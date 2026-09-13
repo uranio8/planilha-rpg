@@ -179,7 +179,9 @@ function renderPlayers() {
     const prof = getProfBonus(p.level);
     const wisMod = Math.floor((p.wis - 10) / 2);
     const dexMod = Math.floor((p.dex - 10) / 2);
-    const passPerc = 10 + wisMod;
+    const isWisProf = (p.skillProficiencies || []).includes('perception');
+    const isWisExpert = (p.skillExpertises || []).includes('perception');
+    const passPerc = 10 + wisMod + (isWisExpert ? (prof * 2) : (isWisProf ? prof : 0));
     const activeTab = p.activeCardTab || 'attacks';
 
     // Normaliza slots e dados
@@ -193,6 +195,7 @@ function renderPlayers() {
     p.conditions = p.conditions || [];
     p.avatar = p.avatar || '👤';
     p.skillProficiencies = p.skillProficiencies || [];
+    p.skillExpertises = p.skillExpertises || [];
     p.saveProficiencies = p.saveProficiencies || [];
     p.actionLogs = p.actionLogs || [];
     p.playerNotes = p.playerNotes !== undefined ? p.playerNotes : '';
@@ -348,8 +351,13 @@ function renderPlayers() {
             </div>
           </div>
 
-          <div class="player-meta">
-            👤 <b>${p.student}</b> • <span style="color: #cbd5e1;">${p.race}</span> • <span style="color: var(--primary-light);">${p.className}</span>
+          <div class="player-meta" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <span>👤 <b>${p.student}</b> • <span style="color: #cbd5e1;">${p.race}</span> • <span style="color: var(--primary-light);">${p.className}</span></span>
+            ${(p.fightingStyle && typeof FIGHTING_STYLES !== 'undefined' && FIGHTING_STYLES[p.fightingStyle]) ? `
+              <span class="fighting-style-badge" title="${escapeAttr(FIGHTING_STYLES[p.fightingStyle].desc)}">
+                ${FIGHTING_STYLES[p.fightingStyle].icon} ${FIGHTING_STYLES[p.fightingStyle].name}
+              </span>
+            ` : ''}
           </div>
 
           <!-- V4: BARRA DE EXPERIÊNCIA (XP) ANIMADA -->
@@ -515,22 +523,34 @@ function renderPlayers() {
 
             <div class="powers-section-box">
               <div class="powers-section-header">
-                <span>🔮 Magias Preparadas (${(p.preparedSpells || []).length})</span>
+                ${(() => {
+                  const prepInfo = getMaxPreparedSpells(p);
+                  const leveledSpells = (p.preparedSpells || []).filter(sName => {
+                    const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+                    return !sp || sp.level > 0;
+                  });
+                  const countLabel = prepInfo.isPreparedCaster ? `${leveledSpells.length}/${prepInfo.max} prep` : `${(p.preparedSpells || []).length}`;
+                  return `<span>🔮 Magias (${countLabel})</span>`;
+                })()}
                 <button class="btn-secondary" style="font-size: 10px; padding: 2px 6px;" onclick="openSpellPickerModal('${p.id}')">📖 Escolher</button>
               </div>
               ${(p.preparedSpells && p.preparedSpells.length > 0) ? `
                 <div class="player-spells-chips-grid">
                   ${p.preparedSpells.map(sName => {
                     const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
-                    const lvlBadge = sp ? (sp.level === 0 ? 'Truque' : `${sp.level}º Círc.`) : 'Magia';
+                    const isCantrip = sp && sp.level === 0;
+                    const lvlBadge = sp ? (isCantrip ? 'Truque' : `${sp.level}º Círc.`) : 'Magia';
                     const school = sp ? sp.school : '';
                     return `
-                      <div class="spell-action-chip" onclick="castPlayerSpellPrompt('${p.id}', '${escapeAttr(sName)}')" title="Clique para conjurar ${escapeAttr(sName)}">
-                        <div class="spell-chip-top">
+                      <div class="spell-action-chip" title="Clique para conjurar ${escapeAttr(sName)}">
+                        <div class="spell-chip-top" onclick="castPlayerSpellPrompt('${p.id}', '${escapeAttr(sName)}')">
                           <span class="spell-chip-name">${sName}</span>
-                          <span class="spell-chip-lvl ${sp && sp.level === 0 ? 'cantrip' : ''}">${lvlBadge}</span>
+                          <span class="spell-chip-lvl ${isCantrip ? 'cantrip' : ''}">${lvlBadge}</span>
                         </div>
-                        <div class="spell-chip-meta">${school ? school + ' • ' : ''}${sp ? sp.range : ''} ➔ <b>⚡ Lançar</b></div>
+                        <div class="spell-chip-meta" style="display: flex; justify-content: space-between; align-items: center;">
+                          <span onclick="castPlayerSpellPrompt('${p.id}', '${escapeAttr(sName)}')">${school ? school + ' • ' : ''}${sp ? sp.range : ''} ➔ <b>⚡ Lançar</b></span>
+                          <button class="spell-prep-toggle-btn prepared" onclick="event.stopPropagation(); togglePlayerSpellPrepared('${p.id}', '${escapeAttr(sName)}')" title="Alternar status desta magia">⭐ Ativa</button>
+                        </div>
                       </div>
                     `;
                   }).join('')}
@@ -574,17 +594,20 @@ function renderPlayers() {
               <div class="skills-card-grid">
                 ${(typeof DND5E_SKILLS !== 'undefined' ? DND5E_SKILLS : []).map(sk => {
                   const isProf = (p.skillProficiencies || []).includes(sk.key);
+                  const isExpert = (p.skillExpertises || []).includes(sk.key);
                   const baseMod = Math.floor(((p[sk.attr] || 10) - 10) / 2);
-                  const totalMod = baseMod + (isProf ? prof : 0);
+                  const profBonus = isExpert ? (prof * 2) : (isProf ? prof : 0);
+                  const totalMod = baseMod + profBonus;
                   const modStr = totalMod >= 0 ? '+' + totalMod : `${totalMod}`;
+                  const starIcon = isExpert ? '<span style="color:#fbbf24; font-size:10px;" title="Especialização (Bônus Dobrado)">★★</span>' : (isProf ? '<span style="color:var(--primary); font-size:10px;" title="Proficiente">★</span>' : '');
                   return `
-                    <div class="skill-card-item ${isProf ? 'prof' : ''}">
-                      <div class="skill-card-name">
-                        ${isProf ? '<span style="color:var(--primary); font-size:10px;">★</span>' : ''}
+                    <div class="skill-card-item ${isExpert ? 'expert' : (isProf ? 'prof' : '')}">
+                      <div class="skill-card-name ${isExpert ? 'expert' : ''}">
+                        ${starIcon}
                         <span>${sk.name}</span>
                         <span class="skill-card-attr">(${sk.label})</span>
                       </div>
-                      <button class="skill-card-roll-btn" onclick="rollPlayerSkill('${p.id}', '${sk.key}')" title="Rolar teste de ${sk.name} (${modStr})">
+                      <button class="skill-card-roll-btn ${isExpert ? 'expert' : ''}" onclick="rollPlayerSkill('${p.id}', '${sk.key}')" title="Rolar teste de ${sk.name} (${modStr})${isExpert ? ' • Especialista (Bônus Dobrado +2x PB)' : (isProf ? ' • Proficiente' : '')}">
                         🎲 ${modStr}
                       </button>
                     </div>
@@ -981,9 +1004,12 @@ function rollPlayerSkill(id, skillKey, mode = 'normal') {
   const attrVal = p[skill.attr] || 10;
   const attrMod = Math.floor((attrVal - 10) / 2);
   const isProf = (p.skillProficiencies || []).includes(skillKey);
+  const isExpert = (p.skillExpertises || []).includes(skillKey);
   const prof = getProfBonus(p.level);
-  const totalMod = attrMod + (isProf ? prof : 0);
-  const rollLabel = `${p.name} - ${skill.name} (${skill.label})`;
+  const profMultiplier = isExpert ? (prof * 2) : (isProf ? prof : 0);
+  const totalMod = attrMod + profMultiplier;
+  const expertTag = isExpert ? ' (Especialista ★★)' : (isProf ? ' (Proficiente ★)' : '');
+  const rollLabel = `${p.name} - ${skill.name}${expertTag}`;
 
   let result;
   if (typeof rollGlobalDice === 'function') {
@@ -993,10 +1019,10 @@ function rollPlayerSkill(id, skillKey, mode = 'normal') {
     const tot = d20 + totalMod;
     const bd = `d20 [${d20}] ${totalMod >= 0 ? '+' + totalMod : totalMod}`;
     result = { total: tot, breakdown: bd, isCrit: d20 === 20, isFumble: d20 === 1 };
-    addLog(`🎯 <b>${p.name}</b> rolou Perícia <b>${skill.name}</b>: <b>${tot}</b> (${bd})`);
+    addLog(`🎯 <b>${p.name}</b> rolou Perícia <b>${skill.name}</b>${expertTag}: <b>${tot}</b> (${bd})`);
   }
 
-  addPlayerActionLog(p.id, '🎯', `Perícia ${skill.name}: Total ${result.total} (${result.breakdown || ''})`, 'skill');
+  addPlayerActionLog(p.id, '🎯', `Perícia ${skill.name}${expertTag}: Total ${result.total} (${result.breakdown || ''})`, 'skill');
   renderPlayers();
   return result;
 }
@@ -1039,6 +1065,7 @@ function openPlayerSkillsModal(id) {
   if (!modal) return;
 
   p.skillProficiencies = p.skillProficiencies || [];
+  p.skillExpertises = p.skillExpertises || [];
   p.saveProficiencies = p.saveProficiencies || [];
 
   const nameEl = document.getElementById('skills-modal-player-name');
@@ -1052,6 +1079,19 @@ function renderSkillsModalContent() {
   const p = PLAYERS.find(x => x.id === activeSkillsModalPlayerId);
   if (!p) return;
   const prof = getProfBonus(p.level);
+  p.skillProficiencies = p.skillProficiencies || [];
+  p.skillExpertises = p.skillExpertises || [];
+
+  const countersEl = document.getElementById('skills-modal-counters');
+  if (countersEl) {
+    const norm = (p.className || '').toLowerCase();
+    const isRogue = norm.includes('ladino') || norm.includes('rogue');
+    const isBard = norm.includes('bardo') || norm.includes('bard');
+    let recExpertise = isRogue ? (p.level >= 6 ? '4' : '2') : (isBard ? (p.level >= 10 ? '4' : (p.level >= 3 ? '2' : '0')) : null);
+    let note = `Proficiências: ${p.skillProficiencies.length} • Especializações: ${p.skillExpertises.length}`;
+    if (recExpertise) note += ` (Sugerido para ${p.className}: ${recExpertise})`;
+    countersEl.innerText = note;
+  }
 
   // 1. Saving Throws
   const savesContainer = document.getElementById('skills-modal-saves-container');
@@ -1087,18 +1127,28 @@ function renderSkillsModalContent() {
   if (skillsContainer) {
     const skillList = typeof DND5E_SKILLS !== 'undefined' ? DND5E_SKILLS : [];
     skillsContainer.innerHTML = skillList.map(s => {
-      const isProf = (p.skillProficiencies || []).includes(s.key);
+      const isProf = p.skillProficiencies.includes(s.key);
+      const isExpert = p.skillExpertises.includes(s.key);
       const mod = Math.floor(((p[s.attr] || 10) - 10) / 2);
-      const totalMod = mod + (isProf ? prof : 0);
+      const profVal = isExpert ? (prof * 2) : (isProf ? prof : 0);
+      const totalMod = mod + profVal;
       const modStr = totalMod >= 0 ? `+${totalMod}` : `${totalMod}`;
       return `
-        <div class="skill-modal-chip ${isProf ? 'active' : ''}" onclick="togglePlayerSkillProf('${p.id}', '${s.key}')">
-          <input type="checkbox" ${isProf ? 'checked' : ''} onclick="event.stopPropagation(); togglePlayerSkillProf('${p.id}', '${s.key}')">
+        <div class="skill-modal-chip ${isExpert ? 'expert' : (isProf ? 'active' : '')}" onclick="togglePlayerSkillProf('${p.id}', '${s.key}')">
+          <input type="checkbox" ${isProf || isExpert ? 'checked' : ''} onclick="event.stopPropagation(); togglePlayerSkillProf('${p.id}', '${s.key}')">
           <div style="flex:1;">
-            <div style="font-weight:700; font-size:12px;">${s.name} <span style="font-size:10px; color:var(--primary-light); font-weight:normal;">(${s.label})</span></div>
-            <div style="font-size:10px; color:var(--text-muted);">Atributo: ${s.label} (${mod >= 0 ? '+' + mod : mod}) ${isProf ? `+ Prof (+${prof})` : ''}</div>
+            <div style="font-weight:700; font-size:12px; display:flex; align-items:center; gap:4px;">
+              <span>${s.name}</span>
+              <span style="font-size:10px; color:var(--primary-light); font-weight:normal;">(${s.label})</span>
+            </div>
+            <div style="font-size:10px; color:var(--text-muted);">
+              ${isExpert ? `🌟 Especialista (+${prof * 2})` : (isProf ? `★ Proficiente (+${prof})` : `Base (${mod >= 0 ? '+' + mod : mod})`)}
+            </div>
           </div>
-          <span class="skill-mod-badge ${isProf ? 'prof' : ''}">${modStr}</span>
+          <button class="btn-expert-toggle ${isExpert ? 'active' : ''}" onclick="togglePlayerSkillExpertise('${p.id}', '${s.key}', event)" title="Alternar Especialização / Expertise (Dobra o bônus de proficiência)">
+            ${isExpert ? '★★ Especialista' : '🌟 Especializar'}
+          </button>
+          <span class="skill-mod-badge ${isExpert ? 'expert' : (isProf ? 'prof' : '')}">${modStr}</span>
         </div>
       `;
     }).join('');
@@ -1123,10 +1173,34 @@ function togglePlayerSkillProf(id, skillKey) {
   const p = PLAYERS.find(x => x.id === id);
   if (!p) return;
   p.skillProficiencies = p.skillProficiencies || [];
+  p.skillExpertises = p.skillExpertises || [];
+
   if (p.skillProficiencies.includes(skillKey)) {
     p.skillProficiencies = p.skillProficiencies.filter(x => x !== skillKey);
+    p.skillExpertises = p.skillExpertises.filter(x => x !== skillKey);
   } else {
     p.skillProficiencies.push(skillKey);
+  }
+  renderSkillsModalContent();
+  renderPlayers();
+  saveToLocalStorage();
+}
+
+function togglePlayerSkillExpertise(id, skillKey, e) {
+  if (e) e.stopPropagation();
+  const p = PLAYERS.find(x => x.id === id);
+  if (!p) return;
+  p.skillProficiencies = p.skillProficiencies || [];
+  p.skillExpertises = p.skillExpertises || [];
+
+  if (p.skillExpertises.includes(skillKey)) {
+    p.skillExpertises = p.skillExpertises.filter(x => x !== skillKey);
+  } else {
+    if (!p.skillProficiencies.includes(skillKey)) {
+      p.skillProficiencies.push(skillKey);
+    }
+    p.skillExpertises.push(skillKey);
+    if (typeof playFX === 'function') playFX('crit');
   }
   renderSkillsModalContent();
   renderPlayers();
@@ -1613,6 +1687,87 @@ function getHitDieForClass(className) {
   return '1d8'; // Bardo, Clérigo, Druida, Ladino, Monge, Bruxo
 }
 
+const FIGHTING_STYLES = {
+  archery: { id: 'archery', name: 'Arquearia', icon: '🏹', desc: '+2 de bônus nas jogadas de ataque realizadas com armas de ataque à distância.' },
+  defense: { id: 'defense', name: 'Defesa', icon: '🛡️', desc: '+1 de bônus na Classe de Armadura (CA) enquanto estiver usando uma armadura.' },
+  dueling: { id: 'dueling', name: 'Duelo', icon: '⚔️', desc: '+2 de bônus nas jogadas de dano quando empunhar uma arma corpo a corpo em uma mão e nenhuma outra arma.' },
+  twoweapon: { id: 'twoweapon', name: 'Combate com Duas Armas', icon: '🗡️⚔️', desc: 'Adiciona o modificador de atributo no dano do ataque bônus da segunda arma.' },
+  protection: { id: 'protection', name: 'Proteção', icon: '🛡️⚡', desc: 'Quando uma criatura atacar um alvo que não seja você a até 1,5m, use sua Reação para impor desvantagem no ataque (precisa de escudo).' },
+  interception: { id: 'interception', name: 'Intercepção', icon: '🎯', desc: 'Quando uma criatura a até 1,5m sofrer dano, use sua Reação para reduzir o dano em 1d10 + Bônus de Proficiência.' },
+  greatweapon: { id: 'greatweapon', name: 'Luta com Armas Grandes', icon: '🔨', desc: 'Ao tirar 1 ou 2 no dano com arma de duas mãos ou versátil empunhada com as duas mãos, pode rolar o dado novamente.' },
+  unarmed: { id: 'unarmed', name: 'Combatente Desarmado', icon: '🥊', desc: 'Golpes desarmados causam 1d6 (ou 1d8 com as duas mãos livres) + FOR de dano contundente.' },
+  thrown: { id: 'thrown', name: 'Arremessador', icon: '🪓', desc: '+2 de bônus nas jogadas de dano com armas de arremesso.' },
+  blind: { id: 'blind', name: 'Luta às Cegas', icon: '👁️', desc: 'Você possui Visão às Cegas (Blindsight) com alcance de 3 metros (10 pés).' },
+  blessed: { id: 'blessed', name: 'Guerreiro Abençoado', icon: '🔮', desc: 'Você aprende 2 Truques da lista de magias de Clérigo que contam como magias de Paladino.' },
+  druidic: { id: 'druidic', name: 'Guerreiro Druídico', icon: '🍃', desc: 'Você aprende 2 Truques da lista de magias de Druida que contam como magias de Patrulheiro.' }
+};
+
+function getMaxPreparedSpells(p) {
+  if (!p) return { max: 0, formula: 'Nenhuma', isPreparedCaster: false };
+  const lvl = parseInt(p.level, 10) || 1;
+  const norm = (p.className || '').toLowerCase();
+  const intMod = Math.floor(((p.int || 10) - 10) / 2);
+  const wisMod = Math.floor(((p.wis || 10) - 10) / 2);
+  const chaMod = Math.floor(((p.cha || 10) - 10) / 2);
+
+  if (norm.includes('mago') || norm.includes('wizard')) {
+    const max = Math.max(1, lvl + intMod);
+    return {
+      max,
+      formula: `Nível (${lvl}) + INT (${intMod >= 0 ? '+' : ''}${intMod}) = ${max}`,
+      isPreparedCaster: true,
+      attrLabel: 'INT'
+    };
+  }
+
+  if (norm.includes('clérigo') || norm.includes('clerigo') || norm.includes('druida')) {
+    const max = Math.max(1, lvl + wisMod);
+    return {
+      max,
+      formula: `Nível (${lvl}) + SAB (${wisMod >= 0 ? '+' : ''}${wisMod}) = ${max}`,
+      isPreparedCaster: true,
+      attrLabel: 'SAB'
+    };
+  }
+
+  if (norm.includes('paladino')) {
+    const halfLvl = Math.max(1, Math.floor(lvl / 2));
+    const max = Math.max(1, halfLvl + chaMod);
+    return {
+      max,
+      formula: `Metade do Nível (${halfLvl}) + CAR (${chaMod >= 0 ? '+' : ''}${chaMod}) = ${max}`,
+      isPreparedCaster: true,
+      attrLabel: 'CAR'
+    };
+  }
+
+  return {
+    max: Array.isArray(p.preparedSpells) ? p.preparedSpells.length : 0,
+    formula: `Magias Conhecidas (Sempre preparadas)`,
+    isPreparedCaster: false,
+    attrLabel: null
+  };
+}
+
+function togglePlayerSpellPrepared(playerId, spellName) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+  p.preparedSpells = p.preparedSpells || [];
+  
+  if (p.preparedSpells.includes(spellName)) {
+    p.preparedSpells = p.preparedSpells.filter(s => s !== spellName);
+    addLog(`💤 <b>${p.name}</b> desmarcou a magia <b>${spellName}</b> das preparadas.`);
+  } else {
+    p.preparedSpells.push(spellName);
+    if (typeof playFX === 'function') playFX('heal');
+    addLog(`🔮 <b>${p.name}</b> preparou a magia <b>${spellName}</b> para o dia.`);
+  }
+
+  renderPlayers();
+  if (typeof renderCombat === 'function') renderCombat();
+  saveToLocalStorage();
+}
+
 function findClassData(query) {
   if (!query || typeof CLASSES_DATA === 'undefined') return null;
   const q = String(query).trim().toLowerCase();
@@ -1868,6 +2023,37 @@ function renderSpellPickerList() {
 
   if (countBadge) countBadge.innerText = pickerSelectedSpells.size;
   if (countBtnBadge) countBtnBadge.innerText = pickerSelectedSpells.size;
+
+  const prepBox = document.getElementById('picker-prep-meter-box');
+  if (prepBox && p) {
+    const prepInfo = getMaxPreparedSpells(p);
+    if (prepInfo.isPreparedCaster) {
+      const leveledCount = Array.from(pickerSelectedSpells).filter(sName => {
+        const s = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(x => x.name.toLowerCase() === sName.toLowerCase()) : null;
+        return !s || s.level > 0;
+      }).length;
+      const isOver = leveledCount > prepInfo.max;
+      prepBox.innerHTML = `
+        <div class="prepared-spells-meter" style="${isOver ? 'background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); color:#fca5a5;' : ''}">
+          <span style="font-size: 14px;">🔮</span>
+          <div style="flex: 1;">
+            <b>Limite Diário:</b> <span style="font-weight:800; color:#fff;">${leveledCount} / ${prepInfo.max}</span> magias preparadas (${prepInfo.formula})
+            <div style="font-size: 9px; opacity: 0.85;">* Truques (Nv 0) estão sempre ativos e não contam no limite diário.</div>
+          </div>
+          <span class="badge ${isOver ? 'badge-warn' : 'badge-cls'}" style="font-size: 10px;">${isOver ? '⚠️ Acima do Limite' : '✅ Válido'}</span>
+        </div>
+      `;
+    } else {
+      prepBox.innerHTML = `
+        <div class="prepared-spells-meter">
+          <span style="font-size: 14px;">📖</span>
+          <div style="flex: 1;">
+            <b>Conjurador de Magias Conhecidas:</b> Todas as suas magias selecionadas estão sempre preparadas para uso.
+          </div>
+        </div>
+      `;
+    }
+  }
 
   let spells = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA : [];
   
@@ -2259,6 +2445,11 @@ function openPlayerModal(id) {
     const avatarInp = document.getElementById('pm-avatar');
     if (avatarInp) avatarInp.value = p.avatar || '👤';
 
+    const fsSel = document.getElementById('pm-fighting-style');
+    if (fsSel) {
+      fsSel.value = p.fightingStyle || '';
+    }
+
     const slots = p.slots || [0, 0, 0, 0, 0];
     document.getElementById('pm-slot-1').value = slots[0] || 0;
     document.getElementById('pm-slot-2').value = slots[1] || 0;
@@ -2308,6 +2499,9 @@ function openPlayerModal(id) {
     if (storyInp) storyInp.value = '';
     const avatarInp = document.getElementById('pm-avatar');
     if (avatarInp) avatarInp.value = '👤';
+
+    const fsSel = document.getElementById('pm-fighting-style');
+    if (fsSel) fsSel.value = '';
 
     document.getElementById('pm-badges').value = '⭐ Presença 100%';
     document.getElementById('pm-slot-1').value = 0;
@@ -2393,6 +2587,9 @@ function savePlayerSheet() {
   const storyVal = document.getElementById('pm-backstory') ? document.getElementById('pm-backstory').value.trim() : (existing ? existing.backstory || '' : '');
   const avatarVal = document.getElementById('pm-avatar') ? document.getElementById('pm-avatar').value.trim() : (existing ? existing.avatar || '👤' : '👤');
 
+  const fsSel = document.getElementById('pm-fighting-style');
+  const fightingStyle = fsSel ? fsSel.value : (existing ? existing.fightingStyle || '' : '');
+
   const data = {
     id: id || 'p_' + Date.now(),
     student, name,
@@ -2400,6 +2597,7 @@ function savePlayerSheet() {
     race: raceVal,
     className: classNameVal,
     subclassIdx,
+    fightingStyle,
     level: parseInt(document.getElementById('pm-level').value) || 1,
     xp: parseInt(document.getElementById('pm-xp').value) || 0,
     hitDice: document.getElementById('pm-hitdice').value || '1d10',
@@ -2416,6 +2614,7 @@ function savePlayerSheet() {
     slotsUsed: existing ? existing.slotsUsed : [0, 0, 0, 0, 0],
     preparedSpells: existing && existing.preparedSpells ? existing.preparedSpells : [],
     skillProficiencies: existing && existing.skillProficiencies ? existing.skillProficiencies : [],
+    skillExpertises: existing && existing.skillExpertises ? existing.skillExpertises : [],
     saveProficiencies: existing && existing.saveProficiencies ? existing.saveProficiencies : [],
     featureCharges: existing && existing.featureCharges ? existing.featureCharges : [],
     actionLogs: existing && existing.actionLogs ? existing.actionLogs : [],

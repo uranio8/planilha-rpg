@@ -1319,6 +1319,77 @@ const hasSneakAttackInRogue = rogueUnlocked.some(f => f.name.includes('Ataque Fu
 const hasDivineSmiteInRogue = rogueUnlocked.some(f => f.name.includes('Destruição Divina'));
 assert(hasSneakAttackInRogue && !hasDivineSmiteInRogue, 'Ladino Nv 3 desbloqueia Ataque Furtivo e NÃO puxa habilidades de Paladino');
 
+// --- SUÍTE 25: Estilo de Luta, Especialização (Expertise) e Preparação de Magias ---
+console.log('\n⚔️ 25. Testes de Estilo de Luta, Especialização (Expertise) e Preparação de Magias:');
+assert(typeof vm.runInContext("FIGHTING_STYLES", sandbox) === 'object', 'Dicionário FIGHTING_STYLES exportado');
+assert(typeof vm.runInContext("getMaxPreparedSpells", sandbox) === 'function', 'Função getMaxPreparedSpells exportada');
+assert(typeof vm.runInContext("togglePlayerSkillExpertise", sandbox) === 'function', 'Função togglePlayerSkillExpertise exportada');
+assert(typeof vm.runInContext("togglePlayerSpellPrepared", sandbox) === 'function', 'Função togglePlayerSpellPrepared exportada');
+
+// 1. Validação dos 12 Estilos de Luta
+const stylesObj = vm.runInContext("FIGHTING_STYLES", sandbox);
+const expectedStyles = ['archery', 'defense', 'dueling', 'twoweapon', 'protection', 'interception', 'greatweapon', 'unarmed', 'thrown', 'blind', 'blessed', 'druidic'];
+const allStylesPresent = expectedStyles.every(k => stylesObj[k] && stylesObj[k].name && stylesObj[k].desc);
+assert(allStylesPresent, 'Todos os 12 Estilos de Luta D&D 5E estão catalogados com nomes e descrições');
+
+// 2. Validação do Cálculo de Magias Preparadas (Mago, Clérigo, Paladino, Conhecidas)
+const wizardPrep = vm.runInContext("getMaxPreparedSpells({ className: 'Mago', level: 3, int: 16 })", sandbox);
+assert(wizardPrep.isPreparedCaster && wizardPrep.max === 6, 'Mago Nv 3 com INT 16 (+3) pode preparar até 6 magias (3 + 3 = 6)');
+
+const clericPrep = vm.runInContext("getMaxPreparedSpells({ className: 'Clérigo', level: 5, wis: 18 })", sandbox);
+assert(clericPrep.isPreparedCaster && clericPrep.max === 9, 'Clérigo Nv 5 com SAB 18 (+4) pode preparar até 9 magias (5 + 4 = 9)');
+
+const paladinPrep = vm.runInContext("getMaxPreparedSpells({ className: 'Paladino', level: 4, cha: 14 })", sandbox);
+assert(paladinPrep.isPreparedCaster && paladinPrep.max === 4, 'Paladino Nv 4 com CAR 14 (+2) pode preparar até 4 magias (2 + 2 = 4)');
+
+const sorcererPrep = vm.runInContext("getMaxPreparedSpells({ className: 'Feiticeiro', level: 5, cha: 16 })", sandbox);
+assert(!sorcererPrep.isPreparedCaster, 'Feiticeiro é identificado como Conjurador de Magias Conhecidas');
+
+// 3. Validação de Especialização (Expertise - Dobro da Proficiência)
+const testRogue = {
+  id: 'test_rogue_exp',
+  name: 'Ladino Teste',
+  student: 'Aluno',
+  className: 'Ladino',
+  level: 1, // PB = +2
+  dex: 16,  // Mod = +3
+  wis: 14,  // Mod = +2
+  skillProficiencies: ['furtividade', 'acrobacia'],
+  skillExpertises: ['furtividade']
+};
+vm.runInContext(`PLAYERS.push(${JSON.stringify(testRogue)})`, sandbox);
+
+// Furtividade com Especialização: Mod (+3) + 2x Prof (+4) = +7
+const stealthRoll = vm.runInContext("rollPlayerSkill('test_rogue_exp', 'furtividade')", sandbox);
+assert(stealthRoll && stealthRoll.mod === 7, 'Ladino Nv 1 com DES 16 (+3) e Especialização em Furtividade soma +7 (+3 + 2x2)');
+
+// Acrobacia apenas Proficiente: Mod (+3) + 1x Prof (+2) = +5
+const acrobRoll = vm.runInContext("rollPlayerSkill('test_rogue_exp', 'acrobacia')", sandbox);
+assert(acrobRoll && acrobRoll.mod === 5, 'Ladino Nv 1 com DES 16 (+3) e Proficiência normal em Acrobacia soma +5 (+3 + 2)');
+
+// 4. Teste de Alternância de Especialização (togglePlayerSkillExpertise)
+vm.runInContext("togglePlayerSkillExpertise('test_rogue_exp', 'acrobacia')", sandbox);
+const updatedRogue = vm.runInContext("PLAYERS.find(p => p.id === 'test_rogue_exp')", sandbox);
+assert(updatedRogue.skillExpertises.includes('acrobacia'), 'togglePlayerSkillExpertise ativou especialização em Acrobacia');
+
+// 5. Teste de Alternância Rápida de Magia Preparada (togglePlayerSpellPrepared)
+const testCaster = {
+  id: 'test_caster_prep',
+  name: 'Mago Teste',
+  student: 'Aluno',
+  className: 'Mago',
+  level: 3,
+  preparedSpells: ['Mísseis Mágicos']
+};
+vm.runInContext(`PLAYERS.push(${JSON.stringify(testCaster)})`, sandbox);
+vm.runInContext("togglePlayerSpellPrepared('test_caster_prep', 'Escudo Arcano')", sandbox);
+const prepCasterUpdated = vm.runInContext("PLAYERS.find(p => p.id === 'test_caster_prep')", sandbox);
+assert(prepCasterUpdated.preparedSpells.includes('Escudo Arcano'), 'togglePlayerSpellPrepared adicionou Escudo Arcano às magias preparadas');
+
+vm.runInContext("togglePlayerSpellPrepared('test_caster_prep', 'Escudo Arcano')", sandbox);
+const finalCaster = vm.runInContext("PLAYERS.find(p => p.id === 'test_caster_prep')", sandbox);
+assert(!finalCaster.preparedSpells.includes('Escudo Arcano'), 'togglePlayerSpellPrepared desmarcou Escudo Arcano');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

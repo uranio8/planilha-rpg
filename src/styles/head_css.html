@@ -4005,6 +4005,11 @@
       border-color: rgba(245, 158, 11, 0.5);
       background: rgba(245, 158, 11, 0.06);
     }
+    .skill-card-item.expert {
+      border-color: rgba(234, 179, 8, 0.8);
+      background: linear-gradient(135deg, rgba(234, 179, 8, 0.15), rgba(168, 85, 247, 0.1));
+      box-shadow: 0 0 8px rgba(234, 179, 8, 0.15);
+    }
     .skill-card-name {
       font-size: 11px;
       font-weight: 700;
@@ -4013,14 +4018,15 @@
       align-items: center;
       gap: 4px;
     }
+    .skill-card-name.expert {
+      color: #fef08a;
+    }
     .skill-card-attr {
       font-size: 9px;
       color: var(--text-dim);
-      font-weight: normal;
+      font-weight: 400;
     }
     .skill-card-roll-btn {
-      background: rgba(245, 158, 11, 0.15);
-      border: 1px solid var(--primary);
       color: var(--primary-light);
       border-radius: 4px;
       padding: 3px 6px;
@@ -4079,6 +4085,84 @@
     .skill-mod-badge.prof {
       background: var(--primary);
       color: #000;
+    }
+    .skill-modal-chip.expert {
+      border-color: #f59e0b;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(147, 51, 234, 0.12));
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+    }
+    .skill-mod-badge.expert {
+      background: linear-gradient(135deg, #f59e0b, #eab308);
+      color: #000;
+      box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+    }
+    .btn-expert-toggle {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .btn-expert-toggle:hover {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fff;
+    }
+    .btn-expert-toggle.active {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #000;
+      border-color: #fbbf24;
+      font-weight: 800;
+    }
+
+    /* Fighting Style Pill & Prepared Spells Meter */
+    .fighting-style-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(147, 51, 234, 0.15);
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #d8b4fe;
+    }
+    .prepared-spells-meter {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(14, 165, 233, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      color: #7dd3fc;
+    }
+    .spell-prep-toggle-btn {
+      font-size: 9px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(0, 0, 0, 0.3);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .spell-prep-toggle-btn:hover {
+      background: rgba(56, 189, 248, 0.2);
+      color: #fff;
+    }
+    .spell-prep-toggle-btn.prepared {
+      background: rgba(14, 165, 233, 0.35);
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.6);
+      font-weight: 700;
     }
 
     /* --- P2: HISTÓRICO DE AÇÕES DO PERSONAGEM --- */
