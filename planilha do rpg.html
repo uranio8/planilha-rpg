@@ -25928,14 +25928,26 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 
-// src/js/firebase_sync.js - Módulo de Sincronização em Nuvem em Tempo Real com Google Firebase Firestore
+// src/js/firebase_sync.js - Módulo de Sincronização em Nuvem em Tempo Real com Google Firebase Firestore & Realtime Database
 
 const FIREBASE_CONFIG_KEY = 'dnd5e_firebase_config';
 const FIREBASE_ROOM_KEY = 'dnd5e_firebase_room';
 const FIREBASE_AUTOSYNC_KEY = 'dnd5e_firebase_autosync';
 
+const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDFt7A4FgRlqWXvZwtef8XaVJ1ZBAmlv5w",
+  authDomain: "rpg-turma.firebaseapp.com",
+  databaseURL: "https://rpg-turma-default-rtdb.firebaseio.com",
+  projectId: "rpg-turma",
+  storageBucket: "rpg-turma.firebasestorage.app",
+  messagingSenderId: "799098415465",
+  appId: "1:799098415465:web:f9af316421cf285f4535f8",
+  measurementId: "G-Y0J9LESXRF"
+};
+
 let firebaseApp = null;
 let firestoreDb = null;
+let realtimeDb = null;
 let firebaseUnsubscribe = null;
 let isFirebaseConnected = false;
 let isFirebaseSyncing = false;
@@ -25948,17 +25960,15 @@ let localClientId = 'client_' + Math.random().toString(36).substring(2, 9);
 function getStoredFirebaseConfig() {
   try {
     const raw = localStorage.getItem(FIREBASE_CONFIG_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch (e) {
-    return null;
-  }
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return DEFAULT_FIREBASE_CONFIG;
 }
 
 function saveFirebaseConfigToStorage(configObj) {
   try {
     if (!configObj) {
-      localStorage.removeItem(FIREBASE_CONFIG_KEY);
+      localStorage.setItem(FIREBASE_CONFIG_KEY, JSON.stringify(DEFAULT_FIREBASE_CONFIG));
     } else {
       localStorage.setItem(FIREBASE_CONFIG_KEY, JSON.stringify(configObj));
     }
@@ -25989,8 +25999,6 @@ function setFirebaseAutoSyncEnabled(enabled) {
 
 // --- INICIALIZAÇÃO DO FIREBASE ---
 
-let realtimeDb = null;
-
 function initFirebaseSync() {
   const config = getStoredFirebaseConfig();
   if (!config || !config.apiKey || (!config.projectId && !config.databaseURL)) {
@@ -26013,7 +26021,9 @@ function initFirebaseSync() {
 
     // Suporte tanto para Realtime Database quanto para Firestore
     if (typeof firebase.database === 'function' && (config.databaseURL || !config.projectId)) {
-      realtimeDb = firebase.database();
+      try {
+        realtimeDb = firebase.database();
+      } catch (e) {}
     }
     if (typeof firebase.firestore === 'function') {
       try {
@@ -26029,7 +26039,7 @@ function initFirebaseSync() {
     // Inicia a escuta em tempo real
     startFirebaseRoomListener(currentRoom);
 
-    console.log('✅ Google Firebase conectado com sucesso! Sala:', currentRoom);
+    console.log('✅ Google Firebase conectado automaticamente! Sala:', currentRoom);
     return true;
   } catch (err) {
     console.error('Erro ao conectar ao Firebase:', err);
@@ -26042,38 +26052,43 @@ function initFirebaseSync() {
 // --- ESCUTA EM TEMPO REAL (REALTIME SNAPSHOTS) ---
 
 function startFirebaseRoomListener(roomId) {
-  if (!firestoreDb) return;
-
   if (firebaseUnsubscribe) {
     firebaseUnsubscribe();
     firebaseUnsubscribe = null;
   }
 
-  const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
-
-  firebaseUnsubscribe = roomDocRef.onSnapshot(
-    docSnapshot => {
-      if (!docSnapshot.exists) {
-        console.log(`Sala '${roomId}' ainda não possui dados na nuvem. Criando ao salvar.`);
-        return;
-      }
-
-      const cloudData = docSnapshot.data();
+  // 1. Escuta via Realtime Database
+  if (realtimeDb) {
+    const rtdbRef = realtimeDb.ref('dnd_rooms/' + roomId);
+    const callback = snapshot => {
+      const cloudData = snapshot.val();
       if (!cloudData) return;
-
-      // Evita aplicar a alteração que este próprio cliente acabou de emitir
-      if (cloudData.lastUpdatedBy === localClientId) {
-        return;
-      }
-
-      console.log('☁️ Alteração remota recebida do Firebase!');
+      if (cloudData.lastUpdatedBy === localClientId) return;
+      console.log('☁️ Alteração remota recebida do Realtime Database!');
       applyCloudDataToLocal(cloudData);
-    },
-    error => {
-      console.warn('Erro na escuta em tempo real do Firebase:', error);
-      updateFirebaseUiStatus('error', 'Sem Acesso');
-    }
-  );
+    };
+    rtdbRef.on('value', callback);
+    firebaseUnsubscribe = () => rtdbRef.off('value', callback);
+    return;
+  }
+
+  // 2. Escuta via Firestore
+  if (firestoreDb) {
+    const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
+    firebaseUnsubscribe = roomDocRef.onSnapshot(
+      docSnapshot => {
+        if (!docSnapshot.exists) return;
+        const cloudData = docSnapshot.data();
+        if (!cloudData) return;
+        if (cloudData.lastUpdatedBy === localClientId) return;
+        console.log('☁️ Alteração remota recebida do Firestore!');
+        applyCloudDataToLocal(cloudData);
+      },
+      error => {
+        console.warn('Erro na escuta do Firestore:', error);
+      }
+    );
+  }
 }
 
 function applyCloudDataToLocal(cloudData) {
@@ -26129,7 +26144,7 @@ function applyCloudDataToLocal(cloudData) {
 // --- DESPACHO DE ALTERAÇÕES LOCAIS PARA A NUVEM ---
 
 function syncLocalChangesToFirebase(immediate = false) {
-  if (!isFirebaseConnected || !firestoreDb || isApplyingCloudUpdate) return;
+  if (!isFirebaseConnected || (!firestoreDb && !realtimeDb) || isApplyingCloudUpdate) return;
   if (!isFirebaseAutoSyncEnabled()) return;
 
   if (firebaseCloudDebounceTimer) {
@@ -26137,7 +26152,7 @@ function syncLocalChangesToFirebase(immediate = false) {
     firebaseCloudDebounceTimer = null;
   }
 
-  const delay = immediate ? 0 : 600;
+  const delay = immediate ? 0 : 500;
 
   firebaseCloudDebounceTimer = setTimeout(() => {
     executeCloudSave();
@@ -26145,29 +26160,40 @@ function syncLocalChangesToFirebase(immediate = false) {
 }
 
 function executeCloudSave() {
-  if (!isFirebaseConnected || !firestoreDb) return;
+  if (!isFirebaseConnected || (!firestoreDb && !realtimeDb)) return;
 
   const roomId = getStoredFirebaseRoom();
-  const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
-
   const payload = {
     players: (typeof PLAYERS !== 'undefined') ? PLAYERS : [],
     state: (typeof state !== 'undefined') ? state : { combatants: [], round: 1, current: 0 },
-    lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
     lastUpdatedBy: localClientId,
     lastUpdateIso: new Date().toISOString()
   };
 
-  updateFirebaseUiStatus('syncing', 'Salvando na Nuvem...');
+  updateFirebaseUiStatus('syncing', 'Salvando...');
 
-  roomDocRef.set(payload, { merge: true })
-    .then(() => {
-      updateFirebaseUiStatus('connected', `Nuvem: ${roomId}`);
-    })
-    .catch(err => {
-      console.warn('Erro ao salvar no Firestore:', err);
-      updateFirebaseUiStatus('error', 'Falha ao Salvar');
-    });
+  // Salva no Realtime Database
+  if (realtimeDb) {
+    realtimeDb.ref('dnd_rooms/' + roomId).set(payload)
+      .then(() => {
+        updateFirebaseUiStatus('connected', `Nuvem: ${roomId}`);
+      })
+      .catch(err => {
+        console.warn('Erro ao salvar no Realtime DB:', err);
+      });
+  }
+
+  // Salva no Firestore
+  if (firestoreDb) {
+    const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
+    roomDocRef.set(payload, { merge: true })
+      .then(() => {
+        updateFirebaseUiStatus('connected', `Nuvem: ${roomId}`);
+      })
+      .catch(err => {
+        console.warn('Erro ao salvar no Firestore:', err);
+      });
+  }
 }
 
 // --- INTERFACE DO USUÁRIO & MODAL DE CONFIGURAÇÃO ---

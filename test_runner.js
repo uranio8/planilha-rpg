@@ -1276,9 +1276,10 @@ assert(loadedConfig && loadedConfig.apiKey === "AIzaSyTestKey123" && loadedConfi
 const initResult = vm.runInContext("initFirebaseSync()", sandbox);
 assert(initResult === false, 'initFirebaseSync tratou ausência do SDK de forma defensiva e graciosa');
 
-// Testa remoção de configuração
+// Testa remoção de configuração customizada e fallback para DEFAULT_FIREBASE_CONFIG
 vm.runInContext("saveFirebaseConfigToStorage(null)", sandbox);
-assert(vm.runInContext("getStoredFirebaseConfig()", sandbox) === null, 'Configuração do Firebase removida retornando ao Modo Local');
+const fallbackConfig = vm.runInContext("getStoredFirebaseConfig()", sandbox);
+assert(fallbackConfig && fallbackConfig.apiKey === "AIzaSyDFt7A4FgRlqWXvZwtef8XaVJ1ZBAmlv5w", 'Configuração padrão integrada do Firebase ativa e pronta para uso');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
