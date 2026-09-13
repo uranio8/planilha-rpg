@@ -37,6 +37,11 @@
         </select>
         <input type="range" id="rng-audio-vol" min="0" max="1" step="0.05" value="0.5" oninput="setAudioMasterVolume(this.value)" style="width: 45px; height: 4px; cursor: pointer;" title="Volume Geral do Áudio">
       </div>
+      <!-- V7: STATUS & CONEXÃO GOOGLE FIREBASE -->
+      <button class="btn-top" onclick="openFirebaseModal()" title="Configurar Sincronização em Nuvem (Google Firebase)" style="display: flex; align-items: center; gap: 5px;">
+        <span id="firebase-status-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
+        <span id="firebase-status-text">☁️ Nuvem</span>
+      </button>
       <button class="btn-top" onclick="toggleDMNotesDrawer()" title="Notas Rápidas do Mestre (Atalho: Ctrl+N)">📝 Notas <kbd style="font-size:9px; opacity:0.8;">Ctrl+N</kbd></button>
       <button class="btn-top" onclick="toggleGlobalDiceDrawer()" title="Abrir Painel de Rolagem de Dados">🎲 Dados</button>
       <button class="btn-top" onclick="openPlayerView()" title="Abrir Modo Telão para Projetor da Sala de Aula">📺 Telão</button>
@@ -2532,6 +2537,103 @@
 
   <!-- INPUT OCULTO DE IMPORTAÇÃO DE BACKUP JSON -->
   <input type="file" id="inp-import-backup" accept=".json,application/json" style="display: none;" onchange="handleBackupFileSelected(this)">
+
+  <!-- MODAL: CONFIGURAÇÃO DO GOOGLE FIREBASE (NUVEM EM TEMPO REAL) -->
+  <div id="modal-firebase-config" class="modal-overlay">
+    <div class="modal-body" style="max-width: 540px;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 22px;">☁️</span>
+          <div>
+            <div style="font-size: 16px; font-weight: 800; font-family: var(--font-title); color: #fff;">
+              Sincronização em Nuvem (Google Firebase)
+            </div>
+            <div style="font-size: 11px; color: var(--primary-light);">
+              Banco de Dados Firestore em Tempo Real para Celulares e Computadores
+            </div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeFirebaseModal()">✕</button>
+      </div>
+
+      <!-- Diagnóstico de Status Atual -->
+      <div id="firebase-modal-diag" style="margin-bottom: 12px;">
+        <!-- Preenchido dinamicamente por renderFirebaseModalDiagnostic() -->
+      </div>
+
+      <!-- Formulário de Conexão -->
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div>
+          <label style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">
+            🏷️ Código da Sala / Turma:
+          </label>
+          <input type="text" id="inp-firebase-room" placeholder="Ex: turma_sabado, mesa_alancia_1" style="margin-top: 3px; font-size: 12px; font-family: monospace;">
+          <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">
+            Aparelhos com o mesmo Código de Sala compartilham as mesmas fichas e combate.
+          </div>
+        </div>
+
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <label style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">
+              🔑 Configuração do Firebase (JSON / Objeto JS):
+            </label>
+            <span style="font-size: 10px; color: var(--primary-light);">100% Gratuito</span>
+          </div>
+          <textarea id="inp-firebase-config" rows="5" placeholder='Cole aqui o trecho copiado do Firebase:
+{
+  "apiKey": "AIzaSy...",
+  "authDomain": "seu-app.firebaseapp.com",
+  "projectId": "seu-app-id",
+  "storageBucket": "seu-app.appspot.com",
+  "messagingSenderId": "...",
+  "appId": "..."
+}' style="margin-top: 3px; font-size: 11px; font-family: monospace; line-height: 1.4; resize: vertical;"></textarea>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
+          <input type="checkbox" id="chk-firebase-autosync" style="width: 16px; height: 16px; cursor: pointer;">
+          <label for="chk-firebase-autosync" style="font-size: 11px; color: #cbd5e1; cursor: pointer;">
+            Sincronizar alterações automaticamente ao editar fichas e combates
+          </label>
+        </div>
+
+        <!-- Instruções Rápidas -->
+        <details style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 10px; font-size: 11px;">
+          <summary style="cursor: pointer; font-weight: 700; color: var(--primary-light);">
+            📖 Como obter sua chave gratuita do Firebase (em 2 minutos)
+          </summary>
+          <ol style="margin: 8px 0 4px 18px; padding: 0; line-height: 1.5; color: #cbd5e1;">
+            <li>Acesse <a href="https://console.firebase.google.com/" target="_blank" style="color: #60a5fa; text-decoration: underline;">console.firebase.google.com</a> e faça login com sua conta Google.</li>
+            <li>Clique em <b>Adicionar Projeto</b> e dê um nome (ex: <code>rpg-turma</code>).</li>
+            <li>No menu lateral esquerdo, clique em <b>Criação ➔ Firestore Database</b> e clique em <b>Criar Banco de Dados</b> (escolha <i>Modo de Teste</i>).</li>
+            <li>Vá em <b>Configurações do Projeto ⚙️</b> (no topo esquerdo), role até "Seus Aplicativos", clique no ícone <b>Web &lt;/&gt;</b> e copie o bloco <code>firebaseConfig</code>.</li>
+            <li>Cole o bloco no campo acima e clique em <b>Salvar & Conectar</b>!</li>
+          </ol>
+        </details>
+
+        <!-- Ações Manuais de Sincronização -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;">
+          <button class="btn-secondary" style="font-size: 11px; padding: 8px;" onclick="manualPushToCloud()" title="Enviar todas as fichas deste computador para a nuvem">
+            ⬆️ Subir Fichas para Nuvem
+          </button>
+          <button class="btn-secondary" style="font-size: 11px; padding: 8px;" onclick="manualPullFromCloud()" title="Baixar as fichas mais recentes da nuvem para este aparelho">
+            ⬇️ Puxar da Nuvem
+          </button>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 6px;">
+          <button class="btn-secondary" style="font-size: 11px; color: #f87171; border-color: rgba(248, 113, 113, 0.3);" onclick="document.getElementById('inp-firebase-config').value=''; parseAndSaveFirebaseModalConfig();">
+            Desconectar (Modo Local)
+          </button>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn-secondary" onclick="closeFirebaseModal()">Cancelar</button>
+            <button class="btn-action" onclick="parseAndSaveFirebaseModalConfig()">💾 Salvar & Conectar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 
 

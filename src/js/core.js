@@ -238,6 +238,7 @@ function saveToLocalStorage() {
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     if (typeof saveCampaignsState === 'function') saveCampaignsState();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
     showSaveStatus();
   } catch (e) {
     console.warn('Erro ao salvar no localStorage:', e);

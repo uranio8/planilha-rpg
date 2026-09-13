@@ -43,7 +43,8 @@ const requiredFiles = [
   'src/js/audio_synth.js',
   'src/js/dice_roller.js',
   'src/js/vtt_grid.js',
-  'src/js/screen_sync.js'
+  'src/js/screen_sync.js',
+  'src/js/firebase_sync.js'
 ];
 
 requiredFiles.forEach(file => {
@@ -166,7 +167,9 @@ const sandbox = {
   localStorage: {
     data: {},
     setItem(k, v) { this.data[k] = v; },
-    getItem(k) { return this.data[k] || null; }
+    getItem(k) { return this.data[k] || null; },
+    removeItem(k) { delete this.data[k]; },
+    clear() { this.data = {}; }
   },
   prompt: (msg, def) => (def !== undefined ? String(def) : '10'),
   confirm: () => true,
@@ -198,6 +201,7 @@ const jsComp = fs.readFileSync(path.join(srcDir, 'js', 'compendium.js'), 'utf8')
 const jsCampaigns = fs.readFileSync(path.join(srcDir, 'js', 'campaigns.js'), 'utf8');
 const jsDice = fs.readFileSync(path.join(srcDir, 'js', 'dice_roller.js'), 'utf8');
 const jsGrid = fs.readFileSync(path.join(srcDir, 'js', 'vtt_grid.js'), 'utf8');
+const jsFirebase = fs.readFileSync(path.join(srcDir, 'js', 'firebase_sync.js'), 'utf8');
 
 vm.runInContext(dataRulesXp, sandbox);
 vm.runInContext(dataSpells, sandbox);
@@ -206,6 +210,7 @@ vm.runInContext(dataEquip, sandbox);
 vm.runInContext(dataCampaigns, sandbox);
 vm.runInContext(jsAudioSynth, sandbox);
 vm.runInContext(jsCore, sandbox);
+vm.runInContext(jsFirebase, sandbox);
 vm.runInContext(jsCombat, sandbox);
 vm.runInContext(jsPlayers, sandbox);
 vm.runInContext(jsComp, sandbox);
@@ -1239,6 +1244,41 @@ vm.runInContext("document.getElementById('filter-spell-q').value = 'fireball'", 
 vm.runInContext("handleSpellSearchInput('fireball')", sandbox);
 const spellsGrid = vm.runInContext("document.getElementById('grid-spells').innerHTML", sandbox);
 assert(spellsGrid.includes('Bola de Fogo'), 'handleSpellSearchInput filtrou e encontrou Bola de Fogo via alias fireball');
+
+// --- SUÍTE 23: Sincronização em Nuvem (Google Firebase Firestore) ---
+console.log('\n☁️ 23. Testes de Sincronização em Nuvem (Google Firebase):');
+assert(typeof vm.runInContext("getStoredFirebaseConfig", sandbox) === 'function', 'Função getStoredFirebaseConfig exportada');
+assert(typeof vm.runInContext("saveFirebaseConfigToStorage", sandbox) === 'function', 'Função saveFirebaseConfigToStorage exportada');
+assert(typeof vm.runInContext("getStoredFirebaseRoom", sandbox) === 'function', 'Função getStoredFirebaseRoom exportada');
+assert(typeof vm.runInContext("setStoredFirebaseRoom", sandbox) === 'function', 'Função setStoredFirebaseRoom exportada');
+assert(typeof vm.runInContext("initFirebaseSync", sandbox) === 'function', 'Função initFirebaseSync exportada');
+assert(typeof vm.runInContext("openFirebaseModal", sandbox) === 'function', 'Função openFirebaseModal exportada');
+assert(typeof vm.runInContext("closeFirebaseModal", sandbox) === 'function', 'Função closeFirebaseModal exportada');
+assert(typeof vm.runInContext("manualPushToCloud", sandbox) === 'function', 'Função manualPushToCloud exportada');
+assert(typeof vm.runInContext("manualPullFromCloud", sandbox) === 'function', 'Função manualPullFromCloud exportada');
+
+// Testa sala padrão e sanitização de sala
+assert(vm.runInContext("getStoredFirebaseRoom()", sandbox) === 'turma_principal', 'Código de sala padrão inicializado como turma_principal');
+vm.runInContext("setStoredFirebaseRoom('Turma Sábado - Mesa #1')", sandbox);
+assert(vm.runInContext("getStoredFirebaseRoom()", sandbox) === 'turma_s_bado_-_mesa__1', 'Código de sala sanitizado corretamente');
+
+// Testa salvamento e leitura de configuração
+const sampleFirebaseConfig = {
+  apiKey: "AIzaSyTestKey123",
+  projectId: "rpg-prisco-test",
+  authDomain: "rpg-prisco-test.firebaseapp.com"
+};
+vm.runInContext(`saveFirebaseConfigToStorage(${JSON.stringify(sampleFirebaseConfig)})`, sandbox);
+const loadedConfig = vm.runInContext("getStoredFirebaseConfig()", sandbox);
+assert(loadedConfig && loadedConfig.apiKey === "AIzaSyTestKey123" && loadedConfig.projectId === "rpg-prisco-test", 'Configuração do Firebase salva e recuperada com sucesso');
+
+// Testa fallback gracioso quando Firebase SDK não está presente no sandbox
+const initResult = vm.runInContext("initFirebaseSync()", sandbox);
+assert(initResult === false, 'initFirebaseSync tratou ausência do SDK de forma defensiva e graciosa');
+
+// Testa remoção de configuração
+vm.runInContext("saveFirebaseConfigToStorage(null)", sandbox);
+assert(vm.runInContext("getStoredFirebaseConfig()", sandbox) === null, 'Configuração do Firebase removida retornando ao Modo Local');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

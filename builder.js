@@ -29,11 +29,15 @@ const jsAudioSynth = fs.readFileSync(path.join(srcDir, 'js', 'audio_synth.js'), 
 const jsDice = fs.readFileSync(path.join(srcDir, 'js', 'dice_roller.js'), 'utf8');
 const jsGrid = fs.readFileSync(path.join(srcDir, 'js', 'vtt_grid.js'), 'utf8');
 const jsScreen = fs.readFileSync(path.join(srcDir, 'js', 'screen_sync.js'), 'utf8');
+const jsFirebase = fs.readFileSync(path.join(srcDir, 'js', 'firebase_sync.js'), 'utf8');
 
 const finalHtml = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 ${headCss}
+  <!-- Google Firebase SDK Compat (Nuvem em Tempo Real) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 ${ui}
@@ -47,6 +51,7 @@ ${dataCampaigns}
 ${dataRulesXp}
 ${jsAudioSynth}
 ${jsCore}
+${jsFirebase}
 ${jsCombat}
 ${jsPlayers}
 ${jsCompendium}
@@ -56,6 +61,13 @@ ${jsCampaigns}
 ${jsDice}
 ${jsGrid}
 ${jsScreen}
+
+// Inicialização automática do Firebase se configurado
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof initFirebaseSync === 'function') {
+    initFirebaseSync();
+  }
+});
 </script>
 </body>
 </html>

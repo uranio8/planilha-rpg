@@ -5300,6 +5300,9 @@
     }
   </style>
 
+  <!-- Google Firebase SDK Compat (Nuvem em Tempo Real) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
   <header>
@@ -5341,6 +5344,11 @@
         </select>
         <input type="range" id="rng-audio-vol" min="0" max="1" step="0.05" value="0.5" oninput="setAudioMasterVolume(this.value)" style="width: 45px; height: 4px; cursor: pointer;" title="Volume Geral do Áudio">
       </div>
+      <!-- V7: STATUS & CONEXÃO GOOGLE FIREBASE -->
+      <button class="btn-top" onclick="openFirebaseModal()" title="Configurar Sincronização em Nuvem (Google Firebase)" style="display: flex; align-items: center; gap: 5px;">
+        <span id="firebase-status-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
+        <span id="firebase-status-text">☁️ Nuvem</span>
+      </button>
       <button class="btn-top" onclick="toggleDMNotesDrawer()" title="Notas Rápidas do Mestre (Atalho: Ctrl+N)">📝 Notas <kbd style="font-size:9px; opacity:0.8;">Ctrl+N</kbd></button>
       <button class="btn-top" onclick="toggleGlobalDiceDrawer()" title="Abrir Painel de Rolagem de Dados">🎲 Dados</button>
       <button class="btn-top" onclick="openPlayerView()" title="Abrir Modo Telão para Projetor da Sala de Aula">📺 Telão</button>
@@ -7836,6 +7844,103 @@
 
   <!-- INPUT OCULTO DE IMPORTAÇÃO DE BACKUP JSON -->
   <input type="file" id="inp-import-backup" accept=".json,application/json" style="display: none;" onchange="handleBackupFileSelected(this)">
+
+  <!-- MODAL: CONFIGURAÇÃO DO GOOGLE FIREBASE (NUVEM EM TEMPO REAL) -->
+  <div id="modal-firebase-config" class="modal-overlay">
+    <div class="modal-body" style="max-width: 540px;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 22px;">☁️</span>
+          <div>
+            <div style="font-size: 16px; font-weight: 800; font-family: var(--font-title); color: #fff;">
+              Sincronização em Nuvem (Google Firebase)
+            </div>
+            <div style="font-size: 11px; color: var(--primary-light);">
+              Banco de Dados Firestore em Tempo Real para Celulares e Computadores
+            </div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeFirebaseModal()">✕</button>
+      </div>
+
+      <!-- Diagnóstico de Status Atual -->
+      <div id="firebase-modal-diag" style="margin-bottom: 12px;">
+        <!-- Preenchido dinamicamente por renderFirebaseModalDiagnostic() -->
+      </div>
+
+      <!-- Formulário de Conexão -->
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div>
+          <label style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">
+            🏷️ Código da Sala / Turma:
+          </label>
+          <input type="text" id="inp-firebase-room" placeholder="Ex: turma_sabado, mesa_alancia_1" style="margin-top: 3px; font-size: 12px; font-family: monospace;">
+          <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">
+            Aparelhos com o mesmo Código de Sala compartilham as mesmas fichas e combate.
+          </div>
+        </div>
+
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <label style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">
+              🔑 Configuração do Firebase (JSON / Objeto JS):
+            </label>
+            <span style="font-size: 10px; color: var(--primary-light);">100% Gratuito</span>
+          </div>
+          <textarea id="inp-firebase-config" rows="5" placeholder='Cole aqui o trecho copiado do Firebase:
+{
+  "apiKey": "AIzaSy...",
+  "authDomain": "seu-app.firebaseapp.com",
+  "projectId": "seu-app-id",
+  "storageBucket": "seu-app.appspot.com",
+  "messagingSenderId": "...",
+  "appId": "..."
+}' style="margin-top: 3px; font-size: 11px; font-family: monospace; line-height: 1.4; resize: vertical;"></textarea>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
+          <input type="checkbox" id="chk-firebase-autosync" style="width: 16px; height: 16px; cursor: pointer;">
+          <label for="chk-firebase-autosync" style="font-size: 11px; color: #cbd5e1; cursor: pointer;">
+            Sincronizar alterações automaticamente ao editar fichas e combates
+          </label>
+        </div>
+
+        <!-- Instruções Rápidas -->
+        <details style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 10px; font-size: 11px;">
+          <summary style="cursor: pointer; font-weight: 700; color: var(--primary-light);">
+            📖 Como obter sua chave gratuita do Firebase (em 2 minutos)
+          </summary>
+          <ol style="margin: 8px 0 4px 18px; padding: 0; line-height: 1.5; color: #cbd5e1;">
+            <li>Acesse <a href="https://console.firebase.google.com/" target="_blank" style="color: #60a5fa; text-decoration: underline;">console.firebase.google.com</a> e faça login com sua conta Google.</li>
+            <li>Clique em <b>Adicionar Projeto</b> e dê um nome (ex: <code>rpg-turma</code>).</li>
+            <li>No menu lateral esquerdo, clique em <b>Criação ➔ Firestore Database</b> e clique em <b>Criar Banco de Dados</b> (escolha <i>Modo de Teste</i>).</li>
+            <li>Vá em <b>Configurações do Projeto ⚙️</b> (no topo esquerdo), role até "Seus Aplicativos", clique no ícone <b>Web &lt;/&gt;</b> e copie o bloco <code>firebaseConfig</code>.</li>
+            <li>Cole o bloco no campo acima e clique em <b>Salvar & Conectar</b>!</li>
+          </ol>
+        </details>
+
+        <!-- Ações Manuais de Sincronização -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;">
+          <button class="btn-secondary" style="font-size: 11px; padding: 8px;" onclick="manualPushToCloud()" title="Enviar todas as fichas deste computador para a nuvem">
+            ⬆️ Subir Fichas para Nuvem
+          </button>
+          <button class="btn-secondary" style="font-size: 11px; padding: 8px;" onclick="manualPullFromCloud()" title="Baixar as fichas mais recentes da nuvem para este aparelho">
+            ⬇️ Puxar da Nuvem
+          </button>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 6px;">
+          <button class="btn-secondary" style="font-size: 11px; color: #f87171; border-color: rgba(248, 113, 113, 0.3);" onclick="document.getElementById('inp-firebase-config').value=''; parseAndSaveFirebaseModalConfig();">
+            Desconectar (Modo Local)
+          </button>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn-secondary" onclick="closeFirebaseModal()">Cancelar</button>
+            <button class="btn-action" onclick="parseAndSaveFirebaseModalConfig()">💾 Salvar & Conectar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 
 
@@ -25429,6 +25534,7 @@ function saveToLocalStorage() {
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     if (typeof saveCampaignsState === 'function') saveCampaignsState();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
     showSaveStatus();
   } catch (e) {
     console.warn('Erro ao salvar no localStorage:', e);
@@ -25820,6 +25926,408 @@ if (typeof module !== 'undefined' && module.exports) {
   };
 }
 
+
+// src/js/firebase_sync.js - Módulo de Sincronização em Nuvem em Tempo Real com Google Firebase Firestore
+
+const FIREBASE_CONFIG_KEY = 'dnd5e_firebase_config';
+const FIREBASE_ROOM_KEY = 'dnd5e_firebase_room';
+const FIREBASE_AUTOSYNC_KEY = 'dnd5e_firebase_autosync';
+
+let firebaseApp = null;
+let firestoreDb = null;
+let firebaseUnsubscribe = null;
+let isFirebaseConnected = false;
+let isFirebaseSyncing = false;
+let isApplyingCloudUpdate = false;
+let firebaseCloudDebounceTimer = null;
+let localClientId = 'client_' + Math.random().toString(36).substring(2, 9);
+
+// --- UTILITÁRIOS DE CONFIGURAÇÃO ---
+
+function getStoredFirebaseConfig() {
+  try {
+    const raw = localStorage.getItem(FIREBASE_CONFIG_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveFirebaseConfigToStorage(configObj) {
+  try {
+    if (!configObj) {
+      localStorage.removeItem(FIREBASE_CONFIG_KEY);
+    } else {
+      localStorage.setItem(FIREBASE_CONFIG_KEY, JSON.stringify(configObj));
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function getStoredFirebaseRoom() {
+  const room = localStorage.getItem(FIREBASE_ROOM_KEY) || 'turma_principal';
+  return room.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+}
+
+function setStoredFirebaseRoom(roomId) {
+  const clean = (roomId || 'turma_principal').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+  localStorage.setItem(FIREBASE_ROOM_KEY, clean);
+  return clean;
+}
+
+function isFirebaseAutoSyncEnabled() {
+  return localStorage.getItem(FIREBASE_AUTOSYNC_KEY) !== 'false';
+}
+
+function setFirebaseAutoSyncEnabled(enabled) {
+  localStorage.setItem(FIREBASE_AUTOSYNC_KEY, enabled ? 'true' : 'false');
+}
+
+// --- INICIALIZAÇÃO DO FIREBASE ---
+
+function initFirebaseSync() {
+  const config = getStoredFirebaseConfig();
+  if (!config || !config.apiKey || !config.projectId) {
+    updateFirebaseUiStatus('offline', 'Modo Local');
+    return false;
+  }
+
+  if (typeof firebase === 'undefined') {
+    console.warn('SDK do Firebase não encontrado no navegador.');
+    updateFirebaseUiStatus('offline', 'SDK Indisponível');
+    return false;
+  }
+
+  try {
+    if (!firebase.apps || firebase.apps.length === 0) {
+      firebaseApp = firebase.initializeApp(config);
+    } else {
+      firebaseApp = firebase.apps[0];
+    }
+
+    firestoreDb = firebase.firestore();
+
+    // Tenta persistência offline se suportada
+    try {
+      firestoreDb.enablePersistence({ synchronizeTabs: true }).catch(err => {
+        // Multi-tab ou navegador não suportado é esperado em algumas situações
+      });
+    } catch (e) {}
+
+    isFirebaseConnected = true;
+    const currentRoom = getStoredFirebaseRoom();
+    updateFirebaseUiStatus('connected', `Nuvem: ${currentRoom}`);
+
+    // Inicia a escuta em tempo real
+    startFirebaseRoomListener(currentRoom);
+
+    console.log('✅ Google Firebase Firestore conectado com sucesso! Sala:', currentRoom);
+    return true;
+  } catch (err) {
+    console.error('Erro ao conectar ao Firebase:', err);
+    isFirebaseConnected = false;
+    updateFirebaseUiStatus('error', 'Erro na Chave');
+    return false;
+  }
+}
+
+// --- ESCUTA EM TEMPO REAL (REALTIME SNAPSHOTS) ---
+
+function startFirebaseRoomListener(roomId) {
+  if (!firestoreDb) return;
+
+  if (firebaseUnsubscribe) {
+    firebaseUnsubscribe();
+    firebaseUnsubscribe = null;
+  }
+
+  const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
+
+  firebaseUnsubscribe = roomDocRef.onSnapshot(
+    docSnapshot => {
+      if (!docSnapshot.exists) {
+        console.log(`Sala '${roomId}' ainda não possui dados na nuvem. Criando ao salvar.`);
+        return;
+      }
+
+      const cloudData = docSnapshot.data();
+      if (!cloudData) return;
+
+      // Evita aplicar a alteração que este próprio cliente acabou de emitir
+      if (cloudData.lastUpdatedBy === localClientId) {
+        return;
+      }
+
+      console.log('☁️ Alteração remota recebida do Firebase!');
+      applyCloudDataToLocal(cloudData);
+    },
+    error => {
+      console.warn('Erro na escuta em tempo real do Firebase:', error);
+      updateFirebaseUiStatus('error', 'Sem Acesso');
+    }
+  );
+}
+
+function applyCloudDataToLocal(cloudData) {
+  if (!cloudData) return;
+  isApplyingCloudUpdate = true;
+
+  try {
+    // 1. Atualiza Fichas de Jogadores
+    if (cloudData.players && Array.isArray(cloudData.players)) {
+      PLAYERS = cloudData.players.map(p => {
+        if (!p.skillProficiencies) p.skillProficiencies = [];
+        if (!p.saveProficiencies) p.saveProficiencies = [];
+        if (!p.actionLogs) p.actionLogs = [];
+        if (p.playerNotes === undefined) p.playerNotes = '';
+        return p;
+      });
+      if (typeof renderPlayers === 'function') renderPlayers();
+    }
+
+    // 2. Atualiza Estado de Combate
+    if (cloudData.state && Array.isArray(cloudData.state.combatants)) {
+      state = cloudData.state;
+      if (typeof renderCombat === 'function') renderCombat();
+    }
+
+    // 3. Atualiza Grid de Batalha (Opcional se sincronizado)
+    if (cloudData.gridState && typeof gridState !== 'undefined') {
+      gridState = Object.assign({}, gridState, cloudData.gridState);
+      if (typeof renderBattleGrid === 'function') renderBattleGrid();
+      if (typeof renderVttCombatHud === 'function') renderVttCombatHud();
+    }
+
+    // Salva no cache local (localStorage) sem re-despachar para a nuvem
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        players: PLAYERS,
+        state: state,
+        gridState: (typeof gridState !== 'undefined') ? gridState : null
+      }));
+    } catch (e) {}
+
+    updateFirebaseUiStatus('connected', `Sincronizado`);
+    if (typeof playFX === 'function') playFX('dice');
+  } catch (e) {
+    console.error('Erro ao aplicar dados recebidos da nuvem:', e);
+  } finally {
+    setTimeout(() => {
+      isApplyingCloudUpdate = false;
+    }, 200);
+  }
+}
+
+// --- DESPACHO DE ALTERAÇÕES LOCAIS PARA A NUVEM ---
+
+function syncLocalChangesToFirebase(immediate = false) {
+  if (!isFirebaseConnected || !firestoreDb || isApplyingCloudUpdate) return;
+  if (!isFirebaseAutoSyncEnabled()) return;
+
+  if (firebaseCloudDebounceTimer) {
+    clearTimeout(firebaseCloudDebounceTimer);
+    firebaseCloudDebounceTimer = null;
+  }
+
+  const delay = immediate ? 0 : 600;
+
+  firebaseCloudDebounceTimer = setTimeout(() => {
+    executeCloudSave();
+  }, delay);
+}
+
+function executeCloudSave() {
+  if (!isFirebaseConnected || !firestoreDb) return;
+
+  const roomId = getStoredFirebaseRoom();
+  const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
+
+  const payload = {
+    players: (typeof PLAYERS !== 'undefined') ? PLAYERS : [],
+    state: (typeof state !== 'undefined') ? state : { combatants: [], round: 1, current: 0 },
+    lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+    lastUpdatedBy: localClientId,
+    lastUpdateIso: new Date().toISOString()
+  };
+
+  updateFirebaseUiStatus('syncing', 'Salvando na Nuvem...');
+
+  roomDocRef.set(payload, { merge: true })
+    .then(() => {
+      updateFirebaseUiStatus('connected', `Nuvem: ${roomId}`);
+    })
+    .catch(err => {
+      console.warn('Erro ao salvar no Firestore:', err);
+      updateFirebaseUiStatus('error', 'Falha ao Salvar');
+    });
+}
+
+// --- INTERFACE DO USUÁRIO & MODAL DE CONFIGURAÇÃO ---
+
+function updateFirebaseUiStatus(status, text) {
+  const badge = document.getElementById('firebase-status-badge');
+  const textEl = document.getElementById('firebase-status-text');
+  const dotEl = document.getElementById('firebase-status-dot');
+
+  if (badge) {
+    badge.className = `firebase-status-pill ${status}`;
+  }
+  if (textEl) {
+    textEl.innerText = text || (status === 'connected' ? 'Nuvem Conectada' : 'Modo Local');
+  }
+  if (dotEl) {
+    dotEl.style.backgroundColor = status === 'connected' ? '#10b981' : (status === 'syncing' ? '#fbbf24' : (status === 'error' ? '#f87171' : '#64748b'));
+  }
+}
+
+function openFirebaseModal() {
+  const modal = document.getElementById('modal-firebase-config');
+  if (!modal) return;
+
+  const config = getStoredFirebaseConfig();
+  const room = getStoredFirebaseRoom();
+  const autoSync = isFirebaseAutoSyncEnabled();
+
+  const inpConfig = document.getElementById('inp-firebase-config');
+  const inpRoom = document.getElementById('inp-firebase-room');
+  const chkAutoSync = document.getElementById('chk-firebase-autosync');
+
+  if (inpConfig) {
+    inpConfig.value = config ? JSON.stringify(config, null, 2) : '';
+  }
+  if (inpRoom) {
+    inpRoom.value = room || 'turma_principal';
+  }
+  if (chkAutoSync) {
+    chkAutoSync.checked = autoSync;
+  }
+
+  renderFirebaseModalDiagnostic();
+  modal.classList.add('open');
+}
+
+function closeFirebaseModal() {
+  const modal = document.getElementById('modal-firebase-config');
+  if (!modal) return;
+  modal.classList.remove('open');
+}
+
+function renderFirebaseModalDiagnostic() {
+  const diagEl = document.getElementById('firebase-modal-diag');
+  if (!diagEl) return;
+
+  const config = getStoredFirebaseConfig();
+  const room = getStoredFirebaseRoom();
+
+  if (!config) {
+    diagEl.innerHTML = `
+      <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 10px; font-size: 12px; color: #fca5a5;">
+        ❌ <b>Nenhuma chave configurada.</b> O sistema está operando em <b>Modo Local (Offline)</b>.
+      </div>
+    `;
+    return;
+  }
+
+  diagEl.innerHTML = `
+    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 10px; font-size: 12px; color: #6ee7b7;">
+      ✅ <b>Projeto Conectado:</b> ${config.projectId || 'Firebase'} • <b>Sala Ativa:</b> <code>${room}</code><br>
+      <span style="font-size: 11px; color: var(--text-muted);">Sincronização em tempo real ativa entre computadores e celulares conectados a esta sala.</span>
+    </div>
+  `;
+}
+
+function parseAndSaveFirebaseModalConfig() {
+  const inpConfig = document.getElementById('inp-firebase-config');
+  const inpRoom = document.getElementById('inp-firebase-room');
+  const chkAutoSync = document.getElementById('chk-firebase-autosync');
+
+  let raw = inpConfig ? inpConfig.value.trim() : '';
+  let roomId = inpRoom ? inpRoom.value.trim() : 'turma_principal';
+  let autoSync = chkAutoSync ? chkAutoSync.checked : true;
+
+  if (!raw) {
+    saveFirebaseConfigToStorage(null);
+    setStoredFirebaseRoom(roomId);
+    setFirebaseAutoSyncEnabled(autoSync);
+    isFirebaseConnected = false;
+    updateFirebaseUiStatus('offline', 'Modo Local');
+    alert('Configuração do Firebase removida. O sistema voltou ao Modo Local.');
+    renderFirebaseModalDiagnostic();
+    return;
+  }
+
+  // Permite colar tanto o JSON direto quanto o trecho const firebaseConfig = { ... };
+  try {
+    if (raw.includes('{') && raw.includes('}')) {
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (match) raw = match[0];
+    }
+
+    // Converte sintaxe JS (chaves sem aspas) para JSON válido se necessário
+    let parsedConfig;
+    try {
+      parsedConfig = JSON.parse(raw);
+    } catch (e) {
+      // Tenta avaliar de forma segura com Function
+      parsedConfig = new Function(`return (${raw});`)();
+    }
+
+    if (!parsedConfig || !parsedConfig.apiKey || !parsedConfig.projectId) {
+      alert('Erro: A configuração colada não parece válida. Certifique-se de que ela contenha "apiKey" e "projectId".');
+      return;
+    }
+
+    saveFirebaseConfigToStorage(parsedConfig);
+    setStoredFirebaseRoom(roomId);
+    setFirebaseAutoSyncEnabled(autoSync);
+
+    const connected = initFirebaseSync();
+    if (connected) {
+      alert('🎉 Conexão com o Google Firebase estabelecida com sucesso!\nSuas fichas e combate agora sincronizam na nuvem em tempo real.');
+      // Envia os dados atuais como carga inicial
+      syncLocalChangesToFirebase(true);
+      closeFirebaseModal();
+    } else {
+      alert('A chave foi salva, mas o Firebase retornou erro de conexão. Verifique se o Firestore está criado no Console do Firebase.');
+    }
+  } catch (err) {
+    alert('Erro ao processar o texto da configuração: ' + err.message);
+  }
+}
+
+function manualPushToCloud() {
+  if (!isFirebaseConnected) {
+    alert('Conecte o Firebase primeiro antes de enviar dados.');
+    return;
+  }
+  executeCloudSave();
+  alert('⬆️ Todas as fichas e dados locais foram enviados para a nuvem com sucesso!');
+}
+
+function manualPullFromCloud() {
+  if (!isFirebaseConnected || !firestoreDb) {
+    alert('Conecte o Firebase primeiro.');
+    return;
+  }
+  const roomId = getStoredFirebaseRoom();
+  updateFirebaseUiStatus('syncing', 'Buscando dados...');
+
+  firestoreDb.collection('dnd_rooms').doc(roomId).get()
+    .then(doc => {
+      if (doc.exists) {
+        applyCloudDataToLocal(doc.data());
+        alert('⬇️ Fichas e estado de combate atualizados a partir da nuvem!');
+      } else {
+        alert(`A sala '${roomId}' ainda não possui dados na nuvem.`);
+      }
+    })
+    .catch(err => {
+      alert('Erro ao buscar dados da nuvem: ' + err.message);
+    });
+}
 
 // src_js_combat.js - Initiative, combat rounds, attacks, damage dispatcher and dice rolling
 
@@ -37215,6 +37723,13 @@ window.onload = () => {
   if (typeof checkPlayerPortalUrl === 'function') checkPlayerPortalUrl();
 };
 
+
+// Inicialização automática do Firebase se configurado
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof initFirebaseSync === 'function') {
+    initFirebaseSync();
+  }
+});
 </script>
 </body>
 </html>
