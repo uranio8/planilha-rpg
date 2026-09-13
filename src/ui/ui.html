@@ -1900,13 +1900,22 @@
         </div>
       </div>
 
-      <!-- Link direto -->
+      <!-- Link direto e Ações de Compartilhamento -->
       <div style="margin-top: 12px; text-align: left;">
-        <label style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Link de Acesso Direto:</label>
+        <label style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Link de Acesso Direto (com dados embutidos):</label>
         <div style="display: flex; gap: 6px; margin-top: 4px;">
           <input type="text" id="inp-share-url" readonly style="font-size: 11px; background: rgba(0,0,0,0.4); color: var(--primary-light); cursor: text; padding: 6px 10px;" onclick="this.select()">
           <button class="btn-action" id="btn-copy-share" style="white-space: nowrap; font-size: 11px; padding: 6px 12px;" onclick="copyShareLink()">📋 Copiar</button>
         </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;">
+        <button class="btn-action" style="background: linear-gradient(135deg, #25D366, #128C7E); color: #fff; font-size: 11px; padding: 8px; border: none; font-weight: 700; border-radius: 6px;" onclick="sharePlayerViaWhatsApp()" title="Enviar link da ficha diretamente pelo WhatsApp">
+          📲 Enviar no WhatsApp
+        </button>
+        <button class="btn-secondary" style="font-size: 11px; padding: 8px;" onclick="exportSinglePlayerCode()" title="Copiar código de backup para importar em outro aparelho">
+          💾 Exportar Código
+        </button>
       </div>
 
       <div style="display: flex; justify-content: space-between; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">

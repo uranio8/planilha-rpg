@@ -2634,13 +2634,99 @@ function closePrintModal() {
 
 let currentSharePlayerId = null;
 
-function generatePlayerShareUrl(playerId) {
+function serializePlayerForShare(p) {
+  if (!p) return '';
+  const clean = {
+    id: p.id,
+    student: p.student || '',
+    name: p.name || '',
+    avatar: p.avatar || '👤',
+    race: p.race || 'Humano',
+    className: p.className || 'Guerreiro',
+    level: parseInt(p.level) || 1,
+    xp: parseInt(p.xp) || 0,
+    ac: parseInt(p.ac) || 10,
+    hp: parseInt(p.hp) || 10,
+    maxHp: parseInt(p.maxHp) || 10,
+    tempHp: parseInt(p.tempHp) || 0,
+    speed: p.speed || '9m',
+    hitDice: p.hitDice || '1d8',
+    gold: parseInt(p.gold) || 0,
+    coins: p.coins || { cp: 0, sp: 0, ep: 0, gp: p.gold || 0, pp: 0 },
+    inspiration: !!p.inspiration,
+    conditions: Array.isArray(p.conditions) ? p.conditions : [],
+    deathSaves: p.deathSaves || { success: 0, fail: 0 },
+    slots: Array.isArray(p.slots) ? p.slots : [0, 0, 0, 0, 0],
+    slotsUsed: Array.isArray(p.slotsUsed) ? p.slotsUsed : [0, 0, 0, 0, 0],
+    str: parseInt(p.str) || 10,
+    dex: parseInt(p.dex) || 10,
+    con: parseInt(p.con) || 10,
+    int: parseInt(p.int) || 10,
+    wis: parseInt(p.wis) || 10,
+    cha: parseInt(p.cha) || 10,
+    skillProficiencies: Array.isArray(p.skillProficiencies) ? p.skillProficiencies : [],
+    saveProficiencies: Array.isArray(p.saveProficiencies) ? p.saveProficiencies : [],
+    background: p.background || '',
+    ideal: p.ideal || '',
+    bond: p.bond || '',
+    flaw: p.flaw || '',
+    backstory: p.backstory || '',
+    attacks: p.attacks || '',
+    spells: p.spells || '',
+    preparedSpells: Array.isArray(p.preparedSpells) ? p.preparedSpells : [],
+    features: p.features || '',
+    featureCharges: Array.isArray(p.featureCharges) ? p.featureCharges : [],
+    inventory: Array.isArray(p.inventory) ? p.inventory : [],
+    playerNotes: p.playerNotes || '',
+    subclassIdx: parseInt(p.subclassIdx) || 0,
+    multiclass: Array.isArray(p.multiclass) ? p.multiclass : []
+  };
+
+  try {
+    const jsonStr = JSON.stringify(clean);
+    const base64 = (typeof btoa === 'function') 
+      ? btoa(encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1)))
+      : Buffer.from(jsonStr, 'utf8').toString('base64');
+    return base64;
+  } catch (e) {
+    console.error('Erro ao serializar ficha:', e);
+    return '';
+  }
+}
+
+function deserializePlayerFromShare(encodedStr) {
+  if (!encodedStr) return null;
+  try {
+    const cleanStr = decodeURIComponent(encodedStr.trim().replace(/^#pdata=/, '').replace(/^#import_player=/, '').replace(/^\?pdata=/, ''));
+    let jsonStr = '';
+    if (typeof atob === 'function') {
+      jsonStr = decodeURIComponent(Array.prototype.map.call(atob(cleanStr), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+    } else {
+      jsonStr = Buffer.from(cleanStr, 'base64').toString('utf8');
+    }
+    const obj = JSON.parse(jsonStr);
+    if (obj && (obj.name || obj.id)) return obj;
+  } catch (e) {
+    console.error('Erro ao desserializar ficha do jogador:', e);
+  }
+  return null;
+}
+
+function generatePlayerShareUrl(playerId, embedData = true) {
   const p = PLAYERS.find(x => x.id === playerId);
-  const href = (typeof window !== 'undefined' && window.location && window.location.href) ? window.location.href : 'http://localhost/planilha.html';
+  const href = (typeof window !== 'undefined' && window.location && window.location.href) ? window.location.href : 'https://uranio8.github.io/planilha-rpg/';
   if (!p) return href;
 
   let base = href.split('?')[0].split('#')[0];
-  return `${base}?view=player&id=${encodeURIComponent(playerId)}`;
+  let url = `${base}?view=player&id=${encodeURIComponent(playerId)}`;
+
+  if (embedData) {
+    const payload = serializePlayerForShare(p);
+    if (payload) {
+      url += `#pdata=${payload}`;
+    }
+  }
+  return url;
 }
 
 function openSharePlayerModal(playerId) {
@@ -2660,20 +2746,20 @@ function openSharePlayerModal(playerId) {
   if (charNameEl) charNameEl.innerText = `${p.name} (${p.student})`;
   if (charMetaEl) charMetaEl.innerText = `${p.race} • ${p.className} • Nível ${p.level} • CA ${p.ac} • ${p.hp}/${p.maxHp} PV`;
 
-  const shareUrl = generatePlayerShareUrl(playerId);
+  const shareUrl = generatePlayerShareUrl(playerId, true);
   if (inpUrl) inpUrl.value = shareUrl;
   if (btnCopy) {
     btnCopy.innerText = '📋 Copiar';
     btnCopy.style.background = '';
   }
 
-  // Renderiza QR Code com fallback automático
+  // Renderiza QR Code com payload embutido
   if (qrContainer) {
     qrContainer.innerHTML = `
-      <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl)}" 
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(shareUrl)}" 
            alt="QR Code da Ficha de ${p.name}" 
-           style="width: 200px; height: 200px; display: block; border-radius: 4px;"
-           onerror="this.onerror=null; this.src='https://quickchart.io/qr?size=200&text=${encodeURIComponent(shareUrl)}';">
+           style="width: 220px; height: 220px; display: block; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"
+           onerror="this.onerror=null; this.src='https://quickchart.io/qr?size=220&text=${encodeURIComponent(shareUrl)}';">
     `;
   }
 
@@ -2708,15 +2794,42 @@ function copyShareLink() {
         }
       }, 2000);
     }
-    if (typeof addLog === 'function') addLog('📱 <b>Link Copiado:</b> Link de acesso do jogador copiado para a área de transferência.');
+    if (typeof addLog === 'function') addLog('📱 <b>Link Copiado:</b> Link de acesso com dados do personagem copiado para a área de transferência.');
   } catch (e) {
     alert('Link selecionado. Pressione Ctrl+C para copiar.');
   }
 }
 
+function sharePlayerViaWhatsApp() {
+  if (!currentSharePlayerId) return;
+  const p = PLAYERS.find(x => x.id === currentSharePlayerId);
+  if (!p) return;
+
+  const shareUrl = generatePlayerShareUrl(currentSharePlayerId, true);
+  const msg = `🎲 *D&D 5E - Ficha de Personagem*\n👤 *${p.name}* (${p.student})\n🛡️ ${p.race} • ${p.className} (Nível ${p.level})\n\nAbra sua ficha interativa no link abaixo:\n${shareUrl}`;
+  const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+  window.open(waUrl, '_blank');
+}
+
+function exportSinglePlayerCode() {
+  if (!currentSharePlayerId) return;
+  const p = PLAYERS.find(x => x.id === currentSharePlayerId);
+  if (!p) return;
+  const code = serializePlayerForShare(p);
+  if (!code) return;
+  
+  const formatted = `DND5E_PLAYER:${code}`;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(formatted);
+    alert(`Código da Ficha de ${p.name} copiado com sucesso! Você pode colá-lo no celular para importar.`);
+  } else {
+    prompt(`Código de Backup da Ficha de ${p.name}:`, formatted);
+  }
+}
+
 function openPlayerPortalDirect() {
   if (!currentSharePlayerId) return;
-  const shareUrl = generatePlayerShareUrl(currentSharePlayerId);
+  const shareUrl = generatePlayerShareUrl(currentSharePlayerId, true);
   window.open(shareUrl, '_blank');
 }
 
@@ -2734,7 +2847,7 @@ function initPlayerPortalMode(playerId) {
   const subEl = document.getElementById('portal-char-sub');
 
   if (banner) banner.style.display = 'flex';
-  if (titleEl) titleEl.innerText = `👤 Ficha: ${p.name} (${p.student})`;
+  if (titleEl) titleEl.innerText = `👤 ${p.name} (${p.student})`;
   if (subEl) subEl.innerText = `${p.race} • ${p.className} (Nível ${p.level}) • CA ${p.ac} • ${p.hp}/${p.maxHp} PV`;
 
   // Força aba inicial em Minha Ficha
@@ -2754,7 +2867,41 @@ function exitPlayerPortalMode() {
 
 function checkPlayerPortalUrl() {
   try {
+    // 1. Verifica se há payload de dados codificado no Hash (#pdata=...) ou na Busca (?pdata=...)
+    let encodedData = '';
+    const hash = window.location.hash || '';
+    if (hash.includes('pdata=')) {
+      encodedData = hash.split('pdata=')[1].split('&')[0];
+    } else if (hash.includes('import_player=')) {
+      encodedData = hash.split('import_player=')[1].split('&')[0];
+    }
+
     const params = new URLSearchParams(window.location.search);
+    if (!encodedData && params.get('pdata')) {
+      encodedData = params.get('pdata');
+    }
+
+    if (encodedData) {
+      const importedPlayer = deserializePlayerFromShare(encodedData);
+      if (importedPlayer && importedPlayer.id) {
+        // Atualiza ou insere o jogador na lista local
+        const existingIdx = PLAYERS.findIndex(x => x.id === importedPlayer.id);
+        if (existingIdx >= 0) {
+          PLAYERS[existingIdx] = Object.assign({}, PLAYERS[existingIdx], importedPlayer);
+        } else {
+          PLAYERS.push(importedPlayer);
+        }
+
+        saveToLocalStorage();
+        initPlayerPortalMode(importedPlayer.id);
+
+        if (typeof addLog === 'function') {
+          addLog(`✨ <b>Ficha Sincronizada:</b> Ficha de <b>${importedPlayer.name}</b> (${importedPlayer.student}) carregada e salva com sucesso neste dispositivo!`);
+        }
+        return true;
+      }
+    }
+
     const view = params.get('view');
     const playerId = params.get('id') || params.get('playerId');
 
@@ -2762,7 +2909,9 @@ function checkPlayerPortalUrl() {
       initPlayerPortalMode(playerId);
       return true;
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('Erro ao processar URL do portal do jogador:', e);
+  }
   return false;
 }
 
