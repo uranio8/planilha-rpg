@@ -59,9 +59,11 @@ function setFirebaseAutoSyncEnabled(enabled) {
 
 // --- INICIALIZAÇÃO DO FIREBASE ---
 
+let realtimeDb = null;
+
 function initFirebaseSync() {
   const config = getStoredFirebaseConfig();
-  if (!config || !config.apiKey || !config.projectId) {
+  if (!config || !config.apiKey || (!config.projectId && !config.databaseURL)) {
     updateFirebaseUiStatus('offline', 'Modo Local');
     return false;
   }
@@ -79,14 +81,16 @@ function initFirebaseSync() {
       firebaseApp = firebase.apps[0];
     }
 
-    firestoreDb = firebase.firestore();
-
-    // Tenta persistência offline se suportada
-    try {
-      firestoreDb.enablePersistence({ synchronizeTabs: true }).catch(err => {
-        // Multi-tab ou navegador não suportado é esperado em algumas situações
-      });
-    } catch (e) {}
+    // Suporte tanto para Realtime Database quanto para Firestore
+    if (typeof firebase.database === 'function' && (config.databaseURL || !config.projectId)) {
+      realtimeDb = firebase.database();
+    }
+    if (typeof firebase.firestore === 'function') {
+      try {
+        firestoreDb = firebase.firestore();
+        firestoreDb.enablePersistence({ synchronizeTabs: true }).catch(err => {});
+      } catch (e) {}
+    }
 
     isFirebaseConnected = true;
     const currentRoom = getStoredFirebaseRoom();
@@ -95,7 +99,7 @@ function initFirebaseSync() {
     // Inicia a escuta em tempo real
     startFirebaseRoomListener(currentRoom);
 
-    console.log('✅ Google Firebase Firestore conectado com sucesso! Sala:', currentRoom);
+    console.log('✅ Google Firebase conectado com sucesso! Sala:', currentRoom);
     return true;
   } catch (err) {
     console.error('Erro ao conectar ao Firebase:', err);
