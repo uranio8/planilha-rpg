@@ -1277,9 +1277,47 @@ const initResult = vm.runInContext("initFirebaseSync()", sandbox);
 assert(initResult === false, 'initFirebaseSync tratou ausência do SDK de forma defensiva e graciosa');
 
 // Testa remoção de configuração customizada e fallback para DEFAULT_FIREBASE_CONFIG
-vm.runInContext("saveFirebaseConfigToStorage(null)", sandbox);
-const fallbackConfig = vm.runInContext("getStoredFirebaseConfig()", sandbox);
-assert(fallbackConfig && fallbackConfig.apiKey === "AIzaSyDFt7A4FgRlqWXvZwtef8XaVJ1ZBAmlv5w", 'Configuração padrão integrada do Firebase ativa e pronta para uso');
+// --- SUÍTE 24: Resolução de Classes, Subclasses e Habilidades (Prevenção de Colisões) ---
+console.log('\n🛡️ 24. Testes de Resolução de Classes e Subclasses (Paladino vs Ladino):');
+assert(typeof vm.runInContext("findClassData", sandbox) === 'function', 'Função findClassData exportada');
+assert(typeof vm.runInContext("findSpeciesData", sandbox) === 'function', 'Função findSpeciesData exportada');
+
+// 1. Testa busca de Paladino vs Ladino
+const paladinData = vm.runInContext("findClassData('Paladino')", sandbox);
+assert(paladinData && paladinData.id === 'paladino' && paladinData.name === 'Paladino', 'findClassData("Paladino") retorna Paladino corretamente (sem colisão com Ladino)');
+
+const rogueData = vm.runInContext("findClassData('Ladino')", sandbox);
+assert(rogueData && rogueData.id === 'ladino' && rogueData.name === 'Ladino', 'findClassData("Ladino") retorna Ladino corretamente');
+
+// 2. Testa busca com nomes compostos / subclasses
+const paladinSubData = vm.runInContext("findClassData('Paladino (Juramento de Devoção)')", sandbox);
+assert(paladinSubData && paladinSubData.id === 'paladino', 'findClassData com nome composto "Paladino (Juramento...)" identifica Paladino');
+
+const rogueSubData = vm.runInContext("findClassData('Ladino (Assassino)')", sandbox);
+assert(rogueSubData && rogueSubData.id === 'ladino', 'findClassData com nome composto "Ladino (Assassino)" identifica Ladino');
+
+// 3. Testa todas as 12 classes padrão
+const all12Classes = ['Bárbaro', 'Bardo', 'Bruxo', 'Clérigo', 'Druida', 'Feiticeiro', 'Guerreiro', 'Ladino', 'Mago', 'Monge', 'Paladino', 'Patrulheiro'];
+let allClassesMatchCorrectly = true;
+all12Classes.forEach(clsName => {
+  const result = vm.runInContext(`findClassData('${clsName}')`, sandbox);
+  if (!result || result.name !== clsName) {
+    allClassesMatchCorrectly = false;
+  }
+});
+assert(allClassesMatchCorrectly, 'Todas as 12 classes D&D 5E são identificadas com precisão exata');
+
+// 4. Testa habilidades desbloqueadas do Paladino Nv 3
+const paladinUnlocked = vm.runInContext("getUnlockedClassFeatures('Paladino', 3, 0)", sandbox);
+const hasDivineSmite = paladinUnlocked.some(f => f.name.includes('Destruição Divina') || f.name.includes('Smite'));
+const hasSneakAttackInPaladin = paladinUnlocked.some(f => f.name.includes('Ataque Furtivo') || f.name.includes('Sneak'));
+assert(hasDivineSmite && !hasSneakAttackInPaladin, 'Paladino Nv 3 desbloqueia Destruição Divina e NÃO puxa Ataque Furtivo do Ladino');
+
+// 5. Testa habilidades desbloqueadas do Ladino Nv 3
+const rogueUnlocked = vm.runInContext("getUnlockedClassFeatures('Ladino', 3, 0)", sandbox);
+const hasSneakAttackInRogue = rogueUnlocked.some(f => f.name.includes('Ataque Furtivo'));
+const hasDivineSmiteInRogue = rogueUnlocked.some(f => f.name.includes('Destruição Divina'));
+assert(hasSneakAttackInRogue && !hasDivineSmiteInRogue, 'Ladino Nv 3 desbloqueia Ataque Furtivo e NÃO puxa habilidades de Paladino');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

@@ -1613,10 +1613,65 @@ function getHitDieForClass(className) {
   return '1d8'; // Bardo, Clérigo, Druida, Ladino, Monge, Bruxo
 }
 
+function findClassData(query) {
+  if (!query || typeof CLASSES_DATA === 'undefined') return null;
+  const q = String(query).trim().toLowerCase();
+  if (!q) return null;
+
+  // 1. Exact match by id or name
+  let found = CLASSES_DATA.find(c => c.id.toLowerCase() === q || c.name.toLowerCase() === q);
+  if (found) return found;
+
+  // 2. Exact match on the primary word (e.g. "Paladino (Devoção)" -> "paladino")
+  const firstWord = q.split(/[\s\(/]+/)[0];
+  if (firstWord) {
+    found = CLASSES_DATA.find(c => c.id.toLowerCase() === firstWord || c.name.toLowerCase() === firstWord);
+    if (found) return found;
+  }
+
+  // 3. Fallback: Check whole-word or longest match first (prevents "Paladino" matching "Ladino")
+  const sortedClasses = [...CLASSES_DATA].sort((a, b) => b.name.length - a.name.length);
+  found = sortedClasses.find(c => {
+    const cName = c.name.toLowerCase();
+    const cId = c.id.toLowerCase();
+    const regexName = new RegExp(`\\b${cName}\\b`, 'i');
+    const regexId = new RegExp(`\\b${cId}\\b`, 'i');
+    return regexName.test(q) || regexId.test(q) || q.includes(cName) || q.includes(cId);
+  });
+
+  return found || null;
+}
+
+function findSpeciesData(query) {
+  if (!query || typeof SPECIES_DATA === 'undefined') return null;
+  const q = String(query).trim().toLowerCase();
+  if (!q) return null;
+
+  // 1. Exact match by id or name
+  let found = SPECIES_DATA.find(s => s.id.toLowerCase() === q || s.name.toLowerCase() === q);
+  if (found) return found;
+
+  // 2. Exact match on the primary word
+  const firstWord = q.split(/[\s\(/]+/)[0];
+  if (firstWord) {
+    found = SPECIES_DATA.find(s => s.id.toLowerCase() === firstWord || s.name.toLowerCase() === firstWord);
+    if (found) return found;
+  }
+
+  // 3. Fallback: Longest match first
+  const sortedSpecies = [...SPECIES_DATA].sort((a, b) => b.name.length - a.name.length);
+  found = sortedSpecies.find(s => {
+    const sName = s.name.toLowerCase();
+    const sId = s.id.toLowerCase();
+    return q.includes(sName) || q.includes(sId);
+  });
+
+  return found || null;
+}
+
 function getUnlockedClassFeatures(className, level, subclassIdx = 0) {
   if (typeof CLASSES_DATA === 'undefined') return [];
-  const norm = (className || '').toLowerCase();
-  const cls = CLASSES_DATA.find(c => norm.includes(c.name.toLowerCase()) || norm.includes(c.id));
+  const cls = findClassData(className);
   if (!cls) return [];
   
   level = parseInt(level) || 1;
@@ -2091,7 +2146,7 @@ function onPlayerModalClassOrLevelChange() {
   }
 
   if (subclassSel && typeof CLASSES_DATA !== 'undefined') {
-    const cls = CLASSES_DATA.find(c => selectedClassName.toLowerCase().includes(c.name.toLowerCase()) || selectedClassName.toLowerCase().includes(c.id));
+    const cls = findClassData(selectedClassName);
     if (cls && cls.subclasses) {
       const currentSubVal = parseInt(subclassSel.value) || 0;
       subclassSel.innerHTML = cls.subclasses.map((s, idx) => `
@@ -2143,14 +2198,32 @@ function openPlayerModal(id) {
     document.getElementById('pm-name').value = p.name;
     
     if (raceSel) {
-      const matchRace = Array.from(raceSel.options).find(o => p.race && p.race.toLowerCase().includes(o.value.toLowerCase().split('(')[0].trim()));
+      const pRaceNorm = (p.race || '').trim().toLowerCase();
+      const optionsArr = Array.from(raceSel.options).filter(o => o.value !== 'custom');
+      let matchRace = optionsArr.find(o => o.value.toLowerCase() === pRaceNorm);
+      if (!matchRace) {
+        const sortedOptions = [...optionsArr].sort((a, b) => b.value.length - a.value.length);
+        matchRace = sortedOptions.find(o => {
+          const optVal = o.value.toLowerCase().split('(')[0].trim();
+          return pRaceNorm.includes(optVal) || optVal.includes(pRaceNorm);
+        });
+      }
       if (matchRace) raceSel.value = matchRace.value;
       else raceSel.value = 'custom';
     }
     document.getElementById('pm-race').value = p.race;
 
     if (classSel) {
-      const matchClass = Array.from(classSel.options).find(o => p.className && p.className.toLowerCase().includes(o.value.toLowerCase().split('(')[0].trim()));
+      const pClassNorm = (p.className || '').trim().toLowerCase();
+      const optionsArr = Array.from(classSel.options).filter(o => o.value !== 'custom');
+      let matchClass = optionsArr.find(o => o.value.toLowerCase() === pClassNorm);
+      if (!matchClass) {
+        const sortedOptions = [...optionsArr].sort((a, b) => b.value.length - a.value.length);
+        matchClass = sortedOptions.find(o => {
+          const optVal = o.value.toLowerCase().split('(')[0].trim();
+          return pClassNorm.includes(optVal) || optVal.includes(pClassNorm);
+        });
+      }
       if (matchClass) classSel.value = matchClass.value;
       else classSel.value = 'custom';
     }
@@ -3578,7 +3651,7 @@ function renderLevelUpWizardStep() {
   else if (levelUpWizardState.step === 2) {
     const clsName = levelUpWizardState.selectedClassKey;
     const targetLvl = levelUpWizardState.targetClassLevel;
-    const clsData = availableClasses.find(x => x.name.toLowerCase() === clsName.toLowerCase() || x.id === clsName.toLowerCase());
+    const clsData = findClassData(clsName);
     
     // Novas habilidades adquiridas especificamente no targetLvl
     let newFeatures = [];
