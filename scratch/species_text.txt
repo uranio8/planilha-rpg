@@ -1,0 +1,347 @@
+Espécies    
+
+ As seguintes regras aparecem entre as espécies:   
+
+  Tipo:    O tipo de criatura ao qual
+essa espécie pertence. 
+
+  Tamanho:    Espécies jogadoras
+normalmente são Médias ou Pequenas. 
+
+  Traços:    Membros da espécie possuem
+esses traços. Alguns deles oferecem opções. 
+
+   Aasimar   
+
+Descendentes de criaturas celestiais ou de poderes
+divinos, Aasimares parecem com membros de sua espécie parente mas com traços
+que indicam sua natureza, como olhos brilhantes, halos ou tons de pele atípicos.
+Aasimares costumam tentar disfarçar sua linhagem para enfrentar o mal sem
+chamar atenção. 
+
+  Tipo:    Humanoide. 
+
+  Tamanho:    Pequeno (0,6 a 1,2m) ou
+Médio (1,2 a 2,1m), sua escolha. 
+
+  Deslocamento:    9m. 
+
+  Mãos que Curam:    Uma vez por dia, com ação Magia
+cura alvo tocado PV uma quantidade de d4s igual sua Prof. 
+
+  Portador da Luz:    Conhece o Truque Luz,
+baseado em CAR. 
+
+  Resistência
+Celestial:   
+Resistência à dano Necrótico e Radiante. 
+
+  Revelação
+Celestial:    A
+partir do nível 3, uma vez por dia pode libertar energia celestial por 1 minuto
+ou até terminar o efeito (sem ação). Uma vez por turno quando causa dano com
+ataque ou magia, pode causar dano extra igual Prof. Esse dano é radiante se
+escolher Asas Celestiais ou Brilho Interno, e necrótico se escolher Véu Necrótico. 
+
+ -Brilho Interno: Durante o efeito emana luz brilhante
+a 3m e luz baixa em mais 3m. Ao final de seu turno criaturas a até 3m sofrem Prof
+como dano radiante. 
+
+ -Asas Celestiais: Durante o efeito recebe
+deslocamento de vôo igual ao terrestre. 
+
+ -Véu Necrótico: Inimigos a até 3m ficam Assustados
+até o fim de seu próximo turno. CAR nega, baseado em CAR. 
+
+  Visão no
+Escuro:    Trata
+luz baixa como luz normal e escuridão como luz baixa, ambos a até 18m. 
+
+   Anão   
+
+      Reinos ricos em grandiosidade, salões cravejados nas
+raízes das montanhas, o eco de picaretas e martelos nas minas e nas forjas,
+dedicação a clã e tradição, e um ódio por orcs e goblins - são essas as
+heranças de todo anão. 
+
+  Tipo:    Humanoide. 
+
+  Tamanho:    Médio (1,2 &#8211; 1,5m). 
+
+  Deslocamento:    9m. 
+
+  Firmeza Enânica:    +1 PV por nível. 
+
+  Ligação com
+Pedra:    Prof
+vezes por dia, com ação bônus ganha Sentido Sísmico 18m por 10 minutos. 
+
+  Resiliência
+Enânica:   
+Resistência a dano venenoso e Vantagem em testes de resistência contra veneno. 
+
+  Visão no Escuro:    Trata luz baixa como luz
+normal e escuridão como luz baixa, ambos a até 18m. 
+
+   Draconato   
+
+Nascido de dragões como diz seu nome, os draconatos
+andam orgulhosamente por um mundo que os recebe como medo e incompreensão. 
+
+  Tipo:    Humanoide. 
+
+  Tamanho:    Médio (1,5 a 2,1m). 
+
+  Deslocamento:    9m. 
+
+  Ancestralidade
+Dracônica:   
+Escolha um tipo de dano entre Ácido, Eletricidade, Fogo, Frio ou Venenoso. Sua
+escolha modifica sua Resistência e Sopro. 
+
+  Resistência:    Recebe resistência ao dano
+de seu ancestralidade. 
+
+  Sopro:    Prof vezes por dia, quando
+faz ação Ataque pode substituir um ataque por um sopro. Sopro é cone de 4,5m ou
+linha de 9m, e causa 1d10 de dano de sua ancestralidade (DES metade, baseada em
+CON). Esse dano aumenta em 1d10 aos níveis 5, 11 e 17. 
+
+  Visão no
+Escuro:    Trata
+luz baixa como luz normal e escuridão como luz baixa, ambos a até 18m. 
+
+  Voo Dracônico:    A partir do nível 5, uma vez
+por dia, com ação bônus ganha deslocamento de voo igual seu deslocamento
+terrestre por 10 minutos, ou até retrair as asas (sem ação) ou ficar
+Incapacitado.  
+
+   Elfo   
+
+Elfos são um povo mágico com graça sobrenatural,
+vivendo no mundo mas não inteiramente parte dele. 
+
+  Tipo:    Humanoide. 
+
+  Tamanho:    Médio (1,5 &#8211; 1,8m). 
+
+  Deslocamento:    9m. 
+
+  Ancestralidade
+Feérica:    Vantagem
+contra ser Enfeitiçado. 
+
+  Linhagem Elfica:    Escolha uma das linhagens
+abaixo. Você recebe seus benefícios de nível 1. Ao alcançar os níveis 3 e 5,
+você recebe uma magia indicada pela linhagem. Essas magias sempre são
+preparadas, você pode as conjurar uma vez por dia sem gastar uso diário, e pode
+as conjurar com usos diários de magia que possuir. A chave para essas magias é
+sua escolha entre INT, SAB ou CAR. 
+
+ -Alto Elfo: Aprende o truque Prestidigitação. Pode
+trocar esse Truque por outro truque de Mago ao fim de um Descanso Curto. Nível 3:
+Detectar Magia. Nível 5: Passo da Neblina. 
+
+ -Drow: Sua Visão no Escuro alcança 36m. Aprende o
+truque Luz Dançante. Nível 3: Fogo Feérico. Nível 5: Escuridão. 
+
+ -Elfo Silvestre: Deslocamento 10,5m. Aprende o truque
+Druidismo. Nível 3: Passolongo. Nível 5: Passo sem Pegadas. 
+
+  Sentidos
+Afiados:   
+Proficiência em Intuição, Percepção ou Sobrevivência. 
+
+  Transe:    Não dorme, imune a sono
+mágico. Descanso Longo de apenas 4 horas, em que não fica Inconsciente. 
+
+  Visão no
+Escuro:    Trata
+luz baixa como luz normal e escuridão como luz baixa, ambos a até 18m. 
+
+   Gnomo   
+
+Gnomos aproveitam a vida com dedicação, aproveitando
+cada momento de invenção, exploração, investigação, criação ou brincadeira. 
+
+  Tipo:    Humanoide. 
+
+  Tamanho:    Pequeno (0,9 &#8211; 1,2m). 
+
+  Deslocamento:    9m. 
+
+  Esperteza
+Gnômica:   
+Vantagem em testes de resistência de INT, SAB ou CAR. 
+
+  Linhagem Gnômica:    Escolha uma das linhagens
+abaixo. A chave para magias que ganha com essa habilidade é sua escolha entre
+INT, SAB ou CAR. 
+
+ -Gnomo da Floresta: Aprende o truque Ilusão Menor. Também
+tem a magia Falar com Animais sempre preparada, e pode conjura-la Prof vezes
+por dia sem gastar usos diários, além de poder usar seus usos diários. 
+
+ -Gnomo da Rocha: Aprende os truques Consertar e
+Prestidigitação. Também pode gastar 10 minutos conjurando Prestigitação para
+criar um mecanismo miúdo (CA 5, 1 PV) que imita um efeito de Prestidigitação. Pode
+ter até 3 mecanismos, que duram até 8 horas. 
+
+  Visão no
+Escuro:    Trata
+luz baixa como luz normal e escuridão como luz baixa, ambos a até 18m. 
+
+   Goliath   
+
+Nas montanhas mais altas vivem os Goliath, seus
+corpos parecendo ser feitos de pedra. Poucos podem dizer que viram um Goliath,
+e ainda menos podem clamar amizade com um. 
+
+  Tipo:    Humanoide. 
+
+  Tamanho:    Médio (2,1 &#8211; 2,4m). 
+
+  Deslocamento:    10,5m. 
+
+  Físico Poderoso:    Conta como uma categoria
+maior ao determinar a capacidade de carga, e tem Vantagem para se livrar de
+agarrar. 
+
+  Forma Grande:    Ao nível 5, uma vez por dia
+com uma ação bônus pode ficar Grande por até 10 minutos. Pelo período recebe
+Vantagem em testes de FOR e +3m de movimento. 
+
+  Linhagem Gigante:    Escolha uma das linhagens
+abaixo. Você pode usar essa habilidade Prof vezes por dia. 
+
+ -Frio da Geada (Gigante de Gelo): Quando acerta um
+ataque, pode adicionar 1d6 frio e diminuir deslocamento de alvo em 3m até o
+começo de seu próximo turno. 
+
+ -Queda da Colina (Gigante da Colina): Quando acerta criatura
+Grande ou menor com um ataque, derruba alvo. 
+
+ -Queimadura do Fogo (Gigante de Fogo): Quando acerta um
+ataque, pode adicionar 1d10 fogo. 
+
+ -Salto das Nuvens (Gigante das Nuvens): Com ação
+bônus teletransporta-se a até 9m. 
+
+ -Tolerância da Pedra (Gigante de Pedra): Quando sofre
+dano, com reação reduz dano em 1d12+CON. 
+
+ -Trovão da Tempestade (Gigante do Trovão): Quando sofre
+dano de criatura a até 18m, com Reação causa 1d8 trovejante. 
+
+  Visão no
+Escuro:    Trata
+luz baixa como luz normal e escuridão como luz baixa, ambos a até 18m. 
+
+   Halfling   
+
+Os confortos do lar são o objetivo da maioria dos
+halflings: Se acomodar em paz e silêncio, longe de monstros e exércitos, com
+uma boa refeição, bebida e companhia. 
+
+  Tipo:    Humanoide. 
+
+  Tamanho:    Pequeno (0,9 &#8211; 1,5m). 
+
+  Deslocamento:    9m. 
+
+  Agilidade
+Halfling:   
+Pode se mover pelo espaço de criaturas maiores que você. 
+
+  Corajoso:    Vantagem em resistência
+contra medo. 
+
+  Naturalmente
+Furtivo:    Pode
+se esconder quando apenas obscurecido por uma criatura maior. 
+
+  Sortudo:    Pode re-rolar resultados de
+d20 iguais a 1. 
+
+   Humano   
+
+Humanos são a mais nova das raças, com razões e
+culturas diversas, inovadores, desbravadores e pioneiros. 
+
+  Tipo:    Humanoide. 
+
+  Tamanho:    Médio (1,2 &#8211; 2,1m), ou
+Pequeno (0,9 - 1,2m). 
+
+  Deslocamento:    9m. 
+
+  Engenhoso:    Ganha Inspiração Heroica
+quando termina Descanso Longo. 
+
+  Hábil:    Proficiência em uma perícia. 
+
+  Versátil:    Recebe um Talento de Origem. 
+
+   Orc   
+
+Orcs têm resistência e tenacidade incomparáveis. Eles
+são capazes de vagar pelas grandes planícies, vastas cavernas e mares agitados,
+e enfrentar os monstros que se escondem lá. 
+
+  Tipo:    Humanoide. 
+
+  Tamanho:    Médio (1,8 &#8211; 2,1m). 
+
+  Deslocamento:    9m. 
+
+  Surto de
+Adrenalina:    Prof
+vezes por Descanso Curto, como ação bônus pode fazer ação Corrida e receber
+Prof PV temporários. 
+
+  Tolerância
+Infindável:   
+Uma vez por descanso longo, ao cair a 0 sem morrer, cai para 1 ao invés. 
+
+  Visão no
+Escuro:    Trata
+luz baixa como luz normal e escuridão como luz baixa, ambos a até 36m. 
+
+   Tiefling   
+
+Ser recebido com encaradas e sussurros, sofrer
+violência e insulto na rua, ver desconfiança e medo em cada olhar: Essa é a
+vida dos tieflings, um povo amaldiçoado por um pacto feito gerações atrás com
+diabos. 
+
+  Tipo:    Humanoide. 
+
+  Tamanho:    Médio (1,8 &#8211; 2,1m). 
+
+  Deslocamento:    9m. 
+
+  Legado Infernal:    Escolha uma das linhagens
+abaixo. Você recebe seus benefícios de nível 1. Ao alcançar os níveis 3 e 5,
+você recebe uma magia indicada pela linhagem. Essas magias sempre são
+preparadas, você pode as conjurar uma vez por dia sem gastar uso diário, e pode
+as conjurar com usos diários de magia que possuir. A chave para essas magias é
+sua escolha entre INT, SAB ou CAR. 
+
+ -Abissal: Aprende o truque Spray Venenoso. Tem
+resistência à dano venenoso. Nível 3: Raio de Enjôo. Nível 5: Imobilizar
+Pessoas. 
+
+ -Chthonico: Aprende o truque Toque Gélido. Tem
+resistência à dano necrótico. Nível 3: Vida Falsa. Nível 5: Raio do
+Enfraquecimento. 
+
+ -Infernal: Aprende o truque Raio de Fogo. Tem
+resistência à dano de fogo. Nível 3: Repreensão Infernal. Nível 5: Escuridão. 
+
+  Presença
+Sobrenatural:   
+Aprende o truque Taumaturgia, usando o mesmo atributo que Legado Infernal. 
+
+  Visão no
+Escuro:    Trata
+luz baixa como luz normal e escuridão como luz baixa, ambos a até 18m.

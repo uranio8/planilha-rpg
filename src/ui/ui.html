@@ -1,0 +1,2529 @@
+  <header>
+    <div class="brand">
+      <div class="brand-icon">⚔️</div>
+      <div>
+        <div class="brand-title">Central do Mestre D&D 5e</div>
+        <div class="brand-sub">Clube de RPG Prisco Bezerra • Base Expandida</div>
+      </div>
+    </div>
+
+    <nav id="navbar">
+      <button class="tab-btn active" onclick="switchTab('combat')">⚔️ Combate</button>
+      <button class="tab-btn" onclick="switchTab('grid')">🗺️ Mapa & Grid</button>
+      <button class="tab-btn" onclick="switchTab('grid-config')">⚙️ Config. do Grid</button>
+      <button class="tab-btn" onclick="switchTab('players')">👤 Fichas <span class="tab-count" id="cnt-players">0</span></button>
+      <button class="tab-btn" onclick="switchTab('dmscreen')">🛡️ Escudo do Mestre</button>
+      <button class="tab-btn" onclick="switchTab('generators')">🎲 Geradores</button>
+      <button class="tab-btn" onclick="switchTab('spells')">✨ Grimório <span class="tab-count" id="cnt-spells">0</span></button>
+      <button class="tab-btn" onclick="switchTab('bestiary')">🐉 Bestiário <span class="tab-count" id="cnt-bestiary">0</span></button>
+      <button class="tab-btn" onclick="switchTab('equipment')">🛡️ Itens <span class="tab-count" id="cnt-equip">0</span></button>
+      <button class="tab-btn" onclick="switchTab('classes')">🌳 Classes & Habilidades</button>
+      <button class="tab-btn" onclick="switchTab('species')">🧬 Raças & Espécies</button>
+      <button class="tab-btn" onclick="switchTab('campaigns')">👑 Campanhas & Gestão</button>
+    </nav>
+
+
+    <div class="top-actions">
+      <span id="save-status">💾 Salvo</span>
+      <!-- V6: CONTROLE DE ÁUDIO & AMBIENTE -->
+      <div class="audio-top-widget" style="display: flex; align-items: center; gap: 4px; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 6px;">
+        <button id="btn-audio-mute" class="btn-micro" onclick="toggleAudioMute()" title="Mutar / Desmutar Sons" style="font-size: 13px;">🔊</button>
+        <select id="sel-audio-ambiance" onchange="setAudioAmbiance(this.value)" style="font-size: 11px; padding: 2px 4px; background: transparent; border: none; color: var(--primary-light); cursor: pointer; max-width: 105px; font-weight: 600;">
+          <option value="none">🔇 Ambiente: Off</option>
+          <option value="tavern">🍺 Taverna</option>
+          <option value="rain">🌧️ Tempestade</option>
+          <option value="dungeon">🏰 Masmorra</option>
+          <option value="battle">🥁 Tambores</option>
+        </select>
+        <input type="range" id="rng-audio-vol" min="0" max="1" step="0.05" value="0.5" oninput="setAudioMasterVolume(this.value)" style="width: 45px; height: 4px; cursor: pointer;" title="Volume Geral do Áudio">
+      </div>
+      <button class="btn-top" onclick="toggleDMNotesDrawer()" title="Notas Rápidas do Mestre (Atalho: Ctrl+N)">📝 Notas <kbd style="font-size:9px; opacity:0.8;">Ctrl+N</kbd></button>
+      <button class="btn-top" onclick="toggleGlobalDiceDrawer()" title="Abrir Painel de Rolagem de Dados">🎲 Dados</button>
+      <button class="btn-top" onclick="openPlayerView()" title="Abrir Modo Telão para Projetor da Sala de Aula">📺 Telão</button>
+      <button class="btn-top" onclick="openDiceModal()">🎲 Rolador</button>
+      <button class="btn-top" onclick="exportData()" title="Salvar Backup">💾 Backup</button>
+      <button class="btn-top" onclick="importData()" title="Carregar Backup">📂 Carregar</button>
+    </div>
+  </header>
+
+  <!-- BANNER: MODO PORTAL DO JOGADOR -->
+  <div id="player-portal-banner" class="player-portal-banner" style="display: none;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span style="font-size: 20px;">📱</span>
+      <div>
+        <div style="font-weight: 800; font-size: 13px; color: #fff;" id="portal-char-title">Portal do Jogador</div>
+        <div style="font-size: 11px; color: var(--primary-light);" id="portal-char-sub">Ficha Interativa • Grimório • Itens • Classes • Raças</div>
+      </div>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <button class="btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="exitPlayerPortalMode()" title="Retornar à Central do Mestre">⚙️ Visão do Mestre</button>
+    </div>
+  </div>
+
+  <main>
+    <!-- TAB 1: COMBATE -->
+    <div id="tab-combat" class="tab-pane active">
+      <div class="controls-bar">
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <div class="round-badge">RODADA <span id="lbl-round">1</span></div>
+          <div id="combat-difficulty-badge" class="diff-meter diff-trivial">Encontro: Trivial</div>
+          <button class="btn-action" onclick="nextTurn()">Próximo Turno ➔ <kbd style="font-size:10px; background:rgba(0,0,0,0.3); padding:2px 5px; border-radius:4px;">Espaço</kbd></button>
+          
+          <!-- M6: TEMPORIZADOR DE TURNO -->
+          <div class="turn-timer-box" style="display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); padding: 3px 8px; border-radius: 6px; position: relative; overflow: hidden;">
+            <div id="combat-timer-bar" style="position: absolute; bottom: 0; left: 0; height: 3px; width: 100%; background: var(--accent-green); transition: width 0.3s linear, background-color 0.3s;"></div>
+            <span id="combat-timer-display" style="font-family: monospace; font-size: 13px; font-weight: 700; color: var(--primary-light); min-width: 44px; text-align: center;">01:00</span>
+            <button id="btn-timer-toggle" class="btn-micro" onclick="toggleTurnTimer()" title="Iniciar / Pausar Cronômetro de Turno">▶️</button>
+            <button class="btn-micro" onclick="resetTurnTimer()" title="Reiniciar Cronômetro">🔄</button>
+            <button class="btn-micro" onclick="addTurnTimerSeconds(15)" title="+15s no Turno">+15s</button>
+            <label style="font-size: 10px; color: var(--text-muted); display: flex; align-items: center; gap: 3px; cursor: pointer;" title="Reinicia o cronômetro automaticamente ao avançar para o próximo turno">
+              <input type="checkbox" id="chk-timer-autoreset" onchange="toggleTurnTimerAutoReset(this.checked)" checked> Auto
+            </label>
+          </div>
+
+          <button class="btn-secondary" onclick="resetCombat()">Reiniciar Rodada</button>
+          <button class="btn-secondary" style="color: #f87171;" onclick="clearCombat()">Limpar Mesa</button>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn-secondary" style="border-color: #eab308; color: #facc15;" onclick="openEncounterBuilderModal()" title="Balanceador & Orçamento de XP de Encontros (D&D 5E DMG)">⚖️ Balanceador</button>
+          <button class="btn-secondary" onclick="openPlayerView()">📺 Modo Telão</button>
+          <button class="btn-secondary" onclick="rollMonsterInit()">🎲 Rolar Inic. Monstros</button>
+          <button class="btn-action" onclick="openAddModal()">➕ Novo Combatente</button>
+        </div>
+      </div>
+
+      <div class="grid-3col">
+        <!-- COL 1: ORDEM DE TURNOS -->
+        <div class="card-panel">
+          <div class="panel-header">
+            <span>Ordem de Iniciativa</span>
+            <span id="lbl-comb-count" style="color: var(--text-muted); font-size: 11px;">0 ativos</span>
+          </div>
+          <div id="list-combatants" style="overflow-y: auto; max-height: 540px; display: flex; flex-direction: column; gap: 6px;"></div>
+        </div>
+
+        <!-- COL 2: COMBATENTE DO TURNO & DESPACHANTE -->
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div class="card-panel" style="flex: 1;">
+            <div class="panel-header">
+              <span>Combatente do Turno Ativo</span>
+              <span id="lbl-active-type" class="badge badge-src">Monstro</span>
+            </div>
+            <div id="active-details" style="display: flex; flex-direction: column; gap: 10px;"></div>
+          </div>
+
+          <div class="dispatch-box">
+            <div style="font-family: var(--font-title); font-size: 13px; font-weight: 700; color: var(--primary-light); display: flex; justify-content: space-between; align-items: center;">
+              <span>⚡ Despachante de Ataque & Dano</span>
+              <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">Ação Rápida</span>
+            </div>
+            <div class="form-row">
+              <div>
+                <label>Atacante</label>
+                <select id="sel-attacker"></select>
+              </div>
+              <div>
+                <label>Alvo</label>
+                <select id="sel-target"></select>
+              </div>
+              <div>
+                <label>Valor de Dano / Cura</label>
+                <input type="number" id="inp-damage" placeholder="Ex: 14" min="0">
+              </div>
+            </div>
+            <div style="display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap;">
+              <button class="btn-action" style="flex: 1; min-width: 110px; background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff;" onclick="applyCombatAction('damage')">⚔️ Dano Cheio</button>
+              <button class="btn-secondary" style="padding: 7px 10px; font-size: 11px;" onclick="applyHalfDamage()" title="Aplica metade do valor digitado (Resistência ou Sucesso em Teste de Destreza/Constituição)">🛡️ Metade (Resist.)</button>
+              <button class="btn-secondary" style="padding: 7px 10px; font-size: 11px;" onclick="applyDoubleDamage()" title="Aplica o dobro do valor digitado (Vulnerabilidade a Dano)">💥 Dobro (Vuln.)</button>
+              <button class="btn-action" style="flex: 1; min-width: 90px; background: linear-gradient(135deg, #10b981, #047857); color: #fff;" onclick="applyCombatAction('heal')">💚 Curar</button>
+              <button class="btn-action" style="background: linear-gradient(135deg, #f59e0b, #b45309); color: #000;" onclick="applyCombatAction('crit')">🔥 Crítico</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- COL 3: HISTÓRICO E ENIGMA -->
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div class="card-panel" style="flex: 1; max-height: 380px;">
+            <div class="panel-header">
+              <span>Histórico de Combate</span>
+              <button class="btn-secondary" style="padding: 2px 8px; font-size: 10px;" onclick="undoLog()">Desfazer</button>
+            </div>
+            <div id="list-logs" style="overflow-y: auto; flex: 1; font-size: 11px; display: flex; flex-direction: column; gap: 6px;"></div>
+          </div>
+
+          <div class="card-panel">
+            <div class="panel-header">
+              <span>🧩 Enigma do Dia</span>
+              <button class="btn-secondary" style="padding: 2px 8px; font-size: 10px;" onclick="nextPuzzle()">Outro 🎲</button>
+            </div>
+            <div id="lbl-puzzle-q" style="font-size: 12px; color: #cbd5e1; font-style: italic; line-height: 1.4;"></div>
+            <div id="lbl-puzzle-a" style="display: none; background: #070a12; padding: 8px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; font-size: 12px; font-weight: bold;"></div>
+            <button class="btn-secondary" style="width: 100%; font-size: 11px; justify-content: center;" onclick="togglePuzzle()">Revelar Solução</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 1.5: MAPA & GRID DE BATALHA (VTT EXPANDIDO DEDICADO DO MESTRE) -->
+    <div id="tab-grid" class="tab-pane">
+      <div class="battlegrid-container" id="battlegrid-container">
+        <!-- BARRA SUPERIOR DE FERRAMENTAS DO MESTRE (COMPACTA E DE JOGO) -->
+        <div class="battlegrid-toolbar">
+          <div class="toolbar-group">
+            <span style="font-family: var(--font-title); font-weight: 800; font-size: 13px; color: var(--primary-light); display: flex; align-items: center; gap: 4px; padding-right: 4px; border-right: 1px solid var(--border-color);">
+              <span>🗺️</span> <span>Mapa</span>
+            </span>
+
+            <!-- GESTÃO RÁPIDA DE CENAS -->
+            <select id="sel-scene-active" onchange="switchScene(this.value)" title="Alternar Cena / Mapa Ativo" style="font-weight: 600; max-width: 140px;">
+              <option value="scene-1">🏰 Cena 1: Masmorra</option>
+            </select>
+            <button class="btn-secondary" onclick="openCreateSceneModal()" title="Criar Nova Cena">➕</button>
+            <button class="btn-secondary" onclick="switchTab('grid-config')" title="Abrir Configurações Completas do Grid & Cenários">⚙️ Configurar Mapa</button>
+            
+            <!-- CENÁRIO E UPLOAD (COMPATIBILIDADE) -->
+            <select id="bg-map-theme" onchange="setGridMapBackground(this.value)" title="Tema do mapa" style="display:none;">
+              <option value="bg-dungeon">🏰 Masmorra</option>
+              <option value="bg-forest">🌲 Floresta</option>
+              <option value="bg-tavern">🍺 Taverna</option>
+              <option value="bg-cave">🌋 Caverna</option>
+              <option value="bg-ruins">🏛️ Ruínas</option>
+              <option value="bg-desert">🏜️ Deserto</option>
+              <option value="bg-tundra">❄️ Tundra</option>
+              <option value="bg-ship">🏴‍☠️ Navio</option>
+              <option value="bg-magma">🔥 Magma</option>
+              <option value="bg-astral">🌌 Astral</option>
+              <option value="custom" id="opt-custom-map" style="display: none;">🖼️ Custom</option>
+            </select>
+            <input type="file" id="inp-custom-map-file" accept="image/*" style="display: none;" onchange="handleCustomMapUpload(this)">
+
+            <!-- GRADE (COMPATIBILIDADE) -->
+            <select id="sel-grid-line-style" onchange="setGridLineStyle(this.value)" title="Estilo das linhas da grade" style="display:none;">
+              <option value="default">⚪ Grade</option>
+              <option value="gold">🟡 Grade Dourada</option>
+              <option value="dark">⚫ Grade Escura</option>
+              <option value="hidden">🚫 Sem Linhas</option>
+            </select>
+
+            <select id="sel-grid-size" onchange="changeGridCellSize(this.value)" title="Tamanho da célula" style="display:none;">
+              <option value="35">35px</option>
+              <option value="45">45px</option>
+              <option value="50" selected>50px</option>
+              <option value="60">60px</option>
+              <option value="75">75px</option>
+              <option value="90">90px</option>
+            </select>
+          </div>
+
+          <div class="toolbar-group">
+            <!-- MODOS E FERRAMENTAS -->
+            <button id="btn-toggle-pan-mode" class="btn-secondary" onclick="togglePanMode()" title="Modo Mover Mapa (ou segure Espaço / botão direito)">🖐️ Mover</button>
+            <button id="btn-tool-select" class="btn-secondary active" onclick="setPanMode(false); setVttTool('select');" title="Modo Seleção de Tokens">🎯 Tokens</button>
+            <button id="btn-tool-ruler" class="btn-secondary" onclick="toggleRulerTool()" title="Régua Tática de Medição (ft / m / quadrados)">📏 Régua</button>
+            
+            <!-- PINCEL DE ANOTAÇÃO E PALETA RÁPIDA -->
+            <button id="btn-tool-draw" class="btn-secondary" onclick="toggleDrawingTool()" title="Pincel / Giz de Desenho Tático (Ctrl+Z para desfazer)">✏️ Giz</button>
+            <div id="vtt-drawing-controls" style="display: none; align-items: center; gap: 4px;">
+              <div class="drawing-palette">
+                <span class="drawing-color-dot active" style="background: #f59e0b;" onclick="setDrawingColor('#f59e0b', this)" title="Amarelo / Dourado"></span>
+                <span class="drawing-color-dot" style="background: #ef4444;" onclick="setDrawingColor('#ef4444', this)" title="Vermelho"></span>
+                <span class="drawing-color-dot" style="background: #38bdf8;" onclick="setDrawingColor('#38bdf8', this)" title="Azul"></span>
+                <span class="drawing-color-dot" style="background: #10b981;" onclick="setDrawingColor('#10b981', this)" title="Verde"></span>
+                <span class="drawing-color-dot" style="background: #ffffff;" onclick="setDrawingColor('#ffffff', this)" title="Branco"></span>
+                <span class="drawing-color-dot" style="background: #a855f7;" onclick="setDrawingColor('#a855f7', this)" title="Roxo"></span>
+              </div>
+              <div style="display: flex; gap: 2px; align-items: center; border-left: 1px solid var(--border-color); padding-left: 4px;">
+                <button class="drawing-size-btn active" onclick="setDrawingSize(2, this)" title="Pincel Fino">━</button>
+                <button class="drawing-size-btn" onclick="setDrawingSize(5, this)" title="Pincel Médio">▬</button>
+                <button class="drawing-size-btn" onclick="setDrawingSize(10, this)" title="Pincel Grosso">█</button>
+              </div>
+              <button class="btn-secondary" style="padding: 1px 5px; font-size: 10px;" onclick="undoLastDrawing()" title="Desfazer último traço (Ctrl+Z)">↩️</button>
+              <button class="btn-secondary" style="padding: 1px 4px; font-size: 10px;" onclick="clearDrawings()" title="Limpar todos os Desenhos">🗑️</button>
+            </div>
+
+            <button id="btn-tool-ping" class="btn-secondary" onclick="togglePingTool()" title="Ponteiro / Radar Ping (chama atenção no mapa)">📍 Ping</button>
+            <button id="btn-toggle-coords" class="btn-secondary" onclick="toggleGridCoordinates()" title="Coordenadas A-Z / 1-50">🔢 Coord</button>
+            <button id="btn-toggle-combatants-drawer" class="btn-secondary" onclick="toggleCombatantsDrawer()" title="Painel Lateral de Combatentes">👥 Lista</button>
+            <button class="btn-secondary" onclick="syncCombatantsToGrid()" title="Povoar tokens da mesa de combate">🔄 Povoar</button>
+            
+            <!-- MARCADORES E AOE -->
+            <select id="sel-add-marker" onchange="if(this.value){addMapMarker(this.value); this.value='';}" title="Marcador de Terreno">
+              <option value="">➕ Marcador...</option>
+              <option value="🔥 Fogueira">🔥 Fogueira</option>
+              <option value="📦 Baú de Tesouro">📦 Baú</option>
+              <option value="🚪 Porta de Madeira">🚪 Porta</option>
+              <option value="⚠️ Armadilha Oculta">⚠️ Armadilha</option>
+              <option value="🧊 Parede de Gelo">🧊 Gelo</option>
+              <option value="💀 Pilha de Ossos">💀 Ossos</option>
+              <option value="🌀 Portal Mágico">🌀 Portal</option>
+              <option value="🗝️ Alavanca / Chave">🗝️ Alavanca</option>
+            </select>
+
+            <select id="sel-add-aoe" onchange="if(this.value){addAoETemplate(this.value); this.value='';}" title="Magia em Área">
+              <option value="">🔮 Magia AoE...</option>
+              <option value="circle_6m">🔴 Bola de Fogo (6m / 20ft)</option>
+              <option value="circle_4m">🟡 Espírito Guardião (4,5m / 15ft)</option>
+              <option value="cone_4m">🔺 Cone de Chamas (4,5m / 15ft)</option>
+              <option value="cone_9m">🔻 Sopro do Dragão (9m / 30ft)</option>
+              <option value="line_18m">⚡ Relâmpago (18m / 60ft)</option>
+              <option value="cube_3m">🟩 Nuvem de Adagas (3m / 10ft)</option>
+              <option value="cube_6m">🟦 Espinheiros (6m / 20ft)</option>
+            </select>
+
+            <!-- NÉVOA RÁPIDA -->
+            <div style="display: flex; align-items: center; gap: 2px; background: rgba(0,0,0,0.4); padding: 1px 4px; border-radius: 6px; border: 1px solid var(--border-color);">
+              <button id="btn-toggle-fow" class="btn-secondary" style="padding: 2px 5px; font-size: 10px;" onclick="toggleFogOfWar()" title="Ativar/Desativar Névoa de Guerra">🌫️ Névoa</button>
+              <select id="sel-fow-brush" onchange="setFogBrushMode(this.value)" style="display: none; padding: 1px 3px; font-size: 10px;">
+                <option value="reveal">🖌️ Revelar</option>
+                <option value="hide">⬛ Cobrir</option>
+              </select>
+              <select id="sel-fow-brush-size" onchange="setFowBrushSize(this.value)" style="display: none; padding: 1px 3px; font-size: 10px;" title="Tamanho do pincel">
+                <option value="0.8">🔹 Fino</option>
+                <option value="1.5" selected>🔶 Médio</option>
+                <option value="2.8">🟠 Grosso</option>
+              </select>
+              <button id="btn-fow-reset" class="btn-secondary" style="display: none; padding: 1px 4px; font-size: 9px;" onclick="coverAllFog()" title="Cobrir Tudo">⬛</button>
+              <button id="btn-fow-reveal-all" class="btn-secondary" style="display: none; padding: 1px 4px; font-size: 9px;" onclick="revealAllFog()" title="Revelar Tudo">👁️</button>
+            </div>
+          </div>
+
+          <div class="toolbar-group">
+            <!-- CLIMA & TELÃO (COMPATIBILIDADE) -->
+            <select id="sel-weather-effect" onchange="setWeatherEffect(this.value)" title="Efeito climático no telão" style="display:none;">
+              <option value="none">☀️ Clima: Nenhum</option>
+              <option value="rain">🌧️ Tempestade</option>
+              <option value="embers">🔥 Brasas</option>
+              <option value="fog">🌫️ Névoa</option>
+            </select>
+            <span id="grid-dimensions-badge" style="font-size: 10px; color: var(--primary-light); font-family: var(--font-mono); padding: 0 2px;">1200x800</span>
+            <button class="btn-secondary" style="padding: 3px 8px; font-size: 11px; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;" onclick="scrollGridIntoFocus()" title="Rolar a página e focar visão no grid">⬇️ Foco no Grid</button>
+            <button class="btn-secondary" style="padding: 3px 7px; font-size: 11px;" onclick="toggleGridFullscreen()" title="Alternar Tela Cheia do Mapa">⛶</button>
+            <button class="btn-action" style="padding: 3px 8px; font-size: 11px;" onclick="saveGridStatePermanently()" title="Salvar posições no mapa">💾 Salvar</button>
+            <button class="btn-action" style="padding: 3px 10px; font-size: 11px; background: linear-gradient(135deg, #0ea5e9, #0284c7);" onclick="openPlayerView()" title="Abrir janela do projetor/telão">📺 Telão</button>
+          </div>
+        </div>
+
+        <!-- HUD / DOCK DE COMBATE RÁPIDO INTEGRADO NO GRID -->
+        <div id="vtt-combat-hud" class="vtt-combat-hud">
+          <div class="vtt-hud-header">
+            <div class="vtt-hud-turn-info">
+              <div class="vtt-round-chip">RODADA <span id="lbl-vtt-round">1</span></div>
+              <div id="vtt-active-combatant-chip" class="vtt-active-combatant-chip" onclick="focusActiveToken()" title="Clique para centralizar câmera no combatente ativo">
+                <span id="vtt-active-icon">⚔️</span>
+                <div style="display: flex; flex-direction: column; min-width: 110px;">
+                  <span id="vtt-active-name" style="font-weight: 800; font-size: 12px; color: #fff;">Sem combate</span>
+                  <span id="vtt-active-stats" style="font-size: 10px; color: var(--text-muted);">Inic: - | CA: - | PV: -/-</span>
+                </div>
+              </div>
+              <div class="vtt-active-hp-bar" id="vtt-active-hp-bar-box" style="display: none;">
+                <div class="vtt-active-hp-fill" id="vtt-active-hp-fill"></div>
+              </div>
+            </div>
+
+            <!-- BOTÃO PRINCIPAL: PRÓXIMO TURNO -->
+            <button class="btn-action vtt-btn-next-turn" onclick="nextTurn()" title="Avançar para o próximo combatente (Atalho: Espaço)">
+              <span>Próximo Turno ➔</span>
+              <kbd style="font-size:9px; background:rgba(0,0,0,0.35); padding:1px 4px; border-radius:3px;">Espaço</kbd>
+            </button>
+
+            <!-- MINI DESPACHANTE DE DANO / CURA NO VTT -->
+            <div class="vtt-quick-dispatch">
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <select id="sel-vtt-target" title="Selecione o Alvo do Dano ou Cura" style="max-width: 140px; font-size: 11px;"></select>
+                <input type="number" id="inp-vtt-damage" placeholder="Valor" min="0" title="Valor do Dano / Cura" style="width: 55px; font-size: 11px; padding: 3px 5px; text-align: center;">
+              </div>
+              <div style="display: flex; gap: 3px; align-items: center;">
+                <button class="btn-action" style="padding: 3px 8px; font-size: 11px; background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff;" onclick="applyVttCombatAction('damage')" title="Aplicar Dano Cheio no Alvo">⚔️ Dano</button>
+                <button class="btn-secondary" style="padding: 3px 5px; font-size: 10px;" onclick="applyVttHalfDamage()" title="Metade do Dano (Resistência)">🛡️ ½</button>
+                <button class="btn-secondary" style="padding: 3px 5px; font-size: 10px;" onclick="applyVttDoubleDamage()" title="Dobro do Dano (Vulnerabilidade)">💥 2x</button>
+                <button class="btn-action" style="padding: 3px 7px; font-size: 11px; background: linear-gradient(135deg, #10b981, #047857); color: #fff;" onclick="applyVttCombatAction('heal')" title="Curar Alvo">💚 Curar</button>
+                <button class="btn-action" style="padding: 3px 6px; font-size: 10px; background: linear-gradient(135deg, #f59e0b, #b45309); color: #000; font-weight: bold;" onclick="applyVttCombatAction('crit')" title="Acerto Crítico">🔥</button>
+              </div>
+            </div>
+
+            <!-- CONTROLES DO HUD -->
+            <div style="display: flex; gap: 4px; align-items: center;">
+              <button class="btn-secondary" style="padding: 3px 7px; font-size: 11px;" onclick="openAddModal()" title="Adicionar Novo Combatente à Mesa">➕</button>
+              <button id="btn-toggle-vtt-hud" class="btn-secondary" style="padding: 3px 7px; font-size: 11px;" onclick="toggleVttCombatHud()" title="Recolher / Expandir Painel de Combate">🔼</button>
+            </div>
+          </div>
+
+          <!-- SUB-SEÇÃO EXPANSÍVEL: AÇÕES RÁPIDAS & MINI TIMELINE -->
+          <div id="vtt-hud-body" class="vtt-hud-body">
+            <!-- Ações do Combatente Ativo -->
+            <div id="vtt-hud-actions-box" class="vtt-hud-actions-box">
+              <span style="font-size: 10px; font-weight: 700; color: var(--primary-light); white-space: nowrap;">⚔️ Ações:</span>
+              <div id="vtt-hud-actions-list" style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center;"></div>
+            </div>
+
+            <!-- Mini Timeline Horizontal de Iniciativa -->
+            <div class="vtt-hud-timeline-wrap">
+              <span style="font-size: 10px; font-weight: 700; color: var(--text-muted); white-space: nowrap;">Ordem:</span>
+              <div id="vtt-hud-timeline-list" class="vtt-hud-timeline-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEWPORT PRINCIPAL DO GRID DE BATALHA -->
+        <div class="battlegrid-viewport" id="battlegrid-viewport" 
+             onwheel="handleGridWheelZoom(event)" 
+             onmousedown="handleViewportMouseDown(event)"
+             oncontextmenu="handleGridContextMenu(event)">
+          
+          <div class="battlegrid-transform-layer" id="battlegrid-transform-layer">
+            <div id="grid-coord-top" class="grid-coord-top" style="display: none;"></div>
+            <div id="grid-coord-left" class="grid-coord-left" style="display: none;"></div>
+            
+            <div class="battlegrid-board bg-dungeon" id="battlegrid-board" onmousedown="handleBoardMouseDown(event)">
+              <div class="grid-lines-overlay" id="grid-lines-overlay"></div>
+              <!-- Elemento de Seleção Múltipla Retangular -->
+              <div id="grid-selection-box" class="grid-selection-box"></div>
+              <!-- B2: SVG da Régua — sem display:none, controlado por JS (opacity/display via renderRulerSvg) -->
+              <svg id="battlegrid-ruler-svg" class="vtt-ruler-svg" style="display: none; overflow: visible;"></svg>
+              <div id="grid-measure-line" class="grid-measure-line" style="display: none;"></div>
+              <div id="grid-measure-badge" class="grid-measure-badge" style="display: none;">0 m</div>
+              <!-- Camada de Desenho Livre Tático -->
+              <canvas id="battlegrid-drawing-layer" class="vtt-drawing-canvas"></canvas>
+              <!-- Camadas de Pings, AoE, Marcadores, Tokens e Névoa -->
+              <div id="grid-pings-layer" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:50;"></div>
+              <div id="grid-aoe-layer"></div>
+              <div id="grid-markers-layer"></div>
+              <div id="grid-tokens-layer"></div>
+              <canvas id="fow-canvas-dm" class="fow-canvas fow-canvas-dm" style="display: none;"></canvas>
+            </div>
+          </div>
+
+          <!-- PAINEL LATERAL RETRÁTIL DE COMBATENTES (QUICK DRAWER) -->
+          <div id="grid-combatants-drawer" class="grid-combatants-drawer">
+            <div class="drawer-header">
+              <div style="font-weight: 800; font-size: 12px; color: var(--primary-light); display: flex; align-items: center; gap: 6px;">
+                <span>⚔️ Combatentes Ativos</span>
+              </div>
+              <button class="btn-drawer-close" onclick="toggleCombatantsDrawer()" title="Fechar painel">✕</button>
+            </div>
+            <div id="grid-combatants-drawer-list" class="drawer-list"></div>
+          </div>
+
+          <!-- HUD FLUTUANTE DE CONTROLE DE NAVEGAÇÃO & ZOOM -->
+          <div class="grid-zoom-hud">
+            <button class="grid-zoom-btn" onclick="zoomBattleGrid(-0.15)" title="Diminuir Zoom (-)">−</button>
+            <span class="grid-zoom-badge" id="grid-zoom-level-badge" onclick="resetBattleGridZoom()" title="Clique para redefinir zoom para 100%">100%</span>
+            <button class="grid-zoom-btn" onclick="zoomBattleGrid(0.15)" title="Aumentar Zoom (+)">+</button>
+            <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.15); margin: 0 2px;"></div>
+            <button class="grid-zoom-btn" onclick="fitBattleGridToView()" title="Ajustar Mapa à Janela (Fit)">🔍</button>
+            <button class="grid-zoom-btn" onclick="focusActiveToken()" title="Centralizar Câmera no Combatente do Turno Ativo">🎯</button>
+            <button class="grid-zoom-btn" id="btn-toggle-fullscreen" onclick="toggleGridFullscreen()" title="Alternar Modo Tela Cheia">⛶</button>
+          </div>
+
+          <!-- DICA FLUTUANTE DE NAVEGAÇÃO -->
+          <div class="grid-nav-hint">
+            <span>🖱️ <b>Botão Direito / Meio</b> para mover | <b>Roda do mouse</b> para zoom | <b>Shift + Roda</b> ou barra lateral para rolar a página | Segure <b>Espaço</b> para arrastar</span>
+          </div>
+
+          <!-- MENU CONTEXTUAL RÁPIDO DO TOKEN -->
+          <div id="grid-token-context-menu" class="grid-context-menu"></div>
+          <!-- V2: Badge flutuante de ferramenta ativa -->
+          <div id="vtt-active-tool-badge"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 1.6: CONFIGURAÇÃO DO GRID & CENÁRIOS -->
+    <div id="tab-grid-config" class="tab-pane">
+      <div class="controls-bar">
+        <div>
+          <div style="font-family: var(--font-title); font-size: 16px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px;">
+            <span>⚙️ Configurações do Mapa & Grid de Batalha</span>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted);">
+            Gerencie cenas, dimensões do tabuleiro, imagens de fundo, estilo das linhas de grade, névoa de guerra e clima do telão.
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-secondary" onclick="saveGridStatePermanently()" title="Salvar todas as configurações do mapa">💾 Salvar Configurações</button>
+          <button class="btn-action" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);" onclick="switchTab('grid')" title="Retornar à mesa tática">🗺️ Ir para o Grid de Batalha ➔</button>
+        </div>
+      </div>
+
+      <div class="config-grid-layout">
+        <!-- CARD 1: GERENCIADOR DE CENAS -->
+        <div class="card-panel config-card">
+          <div class="panel-header">
+            <span>🏰 Gerenciador de Cenas (Multi-Mapas)</span>
+            <button class="btn-action" style="font-size: 10px; padding: 2px 8px;" onclick="openCreateSceneModal()">➕ Nova Cena</button>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 4px;">
+            <div>
+              <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Cena Ativa no Tabuleiro:</label>
+              <div style="display: flex; gap: 6px;">
+                <select id="sel-config-scene-active" onchange="switchScene(this.value); renderGridConfig();" style="flex: 1; padding: 6px 10px; background: #080c16; border: 1px solid var(--border-color); color: #fff; border-radius: 6px; font-size: 12px; font-weight: 700;"></select>
+                <button class="btn-secondary" onclick="duplicateCurrentScene()" title="Duplicar Cena Atual">📋 Copiar</button>
+                <button class="btn-secondary" onclick="renameCurrentScenePrompt()" title="Renomear Cena Atual">✏️</button>
+                <button class="btn-secondary" style="color: #f87171;" onclick="deleteCurrentSceneConfirm()" title="Excluir Cena Atual">🗑️</button>
+              </div>
+            </div>
+            <div style="border-top: 1px solid var(--border-color); padding-top: 10px;">
+              <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 6px;">Cenas Criadas:</span>
+              <div id="config-scenes-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 2: CENÁRIO, TEMA & UPLOAD -->
+        <div class="card-panel config-card">
+          <div class="panel-header">
+            <span>🎨 Cenário, Tema & Imagem de Fundo</span>
+            <span id="lbl-config-theme-current" class="badge badge-cls">Masmorra</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 4px;">
+            <div>
+              <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Tema Procedural Pré-definido:</label>
+              <select id="sel-config-map-theme" onchange="setGridMapBackground(this.value); renderGridConfig();" style="width: 100%; padding: 6px 10px; background: #080c16; border: 1px solid var(--border-color); color: #fff; border-radius: 6px; font-size: 12px;">
+                <option value="bg-dungeon">🏰 Masmorra de Pedra Clássica</option>
+                <option value="bg-forest">🌲 Floresta Feérica & Clareira</option>
+                <option value="bg-tavern">🍺 Taverna Aconchegante de Madeira</option>
+                <option value="bg-cave">🌋 Caverna Vulcânica & Rochas</option>
+                <option value="bg-ruins">🏛️ Ruínas Ancestrais Esquecidas</option>
+                <option value="bg-desert">🏜️ Deserto Escaldante & Dunas</option>
+                <option value="bg-tundra">❄️ Tundra Congelada & Geleira</option>
+                <option value="bg-ship">🏴‍☠️ Convés de Navio Pirata</option>
+                <option value="bg-magma">🔥 Lago de Magma & Inferno</option>
+                <option value="bg-astral">🌌 Plano Astral & Vazio Cósmico</option>
+                <option value="custom">🖼️ Imagem Personalizada (Upload)</option>
+              </select>
+            </div>
+
+            <div style="border-top: 1px solid var(--border-color); padding-top: 10px;">
+              <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Carregar Mapa do Computador:</label>
+              <div class="custom-upload-box" onclick="document.getElementById('inp-custom-map-file').click()" style="border: 2px dashed rgba(245,158,11,0.4); background: rgba(0,0,0,0.3); padding: 14px; text-align: center; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                <span style="font-size: 24px;">📁</span>
+                <span style="font-size: 12px; font-weight: bold; color: #fff;">Clique para selecionar arquivo de imagem</span>
+                <span style="font-size: 10px; color: var(--text-muted);">Suporta PNG, JPG, WebP (ajusta resolução automaticamente)</span>
+              </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--border-color); padding-top: 10px;">
+              <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Dimensões do Tabuleiro (Largura x Altura em Pixels):</label>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <div style="flex: 1;">
+                  <span style="font-size: 10px; color: var(--text-dim);">Largura (px):</span>
+                  <input type="number" id="inp-config-grid-w" min="400" max="4000" step="50" onchange="updateGridDimensionsFromConfig()" style="width: 100%; padding: 5px; background: #080c16; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; font-size: 12px;">
+                </div>
+                <div style="flex: 1;">
+                  <span style="font-size: 10px; color: var(--text-dim);">Altura (px):</span>
+                  <input type="number" id="inp-config-grid-h" min="400" max="4000" step="50" onchange="updateGridDimensionsFromConfig()" style="width: 100%; padding: 5px; background: #080c16; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; font-size: 12px;">
+                </div>
+              </div>
+              <div style="display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap;">
+                <button class="btn-secondary" style="font-size: 10px; padding: 2px 6px;" onclick="setGridPresetDimensions(1200, 800)">1200x800</button>
+                <button class="btn-secondary" style="font-size: 10px; padding: 2px 6px;" onclick="setGridPresetDimensions(1600, 1200)">1600x1200</button>
+                <button class="btn-secondary" style="font-size: 10px; padding: 2px 6px;" onclick="setGridPresetDimensions(2000, 1500)">2000x1500</button>
+                <button class="btn-secondary" style="font-size: 10px; padding: 2px 6px;" onclick="setGridPresetDimensions(3000, 2000)">3000x2000</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 3: GRADE TÁTICA & ESTILIZAÇÃO -->
+        <div class="card-panel config-card">
+          <div class="panel-header">
+            <span>📐 Grade Tática & Ajuste Fino</span>
+            <span id="lbl-config-grid-stats" class="badge badge-src">50px • 24x16 casas</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 4px;">
+            <div>
+              <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Tamanho da Célula / Quadrado:</label>
+              <select id="sel-config-cell-size" onchange="changeGridCellSize(this.value); renderGridConfig();" style="width: 100%; padding: 6px 10px; background: #080c16; border: 1px solid var(--border-color); color: #fff; border-radius: 6px; font-size: 12px;">
+                <option value="35">35px (Grid Denso / Batalha Gigante)</option>
+                <option value="45">45px (Grid Compacto)</option>
+                <option value="50">50px (Padrão D&D 5E)</option>
+                <option value="60">60px (Grid Médio-Grande)</option>
+                <option value="75">75px (Grid Amplo)</option>
+                <option value="90">90px (Grid Extra Grande)</option>
+              </select>
+            </div>
+
+            <div style="border-top: 1px solid var(--border-color); padding-top: 10px;">
+              <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Estilo Visual das Linhas:</label>
+              <select id="sel-config-line-style" onchange="setGridLineStyle(this.value); renderGridConfig();" style="width: 100%; padding: 6px 10px; background: #080c16; border: 1px solid var(--border-color); color: #fff; border-radius: 6px; font-size: 12px;">
+                <option value="default">⚪ Grade Branca Sutil (Padrão)</option>
+                <option value="gold">🟡 Grade Dourada Fantasia</option>
+                <option value="dark">⚫ Grade Escura / Tática</option>
+                <option value="hidden">🚫 Ocultar Linhas (Grid Invisível)</option>
+              </select>
+            </div>
+
+            <div style="border-top: 1px solid var(--border-color); padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <b style="color: #fff; font-size: 12px;">Exibir Coordenadas Alfa-Numéricas</b>
+                <div style="font-size: 10px; color: var(--text-muted);">Colunas A-Z e Linhas 1-50 nas bordas</div>
+              </div>
+              <button class="btn-secondary" id="btn-config-toggle-coords" onclick="toggleGridCoordinates(); renderGridConfig();" style="font-size: 11px; padding: 4px 10px;">Alternar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 4: NÉVOA DE GUERRA & ILUMINAÇÃO -->
+        <div class="card-panel config-card">
+          <div class="panel-header">
+            <span>🌫️ Névoa de Guerra (Fog of War)</span>
+            <span id="lbl-config-fow-status" class="badge badge-cr">Desativada</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <b style="color: #fff; font-size: 12px;">Estado da Névoa de Guerra</b>
+                <div style="font-size: 10px; color: var(--text-muted);">Oculta áreas não exploradas no telão dos jogadores</div>
+              </div>
+              <button id="btn-config-toggle-fow" class="btn-action" onclick="toggleFogOfWar(); renderGridConfig();" style="padding: 4px 12px; font-size: 11px;">Ativar Névoa</button>
+            </div>
+
+            <div style="border-top: 1px solid var(--border-color); padding-top: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin: 0;">Transparência da Névoa para o Mestre:</label>
+                <span id="lbl-config-fow-opacity-val" style="font-size: 11px; font-weight: 700; color: #fff;">45%</span>
+              </div>
+              <input type="range" id="inp-config-fow-opacity" min="0.1" max="0.9" step="0.05" value="0.45" oninput="setDmFogOpacity(this.value)" style="width: 100%;">
+            </div>
+
+            <div style="border-top: 1px solid var(--border-color); padding-top: 10px; display: flex; gap: 8px;">
+              <button class="btn-secondary" style="flex: 1; padding: 6px;" onclick="coverAllFog()" title="Cobrir todo o mapa com névoa">⬛ Cobrir Tudo</button>
+              <button class="btn-secondary" style="flex: 1; padding: 6px;" onclick="revealAllFog()" title="Revelar todo o mapa">👁️ Revelar Tudo</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 5: CLIMA & AMBIENTAÇÃO DO TELÃO -->
+        <div class="card-panel config-card">
+          <div class="panel-header">
+            <span>🌧️ Clima & Efeitos de Partículas</span>
+            <button class="btn-action" style="font-size: 10px; padding: 2px 8px; background: linear-gradient(135deg, #0ea5e9, #0284c7);" onclick="openPlayerView()">📺 Abrir Telão</button>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 4px;">
+            <div>
+              <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Efeito Climático Ativo no Telão:</label>
+              <select id="sel-config-weather" onchange="setWeatherEffect(this.value); renderGridConfig();" style="width: 100%; padding: 6px 10px; background: #080c16; border: 1px solid var(--border-color); color: #fff; border-radius: 6px; font-size: 12px;">
+                <option value="none">☀️ Clima Normal (Sem Efeito)</option>
+                <option value="rain">🌧️ Tempestade Torrencial com Relâmpagos</option>
+                <option value="embers">🔥 Brasas Vulcânicas & Cinzas Quentes</option>
+                <option value="fog">🌫️ Névoa Densa & Vapores Místicos</option>
+              </select>
+            </div>
+
+            <div style="border-top: 1px solid var(--border-color); padding-top: 10px;">
+              <b style="color: #fff; font-size: 12px;">Modo Telão dos Jogadores (Projetor / Segunda Tela)</b>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
+                Abre uma janela dedicada e limpa que esconde notas do mestre, tokens ocultos e controles, sincronizada em tempo real via Broadcast Channel.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- TAB 2: FICHAS DOS ALUNOS -->
+    <div id="tab-players" class="tab-pane">
+      <div class="controls-bar">
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <input type="text" id="filter-player-q" placeholder="Buscar aluno, personagem, raça..." style="max-width: 250px;" oninput="renderPlayers()">
+          <select id="filter-player-sort" style="max-width: 150px; padding: 6px 10px; border-radius: 6px; background: #080c16; color: #fff; border: 1px solid var(--border-color); font-size: 12px;" onchange="renderPlayers()">
+            <option value="name">Ordenar: Nome</option>
+            <option value="student">Ordenar: Aluno</option>
+            <option value="level">Maior Nível</option>
+            <option value="hp">Maior % PV</option>
+          </select>
+          <div style="font-size: 11px; color: var(--text-muted);">Clique nos atributos, ataques e dados para rolar instantaneamente.</div>
+        </div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button class="btn-action" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 700;" onclick="addAllPlayersToCombat()" title="Adicionar todas as fichas de alunos ao combate ativo de uma vez">⚔️ Todos no Combate</button>
+          <button class="btn-secondary" onclick="partyShortRestAll()" title="Descanso Curto para todo o grupo (1h)">☕ Curto (Todos)</button>
+          <button class="btn-secondary" onclick="partyLongRestAll()" title="Descanso Longo para todo o grupo (8h - restaura PV, magias e dados)">🌙 Longo (Todos)</button>
+          <button class="btn-action" onclick="openPlayerModal(null)">➕ Nova Ficha</button>
+        </div>
+      </div>
+      <div id="grid-players" class="cards-grid"></div>
+    </div>
+
+    <!-- TAB 2.5: ESCUDO DO MESTRE (DM SCREEN - REGRAS RÁPIDAS) -->
+    <div id="tab-dmscreen" class="tab-pane">
+      <div class="controls-bar">
+        <div>
+          <div style="font-family: var(--font-title); font-size: 16px; font-weight: 700; color: #fff;">🛡️ Escudo do Mestre (DM Screen - Regras Oficiais D&D 5e)</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Consulte regras de combate, coberturas, condições, exaustão e serviços rapidamente.</div>
+        </div>
+      </div>
+
+      <div class="dm-screen-grid">
+        <!-- CARD 1: AÇÕES EM COMBATE -->
+        <div class="rule-card">
+          <div class="rule-title">⚔️ Ações em Combate</div>
+          <table class="rule-table">
+            <thead><tr><th>Ação</th><th>Efeito Principal</th></tr></thead>
+            <tbody>
+              <tr><td><b>Atacar</b></td><td>Realiza 1 ou mais ataques corpo a corpo ou à distância.</td></tr>
+              <tr><td><b>Conjurar Magia</b></td><td>Lança uma magia com tempo de conjuração de 1 Ação.</td></tr>
+              <tr><td><b>Esquivar (Dodge)</b></td><td>Ataques contra você têm Desvantagem; Vantagem em salvaguardas de DES.</td></tr>
+              <tr><td><b>Desengajar</b></td><td>Seu movimento não provoca ataques de oportunidade pelo resto do turno.</td></tr>
+              <tr><td><b>Disparar (Dash)</b></td><td>Ganha movimento extra igual ao seu deslocamento no turno.</td></tr>
+              <tr><td><b>Ajudar (Help)</b></td><td>Concede Vantagem no próximo ataque ou teste de um aliado a até 1,5m.</td></tr>
+              <tr><td><b>Esconder (Hide)</b></td><td>Teste de Furtividade vs Percepção Passiva dos inimigos.</td></tr>
+              <tr><td><b>Preparar (Ready)</b></td><td>Define um gatilho de reação para agir fora do seu turno.</td></tr>
+              <tr><td><b>Agarrar / Empurrar</b></td><td>Substitui um ataque: Atletismo (FOR) vs Atletismo ou Acrobacia do alvo.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- CARD 2: COBERTURA & ILUMINAÇÃO -->
+        <div class="rule-card">
+          <div class="rule-title">🛡️ Cobertura & Iluminação</div>
+          <table class="rule-table">
+            <thead><tr><th>Tipo de Cobertura</th><th>Benefício</th></tr></thead>
+            <tbody>
+              <tr><td><b>Meia Cobertura (1/2)</b></td><td><b>+2 na CA</b> e em testes de resistência de Destreza.</td></tr>
+              <tr><td><b>Três Quartos (3/4)</b></td><td><b>+5 na CA</b> e em testes de resistência de Destreza.</td></tr>
+              <tr><td><b>Cobertura Total</b></td><td>Não pode ser alvo direto de ataques ou magias.</td></tr>
+            </tbody>
+          </table>
+
+          <div style="margin-top: 6px; font-weight: 700; color: var(--primary); font-size: 12px;">🕯️ Iluminação & Visão</div>
+          <table class="rule-table">
+            <tbody>
+              <tr><td><b>Luz Plena</b></td><td>Visão normal para todos os personagens.</td></tr>
+              <tr><td><b>Penumbra</b></td><td>Área levemente obscurecida; Desvantagem em Percepção (Sabedoria) visual.</td></tr>
+              <tr><td><b>Escuridão</b></td><td>Totalmente obscurecido; criaturas sofrem a condição <b>Cego</b> sem visão especial.</td></tr>
+              <tr><td><b>Visão no Escuro</b></td><td>Trata escuridão como penumbra até 18m (tons de cinza).</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- CARD 3: TABELA DE EXAUSTÃO & DANOS -->
+        <div class="rule-card">
+          <div class="rule-title">⏳ Tabela de Exaustão (Níveis 1 a 6)</div>
+          <table class="rule-table">
+            <thead><tr><th>Nível</th><th>Efeito Acumulativo</th></tr></thead>
+            <tbody>
+              <tr><td><b>1</b></td><td>Desvantagem em testes de atributo.</td></tr>
+              <tr><td><b>2</b></td><td>Deslocamento reduzido à metade.</td></tr>
+              <tr><td><b>3</b></td><td>Desvantagem em jogadas de ataque e salvaguardas.</td></tr>
+              <tr><td><b>4</b></td><td>Pontos de Vida Máximos reduzidos à metade.</td></tr>
+              <tr><td><b>5</b></td><td>Deslocamento reduzido a 0.</td></tr>
+              <tr><td><b>6</b></td><td><b style="color:#f87171;">Morte imediata do personagem.</b></td></tr>
+            </tbody>
+          </table>
+          <div style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">* Um Descanso Longo completo (com comida e água) reduz o nível de exaustão em 1.</div>
+        </div>
+
+        <!-- CARD 4: VIAGEM, QUEDA & SUFOCAMENTO -->
+        <div class="rule-card">
+          <div class="rule-title">🐎 Viagem, Marcha & Queda</div>
+          <table class="rule-table">
+            <thead><tr><th>Ritmo</th><th>Distância / Dia</th><th>Efeito</th></tr></thead>
+            <tbody>
+              <tr><td><b>Rápido</b></td><td>45 km / dia</td><td>-5 na Percepção Passiva.</td></tr>
+              <tr><td><b>Normal</b></td><td>36 km / dia</td><td>Nenhum modificador.</td></tr>
+              <tr><td><b>Lento</b></td><td>27 km / dia</td><td>Permite usar <b>Furtividade</b> em marcha.</td></tr>
+            </tbody>
+          </table>
+          <div style="margin-top: 6px; font-size: 11.5px; color: #cbd5e1; line-height: 1.4;">
+            <div>💥 <b>Dano de Queda:</b> <b>1d6</b> de dano contundente a cada 3 metros (máx 20d6) e a criatura cai <i>Prostrada</i>.</div>
+            <div>🫁 <b>Sufocamento:</b> Pode prender a respiração por <b>1 + Mod. CON</b> minutos (mínimo 30s). Sem ar, sobrevive por Mod. CON rodadas antes de cair a 0 PV.</div>
+          </div>
+        </div>
+
+        <!-- CARD 5: SERVIÇOS, ESTADIA & PREÇOS -->
+        <div class="rule-card">
+          <div class="rule-title">💰 Serviços & Estadia Comum</div>
+          <table class="rule-table">
+            <thead><tr><th>Item / Serviço</th><th>Custo Típico</th></tr></thead>
+            <tbody>
+              <tr><td>Estalagem (Quarto Simples / Nobre)</td><td>5 PP / dia (Simples) | 2 PO / dia (Nobre)</td></tr>
+              <tr><td>Refeição na Taverna (Boa / Caneca de Cerveja)</td><td>3 PP (Refeição) | 4 PC (Cerveja)</td></tr>
+              <tr><td>Ração de Viagem (1 dia de suprimento)</td><td>5 PP</td></tr>
+              <tr><td>Poção de Cura Comum (2d4+2 PV)</td><td>50 PO</td></tr>
+              <tr><td>Cavalo de Montaria / Pônei</td><td>75 PO (Cavalo) | 30 PO (Pônei)</td></tr>
+              <tr><td>Aluguel de Carroça / Balsa por Rio</td><td>15 PO (Compra) | 1 PP por travessia</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2.6: GERADORES (NPCS & TESOUROS) -->
+    <div id="tab-generators" class="tab-pane">
+      <div class="controls-bar">
+        <div>
+          <div style="font-family: var(--font-title); font-size: 16px; font-weight: 700; color: #fff;">🎲 Geradores Instantâneos do Mestre</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Gere NPCs com nomes e segredos, ou role baús de tesouro oficiais para recompensar os alunos.</div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start;">
+        <!-- GERADOR DE NPCS -->
+        <div class="generator-box">
+          <div class="panel-header">
+            <span>👤 Gerador de NPCs & Nomes de Improviso</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div>
+              <label>Raça do NPC</label>
+              <select id="gen-npc-race">
+                <option value="any">Qualquer Raça</option>
+                <option value="Humano">Humano</option>
+                <option value="Anão">Anão</option>
+                <option value="Elfo">Elfo</option>
+                <option value="Meio-Elfo">Meio-Elfo</option>
+                <option value="Halfling">Halfling</option>
+                <option value="Tiefling">Tiefling</option>
+                <option value="Draconato">Draconato</option>
+                <option value="Meio-Orc">Meio-Orc</option>
+              </select>
+            </div>
+            <div>
+              <label>Ocupação / Arquétipo</label>
+              <select id="gen-npc-job">
+                <option value="any">Qualquer Ocupação</option>
+                <option value="Taverneiro">Taverneiro / Estalajadeiro</option>
+                <option value="Ferreiro">Ferreiro de Armas</option>
+                <option value="Guarda">Capitão / Guarda da Cidade</option>
+                <option value="Herbalista">Herbalista / Alquimista</option>
+                <option value="Nobre">Nobre / Magistrado</option>
+                <option value="Mercador">Mercador Viajante</option>
+                <option value="Ladino">Ladino de Beco</option>
+                <option value="Sacerdote">Sacerdote do Templo</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn-action" style="justify-content: center; width: 100%;" onclick="generateNPC()">🎲 Gerar Personagem Novo</button>
+
+          <div id="npc-result-display" style="display: none;" class="npc-result-card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <div id="npc-res-name" style="font-size: 18px; font-weight: 800; font-family: var(--font-title); color: #fff;">-</div>
+                <div id="npc-res-meta" style="font-size: 11px; color: var(--primary-light);">-</div>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <button class="btn-action" style="font-size: 11px; padding: 4px 8px;" onclick="addNPCToCombat()">⚔️ Combate</button>
+                <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="copyNPCToClipboard()">📋 Copiar</button>
+              </div>
+            </div>
+            <div style="font-size: 12px; line-height: 1.4; display: flex; flex-direction: column; gap: 4px; color: #cbd5e1;">
+              <div>🎭 <b>Personalidade:</b> <span id="npc-res-trait">-</span></div>
+              <div>🗣️ <b>Voz / Maneirismo:</b> <span id="npc-res-voice">-</span></div>
+              <div>🎯 <b>Objetivo Atual:</b> <span id="npc-res-goal">-</span></div>
+              <div>🤫 <b>Segredo Oculto:</b> <span id="npc-res-secret" style="color: #fca5a5;">-</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GERADOR DE TESOUROS -->
+        <div class="generator-box">
+          <div class="panel-header">
+            <span>💰 Gerador de Tesouro & Saques (Loot DMG)</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div>
+              <label>Tipo de Tesouro</label>
+              <select id="gen-loot-type">
+                <option value="hoard">Tesouro de Baú / Covil (Completo)</option>
+                <option value="individual">Saque Individual de Monstro</option>
+              </select>
+            </div>
+            <div>
+              <label>Faixa de Nível de Desafio (ND)</label>
+              <select id="gen-loot-cr">
+                <option value="0-4">ND 0 a 4 (Iniciantes - Níveis 1 a 4)</option>
+                <option value="5-10">ND 5 a 10 (Heroico - Níveis 5 a 10)</option>
+                <option value="11-16">ND 11 a 16 (Lendário - Níveis 11 a 16)</option>
+                <option value="17+">ND 17+ (Épico / Dragões Anciões)</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn-action" style="justify-content: center; width: 100%;" onclick="generateLoot()">💰 Rolar Tesouro</button>
+
+          <div id="loot-result-display" style="display: none;" class="loot-result-box">
+            <div class="loot-coins-grid">
+              <div class="coin-badge"><span style="font-size: 9px; color: #b45309; font-weight: bold;">COBRE</span><div id="loot-res-cp" style="font-weight: 800; font-size: 14px; color: #d97706;">0</div></div>
+              <div class="coin-badge"><span style="font-size: 9px; color: #94a3b8; font-weight: bold;">PRATA</span><div id="loot-res-sp" style="font-weight: 800; font-size: 14px; color: #e2e8f0;">0</div></div>
+              <div class="coin-badge"><span style="font-size: 9px; color: #fbbf24; font-weight: bold;">OURO</span><div id="loot-res-gp" style="font-weight: 800; font-size: 15px; color: #f59e0b;">0</div></div>
+              <div class="coin-badge"><span style="font-size: 9px; color: #38bdf8; font-weight: bold;">PLATINA</span><div id="loot-res-pp" style="font-weight: 800; font-size: 14px; color: #7dd3fc;">0</div></div>
+            </div>
+
+            <div style="font-size: 12px; line-height: 1.4; display: flex; flex-direction: column; gap: 6px; color: #cbd5e1; margin-top: 4px;">
+              <div>💎 <b>Gemas & Artefatos:</b> <span id="loot-res-gems">Nenhum</span></div>
+              <div>✨ <b>Itens Mágicos Rolados:</b> <span id="loot-res-items" style="color: var(--primary-light);">Nenhum</span></div>
+            </div>
+
+            <button class="btn-secondary" style="width: 100%; justify-content: center; margin-top: 6px; font-weight: 700; color: #34d399;" onclick="distributeLootGoldToParty()">
+              🪙 Dividir Ouro Igualmente entre os Alunos
+            </button>
+          </div>
+        </div>
+
+        <!-- GERADOR DE ENCONTROS POR BIOMA -->
+        <div class="generator-box" style="grid-column: 1 / -1; margin-top: 6px;">
+          <div class="panel-header">
+            <span>🌲 Gerador de Encontros Aleatórios por Bioma</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+            <div>
+              <label>Bioma / Terreno</label>
+              <select id="gen-enc-biome">
+                <option value="floresta">🌲 Floresta Ancestral / Bosque</option>
+                <option value="masmorra">🏰 Masmorra / Cripta Sombria</option>
+                <option value="estrada">🛣️ Estrada Real / Montanhas</option>
+                <option value="pantano">🌫️ Pântano Macabro</option>
+                <option value="cidade">🏙️ Beco Noturno / Esgotos</option>
+              </select>
+            </div>
+            <div>
+              <label>Dificuldade Almejada</label>
+              <select id="gen-enc-diff">
+                <option value="medio">Equilibrado (Médio)</option>
+                <option value="facil">Fácil (Aquecimento)</option>
+                <option value="dificil">Difícil (Desafiador)</option>
+                <option value="mortal">Mortal (Chefe / Clímax)</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn-action" style="justify-content: center; width: 100%; margin-top: 8px;" onclick="generateRandomEncounter()">⚔️ Gerar Encontro de Combate</button>
+
+          <div id="enc-result-display" style="display: none;" class="npc-result-card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <div id="enc-res-title" style="font-size: 16px; font-weight: 800; font-family: var(--font-title); color: #fff;">-</div>
+                <div id="enc-res-meta" style="font-size: 11px; color: var(--primary-light);">-</div>
+              </div>
+              <button class="btn-action" style="font-size: 11px; padding: 5px 10px;" onclick="sendEncounterToCombat()">⚔️ Enviar para o Combate</button>
+            </div>
+            <div id="enc-res-desc" style="font-size: 12px; color: #cbd5e1; line-height: 1.4; margin-top: 6px;"></div>
+          </div>
+        </div>
+
+        <!-- GERADOR DE GANCHOS DE AVENTURA (DM6) -->
+        <div class="generator-box">
+          <div class="panel-header">
+            <span>📜 Gerador de Ganchos de Aventura & Missões</span>
+          </div>
+          <p style="font-size: 11px; color: var(--text-muted); margin: 0 0 10px 0;">Gere patronos, objetivos épicos, locais perigosos, reviravoltas ocultas e recompensas.</p>
+          <button class="btn-action" style="justify-content: center; width: 100%;" onclick="generateAdventureHook()">🎲 Gerar Nova Missão / Gancho</button>
+
+          <div id="hook-result-display" style="display: none;" class="npc-result-card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div id="hook-res-title" style="font-size: 16px; font-weight: 800; font-family: var(--font-title); color: #fff;">-</div>
+              <div style="display: flex; gap: 4px;">
+                <button class="btn-secondary" style="font-size: 10px; padding: 3px 8px;" onclick="copyAdventureHook()" title="Copiar texto da missão">📋 Copiar</button>
+                <button class="btn-action" style="font-size: 10px; padding: 3px 8px; background: linear-gradient(135deg, #0ea5e9, #0284c7);" onclick="addHookToCampaignJournal()" title="Salvar no Diário da Campanha">📖 Salvar</button>
+              </div>
+            </div>
+            <div style="font-size: 11.5px; line-height: 1.4; display: flex; flex-direction: column; gap: 5px; color: #cbd5e1; margin-top: 6px;">
+              <div>👤 <b>Patrono / Contratante:</b> <span id="hook-res-patron" style="color: #fff;">-</span></div>
+              <div>🗺️ <b>Local do Desafio:</b> <span id="hook-res-location" style="color: var(--primary-light);">-</span></div>
+              <div>🎯 <b>Objetivo Principal:</b> <span id="hook-res-objective">-</span></div>
+              <div>⚡ <b>Reviravolta Oculta:</b> <span id="hook-res-twist" style="color: #fca5a5;">-</span></div>
+              <div>💰 <b>Recompensa Sugerida:</b> <span id="hook-res-reward" style="color: #fbbf24; font-weight: 700;">-</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GERADOR DE CLIMA & EVENTOS DE VIAGEM (DM6) -->
+        <div class="generator-box">
+          <div class="panel-header">
+            <span>🌦️ Gerador de Clima & Eventos de Viagem (D&D 5E)</span>
+          </div>
+          <p style="font-size: 11px; color: var(--text-muted); margin: 0 0 10px 0;">Role condições climáticas com regras mecânicas de visibilidade, marcha e exaustão.</p>
+          <button class="btn-action" style="justify-content: center; width: 100%;" onclick="generateWeatherEvent()">🎲 Rolar Condições Climáticas</button>
+
+          <div id="weather-result-display" style="display: none;" class="npc-result-card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div id="weather-res-name" style="font-size: 16px; font-weight: 800; font-family: var(--font-title); color: #fff;">-</div>
+              <button class="btn-action" style="font-size: 10px; padding: 3px 8px; background: linear-gradient(135deg, #10b981, #059669);" onclick="applyWeatherToGrid()" title="Aplicar efeito no Grid VTT e Telão">🗺️ Aplicar no Mapa</button>
+            </div>
+            <div style="font-size: 11.5px; line-height: 1.4; color: #cbd5e1; margin-top: 6px;">
+              <b>Efeito de Regras D&D 5E:</b> <span id="weather-res-effect">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: GRIMÓRIO (MAGIAS EXPANDIDAS) -->
+    <div id="tab-spells" class="tab-pane">
+      <div class="controls-bar" style="gap: 10px; align-items: center; flex-wrap: wrap;">
+        <!-- BARRA DE BUSCA INTELIGENTE DE MAGIAS -->
+        <div class="search-box-wrapper">
+          <span class="search-box-icon">🔮</span>
+          <input type="text" id="filter-spell-q" placeholder="Buscar magia (ex: Bola de Fogo, Fireball, Curar Ferimentos, Shield)..." oninput="handleSpellSearchInput(this.value)">
+          <button id="btn-clear-spell-search" class="search-clear-btn" onclick="clearSpellSearch()" title="Limpar busca">✕</button>
+        </div>
+
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+          <!-- FILTRO DE CLASSE CONJURADORA -->
+          <select id="filter-spell-cls" onchange="renderSpells()" style="max-width: 155px;">
+            <option value="all">🧙 Todas as Classes</option>
+            <option value="Bardo">Bardo</option>
+            <option value="Bruxo">Bruxo</option>
+            <option value="Clérigo">Clérigo</option>
+            <option value="Druida">Druida</option>
+            <option value="Feiticeiro">Feiticeiro</option>
+            <option value="Mago">Mago</option>
+            <option value="Paladino">Paladino</option>
+            <option value="Patrulheiro">Patrulheiro</option>
+          </select>
+
+          <!-- FILTRO DE CÍRCULO / NÍVEL -->
+          <select id="filter-spell-lvl" onchange="renderSpells()" style="max-width: 155px;">
+            <option value="all">⚡ Todos Círculos</option>
+            <option value="0">Truques (Nv 0)</option>
+            <option value="1">1º Círculo</option>
+            <option value="2">2º Círculo</option>
+            <option value="3">3º Círculo</option>
+            <option value="4">4º Círculo</option>
+            <option value="5">5º Círculo</option>
+            <option value="6">6º Círculo</option>
+            <option value="7">7º Círculo</option>
+            <option value="8">8º Círculo</option>
+            <option value="9">9º Círculo</option>
+          </select>
+
+          <!-- FILTRO DE ESCOLA DE MAGIA -->
+          <select id="filter-spell-sch" onchange="renderSpells()" style="max-width: 155px;">
+            <option value="all">✨ Todas Escolas</option>
+            <option value="Evocação">Evocação</option>
+            <option value="Abjuração">Abjuração</option>
+            <option value="Encantamento">Encantamento</option>
+            <option value="Necromancia">Necromancia</option>
+            <option value="Transmutação">Transmutação</option>
+            <option value="Ilusão">Ilusão</option>
+            <option value="Conjuração">Conjuração</option>
+            <option value="Adivinhação">Adivinhação</option>
+          </select>
+
+          <!-- FILTRO DE TAGS / PROPRIEDADES -->
+          <select id="filter-spell-tag" onchange="renderSpells()" style="max-width: 145px;">
+            <option value="all">🏷️ Todas Tags</option>
+            <option value="conc">🧠 Concentração</option>
+            <option value="ritual">📜 Ritual</option>
+          </select>
+
+          <!-- ORDENAÇÃO -->
+          <select id="filter-spell-sort" onchange="renderSpells()" style="max-width: 145px;">
+            <option value="relevance">🎯 Relevância</option>
+            <option value="lvl-asc">⚡ Círculo (0 ➔ 9)</option>
+            <option value="name-asc">🔤 Nome (A ➔ Z)</option>
+            <option value="name-desc">🔤 Nome (Z ➔ A)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- CHIPS DE ESCOLAS DE MAGIA -->
+      <div class="grimoire-filter-chips" id="grimoire-school-chips">
+        <button class="grimoire-filter-chip active" onclick="setGrimoireSchoolFilter('all')">🌟 Todas</button>
+        <button class="grimoire-filter-chip" onclick="setGrimoireSchoolFilter('Evocação')">⚡ Evocação</button>
+        <button class="grimoire-filter-chip" onclick="setGrimoireSchoolFilter('Abjuração')">🛡️ Abjuração</button>
+        <button class="grimoire-filter-chip" onclick="setGrimoireSchoolFilter('Necromancia')">💀 Necromancia</button>
+        <button class="grimoire-filter-chip" onclick="setGrimoireSchoolFilter('Encantamento')">✨ Encantamento</button>
+        <button class="grimoire-filter-chip" onclick="setGrimoireSchoolFilter('Ilusão')">🔮 Ilusão</button>
+        <button class="grimoire-filter-chip" onclick="setGrimoireSchoolFilter('Conjuração')">🚪 Conjuração</button>
+        <button class="grimoire-filter-chip" onclick="setGrimoireSchoolFilter('Transmutação')">⏳ Transmutação</button>
+        <button class="grimoire-filter-chip" onclick="setGrimoireSchoolFilter('Adivinhação')">👁️ Adivinhação</button>
+      </div>
+
+      <!-- STATUS DAS MAGIAS -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin: 4px 4px 12px 4px;">
+        <span class="bestiary-meta-stats" id="spells-meta-stats">
+          Catálogo completo com 361 magias oficiais D&D 5E
+        </span>
+        <button class="btn-secondary" style="font-size: 11px; padding: 3px 8px;" onclick="clearAllSpellFilters()">
+          🔄 Resetar Filtros
+        </button>
+      </div>
+
+      <div id="grid-spells" class="cards-grid"></div>
+    </div>
+
+    <!-- TAB 4: BESTIÁRIO EXPANDIDO -->
+    <div id="tab-bestiary" class="tab-pane">
+      <div class="controls-bar" style="gap: 10px; align-items: center; flex-wrap: wrap;">
+        <!-- BARRA DE BUSCA INTELIGENTE COM ÍCONE E BOTÃO LIMPAR -->
+        <div class="search-box-wrapper">
+          <span class="search-box-icon">🔍</span>
+          <input type="text" id="filter-mon-q" placeholder="Buscar por nome (ex: Dragão Vermelho, Urso Coruja, Zumbi, Owlbear)..." oninput="handleBestiarySearchInput(this.value)">
+          <button id="btn-clear-mon-search" class="search-clear-btn" onclick="clearBestiarySearch()" title="Limpar busca">✕</button>
+        </div>
+
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+          <!-- FILTRO DE TIPO DE CRIATURA -->
+          <select id="filter-mon-type" onchange="renderBestiary()" style="max-width: 170px;">
+            <option value="all">🌟 Todos os Tipos</option>
+            <option value="undead">💀 Morto-Vivo (Undead)</option>
+            <option value="dragon">🐉 Dragão (Dragon)</option>
+            <option value="beast">🐺 Fera / Animal (Beast)</option>
+            <option value="humanoid">🧙 Humanoide (Humanoid)</option>
+            <option value="fiend">👹 Corruptor / Demônio (Fiend)</option>
+            <option value="giant">🧌 Gigante (Giant)</option>
+            <option value="monstrosity">🌲 Monstruosidade (Monstrosity)</option>
+            <option value="construct">🤖 Constructo (Construct)</option>
+            <option value="fey">🧚 Feérico / Fada (Fey)</option>
+            <option value="elemental">🌀 Elemental (Elemental)</option>
+            <option value="aberration">👁️ Aberração (Aberration)</option>
+            <option value="plant">🌿 Planta (Plant)</option>
+            <option value="ooze">🧪 Lodo (Ooze)</option>
+          </select>
+
+          <!-- FILTRO DE NÍVEL DE DESAFIO (ND) -->
+          <select id="filter-mon-cr" onchange="renderBestiary()" style="max-width: 155px;">
+            <option value="all">⚡ Todos os NDs</option>
+            <option value="0">ND 0 (10 XP)</option>
+            <option value="1/8">ND 1/8 (25 XP)</option>
+            <option value="1/4">ND 1/4 (50 XP)</option>
+            <option value="1/2">ND 1/2 (100 XP)</option>
+            <option value="1">ND 1 (200 XP)</option>
+            <option value="2">ND 2 (450 XP)</option>
+            <option value="3">ND 3 (700 XP)</option>
+            <option value="4">ND 4 (1.100 XP)</option>
+            <option value="5">ND 5 (1.800 XP)</option>
+            <option value="6-10">ND 6 a 10 (Heroico)</option>
+            <option value="11-15">ND 11 a 15 (Mestre)</option>
+            <option value="16-20">ND 16 a 20 (Lendário)</option>
+            <option value="21+">ND 21+ (Épico)</option>
+          </select>
+
+          <!-- FILTRO DE FONTE/LIVRO -->
+          <select id="filter-mon-src" onchange="renderBestiary()" style="max-width: 150px;">
+            <option value="all">📚 Todas Fontes</option>
+            <option value="MM 2024">Livro 2024 (SRD 5.2)</option>
+            <option value="MM">Manual 2014 (MM)</option>
+          </select>
+
+          <!-- ORDENAÇÃO DOS RESULTADOS -->
+          <select id="filter-mon-sort" onchange="renderBestiary()" style="max-width: 155px;">
+            <option value="relevance">🎯 Mais Relevantes</option>
+            <option value="name-asc">🔤 Nome (A ➔ Z)</option>
+            <option value="name-desc">🔤 Nome (Z ➔ A)</option>
+            <option value="cr-asc">📊 ND (Menor ➔ Maior)</option>
+            <option value="cr-desc">📊 ND (Maior ➔ Menor)</option>
+            <option value="hp-desc">❤️ PV Máximo (Maior)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- CHIPS DE CATEGORIAS RÁPIDAS -->
+      <div class="bestiary-filter-chips" id="bestiary-type-chips">
+        <button class="bestiary-filter-chip active" onclick="setBestiaryTypeFilter('all')">🌟 Todos</button>
+        <button class="bestiary-filter-chip" onclick="setBestiaryTypeFilter('undead')">💀 Mortos-Vivos</button>
+        <button class="bestiary-filter-chip" onclick="setBestiaryTypeFilter('dragon')">🐉 Dragões</button>
+        <button class="bestiary-filter-chip" onclick="setBestiaryTypeFilter('beast')">🐺 Feras & Animais</button>
+        <button class="bestiary-filter-chip" onclick="setBestiaryTypeFilter('humanoid')">🧙 Humanoides</button>
+        <button class="bestiary-filter-chip" onclick="setBestiaryTypeFilter('fiend')">👹 Demônios & Diabos</button>
+        <button class="bestiary-filter-chip" onclick="setBestiaryTypeFilter('giant')">🧌 Gigantes & Trolls</button>
+        <button class="bestiary-filter-chip" onclick="setBestiaryTypeFilter('monstrosity')">🌲 Monstruosidades</button>
+        <button class="bestiary-filter-chip" onclick="setBestiaryTypeFilter('construct')">🤖 Constructos</button>
+        <button class="bestiary-filter-chip" onclick="setBestiaryTypeFilter('fey')">🧚 Feéricos</button>
+        <button class="bestiary-filter-chip" onclick="setBestiaryTypeFilter('elemental')">🌀 Elementais</button>
+      </div>
+
+      <!-- STATUS DOS RESULTADOS -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin: 4px 4px 12px 4px;">
+        <span class="bestiary-meta-stats" id="bestiary-meta-stats">
+          Exibindo criaturas do Bestiário
+        </span>
+        <button class="btn-secondary" style="font-size: 11px; padding: 3px 8px;" onclick="clearAllBestiaryFilters()">
+          🔄 Resetar Filtros
+        </button>
+      </div>
+
+      <div id="grid-bestiary" class="cards-grid"></div>
+    </div>
+
+    <!-- TAB 5: EQUIPAMENTOS & ITENS MÁGICOS -->
+    <div id="tab-equipment" class="tab-pane">
+      <div class="controls-bar">
+        <input type="text" id="filter-eq-q" placeholder="Buscar armas, armaduras, poções ou itens mágicos..." style="max-width: 340px;" oninput="renderEquipment()">
+        <select id="filter-eq-cat" onchange="renderEquipment()" style="max-width: 220px;">
+          <option value="all">Todas as Categorias</option>
+          <option value="Armaduras e Escudos">Armaduras e Escudos</option>
+          <option value="Armas Simples">Armas Simples</option>
+          <option value="Armas Marciais">Armas Marciais</option>
+          <option value="Munições">Munições</option>
+          <option value="Equipamento de Aventura">Equipamento de Aventura</option>
+          <option value="Focos e Itens Arcanos">Focos e Itens Arcanos</option>
+          <option value="Ferramentas e Kits">Ferramentas e Kits</option>
+          <option value="Montarias e Animais">Montarias e Animais</option>
+          <option value="Veículos e Arreios">Veículos e Arreios</option>
+          <option value="Pacotes de Equipamento">Pacotes de Equipamento</option>
+          <option value="Poções e Alquimia">Poções e Alquimia</option>
+          <option value="Comida e Serviços">Comida e Serviços</option>
+        </select>
+      </div>
+      <div id="grid-equipment" class="cards-grid"></div>
+    </div>
+
+    <!-- TAB 6: ÁRVORES DE HABILIDADES & CLASSES D&D 2024 -->
+    <div id="tab-classes" class="tab-pane">
+      <!-- Seletor Rápido de Classes (12 Classes) -->
+      <div id="classes-selector-grid" class="classes-selector-bar"></div>
+
+      <!-- Resumo da Classe Ativa (Hero Card) -->
+      <div id="class-header-summary"></div>
+
+      <!-- Tabela de Progressão de Nível 1 a 20 (Recolhível) -->
+      <div id="class-table-container" style="display: none;"></div>
+
+      <!-- Barra de Filtros e Seleção de Subclasses -->
+      <div class="controls-bar" style="margin-bottom: 12px; justify-content: space-between; flex-wrap: wrap;">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+          <input type="text" id="filter-class-search" placeholder="Buscar habilidades ou poderes..." style="max-width: 280px;" oninput="renderClasses()">
+          <select id="filter-class-tier-sel" onchange="setClassTierFilter(this.value)" style="max-width: 200px;">
+            <option value="all">Todos os Níveis (1 a 20)</option>
+            <option value="1-4">Patamar 1: Níveis 1 a 4</option>
+            <option value="5-10">Patamar 2: Níveis 5 a 10</option>
+            <option value="11-16">Patamar 3: Níveis 11 a 16</option>
+            <option value="17-20">Patamar 4: Níveis 17 a 20</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Seletor de Subclasses / Ramos de Especialização -->
+      <div id="class-subclasses-pills" class="subclass-pills-bar"></div>
+
+      <!-- Árvore de Habilidades (Skill Tree) -->
+      <div id="class-skill-tree"></div>
+    </div>
+
+    <!-- TAB 7: RAÇAS & ESPÉCIES D&D 2024 -->
+    <div id="tab-species" class="tab-pane">
+      <div id="species-container"></div>
+    </div>
+
+    <!-- TAB 8: CAMPANHAS, DIÁRIO E INVENTÁRIO DO GRUPO -->
+    <div id="tab-campaigns" class="tab-pane">
+      <div class="controls-bar">
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <span style="font-weight: 800; font-family: var(--font-title); font-size: 14px; color: var(--primary-light);">👑 CAMPANHA:</span>
+          <select id="sel-active-campaign" onchange="handleCampaignSelect(this.value)" style="font-weight: 700; min-width: 220px;"></select>
+          <span id="camp-status-badge" class="badge badge-cls">🟢 Em Andamento</span>
+          <span id="camp-heroes-count" class="badge badge-src">0 Heróis</span>
+          <span id="camp-sessions-count" class="badge badge-lvl">0 Sessões</span>
+        </div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button class="btn-secondary" style="border-color: #38bdf8; color: #38bdf8;" onclick="printCampaignChronicles()" title="Exportar e Imprimir Crônicas da Campanha em PDF / A4">🖨️ Crônicas (A4)</button>
+          <button class="btn-action" onclick="openCampaignModal()">➕ Nova Campanha</button>
+          <button class="btn-secondary" onclick="openCampaignModal(getActiveCampaign()?.id)">✏️ Editar</button>
+          <button class="btn-secondary" style="color: #f87171;" onclick="deleteCurrentCampaign()">🗑️ Excluir</button>
+        </div>
+      </div>
+
+      <!-- DASHBOARD DE VISÃO GERAL DA CAMPANHA (DM3) -->
+      <div id="campaign-dashboard-panel" style="margin-bottom: 14px;"></div>
+
+      <div class="campaign-header-card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 280px;">
+            <div id="camp-title-display" style="font-family: var(--font-title); font-size: 20px; font-weight: 800; color: #fff;">-</div>
+            <div id="camp-desc-display" style="font-size: 12px; color: #cbd5e1; margin-top: 4px; line-height: 1.5;">-</div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <button class="btn-action" style="padding: 6px 12px; font-size: 11px;" onclick="openCampaignHeroesModal()">👥 Gerenciar Heróis</button>
+            <button class="btn-action" style="padding: 6px 12px; font-size: 11px; background: linear-gradient(135deg, #ef4444, #b91c1c);" onclick="addAllCampaignHeroesToCombat()">⚔️ Heróis no Combate</button>
+          </div>
+        </div>
+
+        <!-- SUB-SEÇÃO: HERÓIS VINCULADOS -->
+        <div style="margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+          <div style="font-size: 12px; font-weight: 800; color: var(--primary-light); text-transform: uppercase; margin-bottom: 8px;">
+            👥 Grupo de Heróis Desta Campanha:
+          </div>
+          <div id="camp-heroes-grid" class="campaign-heroes-grid"></div>
+        </div>
+      </div>
+
+      <div class="grid-2col" style="margin-top: 16px; gap: 16px;">
+        <!-- COL 1: DIÁRIO DE SESSÕES (CRÔNICAS) -->
+        <div class="card-panel">
+          <div class="panel-header">
+            <span>📖 Diário de Sessões (Crônicas da Mesa)</span>
+            <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="openSessionModal()">➕ Nova Sessão</button>
+          </div>
+          <div id="camp-sessions-timeline" class="sessions-timeline-container"></div>
+        </div>
+
+        <!-- COL 2: INVENTÁRIO DO GRUPO & TESOURO (PARTY STASH) -->
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <!-- TESOURO COLETIVO -->
+          <div class="stash-gold-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <span style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">💰 TESOURO DO GRUPO:</span>
+                <div id="stash-gold-amount" style="font-size: 26px; font-weight: 900; color: var(--primary); font-family: var(--font-title); line-height: 1.1;">0 PO</div>
+              </div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button class="btn-action" style="padding: 6px 10px; font-size: 11px;" onclick="promptAdjustPartyGold('add')">➕ Adicionar PO</button>
+                <button class="btn-secondary" style="padding: 6px 10px; font-size: 11px;" onclick="promptAdjustPartyGold('remove')">➖ Gastar PO</button>
+                <button class="btn-secondary" style="padding: 6px 10px; font-size: 11px; color: var(--primary-light); border-color: rgba(245, 158, 11, 0.4);" onclick="splitPartyGold()" title="Dividir igualmente entre os heróis">⚖️ Dividir Ouro</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ITENS COLETIVOS -->
+          <div class="card-panel" style="flex: 1;">
+            <div class="panel-header">
+              <span>🎒 Baú Coletivo & Suprimentos</span>
+              <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="openPartyItemModal()">➕ Adicionar Item</button>
+            </div>
+            <div style="overflow-x: auto; max-height: 280px;">
+              <table class="equip-table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th style="text-align:center;">Qtd</th>
+                    <th>Categoria</th>
+                    <th>Portador / Local</th>
+                    <th style="text-align:right;">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="stash-items-tbody"></tbody>
+              </table>
+            </div>
+
+            <!-- HISTÓRICO RECENTE DE TRANSAÇÕES -->
+            <div style="margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+              <span style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">📜 Movimentações Recentes do Baú:</span>
+              <div id="stash-history-list" style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL: ADD COMBATANT -->
+  <div id="modal-add" class="modal-overlay">
+    <div class="modal-body" style="max-width: 420px;">
+      <div class="panel-header">
+        <span>Adicionar Combatente</span>
+        <button class="btn-secondary" onclick="closeAddModal()">✕</button>
+      </div>
+      <div>
+        <label>Nome do Combatente</label>
+        <input type="text" id="add-name" placeholder="Ex: Orc Furioso, Goblin Arqueiro">
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+        <div><label>Iniciativa</label><input type="number" id="add-init" value="12"></div>
+        <div><label>CA</label><input type="number" id="add-ac" value="14"></div>
+        <div><label>PV Máx</label><input type="number" id="add-hp" value="20"></div>
+      </div>
+      <div>
+        <label>Tipo de Combatente</label>
+        <select id="add-type">
+          <option value="monster">Monstro / Inimigo</option>
+          <option value="player">Jogador (Aluno)</option>
+        </select>
+      </div>
+      <div>
+        <label>Ataques & Ações Principais</label>
+        <input type="text" id="add-actions" placeholder="Ex: Mordida (+5, 1d8+3 perfurante)">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px;">
+        <button class="btn-secondary" onclick="closeAddModal()">Cancelar</button>
+        <button class="btn-action" onclick="saveNewCombatant()">Adicionar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CONDIÇÕES DO COMBATENTE -->
+  <div id="modal-conds" class="modal-overlay">
+    <div class="modal-body" style="max-width: 450px;">
+      <div class="panel-header">
+        <span id="cond-modal-heading">Gerenciar Condições & Status</span>
+        <button class="btn-secondary" onclick="closeCondModal()">✕</button>
+      </div>
+      <div id="conds-picker" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;"></div>
+      <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+        <button class="btn-action" onclick="closeCondModal()">Concluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ROLADOR DE DADOS COMPLETO -->
+  <div id="modal-dice" class="modal-overlay">
+    <div class="modal-body" style="max-width: 480px;">
+      <div class="panel-header">
+        <span>🎲 Rolador de Dados D&D 5e</span>
+        <button class="btn-secondary" onclick="closeDiceModal()">✕</button>
+      </div>
+      
+      <div id="dice-banner" class="dice-result-banner" style="display: none;">
+        <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;" id="dice-detail-text">Resultado da Rolagem</div>
+        <div style="font-size: 32px; font-weight: 900; color: var(--primary-light); font-family: var(--font-mono); margin: 4px 0;" id="dice-total-number">20</div>
+        <div style="font-size: 12px; color: var(--accent-green);" id="dice-breakdown-text">1d20 [16] + 4</div>
+      </div>
+
+      <div>
+        <label>Escolha o Dado para Rolar</label>
+        <div class="dice-grid">
+          <button class="btn-die" onclick="executeDiceRoll(4)"><span>d4</span><small style="color:var(--text-dim);">1-4</small></button>
+          <button class="btn-die" onclick="executeDiceRoll(6)"><span>d6</span><small style="color:var(--text-dim);">1-6</small></button>
+          <button class="btn-die" onclick="executeDiceRoll(8)"><span>d8</span><small style="color:var(--text-dim);">1-8</small></button>
+          <button class="btn-die" onclick="executeDiceRoll(10)"><span>d10</span><small style="color:var(--text-dim);">1-10</small></button>
+          <button class="btn-die" onclick="executeDiceRoll(12)"><span>d12</span><small style="color:var(--text-dim);">1-12</small></button>
+          <button class="btn-die" onclick="executeDiceRoll(20)" style="border-color: var(--primary); background: #1a233a;"><span>d20</span><small style="color:var(--primary);">Padrão</small></button>
+          <button class="btn-die" onclick="executeDiceRoll(100)"><span>d100</span><small style="color:var(--text-dim);">1-100</small></button>
+          <button class="btn-die" onclick="executeDiceRoll(20, 'adv')" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.4);"><span style="color: #34d399;">Vant.</span><small style="color:#34d399;">2d20 (Maior)</small></button>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 4px;">
+        <div>
+          <label>Qtd. Dados</label>
+          <input type="number" id="dice-count" value="1" min="1" max="20">
+        </div>
+        <div>
+          <label>Modificador (+/-)</label>
+          <input type="number" id="dice-mod" value="0">
+        </div>
+        <div>
+          <label>Desvantagem</label>
+          <button class="btn-secondary" style="width: 100%; height: 35px; margin-top: 1px; color: #f87171; justify-content: center;" onclick="executeDiceRoll(20, 'dis')">2d20 (Menor)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PLAYER SHEET (D&D 5E) -->
+  <div id="modal-player" class="modal-overlay">
+    <div class="modal-body" style="max-width: 740px;">
+      <div class="panel-header">
+        <span id="player-modal-heading">Editar Ficha de Personagem</span>
+        <button class="btn-secondary" onclick="closePlayerModal()">✕</button>
+      </div>
+      <input type="hidden" id="pm-id">
+
+      <div class="form-row">
+        <div>
+          <label>Avatar / Emoji / Foto</label>
+          <div style="display: flex; gap: 4px;">
+            <input type="text" id="pm-avatar" placeholder="Ex: 🧙" value="👤" style="width: 70px; text-align: center;">
+            <button class="btn-secondary" type="button" onclick="openAvatarModal(document.getElementById('pm-id').value)" style="flex: 1; font-size: 11px;">🎨 Escolher Avatar</button>
+          </div>
+        </div>
+        <div><label>Nome do Aluno(a)</label><input type="text" id="pm-student" placeholder="Ex: Arthur Lima"></div>
+        <div><label>Nome do Personagem</label><input type="text" id="pm-name" placeholder="Ex: Valerius Martelo Negro"></div>
+        <div>
+          <label>Raça & Espécie (D&D 2024)</label>
+          <div style="display:flex; gap:4px;">
+            <select id="pm-race-select" onchange="onPlayerModalClassOrLevelChange()" style="flex:1;"></select>
+            <input type="hidden" id="pm-race">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row" style="background: #080c16; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); align-items: flex-end;">
+        <div>
+          <label>Classe (D&D 2024)</label>
+          <select id="pm-class-select" onchange="onPlayerModalClassOrLevelChange()"></select>
+          <input type="hidden" id="pm-class">
+        </div>
+        <div>
+          <label>Subclasse / Especialização</label>
+          <select id="pm-subclass-select" onchange="onPlayerModalClassOrLevelChange()"></select>
+        </div>
+        <div>
+          <label>Nível (1-20)</label>
+          <div style="display: flex; gap: 4px;">
+            <input type="number" id="pm-level" min="1" max="20" value="1" oninput="onPlayerModalClassOrLevelChange()">
+            <button class="btn-action" style="padding: 4px 8px; font-size: 11px;" type="button" onclick="autoLevelUpPrompt()" title="Subir de Nível Automaticamente">⭐ Subir</button>
+          </div>
+        </div>
+        <div><label>Dado de Vida</label><input type="text" id="pm-hitdice" placeholder="Ex: 1d10" value="1d10"></div>
+      </div>
+
+      <div class="form-row">
+        <div><label>CA (Classe de Armadura)</label><input type="number" id="pm-ac" value="16"></div>
+        <div><label>PV Máximo</label><input type="number" id="pm-maxhp" value="12"></div>
+        <div><label>Deslocamento</label><input type="text" id="pm-speed" value="9m"></div>
+        <div><label>Ouro / Moedas (PO)</label><input type="number" id="pm-gold" value="15"></div>
+        <div><label>XP Atual</label><input type="number" id="pm-xp" value="0"></div>
+      </div>
+
+      <!-- SEÇÃO ORIGEM & ANTECEDENTE (D&D 2024 - P3) -->
+      <div style="background: #080c16; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-size: 11px; font-weight: 800; color: var(--primary-light); text-transform: uppercase;">
+          🎭 Origem, Antecedente & Personalidade (D&D 2024)
+        </div>
+        <div class="form-row">
+          <div>
+            <label>Antecedente / Origem</label>
+            <input type="text" id="pm-background" placeholder="Ex: Soldado, Acólito, Sábio, Criminoso, Nobre, Artesão">
+          </div>
+          <div>
+            <label>Ideal</label>
+            <input type="text" id="pm-ideal" placeholder="Ex: Proteção: Cuidarei dos indefesos a todo custo.">
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>Vínculo</label>
+            <input type="text" id="pm-bond" placeholder="Ex: Devo proteger meu clã e minha família.">
+          </div>
+          <div>
+            <label>Defeito</label>
+            <input type="text" id="pm-flaw" placeholder="Ex: Tenho orgulho teimoso e não recuo de brigas.">
+          </div>
+        </div>
+        <div>
+          <label>História & Biografia</label>
+          <textarea id="pm-backstory" rows="2" placeholder="Histórico narrativo, origens e motivações na campanha..."></textarea>
+        </div>
+      </div>
+
+      <div>
+        <label>6 Atributos D&D (Valores Brutos 1 a 20)</label>
+        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px;">
+          <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">FOR</span><input type="number" id="pm-str" value="16" style="text-align: center;"></div>
+          <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">DES</span><input type="number" id="pm-dex" value="12" style="text-align: center;"></div>
+          <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">CON</span><input type="number" id="pm-con" value="14" style="text-align: center;"></div>
+          <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">INT</span><input type="number" id="pm-int" value="10" style="text-align: center;"></div>
+          <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">SAB</span><input type="number" id="pm-wis" value="12" style="text-align: center;"></div>
+          <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">CAR</span><input type="number" id="pm-cha" value="8" style="text-align: center;"></div>
+        </div>
+      </div>
+
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <label style="margin:0;">Espaços de Magia (Círculos 1º ao 5º - Calculados Automaticamente)</label>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; background: #080c16; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color);">
+          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">1º CÍRCULO</span><input type="number" id="pm-slot-1" value="0" min="0" max="9" style="text-align: center;"></div>
+          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">2º CÍRCULO</span><input type="number" id="pm-slot-2" value="0" min="0" max="9" style="text-align: center;"></div>
+          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">3º CÍRCULO</span><input type="number" id="pm-slot-3" value="0" min="0" max="9" style="text-align: center;"></div>
+          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">4º CÍRCULO</span><input type="number" id="pm-slot-4" value="0" min="0" max="9" style="text-align: center;"></div>
+          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">5º CÍRCULO</span><input type="number" id="pm-slot-5" value="0" min="0" max="9" style="text-align: center;"></div>
+        </div>
+      </div>
+
+      <!-- Preview de Habilidades Desbloqueadas -->
+      <div>
+        <label>🌳 Habilidades Desbloqueadas da Classe (Automático pelo Nível)</label>
+        <div id="pm-features-preview" style="max-height: 110px; overflow-y: auto; background: #080c16; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 4px;"></div>
+      </div>
+
+      <div>
+        <label>Ataques & Armas Principais (Ex: Espada Longa (+5, 1d8+3 cortante) | Arco Curto (+4, 1d6+2))</label>
+        <input type="text" id="pm-attacks" placeholder="Ex: Machado de Guerra (+5, 1d8+3 cortante), Azagaia (+5, 1d6+3)">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div>
+          <label>Características & Talentos Adicionais</label>
+          <textarea id="pm-features" rows="2" placeholder="Ex: Alerta (+5 iniciativa), Resistência a Fogo"></textarea>
+        </div>
+        <div>
+          <label>Anotações de Magias / Equipamentos</label>
+          <textarea id="pm-spells" rows="2" placeholder="Ex: 2 Poções de Cura, Foco Arcano"></textarea>
+        </div>
+      </div>
+
+      <div>
+        <label>🏅 Conquistas & Medalhas Escolares (Separadas por vírgula)</label>
+        <input type="text" id="pm-badges" placeholder="Ex: 🏆 MVP do Combate, 🧩 Solucionador de Enigmas, 🛡️ Herói Protetor, ⭐ Presença 100%">
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+        <button id="btn-del-player" class="btn-secondary" style="color: #f87171; border-color: rgba(248, 113, 113, 0.3);" onclick="deletePlayerSheet()">Excluir Ficha</button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-secondary" onclick="closePlayerModal()">Cancelar</button>
+          <button class="btn-action" onclick="savePlayerSheet()">Salvar Ficha</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: MODO TELÃO / VISUALIZAÇÃO DOS JOGADORES -->
+  <div id="modal-player-view" class="player-view-overlay theme-default" style="display: none;">
+    <div class="pv-header">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <span style="font-size: 28px;">⚔️</span>
+        <div>
+          <div style="font-size: 22px; font-weight: 800; font-family: var(--font-title); color: #fff;">CAMPO DE BATALHA • MODO APRESENTAÇÃO</div>
+          <div style="font-size: 13px; color: var(--primary-light); display: flex; gap: 10px; align-items: center; margin-top: 2px;">
+            <span>Rodada <b id="pv-round" style="color: #fff; font-size: 14px;">1</b></span>
+            <span>•</span>
+            <div id="pv-turn-timer" class="turn-timer-badge" title="Tempo do Turno">⏱️ 00:00</div>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <!-- Seletor de Modo Telão: Cartões vs Grid -->
+        <div style="display: flex; background: #0b0f19; border: 1px solid var(--border-color); border-radius: 6px; padding: 2px;">
+          <button id="pv-view-cards-btn" class="btn-secondary" style="padding: 4px 10px; font-size: 11px; background: var(--primary); color: #000; font-weight: 700;" onclick="switchPlayerViewMode('cards')">⚔️ Ordem de Turnos</button>
+          <button id="pv-view-grid-btn" class="btn-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="switchPlayerViewMode('grid')">🗺️ Grid de Batalha</button>
+        </div>
+        <!-- Seletor de Cenário / Fundo -->
+        <select id="pv-theme-select" onchange="setPlayerViewTheme(this.value)" style="padding: 6px 10px; font-size: 12px; background: #0f172a; color: var(--primary-light); border: 1px solid var(--border-color); border-radius: 6px;">
+          <option value="theme-default">🌌 Cenário: Padrão Arcano</option>
+          <option value="theme-dungeon">🏰 Cenário: Masmorra & Cripta</option>
+          <option value="theme-forest">🌲 Cenário: Floresta Ancestral</option>
+          <option value="theme-tavern">🍺 Cenário: Taverna Acolhedora</option>
+          <option value="theme-boss">🔥 Cenário: Chefe & Vulcão</option>
+        </select>
+        <button class="btn-action" style="font-size: 13px; padding: 7px 14px;" onclick="nextTurn()">Próximo Turno ➔</button>
+        <button class="btn-secondary" style="font-size: 13px; padding: 7px 12px;" onclick="document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()" title="Tela Cheia (F11)">⛶ Tela Cheia</button>
+        <button class="btn-secondary btn-pv-close" style="font-size: 13px; padding: 7px 12px;" onclick="closePlayerView()">✕ Fechar Telão</button>
+      </div>
+    </div>
+
+    <!-- BANNER DE ÚLTIMA AÇÃO / NARRATIVA NO TELÃO -->
+    <div id="pv-action-banner" class="pv-action-banner" style="display: none;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 24px;" id="pv-action-icon">⚡</span>
+        <span class="pv-action-text" id="pv-action-text">O combate começou! Preparem suas ações!</span>
+      </div>
+      <span style="font-size: 11px; color: var(--primary); font-family: var(--font-mono); text-transform: uppercase;">Ação do Mestre</span>
+    </div>
+
+    <!-- OVERLAY DE CLIMA NO TELÃO -->
+    <div id="pv-weather-layer" class="weather-overlay" style="display: none;"></div>
+
+    <!-- VISÃO 1: CARTÕES DE COMBATE -->
+    <div id="pv-combat-list" class="pv-grid"></div>
+
+    <!-- VISÃO 2: GRID TÁTICO NO TELÃO -->
+    <div id="pv-grid-display" style="display: none; flex: 1; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+      <div class="battlegrid-board bg-dungeon" id="pv-battlegrid-board" style="transform: scale(0.95);">
+        <div class="grid-lines-overlay" id="pv-grid-lines-overlay"></div>
+        <div id="pv-grid-pings-layer" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:50;"></div>
+        <svg id="pv-battlegrid-ruler-svg" class="vtt-ruler-svg" style="display: none; overflow: visible;"></svg>
+        <canvas id="pv-battlegrid-drawing-layer" class="vtt-drawing-canvas"></canvas>
+        <div id="pv-grid-aoe-layer"></div>
+        <div id="pv-grid-markers-layer"></div>
+        <div id="pv-grid-tokens-layer"></div>
+        <canvas id="fow-canvas-screen" class="fow-canvas fow-canvas-screen" style="display: none;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- OVERLAY DE DADOS AO VIVO NO TELÃO -->
+  <div id="live-dice-display" class="live-dice-overlay">
+    <div style="font-size: 14px; color: var(--primary-light); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;" id="ld-title">Rolagem de D20</div>
+    <div id="ld-value" class="live-dice-val">20</div>
+    <div style="font-size: 14px; color: #cbd5e1;" id="ld-detail">1d20 + 5 = 25</div>
+  </div>
+
+  <!-- MODAL: GERENCIADOR DE CENAS / MAPAS -->
+  <div id="modal-scene-manager" class="modal-overlay">
+    <div class="modal-body" style="max-width: 600px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 12px;">
+        <span style="font-size: 16px; font-weight: bold; color: var(--primary-light); font-family: var(--font-title);">🎬 Gerenciador de Cenas e Mapas</span>
+        <button class="btn-secondary" onclick="closeSceneManagerModal()">✕ Fechar</button>
+      </div>
+      
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+        Crie e alterne entre diferentes cenários de batalha (masmorras, tavernas, florestas) preservando tokens, névoa e desenhos.
+      </p>
+
+      <div id="scenes-list-container" style="display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; margin-bottom: 14px;">
+        <!-- Lista de Cenas renderizada via JS -->
+      </div>
+
+      <div style="display: flex; justify-content: space-between; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+        <button class="btn-action" onclick="openCreateSceneModal()">➕ Nova Cena</button>
+        <button class="btn-secondary" onclick="closeSceneManagerModal()">Concluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CRIAR / EDITAR CENA -->
+  <div id="modal-scene-create" class="modal-overlay">
+    <div class="modal-body" style="max-width: 480px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 12px;">
+        <span style="font-size: 15px; font-weight: bold; color: var(--primary-light); font-family: var(--font-title);" id="modal-scene-create-title">➕ Criar Nova Cena</span>
+        <button class="btn-secondary" onclick="closeCreateSceneModal()">✕</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div>
+          <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Nome da Cena:</label>
+          <input type="text" id="inp-scene-name" placeholder="Ex: Entrada da Caverna dos Goblins" style="width: 100%; padding: 6px 10px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); border-radius: 6px; color: #fff;">
+        </div>
+
+        <div>
+          <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Tema / Cenário Base:</label>
+          <select id="inp-scene-theme" style="width: 100%; padding: 6px 10px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); border-radius: 6px; color: #fff;">
+            <option value="bg-dungeon">🏰 Masmorra</option>
+            <option value="bg-forest">🌲 Floresta</option>
+            <option value="bg-tavern">🍺 Taverna</option>
+            <option value="bg-cave">🌋 Caverna</option>
+            <option value="bg-ruins">🏛️ Ruínas</option>
+            <option value="bg-desert">🏜️ Deserto</option>
+            <option value="bg-tundra">❄️ Tundra</option>
+            <option value="bg-ship">🏴‍☠️ Navio</option>
+            <option value="bg-magma">🔥 Magma</option>
+            <option value="bg-astral">🌌 Astral</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div>
+            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Largura (px):</label>
+            <input type="number" id="inp-scene-width" value="1200" step="50" style="width: 100%; padding: 6px 10px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); border-radius: 6px; color: #fff;">
+          </div>
+          <div>
+            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Altura (px):</label>
+            <input type="number" id="inp-scene-height" value="800" step="50" style="width: 100%; padding: 6px 10px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); border-radius: 6px; color: #fff;">
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
+        <button class="btn-secondary" onclick="closeCreateSceneModal()">Cancelar</button>
+        <button class="btn-action" onclick="submitCreateScene()">Salvar e Abrir Cena</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: IMPRESSÃO DA FICHA DO ALUNO (A4 LIMPO) -->
+  <div id="modal-print" class="modal-overlay">
+    <div class="modal-body" style="max-width: 800px; background: #fff; color: #000;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 12px;">
+        <span style="font-size: 16px; font-weight: bold; color: #000;">Visualização de Impressão (Formato A4)</span>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-action" style="background: #000; color: #fff;" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+          <button class="btn-secondary" style="background: #eee; color: #000; border-color: #999;" onclick="closePrintModal()">Fechar</button>
+        </div>
+      </div>
+      <div id="print-sheet-content" class="print-a4-sheet"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: DETALHES DA HABILIDADE / PODER DE CLASSE -->
+  <div id="modal-skill-detail" class="modal-overlay">
+    <div class="modal-body skill-modal-card" style="max-width: 620px; padding: 0;">
+      <div class="skill-modal-hero">
+        <div class="skill-modal-hero-left">
+          <div id="skill-modal-icon" class="skill-modal-icon-badge">✨</div>
+          <div>
+            <div id="skill-modal-title" class="skill-modal-title">-</div>
+            <div id="skill-modal-meta" class="skill-modal-meta">-</div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeSkillModal()" style="border-radius: 50%; width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px;">✕</button>
+      </div>
+      
+      <div class="skill-modal-tags-bar" id="skill-modal-tags-container">
+        <span id="skill-modal-type" class="skill-tag-pill">Habilidade</span>
+      </div>
+
+      <div id="skill-modal-desc" style="padding-top: 4px;"></div>
+
+      <div style="display: flex; justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.08); padding: 12px 20px; background: rgba(0,0,0,0.2);">
+        <button class="btn-action" onclick="closeSkillModal()" style="padding: 6px 18px; font-weight: 700;">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DETALHES DE CARACTERÍSTICA RACIAL -->
+  <div id="modal-species-detail" class="modal-overlay">
+    <div class="modal-body skill-modal-card" style="max-width: 620px; padding: 0;" id="modal-species-detail-content">
+    </div>
+  </div>
+
+  <!-- MODAL: SELETOR DE MAGIAS PREPARADAS DA FICHA -->
+  <div id="modal-spell-picker" class="modal-overlay">
+    <div class="modal-body" style="max-width: 650px;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div>
+          <div style="font-size: 17px; font-weight: 800; font-family: var(--font-title); color: #fff;">
+            📖 Grimório & Magias Preparadas
+          </div>
+          <div style="font-size: 11px; color: var(--primary-light); margin-top: 2px;">
+            <span id="picker-player-name">Herói</span> • <span id="picker-player-class">Classe</span> • Selecionadas: <b id="picker-selected-count" style="color:#fff;">0</b>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeSpellPickerModal()">✕</button>
+      </div>
+
+      <!-- Filtros de busca no picker -->
+      <div style="display: flex; gap: 8px; margin: 12px 0 8px 0; flex-wrap: wrap;">
+        <input type="text" id="picker-search-input" placeholder="🔍 Buscar magia (nome, descrição)..." style="flex: 1; min-width: 160px;" oninput="handlePickerSearch(this.value)">
+        <select id="picker-class-filter" onchange="handlePickerClassFilter(this.value)" style="max-width: 135px;" title="Filtrar por Lista de Classe">
+          <option value="auto">Classe do Herói</option>
+          <option value="all">🌐 Todas as Magias</option>
+          <option value="Bardo">Bardo</option>
+          <option value="Bruxo">Bruxo</option>
+          <option value="Clérigo">Clérigo</option>
+          <option value="Druida">Druida</option>
+          <option value="Feiticeiro">Feiticeiro</option>
+          <option value="Mago">Mago</option>
+          <option value="Paladino">Paladino</option>
+          <option value="Patrulheiro">Patrulheiro</option>
+        </select>
+        <select onchange="handlePickerCircleFilter(this.value)" style="max-width: 125px;">
+          <option value="all">Todos Círculos</option>
+          <option value="0">Truques (Nv 0)</option>
+          <option value="1">1º Círculo</option>
+          <option value="2">2º Círculo</option>
+          <option value="3">3º Círculo</option>
+          <option value="4">4º Círculo</option>
+          <option value="5">5º Círculo</option>
+          <option value="6">6º Círculo</option>
+          <option value="7">7º Círculo</option>
+          <option value="8">8º Círculo</option>
+          <option value="9">9º Círculo</option>
+        </select>
+        <select onchange="handlePickerSchoolFilter(this.value)" style="max-width: 125px;">
+          <option value="all">Todas Escolas</option>
+          <option value="Evocação">Evocação</option>
+          <option value="Abjuração">Abjuração</option>
+          <option value="Encantamento">Encantamento</option>
+          <option value="Necromancia">Necromancia</option>
+          <option value="Transmutação">Transmutação</option>
+          <option value="Ilusão">Ilusão</option>
+          <option value="Conjuração">Conjuração</option>
+          <option value="Adivinhação">Adivinhação</option>
+        </select>
+        <button id="btn-picker-only-selected" class="btn-secondary" style="font-size:11px; padding:4px 10px; border-color:var(--accent-gold);" onclick="togglePickerShowOnlySelected()" title="Ver apenas as magias já marcadas no herói">
+          ⭐ Selecionadas (<b id="picker-btn-selected-count">0</b>)
+        </button>
+      </div>
+
+      <!-- Dica de uso -->
+      <div style="font-size:11px; color:#cbd5e1; background:rgba(245,158,11,0.08); border-left:3px solid var(--accent-gold); padding:6px 10px; border-radius:4px; margin-bottom:8px;">
+        💡 <b>Como funciona:</b> Clique em qualquer magia para marcá-la (você pode selecionar de <b>qualquer classe</b>). Ao finalizar, clique em <b>"Salvar Magias Preparadas"</b> abaixo.
+      </div>
+
+      <!-- Lista de magias -->
+      <div id="picker-spells-list" class="picker-spells-container"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
+        <button class="btn-secondary" onclick="closeSpellPickerModal()">Cancelar</button>
+        <button class="btn-action" onclick="saveSpellPickerSelection()">Salvar Magias Preparadas</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ASSISTENTE DE SUBIR DE NÍVEL & MULTICLASSE (LEVEL-UP WIZARD) -->
+  <div id="modal-level-up" class="modal-overlay">
+    <div class="modal-body levelup-card" style="max-width: 680px; padding: 0;">
+      <div class="levelup-hero">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="font-size: 26px;">🧙‍♂️</div>
+          <div>
+            <div style="font-size: 18px; font-weight: 800; font-family: var(--font-title); color: #fff;">
+              Assistente de Evolução & Multiclasse
+            </div>
+            <div id="levelup-player-meta" style="font-size: 11px; color: var(--accent-gold); margin-top: 2px;">
+              Herói • Nível Atual
+            </div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeLevelUpModal()" style="border-radius: 50%; width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">✕</button>
+      </div>
+
+      <!-- Stepper Visual -->
+      <div class="levelup-stepper">
+        <div id="step-dot-1" class="levelup-step-dot active">1. Escolha de Classe</div>
+        <div style="color: var(--text-dim); font-size: 10px;">➔</div>
+        <div id="step-dot-2" class="levelup-step-dot">2. Novos Traços</div>
+        <div style="color: var(--text-dim); font-size: 10px;">➔</div>
+        <div id="step-dot-3" class="levelup-step-dot">3. PV & Conclusão</div>
+      </div>
+
+      <!-- Conteúdo Dinâmico do Wizard -->
+      <div id="levelup-wizard-body" style="max-height: 60vh; overflow-y: auto; padding: 4px 0;"></div>
+
+      <!-- Rodapé com Botões de Navegação -->
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.08); padding: 14px 20px; background: rgba(0,0,0,0.25);">
+        <button id="btn-levelup-back" class="btn-secondary" onclick="handleLevelUpBack()" style="display: none;">◀ Voltar</button>
+        <div style="flex: 1;"></div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-secondary" onclick="closeLevelUpModal()">Cancelar</button>
+          <button id="btn-levelup-next" class="btn-action" onclick="handleLevelUpNext()">Avançar ➔</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LANÇAR MAGIA COM ESCOLHA DE ESPAÇO (SLOT/UPCASTING) -->
+  <div id="modal-cast-spell" class="modal-overlay">
+    <div class="modal-body" style="max-width: 520px;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div>
+          <div id="cast-spell-title" style="font-size: 18px; font-weight: 800; font-family: var(--font-title); color: #fff;">-</div>
+          <div id="cast-spell-meta" style="font-size: 11px; color: var(--primary-light); margin-top: 2px;">-</div>
+        </div>
+        <button class="btn-secondary" onclick="closeCastSpellModal()">✕</button>
+      </div>
+
+      <div id="cast-spell-desc" style="font-size: 12px; line-height: 1.5; color: #cbd5e1; max-height: 140px; overflow-y: auto; margin: 12px 0; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);"></div>
+
+      <div style="margin-bottom: 8px;">
+        <label style="font-weight: 700; color: #fff; font-size: 12px;">Escolha o Espaço de Magia (Círculo) para Conjurar:</label>
+        <div id="cast-slot-options" class="cast-slot-options-list"></div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
+        <button class="btn-secondary" onclick="closeCastSpellModal()">Cancelar</button>
+        <button class="btn-action" style="background: linear-gradient(135deg, #3b82f6, #8b5cf6);" onclick="submitCastSpell()">⚡ Confirmar Lançamento</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: COMPARTILHAMENTO DE FICHA COM LINK & QR CODE -->
+  <div id="modal-share-sheet" class="modal-overlay">
+    <div class="modal-body" style="max-width: 480px; text-align: center;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 12px;">
+        <div style="text-align: left;">
+          <div style="font-size: 17px; font-weight: 800; font-family: var(--font-title); color: #fff;">
+            📱 Compartilhar Ficha de Jogador
+          </div>
+          <div style="font-size: 11px; color: var(--primary-light); margin-top: 2px;">
+            Acesso ao Portal do Jogador (Ficha, Grimório, Itens, Classes e Raças)
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeSharePlayerModal()">✕</button>
+      </div>
+
+      <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; margin-bottom: 12px;">
+        <div id="share-modal-char-name" style="font-size: 16px; font-weight: 800; color: #fff;">-</div>
+        <div id="share-modal-char-meta" style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">-</div>
+      </div>
+
+      <!-- Container do QR Code -->
+      <div class="share-qrcode-container">
+        <div id="share-qrcode-render" style="display: flex; justify-content: center; align-items: center; min-height: 200px; min-width: 200px;">
+          <!-- QR Code renderizado dinamicamente -->
+        </div>
+        <div class="share-qrcode-hint">
+          📷 Aponte a câmera do celular para abrir a ficha instantaneamente
+        </div>
+      </div>
+
+      <!-- Link direto -->
+      <div style="margin-top: 12px; text-align: left;">
+        <label style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Link de Acesso Direto:</label>
+        <div style="display: flex; gap: 6px; margin-top: 4px;">
+          <input type="text" id="inp-share-url" readonly style="font-size: 11px; background: rgba(0,0,0,0.4); color: var(--primary-light); cursor: text; padding: 6px 10px;" onclick="this.select()">
+          <button class="btn-action" id="btn-copy-share" style="white-space: nowrap; font-size: 11px; padding: 6px 12px;" onclick="copyShareLink()">📋 Copiar</button>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
+        <button class="btn-secondary" style="font-size: 12px;" onclick="openPlayerPortalDirect()" title="Abrir em nova aba para testar a visão do aluno">🌐 Abrir Portal</button>
+        <button class="btn-action" style="font-size: 12px;" onclick="closeSharePlayerModal()">Concluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CRIAR / EDITAR CAMPANHA -->
+  <div id="modal-campaign-form" class="modal-overlay">
+    <div class="modal-body" style="max-width: 480px;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <span id="camp-form-modal-title" style="font-weight: 800; font-size: 16px; color: #fff;">➕ Nova Campanha</span>
+        <button class="btn-secondary" onclick="closeCampaignModal()">✕</button>
+      </div>
+      <input type="hidden" id="inp-camp-id">
+      <div style="margin-top: 12px;">
+        <label>Nome da Campanha</label>
+        <input type="text" id="inp-camp-name" placeholder="Ex: A Maldição de Strahd, Cavernas de Fogo">
+      </div>
+      <div>
+        <label>Status da Campanha</label>
+        <select id="inp-camp-status">
+          <option value="active">🟢 Em Andamento (Ativa)</option>
+          <option value="paused">🟡 Pausada</option>
+          <option value="finished">🏁 Concluída</option>
+        </select>
+      </div>
+      <div>
+        <label>Descrição / Sinopse da Aventura</label>
+        <textarea id="inp-camp-desc" rows="3" placeholder="Resumo do cenário, objetivos do grupo e contexto geral..."></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
+        <button class="btn-secondary" onclick="closeCampaignModal()">Cancelar</button>
+        <button class="btn-action" onclick="saveCampaignForm()">Salvar Campanha</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: GERENCIAR HERÓIS DA CAMPANHA -->
+  <div id="modal-campaign-heroes" class="modal-overlay">
+    <div class="modal-body" style="max-width: 520px;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div>
+          <div style="font-size: 17px; font-weight: 800; font-family: var(--font-title); color: #fff;">
+            👥 Heróis da Campanha
+          </div>
+          <div style="font-size: 11px; color: var(--primary-light); margin-top: 2px;">
+            Marque os personagens participantes desta aventura
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeCampaignHeroesModal()">✕</button>
+      </div>
+      <div id="campaign-heroes-picker-list" class="heroes-picker-container" style="max-height: 320px; overflow-y: auto; margin: 12px 0;"></div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
+        <button class="btn-secondary" onclick="closeCampaignHeroesModal()">Cancelar</button>
+        <button class="btn-action" onclick="saveCampaignHeroesSelection()">Salvar Heróis Vinculados</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR / EDITAR SESSÃO DE DIÁRIO -->
+  <div id="modal-campaign-session" class="modal-overlay">
+    <div class="modal-body" style="max-width: 600px;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <span id="session-modal-title" style="font-weight: 800; font-size: 16px; color: #fff;">📖 Registrar Sessão</span>
+        <button class="btn-secondary" onclick="closeSessionModal()">✕</button>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 8px; margin-top: 12px;">
+        <div>
+          <label>Nº da Sessão</label>
+          <input type="number" id="inp-sess-num" min="1" value="1">
+        </div>
+        <div>
+          <label>Data da Sessão</label>
+          <input type="date" id="inp-sess-date">
+        </div>
+      </div>
+      <div>
+        <label>Título / Tema da Sessão</label>
+        <input type="text" id="inp-sess-title" placeholder="Ex: O Resgate no Castelo Cragmaw">
+      </div>
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+        <div>
+          <label>Local / Região</label>
+          <input type="text" id="inp-sess-loc" placeholder="Ex: Floresta Neverwinter">
+        </div>
+        <div>
+          <label>XP Concedido (por aluno)</label>
+          <input type="number" id="inp-sess-xp" min="0" value="100">
+        </div>
+      </div>
+      <div>
+        <label>NPCs Encontrados / Inimigos Derrotados</label>
+        <input type="text" id="inp-sess-npcs" placeholder="Ex: Rei Grol, Vyerith, 3 Bugbears">
+      </div>
+      <div>
+        <label>Crônica / Diário Narrativo da Sessão</label>
+        <textarea id="inp-sess-notes" rows="6" placeholder="Escreva o resumo da sessão, acontecimentos marcantes, decisões dos jogadores e ganchos para a próxima aventura..."></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
+        <button class="btn-secondary" onclick="closeSessionModal()">Cancelar</button>
+        <button class="btn-action" onclick="saveSessionLog()">Salvar Registro de Sessão</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADICIONAR / EDITAR ITEM DO BAÚ DO GRUPO -->
+  <div id="modal-party-item" class="modal-overlay">
+    <div class="modal-body" style="max-width: 480px;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <span id="party-item-modal-title" style="font-weight: 800; font-size: 16px; color: #fff;">➕ Item do Grupo</span>
+        <button class="btn-secondary" onclick="closePartyItemModal()">✕</button>
+      </div>
+      <div style="display: grid; grid-template-columns: 3fr 1fr; gap: 8px; margin-top: 12px;">
+        <div>
+          <label>Nome do Item</label>
+          <input type="text" id="inp-pitem-name" placeholder="Ex: Poção de Invisibilidade, 10x Ração de Viagem">
+        </div>
+        <div>
+          <label>Quantidade</label>
+          <input type="number" id="inp-pitem-qty" min="1" value="1">
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div>
+          <label>Categoria</label>
+          <select id="inp-pitem-cat">
+            <option value="Poções">Poções & Consumíveis</option>
+            <option value="Itens Mágicos">Itens Mágicos & Artefatos</option>
+            <option value="Equipamento de Aventura">Equipamento de Aventura</option>
+            <option value="Armas">Armas</option>
+            <option value="Armaduras">Armaduras & Escudos</option>
+            <option value="Ferramentas">Ferramentas</option>
+            <option value="Documentos & Pistas">Documentos & Pistas</option>
+            <option value="Tesouros & Gemas">Tesouros & Gemas</option>
+          </select>
+        </div>
+        <div>
+          <label>Portador / Local</label>
+          <select id="inp-pitem-carrier"></select>
+        </div>
+      </div>
+      <div>
+        <label>Descrição / Propriedades</label>
+        <textarea id="inp-pitem-desc" rows="3" placeholder="Efeito mágico, notas de identificação ou valor estimado..."></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
+        <button class="btn-secondary" onclick="closePartyItemModal()">Cancelar</button>
+        <button class="btn-action" onclick="savePartyItem()">Salvar Item no Baú</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIGURAÇÃO DE PERÍCIAS E SALVAGUARDAS (P1) -->
+  <div id="modal-player-skills" class="modal-overlay">
+    <div class="modal-body" style="max-width: 640px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div>
+          <span style="font-weight: 800; font-size: 16px; color: #fff;">🎯 Perícias & Salvaguardas</span>
+          <div id="skills-modal-player-name" style="font-size: 11px; color: var(--primary-light); margin-top: 2px;">Personagem</div>
+        </div>
+        <button class="btn-secondary" onclick="closePlayerSkillsModal()">✕</button>
+      </div>
+
+      <div style="flex: 1; overflow-y: auto; padding-right: 4px; margin-top: 10px;">
+        <div style="font-size: 12px; font-weight: 800; color: #fff; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+          <span>🛡️ Testes de Resistência / Salvaguardas</span>
+          <span style="font-size: 10px; color: var(--text-muted); font-weight: normal;">(Marque onde possui proficiência)</span>
+        </div>
+        <div id="skills-modal-saves-container" class="skills-modal-saves-grid"></div>
+
+        <div style="font-size: 12px; font-weight: 800; color: #fff; margin: 14px 0 6px 0; display: flex; align-items: center; gap: 6px;">
+          <span>🎯 Perícias D&D 5E (18)</span>
+          <span style="font-size: 10px; color: var(--text-muted); font-weight: normal;">(Bônus calculado automaticamente: Atributo + Proficiência)</span>
+        </div>
+        <div id="skills-modal-skills-container" class="skills-modal-skills-grid"></div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
+        <button class="btn-action" onclick="closePlayerSkillsModal()">Concluir & Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: GERENCIADOR DE CONDIÇÕES & STATUS DO JOGADOR (M2) -->
+  <div id="modal-player-conds" class="modal-overlay">
+    <div class="modal-body" style="max-width: 520px;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <span id="player-conds-modal-title" style="font-weight: 800; font-size: 16px; color: #fff;">Condições do Jogador</span>
+        <button class="btn-secondary" onclick="closePlayerCondModal()">✕</button>
+      </div>
+      <div style="font-size: 11px; color: var(--text-muted); margin: 8px 0 12px 0;">
+        Clique nas condições para ativar ou desativar neste personagem. Status ativos sincronizam automaticamente com o Combate e o Grid VTT.
+      </div>
+      <div id="player-conds-picker-grid" class="player-conds-picker-grid"></div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
+        <button class="btn-action" onclick="closePlayerCondModal()">Concluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SELETOR DE AVATAR / UPLOAD DE FOTO (P4) -->
+  <div id="modal-avatar-picker" class="modal-overlay">
+    <div class="modal-body" style="max-width: 480px;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <span id="avatar-modal-char-name" style="font-weight: 800; font-size: 16px; color: #fff;">Avatar do Personagem</span>
+        <button class="btn-secondary" onclick="closeAvatarModal()">✕</button>
+      </div>
+
+      <div style="display: flex; align-items: center; justify-content: center; margin: 14px 0;">
+        <div id="avatar-modal-preview" class="avatar-big-preview">
+          <span style="font-size: 44px;">👤</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 10px;">
+        <label>Escolha um Avatar D&D Pré-definido:</label>
+        <div id="avatar-presets-grid" class="avatar-presets-grid"></div>
+      </div>
+
+      <div style="border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 12px;">
+        <label>Ou faça Upload de Imagem / Foto Local:</label>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input type="file" id="avatar-file-input" accept="image/*" onchange="handleAvatarFileUpload(event)" style="font-size: 11px;">
+          <button class="btn-secondary" style="font-size: 11px; color: #f87171; white-space: nowrap;" onclick="removePlayerAvatar()">Restaurar Padrão</button>
+        </div>
+        <small style="color: var(--text-dim); display: block; margin-top: 4px;">A imagem será otimizada automaticamente para economizar espaço.</small>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
+        <button class="btn-secondary" onclick="closeAvatarModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DRAWER LATERAL: NOTAS RÁPIDAS DO MESTRE (DM2 - Ctrl+N) -->
+  <div id="dm-quick-notes-drawer" class="dm-notes-drawer">
+    <div class="dm-notes-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 18px;">📝</span>
+        <div>
+          <div style="font-weight: 800; font-size: 14px; color: #fff;" id="dm-notes-camp-title">Notas Rápidas do Mestre</div>
+          <div style="font-size: 10px; color: var(--primary-light);">Atalho: <kbd style="background:rgba(0,0,0,0.4); padding:1px 4px; border-radius:3px;">Ctrl+N</kbd> • Salvo por Campanha</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 6px; align-items: center;">
+        <span id="dm-notes-save-status" style="font-size: 11px; color: var(--accent-green); font-weight: 700;"></span>
+        <button class="btn-secondary" style="padding: 3px 8px; font-size: 12px;" onclick="toggleDMNotesDrawer(false)">✕</button>
+      </div>
+    </div>
+    <div class="dm-notes-body">
+      <textarea id="inp-dm-quick-notes" placeholder="Digite notas secretas, rascunhos de diálogos de NPCs, planos para o próximo encontro, segredos de masmorras ou itens especiais... (Auto-save ativado)" oninput="handleDMNotesInput()"></textarea>
+    </div>
+    <div class="dm-notes-footer">
+      <span id="dm-notes-char-count" style="font-size: 11px; color: var(--text-dim);">0 caracteres</span>
+      <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="saveDMNotes()">Salvar Agora</button>
+    </div>
+  </div>
+
+  <!-- DRAWER / WIDGET FLUTUANTE: ROLADOR DE DADOS GLOBAL (M1) -->
+  <div id="global-dice-drawer" class="global-dice-widget">
+    <div class="global-dice-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 16px;">🎲</span>
+        <span style="font-weight: 800; font-size: 13px; color: #fff;">Rolador de Dados</span>
+      </div>
+      <div style="display: flex; gap: 4px;">
+        <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px;" onclick="clearGlobalDiceHistory()" title="Limpar Histórico">🗑️</button>
+        <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px;" onclick="toggleGlobalDiceDrawer(false)">✕</button>
+      </div>
+    </div>
+
+    <!-- BANNER ÚLTIMO RESULTADO -->
+    <div id="floating-dice-last-box" class="floating-dice-banner" style="display: none;">
+      <div id="floating-dice-result-label" style="font-size: 10px; text-transform: uppercase; color: var(--text-muted);">Resultado:</div>
+      <div id="floating-dice-result-num" class="floating-dice-num">20</div>
+      <div id="floating-dice-result-breakdown" style="font-size: 11px; color: var(--text-main);">1d20 [16] + 4</div>
+    </div>
+
+    <!-- BOTÕES RÁPIDOS DE DADOS -->
+    <div class="dice-quick-btns-grid">
+      <button class="btn-quick-die" onclick="rollGlobalDice(4)">d4</button>
+      <button class="btn-quick-die" onclick="rollGlobalDice(6)">d6</button>
+      <button class="btn-quick-die" onclick="rollGlobalDice(8)">d8</button>
+      <button class="btn-quick-die" onclick="rollGlobalDice(10)">d10</button>
+      <button class="btn-quick-die" onclick="rollGlobalDice(12)">d12</button>
+      <button class="btn-quick-die d20-die" onclick="rollGlobalDice(20)">d20</button>
+      <button class="btn-quick-die" onclick="rollGlobalDice(100)">d100</button>
+      <button class="btn-quick-die adv-die" onclick="rollGlobalDice(20, 1, 0, 'adv', 'd20 c/ Vantagem')">Vant.</button>
+      <button class="btn-quick-die dis-die" onclick="rollGlobalDice(20, 1, 0, 'dis', 'd20 c/ Desvant.')">Desv.</button>
+    </div>
+
+    <!-- FÓRMULA PERSONALIZADA -->
+    <div style="margin-top: 8px;">
+      <div style="display: flex; gap: 4px;">
+        <input type="text" id="inp-global-dice-formula" placeholder="Ex: 3d6+4, 1d20+7, 2d8" style="font-size: 11px; padding: 5px 8px; flex: 1;" onkeydown="if(event.key==='Enter') { rollGlobalFormula(this.value); this.value=''; }">
+        <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="const inp=document.getElementById('inp-global-dice-formula'); rollGlobalFormula(inp.value); inp.value='';">Rolar</button>
+      </div>
+    </div>
+
+    <!-- HISTÓRICO DE ROLAGENS -->
+    <div style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 8px;">
+      <div style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; margin-bottom: 6px;">Histórico de Rolagens:</div>
+      <div id="global-dice-history-list" class="global-dice-history-container"></div>
+    </div>
+  </div>
+
+  <!-- BOTÕES FLUTUANTES (FAB) -->
+  <div id="fab-actions-container" class="fab-actions-container">
+    <button class="fab-btn" onclick="toggleDMNotesDrawer()" title="Abrir Notas do Mestre (Ctrl+N)">📝</button>
+    <button class="fab-btn" onclick="toggleGlobalDiceDrawer()" title="Abrir Rolador de Dados Rápido">🎲</button>
+  </div>
+
+  <!-- MODAL: BALANCEADOR & GERADOR DE ENCONTROS (DM1) -->
+  <div id="modal-encounter-builder" class="modal-overlay">
+    <div class="modal-body" style="max-width: 860px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 18px;">⚖️</span>
+          <div>
+            <div style="font-size: 16px; font-weight: 800; color: #fff;">Balanceador de Encontros (D&D 5E DMG)</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Cálculo de Orçamento de XP, Multiplicadores e Dificuldade</div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeEncounterBuilderModal()">✕</button>
+      </div>
+
+      <div id="encounter-builder-content" style="margin-top: 14px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 14px; padding-right: 4px;">
+        <!-- GRUPO DE AVENTUREIROS -->
+        <div class="card-panel">
+          <div class="panel-header">
+            <span>👥 Grupo de Aventureiros & Níveis</span>
+            <span style="font-size: 11px; color: var(--text-muted);">Limites de XP (Fácil, Médio, Difícil, Mortal)</span>
+          </div>
+          <div id="enc-party-members" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding-top: 4px;"></div>
+        </div>
+
+        <!-- RESUMO DE DIFICULDADE & LIMITES -->
+        <div id="enc-summary-box"></div>
+
+        <!-- MONSTROS NO ENCONTRO & SELEÇÃO -->
+        <div class="card-panel">
+          <div class="panel-header">
+            <span>🐉 Monstros no Encontro</span>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn-secondary" style="font-size: 10px; padding: 2px 8px; color: #f87171;" onclick="clearEncounterDraft()">🗑️ Limpar Monstros</button>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 10px; display: flex; gap: 8px; align-items: center;">
+            <select id="enc-select-monster-add" style="flex: 1; padding: 6px 10px; background: #080c16; border: 1px solid var(--border-color); color: #fff; border-radius: 6px; font-size: 12px;">
+              <option value="">Selecione um monstro do bestiário para adicionar...</option>
+            </select>
+            <button class="btn-action" onclick="addSelectedMonsterToEncounter()" style="padding: 6px 12px; font-size: 11px;">➕ Adicionar</button>
+          </div>
+
+          <div id="enc-draft-monsters" style="display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto;"></div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 10px;">
+        <button class="btn-secondary" onclick="closeEncounterBuilderModal()">Fechar</button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-secondary" style="border-color: #ef4444; color: #f87171;" onclick="dispatchEncounterToCombat(true)" title="Remove monstros atuais e adiciona os do encontro">⚡ Substituir Inimigos no Combate</button>
+          <button class="btn-action" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: 700;" onclick="dispatchEncounterToCombat(false)" title="Mantém os existentes e soma este grupo">⚔️ Adicionar ao Combate Ativo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: INICIATIVA RELÂMPAGO DO BESTIÁRIO (DM4) -->
+  <div id="modal-quick-init" class="modal-overlay">
+    <div class="modal-body" style="max-width: 440px;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 18px;">⚡</span>
+          <div>
+            <div style="font-size: 15px; font-weight: 800; color: #fff;">Iniciativa Relâmpago</div>
+            <div id="quick-init-monster-name" style="font-size: 11px; color: var(--primary-light); font-weight: 700;">-</div>
+            <div id="quick-init-monster-meta" style="font-size: 10px; color: var(--text-muted);">-</div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeQuickInitModal()">✕</button>
+      </div>
+
+      <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div>
+            <label>Quantidade de Criaturas</label>
+            <div style="display: flex; gap: 4px; align-items: center;">
+              <input type="number" id="inp-quick-init-qty" min="1" max="20" value="1" style="font-size: 14px; font-weight: 700; width: 60px; text-align: center;">
+              <button class="btn-secondary" style="padding: 4px 6px; font-size: 11px;" onclick="document.getElementById('inp-quick-init-qty').value = 1;">1</button>
+              <button class="btn-secondary" style="padding: 4px 6px; font-size: 11px;" onclick="document.getElementById('inp-quick-init-qty').value = 2;">2</button>
+              <button class="btn-secondary" style="padding: 4px 6px; font-size: 11px;" onclick="document.getElementById('inp-quick-init-qty').value = 4;">4</button>
+            </div>
+          </div>
+          <div>
+            <label>Modificador Inic. (DES)</label>
+            <input type="number" id="inp-quick-init-mod" value="0" style="font-size: 14px; font-weight: 700; width: 100%; text-align: center;">
+          </div>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #e2e8f0; font-size: 12px; margin: 0;">
+            <input type="checkbox" id="chk-quick-init-roll" checked>
+            <span>🎲 Rolar iniciativas individuais automaticamente com bônus de Destreza</span>
+          </label>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 6px;">
+          <button class="btn-secondary" onclick="closeQuickInitModal()">Cancelar</button>
+          <button class="btn-action" style="background: linear-gradient(135deg, #eab308, #ca8a04); color: #000; font-weight: 700;" onclick="submitQuickInit()">⚡ Despachar para Combate</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EXPORTAR / IMPRIMIR CRÔNICAS DA CAMPANHA (DM5) -->
+  <div id="modal-print-chronicles" class="modal-overlay">
+    <div class="modal-body" style="max-width: 860px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 18px;">🖨️</span>
+          <div>
+            <div style="font-size: 16px; font-weight: 800; color: #fff;">Crônicas & Diários da Campanha (PDF / A4)</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Visualização formatada para impressão ou exportação em PDF</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-action" style="background: linear-gradient(135deg, #0284c7, #0369a1); font-size: 12px;" onclick="triggerChroniclesBrowserPrint()">🖨️ Imprimir / Salvar PDF</button>
+          <button class="btn-secondary" onclick="closePrintChroniclesModal()">✕</button>
+        </div>
+      </div>
+
+      <div id="chronicles-print-content" class="chronicles-print-viewport" style="flex: 1; overflow-y: auto; background: #ffffff; color: #0f172a; border-radius: 6px; margin-top: 12px; padding: 10px;"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: GUIA & REGRAS DE CONDIÇÕES (M9) -->
+  <div id="modal-condition-rule" class="modal-overlay">
+    <div class="modal-body" style="max-width: 480px;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div id="cond-rule-title" style="font-size: 16px; font-weight: 800; color: #fff; font-family: var(--font-title);">-</div>
+        <button class="btn-secondary" onclick="closeConditionRuleModal()">✕</button>
+      </div>
+      <div style="margin-top: 14px; font-size: 12.5px; line-height: 1.6; color: #e2e8f0; white-space: pre-wrap; background: #080c16; padding: 12px; border-radius: 6px; border: 1px solid var(--border-color);" id="cond-rule-desc"></div>
+      <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+        <button class="btn-secondary" onclick="closeConditionRuleModal()">Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADICIONAR ITEM AO INVENTÁRIO (M8 / P6) -->
+  <div id="modal-add-player-item" class="modal-overlay">
+    <div class="modal-body" style="max-width: 680px; width: 95%; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 18px;">🎒</span>
+          <div>
+            <div style="font-size: 15px; font-weight: 800; color: #fff;">Adicionar Item ao Inventário</div>
+            <div id="add-item-player-name" style="font-size: 11px; color: var(--primary-light);">-</div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeAddPlayerItemModal()">✕</button>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+        <button id="tab-item-mode-cat" class="btn-secondary active" onclick="switchAddItemMode('catalog')">📚 Do Catálogo Oficial (145 itens)</button>
+        <button id="tab-item-mode-custom" class="btn-secondary" onclick="switchAddItemMode('custom')">✏️ Item Personalizado</button>
+      </div>
+
+      <!-- PAINEL CATÁLOGO -->
+      <div id="panel-add-item-catalog" style="flex: 1; overflow-y: auto; margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="inp-catalog-item-search" placeholder="Buscar no acervo de equipamentos..." style="flex: 1;" oninput="renderCatalogItemsForModal()">
+          <select id="sel-catalog-item-cat" onchange="renderCatalogItemsForModal()" style="max-width: 180px;">
+            <option value="all">Todas as Categorias</option>
+            <option value="Armas Marciais">Armas Marciais</option>
+            <option value="Armas Simples">Armas Simples</option>
+            <option value="Armaduras Pesadas">Armaduras Pesadas</option>
+            <option value="Armaduras Médias">Armaduras Médias</option>
+            <option value="Armaduras Leves">Armaduras Leves</option>
+            <option value="Escudos">Escudos</option>
+            <option value="Poções & Consumíveis">Poções</option>
+            <option value="Focos de Conjuração">Focos</option>
+            <option value="Equipamento de Aventura">Aventura</option>
+            <option value="Ferramentas & Instrumentos">Ferramentas</option>
+          </select>
+        </div>
+        <div id="catalog-items-modal-list" style="overflow-y: auto; max-height: 380px; display: flex; flex-direction: column; gap: 6px;"></div>
+      </div>
+
+      <!-- PAINEL PERSONALIZADO -->
+      <div id="panel-add-item-custom" style="display: none; flex-direction: column; gap: 10px; margin-top: 10px;">
+        <div>
+          <label>Nome do Item</label>
+          <input type="text" id="inp-custom-item-name" placeholder="Ex: Adaga de Prata Rúnica">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+          <div>
+            <label>Quantidade</label>
+            <input type="number" id="inp-custom-item-qty" min="1" value="1">
+          </div>
+          <div>
+            <label>Peso Unitário (kg)</label>
+            <input type="number" id="inp-custom-item-weight" min="0" step="0.1" value="0.5">
+          </div>
+          <div>
+            <label>Preço / Valor</label>
+            <input type="text" id="inp-custom-item-cost" placeholder="Ex: 25 PO" value="10 PO">
+          </div>
+        </div>
+        <div>
+          <label>Categoria</label>
+          <input type="text" id="inp-custom-item-cat" placeholder="Ex: Arma, Poção, Item Mágico" value="Equipamento">
+        </div>
+        <div>
+          <label>Descrição / Propriedades</label>
+          <textarea id="inp-custom-item-desc" rows="3" placeholder="Propriedades especiais, dano, bônus..."></textarea>
+        </div>
+        <button class="btn-action" style="margin-top: 6px;" onclick="submitCustomItemToPlayer()">➕ Adicionar Item Personalizado</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CARTEIRA DE MOEDAS DO JOGADOR (M8 / P6) -->
+  <div id="modal-player-coins" class="modal-overlay">
+    <div class="modal-body" style="max-width: 480px;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 18px;">🪙</span>
+          <div>
+            <div style="font-size: 15px; font-weight: 800; color: #fff;">Carteira de Moedas D&D 5E</div>
+            <div id="player-coins-char-name" style="font-size: 11px; color: var(--primary-light);">-</div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closePlayerCoinsModal()">✕</button>
+      </div>
+
+      <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; text-align: center;">
+          <div style="background: rgba(180,83,9,0.15); border: 1px solid #b45309; padding: 6px 4px; border-radius: 6px;">
+            <div style="font-size: 10px; color: #d97706; font-weight: 700;">PC (Cobre)</div>
+            <input type="number" id="inp-coin-cp" min="0" value="0" style="text-align: center; font-weight: 800; font-size: 14px; width: 100%; margin-top: 4px;" oninput="updateCoinsModalTotal()">
+          </div>
+          <div style="background: rgba(148,163,184,0.15); border: 1px solid #94a3b8; padding: 6px 4px; border-radius: 6px;">
+            <div style="font-size: 10px; color: #e2e8f0; font-weight: 700;">PP (Prata)</div>
+            <input type="number" id="inp-coin-sp" min="0" value="0" style="text-align: center; font-weight: 800; font-size: 14px; width: 100%; margin-top: 4px;" oninput="updateCoinsModalTotal()">
+          </div>
+          <div style="background: rgba(56,189,248,0.15); border: 1px solid #0284c7; padding: 6px 4px; border-radius: 6px;">
+            <div style="font-size: 10px; color: #38bdf8; font-weight: 700;">PE (Electro)</div>
+            <input type="number" id="inp-coin-ep" min="0" value="0" style="text-align: center; font-weight: 800; font-size: 14px; width: 100%; margin-top: 4px;" oninput="updateCoinsModalTotal()">
+          </div>
+          <div style="background: rgba(245,158,11,0.15); border: 1px solid #f59e0b; padding: 6px 4px; border-radius: 6px;">
+            <div style="font-size: 10px; color: #f59e0b; font-weight: 700;">PO (Ouro)</div>
+            <input type="number" id="inp-coin-gp" min="0" value="0" style="text-align: center; font-weight: 800; font-size: 14px; width: 100%; margin-top: 4px;" oninput="updateCoinsModalTotal()">
+          </div>
+          <div style="background: rgba(168,85,247,0.15); border: 1px solid #a855f7; padding: 6px 4px; border-radius: 6px;">
+            <div style="font-size: 10px; color: #c084fc; font-weight: 700;">PL (Platina)</div>
+            <input type="number" id="inp-coin-pp" min="0" value="0" style="text-align: center; font-weight: 800; font-size: 14px; width: 100%; margin-top: 4px;" oninput="updateCoinsModalTotal()">
+          </div>
+        </div>
+
+        <div style="background: #080c16; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 12px; color: var(--text-muted);">Patrimônio Total Convertido:</span>
+          <span id="player-coins-total-gp" style="font-size: 15px; font-weight: 800; color: #fbbf24;">0 PO</span>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+          <button class="btn-secondary" onclick="closePlayerCoinsModal()">Cancelar</button>
+          <button class="btn-action" onclick="savePlayerCoinsFromModal()">💾 Salvar Carteira</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DESCANSO CURTO & DADOS DE VIDA (D&D 5E) -->
+  <div id="modal-short-rest" class="modal-overlay">
+    <div class="modal-body" style="max-width: 520px;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">🏕️</span>
+          <div>
+            <div style="font-size: 16px; font-weight: 800; color: #fff;">Descanso Curto (1 Hora)</div>
+            <div id="short-rest-char-title" style="font-size: 11px; color: var(--primary-light);">-</div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeShortRestModal()">✕</button>
+      </div>
+
+      <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 12px;">
+        <!-- Status de PV e Dados de Vida -->
+        <div class="short-rest-card" id="short-rest-card-content">
+          <!-- Dinâmico: Preenchido por renderShortRestModal() -->
+        </div>
+
+        <!-- Habilidades recuperadas automaticamente -->
+        <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 10px; font-size: 11px;">
+          <div style="font-weight: 700; color: var(--primary-light); margin-bottom: 4px;">⚡ Recursos Restaurados neste Descanso:</div>
+          <div id="short-rest-restored-features" style="color: #cbd5e1; line-height: 1.4;">
+            • Todas as habilidades de classe marcadas para Descanso Curto (ex: Retomar o Fôlego, Surto de Ação, Canalizar Divindade, Slots de Bruxo).
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 12px;">
+          <button class="btn-secondary" onclick="closeShortRestModal()">Fechar</button>
+          <button class="btn-action" onclick="finishShortRestModal()">✅ Concluir Descanso</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INPUT OCULTO DE IMPORTAÇÃO DE BACKUP JSON -->
+  <input type="file" id="inp-import-backup" accept=".json,application/json" style="display: none;" onchange="handleBackupFileSelected(this)">
+
+
+
+

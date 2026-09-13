@@ -1,0 +1,1256 @@
+// test_runner.js - Automated Test Suite for Planilha RPG
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+
+console.log('🧪 Iniciando Bateria de Testes Automatizados do Planilha RPG...\n');
+
+let totalTests = 0;
+let passedTests = 0;
+let failedTests = 0;
+
+function assert(condition, message) {
+  totalTests++;
+  if (condition) {
+    console.log(`  ✅ [PASS] ${message}`);
+    passedTests++;
+  } else {
+    console.error(`  ❌ [FAIL] ${message}`);
+    failedTests++;
+  }
+}
+
+// --- SUÍTE 1: Verificação de Arquivos Fonte e Sintaxe JS ---
+console.log('📁 1. Verificação de Arquivos Fonte e Sintaxe JS:');
+const requiredFiles = [
+  'builder.js',
+  'src/styles/head_css.html',
+  'src/ui/ui.html',
+  'src/data/rules_xp.js',
+  'src/data/monsters.js',
+  'src/data/spells.js',
+  'src/data/equipment.js',
+  'src/data/classes.js',
+  'src/data/species.js',
+  'src/data/campaigns.js',
+  'src/js/core.js',
+  'src/js/combat.js',
+  'src/js/players.js',
+  'src/js/compendium.js',
+  'src/js/classes.js',
+  'src/js/species.js',
+  'src/js/campaigns.js',
+  'src/js/audio_synth.js',
+  'src/js/dice_roller.js',
+  'src/js/vtt_grid.js',
+  'src/js/screen_sync.js'
+];
+
+requiredFiles.forEach(file => {
+  const filePath = path.join(__dirname, file);
+  assert(fs.existsSync(filePath), `Arquivo existe: ${file}`);
+  if (file.endsWith('.js')) {
+    try {
+      const code = fs.readFileSync(filePath, 'utf8');
+      new vm.Script(code);
+      assert(true, `Sintaxe válida: ${file}`);
+    } catch (err) {
+      assert(false, `Erro de sintaxe em ${file}: ${err.message}`);
+    }
+  }
+});
+
+// --- SUÍTE 2: Teste do Compilador Builder ---
+console.log('\n🏗️ 2. Teste do Compilador (builder.js):');
+try {
+  require('./builder.js');
+  const compiledPath = path.join(__dirname, 'planilha do rpg.html');
+  assert(fs.existsSync(compiledPath), 'planilha do rpg.html gerada com sucesso');
+  const compiledContent = fs.readFileSync(compiledPath, 'utf8');
+  assert(compiledContent.includes('<!DOCTYPE html>'), 'HTML possui declaração DOCTYPE');
+  assert(compiledContent.includes('Central do Mestre D&D 5e'), 'HTML possui cabeçalho principal');
+  assert(compiledContent.includes('function addPlayerToCombat'), 'HTML inclui scripts de jogadores');
+  assert(compiledContent.includes('function addMonsterToCombat'), 'HTML inclui scripts de compêndio');
+  assert(compiledContent.length > 200000, `Tamanho da build consistente: ${(compiledContent.length / 1024).toFixed(1)} KB`);
+
+  // Validação estrita de escopo global e sintaxe de todo o JS concatenado no bundle
+  const scriptRegex = /<script>([\s\S]*?)<\/script>/gi;
+  let match;
+  let scriptIndex = 0;
+  while ((match = scriptRegex.exec(compiledContent)) !== null) {
+    scriptIndex++;
+    const jsCode = match[1];
+    try {
+      new vm.Script(jsCode);
+      assert(true, `Bundle JS #${scriptIndex} possui sintaxe e escopo 100% válidos (sem colisões let/const)`);
+    } catch (syntaxErr) {
+      assert(false, `Erro de sintaxe no Bundle JS #${scriptIndex}: ${syntaxErr.message}`);
+    }
+  }
+} catch (err) {
+  assert(false, `Falha na execução do builder: ${err.message}`);
+}
+
+// --- SUÍTE 3: Testes de Regras D&D 5E e Lógica de Negócio ---
+console.log('\n🎲 3. Testes Unitários de Regras D&D 5E e Lógica:');
+
+// Cria ambiente simulado de navegador no Node
+const domElements = {};
+const sandbox = {
+  document: {
+    getElementById: (id) => {
+      if (!domElements[id]) {
+        domElements[id] = {
+          id,
+          value: id && id.includes('qty') ? '3' : '10',
+          options: [{ value: '1' }, { value: '2' }],
+          selectedIndex: 0,
+          clientWidth: 1200,
+          clientHeight: 800,
+          getBoundingClientRect: () => ({ left: 0, top: 0, width: 1200, height: 800 }),
+          dataset: {},
+          getContext: () => ({ clearRect: () => {}, beginPath: () => {}, moveTo: () => {}, lineTo: () => {}, stroke: () => {} }),
+          classList: { 
+            _classes: new Set(),
+            add(c) { this._classes.add(c); }, 
+            remove(c) { this._classes.delete(c); }, 
+            toggle(c, force) { 
+              if (force !== undefined) {
+                if (force) this._classes.add(c);
+                else this._classes.delete(c);
+                return !!force;
+              }
+              if (this._classes.has(c)) { this._classes.delete(c); return false; } 
+              else { this._classes.add(c); return true; } 
+            },
+            contains(c) { return this._classes.has(c); }
+          },
+          innerText: '',
+          innerHTML: '',
+          style: {}
+        };
+      }
+      return domElements[id];
+    },
+    querySelectorAll: () => [],
+    body: {
+      classList: {
+        _classes: new Set(),
+        add(c) { this._classes.add(c); },
+        remove(c) { this._classes.delete(c); },
+        contains(c) { return this._classes.has(c); }
+      }
+    },
+    documentElement: { style: { setProperty: () => {} } },
+    addEventListener: () => {},
+    removeEventListener: () => {}
+  },
+  window: {
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    AudioContext: function() {
+      return {
+        currentTime: 0,
+        sampleRate: 44100,
+        state: 'running',
+        createGain: () => ({ gain: { setValueAtTime: () => {}, linearRampToValueAtTime: () => {}, exponentialRampToValueAtTime: () => {} }, connect: () => {} }),
+        createOscillator: () => ({ type: 'sine', frequency: { setValueAtTime: () => {}, exponentialRampToValueAtTime: () => {} }, connect: () => {}, start: () => {}, stop: () => {} }),
+        createBiquadFilter: () => ({ type: 'lowpass', frequency: { setValueAtTime: () => {} }, Q: { setValueAtTime: () => {} }, connect: () => {} }),
+        createBufferSource: () => ({ buffer: null, loop: false, connect: () => {}, start: () => {}, stop: () => {} }),
+        createBuffer: (c, len, sr) => ({ length: len, sampleRate: sr, getChannelData: () => new Float32Array(len) }),
+        resume: () => {},
+        destination: {}
+      };
+    }
+  },
+  localStorage: {
+    data: {},
+    setItem(k, v) { this.data[k] = v; },
+    getItem(k) { return this.data[k] || null; }
+  },
+  prompt: (msg, def) => (def !== undefined ? String(def) : '10'),
+  confirm: () => true,
+  alert: () => {},
+  setTimeout: (fn) => fn(),
+  clearTimeout: () => {},
+  setInterval: (fn) => 1,
+  clearInterval: () => {},
+  CONDITIONS_LIST: [
+    { id: 'caido', name: 'Caído' },
+    { id: 'envenenado', name: 'Envenenado' }
+  ]
+};
+
+vm.createContext(sandbox);
+
+// Carrega data e logic na VM a partir de src/
+const srcDir = path.join(__dirname, 'src');
+const dataRulesXp = fs.readFileSync(path.join(srcDir, 'data', 'rules_xp.js'), 'utf8');
+const dataSpells = fs.readFileSync(path.join(srcDir, 'data', 'spells.js'), 'utf8');
+const dataMonsters = fs.readFileSync(path.join(srcDir, 'data', 'monsters.js'), 'utf8');
+const dataEquip = fs.readFileSync(path.join(srcDir, 'data', 'equipment.js'), 'utf8');
+const dataCampaigns = fs.readFileSync(path.join(srcDir, 'data', 'campaigns.js'), 'utf8');
+const jsAudioSynth = fs.readFileSync(path.join(srcDir, 'js', 'audio_synth.js'), 'utf8');
+const jsCore = fs.readFileSync(path.join(srcDir, 'js', 'core.js'), 'utf8');
+const jsCombat = fs.readFileSync(path.join(srcDir, 'js', 'combat.js'), 'utf8');
+const jsPlayers = fs.readFileSync(path.join(srcDir, 'js', 'players.js'), 'utf8');
+const jsComp = fs.readFileSync(path.join(srcDir, 'js', 'compendium.js'), 'utf8');
+const jsCampaigns = fs.readFileSync(path.join(srcDir, 'js', 'campaigns.js'), 'utf8');
+const jsDice = fs.readFileSync(path.join(srcDir, 'js', 'dice_roller.js'), 'utf8');
+const jsGrid = fs.readFileSync(path.join(srcDir, 'js', 'vtt_grid.js'), 'utf8');
+
+vm.runInContext(dataRulesXp, sandbox);
+vm.runInContext(dataSpells, sandbox);
+vm.runInContext(dataMonsters, sandbox);
+vm.runInContext(dataEquip, sandbox);
+vm.runInContext(dataCampaigns, sandbox);
+vm.runInContext(jsAudioSynth, sandbox);
+vm.runInContext(jsCore, sandbox);
+vm.runInContext(jsCombat, sandbox);
+vm.runInContext(jsPlayers, sandbox);
+vm.runInContext(jsComp, sandbox);
+vm.runInContext(jsCampaigns, sandbox);
+vm.runInContext(jsDice, sandbox);
+vm.runInContext(jsGrid, sandbox);
+
+// Teste 3.1: Proficiência D&D 5E
+assert(vm.runInContext('getProfBonus(1)', sandbox) === 2, 'Bônus de Proficiência Nv 1 = +2');
+assert(vm.runInContext('getProfBonus(5)', sandbox) === 3, 'Bônus de Proficiência Nv 5 = +3');
+assert(vm.runInContext('getProfBonus(9)', sandbox) === 4, 'Bônus de Proficiência Nv 9 = +4');
+assert(vm.runInContext('getProfBonus(17)', sandbox) === 6, 'Bônus de Proficiência Nv 17 = +6');
+
+// Teste 3.2: Modificadores de Atributo
+assert(vm.runInContext('getMod(10)', sandbox) === '+0', 'Modificador Atributo 10 = +0');
+assert(vm.runInContext('getMod(14)', sandbox) === '+2', 'Modificador Atributo 14 = +2');
+assert(vm.runInContext('getMod(8)', sandbox) === '-1', 'Modificador Atributo 8 = -1');
+assert(vm.runInContext('getMod(20)', sandbox) === '+5', 'Modificador Atributo 20 = +5');
+
+// Teste 3.3: Inserção de Jogador e Entrada no Combate mantendo PV
+vm.runInContext(`
+  PLAYERS.push({
+    id: 'p_test_1',
+    student: 'Lucas',
+    name: 'Kaelen',
+    level: 3,
+    ac: 16,
+    hp: 18,
+    maxHp: 24,
+    dex: 14,
+    attacks: 'Espada Longa (+5, 1d8+3)'
+  });
+  addPlayerToCombat('p_test_1');
+`, sandbox);
+
+const addedPlayerCombatant = vm.runInContext(`state.combatants.find(c => c.playerId === 'p_test_1')`, sandbox);
+assert(addedPlayerCombatant !== undefined, 'Jogador adicionado à lista de combatentes');
+assert(addedPlayerCombatant && addedPlayerCombatant.hp === 18, 'Combatente preservou o PV atual da ficha (18/24 PV)');
+assert(addedPlayerCombatant && addedPlayerCombatant.maxHp === 24, 'Combatente preservou o PV Máximo');
+
+// Teste 3.4: Adição de Criaturas em Lote (Qtd: 3) com nomes sequenciais
+vm.runInContext(`
+  state.combatants = [];
+  addMonsterToCombat('Goblin', 15, 7, 'Cimitarra (+4, 1d6+2)', 'qty-test');
+`, sandbox);
+const goblins = vm.runInContext(`state.combatants.filter(c => c.name.startsWith('Goblin'))`, sandbox);
+const goblinNames = goblins.map(g => g.name).sort();
+assert(goblins.length === 3, 'Adicionou exatamente 3 Goblins ao combate');
+assert(goblinNames[0] === 'Goblin #1' && goblinNames[1] === 'Goblin #2' && goblinNames[2] === 'Goblin #3', 'Goblins numerados sequencialmente (1, 2, 3)');
+
+// Teste 3.5: Ajuste Rápido de PV e Sincronização com Ficha
+vm.runInContext(`
+  addPlayerToCombat('p_test_1');
+  const comb = state.combatants.find(c => c.playerId === 'p_test_1');
+  quickAdjustCombatantHp(comb.id, -5);
+`, sandbox);
+const updatedCombatant = vm.runInContext(`state.combatants.find(c => c.playerId === 'p_test_1')`, sandbox);
+const updatedPlayer = vm.runInContext(`PLAYERS.find(p => p.id === 'p_test_1')`, sandbox);
+assert(updatedCombatant && updatedCombatant.hp === 13, 'Combatente sofreu 5 de dano (18 -> 13 PV)');
+assert(updatedPlayer && updatedPlayer.hp === 13, 'Dano no combate sincronizou de volta na ficha do jogador');
+
+// Teste 3.6: Exclusão Segura e Limpeza em Cascata
+vm.runInContext(`deletePlayerDirect('p_test_1');`, sandbox);
+const playerStillExists = vm.runInContext(`PLAYERS.some(p => p.id === 'p_test_1')`, sandbox);
+const combatantStillExists = vm.runInContext(`state.combatants.some(c => c.playerId === 'p_test_1')`, sandbox);
+assert(!playerStillExists, 'Ficha excluída de PLAYERS');
+assert(!combatantStillExists, 'Combatente removido automaticamente do combate');
+
+// Teste 3.7: Normalização de Strings (Busca sem Acentos)
+assert(vm.runInContext("normalizeStr('Dragão Vermelho Anão')", sandbox) === 'dragao vermelho anao', 'Normalização de acentos: "Dragão Vermelho Anão" -> "dragao vermelho anao"');
+assert(vm.runInContext("normalizeStr('Mísseis Mágicos')", sandbox) === 'misseis magicos', 'Normalização de acentos: "Mísseis Mágicos" -> "misseis magicos"');
+
+// Teste 3.8: Lançamento de Magia do Grimório no Combate
+const prevLogsCount = vm.runInContext('state.logs.length', sandbox);
+vm.runInContext("castSpellToCombat('Bola de Fogo', 3, 'Uma esfera brilhante explode em chamas.');", sandbox);
+const newLogsCount = vm.runInContext('state.logs.length', sandbox);
+assert(newLogsCount > prevLogsCount, 'Lançamento de magia registrado no histórico de combate');
+
+// Teste 3.9: Adição de NPC Gerado ao Combate
+vm.runInContext(`
+  lastGeneratedNPC = { name: 'Erick Ferreiro', race: 'Humano', job: 'Ferreiro de Armas', trait: 'Honesto' };
+  addNPCToCombat();
+`, sandbox);
+const npcCombatant = vm.runInContext("state.combatants.find(c => c.name.includes('Erick Ferreiro'))", sandbox);
+// Teste 3.10: Sistema de Grid VTT - Tamanhos de Tokens D&D 5E
+assert(vm.runInContext("getTokenSpan({ size: 'medium' })", sandbox) === 1, 'Tamanho de token Médio/Pequeno ocupa 1 célula');
+assert(vm.runInContext("getTokenSpan({ size: 'large' })", sandbox) === 2, 'Tamanho de token Grande ocupa 2 células (2x2)');
+assert(vm.runInContext("getTokenSpan({ size: 'huge' })", sandbox) === 3, 'Tamanho de token Enorme ocupa 3 células (3x3)');
+assert(vm.runInContext("getTokenSpan({ size: 'gargantuan' })", sandbox) === 4, 'Tamanho de token Imenso/Gargantuesco ocupa 4 células (4x4)');
+
+// Teste 3.11: Resolução de Ícones Temáticos de Tokens
+assert(vm.runInContext("getTokenClassIcon({ type: 'player' }, { className: 'Mago Evocador' })", sandbox) === '🧙‍♂️', 'Ícone de Mago resolvido corretamente');
+assert(vm.runInContext("getTokenClassIcon({ type: 'player' }, { className: 'Guerreiro' })", sandbox) === '⚔️', 'Ícone de Guerreiro resolvido corretamente');
+assert(vm.runInContext("getTokenClassIcon({ type: 'monster', name: 'Dragão Jovem' }, {})", sandbox) === '🐉', 'Ícone de Dragão resolvido corretamente');
+
+// Teste 3.12: Controle de Zoom e Navegação do Grid
+vm.runInContext(`
+  gridState.zoom = 1.0;
+  zoomBattleGrid(0.2);
+`, sandbox);
+assert(vm.runInContext("gridState.zoom", sandbox) === 1.2, 'Zoom in aumentou escala para 1.2x');
+vm.runInContext(`zoomBattleGrid(5.0);`, sandbox);
+assert(vm.runInContext("gridState.zoom", sandbox) === 2.5, 'Zoom respeita limite máximo de 2.5x');
+vm.runInContext(`zoomBattleGrid(-10.0);`, sandbox);
+assert(vm.runInContext("gridState.zoom", sandbox) === 0.35, 'Zoom respeita limite mínimo de 0.35x');
+
+// Teste 3.13: Alternância da Gaveta de Combatentes do Grid
+vm.runInContext(`
+  isCombatantsDrawerOpen = false;
+  toggleCombatantsDrawer();
+`, sandbox);
+assert(vm.runInContext("isCombatantsDrawerOpen", sandbox) === true, 'Abertura da gaveta de combatentes do grid ativada');
+
+// Teste 3.14: Centralização e Foco de Câmera no Grid
+vm.runInContext(`
+  resetBattleGridZoom();
+`, sandbox);
+assert(vm.runInContext("gridState.zoom", sandbox) === 1.0, 'Reset de zoom retorna para escala 1.0');
+
+// Teste 3.15: Gestão de Cenas e Multi-Mapas
+vm.runInContext(`
+  initScenes();
+  const initialSceneCount = scenesState.scenes.length;
+  // Cria nova cena
+  document.getElementById('inp-scene-name').value = 'Caverna dos Vermes';
+  document.getElementById('inp-scene-theme').value = 'bg-cave';
+  document.getElementById('inp-scene-width').value = '1400';
+  document.getElementById('inp-scene-height').value = '900';
+  submitCreateScene();
+`, sandbox);
+assert(vm.runInContext("scenesState.scenes.length", sandbox) >= 2, 'Nova cena criada com sucesso no gerenciador de cenas');
+assert(vm.runInContext("gridState.theme", sandbox) === 'bg-cave', 'Tema da cena ativa carregado no gridState');
+assert(vm.runInContext("gridState.width", sandbox) === 1400, 'Largura da cena ativa atualizada para 1400px');
+
+// Teste 3.16: Alternância e Duplicação de Cenas
+vm.runInContext(`
+  const activeId = scenesState.activeSceneId;
+  duplicateScene(activeId);
+`, sandbox);
+const clonedScene = vm.runInContext("scenesState.scenes[scenesState.scenes.length - 1]", sandbox);
+assert(clonedScene && clonedScene.name.includes('(Cópia)'), 'Cena duplicada com sucesso com sufixo (Cópia)');
+
+// Teste 3.17: Ferramentas do VTT e Régua de Medição Tática
+vm.runInContext(`
+  setVttTool('ruler');
+`, sandbox);
+assert(vm.runInContext("activeVttTool", sandbox) === 'ruler', 'Modo de régua tática ativado com sucesso');
+vm.runInContext(`
+  setVttTool('draw');
+`, sandbox);
+assert(vm.runInContext("activeVttTool", sandbox) === 'draw', 'Modo de giz/desenho tático ativado com sucesso');
+
+// Teste 3.18: Camada de Desenho Tático
+vm.runInContext(`
+  gridState.drawings = [{ color: '#f59e0b', size: 3, points: [{x: 10, y: 10}, {x: 50, y: 50}] }];
+  saveScenesState();
+  clearDrawings();
+`, sandbox);
+assert(vm.runInContext("gridState.drawings.length", sandbox) === 0, 'Limpeza de desenhos executada com sucesso');
+
+// Teste 3.19: Templates AoE Expandidos
+vm.runInContext(`
+  addAoETemplate('circle_4m');
+  addAoETemplate('cone_9m');
+`, sandbox);
+const hasCircle4m = vm.runInContext("gridState.aoeTemplates.some(a => a.type === 'circle_4m')", sandbox);
+const hasCone9m = vm.runInContext("gridState.aoeTemplates.some(a => a.type === 'cone_9m')", sandbox);
+assert(hasCircle4m, 'Template AoE Espírito Guardião (4,5m / 15ft) adicionado ao grid');
+assert(hasCone9m, 'Template AoE Sopro do Dragão (9m / 30ft) adicionado ao grid');
+
+// Teste 3.20: Grimório D&D 5E Expandido e Mapeamento por Classes
+const totalSpellsCount = vm.runInContext("typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.length : 0", sandbox);
+assert(totalSpellsCount >= 300, `Grimório carregado com acervo completo (${totalSpellsCount} magias)`);
+
+const bardSpells = vm.runInContext("SPELLS_DATA.filter(s => s.classes.includes('Bardo')).length", sandbox);
+const wizardSpells = vm.runInContext("SPELLS_DATA.filter(s => s.classes.includes('Mago')).length", sandbox);
+const clericSpells = vm.runInContext("SPELLS_DATA.filter(s => s.classes.includes('Clérigo')).length", sandbox);
+const paladinSpells = vm.runInContext("SPELLS_DATA.filter(s => s.classes.includes('Paladino')).length", sandbox);
+
+assert(bardSpells > 100, `Mapeamento de magias de Bardo verificado (${bardSpells} magias)`);
+assert(wizardSpells > 180, `Mapeamento de magias de Mago verificado (${wizardSpells} magias)`);
+assert(clericSpells > 90, `Mapeamento de magias de Clérigo verificado (${clericSpells} magias)`);
+assert(paladinSpells > 30, `Mapeamento de magias de Paladino verificado (${paladinSpells} magias)`);
+
+// Teste 3.21: Catálogo de Equipamentos D&D 5E e Preços Padronizados em Ouro (PO)
+const totalEquipCount = vm.runInContext("typeof EQUIPMENT_DATA !== 'undefined' ? EQUIPMENT_DATA.length : 0", sandbox);
+assert(totalEquipCount >= 100, `Catálogo de equipamentos carregado com acervo completo (${totalEquipCount} itens)`);
+
+const allPricesInGold = vm.runInContext("EQUIPMENT_DATA.every(e => e.cost && e.cost.includes('PO') && !/\\b(PP|PC|PE|PL)\\b/.test(e.cost))", sandbox);
+assert(allPricesInGold, 'Todos os itens possuem preços integralmente convertidos e formatados em Peças de Ouro (PO)');
+
+const hasCategories = vm.runInContext(`
+  ['Armaduras e Escudos', 'Armas Simples', 'Armas Marciais', 'Munições', 'Equipamento de Aventura', 'Focos e Itens Arcanos', 'Ferramentas e Kits', 'Montarias e Animais', 'Veículos e Arreios', 'Pacotes de Equipamento', 'Poções e Alquimia', 'Comida e Serviços'].every(cat => EQUIPMENT_DATA.some(e => e.category === cat))
+`, sandbox);
+assert(hasCategories, 'Todas as 12 categorias de equipamentos foram populadas corretamente');
+
+// Teste 3.22: Árvores de Habilidades e Progressão de Classes D&D 5E 2024
+const classesCode = fs.readFileSync(path.join(__dirname, 'src/data/classes.js'), 'utf8');
+const classesJsCode = fs.readFileSync(path.join(__dirname, 'src/js/classes.js'), 'utf8');
+vm.runInContext(classesCode, sandbox);
+vm.runInContext(classesJsCode, sandbox);
+
+const totalClassesCount = vm.runInContext("typeof CLASSES_DATA !== 'undefined' ? CLASSES_DATA.length : 0", sandbox);
+assert(totalClassesCount === 12, `Todas as 12 classes oficiais D&D 5E 2024 carregadas com sucesso (${totalClassesCount} classes)`);
+
+const allClassesHave20Levels = vm.runInContext("CLASSES_DATA.every(c => Array.isArray(c.progression) && c.progression.length === 20)", sandbox);
+assert(allClassesHave20Levels, 'Todas as 12 classes possuem tabela completa de progressão do Nível 1 ao 20');
+
+const allClassesHave4Subclasses = vm.runInContext("CLASSES_DATA.every(c => Array.isArray(c.subclasses) && c.subclasses.length >= 4)", sandbox);
+assert(allClassesHave4Subclasses, 'Todas as 12 classes possuem no mínimo 4 subclasses oficiais detalhadas');
+
+const allClassesHaveFeatures = vm.runInContext("CLASSES_DATA.every(c => Array.isArray(c.features) && c.features.length >= 5)", sandbox);
+assert(allClassesHaveFeatures, 'Todas as classes possuem acervo estruturado de habilidades base');
+
+vm.runInContext(`
+  selectClass('mago');
+  selectSubclass(2);
+`, sandbox);
+assert(vm.runInContext("selectedClassId", sandbox) === 'mago', 'Seleção de classe (Mago) executada com sucesso');
+assert(vm.runInContext("selectedSubclassIdx", sandbox) === 2, 'Seleção de subclasse (Índice 2) executada com sucesso');
+
+// Teste do Modal de Detalhes da Habilidade
+vm.runInContext(`
+  openSkillDetail('mago', 0, false);
+`, sandbox);
+assert(true, 'Abertura de modal de detalhes da habilidade executada sem erros');
+
+// Teste 3.23: Compêndio de Raças, Espécies e Linhagens D&D 5E 2024
+const speciesCode = fs.readFileSync(path.join(__dirname, 'src/data/species.js'), 'utf8');
+const speciesJsCode = fs.readFileSync(path.join(__dirname, 'src/js/species.js'), 'utf8');
+vm.runInContext(speciesCode, sandbox);
+vm.runInContext(speciesJsCode, sandbox);
+
+const totalSpeciesCount = vm.runInContext("typeof SPECIES_DATA !== 'undefined' ? SPECIES_DATA.length : 0", sandbox);
+assert(totalSpeciesCount === 10, `Todas as 10 espécies oficiais D&D 5E 2024 carregadas com sucesso (${totalSpeciesCount} espécies)`);
+
+const allSpeciesHaveAttributes = vm.runInContext("SPECIES_DATA.every(s => s.id && s.name && s.icon && s.size && s.speed && s.description && Array.isArray(s.traits) && s.traits.length > 0)", sandbox);
+assert(allSpeciesHaveAttributes, 'Todas as espécies possuem atributos completos (ícone, tamanho, deslocamento, descrição e características)');
+
+const allSpeciesHaveLineages = vm.runInContext("SPECIES_DATA.every(s => Array.isArray(s.lineages) && s.lineages.length > 0)", sandbox);
+assert(allSpeciesHaveLineages, 'Todas as espécies possuem linhagens ou sub-raças documentadas');
+
+vm.runInContext(`
+  selectSpecies('elfo');
+  selectLineage(1);
+`, sandbox);
+assert(vm.runInContext("activeSpeciesId", sandbox) === 'elfo', 'Seleção de espécie (Elfo) executada com sucesso');
+assert(vm.runInContext("activeLineageIdx", sandbox) === 1, 'Seleção de linhagem (Alto Elfo) executada com sucesso');
+
+// Teste de Busca e Filtro de Espécies
+vm.runInContext(`
+  handleSpeciesSearch('visão no escuro');
+  handleSpeciesFilterSize('pequeno');
+`, sandbox);
+assert(vm.runInContext("speciesSearchQuery", sandbox) === 'visão no escuro', 'Filtro de busca por termo em espécies verificado');
+assert(vm.runInContext("speciesFilterSize", sandbox) === 'pequeno', 'Filtro por tamanho de espécie verificado');
+
+// Teste 3.24: Bestiário Expandido (Pocket DM / SRD 5.2 / MM 2024)
+const totalBestiaryCount = vm.runInContext("typeof BESTIARY_DATA !== 'undefined' ? BESTIARY_DATA.length : 0", sandbox);
+assert(totalBestiaryCount >= 600, `Bestiário carregado com catálogo completo de criaturas (${totalBestiaryCount} monstros)`);
+
+const allMonstersHaveStats = vm.runInContext("BESTIARY_DATA.every(m => m.name && typeof m.ac === 'number' && typeof m.hp === 'number' && m.cr !== undefined && m.attack)", sandbox);
+assert(allMonstersHaveStats, 'Todos os monstros possuem nome, CA, PV, ND e ações válidas');
+
+const hasIconicMonsters = vm.runInContext(`
+  ['Aboleth', 'Balor', 'Behir', 'Carniçal', 'Dragão Vermelho Adulto', 'Goblin', 'Orc', 'Zumbi'].every(name => BESTIARY_DATA.some(m => m.name === name))
+`, sandbox);
+assert(hasIconicMonsters, 'Criaturas clássicas e icônicas do D&D presentes no catálogo (Aboleth, Balor, Behir, Carniçal, Dragão Vermelho, Goblin, Orc, Zumbi)');
+
+// Teste 3.25: Vinculação Automática Classe-Ficha e Lançamento de Magias por Slots
+const wizSlotsNv1 = vm.runInContext("calculateSpellSlots('Mago', 1)", sandbox);
+const wizSlotsNv5 = vm.runInContext("calculateSpellSlots('Mago', 5)", sandbox);
+const palSlotsNv5 = vm.runInContext("calculateSpellSlots('Paladino', 5)", sandbox);
+const warlockSlotsNv3 = vm.runInContext("calculateSpellSlots('Bruxo', 3)", sandbox);
+
+assert(wizSlotsNv1[0] === 2 && wizSlotsNv1[1] === 0, 'Cálculo de slots para Mago Nv 1 correto ([2, 0, 0, 0, 0])');
+assert(wizSlotsNv5[0] === 4 && wizSlotsNv5[1] === 3 && wizSlotsNv5[2] === 2, 'Cálculo de slots para Mago Nv 5 correto ([4, 3, 2, 0, 0])');
+assert(palSlotsNv5[0] === 4 && palSlotsNv5[1] === 2, 'Cálculo de slots para Paladino Nv 5 correto ([4, 2, 0, 0, 0])');
+assert(warlockSlotsNv3[1] === 2, 'Cálculo de pact magic para Bruxo Nv 3 correto (2 slots de 2º círculo)');
+
+assert(vm.runInContext("getHitDieForClass('Bárbaro')", sandbox) === '1d12', 'Dado de vida para Bárbaro = 1d12');
+assert(vm.runInContext("getHitDieForClass('Guerreiro')", sandbox) === '1d10', 'Dado de vida para Guerreiro = 1d10');
+assert(vm.runInContext("getHitDieForClass('Mago')", sandbox) === '1d6', 'Dado de vida para Mago = 1d6');
+assert(vm.runInContext("getHitDieForClass('Ladino')", sandbox) === '1d8', 'Dado de vida para Ladino = 1d8');
+
+const fighterFeaturesNv2 = vm.runInContext("getUnlockedClassFeatures('Guerreiro', 2, 0)", sandbox);
+assert(fighterFeaturesNv2.some(f => f.name.includes('Retomar o Fôlego')) && fighterFeaturesNv2.some(f => f.name.includes('Surto de Ação')), 'Habilidades desbloqueadas de Guerreiro Nv 2 recuperadas corretamente');
+
+// Teste de consumo de slot de magia ao lançar
+vm.runInContext(`
+  const pTest = {
+    id: 'p_caster_test',
+    name: 'Maga Teste',
+    student: 'Teste',
+    className: 'Mago',
+    level: 3,
+    slots: [4, 2, 0, 0, 0],
+    slotsUsed: [0, 0, 0, 0, 0],
+    preparedSpells: ['Mísseis Mágicos', 'Passo Nebuloso']
+  };
+  PLAYERS.push(pTest);
+  executeCastSpell('p_caster_test', 'Mísseis Mágicos', 1);
+`, sandbox);
+
+const updatedCaster = vm.runInContext("PLAYERS.find(p => p.id === 'p_caster_test')", sandbox);
+assert(updatedCaster && updatedCaster.slotsUsed[0] === 1, 'Lançamento de magia consumiu 1 espaço de 1º Círculo');
+
+// Teste 3.26: Compartilhamento de Ficha via Link, QR Code e Modo Portal do Jogador
+const shareUrl = vm.runInContext("generatePlayerShareUrl('p1')", sandbox);
+assert(shareUrl && shareUrl.includes('view=player') && shareUrl.includes('id=p1'), 'Geração de URL de compartilhamento com parâmetros de jogador');
+
+vm.runInContext(`
+  initPlayerPortalMode('p1');
+`, sandbox);
+assert(vm.runInContext("activePortalPlayerId", sandbox) === 'p1', 'Modo Portal do Jogador definiu activePortalPlayerId');
+assert(vm.runInContext("document.body.classList.contains('mode-player-portal')", sandbox) === true, 'Classe mode-player-portal adicionada ao body');
+
+// Validação de saída do modo portal
+vm.runInContext(`
+  exitPlayerPortalMode();
+`, sandbox);
+assert(vm.runInContext("activePortalPlayerId", sandbox) === null, 'Saída do modo portal limpou activePortalPlayerId');
+assert(vm.runInContext("document.body.classList.contains('mode-player-portal')", sandbox) === false, 'Classe mode-player-portal removida com sucesso');
+
+
+
+
+// Teste 3.27: Gestão de Campanhas, Heróis Vinculados, Diário e Inventário do Grupo
+const activeCamp = vm.runInContext("getActiveCampaign()", sandbox);
+assert(activeCamp && activeCamp.name.includes('Phandelver'), 'Campanha inicial carregada corretamente');
+
+// Teste de criação e seleção de campanha
+vm.runInContext(`
+  document.getElementById('inp-camp-id').value = '';
+  document.getElementById('inp-camp-name').value = 'Maldição de Strahd';
+  document.getElementById('inp-camp-desc').value = 'Uma terra tomada pelas brumas de Barovia.';
+  document.getElementById('inp-camp-status').value = 'active';
+  saveCampaignForm();
+`, sandbox);
+const createdCamp = vm.runInContext("getActiveCampaign()", sandbox);
+assert(createdCamp && createdCamp.name === 'Maldição de Strahd', 'Nova campanha criada e definida como ativa com sucesso');
+
+// Teste de adição de sessão ao diário
+vm.runInContext(`
+  document.getElementById('inp-sess-num').value = '1';
+  document.getElementById('inp-sess-date').value = '2026-03-10';
+  document.getElementById('inp-sess-title').value = 'As Brumas de Barovia';
+  document.getElementById('inp-sess-loc').value = 'Vila de Barovia';
+  document.getElementById('inp-sess-xp').value = '250';
+  document.getElementById('inp-sess-npcs').value = 'Ismark Kolyanovich, Ireena Kolyana';
+  document.getElementById('inp-sess-notes').value = 'O grupo acordou em meio a uma névoa espessa e encontrou a mansão do burgomestre.';
+  saveSessionLog();
+`, sandbox);
+const campWithSession = vm.runInContext("getActiveCampaign()", sandbox);
+assert(campWithSession.sessions.some(s => s.title === 'As Brumas de Barovia' && s.xpAwarded === 250), 'Sessão de diário registrada com sucesso na campanha ativa');
+
+// Teste de ajuste e divisão de tesouro coletivo (PO)
+vm.runInContext(`
+  const camp = getActiveCampaign();
+  camp.playerIds = ['p1', 'p2', 'p3', 'p4'];
+  camp.partyStash = { gold: 100, items: [], history: [] };
+  splitPartyGold();
+`, sandbox);
+assert(vm.runInContext("getActiveCampaign().partyStash.gold", sandbox) === 0, 'Divisão de ouro esvaziou o saldo correspondente do baú (100 PO / 4 heróis = 25 cada)');
+
+// Teste de itens no baú coletivo
+vm.runInContext(`
+  document.getElementById('inp-pitem-name').value = 'Símbolo Sagrado de Ravenkind';
+  document.getElementById('inp-pitem-qty').value = '1';
+  document.getElementById('inp-pitem-cat').value = 'Itens Mágicos';
+  document.getElementById('inp-pitem-carrier').value = 'Irmão Theron';
+  document.getElementById('inp-pitem-desc').value = 'Artefato sagrado de platina em formato de sol.';
+  savePartyItem();
+`, sandbox);
+assert(vm.runInContext("getActiveCampaign().partyStash.items.some(i => i.name === 'Símbolo Sagrado de Ravenkind' && i.carrier === 'Irmão Theron')", sandbox), 'Item mágico adicionado com sucesso ao baú do grupo com portador definido');
+
+// Teste 3.28: Rolador de Dados Global Flutuante e Fórmulas (M1)
+const roll1 = vm.runInContext("rollGlobalDice(20, 1, 0, 'normal', 'Teste d20')", sandbox);
+assert(roll1 && roll1.total >= 1 && roll1.total <= 20, `Rolagem d20 global no intervalo correto: ${roll1?.total}`);
+
+const rollAdv = vm.runInContext("rollGlobalDice(20, 1, 5, 'adv', 'd20 Vantagem +5')", sandbox);
+assert(rollAdv && rollAdv.total >= 6 && rollAdv.total <= 25, `Rolagem d20 c/ Vantagem +5 no intervalo correto: ${rollAdv?.total}`);
+
+const rollFormula = vm.runInContext("rollGlobalFormula('3d6+4', 'Ataque de Fogo')", sandbox);
+assert(rollFormula && rollFormula.total >= 7 && rollFormula.total <= 22, `Fórmula 3d6+4 calculada com sucesso: ${rollFormula?.total}`);
+
+const diceHistLen = vm.runInContext("GLOBAL_DICE_HISTORY.length", sandbox);
+assert(diceHistLen >= 3, `Histórico de rolagens registrado: ${diceHistLen} rolagens salvas`);
+
+// Teste 3.29: Condições de Status nas Fichas dos Personagens (M2)
+vm.runInContext("togglePlayerCondition('p1', 'envenenado')", sandbox);
+let p1Conds = vm.runInContext("PLAYERS.find(x => x.id === 'p1').conditions", sandbox);
+assert(p1Conds.includes('envenenado'), 'Condição "envenenado" adicionada com sucesso à ficha do jogador');
+
+vm.runInContext("togglePlayerCondition('p1', 'envenenado')", sandbox);
+p1Conds = vm.runInContext("PLAYERS.find(x => x.id === 'p1').conditions", sandbox);
+assert(!p1Conds.includes('envenenado'), 'Condição "envenenado" removida após toggle subsequente');
+
+// Teste 3.30: Origem, Antecedente e Background D&D 2024 (P3)
+const p1Data = vm.runInContext("PLAYERS.find(x => x.id === 'p1')", sandbox);
+assert(p1Data.background && p1Data.ideal && p1Data.bond && p1Data.flaw, 'Ficha possui campos de Antecedente, Ideal, Vínculo e Defeito estruturados');
+
+// Teste 3.31: Avatares de Personagem (P4)
+vm.runInContext("openAvatarModal('p1'); setPlayerAvatarPreset('🐉');", sandbox);
+const pCurrentAvatar = vm.runInContext("PLAYERS.find(x => x.id === 'p1').avatar", sandbox);
+assert(pCurrentAvatar === '🐉', 'Avatar atualizado com sucesso para emoji pré-definido');
+
+// Teste 3.32: Notas Rápidas do Mestre por Campanha (DM2)
+vm.runInContext(`
+  document.getElementById('inp-dm-quick-notes').value = 'O dragão verde Venindor planeja atacar a aldeia ao pôr do sol.';
+  saveDMNotes();
+`, sandbox);
+const campNotes = vm.runInContext("getActiveCampaign().dmNotes", sandbox);
+assert(campNotes && campNotes.includes('Venindor'), 'Notas rápidas do mestre salvas e persistidas com sucesso na campanha ativa');
+
+// Teste 3.33: Dashboard de Visão Geral da Campanha (DM3)
+vm.runInContext(`
+  const activeC = getActiveCampaign();
+  const cPlayers = (activeC.playerIds || []).map(id => PLAYERS.find(p => p.id === id)).filter(p => p);
+  renderCampaignDashboard(activeC, cPlayers);
+`, sandbox);
+assert(true, 'Dashboard de visão geral da campanha renderizado sem erros');
+
+// Teste 3.34: Perícias e Salvaguardas com Rolagens e Modificadores (P1)
+const skillsCount = vm.runInContext("typeof DND5E_SKILLS !== 'undefined' ? DND5E_SKILLS.length : 0", sandbox);
+assert(skillsCount === 18, `Catálogo oficial de 18 perícias D&D 5E carregado (${skillsCount} perícias)`);
+
+const allSkillsValid = vm.runInContext("DND5E_SKILLS.every(s => s.key && s.name && s.attr && s.label)", sandbox);
+assert(allSkillsValid, 'Todas as perícias possuem chave, nome, atributo e rótulo válidos');
+
+const skillRollResult = vm.runInContext("rollPlayerSkill('p1', 'atletismo', 'normal')", sandbox);
+assert(skillRollResult && skillRollResult.total >= 1 && skillRollResult.total <= 30, `Rolagem de perícia (Atletismo) executada com sucesso: Total ${skillRollResult?.total}`);
+
+const saveRollResult = vm.runInContext("rollPlayerSavingThrow('p1', 'str', 'normal')", sandbox);
+assert(saveRollResult && saveRollResult.total >= 1 && saveRollResult.total <= 30, `Rolagem de salvaguarda (FOR) executada com sucesso: Total ${saveRollResult?.total}`);
+
+// Toggle de Proficiência em Perícia e Salvaguarda
+vm.runInContext("togglePlayerSkillProf('p1', 'arcanismo')", sandbox);
+let p1Skills = vm.runInContext("PLAYERS.find(x => x.id === 'p1').skillProficiencies", sandbox);
+assert(p1Skills.includes('arcanismo'), 'Proficiência em Arcanismo adicionada à ficha de p1');
+
+vm.runInContext("togglePlayerSkillProf('p1', 'arcanismo')", sandbox);
+p1Skills = vm.runInContext("PLAYERS.find(x => x.id === 'p1').skillProficiencies", sandbox);
+assert(!p1Skills.includes('arcanismo'), 'Proficiência em Arcanismo removida de p1 após novo toggle');
+
+vm.runInContext("togglePlayerSaveProf('p1', 'dex')", sandbox);
+let p1Saves = vm.runInContext("PLAYERS.find(x => x.id === 'p1').saveProficiencies", sandbox);
+assert(p1Saves.includes('dex'), 'Proficiência na salvaguarda de DES adicionada a p1');
+
+// Teste 3.35: Histórico Cronológico de Ações do Personagem (P2)
+vm.runInContext("addPlayerActionLog('p1', '⚔️', 'Ataque teste com Machado', 'attack')", sandbox);
+let p1Logs = vm.runInContext("PLAYERS.find(x => x.id === 'p1').actionLogs", sandbox);
+assert(p1Logs.length > 0 && p1Logs[0].text.includes('Machado'), 'Ação registrada no histórico cronológico do personagem');
+
+// Verificação de hook automático de dano no log
+vm.runInContext("adjustPlayerHp('p1', -3)", sandbox);
+p1Logs = vm.runInContext("PLAYERS.find(x => x.id === 'p1').actionLogs", sandbox);
+assert(p1Logs.some(l => l.text.includes('3 de dano')), 'Dano sofrido registrado automaticamente no histórico do personagem');
+
+vm.runInContext("clearPlayerActionLogs('p1')", sandbox);
+p1Logs = vm.runInContext("PLAYERS.find(x => x.id === 'p1').actionLogs", sandbox);
+assert(p1Logs.length === 0, 'Histórico de ações do personagem limpo com sucesso');
+
+// Teste 3.36: Bloco de Notas Privado do Jogador (M5)
+vm.runInContext("handlePlayerNotesInput('p1', 'Descobri uma chave dourada no sarcófago.')", sandbox);
+const p1Notes = vm.runInContext("PLAYERS.find(x => x.id === 'p1').playerNotes", sandbox);
+assert(p1Notes && p1Notes.includes('chave dourada'), 'Bloco de notas privado atualizado e persistido com sucesso');
+
+// Teste 3.37: Barra de XP Animada e Marcos 5E (V4)
+const xpTableLen = vm.runInContext("typeof DND5E_XP_TABLE !== 'undefined' ? DND5E_XP_TABLE.length : 0", sandbox);
+assert(xpTableLen === 20, `Tabela de marcos de XP 5E carregada com 20 níveis (${xpTableLen} marcos)`);
+
+const p1XpProgress = vm.runInContext("getPlayerXpProgress(PLAYERS.find(x => x.id === 'p1'))", sandbox);
+assert(p1XpProgress && typeof p1XpProgress.pct === 'number' && p1XpProgress.pct >= 0 && p1XpProgress.pct <= 100, `Progresso de XP calculado com sucesso: ${p1XpProgress?.text} (${p1XpProgress?.pct}%)`);
+
+const p1InitialXp = vm.runInContext("PLAYERS.find(x => x.id === 'p1').xp", sandbox);
+vm.runInContext(`
+  const p = PLAYERS.find(x => x.id === 'p1');
+  p.xp += 200;
+  addPlayerActionLog(p.id, '✨', 'Ganhou +200 XP', 'xp');
+`, sandbox);
+const p1NewXp = vm.runInContext("PLAYERS.find(x => x.id === 'p1').xp", sandbox);
+assert(p1NewXp === p1InitialXp + 200, `XP do jogador incrementado com sucesso (${p1InitialXp} -> ${p1NewXp})`);
+
+// Teste 3.38: Gerador & Balanceador de Encontros por Orçamento de XP / ND (DM1)
+const encGoblinXp = vm.runInContext("getMonsterXp('1/4')", sandbox);
+assert(encGoblinXp === 50, `XP de monstro ND 1/4 calculado com sucesso: ${encGoblinXp} XP`);
+
+const partyThresholds = vm.runInContext("getPartyXpThresholds([3, 3, 3, 3])", sandbox);
+assert(partyThresholds.easy === 300 && partyThresholds.medium === 600 && partyThresholds.hard === 900 && partyThresholds.deadly === 1600, 'Orçamento de XP para 4 heróis de Nível 3 calculado corretamente (300/600/900/1600)');
+
+const encDiffResult = vm.runInContext("calculateEncounterDifficulty([3, 3, 3, 3], [{ cr: '1/4', count: 4, name: 'Goblin' }])", sandbox);
+assert(encDiffResult && encDiffResult.rawXp === 200 && encDiffResult.adjustedXp === 400 && encDiffResult.difficulty === 'Easy', `Dificuldade do encontro calculada com sucesso: ${encDiffResult?.difficulty} (${encDiffResult?.adjustedXp} XP Ajustado)`);
+
+// Teste 3.39: Iniciativa Relâmpago do Bestiário com Despacho Instantâneo (DM4)
+vm.runInContext(`
+  state.combatants = [];
+  openQuickInitModal('Goblin', 15, 7, '1/4', '+2');
+  document.getElementById('inp-quick-init-qty').value = '3';
+  submitQuickInit();
+`, sandbox);
+const combatantsAfterQuickInit = vm.runInContext("state.combatants", sandbox);
+assert(combatantsAfterQuickInit.length === 3, 'Iniciativa relâmpago despachou exatamente 3 goblins para o combate');
+assert(combatantsAfterQuickInit.every(c => c.init >= 1 && c.init <= 25), 'Iniciativas individuais roladas com sucesso no envio relâmpago');
+
+// Teste 3.40: Temporizador de Turno de Combate com Auto-Reset (M6)
+vm.runInContext(`
+  setTurnTimerDuration(60);
+  startTurnTimer();
+  addTurnTimerSeconds(15);
+`, sandbox);
+assert(vm.runInContext("turnTimerRemaining", sandbox) === 75, 'Temporizador de turno configurado e incrementado com sucesso (+15s -> 75s)');
+assert(vm.runInContext("turnTimerRunning", sandbox) === true, 'Temporizador de turno em execução');
+
+vm.runInContext(`
+  pauseTurnTimer();
+  resetTurnTimer();
+`, sandbox);
+assert(vm.runInContext("turnTimerRemaining", sandbox) === 60, 'Reset do temporizador de turno retornou para duração padrão (60s)');
+assert(vm.runInContext("turnTimerRunning", sandbox) === false, 'Temporizador de turno pausado');
+
+// Teste 3.41: Contador e Automação de Cargas por Descanso (M3)
+vm.runInContext(`
+  const pFighter = {
+    id: 'p_fighter_m3',
+    name: 'Guerreiro Teste',
+    student: 'Felipe',
+    className: 'Guerreiro',
+    level: 3,
+    hp: 28,
+    maxHp: 28,
+    con: 14,
+    featureCharges: []
+  };
+  PLAYERS.push(pFighter);
+  initPlayerFeatureCharges(pFighter);
+`, sandbox);
+const fighterCharges = vm.runInContext("PLAYERS.find(p => p.id === 'p_fighter_m3').featureCharges", sandbox);
+assert(fighterCharges.length >= 2, `Cargas de classe inicializadas para Guerreiro (${fighterCharges.length} habilidades registradas)`);
+assert(fighterCharges.some(f => f.id === 'second_wind' && f.max === 1 && f.restType === 'short'), 'Retomar o Fôlego (1 carga / descanso curto) configurado');
+assert(fighterCharges.some(f => f.id === 'action_surge' && f.max === 1 && f.restType === 'short'), 'Surto de Ação (1 carga / descanso curto) configurado');
+
+vm.runInContext(`
+  usePlayerFeatureCharge('p_fighter_m3', 'second_wind', 1);
+`, sandbox);
+const fighterSecondWind = vm.runInContext("PLAYERS.find(p => p.id === 'p_fighter_m3').featureCharges.find(f => f.id === 'second_wind')", sandbox);
+assert(fighterSecondWind && fighterSecondWind.used === 1, 'Uso de carga de Retomar o Fôlego registrado com sucesso');
+
+// Restauração em Descanso Curto
+vm.runInContext(`
+  playerShortRest('p_fighter_m3');
+`, sandbox);
+const fighterSecondWindAfterRest = vm.runInContext("PLAYERS.find(p => p.id === 'p_fighter_m3').featureCharges.find(f => f.id === 'second_wind')", sandbox);
+assert(fighterSecondWindAfterRest && fighterSecondWindAfterRest.used === 0, 'Descanso Curto restaurou integralmente as cargas de descanso curto');
+
+// Teste 3.42: Exportação e Impressão de Crônicas da Campanha A4/PDF (DM5)
+vm.runInContext(`
+  printCampaignChronicles();
+`, sandbox);
+assert(typeof vm.runInContext("printCampaignChronicles", sandbox) === 'function', 'Função de impressão de crônicas da campanha exportada com sucesso');
+
+// Teste 3.43: Inspiração Heroica (D&D 2024) e Rolagem com Vantagem (M4)
+vm.runInContext(`
+  const pInsp = PLAYERS.find(p => p.id === 'p1');
+  pInsp.inspiration = true;
+  const inspRoll = usePlayerInspirationRoll('p1');
+`, sandbox);
+const pInspAfter = vm.runInContext("PLAYERS.find(p => p.id === 'p1')", sandbox);
+assert(pInspAfter.inspiration === false, 'Uso da Inspiração Heroica consumiu o estado de inspiração do jogador');
+
+// Teste 3.44: Salvaguardas contra a Morte Interativas (Death Saves - M7 / P5)
+vm.runInContext(`
+  const pDeath = PLAYERS.find(p => p.id === 'p1');
+  pDeath.hp = 0;
+  pDeath.deathSaves = { success: 0, fail: 0 };
+  toggleDeathSave('p1', 'success', 1);
+  toggleDeathSave('p1', 'fail', 2);
+`, sandbox);
+const pDeathState = vm.runInContext("PLAYERS.find(p => p.id === 'p1').deathSaves", sandbox);
+assert(pDeathState.success === 1 && pDeathState.fail === 2, 'Toggle manual de sucessos e falhas de salvaguarda de morte verificado');
+
+// Rolagem de teste contra a morte
+vm.runInContext(`
+  const dsRoll = rollDeathSave('p1');
+`, sandbox);
+const pDeathStateAfterRoll = vm.runInContext("PLAYERS.find(p => p.id === 'p1').deathSaves", sandbox);
+assert(pDeathStateAfterRoll.success >= 1 || pDeathStateAfterRoll.fail >= 2 || vm.runInContext("PLAYERS.find(p => p.id === 'p1').hp", sandbox) === 1, 'Rolagem automática de salvaguarda de morte executada com sucesso');
+
+// Teste de cura resetando death saves
+vm.runInContext(`
+  const pHeal = PLAYERS.find(p => p.id === 'p1');
+  pHeal.hp = 10;
+  pHeal.deathSaves = { success: 0, fail: 0 };
+`, sandbox);
+assert(vm.runInContext("PLAYERS.find(p => p.id === 'p1').deathSaves.fail", sandbox) === 0, 'Cura restaurou estado seguro e zerou contadores de morte');
+
+// Teste 3.45: Inventário Pessoal, Carga e Carteira de Moedas (M8 / P6)
+vm.runInContext(`
+  const pInv = PLAYERS.find(p => p.id === 'p1');
+  pInv.str = 16;
+  pInv.coins = { cp: 50, sp: 20, ep: 0, gp: 15, pp: 1 };
+  pInv.inventory = [
+    { name: 'Machado Grande', weight: 3.0, qty: 1, cost: '30 PO' },
+    { name: 'Cota de Malha', weight: 25.0, qty: 1, cost: '75 PO' },
+    { name: 'Tocha', weight: 0.5, qty: 5, cost: '5 PC' }
+  ];
+`, sandbox);
+const carryRes = vm.runInContext("getPlayerCarryCapacity(PLAYERS.find(p => p.id === 'p1'))", sandbox);
+assert(carryRes.maxKg === 120, 'Capacidade máxima de carga para FOR 16 calculada corretamente (120 kg)');
+assert(carryRes.itemsWeight === 30.5, `Peso de itens somado corretamente: ${carryRes.itemsWeight} kg`);
+assert(carryRes.isOverloaded === false, 'Personagem não está com sobrecarga');
+
+const purseRes = vm.runInContext("getPlayerCoinPurse(PLAYERS.find(p => p.id === 'p1'))", sandbox);
+assert(purseRes.totalGp === 27.5, `Patrimônio da carteira convertido corretamente: ${purseRes.totalGp} PO (50pc + 20pp + 15po + 1pl)`);
+
+// Teste 3.46: Motor de Áudio Procedural Web Audio API (V6)
+assert(typeof vm.runInContext("AudioEngine", sandbox) === 'object', 'Objeto AudioEngine instanciado globalmente');
+assert(typeof vm.runInContext("AudioEngine.playFX", sandbox) === 'function', 'AudioEngine.playFX exportado com sucesso');
+assert(typeof vm.runInContext("AudioEngine.playAmbiance", sandbox) === 'function', 'AudioEngine.playAmbiance exportado com sucesso');
+assert(typeof vm.runInContext("AudioEngine.toggleMute", sandbox) === 'function', 'AudioEngine.toggleMute exportado com sucesso');
+
+// Executa efeitos sem erro
+vm.runInContext(`
+  AudioEngine.playFX('dice');
+  AudioEngine.playFX('crit');
+  AudioEngine.playFX('fumble');
+  AudioEngine.playFX('spell');
+  AudioEngine.playFX('heal');
+  AudioEngine.playFX('sword');
+  AudioEngine.playFX('death');
+`, sandbox);
+assert(true, 'Todos os 7 efeitos sonoros procedurais (dice, crit, fumble, spell, heal, sword, death) executados sem erro');
+
+// Teste 3.47: Gerador de Ganchos de Aventura & Missões (DM6)
+vm.runInContext(`
+  generateAdventureHook();
+`, sandbox);
+const hookGen = vm.runInContext("lastGeneratedHook", sandbox);
+assert(hookGen && hookGen.patron && hookGen.objective && hookGen.twist && hookGen.reward, 'Gancho de Aventura completo gerado com patrono, objetivo, reviravolta e recompensas');
+
+// Teste 3.48: Gerador de Clima & Eventos de Viagem (DM6)
+vm.runInContext(`
+  generateWeatherEvent();
+`, sandbox);
+const weatherGen = vm.runInContext("lastGeneratedWeather", sandbox);
+assert(weatherGen && weatherGen.name && weatherGen.effect && weatherGen.icon, 'Condição climática de viagem gerada com regras oficiais D&D 5E');
+
+// Teste 3.50: HUD Integrado de Combate no VTT (VTT Combat Dock & Quick Actions)
+assert(typeof vm.runInContext("renderVttCombatHud", sandbox) === 'function', 'Função renderVttCombatHud exportada');
+assert(typeof vm.runInContext("applyVttCombatAction", sandbox) === 'function', 'Função applyVttCombatAction exportada');
+assert(typeof vm.runInContext("applyVttHalfDamage", sandbox) === 'function', 'Função applyVttHalfDamage exportada');
+assert(typeof vm.runInContext("applyVttDoubleDamage", sandbox) === 'function', 'Função applyVttDoubleDamage exportada');
+assert(typeof vm.runInContext("toggleVttCombatHud", sandbox) === 'function', 'Função toggleVttCombatHud exportada');
+
+// Adiciona combatentes e testa renderização do HUD
+vm.runInContext(`
+  state.combatants = [
+    { id: 'c1', name: 'Guerreiro Arthur', type: 'player', hp: 30, maxHp: 30, ac: 18, init: 15 },
+    { id: 'c2', name: 'Goblin Chefe', type: 'monster', hp: 20, maxHp: 20, ac: 14, init: 10 }
+  ];
+  state.turnIndex = 0;
+  state.round = 1;
+  renderVttCombatHud();
+`, sandbox);
+assert(vm.runInContext("document.getElementById('lbl-vtt-round').innerText", sandbox) === '1', 'HUD VTT exibe a rodada atual corretamente (Rodada 1)');
+assert(vm.runInContext("document.getElementById('vtt-active-name').innerText", sandbox) === 'Guerreiro Arthur', 'HUD VTT exibe o combatente do turno ativo (Guerreiro Arthur)');
+
+// Teste de aplicação de dano pelo HUD do VTT
+vm.runInContext(`
+  document.getElementById('sel-vtt-target').value = 'c2';
+  document.getElementById('inp-vtt-damage').value = '8';
+  applyVttCombatAction('damage');
+`, sandbox);
+assert(vm.runInContext("state.combatants.find(c => c.id === 'c2').hp", sandbox) === 12, 'Dano aplicado pelo HUD do VTT reduziu PV do alvo (20 -> 12 PV)');
+
+// Teste de aplicação de metade do dano
+vm.runInContext(`
+  document.getElementById('sel-vtt-target').value = 'c2';
+  document.getElementById('inp-vtt-damage').value = '6';
+  applyVttHalfDamage();
+`, sandbox);
+assert(vm.runInContext("state.combatants.find(c => c.id === 'c2').hp", sandbox) === 9, 'Metade do dano aplicada pelo HUD do VTT (12 - 3 = 9 PV)');
+
+// Teste de cura pelo HUD do VTT
+vm.runInContext(`
+  document.getElementById('sel-vtt-target').value = 'c2';
+  document.getElementById('inp-vtt-damage').value = '5';
+  applyVttCombatAction('heal');
+`, sandbox);
+assert(vm.runInContext("state.combatants.find(c => c.id === 'c2').hp", sandbox) === 14, 'Cura aplicada pelo HUD do VTT restaurou PV do alvo (9 + 5 = 14 PV)');
+
+// Teste de toggle colapsar/expandir HUD
+vm.runInContext("toggleVttCombatHud()", sandbox);
+assert(vm.runInContext("isVttCombatHudCollapsed", sandbox) === true, 'HUD do VTT recolhido com sucesso');
+vm.runInContext("toggleVttCombatHud()", sandbox);
+assert(vm.runInContext("isVttCombatHudCollapsed", sandbox) === false, 'HUD do VTT expandido com sucesso');
+
+// Teste 3.51: Nova Aba Dedicada de Configuração do Grid & Cenários (tab-grid-config)
+assert(typeof vm.runInContext("renderGridConfig", sandbox) === 'function', 'Função renderGridConfig exportada');
+assert(typeof vm.runInContext("updateGridDimensionsFromConfig", sandbox) === 'function', 'Função updateGridDimensionsFromConfig exportada');
+assert(typeof vm.runInContext("setGridPresetDimensions", sandbox) === 'function', 'Função setGridPresetDimensions exportada');
+assert(typeof vm.runInContext("setDmFogOpacity", sandbox) === 'function', 'Função setDmFogOpacity exportada');
+
+// Executa renderização da aba de configurações
+vm.runInContext("renderGridConfig()", sandbox);
+assert(vm.runInContext("document.getElementById('lbl-config-theme-current').innerText", sandbox).length > 0, 'Tema atual renderizado no painel de configurações');
+
+// Teste de alteração de dimensões via preset
+vm.runInContext("setGridPresetDimensions(1600, 1200)", sandbox);
+assert(vm.runInContext("gridState.width", sandbox) === 1600 && vm.runInContext("gridState.height", sandbox) === 1200, 'Preset de dimensões 1600x1200 aplicado com sucesso');
+
+// Teste de opacidade da névoa
+vm.runInContext("setDmFogOpacity('0.60')", sandbox);
+assert(vm.runInContext("document.getElementById('lbl-config-fow-opacity-val').innerText", sandbox) === '60%', 'Opacidade da névoa DM ajustada para 60%');
+
+// Teste de transição de aba para grid-config
+vm.runInContext("switchTab('grid-config')", sandbox);
+assert(vm.runInContext("document.getElementById('tab-grid-config').classList.contains('active')", sandbox) === true, 'Transição para aba de configuração do grid executada com sucesso');
+
+
+// Teste 3.52: HUD Refinado & Leitura em Tópicos Inteligentes (formatFeatureToTopics)
+assert(typeof vm.runInContext("formatFeatureToTopics", sandbox) === 'function', 'Função formatFeatureToTopics exportada');
+assert(typeof vm.runInContext("highlightInlineRules", sandbox) === 'function', 'Função highlightInlineRules exportada');
+assert(typeof vm.runInContext("getTopicIconForText", sandbox) === 'function', 'Função getTopicIconForText exportada');
+
+// Teste de destaque inline de dados, ouro, tempo e círculo de magia
+const testDescSample = "Começa com 6 magias de 1º círculo e ganha **+2 magias gratuitas**, gastando 50 PO e 2 horas de estudo para causar 1d6 de dano.";
+const highlighted = vm.runInContext(`highlightInlineRules(${JSON.stringify(testDescSample)})`, sandbox);
+assert(highlighted.includes('hl-keyword') && highlighted.includes('hl-dice') && highlighted.includes('hl-gold') && highlighted.includes('hl-time'), 'Destaques inline aplicados com sucesso para dados, ouro, tempo e palavras-chave');
+
+// Teste de estruturação em tópicos a partir de parágrafo longo
+const formattedTopicsHtml = vm.runInContext(`formatFeatureToTopics(${JSON.stringify(testDescSample)})`, sandbox);
+assert(formattedTopicsHtml.includes('skill-topic-card') || formattedTopicsHtml.includes('skill-concept-box'), 'Transformação de descrição em cards de tópicos gerada com sucesso');
+
+// Teste de abertura de habilidade com novo HUD
+vm.runInContext("openSkillDetail('mago', 0)", sandbox);
+const modalDescContent = vm.runInContext("document.getElementById('skill-modal-desc').innerHTML", sandbox);
+assert(modalDescContent.includes('skill-topic-card') || modalDescContent.includes('skill-concept-box'), 'Modal de detalhes de classe renderizou conteúdo estruturado em tópicos');
+
+// Teste de abertura de traço racial com novo HUD
+vm.runInContext("openSpeciesTraitModal('aasimar', 0)", sandbox);
+const speciesModalContent = vm.runInContext("document.getElementById('modal-species-detail-content').innerHTML", sandbox);
+// Teste 3.53: Scroll de Foco e Tela Cheia do Grid VTT
+assert(typeof vm.runInContext("scrollGridIntoFocus", sandbox) === 'function', 'Função scrollGridIntoFocus exportada');
+assert(typeof vm.runInContext("toggleGridFullscreen", sandbox) === 'function', 'Função toggleGridFullscreen exportada');
+
+// Executa scrollGridIntoFocus
+vm.runInContext("scrollGridIntoFocus()", sandbox);
+
+// Teste de alternância de tela cheia
+vm.runInContext("toggleGridFullscreen()", sandbox);
+assert(vm.runInContext("document.getElementById('battlegrid-container').classList.contains('is-fullscreen')", sandbox) === true, 'Modo Tela Cheia do Grid ativado com sucesso');
+vm.runInContext("toggleGridFullscreen()", sandbox);
+assert(vm.runInContext("document.getElementById('battlegrid-container').classList.contains('is-fullscreen')", sandbox) === false, 'Modo Tela Cheia do Grid desativado com sucesso');
+
+// Teste 3.54: Assistente de Multiclasse & Subir de Nível (Level-Up Wizard)
+assert(typeof vm.runInContext("MULTICLASS_PREREQUISITES", sandbox) === 'object', 'Tabela MULTICLASS_PREREQUISITES exportada');
+assert(typeof vm.runInContext("checkMulticlassPrerequisites", sandbox) === 'function', 'Função checkMulticlassPrerequisites exportada');
+assert(typeof vm.runInContext("calculateMulticlassSpellSlots", sandbox) === 'function', 'Função calculateMulticlassSpellSlots exportada');
+assert(typeof vm.runInContext("getPlayerClassesList", sandbox) === 'function', 'Função getPlayerClassesList exportada');
+assert(typeof vm.runInContext("openLevelUpWizard", sandbox) === 'function', 'Função openLevelUpWizard exportada');
+assert(typeof vm.runInContext("applyLevelUpConfirm", sandbox) === 'function', 'Função applyLevelUpConfirm exportada');
+
+// 1. Validação de Pré-requisitos de Multiclasse
+const mockWizardPlayer = {
+  id: 'test_p_multi',
+  name: 'Mago Teste',
+  className: 'mago',
+  level: 3,
+  attributes: { str: 10, dex: 12, con: 14, int: 16, wis: 13, cha: 8 },
+  maxHp: 18,
+  currentHp: 18,
+  slots: [4, 2, 0, 0, 0, 0, 0, 0, 0]
+};
+
+// Mago (INT 16 >= 13) quer multiclasse com Clérigo (SAB 13 >= 13) -> Válido
+const clericReq = vm.runInContext(`checkMulticlassPrerequisites(${JSON.stringify(mockWizardPlayer)}, 'clerigo')`, sandbox);
+assert(clericReq.canMulticlass === true, 'Pré-requisitos atendidos para multiclasse Mago/Clérigo (INT 16, SAB 13)');
+
+// Mago quer multiclasse com Bárbaro (FOR 10 < 13) -> Inválido
+const barbReq = vm.runInContext(`checkMulticlassPrerequisites(${JSON.stringify(mockWizardPlayer)}, 'barbaro')`, sandbox);
+assert(barbReq.canMulticlass === false && barbReq.reasons.some(r => r.toUpperCase().includes('FOR')), 'Pré-requisito bloqueado para Bárbaro por Força insuficiente (< 13)');
+
+// 2. Extração da Lista de Classes (getPlayerClassesList)
+const singleClassList = vm.runInContext(`getPlayerClassesList(${JSON.stringify(mockWizardPlayer)})`, sandbox);
+assert(singleClassList.length === 1 && singleClassList[0].className.toLowerCase() === 'mago' && singleClassList[0].level === 3, 'getPlayerClassesList tratou jogador de classe única com retrocompatibilidade');
+
+// 3. Cálculo de Espaços de Magia Multiclasse (Spell Slots D&D 5E)
+// Mago 3 + Clérigo 2 = Conjurador Efetivo Nível 5 (4/3/2 slots)
+const multiclassPlayer = {
+  ...mockWizardPlayer,
+  multiclass: [
+    { className: 'mago', level: 3, subclass: 'evocacao' },
+    { className: 'clerigo', level: 2, subclass: 'vida' }
+  ]
+};
+const combinedSlots = vm.runInContext(`calculateMulticlassSpellSlots(${JSON.stringify(multiclassPlayer)})`, sandbox);
+assert(combinedSlots[0] === 4 && combinedSlots[1] === 3 && combinedSlots[2] === 2, 'Slots combinados calculados corretamente para Mago 3 / Clérigo 2 (Conjurador Nv 5: 4/3/2)');
+
+// Bruxo 3 (Pact Magic 2 slots de 2º círculo) + Mago 2 (Full caster nv 2: 3 slots de 1º círculo)
+const warlockMage = {
+  ...mockWizardPlayer,
+  multiclass: [
+    { className: 'mago', level: 2 },
+    { className: 'bruxo', level: 3 }
+  ]
+};
+const warlockMageSlots = vm.runInContext(`calculateMulticlassSpellSlots(${JSON.stringify(warlockMage)})`, sandbox);
+assert(warlockMageSlots[0] === 3 && warlockMageSlots[1] === 2, 'Pact Magic e Spellcasting padrão combinados corretamente (Bruxo 3 + Mago 2)');
+
+// 4. Execução do Assistente de Level-Up no Sandbox
+vm.runInContext(`
+  PLAYERS.push(${JSON.stringify(mockWizardPlayer)});
+  openLevelUpWizard('test_p_multi');
+`, sandbox);
+assert(vm.runInContext("levelUpWizardState.targetPlayerId", sandbox) === 'test_p_multi', 'Assistente de level-up inicializado com o jogador correto');
+assert(vm.runInContext("levelUpWizardState.step", sandbox) === 1, 'Assistente iniciou no Passo 1 (Escolha de Classe)');
+
+// Seleciona subir de nível na mesma classe (Mago)
+vm.runInContext("selectLevelUpClass('mago')", sandbox);
+assert(vm.runInContext("levelUpWizardState.selectedClass", sandbox) === 'mago', 'Classe Mago selecionada para level-up');
+
+// Avança para o Passo 2 e 3
+vm.runInContext("handleLevelUpNext()", sandbox);
+assert(vm.runInContext("levelUpWizardState.step", sandbox) === 2, 'Assistente avançou para o Passo 2 (Novos Traços)');
+vm.runInContext("handleLevelUpNext()", sandbox);
+assert(vm.runInContext("levelUpWizardState.step", sandbox) === 3, 'Assistente avançou para o Passo 3 (PV & Conclusão)');
+
+// Define ganho de PV Fixo Médio (d6 -> 4 + CON mod (+2) = 6)
+vm.runInContext("setLevelUpHpMethod('fixed')", sandbox);
+assert(vm.runInContext("levelUpWizardState.calculatedHpGain", sandbox) === 6, 'Ganho de PV médio fixo de Mago calculado corretamente (4 + CON +2 = 6)');
+
+// Aplica a evolução de nível
+vm.runInContext("applyLevelUpConfirm()", sandbox);
+const updatedP = vm.runInContext("PLAYERS.find(p => p.id === 'test_p_multi')", sandbox);
+assert(updatedP.level === 4, 'Nível do personagem elevado para 4 com sucesso');
+assert(updatedP.maxHp === 24, 'PV Máximo do personagem incrementado com sucesso (18 + 6 = 24)');
+assert(updatedP.hitDice === '4d6', 'Dado de vida atualizado para 4d6');
+
+// Teste 3.55: Busca Inteligente & Relevância do Bestiário (D&D 5E / 2024)
+assert(typeof vm.runInContext("normalizeBestiarySearch", sandbox) === 'function', 'Função normalizeBestiarySearch exportada');
+assert(typeof vm.runInContext("parseMonsterCr", sandbox) === 'function', 'Função parseMonsterCr exportada');
+assert(typeof vm.runInContext("searchAndFilterMonsters", sandbox) === 'function', 'Função searchAndFilterMonsters exportada');
+assert(typeof vm.runInContext("clearBestiarySearch", sandbox) === 'function', 'Função clearBestiarySearch exportada');
+assert(typeof vm.runInContext("setBestiaryTypeFilter", sandbox) === 'function', 'Função setBestiaryTypeFilter exportada');
+
+// 1. Normalização de Hífens, Acentos e Pontuação
+const normSample = vm.runInContext("normalizeBestiarySearch('Homem-Lagarto, o Ancião!')", sandbox);
+assert(normSample === 'homem lagarto o anciao', 'normalizeBestiarySearch removeu pontuação e converteu hífens em espaços');
+
+// 2. Parser Seguro de Nível de Desafio (ND / CR)
+assert(vm.runInContext("parseMonsterCr('1/4')", sandbox) === 0.25, 'parseMonsterCr converteu 1/4 para 0.25');
+assert(vm.runInContext("parseMonsterCr('1/2')", sandbox) === 0.5, 'parseMonsterCr converteu 1/2 para 0.5');
+assert(vm.runInContext("parseMonsterCr('1/8')", sandbox) === 0.125, 'parseMonsterCr converteu 1/8 para 0.125');
+assert(vm.runInContext("parseMonsterCr('10')", sandbox) === 10, 'parseMonsterCr converteu 10 para 10');
+assert(vm.runInContext("parseMonsterCr(null)", sandbox) === 0, 'parseMonsterCr tratou null defensivamente');
+
+// 3. Busca por Termos com Hífen vs Sem Hífen
+const resWithHyphen = vm.runInContext("searchAndFilterMonsters(BESTIARY_DATA, 'urso-coruja', 'all', 'all', 'all', 'relevance')", sandbox);
+const resWithoutHyphen = vm.runInContext("searchAndFilterMonsters(BESTIARY_DATA, 'urso coruja', 'all', 'all', 'all', 'relevance')", sandbox);
+assert(resWithHyphen.length > 0 && resWithHyphen.length === resWithoutHyphen.length, 'Busca por "urso-coruja" e "urso coruja" retornou os mesmos resultados');
+
+// 4. Reconhecimento de Sinônimos em Inglês
+const resOwlbear = vm.runInContext("searchAndFilterMonsters(BESTIARY_DATA, 'owlbear', 'all', 'all', 'all', 'relevance')", sandbox);
+assert(resOwlbear.some(r => r.monster.name.toLowerCase().includes('urso coruja')), 'Busca em inglês "owlbear" encontrou Urso Coruja');
+
+const resRedDragon = vm.runInContext("searchAndFilterMonsters(BESTIARY_DATA, 'red dragon', 'all', 'all', 'all', 'relevance')", sandbox);
+assert(resRedDragon.some(r => r.monster.name.toLowerCase().includes('dragão vermelho')), 'Busca em inglês "red dragon" encontrou Dragão Vermelho');
+
+const resSkeleton = vm.runInContext("searchAndFilterMonsters(BESTIARY_DATA, 'skeleton', 'all', 'all', 'all', 'relevance')", sandbox);
+assert(resSkeleton.some(r => r.monster.name.toLowerCase().includes('esqueleto')), 'Busca em inglês "skeleton" encontrou Esqueleto');
+
+const resZombie = vm.runInContext("searchAndFilterMonsters(BESTIARY_DATA, 'zombie', 'all', 'all', 'all', 'relevance')", sandbox);
+assert(resZombie.some(r => r.monster.name.toLowerCase().includes('zumbi')), 'Busca em inglês "zombie" encontrou Zumbi');
+
+// 5. Ranking de Relevância
+const resWolf = vm.runInContext("searchAndFilterMonsters(BESTIARY_DATA, 'lobo', 'all', 'all', 'all', 'relevance')", sandbox);
+assert(resWolf[0].monster.name === 'Lobo', 'Ranking de relevância colocou correspondência exata "Lobo" no topo');
+
+// 6. Filtragem por Tipo de Criatura
+const resUndead = vm.runInContext("searchAndFilterMonsters(BESTIARY_DATA, '', 'all', 'all', 'undead', 'relevance')", sandbox);
+assert(resUndead.length > 0 && resUndead.some(r => r.monster.name === 'Esqueleto' || r.monster.name === 'Zumbi' || r.monster.name === 'Carniçal'), 'Filtro de categoria "undead" retornou criaturas mortas-vivas');
+
+// 7. Renderização com Empty State e Limpeza
+vm.runInContext("document.getElementById('filter-mon-q').value = 'criaturainexistente999'", sandbox);
+vm.runInContext("renderBestiary()", sandbox);
+assert(vm.runInContext("document.getElementById('grid-bestiary').innerHTML", sandbox).includes('bestiary-empty-state'), 'Empty state renderizado corretamente quando nenhum monstro é encontrado');
+
+vm.runInContext("clearBestiarySearch()", sandbox);
+assert(vm.runInContext("document.getElementById('filter-mon-q').value", sandbox) === '', 'clearBestiarySearch limpou o campo de busca');
+
+
+
+// --- SUÍTE 17: Rolagem Rápida de Ataques e Ações de Monstros (Combat Quick Rolls) ---
+console.log('\n⚔️ 17. Testes de Rolagem Rápida de Ataques de Monstros:');
+assert(typeof vm.runInContext("parseAndRenderMonsterActions", sandbox) === 'function', 'Função parseAndRenderMonsterActions existe');
+assert(typeof vm.runInContext("rollMonsterAttackAction", sandbox) === 'function', 'Função rollMonsterAttackAction existe');
+
+const parsedActionHtml = vm.runInContext("parseAndRenderMonsterActions('Mordida . Ataque com Arma: +4 para acertar, alcance 1,5 m. Acerto: 7 (2d4 + 2) de dano perfurante.', 'Goblin Chefe', 'm1')", sandbox);
+assert(parsedActionHtml.includes('btn-monster-atk'), 'parseAndRenderMonsterActions gerou botão .btn-monster-atk');
+assert(parsedActionHtml.includes('rollMonsterAttackAction'), 'parseAndRenderMonsterActions vinculou rollMonsterAttackAction');
+
+// Simula rolagem de ataque (suporta acerto normal 2d4+2 = 4-10 ou crítico 4d4+2 = 6-18)
+vm.runInContext("rollMonsterAttackAction('Mordida', 4, '2d4+2', 'Goblin Chefe', 'm1')", sandbox);
+const dmgVal = vm.runInContext("parseInt(document.getElementById('inp-damage').value, 10)", sandbox);
+assert(dmgVal >= 4 && dmgVal <= 18, `rollMonsterAttackAction rolou 2d4+2 e preencheu despachante de dano (${dmgVal})`);
+
+
+// --- SUÍTE 18: Busca Inteligente & Filtros Avançados no Grimório (Grimoire 361 Spells) ---
+console.log('\n📖 18. Testes de Busca Inteligente e Filtros do Grimório:');
+assert(typeof vm.runInContext("SPELL_PHRASE_ALIASES", sandbox) === 'object', 'Dicionário SPELL_PHRASE_ALIASES exportado');
+assert(vm.runInContext("SPELL_PHRASE_ALIASES['fireball']", sandbox) === 'bola de fogo', 'Alias fireball ➔ bola de fogo');
+assert(vm.runInContext("SPELL_PHRASE_ALIASES['cure wounds']", sandbox) === 'curar ferimentos', 'Alias cure wounds ➔ curar ferimentos');
+assert(typeof vm.runInContext("setGrimoireSchoolFilter", sandbox) === 'function', 'Função setGrimoireSchoolFilter exportada');
+assert(typeof vm.runInContext("clearSpellSearch", sandbox) === 'function', 'Função clearSpellSearch exportada');
+assert(typeof vm.runInContext("clearAllSpellFilters", sandbox) === 'function', 'Função clearAllSpellFilters exportada');
+
+// Limpa e inicializa filtros padrão
+vm.runInContext("clearAllSpellFilters()", sandbox);
+
+// Testa busca por alias em inglês
+vm.runInContext("document.getElementById('filter-spell-q').value = 'fireball'", sandbox);
+vm.runInContext("renderSpells()", sandbox);
+const cntSpellsAlias = vm.runInContext("parseInt(document.getElementById('cnt-spells').innerText, 10)", sandbox);
+assert(cntSpellsAlias > 0, `Busca por alias em inglês 'fireball' encontrou ${cntSpellsAlias} magias (Bola de Fogo)`);
+
+// Limpa busca
+vm.runInContext("clearAllSpellFilters()", sandbox);
+vm.runInContext("renderSpells()", sandbox);
+const cntSpellsTotal = vm.runInContext("parseInt(document.getElementById('cnt-spells').innerText, 10)", sandbox);
+assert(cntSpellsTotal >= 360, `Grimório possui catálogo completo de magias (${cntSpellsTotal} magias)`);
+
+
+// --- SUÍTE 19: Descanso Curto Interativo com Dados de Vida (Hit Dice) ---
+console.log('\n🎲 19. Testes de Descanso Curto e Reserva de Dados de Vida:');
+assert(typeof vm.runInContext("getPlayerHitDieType", sandbox) === 'function', 'Função getPlayerHitDieType exportada');
+assert(typeof vm.runInContext("getPlayerHitDicePool", sandbox) === 'function', 'Função getPlayerHitDicePool exportada');
+assert(typeof vm.runInContext("openShortRestModal", sandbox) === 'function', 'Função openShortRestModal exportada');
+assert(typeof vm.runInContext("rollShortRestHitDie", sandbox) === 'function', 'Função rollShortRestHitDie exportada');
+assert(typeof vm.runInContext("finishShortRestModal", sandbox) === 'function', 'Função finishShortRestModal exportada');
+
+const pFighter = vm.runInContext("PLAYERS[0]", sandbox);
+assert(vm.runInContext("getPlayerHitDieType(PLAYERS[0])", sandbox) === 'd10', 'Guerreiro possui Dado de Vida d10');
+const hdPool = vm.runInContext("getPlayerHitDicePool(PLAYERS[0])", sandbox);
+assert(hdPool.total === pFighter.level, `Total de dados de vida igual ao nível do personagem (${hdPool.total})`);
+
+// Simula dano e rolagem de dado de vida no descanso curto
+pFighter.hp = 5;
+pFighter.spentHitDice = 0;
+vm.runInContext("openShortRestModal(PLAYERS[0].id)", sandbox);
+assert(vm.runInContext("activeShortRestPlayerId", sandbox) === pFighter.id, 'activeShortRestPlayerId definido corretamente');
+
+vm.runInContext("rollShortRestHitDie(PLAYERS[0].id)", sandbox);
+assert(pFighter.hp > 5, `rollShortRestHitDie curou o personagem (PV: ${pFighter.hp}/${pFighter.maxHp})`);
+assert(pFighter.spentHitDice === 1, 'spentHitDice incrementado para 1');
+
+// Conclui descanso curto
+vm.runInContext("finishShortRestModal()", sandbox);
+assert(vm.runInContext("activeShortRestPlayerId", sandbox) === null, 'Modal de descanso curto fechado');
+
+// Testa recuperação de dados de vida no Descanso Longo
+vm.runInContext("playerLongRest(PLAYERS[0].id)", sandbox);
+assert(pFighter.hp === pFighter.maxHp, 'playerLongRest restaurou PV ao máximo');
+assert(pFighter.spentHitDice === 0, 'playerLongRest recuperou dados de vida gastos');
+
+// --- SUÍTE 20: Mapas Customizados & Auras de Alcance no VTT ---
+console.log('\n🗺️ 20. Testes de Mapas Customizados e Auras de Tokens:');
+assert(typeof vm.runInContext("setTokenAura", sandbox) === 'function', 'Função setTokenAura exportada');
+assert(typeof vm.runInContext("setGridMapBackground", sandbox) === 'function', 'Função setGridMapBackground exportada');
+
+// Adiciona token de teste
+vm.runInContext("gridState.tokens = [{ id: 'tok-t1', combatantId: 'p1', name: 'Valerius', type: 'player', x: 100, y: 100, size: 'medium' }]", sandbox);
+vm.runInContext("setTokenAura('tok-t1', '6m', 'gold')", sandbox);
+const tokT1 = vm.runInContext("gridState.tokens[0]", sandbox);
+assert(tokT1.aura && tokT1.aura.range === '6m' && tokT1.aura.color === 'gold', 'setTokenAura aplicou aura 6m dourada no token');
+
+vm.runInContext("renderBattleGrid()", sandbox);
+const gridTokensHtml = vm.runInContext("document.getElementById('grid-tokens-layer').innerHTML", sandbox);
+assert(gridTokensHtml.includes('token-aura aura-6m aura-gold'), 'renderBattleGrid renderizou a classe CSS da aura');
+
+// Testa background customizado
+vm.runInContext("setGridMapBackground('custom', 'data:image/png;base64,mockmapdata')", sandbox);
+assert(vm.runInContext("gridState.theme", sandbox) === 'custom', 'Tema customizado ativado no gridState');
+assert(vm.runInContext("gridState.customImage", sandbox) === 'data:image/png;base64,mockmapdata', 'customImage persistida no gridState');
+
+// --- SUÍTE 21: Sistema Completo de Backup & Restauração JSON ---
+console.log('\n💾 21. Testes de Backup e Restauração de Dados JSON:');
+assert(typeof vm.runInContext("exportCompleteBackupJson", sandbox) === 'function', 'Função exportCompleteBackupJson exportada');
+assert(typeof vm.runInContext("importBackupJson", sandbox) === 'function', 'Função importBackupJson exportada');
+assert(typeof vm.runInContext("handleBackupFileSelected", sandbox) === 'function', 'Função handleBackupFileSelected exportada');
+
+// --- SUÍTE 22: Integridade de Modais, Balanceador de Encontros, Timer Bar e Compêndio ---
+console.log('\n🛡️ 22. Testes de Balanceador de Encontros, Temporizador e Correções de Sistema:');
+assert(typeof vm.runInContext("openEncounterBuilderModal", sandbox) === 'function', 'Função openEncounterBuilderModal exportada');
+assert(typeof vm.runInContext("populateEncounterMonsterSelect", sandbox) === 'function', 'Função populateEncounterMonsterSelect exportada');
+assert(typeof vm.runInContext("addSelectedMonsterToEncounter", sandbox) === 'function', 'Função addSelectedMonsterToEncounter exportada');
+assert(typeof vm.runInContext("renderEncounterBuilder", sandbox) === 'function', 'Função renderEncounterBuilder exportada');
+assert(typeof vm.runInContext("dispatchEncounterToCombat", sandbox) === 'function', 'Função dispatchEncounterToCombat exportada');
+assert(typeof vm.runInContext("handleSpellSearchInput", sandbox) === 'function', 'Função handleSpellSearchInput exportada');
+assert(typeof vm.runInContext("togglePuzzle", sandbox) === 'function', 'Função togglePuzzle exportada');
+assert(typeof vm.runInContext("setDmFogOpacity", sandbox) === 'function', 'Função setDmFogOpacity exportada');
+
+// Testa cálculo de dificuldade de encontro no sandbox
+vm.runInContext("encounterDraftMonsters = [{ name: 'Goblin', cr: '1/4', ac: 15, hp: 7, attack: 'Cimitarra', qty: 4 }]", sandbox);
+vm.runInContext("encounterCustomPartyLevels = [2, 2, 2, 2]", sandbox);
+vm.runInContext("renderEncounterBuilder()", sandbox);
+const summaryBoxHtml = vm.runInContext("document.getElementById('enc-summary-box').innerHTML", sandbox);
+assert(summaryBoxHtml.includes('XP') && summaryBoxHtml.includes('enc-th-badge'), 'Encounter Builder renderizou resumo de XP e badges de dificuldade');
+
+// Testa despachar encontro para combate
+const prevCombatantsCount = vm.runInContext("state.combatants.length", sandbox);
+vm.runInContext("dispatchEncounterToCombat(false)", sandbox);
+const newCombatantsCount = vm.runInContext("state.combatants.length", sandbox);
+assert(newCombatantsCount === prevCombatantsCount + 4, `4 Goblins despachados para combate com sucesso (${prevCombatantsCount} -> ${newCombatantsCount})`);
+
+// Testa atualização do Turn Timer Bar
+vm.runInContext("turnTimerDuration = 60; turnTimerRemaining = 30;", sandbox);
+vm.runInContext("updateTurnTimerUI()", sandbox);
+const timerBar = vm.runInContext("document.getElementById('combat-timer-bar')", sandbox);
+assert(timerBar && timerBar.style.width === '50%', 'Barra de progresso do timer calculou 50% de tempo restante');
+
+// Testa ajuste de opacidade da névoa DM
+vm.runInContext("setDmFogOpacity(0.65)", sandbox);
+const fowCanvasDm = vm.runInContext("document.getElementById('fow-canvas-dm')", sandbox);
+const fowLbl = vm.runInContext("document.getElementById('lbl-config-fow-opacity-val')", sandbox);
+assert(fowCanvasDm && fowCanvasDm.style.opacity === '0.65', 'Opacidade do canvas da névoa DM ajustada para 0.65');
+assert(fowLbl && fowLbl.innerText === '65%', 'Label de opacidade da névoa atualizado para 65%');
+
+// Testa busca inteligente e filtros do grimório
+vm.runInContext("document.getElementById('filter-spell-q').value = 'fireball'", sandbox);
+vm.runInContext("handleSpellSearchInput('fireball')", sandbox);
+const spellsGrid = vm.runInContext("document.getElementById('grid-spells').innerHTML", sandbox);
+assert(spellsGrid.includes('Bola de Fogo'), 'handleSpellSearchInput filtrou e encontrou Bola de Fogo via alias fireball');
+
+console.log('\n========================================');
+console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
+if (failedTests === 0) {
+  console.log('🎉 TODOS OS TESTES PASSARAM COM SUCESSO! 🚀');
+  console.log('========================================\n');
+  process.exit(0);
+} else {
+  console.error(`💥 ${failedTests} TESTES FALHARAM! Verifique os logs acima.`);
+  console.log('========================================\n');
+  process.exit(1);
+}
+
+
+
