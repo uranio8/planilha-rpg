@@ -7630,7 +7630,10 @@
         <div class="card-panel">
           <div class="panel-header">
             <span>📖 Diário de Sessões (Crônicas da Mesa)</span>
-            <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="openSessionModal()">➕ Nova Sessão</button>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="recoverSessionsFromSnapshots()" title="Recuperar diários anteriores salvos em backups automáticos">🔄 Recuperar</button>
+              <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="openSessionModal()">➕ Nova Sessão</button>
+            </div>
           </div>
           <div id="camp-sessions-timeline" class="sessions-timeline-container"></div>
         </div>
@@ -8468,25 +8471,25 @@
       </div>
       <div>
         <label>Título / Tema da Sessão</label>
-        <input type="text" id="inp-sess-title" placeholder="Ex: O Resgate no Castelo Cragmaw">
+        <input type="text" id="inp-sess-title" placeholder="Ex: O Resgate no Castelo Cragmaw" oninput="saveSessionDraft()">
       </div>
       <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
         <div>
           <label>Local / Região</label>
-          <input type="text" id="inp-sess-loc" placeholder="Ex: Floresta Neverwinter">
+          <input type="text" id="inp-sess-loc" placeholder="Ex: Floresta Neverwinter" oninput="saveSessionDraft()">
         </div>
         <div>
           <label>XP Concedido (por aluno)</label>
-          <input type="number" id="inp-sess-xp" min="0" value="100">
+          <input type="number" id="inp-sess-xp" min="0" value="100" oninput="saveSessionDraft()">
         </div>
       </div>
       <div>
         <label>NPCs Encontrados / Inimigos Derrotados</label>
-        <input type="text" id="inp-sess-npcs" placeholder="Ex: Rei Grol, Vyerith, 3 Bugbears">
+        <input type="text" id="inp-sess-npcs" placeholder="Ex: Rei Grol, Vyerith, 3 Bugbears" oninput="saveSessionDraft()">
       </div>
       <div>
         <label>Crônica / Diário Narrativo da Sessão</label>
-        <textarea id="inp-sess-notes" rows="6" placeholder="Escreva o resumo da sessão, acontecimentos marcantes, decisões dos jogadores e ganchos para a próxima aventura..."></textarea>
+        <textarea id="inp-sess-notes" rows="6" placeholder="Escreva o resumo da sessão, acontecimentos marcantes, decisões dos jogadores e ganchos para a próxima aventura..." oninput="saveSessionDraft()"></textarea>
       </div>
       <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
         <button class="btn-secondary" onclick="closeSessionModal()">Cancelar</button>
@@ -27193,14 +27196,46 @@ function switchTab(tabId) {
   else if (tabId === 'grid-config') {
     if (typeof renderGridConfig === 'function') renderGridConfig();
   }
-  else if (tabId === 'spells' && typeof renderSpells === 'function') renderSpells();
-  else if (tabId === 'bestiary' && typeof renderBestiary === 'function') renderBestiary();
-  else if (tabId === 'equipment' && typeof renderEquipment === 'function') renderEquipment();
-  else if (tabId === 'classes' && typeof renderClasses === 'function') renderClasses();
-  else if (tabId === 'species' && typeof renderSpecies === 'function') renderSpecies();
+  else if (tabId === 'spells' && typeof renderSpells === 'function') {
+    if (!renderedTabs['spells']) {
+      renderSpells();
+      renderedTabs['spells'] = true;
+    }
+  }
+  else if (tabId === 'bestiary' && typeof renderBestiary === 'function') {
+    if (!renderedTabs['bestiary']) {
+      renderBestiary();
+      renderedTabs['bestiary'] = true;
+    }
+  }
+  else if (tabId === 'equipment' && typeof renderEquipment === 'function') {
+    if (!renderedTabs['equipment']) {
+      renderEquipment();
+      renderedTabs['equipment'] = true;
+    }
+  }
+  else if (tabId === 'classes' && typeof renderClasses === 'function') {
+    if (!renderedTabs['classes']) {
+      renderClasses();
+      renderedTabs['classes'] = true;
+    }
+  }
+  else if (tabId === 'species' && typeof renderSpecies === 'function') {
+    if (!renderedTabs['species']) {
+      renderSpecies();
+      renderedTabs['species'] = true;
+    }
+  }
   else if (tabId === 'campaigns' && typeof renderCampaigns === 'function') renderCampaigns();
+}
 
-  saveToLocalStorage();
+const renderedTabs = {};
+function invalidateTabRender(tabId) {
+  if (tabId) {
+    delete renderedTabs[tabId];
+  } else {
+    for (const k in renderedTabs) delete renderedTabs[k];
+  }
 }
 
 function getProfBonus(level) {
@@ -27884,6 +27919,74 @@ function startFirebaseRoomListener(roomId) {
   }
 }
 
+function mergeCloudCampaignsState(cloudCampaignsState) {
+  if (!cloudCampaignsState || !Array.isArray(cloudCampaignsState.campaigns)) return;
+  if (typeof CAMPAIGNS_STATE === 'undefined') return;
+
+  if (!CAMPAIGNS_STATE.campaigns || CAMPAIGNS_STATE.campaigns.length === 0) {
+    CAMPAIGNS_STATE = cloudCampaignsState;
+    return;
+  }
+
+  cloudCampaignsState.campaigns.forEach(remoteCamp => {
+    const localCamp = CAMPAIGNS_STATE.campaigns.find(c => c.id === remoteCamp.id);
+    if (!localCamp) {
+      CAMPAIGNS_STATE.campaigns.push(remoteCamp);
+    } else {
+      // Mescla diário de sessões garantindo que nenhuma sessão local seja perdida ou apagada
+      const localSessions = localCamp.sessions || [];
+      const remoteSessions = remoteCamp.sessions || [];
+      const mergedSessions = [...localSessions];
+
+      remoteSessions.forEach(rs => {
+        const localIdx = mergedSessions.findIndex(ls => ls.id === rs.id || (ls.number === rs.number && ls.date === rs.date));
+        if (localIdx >= 0) {
+          if ((rs.notes || '').length > (mergedSessions[localIdx].notes || '').length) {
+            mergedSessions[localIdx] = Object.assign({}, mergedSessions[localIdx], rs);
+          }
+        } else {
+          mergedSessions.push(rs);
+        }
+      });
+
+      localCamp.sessions = mergedSessions;
+      if (remoteCamp.name) localCamp.name = remoteCamp.name;
+      if (remoteCamp.system) localCamp.system = remoteCamp.system;
+      if (remoteCamp.description) localCamp.description = remoteCamp.description;
+
+      // Mescla Baú do Grupo e Tesouro
+      if (remoteCamp.partyStash) {
+        if (!localCamp.partyStash) {
+          localCamp.partyStash = remoteCamp.partyStash;
+        } else {
+          if (remoteCamp.partyStash.gold !== undefined && (!localCamp.partyStash.gold || localCamp.partyStash.gold === 0)) {
+            localCamp.partyStash.gold = remoteCamp.partyStash.gold;
+          }
+          const localItems = localCamp.partyStash.items || [];
+          const remoteItems = remoteCamp.partyStash.items || [];
+          const mergedItems = [...localItems];
+          remoteItems.forEach(ri => {
+            if (!mergedItems.some(li => li.id === ri.id || li.name === ri.name)) {
+              mergedItems.push(ri);
+            }
+          });
+          localCamp.partyStash.items = mergedItems;
+
+          const localHist = localCamp.partyStash.history || [];
+          const remoteHist = remoteCamp.partyStash.history || [];
+          const mergedHist = [...localHist];
+          remoteHist.forEach(rh => {
+            if (!mergedHist.some(lh => lh.id === rh.id || (lh.timestamp === rh.timestamp && lh.item === rh.item))) {
+              mergedHist.push(rh);
+            }
+          });
+          localCamp.partyStash.history = mergedHist;
+        }
+      }
+    }
+  });
+}
+
 function applyCloudDataToLocal(cloudData) {
   if (!cloudData) return;
 
@@ -27976,10 +28079,12 @@ function applyCloudDataToLocal(cloudData) {
       if (typeof renderVttCombatHud === 'function') renderVttCombatHud();
     }
 
-    // 4. Atualiza Campanhas, Baú do Grupo e Mesas de Jogo
+    // 4. Atualiza Campanhas, Baú do Grupo e Mesas de Jogo com mescla inteligente defensiva
     if (cloudData.campaigns && typeof CAMPAIGNS_STATE !== 'undefined') {
-      CAMPAIGNS_STATE = cloudData.campaigns;
-      if (typeof saveCampaignsState === 'function') saveCampaignsState();
+      mergeCloudCampaignsState(cloudData.campaigns);
+      try {
+        localStorage.setItem('dnd5e_prisco_campaigns_v1', JSON.stringify(CAMPAIGNS_STATE));
+      } catch(e) {}
       if (typeof renderCampaigns === 'function') renderCampaigns();
       if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
     }
@@ -34513,8 +34618,20 @@ function setGrimoireSchoolFilter(schoolName) {
   renderSpells();
 }
 
+let spellsVisibleLimit = 36;
+const SPELLS_CHUNK_SIZE = 36;
+let spellSearchDebounce = null;
+
 function handleSpellSearchInput(val) {
-  renderSpells();
+  if (spellSearchDebounce) clearTimeout(spellSearchDebounce);
+  spellSearchDebounce = setTimeout(() => {
+    renderSpells(true);
+  }, 120);
+}
+
+function loadMoreSpells() {
+  spellsVisibleLimit += SPELLS_CHUNK_SIZE;
+  renderSpells(false);
 }
 
 function clearSpellSearch() {
@@ -34523,7 +34640,7 @@ function clearSpellSearch() {
     inp.value = '';
     inp.focus();
   }
-  renderSpells();
+  renderSpells(true);
 }
 
 function clearAllSpellFilters() {
@@ -34545,11 +34662,14 @@ function clearAllSpellFilters() {
     chip.classList.toggle('active', chip.getAttribute('data-school') === 'all');
   });
 
-  renderSpells();
+  renderSpells(true);
 }
 
 // --- GRIMÓRIO DE MAGIAS ---
-function renderSpells() {
+function renderSpells(resetLimit = true) {
+  if (resetLimit) {
+    spellsVisibleLimit = SPELLS_CHUNK_SIZE;
+  }
   const grid = document.getElementById('grid-spells');
   const badge = document.getElementById('cnt-spells');
   const resultsCounter = document.getElementById('spells-meta-stats');
@@ -34611,11 +34731,19 @@ function renderSpells() {
     return 0;
   });
 
+  const visibleList = filtered.slice(0, spellsVisibleLimit);
+
   if (badge) badge.innerText = filtered.length;
-  if (resultsCounter) resultsCounter.innerText = `${filtered.length} magias encontradas`;
+  if (resultsCounter) {
+    if (filtered.length > visibleList.length) {
+      resultsCounter.innerText = `Mostrando ${visibleList.length} de ${filtered.length} magias`;
+    } else {
+      resultsCounter.innerText = `${filtered.length} magias encontradas`;
+    }
+  }
   if (!grid) return;
 
-  grid.innerHTML = filtered.map(s => {
+  let html = visibleList.map(s => {
     let formattedDesc = (s.desc || '')
       .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
       .replace(/\*(.*?)\*/g, '<i>$1</i>');
@@ -34661,6 +34789,18 @@ function renderSpells() {
       </div>
     `;
   }).join('');
+
+  if (spellsVisibleLimit < filtered.length) {
+    html += `
+      <div style="grid-column: 1 / -1; display: flex; justify-content: center; padding: 16px 0;">
+        <button class="btn-action" style="padding: 9px 22px; font-size: 12px; font-weight: 700; border-radius: 8px;" onclick="loadMoreSpells()">
+          🔽 Carregar mais magias (Mostrando ${visibleList.length} de ${filtered.length})
+        </button>
+      </div>
+    `;
+  }
+
+  grid.innerHTML = html;
 }
 
 function castSpellToCombat(name, level, desc) {
@@ -34751,14 +34891,24 @@ const BESTIARY_TYPE_KEYWORDS = {
   ooze: ['lodo', 'cubo gelatinoso', 'pudim negro', 'geleia ocre', 'lodo cinzento', 'gosma']
 };
 
-let activeBestiaryTypeChip = 'all';
+let bestiaryVisibleLimit = 36;
+const BESTIARY_CHUNK_SIZE = 36;
+let bestiarySearchDebounce = null;
 
 function handleBestiarySearchInput(val) {
   const btnClear = document.getElementById('btn-clear-mon-search');
   if (btnClear) {
     btnClear.style.display = val && val.trim().length > 0 ? 'flex' : 'none';
   }
-  renderBestiary();
+  if (bestiarySearchDebounce) clearTimeout(bestiarySearchDebounce);
+  bestiarySearchDebounce = setTimeout(() => {
+    renderBestiary(true);
+  }, 120);
+}
+
+function loadMoreBestiary() {
+  bestiaryVisibleLimit += BESTIARY_CHUNK_SIZE;
+  renderBestiary(false);
 }
 
 function clearBestiarySearch() {
@@ -34766,7 +34916,7 @@ function clearBestiarySearch() {
   if (inp) inp.value = '';
   const btnClear = document.getElementById('btn-clear-mon-search');
   if (btnClear) btnClear.style.display = 'none';
-  renderBestiary();
+  renderBestiary(true);
 }
 
 function setBestiaryTypeFilter(typeKey) {
@@ -34948,7 +35098,10 @@ function searchAndFilterMonsters(list, rawQ, srcFilter, crFilter, typeFilter, so
   return matched;
 }
 
-function renderBestiary() {
+function renderBestiary(resetLimit = true) {
+  if (resetLimit) {
+    bestiaryVisibleLimit = BESTIARY_CHUNK_SIZE;
+  }
   const grid = document.getElementById('grid-bestiary');
   const badge = document.getElementById('cnt-bestiary');
   const statsEl = document.getElementById('bestiary-meta-stats');
@@ -34968,10 +35121,14 @@ function renderBestiary() {
 
   const results = searchAndFilterMonsters(BESTIARY_DATA, rawQ, src, cr, typeFilter, sortOrder);
 
+  const visibleList = results.slice(0, bestiaryVisibleLimit);
+
   if (badge) badge.innerText = results.length;
   if (statsEl) {
     const totalCount = BESTIARY_DATA.length;
-    if (rawQ.trim() || src !== 'all' || cr !== 'all' || typeFilter !== 'all') {
+    if (results.length > visibleList.length) {
+      statsEl.innerHTML = `Mostrando <b>${visibleList.length}</b> de <b>${results.length}</b> criaturas encontradas (Total no livro: ${totalCount})`;
+    } else if (rawQ.trim() || src !== 'all' || cr !== 'all' || typeFilter !== 'all') {
       statsEl.innerHTML = `Mostrando <b>${results.length}</b> de <b>${totalCount}</b> criaturas encontradas`;
     } else {
       statsEl.innerHTML = `Catálogo completo com <b>${totalCount}</b> criaturas catalogadas (D&D 5E / MM 2024)`;
@@ -34996,7 +35153,7 @@ function renderBestiary() {
     return;
   }
 
-  grid.innerHTML = results.map(({ monster: m, activeTokens }, idx) => {
+  let html = visibleList.map(({ monster: m, activeTokens }, idx) => {
     const renderedName = highlightSearchMatch(m.name, activeTokens);
     const renderedAtk = highlightSearchMatch(m.attack, activeTokens);
 
@@ -35041,6 +35198,18 @@ function renderBestiary() {
       </div>
     `;
   }).join('');
+
+  if (bestiaryVisibleLimit < results.length) {
+    html += `
+      <div style="grid-column: 1 / -1; display: flex; justify-content: center; padding: 16px 0;">
+        <button class="btn-action" style="padding: 9px 22px; font-size: 12px; font-weight: 700; border-radius: 8px;" onclick="loadMoreBestiary()">
+          🐉 Carregar mais criaturas (Mostrando ${visibleList.length} de ${results.length})
+        </button>
+      </div>
+    `;
+  }
+
+  grid.innerHTML = html;
 }
 
 let activeQuickInitMonster = null;
@@ -36499,6 +36668,12 @@ function loadCampaignsState() {
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.campaigns) && parsed.campaigns.length > 0) {
         CAMPAIGNS_STATE = parsed;
+        const activeCamp = getActiveCampaign();
+        if (activeCamp && (!activeCamp.sessions || activeCamp.sessions.length === 0)) {
+          if (typeof recoverSessionsFromSnapshots === 'function') {
+            recoverSessionsFromSnapshots(true);
+          }
+        }
         return true;
       }
     }
@@ -36507,6 +36682,7 @@ function loadCampaignsState() {
 }
 
 function broadcastCampaignState() {
+  if (typeof isApplyingRemoteSync !== 'undefined' && isApplyingRemoteSync) return;
   if (typeof syncChannel !== 'undefined' && syncChannel) {
     syncChannel.postMessage({
       type: 'CAMPAIGNS_UPDATE',
@@ -36957,6 +37133,27 @@ function addAllCampaignHeroesToCombat() {
 
 // --- DIÁRIO DE SESSÕES ---
 let currentEditSessionId = null;
+let sessionDraftTimer = null;
+
+function saveSessionDraft() {
+  if (sessionDraftTimer) clearTimeout(sessionDraftTimer);
+  sessionDraftTimer = setTimeout(() => {
+    try {
+      const title = document.getElementById('inp-sess-title')?.value || '';
+      const notes = document.getElementById('inp-sess-notes')?.value || '';
+      const num = document.getElementById('inp-sess-num')?.value || '1';
+      const date = document.getElementById('inp-sess-date')?.value || '';
+      const loc = document.getElementById('inp-sess-loc')?.value || '';
+      const xp = document.getElementById('inp-sess-xp')?.value || '100';
+      const npcs = document.getElementById('inp-sess-npcs')?.value || '';
+
+      if (notes.trim() || title.trim()) {
+        const draft = { num, date, title, loc, xp, npcs, notes, timestamp: Date.now() };
+        localStorage.setItem('dnd5e_session_draft', JSON.stringify(draft));
+      }
+    } catch(e) {}
+  }, 250);
+}
 
 function openSessionModal(sessionId = null) {
   const camp = getActiveCampaign();
@@ -36979,6 +37176,24 @@ function openSessionModal(sessionId = null) {
   document.getElementById('inp-sess-npcs').value = sess ? (sess.keyNpcs || '') : '';
   document.getElementById('inp-sess-notes').value = sess ? sess.notes : '';
 
+  // Se for nova sessão e não tiver preenchido nada, restaura rascunho anterior se houver
+  if (!isEdit) {
+    try {
+      const rawDraft = localStorage.getItem('dnd5e_session_draft');
+      if (rawDraft) {
+        const draft = JSON.parse(rawDraft);
+        if (draft && (draft.notes || draft.title)) {
+          if (draft.title) document.getElementById('inp-sess-title').value = draft.title;
+          if (draft.loc) document.getElementById('inp-sess-loc').value = draft.loc;
+          if (draft.xp) document.getElementById('inp-sess-xp').value = draft.xp;
+          if (draft.npcs) document.getElementById('inp-sess-npcs').value = draft.npcs;
+          if (draft.notes) document.getElementById('inp-sess-notes').value = draft.notes;
+          if (draft.date) document.getElementById('inp-sess-date').value = draft.date;
+        }
+      }
+    } catch(e) {}
+  }
+
   modal.classList.add('open');
 }
 
@@ -36992,16 +37207,15 @@ function saveSessionLog() {
   if (!camp) return;
 
   const num = parseInt(document.getElementById('inp-sess-num').value) || 1;
-  const date = document.getElementById('inp-sess-date').value;
-  const title = document.getElementById('inp-sess-title').value.trim();
+  const date = document.getElementById('inp-sess-date').value || new Date().toISOString().split('T')[0];
+  let title = document.getElementById('inp-sess-title').value.trim();
   const location = document.getElementById('inp-sess-loc').value.trim();
   const xp = parseInt(document.getElementById('inp-sess-xp').value) || 0;
   const npcs = document.getElementById('inp-sess-npcs').value.trim();
   const notes = document.getElementById('inp-sess-notes').value.trim();
 
   if (!title) {
-    alert('Por favor, informe o título da sessão.');
-    return;
+    title = `Sessão ${num}`;
   }
 
   camp.sessions = camp.sessions || [];
@@ -37030,10 +37244,54 @@ function saveSessionLog() {
     });
   }
 
+  // Limpa o rascunho temporário
+  try {
+    localStorage.removeItem('dnd5e_session_draft');
+  } catch(e) {}
+
   saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof saveSafetySnapshot === 'function') saveSafetySnapshot(`Registro de Sessão ${num}`);
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+
   closeSessionModal();
   renderCampaigns();
   if (typeof addLog === 'function') addLog(`📖 <b>Diário de Sessão:</b> Sessão ${num} ("${title}") registrada com sucesso.`);
+}
+
+function recoverSessionsFromSnapshots(silent = false) {
+  const camp = getActiveCampaign();
+  if (!camp) return 0;
+  let recoveredCount = 0;
+  try {
+    const snapshots = (typeof getSafetySnapshots === 'function') ? getSafetySnapshots() : [];
+    camp.sessions = camp.sessions || [];
+    snapshots.forEach(snap => {
+      if (snap.campaignsState && Array.isArray(snap.campaignsState.campaigns)) {
+        const snapCamp = snap.campaignsState.campaigns.find(c => c.id === camp.id || c.name === camp.name);
+        if (snapCamp && Array.isArray(snapCamp.sessions)) {
+          snapCamp.sessions.forEach(ss => {
+            if (!camp.sessions.some(ls => ls.id === ss.id || (ls.number === ss.number && ls.date === ss.date))) {
+              camp.sessions.push(ss);
+              recoveredCount++;
+            }
+          });
+        }
+      }
+    });
+
+    if (recoveredCount > 0) {
+      saveCampaignsState();
+      renderCampaigns();
+      if (typeof addLog === 'function') addLog(`📖 <b>Diário Recuperado:</b> ${recoveredCount} sessão(ões) restaurada(s) com sucesso dos backups!`);
+      if (!silent) alert(`✅ ${recoveredCount} sessão(ões) de diário recuperada(s) com sucesso dos backups automáticos locais!`);
+    } else {
+      if (!silent) alert('Nenhum registro anterior de sessão foi encontrado nos backups locais.');
+    }
+  } catch(e) {
+    console.warn('Erro ao recuperar sessões:', e);
+  }
+  return recoveredCount;
 }
 
 function deleteSessionLog(sessionId) {
@@ -40926,7 +41184,10 @@ function broadcastCombatState(actionNarrative = null) {
   } catch (e) {}
 }
 
+let isApplyingRemoteSync = false;
+
 function broadcastStateSync() {
+  if (isApplyingRemoteSync) return;
   if (syncChannel) {
     try {
       syncChannel.postMessage({
@@ -40942,135 +41203,156 @@ function broadcastStateSync() {
 if (syncChannel) {
   syncChannel.onmessage = (event) => {
     if (!event.data) return;
-    
-    if (event.data.type === 'STATE_SYNC') {
-      if (event.data.players && Array.isArray(event.data.players)) {
-        PLAYERS = event.data.players;
-        if (typeof renderPlayers === 'function') renderPlayers();
-      }
-      if (event.data.state && Array.isArray(event.data.state.combatants)) {
-        state = event.data.state;
-        if (typeof renderCombat === 'function') renderCombat();
-      }
-      if (event.data.gridState && typeof gridState !== 'undefined') {
+    isApplyingRemoteSync = true;
+    try {
+      if (event.data.type === 'STATE_SYNC') {
+        if (event.data.players && Array.isArray(event.data.players)) {
+          PLAYERS = event.data.players;
+          if (typeof renderPlayers === 'function') renderPlayers();
+        }
+        if (event.data.state && Array.isArray(event.data.state.combatants)) {
+          state = event.data.state;
+          if (typeof renderCombat === 'function') renderCombat();
+        }
+        if (event.data.gridState && typeof gridState !== 'undefined') {
+          gridState = event.data.gridState;
+          if (typeof renderBattleGrid === 'function') renderBattleGrid();
+        }
+      } else if (event.data.type === 'COMBAT_UPDATE') {
+        if (document.body.classList.contains('mode-screen-only')) {
+          renderStandaloneScreen(event.data);
+        }
+      } else if (event.data.type === 'DICE_ROLL') {
+        if (typeof showLiveDiceRoll === 'function') {
+          showLiveDiceRoll(event.data.title, event.data.val, event.data.detail, event.data.isCrit, event.data.isFumble);
+        }
+      } else if (event.data.type === 'TIMER_TICK') {
+        const timerEl = document.getElementById('pv-turn-timer');
+        if (timerEl) {
+          timerEl.innerText = event.data.timeStr;
+          if (event.data.urgent) timerEl.classList.add('urgent');
+          else timerEl.classList.remove('urgent');
+        }
+      } else if (event.data.type === 'TURN_TIMER_SYNC') {
+        const timerEl = document.getElementById('pv-turn-timer');
+        if (timerEl) {
+          const m = Math.floor((event.data.remaining || 0) / 60);
+          const s = (event.data.remaining || 0) % 60;
+          const timeStr = `⏱️ ${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+          timerEl.innerText = timeStr;
+          if (event.data.isUrgent) {
+            timerEl.classList.add('urgent');
+          } else {
+            timerEl.classList.remove('urgent');
+          }
+          if (event.data.isExpired) {
+            timerEl.innerText = '⌛ TEMPO ESGOTADO!';
+            timerEl.classList.add('urgent');
+          }
+        }
+      } else if (event.data.type === 'THEME_CHANGE') {
+        setPlayerViewTheme(event.data.theme, false);
+      } else if (event.data.type === 'GRID_PING') {
+        if (typeof renderPingAnimation === 'function') {
+          renderPingAnimation(event.data.x, event.data.y, true);
+        }
+      } else if (event.data.type === 'GRID_UPDATE') {
         gridState = event.data.gridState;
+        const pvBoard = document.getElementById('pv-battlegrid-board');
+        if (pvBoard) {
+          if (gridState.theme === 'custom' && gridState.customImage) {
+            pvBoard.className = 'battlegrid-board';
+            pvBoard.style.backgroundImage = `url(${gridState.customImage})`;
+          } else {
+            pvBoard.className = `battlegrid-board ${gridState.theme || 'bg-dungeon'}`;
+            pvBoard.style.backgroundImage = '';
+          }
+          if (gridState.lineStyle) {
+            pvBoard.classList.remove('grid-lines-gold', 'grid-lines-dark', 'grid-lines-hidden');
+            if (gridState.lineStyle === 'gold') pvBoard.classList.add('grid-lines-gold');
+            else if (gridState.lineStyle === 'dark') pvBoard.classList.add('grid-lines-dark');
+            else if (gridState.lineStyle === 'hidden') pvBoard.classList.add('grid-lines-hidden');
+          }
+        }
+        if (typeof applyGridDimensions === 'function') applyGridDimensions();
         if (typeof renderBattleGrid === 'function') renderBattleGrid();
-      }
-    } else if (event.data.type === 'COMBAT_UPDATE') {
-      if (document.body.classList.contains('mode-screen-only')) {
-        renderStandaloneScreen(event.data);
-      }
-    } else if (event.data.type === 'DICE_ROLL') {
-      if (typeof showLiveDiceRoll === 'function') {
-        showLiveDiceRoll(event.data.title, event.data.val, event.data.detail, event.data.isCrit, event.data.isFumble);
-      }
-    } else if (event.data.type === 'TIMER_TICK') {
-      const timerEl = document.getElementById('pv-turn-timer');
-      if (timerEl) {
-        timerEl.innerText = event.data.timeStr;
-        if (event.data.urgent) timerEl.classList.add('urgent');
-        else timerEl.classList.remove('urgent');
-      }
-    } else if (event.data.type === 'TURN_TIMER_SYNC') {
-      const timerEl = document.getElementById('pv-turn-timer');
-      if (timerEl) {
-        const m = Math.floor((event.data.remaining || 0) / 60);
-        const s = (event.data.remaining || 0) % 60;
-        const timeStr = `⏱️ ${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-        timerEl.innerText = timeStr;
-        if (event.data.isUrgent) {
-          timerEl.classList.add('urgent');
-        } else {
-          timerEl.classList.remove('urgent');
-        }
-        if (event.data.isExpired) {
-          timerEl.innerText = '⌛ TEMPO ESGOTADO!';
-          timerEl.classList.add('urgent');
-        }
-      }
-    } else if (event.data.type === 'THEME_CHANGE') {
-      setPlayerViewTheme(event.data.theme, false);
-    } else if (event.data.type === 'GRID_PING') {
-      if (typeof renderPingAnimation === 'function') {
-        renderPingAnimation(event.data.x, event.data.y, true);
-      }
-    } else if (event.data.type === 'GRID_UPDATE') {
-      gridState = event.data.gridState;
-      const pvBoard = document.getElementById('pv-battlegrid-board');
-      if (pvBoard) {
-        if (gridState.theme === 'custom' && gridState.customImage) {
-          pvBoard.className = 'battlegrid-board';
-          pvBoard.style.backgroundImage = `url(${gridState.customImage})`;
-        } else {
-          pvBoard.className = `battlegrid-board ${gridState.theme || 'bg-dungeon'}`;
-          pvBoard.style.backgroundImage = '';
-        }
-        if (gridState.lineStyle) {
-          pvBoard.classList.remove('grid-lines-gold', 'grid-lines-dark', 'grid-lines-hidden');
-          if (gridState.lineStyle === 'gold') pvBoard.classList.add('grid-lines-gold');
-          else if (gridState.lineStyle === 'dark') pvBoard.classList.add('grid-lines-dark');
-          else if (gridState.lineStyle === 'hidden') pvBoard.classList.add('grid-lines-hidden');
-        }
-      }
-      if (typeof applyGridDimensions === 'function') applyGridDimensions();
-      if (typeof renderBattleGrid === 'function') renderBattleGrid();
 
-      const screenFoW = document.getElementById('fow-canvas-screen');
-      if (screenFoW) {
-        screenFoW.style.display = gridState.fowEnabled ? 'block' : 'none';
-        if (gridState.fowEnabled && gridState.fowDataUrl && typeof loadFoWFromDataUrl === 'function') {
-          loadFoWFromDataUrl(gridState.fowDataUrl);
+        const screenFoW = document.getElementById('fow-canvas-screen');
+        if (screenFoW) {
+          screenFoW.style.display = gridState.fowEnabled ? 'block' : 'none';
+          if (gridState.fowEnabled && gridState.fowDataUrl && typeof loadFoWFromDataUrl === 'function') {
+            loadFoWFromDataUrl(gridState.fowDataUrl);
+          }
         }
-      }
 
-      const overlay = document.getElementById('pv-weather-layer');
-      if (overlay) {
-        if (!gridState.weather || gridState.weather === 'none') {
-          overlay.style.display = 'none';
-          overlay.className = 'weather-overlay';
+        const overlay = document.getElementById('pv-weather-layer');
+        if (overlay) {
+          if (!gridState.weather || gridState.weather === 'none') {
+            overlay.style.display = 'none';
+            overlay.className = 'weather-overlay';
+          } else {
+            overlay.style.display = 'block';
+            overlay.className = `weather-overlay weather-${gridState.weather}`;
+          }
+        }
+      } else if (event.data.type === 'FOW_DRAW') {
+        const screenFoW = document.getElementById('fow-canvas-screen');
+        if (screenFoW && gridState && gridState.fowEnabled && typeof drawFoWOnScreenCanvas === 'function') {
+          drawFoWOnScreenCanvas(event.data.x, event.data.y, event.data.radius, event.data.isReveal);
+        }
+      } else if (event.data.type === 'RULER_SYNC') {
+        if (event.data.active) {
+          if (typeof renderScreenRulerOverlay === 'function') {
+            renderScreenRulerOverlay(event.data.fromX, event.data.fromY, event.data.toX, event.data.toY, event.data.distance, event.data.isDiagonal);
+          }
         } else {
-          overlay.style.display = 'block';
-          overlay.className = `weather-overlay weather-${gridState.weather}`;
+          if (typeof clearRulerSvg === 'function') {
+            clearRulerSvg(true);
+          }
+        }
+      } else if (event.data.type === 'PV_VIEW_MODE') {
+        switchPlayerViewMode(event.data.mode, false);
+      } else if (event.data.type === 'CAMPAIGNS_UPDATE') {
+        if (event.data.campaignsState) {
+          CAMPAIGNS_STATE = event.data.campaignsState;
+          try {
+            localStorage.setItem('dnd5e_prisco_campaigns_v1', JSON.stringify(CAMPAIGNS_STATE));
+          } catch(e) {}
+          if (typeof renderCampaigns === 'function') renderCampaigns();
+          if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
+        }
+      } else if (event.data.type === 'GLOBAL_DICE_ROLL' && event.data.roll) {
+        if (typeof updateDiceResultUI === 'function') {
+          updateDiceResultUI(event.data.roll);
+        }
+        if (typeof showLiveDiceRoll === 'function') {
+          showLiveDiceRoll(event.data.roll.label, event.data.roll.total, event.data.roll.breakdown, event.data.roll.isCrit, event.data.roll.isFumble);
         }
       }
-      if (typeof redrawAllDrawings === 'function') redrawAllDrawings();
-    } else if (event.data.type === 'RULER_UPDATE') {
-      if (event.data.active) {
-        if (typeof renderRulerSvg === 'function') {
-          renderRulerSvg(event.data.startX, event.data.startY, event.data.endX, event.data.endY, true);
-        }
-      } else {
-        if (typeof clearRulerSvg === 'function') {
-          clearRulerSvg(true);
-        }
-      }
-    } else if (event.data.type === 'PV_VIEW_MODE') {
-      switchPlayerViewMode(event.data.mode, false);
-    } else if (event.data.type === 'CAMPAIGNS_UPDATE') {
-      if (event.data.campaignsState) {
-        CAMPAIGNS_STATE = event.data.campaignsState;
-        if (typeof renderCampaigns === 'function') renderCampaigns();
-        if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
-      }
-    } else if (event.data.type === 'GLOBAL_DICE_ROLL' && event.data.roll) {
-      if (typeof updateDiceResultUI === 'function') {
-        updateDiceResultUI(event.data.roll);
-      }
-      if (typeof showLiveDiceRoll === 'function') {
-        showLiveDiceRoll(event.data.roll.label, event.data.roll.total, event.data.roll.breakdown, event.data.roll.isCrit, event.data.roll.isFumble);
-      }
+    } finally {
+      isApplyingRemoteSync = false;
     }
   };
 }
 
+let storageSyncDebounceTimer = null;
 window.addEventListener('storage', (e) => {
+  if (isApplyingRemoteSync) return;
   if (e.key === 'dnd5e_prisco_sheet_state_v2' || e.key === 'dnd_tracker_players_v3' || e.key === 'dnd5e_prisco_campaigns_v1') {
-    if (typeof loadFromLocalStorage === 'function') {
-      loadFromLocalStorage();
-      if (typeof renderPlayers === 'function') renderPlayers();
-      if (typeof renderCombat === 'function') renderCombat();
-      if (typeof renderCampaigns === 'function') renderCampaigns();
-    }
+    if (storageSyncDebounceTimer) clearTimeout(storageSyncDebounceTimer);
+    storageSyncDebounceTimer = setTimeout(() => {
+      if (typeof loadFromLocalStorage === 'function') {
+        isApplyingRemoteSync = true;
+        try {
+          loadFromLocalStorage();
+          if (typeof renderPlayers === 'function') renderPlayers();
+          if (typeof renderCombat === 'function') renderCombat();
+          if (typeof renderCampaigns === 'function') renderCampaigns();
+        } finally {
+          isApplyingRemoteSync = false;
+        }
+      }
+    }, 80);
   } else if (e.key === 'dnd5e_prisco_live_combat' && e.newValue) {
     if (document.body.classList.contains('mode-screen-only')) {
       try {

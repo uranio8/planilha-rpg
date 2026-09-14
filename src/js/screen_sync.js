@@ -119,7 +119,10 @@ function broadcastCombatState(actionNarrative = null) {
   } catch (e) {}
 }
 
+let isApplyingRemoteSync = false;
+
 function broadcastStateSync() {
+  if (isApplyingRemoteSync) return;
   if (syncChannel) {
     try {
       syncChannel.postMessage({
@@ -135,135 +138,156 @@ function broadcastStateSync() {
 if (syncChannel) {
   syncChannel.onmessage = (event) => {
     if (!event.data) return;
-    
-    if (event.data.type === 'STATE_SYNC') {
-      if (event.data.players && Array.isArray(event.data.players)) {
-        PLAYERS = event.data.players;
-        if (typeof renderPlayers === 'function') renderPlayers();
-      }
-      if (event.data.state && Array.isArray(event.data.state.combatants)) {
-        state = event.data.state;
-        if (typeof renderCombat === 'function') renderCombat();
-      }
-      if (event.data.gridState && typeof gridState !== 'undefined') {
+    isApplyingRemoteSync = true;
+    try {
+      if (event.data.type === 'STATE_SYNC') {
+        if (event.data.players && Array.isArray(event.data.players)) {
+          PLAYERS = event.data.players;
+          if (typeof renderPlayers === 'function') renderPlayers();
+        }
+        if (event.data.state && Array.isArray(event.data.state.combatants)) {
+          state = event.data.state;
+          if (typeof renderCombat === 'function') renderCombat();
+        }
+        if (event.data.gridState && typeof gridState !== 'undefined') {
+          gridState = event.data.gridState;
+          if (typeof renderBattleGrid === 'function') renderBattleGrid();
+        }
+      } else if (event.data.type === 'COMBAT_UPDATE') {
+        if (document.body.classList.contains('mode-screen-only')) {
+          renderStandaloneScreen(event.data);
+        }
+      } else if (event.data.type === 'DICE_ROLL') {
+        if (typeof showLiveDiceRoll === 'function') {
+          showLiveDiceRoll(event.data.title, event.data.val, event.data.detail, event.data.isCrit, event.data.isFumble);
+        }
+      } else if (event.data.type === 'TIMER_TICK') {
+        const timerEl = document.getElementById('pv-turn-timer');
+        if (timerEl) {
+          timerEl.innerText = event.data.timeStr;
+          if (event.data.urgent) timerEl.classList.add('urgent');
+          else timerEl.classList.remove('urgent');
+        }
+      } else if (event.data.type === 'TURN_TIMER_SYNC') {
+        const timerEl = document.getElementById('pv-turn-timer');
+        if (timerEl) {
+          const m = Math.floor((event.data.remaining || 0) / 60);
+          const s = (event.data.remaining || 0) % 60;
+          const timeStr = `⏱️ ${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+          timerEl.innerText = timeStr;
+          if (event.data.isUrgent) {
+            timerEl.classList.add('urgent');
+          } else {
+            timerEl.classList.remove('urgent');
+          }
+          if (event.data.isExpired) {
+            timerEl.innerText = '⌛ TEMPO ESGOTADO!';
+            timerEl.classList.add('urgent');
+          }
+        }
+      } else if (event.data.type === 'THEME_CHANGE') {
+        setPlayerViewTheme(event.data.theme, false);
+      } else if (event.data.type === 'GRID_PING') {
+        if (typeof renderPingAnimation === 'function') {
+          renderPingAnimation(event.data.x, event.data.y, true);
+        }
+      } else if (event.data.type === 'GRID_UPDATE') {
         gridState = event.data.gridState;
+        const pvBoard = document.getElementById('pv-battlegrid-board');
+        if (pvBoard) {
+          if (gridState.theme === 'custom' && gridState.customImage) {
+            pvBoard.className = 'battlegrid-board';
+            pvBoard.style.backgroundImage = `url(${gridState.customImage})`;
+          } else {
+            pvBoard.className = `battlegrid-board ${gridState.theme || 'bg-dungeon'}`;
+            pvBoard.style.backgroundImage = '';
+          }
+          if (gridState.lineStyle) {
+            pvBoard.classList.remove('grid-lines-gold', 'grid-lines-dark', 'grid-lines-hidden');
+            if (gridState.lineStyle === 'gold') pvBoard.classList.add('grid-lines-gold');
+            else if (gridState.lineStyle === 'dark') pvBoard.classList.add('grid-lines-dark');
+            else if (gridState.lineStyle === 'hidden') pvBoard.classList.add('grid-lines-hidden');
+          }
+        }
+        if (typeof applyGridDimensions === 'function') applyGridDimensions();
         if (typeof renderBattleGrid === 'function') renderBattleGrid();
-      }
-    } else if (event.data.type === 'COMBAT_UPDATE') {
-      if (document.body.classList.contains('mode-screen-only')) {
-        renderStandaloneScreen(event.data);
-      }
-    } else if (event.data.type === 'DICE_ROLL') {
-      if (typeof showLiveDiceRoll === 'function') {
-        showLiveDiceRoll(event.data.title, event.data.val, event.data.detail, event.data.isCrit, event.data.isFumble);
-      }
-    } else if (event.data.type === 'TIMER_TICK') {
-      const timerEl = document.getElementById('pv-turn-timer');
-      if (timerEl) {
-        timerEl.innerText = event.data.timeStr;
-        if (event.data.urgent) timerEl.classList.add('urgent');
-        else timerEl.classList.remove('urgent');
-      }
-    } else if (event.data.type === 'TURN_TIMER_SYNC') {
-      const timerEl = document.getElementById('pv-turn-timer');
-      if (timerEl) {
-        const m = Math.floor((event.data.remaining || 0) / 60);
-        const s = (event.data.remaining || 0) % 60;
-        const timeStr = `⏱️ ${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-        timerEl.innerText = timeStr;
-        if (event.data.isUrgent) {
-          timerEl.classList.add('urgent');
-        } else {
-          timerEl.classList.remove('urgent');
-        }
-        if (event.data.isExpired) {
-          timerEl.innerText = '⌛ TEMPO ESGOTADO!';
-          timerEl.classList.add('urgent');
-        }
-      }
-    } else if (event.data.type === 'THEME_CHANGE') {
-      setPlayerViewTheme(event.data.theme, false);
-    } else if (event.data.type === 'GRID_PING') {
-      if (typeof renderPingAnimation === 'function') {
-        renderPingAnimation(event.data.x, event.data.y, true);
-      }
-    } else if (event.data.type === 'GRID_UPDATE') {
-      gridState = event.data.gridState;
-      const pvBoard = document.getElementById('pv-battlegrid-board');
-      if (pvBoard) {
-        if (gridState.theme === 'custom' && gridState.customImage) {
-          pvBoard.className = 'battlegrid-board';
-          pvBoard.style.backgroundImage = `url(${gridState.customImage})`;
-        } else {
-          pvBoard.className = `battlegrid-board ${gridState.theme || 'bg-dungeon'}`;
-          pvBoard.style.backgroundImage = '';
-        }
-        if (gridState.lineStyle) {
-          pvBoard.classList.remove('grid-lines-gold', 'grid-lines-dark', 'grid-lines-hidden');
-          if (gridState.lineStyle === 'gold') pvBoard.classList.add('grid-lines-gold');
-          else if (gridState.lineStyle === 'dark') pvBoard.classList.add('grid-lines-dark');
-          else if (gridState.lineStyle === 'hidden') pvBoard.classList.add('grid-lines-hidden');
-        }
-      }
-      if (typeof applyGridDimensions === 'function') applyGridDimensions();
-      if (typeof renderBattleGrid === 'function') renderBattleGrid();
 
-      const screenFoW = document.getElementById('fow-canvas-screen');
-      if (screenFoW) {
-        screenFoW.style.display = gridState.fowEnabled ? 'block' : 'none';
-        if (gridState.fowEnabled && gridState.fowDataUrl && typeof loadFoWFromDataUrl === 'function') {
-          loadFoWFromDataUrl(gridState.fowDataUrl);
+        const screenFoW = document.getElementById('fow-canvas-screen');
+        if (screenFoW) {
+          screenFoW.style.display = gridState.fowEnabled ? 'block' : 'none';
+          if (gridState.fowEnabled && gridState.fowDataUrl && typeof loadFoWFromDataUrl === 'function') {
+            loadFoWFromDataUrl(gridState.fowDataUrl);
+          }
         }
-      }
 
-      const overlay = document.getElementById('pv-weather-layer');
-      if (overlay) {
-        if (!gridState.weather || gridState.weather === 'none') {
-          overlay.style.display = 'none';
-          overlay.className = 'weather-overlay';
+        const overlay = document.getElementById('pv-weather-layer');
+        if (overlay) {
+          if (!gridState.weather || gridState.weather === 'none') {
+            overlay.style.display = 'none';
+            overlay.className = 'weather-overlay';
+          } else {
+            overlay.style.display = 'block';
+            overlay.className = `weather-overlay weather-${gridState.weather}`;
+          }
+        }
+      } else if (event.data.type === 'FOW_DRAW') {
+        const screenFoW = document.getElementById('fow-canvas-screen');
+        if (screenFoW && gridState && gridState.fowEnabled && typeof drawFoWOnScreenCanvas === 'function') {
+          drawFoWOnScreenCanvas(event.data.x, event.data.y, event.data.radius, event.data.isReveal);
+        }
+      } else if (event.data.type === 'RULER_SYNC') {
+        if (event.data.active) {
+          if (typeof renderScreenRulerOverlay === 'function') {
+            renderScreenRulerOverlay(event.data.fromX, event.data.fromY, event.data.toX, event.data.toY, event.data.distance, event.data.isDiagonal);
+          }
         } else {
-          overlay.style.display = 'block';
-          overlay.className = `weather-overlay weather-${gridState.weather}`;
+          if (typeof clearRulerSvg === 'function') {
+            clearRulerSvg(true);
+          }
+        }
+      } else if (event.data.type === 'PV_VIEW_MODE') {
+        switchPlayerViewMode(event.data.mode, false);
+      } else if (event.data.type === 'CAMPAIGNS_UPDATE') {
+        if (event.data.campaignsState) {
+          CAMPAIGNS_STATE = event.data.campaignsState;
+          try {
+            localStorage.setItem('dnd5e_prisco_campaigns_v1', JSON.stringify(CAMPAIGNS_STATE));
+          } catch(e) {}
+          if (typeof renderCampaigns === 'function') renderCampaigns();
+          if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
+        }
+      } else if (event.data.type === 'GLOBAL_DICE_ROLL' && event.data.roll) {
+        if (typeof updateDiceResultUI === 'function') {
+          updateDiceResultUI(event.data.roll);
+        }
+        if (typeof showLiveDiceRoll === 'function') {
+          showLiveDiceRoll(event.data.roll.label, event.data.roll.total, event.data.roll.breakdown, event.data.roll.isCrit, event.data.roll.isFumble);
         }
       }
-      if (typeof redrawAllDrawings === 'function') redrawAllDrawings();
-    } else if (event.data.type === 'RULER_UPDATE') {
-      if (event.data.active) {
-        if (typeof renderRulerSvg === 'function') {
-          renderRulerSvg(event.data.startX, event.data.startY, event.data.endX, event.data.endY, true);
-        }
-      } else {
-        if (typeof clearRulerSvg === 'function') {
-          clearRulerSvg(true);
-        }
-      }
-    } else if (event.data.type === 'PV_VIEW_MODE') {
-      switchPlayerViewMode(event.data.mode, false);
-    } else if (event.data.type === 'CAMPAIGNS_UPDATE') {
-      if (event.data.campaignsState) {
-        CAMPAIGNS_STATE = event.data.campaignsState;
-        if (typeof renderCampaigns === 'function') renderCampaigns();
-        if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
-      }
-    } else if (event.data.type === 'GLOBAL_DICE_ROLL' && event.data.roll) {
-      if (typeof updateDiceResultUI === 'function') {
-        updateDiceResultUI(event.data.roll);
-      }
-      if (typeof showLiveDiceRoll === 'function') {
-        showLiveDiceRoll(event.data.roll.label, event.data.roll.total, event.data.roll.breakdown, event.data.roll.isCrit, event.data.roll.isFumble);
-      }
+    } finally {
+      isApplyingRemoteSync = false;
     }
   };
 }
 
+let storageSyncDebounceTimer = null;
 window.addEventListener('storage', (e) => {
+  if (isApplyingRemoteSync) return;
   if (e.key === 'dnd5e_prisco_sheet_state_v2' || e.key === 'dnd_tracker_players_v3' || e.key === 'dnd5e_prisco_campaigns_v1') {
-    if (typeof loadFromLocalStorage === 'function') {
-      loadFromLocalStorage();
-      if (typeof renderPlayers === 'function') renderPlayers();
-      if (typeof renderCombat === 'function') renderCombat();
-      if (typeof renderCampaigns === 'function') renderCampaigns();
-    }
+    if (storageSyncDebounceTimer) clearTimeout(storageSyncDebounceTimer);
+    storageSyncDebounceTimer = setTimeout(() => {
+      if (typeof loadFromLocalStorage === 'function') {
+        isApplyingRemoteSync = true;
+        try {
+          loadFromLocalStorage();
+          if (typeof renderPlayers === 'function') renderPlayers();
+          if (typeof renderCombat === 'function') renderCombat();
+          if (typeof renderCampaigns === 'function') renderCampaigns();
+        } finally {
+          isApplyingRemoteSync = false;
+        }
+      }
+    }, 80);
   } else if (e.key === 'dnd5e_prisco_live_combat' && e.newValue) {
     if (document.body.classList.contains('mode-screen-only')) {
       try {

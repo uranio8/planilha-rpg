@@ -63,8 +63,20 @@ function setGrimoireSchoolFilter(schoolName) {
   renderSpells();
 }
 
+let spellsVisibleLimit = 36;
+const SPELLS_CHUNK_SIZE = 36;
+let spellSearchDebounce = null;
+
 function handleSpellSearchInput(val) {
-  renderSpells();
+  if (spellSearchDebounce) clearTimeout(spellSearchDebounce);
+  spellSearchDebounce = setTimeout(() => {
+    renderSpells(true);
+  }, 120);
+}
+
+function loadMoreSpells() {
+  spellsVisibleLimit += SPELLS_CHUNK_SIZE;
+  renderSpells(false);
 }
 
 function clearSpellSearch() {
@@ -73,7 +85,7 @@ function clearSpellSearch() {
     inp.value = '';
     inp.focus();
   }
-  renderSpells();
+  renderSpells(true);
 }
 
 function clearAllSpellFilters() {
@@ -95,11 +107,14 @@ function clearAllSpellFilters() {
     chip.classList.toggle('active', chip.getAttribute('data-school') === 'all');
   });
 
-  renderSpells();
+  renderSpells(true);
 }
 
 // --- GRIMÓRIO DE MAGIAS ---
-function renderSpells() {
+function renderSpells(resetLimit = true) {
+  if (resetLimit) {
+    spellsVisibleLimit = SPELLS_CHUNK_SIZE;
+  }
   const grid = document.getElementById('grid-spells');
   const badge = document.getElementById('cnt-spells');
   const resultsCounter = document.getElementById('spells-meta-stats');
@@ -161,11 +176,19 @@ function renderSpells() {
     return 0;
   });
 
+  const visibleList = filtered.slice(0, spellsVisibleLimit);
+
   if (badge) badge.innerText = filtered.length;
-  if (resultsCounter) resultsCounter.innerText = `${filtered.length} magias encontradas`;
+  if (resultsCounter) {
+    if (filtered.length > visibleList.length) {
+      resultsCounter.innerText = `Mostrando ${visibleList.length} de ${filtered.length} magias`;
+    } else {
+      resultsCounter.innerText = `${filtered.length} magias encontradas`;
+    }
+  }
   if (!grid) return;
 
-  grid.innerHTML = filtered.map(s => {
+  let html = visibleList.map(s => {
     let formattedDesc = (s.desc || '')
       .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
       .replace(/\*(.*?)\*/g, '<i>$1</i>');
@@ -211,6 +234,18 @@ function renderSpells() {
       </div>
     `;
   }).join('');
+
+  if (spellsVisibleLimit < filtered.length) {
+    html += `
+      <div style="grid-column: 1 / -1; display: flex; justify-content: center; padding: 16px 0;">
+        <button class="btn-action" style="padding: 9px 22px; font-size: 12px; font-weight: 700; border-radius: 8px;" onclick="loadMoreSpells()">
+          🔽 Carregar mais magias (Mostrando ${visibleList.length} de ${filtered.length})
+        </button>
+      </div>
+    `;
+  }
+
+  grid.innerHTML = html;
 }
 
 function castSpellToCombat(name, level, desc) {
@@ -301,14 +336,24 @@ const BESTIARY_TYPE_KEYWORDS = {
   ooze: ['lodo', 'cubo gelatinoso', 'pudim negro', 'geleia ocre', 'lodo cinzento', 'gosma']
 };
 
-let activeBestiaryTypeChip = 'all';
+let bestiaryVisibleLimit = 36;
+const BESTIARY_CHUNK_SIZE = 36;
+let bestiarySearchDebounce = null;
 
 function handleBestiarySearchInput(val) {
   const btnClear = document.getElementById('btn-clear-mon-search');
   if (btnClear) {
     btnClear.style.display = val && val.trim().length > 0 ? 'flex' : 'none';
   }
-  renderBestiary();
+  if (bestiarySearchDebounce) clearTimeout(bestiarySearchDebounce);
+  bestiarySearchDebounce = setTimeout(() => {
+    renderBestiary(true);
+  }, 120);
+}
+
+function loadMoreBestiary() {
+  bestiaryVisibleLimit += BESTIARY_CHUNK_SIZE;
+  renderBestiary(false);
 }
 
 function clearBestiarySearch() {
@@ -316,7 +361,7 @@ function clearBestiarySearch() {
   if (inp) inp.value = '';
   const btnClear = document.getElementById('btn-clear-mon-search');
   if (btnClear) btnClear.style.display = 'none';
-  renderBestiary();
+  renderBestiary(true);
 }
 
 function setBestiaryTypeFilter(typeKey) {
@@ -498,7 +543,10 @@ function searchAndFilterMonsters(list, rawQ, srcFilter, crFilter, typeFilter, so
   return matched;
 }
 
-function renderBestiary() {
+function renderBestiary(resetLimit = true) {
+  if (resetLimit) {
+    bestiaryVisibleLimit = BESTIARY_CHUNK_SIZE;
+  }
   const grid = document.getElementById('grid-bestiary');
   const badge = document.getElementById('cnt-bestiary');
   const statsEl = document.getElementById('bestiary-meta-stats');
@@ -518,10 +566,14 @@ function renderBestiary() {
 
   const results = searchAndFilterMonsters(BESTIARY_DATA, rawQ, src, cr, typeFilter, sortOrder);
 
+  const visibleList = results.slice(0, bestiaryVisibleLimit);
+
   if (badge) badge.innerText = results.length;
   if (statsEl) {
     const totalCount = BESTIARY_DATA.length;
-    if (rawQ.trim() || src !== 'all' || cr !== 'all' || typeFilter !== 'all') {
+    if (results.length > visibleList.length) {
+      statsEl.innerHTML = `Mostrando <b>${visibleList.length}</b> de <b>${results.length}</b> criaturas encontradas (Total no livro: ${totalCount})`;
+    } else if (rawQ.trim() || src !== 'all' || cr !== 'all' || typeFilter !== 'all') {
       statsEl.innerHTML = `Mostrando <b>${results.length}</b> de <b>${totalCount}</b> criaturas encontradas`;
     } else {
       statsEl.innerHTML = `Catálogo completo com <b>${totalCount}</b> criaturas catalogadas (D&D 5E / MM 2024)`;
@@ -546,7 +598,7 @@ function renderBestiary() {
     return;
   }
 
-  grid.innerHTML = results.map(({ monster: m, activeTokens }, idx) => {
+  let html = visibleList.map(({ monster: m, activeTokens }, idx) => {
     const renderedName = highlightSearchMatch(m.name, activeTokens);
     const renderedAtk = highlightSearchMatch(m.attack, activeTokens);
 
@@ -591,6 +643,18 @@ function renderBestiary() {
       </div>
     `;
   }).join('');
+
+  if (bestiaryVisibleLimit < results.length) {
+    html += `
+      <div style="grid-column: 1 / -1; display: flex; justify-content: center; padding: 16px 0;">
+        <button class="btn-action" style="padding: 9px 22px; font-size: 12px; font-weight: 700; border-radius: 8px;" onclick="loadMoreBestiary()">
+          🐉 Carregar mais criaturas (Mostrando ${visibleList.length} de ${results.length})
+        </button>
+      </div>
+    `;
+  }
+
+  grid.innerHTML = html;
 }
 
 let activeQuickInitMonster = null;

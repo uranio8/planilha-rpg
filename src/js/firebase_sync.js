@@ -191,6 +191,74 @@ function startFirebaseRoomListener(roomId) {
   }
 }
 
+function mergeCloudCampaignsState(cloudCampaignsState) {
+  if (!cloudCampaignsState || !Array.isArray(cloudCampaignsState.campaigns)) return;
+  if (typeof CAMPAIGNS_STATE === 'undefined') return;
+
+  if (!CAMPAIGNS_STATE.campaigns || CAMPAIGNS_STATE.campaigns.length === 0) {
+    CAMPAIGNS_STATE = cloudCampaignsState;
+    return;
+  }
+
+  cloudCampaignsState.campaigns.forEach(remoteCamp => {
+    const localCamp = CAMPAIGNS_STATE.campaigns.find(c => c.id === remoteCamp.id);
+    if (!localCamp) {
+      CAMPAIGNS_STATE.campaigns.push(remoteCamp);
+    } else {
+      // Mescla diário de sessões garantindo que nenhuma sessão local seja perdida ou apagada
+      const localSessions = localCamp.sessions || [];
+      const remoteSessions = remoteCamp.sessions || [];
+      const mergedSessions = [...localSessions];
+
+      remoteSessions.forEach(rs => {
+        const localIdx = mergedSessions.findIndex(ls => ls.id === rs.id || (ls.number === rs.number && ls.date === rs.date));
+        if (localIdx >= 0) {
+          if ((rs.notes || '').length > (mergedSessions[localIdx].notes || '').length) {
+            mergedSessions[localIdx] = Object.assign({}, mergedSessions[localIdx], rs);
+          }
+        } else {
+          mergedSessions.push(rs);
+        }
+      });
+
+      localCamp.sessions = mergedSessions;
+      if (remoteCamp.name) localCamp.name = remoteCamp.name;
+      if (remoteCamp.system) localCamp.system = remoteCamp.system;
+      if (remoteCamp.description) localCamp.description = remoteCamp.description;
+
+      // Mescla Baú do Grupo e Tesouro
+      if (remoteCamp.partyStash) {
+        if (!localCamp.partyStash) {
+          localCamp.partyStash = remoteCamp.partyStash;
+        } else {
+          if (remoteCamp.partyStash.gold !== undefined && (!localCamp.partyStash.gold || localCamp.partyStash.gold === 0)) {
+            localCamp.partyStash.gold = remoteCamp.partyStash.gold;
+          }
+          const localItems = localCamp.partyStash.items || [];
+          const remoteItems = remoteCamp.partyStash.items || [];
+          const mergedItems = [...localItems];
+          remoteItems.forEach(ri => {
+            if (!mergedItems.some(li => li.id === ri.id || li.name === ri.name)) {
+              mergedItems.push(ri);
+            }
+          });
+          localCamp.partyStash.items = mergedItems;
+
+          const localHist = localCamp.partyStash.history || [];
+          const remoteHist = remoteCamp.partyStash.history || [];
+          const mergedHist = [...localHist];
+          remoteHist.forEach(rh => {
+            if (!mergedHist.some(lh => lh.id === rh.id || (lh.timestamp === rh.timestamp && lh.item === rh.item))) {
+              mergedHist.push(rh);
+            }
+          });
+          localCamp.partyStash.history = mergedHist;
+        }
+      }
+    }
+  });
+}
+
 function applyCloudDataToLocal(cloudData) {
   if (!cloudData) return;
 
@@ -283,10 +351,12 @@ function applyCloudDataToLocal(cloudData) {
       if (typeof renderVttCombatHud === 'function') renderVttCombatHud();
     }
 
-    // 4. Atualiza Campanhas, Baú do Grupo e Mesas de Jogo
+    // 4. Atualiza Campanhas, Baú do Grupo e Mesas de Jogo com mescla inteligente defensiva
     if (cloudData.campaigns && typeof CAMPAIGNS_STATE !== 'undefined') {
-      CAMPAIGNS_STATE = cloudData.campaigns;
-      if (typeof saveCampaignsState === 'function') saveCampaignsState();
+      mergeCloudCampaignsState(cloudData.campaigns);
+      try {
+        localStorage.setItem('dnd5e_prisco_campaigns_v1', JSON.stringify(CAMPAIGNS_STATE));
+      } catch(e) {}
       if (typeof renderCampaigns === 'function') renderCampaigns();
       if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
     }

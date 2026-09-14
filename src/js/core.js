@@ -599,14 +599,46 @@ function switchTab(tabId) {
   else if (tabId === 'grid-config') {
     if (typeof renderGridConfig === 'function') renderGridConfig();
   }
-  else if (tabId === 'spells' && typeof renderSpells === 'function') renderSpells();
-  else if (tabId === 'bestiary' && typeof renderBestiary === 'function') renderBestiary();
-  else if (tabId === 'equipment' && typeof renderEquipment === 'function') renderEquipment();
-  else if (tabId === 'classes' && typeof renderClasses === 'function') renderClasses();
-  else if (tabId === 'species' && typeof renderSpecies === 'function') renderSpecies();
+  else if (tabId === 'spells' && typeof renderSpells === 'function') {
+    if (!renderedTabs['spells']) {
+      renderSpells();
+      renderedTabs['spells'] = true;
+    }
+  }
+  else if (tabId === 'bestiary' && typeof renderBestiary === 'function') {
+    if (!renderedTabs['bestiary']) {
+      renderBestiary();
+      renderedTabs['bestiary'] = true;
+    }
+  }
+  else if (tabId === 'equipment' && typeof renderEquipment === 'function') {
+    if (!renderedTabs['equipment']) {
+      renderEquipment();
+      renderedTabs['equipment'] = true;
+    }
+  }
+  else if (tabId === 'classes' && typeof renderClasses === 'function') {
+    if (!renderedTabs['classes']) {
+      renderClasses();
+      renderedTabs['classes'] = true;
+    }
+  }
+  else if (tabId === 'species' && typeof renderSpecies === 'function') {
+    if (!renderedTabs['species']) {
+      renderSpecies();
+      renderedTabs['species'] = true;
+    }
+  }
   else if (tabId === 'campaigns' && typeof renderCampaigns === 'function') renderCampaigns();
+}
 
-  saveToLocalStorage();
+const renderedTabs = {};
+function invalidateTabRender(tabId) {
+  if (tabId) {
+    delete renderedTabs[tabId];
+  } else {
+    for (const k in renderedTabs) delete renderedTabs[k];
+  }
 }
 
 function getProfBonus(level) {

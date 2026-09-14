@@ -1275,7 +1275,10 @@
         <div class="card-panel">
           <div class="panel-header">
             <span>📖 Diário de Sessões (Crônicas da Mesa)</span>
-            <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="openSessionModal()">➕ Nova Sessão</button>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="recoverSessionsFromSnapshots()" title="Recuperar diários anteriores salvos em backups automáticos">🔄 Recuperar</button>
+              <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="openSessionModal()">➕ Nova Sessão</button>
+            </div>
           </div>
           <div id="camp-sessions-timeline" class="sessions-timeline-container"></div>
         </div>
@@ -2113,25 +2116,25 @@
       </div>
       <div>
         <label>Título / Tema da Sessão</label>
-        <input type="text" id="inp-sess-title" placeholder="Ex: O Resgate no Castelo Cragmaw">
+        <input type="text" id="inp-sess-title" placeholder="Ex: O Resgate no Castelo Cragmaw" oninput="saveSessionDraft()">
       </div>
       <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
         <div>
           <label>Local / Região</label>
-          <input type="text" id="inp-sess-loc" placeholder="Ex: Floresta Neverwinter">
+          <input type="text" id="inp-sess-loc" placeholder="Ex: Floresta Neverwinter" oninput="saveSessionDraft()">
         </div>
         <div>
           <label>XP Concedido (por aluno)</label>
-          <input type="number" id="inp-sess-xp" min="0" value="100">
+          <input type="number" id="inp-sess-xp" min="0" value="100" oninput="saveSessionDraft()">
         </div>
       </div>
       <div>
         <label>NPCs Encontrados / Inimigos Derrotados</label>
-        <input type="text" id="inp-sess-npcs" placeholder="Ex: Rei Grol, Vyerith, 3 Bugbears">
+        <input type="text" id="inp-sess-npcs" placeholder="Ex: Rei Grol, Vyerith, 3 Bugbears" oninput="saveSessionDraft()">
       </div>
       <div>
         <label>Crônica / Diário Narrativo da Sessão</label>
-        <textarea id="inp-sess-notes" rows="6" placeholder="Escreva o resumo da sessão, acontecimentos marcantes, decisões dos jogadores e ganchos para a próxima aventura..."></textarea>
+        <textarea id="inp-sess-notes" rows="6" placeholder="Escreva o resumo da sessão, acontecimentos marcantes, decisões dos jogadores e ganchos para a próxima aventura..." oninput="saveSessionDraft()"></textarea>
       </div>
       <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
         <button class="btn-secondary" onclick="closeSessionModal()">Cancelar</button>

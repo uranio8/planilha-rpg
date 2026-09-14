@@ -36,6 +36,12 @@ function loadCampaignsState() {
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.campaigns) && parsed.campaigns.length > 0) {
         CAMPAIGNS_STATE = parsed;
+        const activeCamp = getActiveCampaign();
+        if (activeCamp && (!activeCamp.sessions || activeCamp.sessions.length === 0)) {
+          if (typeof recoverSessionsFromSnapshots === 'function') {
+            recoverSessionsFromSnapshots(true);
+          }
+        }
         return true;
       }
     }
@@ -44,6 +50,7 @@ function loadCampaignsState() {
 }
 
 function broadcastCampaignState() {
+  if (typeof isApplyingRemoteSync !== 'undefined' && isApplyingRemoteSync) return;
   if (typeof syncChannel !== 'undefined' && syncChannel) {
     syncChannel.postMessage({
       type: 'CAMPAIGNS_UPDATE',
@@ -494,6 +501,27 @@ function addAllCampaignHeroesToCombat() {
 
 // --- DIÁRIO DE SESSÕES ---
 let currentEditSessionId = null;
+let sessionDraftTimer = null;
+
+function saveSessionDraft() {
+  if (sessionDraftTimer) clearTimeout(sessionDraftTimer);
+  sessionDraftTimer = setTimeout(() => {
+    try {
+      const title = document.getElementById('inp-sess-title')?.value || '';
+      const notes = document.getElementById('inp-sess-notes')?.value || '';
+      const num = document.getElementById('inp-sess-num')?.value || '1';
+      const date = document.getElementById('inp-sess-date')?.value || '';
+      const loc = document.getElementById('inp-sess-loc')?.value || '';
+      const xp = document.getElementById('inp-sess-xp')?.value || '100';
+      const npcs = document.getElementById('inp-sess-npcs')?.value || '';
+
+      if (notes.trim() || title.trim()) {
+        const draft = { num, date, title, loc, xp, npcs, notes, timestamp: Date.now() };
+        localStorage.setItem('dnd5e_session_draft', JSON.stringify(draft));
+      }
+    } catch(e) {}
+  }, 250);
+}
 
 function openSessionModal(sessionId = null) {
   const camp = getActiveCampaign();
@@ -516,6 +544,24 @@ function openSessionModal(sessionId = null) {
   document.getElementById('inp-sess-npcs').value = sess ? (sess.keyNpcs || '') : '';
   document.getElementById('inp-sess-notes').value = sess ? sess.notes : '';
 
+  // Se for nova sessão e não tiver preenchido nada, restaura rascunho anterior se houver
+  if (!isEdit) {
+    try {
+      const rawDraft = localStorage.getItem('dnd5e_session_draft');
+      if (rawDraft) {
+        const draft = JSON.parse(rawDraft);
+        if (draft && (draft.notes || draft.title)) {
+          if (draft.title) document.getElementById('inp-sess-title').value = draft.title;
+          if (draft.loc) document.getElementById('inp-sess-loc').value = draft.loc;
+          if (draft.xp) document.getElementById('inp-sess-xp').value = draft.xp;
+          if (draft.npcs) document.getElementById('inp-sess-npcs').value = draft.npcs;
+          if (draft.notes) document.getElementById('inp-sess-notes').value = draft.notes;
+          if (draft.date) document.getElementById('inp-sess-date').value = draft.date;
+        }
+      }
+    } catch(e) {}
+  }
+
   modal.classList.add('open');
 }
 
@@ -529,16 +575,15 @@ function saveSessionLog() {
   if (!camp) return;
 
   const num = parseInt(document.getElementById('inp-sess-num').value) || 1;
-  const date = document.getElementById('inp-sess-date').value;
-  const title = document.getElementById('inp-sess-title').value.trim();
+  const date = document.getElementById('inp-sess-date').value || new Date().toISOString().split('T')[0];
+  let title = document.getElementById('inp-sess-title').value.trim();
   const location = document.getElementById('inp-sess-loc').value.trim();
   const xp = parseInt(document.getElementById('inp-sess-xp').value) || 0;
   const npcs = document.getElementById('inp-sess-npcs').value.trim();
   const notes = document.getElementById('inp-sess-notes').value.trim();
 
   if (!title) {
-    alert('Por favor, informe o título da sessão.');
-    return;
+    title = `Sessão ${num}`;
   }
 
   camp.sessions = camp.sessions || [];
@@ -567,10 +612,54 @@ function saveSessionLog() {
     });
   }
 
+  // Limpa o rascunho temporário
+  try {
+    localStorage.removeItem('dnd5e_session_draft');
+  } catch(e) {}
+
   saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof saveSafetySnapshot === 'function') saveSafetySnapshot(`Registro de Sessão ${num}`);
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+
   closeSessionModal();
   renderCampaigns();
   if (typeof addLog === 'function') addLog(`📖 <b>Diário de Sessão:</b> Sessão ${num} ("${title}") registrada com sucesso.`);
+}
+
+function recoverSessionsFromSnapshots(silent = false) {
+  const camp = getActiveCampaign();
+  if (!camp) return 0;
+  let recoveredCount = 0;
+  try {
+    const snapshots = (typeof getSafetySnapshots === 'function') ? getSafetySnapshots() : [];
+    camp.sessions = camp.sessions || [];
+    snapshots.forEach(snap => {
+      if (snap.campaignsState && Array.isArray(snap.campaignsState.campaigns)) {
+        const snapCamp = snap.campaignsState.campaigns.find(c => c.id === camp.id || c.name === camp.name);
+        if (snapCamp && Array.isArray(snapCamp.sessions)) {
+          snapCamp.sessions.forEach(ss => {
+            if (!camp.sessions.some(ls => ls.id === ss.id || (ls.number === ss.number && ls.date === ss.date))) {
+              camp.sessions.push(ss);
+              recoveredCount++;
+            }
+          });
+        }
+      }
+    });
+
+    if (recoveredCount > 0) {
+      saveCampaignsState();
+      renderCampaigns();
+      if (typeof addLog === 'function') addLog(`📖 <b>Diário Recuperado:</b> ${recoveredCount} sessão(ões) restaurada(s) com sucesso dos backups!`);
+      if (!silent) alert(`✅ ${recoveredCount} sessão(ões) de diário recuperada(s) com sucesso dos backups automáticos locais!`);
+    } else {
+      if (!silent) alert('Nenhum registro anterior de sessão foi encontrado nos backups locais.');
+    }
+  } catch(e) {
+    console.warn('Erro ao recuperar sessões:', e);
+  }
+  return recoveredCount;
 }
 
 function deleteSessionLog(sessionId) {

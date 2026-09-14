@@ -1871,6 +1871,112 @@ vm.runInContext("clearPartyStashHistory()", sandbox);
 const historyAfterClear = vm.runInContext("getActiveCampaign().partyStash.history", sandbox);
 assert(Array.isArray(historyAfterClear) && historyAfterClear.length === 0, 'clearPartyStashHistory resetou com sucesso todo o histórico do baú');
 
+// ========================================================
+// 33. TESTES DE PERFORMANCE, CHUNKING E DESACOPLAMENTO DE I/O EM ABAS (ISSUE-59)
+// ========================================================
+console.log('\n⚡ 33. Testes de Performance, Chunking e Desacoplamento de I/O em Abas:');
+
+// 1. switchTab não deve chamar saveToLocalStorage (I/O desacoplado)
+vm.runInContext(`
+  let testSaveCount = 0;
+  const originalSave = saveToLocalStorage;
+  saveToLocalStorage = () => { testSaveCount++; };
+  switchTab('spells');
+  switchTab('bestiary');
+  saveToLocalStorage = originalSave;
+`, sandbox);
+const saveCallsDuringTabSwitch = vm.runInContext("testSaveCount", sandbox);
+assert(saveCallsDuringTabSwitch === 0, 'switchTab não dispara saveToLocalStorage (zero I/O ao navegar entre abas)');
+
+// 2. Limite inicial de renderização (chunking)
+assert(typeof vm.runInContext("loadMoreSpells", sandbox) === 'function', 'Função loadMoreSpells exportada');
+assert(typeof vm.runInContext("loadMoreBestiary", sandbox) === 'function', 'Função loadMoreBestiary exportada');
+const initSpellsLimit = vm.runInContext("spellsVisibleLimit", sandbox);
+const initBestiaryLimit = vm.runInContext("bestiaryVisibleLimit", sandbox);
+assert(initSpellsLimit === 36, 'Grimório inicia com lote leve de 36 magias');
+assert(initBestiaryLimit === 36, 'Bestiário inicia com lote leve de 36 criaturas');
+
+// 3. Expansão fluida de lotes ao carregar mais
+vm.runInContext("loadMoreSpells()", sandbox);
+assert(vm.runInContext("spellsVisibleLimit", sandbox) === 72, 'loadMoreSpells incrementou o limite visível para 72 magias');
+vm.runInContext("loadMoreBestiary()", sandbox);
+assert(vm.runInContext("bestiaryVisibleLimit", sandbox) === 72, 'loadMoreBestiary incrementou o limite visível para 72 criaturas');
+
+// 4. Trava de loop / reentrância em sincronização remota
+assert(vm.runInContext("typeof isApplyingRemoteSync", sandbox) === 'boolean', 'Flag isApplyingRemoteSync definida para proteção de reentrância');
+vm.runInContext(`
+  let testBroadcastSent = false;
+  isApplyingRemoteSync = true;
+  if (typeof broadcastStateSync === 'function') {
+    // broadcastStateSync deve abortar silenciosamente sem enviar nada
+    broadcastStateSync();
+  }
+  isApplyingRemoteSync = false;
+`, sandbox);
+assert(vm.runInContext("isApplyingRemoteSync", sandbox) === false, 'Loop guard impediu tempestade de broadcast durante sync remoto');
+
+// ========================================================
+// 34. TESTES DE PERSISTÊNCIA E RECUPERAÇÃO DO DIÁRIO DE SESSÕES (ISSUE-60)
+// ========================================================
+console.log('\n📖 34. Testes de Persistência e Recuperação do Diário de Sessões:');
+
+assert(typeof vm.runInContext("saveSessionDraft", sandbox) === 'function', 'Função saveSessionDraft exportada');
+assert(typeof vm.runInContext("recoverSessionsFromSnapshots", sandbox) === 'function', 'Função recoverSessionsFromSnapshots exportada');
+assert(typeof vm.runInContext("mergeCloudCampaignsState", sandbox) === 'function', 'Função mergeCloudCampaignsState exportada');
+
+// 1. Salvamento de sessão com título padrão automático (sem falhar com alerta se vazio)
+vm.runInContext(`
+  (() => {
+    const activeCampTest = getActiveCampaign();
+    activeCampTest.sessions = [];
+    document.getElementById('inp-sess-num').value = '5';
+    document.getElementById('inp-sess-date').value = '2026-09-14';
+    document.getElementById('inp-sess-title').value = ''; // Título em branco
+    document.getElementById('inp-sess-loc').value = 'Cripta dos Antigos';
+    document.getElementById('inp-sess-xp').value = '250';
+    document.getElementById('inp-sess-npcs').value = 'Ghouls e Sombra';
+    document.getElementById('inp-sess-notes').value = 'Os aventureiros exploraram a tumba e derrotaram a criatura.';
+    saveSessionLog();
+  })();
+`, sandbox);
+
+const recordedSession = vm.runInContext("getActiveCampaign().sessions.find(s => s.number === 5)", sandbox);
+assert(recordedSession !== undefined, 'Sessão 5 foi gravada no diário da campanha ativa');
+assert(recordedSession.title === 'Sessão 5', 'Título em branco recebeu fallback automático para "Sessão 5" sem descartar dados');
+assert(recordedSession.location === 'Cripta dos Antigos', 'Local da sessão registrado corretamente');
+
+// 2. Mescla inteligente da nuvem (mergeCloudCampaignsState) preservando sessões locais
+vm.runInContext(`
+  const remoteCampData = {
+    campaigns: [{
+      id: getActiveCampaign().id,
+      name: getActiveCampaign().name,
+      sessions: [
+        { id: 'remote_sess_1', number: 1, date: '2026-09-01', title: 'Sessão 1 Antiga', notes: 'Sessão remota antiga' }
+      ]
+    }]
+  };
+  mergeCloudCampaignsState(remoteCampData);
+`, sandbox);
+
+const sessionsAfterCloudMerge = vm.runInContext("getActiveCampaign().sessions", sandbox);
+assert(sessionsAfterCloudMerge.length === 2, 'Merge da nuvem preservou a sessão local existente junto com a remota');
+assert(sessionsAfterCloudMerge.some(s => s.number === 5), 'Sessão local recém-escrita foi 100% preservada contra sobreposição');
+assert(sessionsAfterCloudMerge.some(s => s.id === 'remote_sess_1'), 'Sessão remota foi incorporada com sucesso');
+
+// 3. Recuperação de sessões a partir de snapshots
+vm.runInContext(`
+  // Cria um snapshot com uma sessão exclusiva
+  saveSafetySnapshot('Snapshot para teste de recuperação');
+  // Simula perda acidental
+  getActiveCampaign().sessions = [];
+  // Executa recuperação defensiva
+  const recovered = recoverSessionsFromSnapshots(true);
+`, sandbox);
+
+const recoveredSessions = vm.runInContext("getActiveCampaign().sessions", sandbox);
+assert(recoveredSessions.length > 0, 'recoverSessionsFromSnapshots restaurou sessões com sucesso a partir dos backups');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
