@@ -65,6 +65,7 @@
       <div class="portal-nav-group">
         <button class="portal-nav-btn active" id="pnav-players" onclick="switchTab('players')">👤 Minha Ficha</button>
         <button class="portal-nav-btn" id="pnav-stash" onclick="openPartyStashModal()">🎒 Baú do Grupo</button>
+        <button class="portal-nav-btn" id="pnav-chronicles" onclick="openChroniclesViewerModal()">📖 Crônicas da Mesa</button>
         <button class="portal-nav-btn" id="pnav-spells" onclick="switchTab('spells')">✨ Grimório</button>
         <button class="portal-nav-btn" id="pnav-equipment" onclick="switchTab('equipment')">🛡️ Itens</button>
         <button class="portal-nav-btn" id="pnav-classes" onclick="switchTab('classes')">🌳 Classes</button>
@@ -2436,6 +2437,39 @@
           <button class="btn-secondary" onclick="closeQuickInitModal()">Cancelar</button>
           <button class="btn-action" style="background: linear-gradient(135deg, #eab308, #ca8a04); color: #000; font-weight: 700;" onclick="submitQuickInit()">⚡ Despachar para Combate</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LEITOR DE CRÔNICAS & DIÁRIO DE SESSÕES (PARA JOGADORES E MESTRE) -->
+  <div id="modal-chronicles-viewer" class="modal-overlay">
+    <div class="modal-body" style="max-width: 860px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 22px;">📖</span>
+          <div>
+            <div style="font-size: 16px; font-weight: 800; color: #fff;">Crônicas da Mesa • Diário de Sessões</div>
+            <div style="font-size: 11px; color: var(--primary-light);" id="chronicles-viewer-camp-name">Campanha Ativa</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px; border-color: #38bdf8; color: #38bdf8;" onclick="printCampaignChronicles()" title="Exportar e Imprimir em PDF / A4">🖨️ Imprimir PDF</button>
+          <button class="btn-secondary" onclick="closeChroniclesViewerModal()">✕</button>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; align-items: center; margin: 10px 0 6px 0;">
+        <div style="flex: 1; position: relative;">
+          <input type="text" id="inp-filter-chronicles" placeholder="🔍 Filtrar crônica por título, local, NPC ou palavra-chave..." oninput="renderChroniclesViewerContent()" style="width: 100%; font-size: 12px; padding: 6px 10px; background: #080c16; border: 1px solid var(--border-color); border-radius: 6px; color: #fff;">
+        </div>
+      </div>
+
+      <div id="chronicles-viewer-timeline" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; margin-top: 6px;">
+        <!-- Preenchido via renderChroniclesViewerContent -->
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 12px;">
+        <button class="btn-secondary" onclick="closeChroniclesViewerModal()">Fechar</button>
       </div>
     </div>
   </div>

@@ -958,9 +958,12 @@ function renderPlayers() {
             <!-- ABA 4: ORIGEM -->
             <div class="p-tab-content ${activeTab === 'background' ? 'active' : ''}">
               <div class="background-info-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 4px;">
                   <span style="font-size: 12px; font-weight: 800; color: var(--primary-light);">🎭 Origem: <b style="color: #fff;">${p.background || 'Aventureiro'}</b></span>
-                  <button class="btn-secondary" style="font-size: 10px; padding: 2px 8px;" onclick="openPlayerModal('${p.id}')">✏️ Editar Origem</button>
+                  <div style="display: flex; gap: 4px;">
+                    <button class="btn-secondary" style="font-size: 10px; padding: 2px 8px; border-color: rgba(56, 189, 248, 0.4); color: #7dd3fc;" onclick="openChroniclesViewerModal()" title="Ver Crônicas e Diários de Sessões da Mesa">📖 Crônicas da Mesa</button>
+                    <button class="btn-secondary" style="font-size: 10px; padding: 2px 8px;" onclick="openPlayerModal('${p.id}')">✏️ Editar Origem</button>
+                  </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; margin-bottom: 8px;">
                   <div class="origin-field-box">

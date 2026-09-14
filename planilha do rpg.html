@@ -6107,6 +6107,7 @@
       <div class="portal-nav-group">
         <button class="portal-nav-btn active" id="pnav-players" onclick="switchTab('players')">👤 Minha Ficha</button>
         <button class="portal-nav-btn" id="pnav-stash" onclick="openPartyStashModal()">🎒 Baú do Grupo</button>
+        <button class="portal-nav-btn" id="pnav-chronicles" onclick="openChroniclesViewerModal()">📖 Crônicas da Mesa</button>
         <button class="portal-nav-btn" id="pnav-spells" onclick="switchTab('spells')">✨ Grimório</button>
         <button class="portal-nav-btn" id="pnav-equipment" onclick="switchTab('equipment')">🛡️ Itens</button>
         <button class="portal-nav-btn" id="pnav-classes" onclick="switchTab('classes')">🌳 Classes</button>
@@ -8478,6 +8479,39 @@
           <button class="btn-secondary" onclick="closeQuickInitModal()">Cancelar</button>
           <button class="btn-action" style="background: linear-gradient(135deg, #eab308, #ca8a04); color: #000; font-weight: 700;" onclick="submitQuickInit()">⚡ Despachar para Combate</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LEITOR DE CRÔNICAS & DIÁRIO DE SESSÕES (PARA JOGADORES E MESTRE) -->
+  <div id="modal-chronicles-viewer" class="modal-overlay">
+    <div class="modal-body" style="max-width: 860px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 22px;">📖</span>
+          <div>
+            <div style="font-size: 16px; font-weight: 800; color: #fff;">Crônicas da Mesa • Diário de Sessões</div>
+            <div style="font-size: 11px; color: var(--primary-light);" id="chronicles-viewer-camp-name">Campanha Ativa</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px; border-color: #38bdf8; color: #38bdf8;" onclick="printCampaignChronicles()" title="Exportar e Imprimir em PDF / A4">🖨️ Imprimir PDF</button>
+          <button class="btn-secondary" onclick="closeChroniclesViewerModal()">✕</button>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; align-items: center; margin: 10px 0 6px 0;">
+        <div style="flex: 1; position: relative;">
+          <input type="text" id="inp-filter-chronicles" placeholder="🔍 Filtrar crônica por título, local, NPC ou palavra-chave..." oninput="renderChroniclesViewerContent()" style="width: 100%; font-size: 12px; padding: 6px 10px; background: #080c16; border: 1px solid var(--border-color); border-radius: 6px; color: #fff;">
+        </div>
+      </div>
+
+      <div id="chronicles-viewer-timeline" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; margin-top: 6px;">
+        <!-- Preenchido via renderChroniclesViewerContent -->
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 12px;">
+        <button class="btn-secondary" onclick="closeChroniclesViewerModal()">Fechar</button>
       </div>
     </div>
   </div>
@@ -29470,9 +29504,12 @@ function renderPlayers() {
             <!-- ABA 4: ORIGEM -->
             <div class="p-tab-content ${activeTab === 'background' ? 'active' : ''}">
               <div class="background-info-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 4px;">
                   <span style="font-size: 12px; font-weight: 800; color: var(--primary-light);">🎭 Origem: <b style="color: #fff;">${p.background || 'Aventureiro'}</b></span>
-                  <button class="btn-secondary" style="font-size: 10px; padding: 2px 8px;" onclick="openPlayerModal('${p.id}')">✏️ Editar Origem</button>
+                  <div style="display: flex; gap: 4px;">
+                    <button class="btn-secondary" style="font-size: 10px; padding: 2px 8px; border-color: rgba(56, 189, 248, 0.4); color: #7dd3fc;" onclick="openChroniclesViewerModal()" title="Ver Crônicas e Diários de Sessões da Mesa">📖 Crônicas da Mesa</button>
+                    <button class="btn-secondary" style="font-size: 10px; padding: 2px 8px;" onclick="openPlayerModal('${p.id}')">✏️ Editar Origem</button>
+                  </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; margin-bottom: 8px;">
                   <div class="origin-field-box">
@@ -36181,6 +36218,80 @@ function closePrintChroniclesModal() {
 
 function triggerChroniclesBrowserPrint() {
   if (typeof window !== 'undefined') window.print();
+}
+
+// --- LEITOR DE CRÔNICAS & DIÁRIO DE SESSÕES (PARA JOGADORES E MESTRE) ---
+function openChroniclesViewerModal() {
+  const modal = document.getElementById('modal-chronicles-viewer');
+  if (!modal) return;
+  renderChroniclesViewerContent();
+  modal.classList.add('open');
+}
+
+function closeChroniclesViewerModal() {
+  const modal = document.getElementById('modal-chronicles-viewer');
+  if (modal) modal.classList.remove('open');
+}
+
+function renderChroniclesViewerContent() {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const titleEl = document.getElementById('chronicles-viewer-camp-name');
+  if (titleEl) titleEl.innerText = `${camp.name} • ${(camp.sessions || []).length} Sessões Registradas`;
+
+  const container = document.getElementById('chronicles-viewer-timeline');
+  if (!container) return;
+
+  const filterInput = document.getElementById('inp-filter-chronicles');
+  const filterText = filterInput ? filterInput.value.toLowerCase().trim() : '';
+
+  let sessions = (camp.sessions || []).slice().sort((a, b) => b.number - a.number);
+
+  if (filterText) {
+    sessions = sessions.filter(s =>
+      (s.title || '').toLowerCase().includes(filterText) ||
+      (s.location || '').toLowerCase().includes(filterText) ||
+      (s.keyNpcs || '').toLowerCase().includes(filterText) ||
+      (s.notes || '').toLowerCase().includes(filterText) ||
+      String(s.number).includes(filterText)
+    );
+  }
+
+  if (sessions.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px 20px; background: rgba(0,0,0,0.2); border: 1px dashed var(--border-color); border-radius: 8px; color: var(--text-muted); font-size: 13px;">
+        📖 ${filterText ? 'Nenhuma crônica encontrada para este termo de busca.' : 'Nenhuma crônica de sessão registrada nesta campanha.'}
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = sessions.map(s => `
+    <div class="session-log-card" style="background: #080c16; border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; margin-bottom: 6px;">
+      <div class="session-log-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+        <div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="session-number-badge" style="background: rgba(245,158,11,0.2); border: 1px solid rgba(245,158,11,0.4); color: #fbbf24; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 4px;">Sessão ${s.number}</span>
+            <span style="font-size:16px; font-weight:800; color:#fff; font-family:var(--font-title);">${s.title}</span>
+          </div>
+          <div style="font-size:11.5px; color:var(--text-muted); margin-top:4px;">
+            📅 ${s.date || 'Data não informada'} • 🗺️ ${s.location || 'Local desconhecido'} • ⭐ <b>+${s.xpAwarded || 0} XP</b> por herói
+          </div>
+        </div>
+      </div>
+
+      <div class="session-notes-body" style="font-size: 12.5px; line-height: 1.6; color: #cbd5e1; background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.04);">
+        ${(s.notes || 'Sem anotações detalhadas.').replace(/\n/g, '<br>')}
+      </div>
+
+      ${s.keyNpcs ? `
+        <div style="margin-top:10px; font-size:11.5px; color:var(--primary-light); background: rgba(245,158,11,0.05); padding: 6px 10px; border-radius: 4px; border: 1px solid rgba(245,158,11,0.15);">
+          👥 <b>NPCs, Inimigos & Encontros:</b> <span style="color:#e2e8f0;">${s.keyNpcs}</span>
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
 }
 
 

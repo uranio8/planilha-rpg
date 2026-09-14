@@ -1034,3 +1034,77 @@ function triggerChroniclesBrowserPrint() {
   if (typeof window !== 'undefined') window.print();
 }
 
+// --- LEITOR DE CRÔNICAS & DIÁRIO DE SESSÕES (PARA JOGADORES E MESTRE) ---
+function openChroniclesViewerModal() {
+  const modal = document.getElementById('modal-chronicles-viewer');
+  if (!modal) return;
+  renderChroniclesViewerContent();
+  modal.classList.add('open');
+}
+
+function closeChroniclesViewerModal() {
+  const modal = document.getElementById('modal-chronicles-viewer');
+  if (modal) modal.classList.remove('open');
+}
+
+function renderChroniclesViewerContent() {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const titleEl = document.getElementById('chronicles-viewer-camp-name');
+  if (titleEl) titleEl.innerText = `${camp.name} • ${(camp.sessions || []).length} Sessões Registradas`;
+
+  const container = document.getElementById('chronicles-viewer-timeline');
+  if (!container) return;
+
+  const filterInput = document.getElementById('inp-filter-chronicles');
+  const filterText = filterInput ? filterInput.value.toLowerCase().trim() : '';
+
+  let sessions = (camp.sessions || []).slice().sort((a, b) => b.number - a.number);
+
+  if (filterText) {
+    sessions = sessions.filter(s =>
+      (s.title || '').toLowerCase().includes(filterText) ||
+      (s.location || '').toLowerCase().includes(filterText) ||
+      (s.keyNpcs || '').toLowerCase().includes(filterText) ||
+      (s.notes || '').toLowerCase().includes(filterText) ||
+      String(s.number).includes(filterText)
+    );
+  }
+
+  if (sessions.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px 20px; background: rgba(0,0,0,0.2); border: 1px dashed var(--border-color); border-radius: 8px; color: var(--text-muted); font-size: 13px;">
+        📖 ${filterText ? 'Nenhuma crônica encontrada para este termo de busca.' : 'Nenhuma crônica de sessão registrada nesta campanha.'}
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = sessions.map(s => `
+    <div class="session-log-card" style="background: #080c16; border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; margin-bottom: 6px;">
+      <div class="session-log-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+        <div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="session-number-badge" style="background: rgba(245,158,11,0.2); border: 1px solid rgba(245,158,11,0.4); color: #fbbf24; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 4px;">Sessão ${s.number}</span>
+            <span style="font-size:16px; font-weight:800; color:#fff; font-family:var(--font-title);">${s.title}</span>
+          </div>
+          <div style="font-size:11.5px; color:var(--text-muted); margin-top:4px;">
+            📅 ${s.date || 'Data não informada'} • 🗺️ ${s.location || 'Local desconhecido'} • ⭐ <b>+${s.xpAwarded || 0} XP</b> por herói
+          </div>
+        </div>
+      </div>
+
+      <div class="session-notes-body" style="font-size: 12.5px; line-height: 1.6; color: #cbd5e1; background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.04);">
+        ${(s.notes || 'Sem anotações detalhadas.').replace(/\n/g, '<br>')}
+      </div>
+
+      ${s.keyNpcs ? `
+        <div style="margin-top:10px; font-size:11.5px; color:var(--primary-light); background: rgba(245,158,11,0.05); padding: 6px 10px; border-radius: 4px; border: 1px solid rgba(245,158,11,0.15);">
+          👥 <b>NPCs, Inimigos & Encontros:</b> <span style="color:#e2e8f0;">${s.keyNpcs}</span>
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+}
+

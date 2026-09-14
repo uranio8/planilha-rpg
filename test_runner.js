@@ -1599,10 +1599,16 @@ assert(testRecipient.inventory.some(i => i.name === 'Corda Élfica (15m)'), 'Ite
 const itemInStash = updatedCampStash.partyStash.items.find(i => i.id === 'stash_item_test_1');
 assert(itemInStash && itemInStash.qty === 1, 'Quantidade no baú do grupo decrementada para 1x');
 
+assert(typeof vm.runInContext("openChroniclesViewerModal", sandbox) === 'function', 'Função openChroniclesViewerModal exportada');
+assert(typeof vm.runInContext("closeChroniclesViewerModal", sandbox) === 'function', 'Função closeChroniclesViewerModal exportada');
+assert(typeof vm.runInContext("renderChroniclesViewerContent", sandbox) === 'function', 'Função renderChroniclesViewerContent exportada');
+
 // 3. Validação de tags e elementos no bundle HTML
 const bundleHtml = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
 assert(bundleHtml.includes('id="player-portal-banner"'), 'Bundle contém player-portal-banner');
 assert(bundleHtml.includes('id="modal-party-stash-view"'), 'Bundle contém modal-party-stash-view');
+assert(bundleHtml.includes('id="modal-chronicles-viewer"'), 'Bundle contém modal-chronicles-viewer');
+assert(bundleHtml.includes('id="pnav-chronicles"'), 'Bundle contém botão de navegação para Crônicas no portal');
 assert(bundleHtml.includes('id="pnav-spells"'), 'Bundle contém botão de navegação para Grimório no portal');
 assert(bundleHtml.includes('id="pnav-stash"'), 'Bundle contém botão de navegação para Baú do Grupo no portal');
 assert(bundleHtml.includes('id="pnav-equipment"'), 'Bundle contém botão de navegação para Itens no portal');
