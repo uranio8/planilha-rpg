@@ -161,10 +161,17 @@ function renderCombat() {
         }
 
         if (playerObj.preparedSpells && playerObj.preparedSpells.length > 0) {
+          const castStats = typeof getPlayerSpellcastingStats === 'function' ? getPlayerSpellcastingStats(playerObj) : null;
           extraHtml += `
             <div style="background: #080c16; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 12px; margin-top: 6px;">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <b style="color: var(--primary-light);">✨ Magias Preparadas (Ação Rápida):</b>
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <b style="color: var(--primary-light);">✨ Magias (Ação Rápida):</b>
+                  ${castStats && castStats.isCaster ? `
+                    <span class="badge badge-lvl" style="font-size:10px; padding:1px 6px;" title="${castStats.formula}">CD ${castStats.saveDc}</span>
+                    <button class="btn-secondary" style="font-size:10px; padding:1px 6px; color:#fbbf24; border-color:#f59e0b;" onclick="rollPlayerSpellAttack('${playerObj.id}')" title="Rolar Ataque Mágico (d20 ${castStats.attackBonus})">🎲 Atk: ${castStats.attackBonus}</button>
+                  ` : ''}
+                </div>
                 <span style="font-size:10px; color:var(--text-muted);">${(playerObj.slots || []).map((max, idx) => max > 0 ? `${idx+1}º: ${max - (playerObj.slotsUsed[idx]||0)}/${max}` : '').filter(x => x).join(' | ')}</span>
               </div>
               <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">

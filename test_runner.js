@@ -1357,6 +1357,21 @@ assert(rangerPrep.isKnownCaster && rangerPrep.maxLeveled === 2, 'Patrulheiro Nv 
 const eldritchPrep = vm.runInContext("getMaxPreparedSpells({ className: 'Cavaleiro Arcano', level: 3, int: 14 })", sandbox);
 assert(eldritchPrep.isKnownCaster && eldritchPrep.maxLeveled === 3 && eldritchPrep.maxCantrips === 2, 'Cavaleiro Arcano Nv 3 conhece exatamente 3 magias e 2 truques');
 
+// 2.2. Validação de CD de Magia, Modificador e Ataque Mágico (D&D 5E Formulas)
+const wizardStats = vm.runInContext("getPlayerSpellcastingStats({ className: 'Mago', level: 3, int: 16 })", sandbox);
+assert(wizardStats.isCaster && wizardStats.ability === 'INT' && wizardStats.saveDc === 13 && wizardStats.attackBonus === '+5', 'Mago Nv 3 c/ INT 16 (+3, PB +2) calcula CD 13 e Ataque Mágico +5');
+
+const clericStats = vm.runInContext("getPlayerSpellcastingStats({ className: 'Clérigo', level: 5, wis: 18 })", sandbox);
+assert(clericStats.isCaster && clericStats.ability === 'SAB' && clericStats.saveDc === 15 && clericStats.attackBonus === '+7', 'Clérigo Nv 5 c/ SAB 18 (+4, PB +3) calcula CD 15 e Ataque Mágico +7');
+
+const bardStats = vm.runInContext("getPlayerSpellcastingStats({ className: 'Bardo', level: 2, cha: 16 })", sandbox);
+assert(bardStats.isCaster && bardStats.ability === 'CAR' && bardStats.saveDc === 13 && bardStats.attackBonus === '+5', 'Bardo Nv 2 c/ CAR 16 (+3, PB +2) calcula CD 13 e Ataque Mágico +5');
+
+const fighterStats = vm.runInContext("getPlayerSpellcastingStats({ className: 'Guerreiro', level: 2, str: 16, dex: 12, con: 16, int: 10, wis: 12, cha: 8, slots: [0,0,0,0,0], preparedSpells: [] })", sandbox);
+assert(!fighterStats.isCaster, 'Guerreiro puro é identificado como não-conjurador');
+
+assert(typeof vm.runInContext("rollPlayerSpellAttack", sandbox) === 'function', 'Função rollPlayerSpellAttack existe e pode ser executada');
+
 // 3. Validação de Especialização (Expertise - Dobro da Proficiência)
 const testRogue = {
   id: 'test_rogue_exp',

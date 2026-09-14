@@ -5352,6 +5352,72 @@
     }
 
     /* --- 6. CARDS & GRID DE MAGIAS NAS FICHAS DOS JOGADORES --- */
+    .spellcasting-hud-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      border-radius: 8px;
+      padding: 6px 8px;
+      margin-top: 4px;
+      margin-bottom: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .spell-stat-chip {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.15s ease;
+    }
+
+    .spell-stat-chip.rollable {
+      cursor: pointer;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(217, 119, 6, 0.25));
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+
+    .spell-stat-chip.rollable:hover {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(217, 119, 6, 0.45));
+      border-color: #f59e0b;
+      transform: translateY(-1px);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+    }
+
+    .spell-stat-label {
+      font-size: 8px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+    }
+
+    .spell-stat-val {
+      font-size: 13px;
+      font-weight: 900;
+      color: #fff;
+      margin-top: 1px;
+    }
+
+    .spell-stat-val.cd-val {
+      color: #a78bfa;
+    }
+
+    .spell-stat-val.atk-val {
+      color: #fbbf24;
+    }
+
+    .spell-stat-val.mod-val {
+      color: #38bdf8;
+    }
+
     .player-spells-chips-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
@@ -27032,10 +27098,17 @@ function renderCombat() {
         }
 
         if (playerObj.preparedSpells && playerObj.preparedSpells.length > 0) {
+          const castStats = typeof getPlayerSpellcastingStats === 'function' ? getPlayerSpellcastingStats(playerObj) : null;
           extraHtml += `
             <div style="background: #080c16; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 12px; margin-top: 6px;">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <b style="color: var(--primary-light);">✨ Magias Preparadas (Ação Rápida):</b>
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <b style="color: var(--primary-light);">✨ Magias (Ação Rápida):</b>
+                  ${castStats && castStats.isCaster ? `
+                    <span class="badge badge-lvl" style="font-size:10px; padding:1px 6px;" title="${castStats.formula}">CD ${castStats.saveDc}</span>
+                    <button class="btn-secondary" style="font-size:10px; padding:1px 6px; color:#fbbf24; border-color:#f59e0b;" onclick="rollPlayerSpellAttack('${playerObj.id}')" title="Rolar Ataque Mágico (d20 ${castStats.attackBonus})">🎲 Atk: ${castStats.attackBonus}</button>
+                  ` : ''}
+                </div>
                 <span style="font-size:10px; color:var(--text-muted);">${(playerObj.slots || []).map((max, idx) => max > 0 ? `${idx+1}º: ${max - (playerObj.slotsUsed[idx]||0)}/${max}` : '').filter(x => x).join(' | ')}</span>
               </div>
               <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">
@@ -28460,6 +28533,27 @@ function renderPlayers() {
                 })()}
                 <button class="btn-secondary dm-only-btn" style="font-size: 10px; padding: 2px 6px;" onclick="openSpellPickerModal('${p.id}')" title="Mestre: Selecionar e editar as magias deste herói">📖 Escolher</button>
               </div>
+
+              ${(() => {
+                const castStats = getPlayerSpellcastingStats(p);
+                if (!castStats.isCaster && (!p.preparedSpells || p.preparedSpells.length === 0) && (!p.slots || !p.slots.some(s => s > 0))) return '';
+                return `
+                  <div class="spellcasting-hud-bar">
+                    <div class="spell-stat-chip" title="CD de Salvaguarda de Magia: Inimigos devem tirar ${castStats.saveDc} ou mais no d20 para resistir às suas magias (${castStats.formula})">
+                      <span class="spell-stat-label">CD DA MAGIA</span>
+                      <span class="spell-stat-val cd-val">CD ${castStats.saveDc}</span>
+                    </div>
+                    <button class="spell-stat-chip rollable" onclick="rollPlayerSpellAttack('${p.id}')" title="Clique para Rolar Ataque Mágico (d20 ${castStats.attackBonus})">
+                      <span class="spell-stat-label">ATAQUE MÁGICO 🎲</span>
+                      <span class="spell-stat-val atk-val">${castStats.attackBonus}</span>
+                    </button>
+                    <div class="spell-stat-chip" title="Atributo-Chave: ${castStats.ability} (Modificador ${castStats.modStr}) • Bônus de Proficiência: +${castStats.profBonus}">
+                      <span class="spell-stat-label">ATRIBUTO-CHAVE</span>
+                      <span class="spell-stat-val mod-val">${castStats.ability} (${castStats.modStr})</span>
+                    </div>
+                  </div>
+                `;
+              })()}
               ${(p.preparedSpells && p.preparedSpells.length > 0) ? `
                 <div class="player-spells-chips-grid">
                   ${p.preparedSpells.map(sName => {
@@ -29841,6 +29935,89 @@ function getMaxPreparedSpells(p) {
     attrLabel: null,
     className: p.className || 'Classe'
   };
+}
+
+function getPlayerSpellcastingStats(p) {
+  if (!p) return { isCaster: false, ability: 'INT', abilityKey: 'int', abilityMod: 0, modStr: '+0', profBonus: 2, saveDc: 10, attackBonus: '+2', attackModNum: 2, formula: 'CD 10' };
+  const lvl = parseInt(p.level, 10) || 1;
+  const prof = getProfBonus(lvl);
+  const norm = (p.className || '').toLowerCase();
+
+  let abilityKey = 'int';
+  let abilityLabel = 'INT';
+  let isCaster = true;
+
+  if (norm.includes('mago') || norm.includes('wizard') || norm.includes('cavaleiro') || norm.includes('eldritch') || norm.includes('trapaceiro') || norm.includes('trickster')) {
+    abilityKey = 'int';
+    abilityLabel = 'INT';
+  } else if (norm.includes('clérigo') || norm.includes('clerigo') || norm.includes('druida') || norm.includes('patrulheiro') || norm.includes('ranger')) {
+    abilityKey = 'wis';
+    abilityLabel = 'SAB';
+  } else if (norm.includes('bardo') || norm.includes('feiticeiro') || norm.includes('sorcerer') || norm.includes('bruxo') || norm.includes('warlock') || norm.includes('paladino')) {
+    abilityKey = 'cha';
+    abilityLabel = 'CAR';
+  } else {
+    // Classes não-conjuradoras puras (Guerreiro, Bárbaro, Ladino, Monge)
+    if ((p.slots && p.slots.some(s => s > 0)) || (p.preparedSpells && p.preparedSpells.length > 0)) {
+      const intVal = p.int || 10;
+      const wisVal = p.wis || 10;
+      const chaVal = p.cha || 10;
+      if (wisVal >= intVal && wisVal >= chaVal) { abilityKey = 'wis'; abilityLabel = 'SAB'; }
+      else if (chaVal >= intVal && chaVal >= wisVal) { abilityKey = 'cha'; abilityLabel = 'CAR'; }
+      else { abilityKey = 'int'; abilityLabel = 'INT'; }
+    } else {
+      isCaster = false;
+    }
+  }
+
+  const rawAttr = p[abilityKey] || 10;
+  const mod = Math.floor((rawAttr - 10) / 2);
+  const saveDc = 8 + prof + mod;
+  const attackModNum = prof + mod;
+  const attackBonus = attackModNum >= 0 ? `+${attackModNum}` : `${attackModNum}`;
+  const modStr = mod >= 0 ? `+${mod}` : `${mod}`;
+
+  return {
+    isCaster,
+    ability: abilityLabel,
+    abilityKey,
+    abilityMod: mod,
+    modStr,
+    profBonus: prof,
+    saveDc,
+    attackBonus,
+    attackModNum,
+    formula: `CD = 8 + Prof (+${prof}) + ${abilityLabel} (${modStr}) = ${saveDc}`
+  };
+}
+
+function rollPlayerSpellAttack(playerId) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+  const stats = getPlayerSpellcastingStats(p);
+  const d20 = Math.floor(Math.random() * 20) + 1;
+  const isCrit = d20 === 20;
+  const isFumble = d20 === 1;
+  const total = d20 + stats.attackModNum;
+
+  const title = `Ataque Mágico (${stats.ability})`;
+  const detail = `d20 (${d20}) ${stats.attackBonus} = ${total}`;
+
+  if (typeof playFX === 'function') {
+    playFX(isCrit ? 'crit' : (isFumble ? 'fumble' : 'dice'));
+  }
+
+  if (typeof showLiveDiceRoll === 'function') {
+    showLiveDiceRoll(title, `${total}`, `${p.name} • ${detail}${isCrit ? ' 🔥 CRÍTICO!' : ''}`);
+  }
+
+  const logMsg = `🎲 <b>${p.name}</b> rolou <b>Ataque Mágico</b>: [d20 (${d20}) ${stats.attackBonus}] = <b>${total}</b>${isCrit ? ' <span style="color:#fbbf24; font-weight:bold;">🔥 CRÍTICO!</span>' : ''}${isFumble ? ' <span style="color:#f87171; font-weight:bold;">💀 FALHA CRÍTICA!</span>' : ''}`;
+  if (typeof addLog === 'function') addLog(logMsg);
+  if (typeof addPlayerActionLog === 'function') addPlayerActionLog(p.id, '🔮', `Ataque Mágico: ${total} (d20:${d20} ${stats.attackBonus})`, 'dice');
+
+  if (typeof broadcastCombatState === 'function') {
+    broadcastCombatState(logMsg);
+  }
 }
 
 function togglePlayerSpellPrepared(playerId, spellName) {

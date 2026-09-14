@@ -544,6 +544,27 @@ function renderPlayers() {
                 })()}
                 <button class="btn-secondary dm-only-btn" style="font-size: 10px; padding: 2px 6px;" onclick="openSpellPickerModal('${p.id}')" title="Mestre: Selecionar e editar as magias deste herói">📖 Escolher</button>
               </div>
+
+              ${(() => {
+                const castStats = getPlayerSpellcastingStats(p);
+                if (!castStats.isCaster && (!p.preparedSpells || p.preparedSpells.length === 0) && (!p.slots || !p.slots.some(s => s > 0))) return '';
+                return `
+                  <div class="spellcasting-hud-bar">
+                    <div class="spell-stat-chip" title="CD de Salvaguarda de Magia: Inimigos devem tirar ${castStats.saveDc} ou mais no d20 para resistir às suas magias (${castStats.formula})">
+                      <span class="spell-stat-label">CD DA MAGIA</span>
+                      <span class="spell-stat-val cd-val">CD ${castStats.saveDc}</span>
+                    </div>
+                    <button class="spell-stat-chip rollable" onclick="rollPlayerSpellAttack('${p.id}')" title="Clique para Rolar Ataque Mágico (d20 ${castStats.attackBonus})">
+                      <span class="spell-stat-label">ATAQUE MÁGICO 🎲</span>
+                      <span class="spell-stat-val atk-val">${castStats.attackBonus}</span>
+                    </button>
+                    <div class="spell-stat-chip" title="Atributo-Chave: ${castStats.ability} (Modificador ${castStats.modStr}) • Bônus de Proficiência: +${castStats.profBonus}">
+                      <span class="spell-stat-label">ATRIBUTO-CHAVE</span>
+                      <span class="spell-stat-val mod-val">${castStats.ability} (${castStats.modStr})</span>
+                    </div>
+                  </div>
+                `;
+              })()}
               ${(p.preparedSpells && p.preparedSpells.length > 0) ? `
                 <div class="player-spells-chips-grid">
                   ${p.preparedSpells.map(sName => {
@@ -1925,6 +1946,89 @@ function getMaxPreparedSpells(p) {
     attrLabel: null,
     className: p.className || 'Classe'
   };
+}
+
+function getPlayerSpellcastingStats(p) {
+  if (!p) return { isCaster: false, ability: 'INT', abilityKey: 'int', abilityMod: 0, modStr: '+0', profBonus: 2, saveDc: 10, attackBonus: '+2', attackModNum: 2, formula: 'CD 10' };
+  const lvl = parseInt(p.level, 10) || 1;
+  const prof = getProfBonus(lvl);
+  const norm = (p.className || '').toLowerCase();
+
+  let abilityKey = 'int';
+  let abilityLabel = 'INT';
+  let isCaster = true;
+
+  if (norm.includes('mago') || norm.includes('wizard') || norm.includes('cavaleiro') || norm.includes('eldritch') || norm.includes('trapaceiro') || norm.includes('trickster')) {
+    abilityKey = 'int';
+    abilityLabel = 'INT';
+  } else if (norm.includes('clérigo') || norm.includes('clerigo') || norm.includes('druida') || norm.includes('patrulheiro') || norm.includes('ranger')) {
+    abilityKey = 'wis';
+    abilityLabel = 'SAB';
+  } else if (norm.includes('bardo') || norm.includes('feiticeiro') || norm.includes('sorcerer') || norm.includes('bruxo') || norm.includes('warlock') || norm.includes('paladino')) {
+    abilityKey = 'cha';
+    abilityLabel = 'CAR';
+  } else {
+    // Classes não-conjuradoras puras (Guerreiro, Bárbaro, Ladino, Monge)
+    if ((p.slots && p.slots.some(s => s > 0)) || (p.preparedSpells && p.preparedSpells.length > 0)) {
+      const intVal = p.int || 10;
+      const wisVal = p.wis || 10;
+      const chaVal = p.cha || 10;
+      if (wisVal >= intVal && wisVal >= chaVal) { abilityKey = 'wis'; abilityLabel = 'SAB'; }
+      else if (chaVal >= intVal && chaVal >= wisVal) { abilityKey = 'cha'; abilityLabel = 'CAR'; }
+      else { abilityKey = 'int'; abilityLabel = 'INT'; }
+    } else {
+      isCaster = false;
+    }
+  }
+
+  const rawAttr = p[abilityKey] || 10;
+  const mod = Math.floor((rawAttr - 10) / 2);
+  const saveDc = 8 + prof + mod;
+  const attackModNum = prof + mod;
+  const attackBonus = attackModNum >= 0 ? `+${attackModNum}` : `${attackModNum}`;
+  const modStr = mod >= 0 ? `+${mod}` : `${mod}`;
+
+  return {
+    isCaster,
+    ability: abilityLabel,
+    abilityKey,
+    abilityMod: mod,
+    modStr,
+    profBonus: prof,
+    saveDc,
+    attackBonus,
+    attackModNum,
+    formula: `CD = 8 + Prof (+${prof}) + ${abilityLabel} (${modStr}) = ${saveDc}`
+  };
+}
+
+function rollPlayerSpellAttack(playerId) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+  const stats = getPlayerSpellcastingStats(p);
+  const d20 = Math.floor(Math.random() * 20) + 1;
+  const isCrit = d20 === 20;
+  const isFumble = d20 === 1;
+  const total = d20 + stats.attackModNum;
+
+  const title = `Ataque Mágico (${stats.ability})`;
+  const detail = `d20 (${d20}) ${stats.attackBonus} = ${total}`;
+
+  if (typeof playFX === 'function') {
+    playFX(isCrit ? 'crit' : (isFumble ? 'fumble' : 'dice'));
+  }
+
+  if (typeof showLiveDiceRoll === 'function') {
+    showLiveDiceRoll(title, `${total}`, `${p.name} • ${detail}${isCrit ? ' 🔥 CRÍTICO!' : ''}`);
+  }
+
+  const logMsg = `🎲 <b>${p.name}</b> rolou <b>Ataque Mágico</b>: [d20 (${d20}) ${stats.attackBonus}] = <b>${total}</b>${isCrit ? ' <span style="color:#fbbf24; font-weight:bold;">🔥 CRÍTICO!</span>' : ''}${isFumble ? ' <span style="color:#f87171; font-weight:bold;">💀 FALHA CRÍTICA!</span>' : ''}`;
+  if (typeof addLog === 'function') addLog(logMsg);
+  if (typeof addPlayerActionLog === 'function') addPlayerActionLog(p.id, '🔮', `Ataque Mágico: ${total} (d20:${d20} ${stats.attackBonus})`, 'dice');
+
+  if (typeof broadcastCombatState === 'function') {
+    broadcastCombatState(logMsg);
+  }
 }
 
 function togglePlayerSpellPrepared(playerId, spellName) {
