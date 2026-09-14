@@ -3526,6 +3526,15 @@
     body.mode-player-portal header {
       display: none !important;
     }
+    body.mode-player-portal #tab-combat,
+    body.mode-player-portal #tab-grid,
+    body.mode-player-portal #tab-grid-config,
+    body.mode-player-portal #tab-dmscreen,
+    body.mode-player-portal #tab-generators,
+    body.mode-player-portal #tab-bestiary,
+    body.mode-player-portal #tab-campaigns {
+      display: none !important;
+    }
     body.mode-player-portal .player-toolbar .btn-action[onclick*="addPlayerToCombat"] {
       display: none !important;
     }
@@ -3601,12 +3610,6 @@
       border-color: #f59e0b;
       box-shadow: 0 2px 10px rgba(245, 158, 11, 0.4);
       font-weight: 800;
-    }
-
-    .btn-portal-exit {
-      font-size: 11px;
-      padding: 6px 11px;
-      border-radius: 8px;
     }
 
     .party-stash-quickbar {

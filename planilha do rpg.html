@@ -3529,6 +3529,15 @@
     body.mode-player-portal header {
       display: none !important;
     }
+    body.mode-player-portal #tab-combat,
+    body.mode-player-portal #tab-grid,
+    body.mode-player-portal #tab-grid-config,
+    body.mode-player-portal #tab-dmscreen,
+    body.mode-player-portal #tab-generators,
+    body.mode-player-portal #tab-bestiary,
+    body.mode-player-portal #tab-campaigns {
+      display: none !important;
+    }
     body.mode-player-portal .player-toolbar .btn-action[onclick*="addPlayerToCombat"] {
       display: none !important;
     }
@@ -3604,12 +3613,6 @@
       border-color: #f59e0b;
       box-shadow: 0 2px 10px rgba(245, 158, 11, 0.4);
       font-weight: 800;
-    }
-
-    .btn-portal-exit {
-      font-size: 11px;
-      padding: 6px 11px;
-      border-radius: 8px;
     }
 
     .party-stash-quickbar {
@@ -6145,7 +6148,6 @@
         <button class="portal-nav-btn" id="pnav-classes" onclick="switchTab('classes')">🌳 Classes</button>
         <button class="portal-nav-btn" id="pnav-species" onclick="switchTab('species')">🧬 Raças</button>
         <button class="portal-nav-btn" id="pnav-dice" onclick="openDiceModal()">🎲 Dados</button>
-        <button class="btn-secondary btn-portal-exit" onclick="exitPlayerPortalMode()" title="Retornar à Central do Mestre">⚙️ Visão do Mestre</button>
       </div>
     </div>
   </div>
@@ -26545,7 +26547,16 @@ function normalizeStr(str) {
 }
 
 // --- NAVEGAÇÃO ENTRE ABAS ---
+const PLAYER_ALLOWED_TABS = ['players', 'spells', 'equipment', 'classes', 'species'];
+
 function switchTab(tabId) {
+  const isPortalMode = (typeof document !== 'undefined' && document.body && document.body.classList.contains('mode-player-portal')) || (typeof activePortalPlayerId !== 'undefined' && !!activePortalPlayerId);
+
+  // Trava de segurança: jogadores em modo portal só acessam suas fichas e compêndios
+  if (isPortalMode && !PLAYER_ALLOWED_TABS.includes(tabId)) {
+    tabId = 'players';
+  }
+
   document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.portal-nav-btn').forEach(el => el.classList.remove('active'));

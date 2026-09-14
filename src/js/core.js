@@ -314,7 +314,16 @@ function normalizeStr(str) {
 }
 
 // --- NAVEGAÇÃO ENTRE ABAS ---
+const PLAYER_ALLOWED_TABS = ['players', 'spells', 'equipment', 'classes', 'species'];
+
 function switchTab(tabId) {
+  const isPortalMode = (typeof document !== 'undefined' && document.body && document.body.classList.contains('mode-player-portal')) || (typeof activePortalPlayerId !== 'undefined' && !!activePortalPlayerId);
+
+  // Trava de segurança: jogadores em modo portal só acessam suas fichas e compêndios
+  if (isPortalMode && !PLAYER_ALLOWED_TABS.includes(tabId)) {
+    tabId = 'players';
+  }
+
   document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.portal-nav-btn').forEach(el => el.classList.remove('active'));

@@ -1603,7 +1603,19 @@ assert(typeof vm.runInContext("openChroniclesViewerModal", sandbox) === 'functio
 assert(typeof vm.runInContext("closeChroniclesViewerModal", sandbox) === 'function', 'Função closeChroniclesViewerModal exportada');
 assert(typeof vm.runInContext("renderChroniclesViewerContent", sandbox) === 'function', 'Função renderChroniclesViewerContent exportada');
 
-// 3. Validação de tags e elementos no bundle HTML
+// 3. Teste de segurança do Portal do Jogador (Bloqueio de Abas do Mestre)
+const allowedTabs = vm.runInContext("PLAYER_ALLOWED_TABS", sandbox);
+assert(Array.isArray(allowedTabs) && allowedTabs.includes('players') && !allowedTabs.includes('combat') && !allowedTabs.includes('dmscreen'), 'PLAYER_ALLOWED_TABS restringe acesso às abas do mestre');
+
+vm.runInContext(`
+  activePortalPlayerId = 'p1';
+  switchTab('combat'); // Tentativa de abrir aba de combate em modo portal
+`, sandbox);
+
+const activePlayersPane = vm.runInContext("document.getElementById('tab-players').classList.contains('active')", sandbox);
+assert(activePlayersPane, 'Tentativa de acessar aba de Combate em modo Portal foi redirecionada para a aba de Fichas (players)');
+
+// 4. Validação de tags e elementos no bundle HTML
 const bundleHtml = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
 assert(bundleHtml.includes('id="player-portal-banner"'), 'Bundle contém player-portal-banner');
 assert(bundleHtml.includes('id="modal-party-stash-view"'), 'Bundle contém modal-party-stash-view');
@@ -1612,6 +1624,7 @@ assert(bundleHtml.includes('id="pnav-chronicles"'), 'Bundle contém botão de na
 assert(bundleHtml.includes('id="pnav-spells"'), 'Bundle contém botão de navegação para Grimório no portal');
 assert(bundleHtml.includes('id="pnav-stash"'), 'Bundle contém botão de navegação para Baú do Grupo no portal');
 assert(bundleHtml.includes('id="pnav-equipment"'), 'Bundle contém botão de navegação para Itens no portal');
+assert(!bundleHtml.includes('btn-portal-exit'), 'Botão de saída para Visão do Mestre removido do portal dos jogadores');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
