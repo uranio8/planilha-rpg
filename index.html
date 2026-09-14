@@ -6370,23 +6370,11 @@
     <!-- TAB 1: COMBATE -->
     <div id="tab-combat" class="tab-pane active">
       <div class="controls-bar">
-        <!-- CLUSTER 1: FLUXO DE TURNO E CRONÔMETRO -->
+        <!-- CLUSTER 1: FLUXO DE TURNO -->
         <div class="combat-bar-cluster cluster-turn">
           <div class="round-badge">RODADA <span id="lbl-round">1</span></div>
           <div id="combat-difficulty-badge" class="diff-meter diff-trivial">Encontro: Trivial</div>
           <button class="btn-next-turn-hero" onclick="nextTurn()" title="Avançar para o próximo combatente na iniciativa (Atalho: Barra de Espaço)">Próximo Turno ➔ <kbd style="font-size:10px; background:rgba(0,0,0,0.3); color:#fff; padding:2px 5px; border-radius:4px;">Espaço</kbd></button>
-          
-          <!-- M6: TEMPORIZADOR DE TURNO -->
-          <div class="turn-timer-box">
-            <div id="combat-timer-bar" style="position: absolute; bottom: 0; left: 0; height: 3px; width: 100%; background: var(--accent-green); transition: width 0.3s linear, background-color 0.3s;"></div>
-            <span id="combat-timer-display">01:00</span>
-            <button id="btn-timer-toggle" class="btn-micro" onclick="toggleTurnTimer()" title="Iniciar / Pausar Cronômetro de Turno">▶️</button>
-            <button class="btn-micro" onclick="resetTurnTimer()" title="Reiniciar Cronômetro">🔄</button>
-            <button class="btn-micro" onclick="addTurnTimerSeconds(15)" title="+15s no Turno">+15s</button>
-            <label class="timer-auto-label" title="Reinicia o cronômetro automaticamente ao avançar para o próximo turno">
-              <input type="checkbox" id="chk-timer-autoreset" onchange="toggleTurnTimerAutoReset(this.checked)" checked> Auto
-            </label>
-          </div>
         </div>
 
         <!-- CLUSTER 2: GERAÇÃO E ADIÇÃO DE CRIATURAS -->
