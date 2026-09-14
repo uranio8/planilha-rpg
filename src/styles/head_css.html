@@ -604,47 +604,66 @@
       text-align: center;
     }
 
-    /* ESTILOS DA FICHA DE JOGADOR INTERATIVA (REDESENHADA & ERGONÔMICA) */
+    /* GRID DE FICHAS — FULL WIDTH (1 POR LINHA) */
+    #grid-players {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 20px !important;
+      max-height: none !important;
+      overflow-y: visible !important;
+      padding-right: 0 !important;
+    }
+
+    /* ESTILOS DA FICHA DE JOGADOR — REDESIGN COMPLETO */
     .player-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 14px;
-      padding: 16px;
+      background: linear-gradient(160deg, #0e1628 0%, #090d1c 100%);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px;
+      padding: 0;
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      gap: 0;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.5);
       position: relative;
+      overflow: hidden;
+    }
+    .player-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), rgba(245,158,11,0.3));
+      border-radius: 16px 16px 0 0;
+      z-index: 1;
     }
     .player-card:hover {
-      border-color: rgba(245, 158, 11, 0.4);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+      border-color: rgba(245, 158, 11, 0.3);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 20px rgba(245,158,11,0.07);
     }
     .player-card.is-compact .player-sheet-grid {
       display: none !important;
     }
     .player-card.is-compact {
-      gap: 6px;
-      padding: 12px 14px;
+      padding: 0;
     }
     
-    /* Topo do Card */
+    /* Topo do Card — Redesenhado */
     .player-card-top {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      border-bottom: 1px solid var(--border-color);
-      padding-bottom: 10px;
+      gap: 10px;
+      padding: 16px 18px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
     }
     .player-title-row {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      gap: 8px;
+      align-items: flex-start;
+      gap: 12px;
     }
     .player-title {
-      font-size: 17px;
+      font-size: 19px;
       font-weight: 800;
       font-family: var(--font-title);
       color: #fff;
@@ -652,39 +671,62 @@
       align-items: center;
       gap: 8px;
       flex-wrap: wrap;
+      line-height: 1.2;
+    }
+    .player-title > span:first-child {
+      text-shadow: 0 0 20px rgba(245,158,11,0.3);
     }
     .player-meta {
-      font-size: 11px;
+      font-size: 11.5px;
       color: var(--text-muted);
-      line-height: 1.4;
+      line-height: 1.5;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
     }
 
-    /* BADGES DE CLASSE D&D */
+    /* BADGES DE CLASSE D&D — REDESENHADOS */
     .class-badge {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      padding: 2px 8px;
-      border-radius: 6px;
-      font-size: 10px;
-      font-weight: 700;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 10.5px;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      border: 1px solid rgba(255,255,255,0.15);
+      letter-spacing: 0.6px;
+      border: 1px solid rgba(255,255,255,0.12);
       background: rgba(255,255,255,0.05);
+      white-space: nowrap;
     }
-    .class-badge.class-barbarian { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; }
-    .class-badge.class-bard { background: rgba(236, 72, 153, 0.15); border-color: rgba(236, 72, 153, 0.4); color: #f472b6; }
-    .class-badge.class-cleric { background: rgba(234, 179, 8, 0.15); border-color: rgba(234, 179, 8, 0.4); color: #fde047; }
-    .class-badge.class-druid { background: rgba(34, 197, 94, 0.15); border-color: rgba(34, 197, 94, 0.4); color: #86efac; }
-    .class-badge.class-fighter { background: rgba(249, 115, 22, 0.15); border-color: rgba(249, 115, 22, 0.4); color: #fdba74; }
-    .class-badge.class-monk { background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.4); color: #7dd3fc; }
-    .class-badge.class-paladin { background: rgba(250, 204, 21, 0.18); border-color: rgba(250, 204, 21, 0.5); color: #fef08a; }
-    .class-badge.class-ranger { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7; }
-    .class-badge.class-rogue { background: rgba(148, 163, 184, 0.15); border-color: rgba(148, 163, 184, 0.4); color: #cbd5e1; }
-    .class-badge.class-sorcerer { background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.4); color: #d8b4fe; }
-    .class-badge.class-warlock { background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.4); color: #c4b5fd; }
-    .class-badge.class-wizard { background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.4); color: #a5b4fc; }
+    .class-badge.class-barbarian { background: rgba(239, 68, 68, 0.18); border-color: rgba(239, 68, 68, 0.45); color: #fca5a5; }
+    .class-badge.class-bard { background: rgba(236, 72, 153, 0.18); border-color: rgba(236, 72, 153, 0.45); color: #f472b6; }
+    .class-badge.class-cleric { background: rgba(234, 179, 8, 0.18); border-color: rgba(234, 179, 8, 0.45); color: #fde047; }
+    .class-badge.class-druid { background: rgba(34, 197, 94, 0.18); border-color: rgba(34, 197, 94, 0.45); color: #86efac; }
+    .class-badge.class-fighter { background: rgba(249, 115, 22, 0.18); border-color: rgba(249, 115, 22, 0.45); color: #fdba74; }
+    .class-badge.class-monk { background: rgba(56, 189, 248, 0.18); border-color: rgba(56, 189, 248, 0.45); color: #7dd3fc; }
+    .class-badge.class-paladin { background: rgba(250, 204, 21, 0.2); border-color: rgba(250, 204, 21, 0.5); color: #fef08a; }
+    .class-badge.class-ranger { background: rgba(16, 185, 129, 0.18); border-color: rgba(16, 185, 129, 0.45); color: #6ee7b7; }
+    .class-badge.class-rogue { background: rgba(148, 163, 184, 0.18); border-color: rgba(148, 163, 184, 0.45); color: #cbd5e1; }
+    .class-badge.class-sorcerer { background: rgba(168, 85, 247, 0.18); border-color: rgba(168, 85, 247, 0.45); color: #d8b4fe; }
+    .class-badge.class-warlock { background: rgba(139, 92, 246, 0.18); border-color: rgba(139, 92, 246, 0.45); color: #c4b5fd; }
+    .class-badge.class-wizard { background: rgba(99, 102, 241, 0.18); border-color: rgba(99, 102, 241, 0.45); color: #a5b4fc; }
+
+    /* Linha colorida por classe no topo do card */
+    .player-card.cls-barbarian::before { background: linear-gradient(90deg, #ef4444, rgba(239,68,68,0.2)); }
+    .player-card.cls-bard::before { background: linear-gradient(90deg, #ec4899, rgba(236,72,153,0.2)); }
+    .player-card.cls-cleric::before { background: linear-gradient(90deg, #eab308, rgba(234,179,8,0.2)); }
+    .player-card.cls-druid::before { background: linear-gradient(90deg, #22c55e, rgba(34,197,94,0.2)); }
+    .player-card.cls-fighter::before { background: linear-gradient(90deg, #f97316, rgba(249,115,22,0.2)); }
+    .player-card.cls-monk::before { background: linear-gradient(90deg, #38bdf8, rgba(56,189,248,0.2)); }
+    .player-card.cls-paladin::before { background: linear-gradient(90deg, #facc15, rgba(250,204,21,0.2)); }
+    .player-card.cls-ranger::before { background: linear-gradient(90deg, #10b981, rgba(16,185,129,0.2)); }
+    .player-card.cls-rogue::before { background: linear-gradient(90deg, #94a3b8, rgba(148,163,184,0.2)); }
+    .player-card.cls-sorcerer::before { background: linear-gradient(90deg, #a855f7, rgba(168,85,247,0.2)); }
+    .player-card.cls-warlock::before { background: linear-gradient(90deg, #8b5cf6, rgba(139,92,246,0.2)); }
+    .player-card.cls-wizard::before { background: linear-gradient(90deg, #6366f1, rgba(99,102,241,0.2)); }
 
     /* STATUS DE DESCANSO */
     .rest-status-badge {
@@ -702,14 +744,15 @@
     .rest-status-badge.exhausted { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #f87171; }
     .rest-status-badge.unconscious { background: rgba(0, 0, 0, 0.5); border-color: #ef4444; color: #ef4444; animation: pulseGlow 1.5s infinite; }
 
-    /* Barra de Ações Rápidas do Cabeçalho */
+    /* Barra de Ações Rápidas do Cabeçalho — Redesenhada */
     .player-toolbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 8px;
       flex-wrap: wrap;
-      margin-top: 2px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255,255,255,0.05);
     }
     .player-actions-group {
       display: flex;
@@ -717,6 +760,20 @@
       align-items: center;
       flex-wrap: wrap;
     }
+    /* Botão Compactar reposicionado */
+    .btn-micro-compact {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text-muted);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn-micro-compact:hover { background: rgba(255,255,255,0.1); color: #fff; }
 
     /* INSPIRAÇÃO HEROICA */
     .btn-insp {
@@ -742,15 +799,15 @@
       animation: pulseGlow 1.5s infinite alternate;
     }
 
-    /* SEÇÃO DE PV & SAÚDE */
+    /* SEÇÃO DE PV & SAÚDE — Redesenhada */
     .hp-section {
-      background: #090d18;
-      border: 1px solid var(--border-color);
-      border-radius: 10px;
-      padding: 10px 12px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
     .hp-header-row {
       display: flex;
@@ -888,45 +945,56 @@
       opacity: 0.5;
     }
 
-    /* STATS CHIP */
+    /* STATS CHIP — Redesenhado */
     .stat-chip {
-      background: #080c16;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 6px 4px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px;
+      padding: 8px 4px;
       text-align: center;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      transition: border-color 0.15s;
     }
-    .stat-chip-label { font-size: 9px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
-    .stat-chip-val { font-size: 14px; font-weight: 800; color: #fff; font-family: var(--font-mono); margin-top: 1px; }
+    .stat-chip:hover { border-color: rgba(245,158,11,0.3); }
+    .stat-chip-label { font-size: 8.5px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.6px; }
+    .stat-chip-val { font-size: 15px; font-weight: 900; color: #f1f5f9; font-family: var(--font-mono); margin-top: 2px; }
 
-    /* ATRIBUTOS CLICÁVEIS */
+    /* ATRIBUTOS CLICÁVEIS — Redesenhados */
     .attr-btn {
-      background: #0a0e1b;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 7px 4px;
+      background: rgba(0,0,0,0.2);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 9px 4px 7px;
       text-align: center;
       cursor: pointer;
       transition: all 0.15s ease;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 2px;
+      gap: 3px;
+      position: relative;
     }
     .attr-btn:hover {
-      background: #162035;
-      border-color: var(--primary);
+      background: rgba(245,158,11,0.12);
+      border-color: rgba(245,158,11,0.5);
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.2);
+    }
+    .attr-btn:hover::after {
+      content: '🎲';
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      font-size: 8px;
+      opacity: 0.7;
     }
     .attr-btn:active { transform: translateY(0); }
-    .attr-name { font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
-    .attr-mod { font-size: 15px; font-weight: 800; color: var(--primary-light); font-family: var(--font-mono); }
-    .attr-raw { font-size: 9px; color: var(--text-dim); }
+    .attr-name { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+    .attr-mod { font-size: 17px; font-weight: 900; color: var(--primary-light); font-family: var(--font-mono); line-height: 1; }
+    .attr-raw { font-size: 9px; color: #475569; font-weight: 600; }
 
     /* DEATH SAVES */
     .death-saves-box {
@@ -3510,11 +3578,11 @@
       gap: 16px;
     }
 
-    /* Grid do Corpo da Ficha do Jogador */
+    /* Grid do Corpo da Ficha do Jogador — REDESIGN */
     .player-sheet-grid {
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 0;
       width: 100%;
     }
 
@@ -3526,19 +3594,19 @@
     .attrs-chips-grid {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
-      gap: 4px;
+      gap: 5px;
     }
     .player-saves-card-box {
-      background: #080c16;
-      border: 1px solid var(--border-color);
-      border-radius: 10px;
-      padding: 8px 10px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 10px 12px;
     }
     .powers-section-box {
-      background: #080c16;
-      border: 1px solid var(--border-color);
-      border-radius: 10px;
-      padding: 10px 12px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -3547,13 +3615,13 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 800;
-      color: var(--primary-light);
+      color: #94a3b8;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.6px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      padding-bottom: 5px;
+      padding-bottom: 6px;
     }
 
     .player-col-vital,
@@ -3564,14 +3632,21 @@
       gap: 12px;
       min-width: 0;
       width: 100%;
+      padding: 16px 18px;
+    }
+    .player-col-vital {
+      border-right: 1px solid rgba(255,255,255,0.05);
+    }
+    .player-col-powers {
+      border-right: 1px solid rgba(255,255,255,0.05);
     }
 
-    /* Layout Multi-Colunas em Telas Grandes (Desktop >= 1080px) - M-L1 */
+    /* Layout Multi-Colunas em Telas Grandes (Desktop >= 1080px) - M-L1 REDESIGN */
     @media (min-width: 1080px) {
       .player-sheet-grid {
         display: grid !important;
-        grid-template-columns: minmax(300px, 340px) minmax(350px, 1.2fr) minmax(300px, 1fr) !important;
-        gap: 16px;
+        grid-template-columns: 320px 1fr 320px !important;
+        gap: 0 !important;
         align-items: start;
       }
       .player-col-powers .player-spells-chips-grid {
@@ -3584,10 +3659,17 @@
       .player-sheet-grid {
         display: flex !important;
         flex-direction: column !important;
-        gap: 14px !important;
+        gap: 0 !important;
         width: 100% !important;
       }
+      .player-col-vital,
+      .player-col-powers,
       .player-col-utility {
+        border-right: none !important;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+      }
+      .player-col-utility {
+        border-bottom: none !important;
         grid-column: unset;
       }
     }
@@ -3596,13 +3678,13 @@
        MELHORIAS DE EXPERIÊNCIA: M1, M2, V5, DM2, DM3, P3, P4
        ========================================================================== */
 
-    /* --- AVATAR DO PERSONAGEM (P4) --- */
+    /* --- AVATAR DO PERSONAGEM (P4) — REDESENHADO --- */
     .player-avatar-badge {
-      width: 44px;
-      height: 44px;
+      width: 56px;
+      height: 56px;
       border-radius: 50%;
-      background: #0f172a;
-      border: 2px solid var(--primary);
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 2.5px solid var(--primary);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -3611,11 +3693,11 @@
       overflow: hidden;
       flex-shrink: 0;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
-      box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15), 0 4px 16px rgba(0,0,0,0.5);
     }
     .player-avatar-badge:hover {
       transform: scale(1.08);
-      box-shadow: 0 0 16px rgba(245, 158, 11, 0.4);
+      box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.35), 0 8px 20px rgba(0,0,0,0.6);
     }
     .player-avatar-img {
       width: 100%;
@@ -3623,7 +3705,7 @@
       object-fit: cover;
     }
     .player-avatar-emoji {
-      font-size: 24px;
+      font-size: 28px;
       line-height: 1;
     }
     .avatar-edit-overlay {

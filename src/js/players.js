@@ -503,10 +503,10 @@ function renderPlayers() {
     `).join('');
 
     return `
-      <div class="player-card ${activePortalPlayerId && p.id === activePortalPlayerId ? 'portal-view' : ''} ${p.compact ? 'is-compact' : ''}">
+      <div class="player-card ${activePortalPlayerId && p.id === activePortalPlayerId ? 'portal-view' : ''} ${p.compact ? 'is-compact' : ''} cls-${(classBadgeHtml.match(/class-(\w+)/) || ['',''])[1]}">
         <div class="player-card-top">
           <div class="player-title-row">
-            <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
               <div class="player-avatar-badge" onclick="openAvatarModal('${p.id}')" title="Alterar Avatar / Imagem">
                 ${avatarDisplay}
                 <span class="avatar-edit-overlay">✏️</span>
