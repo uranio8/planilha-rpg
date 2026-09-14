@@ -27601,7 +27601,12 @@ function setStoredFirebaseRoom(roomId) {
 }
 
 function isFirebaseAutoSyncEnabled() {
-  return localStorage.getItem(FIREBASE_AUTOSYNC_KEY) === 'true';
+  const stored = localStorage.getItem(FIREBASE_AUTOSYNC_KEY);
+  if (stored === null) {
+    // Por padrão, se houver chaves configuradas, mantém sincronização ativa
+    return true;
+  }
+  return stored === 'true';
 }
 
 function setFirebaseAutoSyncEnabled(enabled) {
@@ -27625,16 +27630,21 @@ function initFirebaseSync() {
 
   if (typeof firebase === 'undefined') {
     console.warn('SDK do Firebase não encontrado no navegador.');
-    updateFirebaseUiStatus('offline', 'SDK Indisponível');
+    updateFirebaseUiStatus('offline', 'SDK Bloqueado / Offline');
     return false;
   }
 
   try {
-    if (!firebase.apps || firebase.apps.length === 0) {
-      firebaseApp = firebase.initializeApp(config);
-    } else {
-      firebaseApp = firebase.apps[0];
+    // Se já existiam instâncias de apps no Firebase, reinicializa para aplicar chaves atualizadas
+    if (firebase.apps && firebase.apps.length > 0) {
+      try {
+        firebase.apps.forEach(app => {
+          if (app && typeof app.delete === 'function') app.delete().catch(() => {});
+        });
+      } catch (e) {}
     }
+
+    firebaseApp = firebase.initializeApp(config);
 
     // Suporte tanto para Realtime Database quanto para Firestore
     if (typeof firebase.database === 'function' && (config.databaseURL || !config.projectId)) {
@@ -27656,12 +27666,12 @@ function initFirebaseSync() {
     // Inicia a escuta em tempo real
     startFirebaseRoomListener(currentRoom);
 
-    console.log('✅ Google Firebase conectado automaticamente! Sala:', currentRoom);
+    console.log('✅ Google Firebase conectado com sucesso! Sala:', currentRoom);
     return true;
   } catch (err) {
     console.error('Erro ao conectar ao Firebase:', err);
     isFirebaseConnected = false;
-    updateFirebaseUiStatus('error', 'Erro na Chave');
+    updateFirebaseUiStatus('error', 'Erro na Conexão');
     return false;
   }
 }
@@ -27906,8 +27916,9 @@ function renderFirebaseModalDiagnostic() {
 
   const config = getStoredFirebaseConfig();
   const room = getStoredFirebaseRoom();
+  const isAuto = isFirebaseAutoSyncEnabled();
 
-  if (!config) {
+  if (!config || !config.apiKey) {
     diagEl.innerHTML = `
       <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 10px; font-size: 12px; color: #fca5a5;">
         ❌ <b>Nenhuma chave configurada.</b> O sistema está operando em <b>Modo Local (Offline)</b>.
@@ -27916,12 +27927,35 @@ function renderFirebaseModalDiagnostic() {
     return;
   }
 
-  diagEl.innerHTML = `
-    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 10px; font-size: 12px; color: #6ee7b7;">
-      ✅ <b>Projeto Conectado:</b> ${config.projectId || 'Firebase'} • <b>Sala Ativa:</b> <code>${room}</code><br>
-      <span style="font-size: 11px; color: var(--text-muted);">Sincronização em tempo real ativa entre computadores e celulares conectados a esta sala.</span>
-    </div>
-  `;
+  if (typeof firebase === 'undefined') {
+    diagEl.innerHTML = `
+      <div style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 10px; font-size: 12px; color: #fde047;">
+        ⚠️ <b>SDK do Firebase não detectado:</b> Verifique se há algum bloqueador de anúncios ou extensão de privacidade (ex: uBlock, AdBlock, Brave Shields) bloqueando o carregamento dos scripts do Google.
+      </div>
+    `;
+    return;
+  }
+
+  if (isFirebaseConnected) {
+    diagEl.innerHTML = `
+      <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 10px; font-size: 12px; color: #6ee7b7;">
+        ✅ <b>Conectado à Nuvem:</b> Projeto <code>${config.projectId || 'Firebase'}</code> • <b>Sala:</b> <code>${room}</code><br>
+        <span style="font-size: 11px; color: #a7f3d0;">Sincronização em tempo real ativa entre computadores e celulares conectados a esta sala.</span>
+      </div>
+    `;
+  } else if (!isAuto) {
+    diagEl.innerHTML = `
+      <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 10px; font-size: 12px; color: #93c5fd;">
+        ℹ️ <b>Sincronização Pausada:</b> As chaves estão salvas, mas a sincronização automática está desmarcada. Marque a opção abaixo para conectar.
+      </div>
+    `;
+  } else {
+    diagEl.innerHTML = `
+      <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 10px; font-size: 12px; color: #fcd34d;">
+        ⚠️ <b>Pronto para Conectar:</b> Chaves detectadas. Clique em <b>Salvar & Conectar</b> para iniciar a sincronização com a nuvem.
+      </div>
+    `;
+  }
 }
 
 function parseAndSaveFirebaseModalConfig() {
@@ -27936,7 +27970,7 @@ function parseAndSaveFirebaseModalConfig() {
   if (!raw) {
     saveFirebaseConfigToStorage(null);
     setStoredFirebaseRoom(roomId);
-    setFirebaseAutoSyncEnabled(autoSync);
+    setFirebaseAutoSyncEnabled(false);
     isFirebaseConnected = false;
     updateFirebaseUiStatus('offline', 'Modo Local');
     alert('Configuração do Firebase removida. O sistema voltou ao Modo Local.');
@@ -27951,35 +27985,43 @@ function parseAndSaveFirebaseModalConfig() {
       if (match) raw = match[0];
     }
 
-    // Converte sintaxe JS (chaves sem aspas) para JSON válido se necessário
+    // Limpa comentários
+    raw = raw.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '$1');
+
+    // Converte sintaxe JS para objeto
     let parsedConfig;
     try {
       parsedConfig = JSON.parse(raw);
     } catch (e) {
-      // Tenta avaliar de forma segura com Function
       parsedConfig = new Function(`return (${raw});`)();
     }
 
-    if (!parsedConfig || !parsedConfig.apiKey || !parsedConfig.projectId) {
-      alert('Erro: A configuração colada não parece válida. Certifique-se de que ela contenha "apiKey" e "projectId".');
+    if (!parsedConfig || !parsedConfig.apiKey || (!parsedConfig.projectId && !parsedConfig.databaseURL)) {
+      alert('Erro: A configuração colada não parece válida. Certifique-se de que ela contenha "apiKey" e "projectId" (ou "databaseURL").');
       return;
     }
 
     saveFirebaseConfigToStorage(parsedConfig);
     setStoredFirebaseRoom(roomId);
-    setFirebaseAutoSyncEnabled(autoSync);
+    setFirebaseAutoSyncEnabled(true);
+
+    if (typeof firebase === 'undefined') {
+      alert('⚠️ Chaves salvas, mas o SDK do Firebase não pôde carregar no navegador.\nVerifique se há bloqueadores de anúncios (uBlock, AdBlock, Brave Shields) ativos.');
+      renderFirebaseModalDiagnostic();
+      return;
+    }
 
     const connected = initFirebaseSync();
     if (connected) {
-      alert('🎉 Conexão com o Google Firebase estabelecida com sucesso!\nSuas fichas e combate agora sincronizam na nuvem em tempo real.');
-      // Envia os dados atuais como carga inicial
+      alert(`🎉 Conexão com o Google Firebase estabelecida com sucesso!\n\nSala Ativa: "${roomId}"\nSuas fichas e combate agora sincronizam na nuvem em tempo real com todos os celulares e computadores conectados.`);
       syncLocalChangesToFirebase(true);
       closeFirebaseModal();
     } else {
-      alert('A chave foi salva, mas o Firebase retornou erro de conexão. Verifique se o Firestore está criado no Console do Firebase.');
+      alert('A chave foi salva, mas o Firebase retornou erro de conexão.\n\nVerifique no console.firebase.google.com:\n1. Se o banco "Firestore Database" foi criado\n2. Se as Regras (Rules) estão em modo de teste (allow read, write: if true;)');
+      renderFirebaseModalDiagnostic();
     }
   } catch (err) {
-    alert('Erro ao processar o texto da configuração: ' + err.message);
+    alert('Erro ao processar o texto da configuração:\n' + err.message);
   }
 }
 
