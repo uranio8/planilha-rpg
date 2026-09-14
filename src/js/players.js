@@ -3218,12 +3218,18 @@ function savePlayerSheet() {
   closePlayerModal();
   renderPlayers();
   saveToLocalStorage();
+  if (typeof saveSafetySnapshot === 'function') {
+    saveSafetySnapshot(`Salvou ficha de ${data.name}`);
+  }
 }
 
 function deletePlayerDirect(id) {
   const p = PLAYERS.find(x => x.id === id);
   if (!p) return;
   if (confirm(`Tem certeza que deseja excluir permanentemente a ficha de:\n"${p.name}" (Aluno: ${p.student})?`)) {
+    if (typeof saveSafetySnapshot === 'function') {
+      saveSafetySnapshot(`Antes de excluir ficha de ${p.name}`);
+    }
     PLAYERS = PLAYERS.filter(x => x.id !== id);
 
     if (state && Array.isArray(state.combatants)) {
@@ -3265,6 +3271,9 @@ function clonePlayerSheet(id) {
   PLAYERS.push(clone);
   renderPlayers();
   saveToLocalStorage();
+  if (typeof saveSafetySnapshot === 'function') {
+    saveSafetySnapshot(`Clonou ficha de ${p.name}`);
+  }
   addLog(`📋 Ficha clonada: <b>${clone.name}</b>`);
 }
 
@@ -3741,6 +3750,14 @@ function checkPlayerPortalUrl() {
       initPlayerPortalMode(playerId);
       return true;
     }
+
+    // Se a URL não for de portal, garante que o modo portal esteja desativado
+    activePortalPlayerId = null;
+    if (typeof document !== 'undefined' && document.body && document.body.classList) {
+      document.body.classList.remove('mode-player-portal');
+    }
+    const banner = document.getElementById('player-portal-banner');
+    if (banner) banner.style.display = 'none';
   } catch (e) {
     console.warn('Erro ao processar URL do portal do jogador:', e);
   }

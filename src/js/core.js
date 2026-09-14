@@ -238,6 +238,13 @@ function saveToLocalStorage() {
       gridState: (typeof gridState !== 'undefined' ? gridState : null)
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+
+    // Sincroniza chaves de compatibilidade v3
+    try {
+      localStorage.setItem('dnd_tracker_players_v3', JSON.stringify(PLAYERS));
+      localStorage.setItem('dnd_tracker_state_v3', JSON.stringify(state));
+    } catch (e) {}
+
     if (typeof saveCampaignsState === 'function') saveCampaignsState();
     if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
 
@@ -261,6 +268,7 @@ function saveGridStatePermanently() {
   try {
     if (typeof gridState !== 'undefined') {
       localStorage.setItem('dnd5e_prisco_live_grid', JSON.stringify(gridState));
+      localStorage.setItem('dnd_tracker_grid_v3', JSON.stringify(gridState));
     }
   } catch (e) {}
   if (typeof broadcastGridState === 'function') broadcastGridState();
@@ -272,11 +280,91 @@ function saveGridStatePermanently() {
 function loadFromLocalStorage() {
   try {
     if (typeof loadCampaignsState === 'function') loadCampaignsState();
+    
+    let loadedPlayers = null;
+    let loadedState = null;
+    let loadedGrid = null;
+
+    // 1. Tenta carregar da chave principal v2
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return false;
-    const data = JSON.parse(raw);
-    if (data.players && Array.isArray(data.players)) {
-      PLAYERS = data.players.map(p => {
+    if (raw) {
+      try {
+        const data = JSON.parse(raw);
+        if (data && data.players && Array.isArray(data.players) && data.players.length > 0) {
+          loadedPlayers = data.players;
+        }
+        if (data && data.state && Array.isArray(data.state.combatants)) {
+          loadedState = data.state;
+        }
+        if (data && data.gridState) {
+          loadedGrid = data.gridState;
+        }
+      } catch (e) {}
+    }
+
+    // 2. Fallback: Se não encontrou jogadores na chave v2, busca na chave v3 legada (dnd_tracker_players_v3)
+    if (!loadedPlayers) {
+      try {
+        const rawPlayersV3 = localStorage.getItem('dnd_tracker_players_v3');
+        if (rawPlayersV3) {
+          const list = JSON.parse(rawPlayersV3);
+          if (Array.isArray(list) && list.length > 0) {
+            loadedPlayers = list;
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 3. Fallback: Se não encontrou jogadores, busca no último snapshot de segurança
+    if (!loadedPlayers) {
+      try {
+        const rawSnapLatest = localStorage.getItem('dnd5e_prisco_safety_snapshot_latest');
+        if (rawSnapLatest) {
+          const snap = JSON.parse(rawSnapLatest);
+          if (snap && snap.players && Array.isArray(snap.players) && snap.players.length > 0) {
+            loadedPlayers = snap.players;
+            if (!loadedState && snap.state) loadedState = snap.state;
+            if (!loadedGrid && snap.gridState) loadedGrid = snap.gridState;
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (!loadedPlayers) {
+      try {
+        const rawHistory = localStorage.getItem(SAFETY_SNAPSHOTS_KEY);
+        if (rawHistory) {
+          const historyList = JSON.parse(rawHistory);
+          if (Array.isArray(historyList) && historyList.length > 0) {
+            for (const snap of historyList) {
+              if (snap && snap.players && Array.isArray(snap.players) && snap.players.length > 0) {
+                loadedPlayers = snap.players;
+                if (!loadedState && snap.state) loadedState = snap.state;
+                if (!loadedGrid && snap.gridState) loadedGrid = snap.gridState;
+                break;
+              }
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 4. Fallback: Chave v1
+    if (!loadedPlayers) {
+      try {
+        const rawV1 = localStorage.getItem('dnd5e_prisco_sheet_state_v1');
+        if (rawV1) {
+          const dataV1 = JSON.parse(rawV1);
+          if (dataV1 && dataV1.players && Array.isArray(dataV1.players) && dataV1.players.length > 0) {
+            loadedPlayers = dataV1.players;
+          }
+        }
+      } catch (e) {}
+    }
+
+    // Aplica os jogadores carregados
+    if (loadedPlayers && Array.isArray(loadedPlayers)) {
+      PLAYERS = loadedPlayers.map(p => {
         if (!p.skillProficiencies) p.skillProficiencies = [];
         if (!p.saveProficiencies) p.saveProficiencies = [];
         if (!p.actionLogs) p.actionLogs = [];
@@ -284,10 +372,26 @@ function loadFromLocalStorage() {
         return p;
       });
     }
-    if (data.state && Array.isArray(data.state.combatants)) state = data.state;
-    if (data.gridState && typeof gridState !== 'undefined') {
-      gridState = data.gridState;
+
+    // Se state foi carregado ou busca em dnd_tracker_state_v3
+    if (loadedState && Array.isArray(loadedState.combatants)) {
+      state = loadedState;
+    } else {
+      try {
+        const rawStateV3 = localStorage.getItem('dnd_tracker_state_v3');
+        if (rawStateV3) {
+          const sV3 = JSON.parse(rawStateV3);
+          if (sV3 && Array.isArray(sV3.combatants)) state = sV3;
+        }
+      } catch (e) {}
     }
+
+    if (loadedGrid && typeof gridState !== 'undefined') {
+      gridState = loadedGrid;
+    }
+
+    // Migra e persiste no formato atual
+    saveToLocalStorage();
     return true;
   } catch (e) {
     return false;
