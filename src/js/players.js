@@ -541,15 +541,26 @@ function renderPlayers() {
                     const isCantrip = sp && sp.level === 0;
                     const lvlBadge = sp ? (isCantrip ? 'Truque' : `${sp.level}º Círc.`) : 'Magia';
                     const school = sp ? sp.school : '';
+                    const range = sp ? sp.range : '';
+                    const castTime = sp ? sp.castTime : '';
                     return `
-                      <div class="spell-action-chip" title="Clique para conjurar ${escapeAttr(sName)}">
-                        <div class="spell-chip-top" onclick="castPlayerSpellPrompt('${p.id}', '${escapeAttr(sName)}')">
-                          <span class="spell-chip-name">${sName}</span>
-                          <span class="spell-chip-lvl ${isCantrip ? 'cantrip' : ''}">${lvlBadge}</span>
+                      <div class="spell-action-chip">
+                        <div class="spell-chip-top">
+                          <div class="spell-chip-name" title="${escapeAttr(sName)}">${sName}</div>
+                          <span class="spell-chip-lvl ${isCantrip ? 'cantrip' : 'leveled'}">${lvlBadge}</span>
                         </div>
-                        <div class="spell-chip-meta" style="display: flex; justify-content: space-between; align-items: center;">
-                          <span onclick="castPlayerSpellPrompt('${p.id}', '${escapeAttr(sName)}')">${school ? school + ' • ' : ''}${sp ? sp.range : ''} ➔ <b>⚡ Lançar</b></span>
-                          <button class="spell-prep-toggle-btn prepared" onclick="event.stopPropagation(); togglePlayerSpellPrepared('${p.id}', '${escapeAttr(sName)}')" title="Alternar status desta magia">⭐ Ativa</button>
+                        <div class="spell-chip-subinfo">
+                          ${school ? `<span>${school}</span>` : ''}
+                          ${range ? `<span>• ${range}</span>` : ''}
+                          ${castTime ? `<span>• ${castTime}</span>` : ''}
+                        </div>
+                        <div class="spell-chip-actions-bar">
+                          <button class="btn-spell-cast" onclick="castPlayerSpellPrompt('${p.id}', '${escapeAttr(sName)}')" title="Lançar ${escapeAttr(sName)} (desconta slot se for magia de nível)">
+                            ⚡ Lançar
+                          </button>
+                          <button class="btn-spell-prep-toggle" onclick="togglePlayerSpellPrepared('${p.id}', '${escapeAttr(sName)}')" title="Alternar status desta magia">
+                            ⭐ ${isCantrip ? 'Ativa' : 'Preparada'}
+                          </button>
                         </div>
                       </div>
                     `;
