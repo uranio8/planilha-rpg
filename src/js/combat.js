@@ -714,6 +714,8 @@ function applyDoubleDamage() {
 }
 
 function addLog(msg) {
+  if (typeof state === 'undefined' || !state) return;
+  state.logs = state.logs || [];
   state.logs.unshift({ time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }), text: msg });
   renderLogs();
 }

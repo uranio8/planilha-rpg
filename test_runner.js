@@ -1845,6 +1845,32 @@ const clearedPendingId = vm.runInContext("pendingPortalPlayerId", sandbox);
 assert(resolvedActiveId === 'char_hero_cloud_only', 'applyCloudDataToLocal autenticou e ativou com sucesso o herói que estava pendente');
 assert(clearedPendingId === null, 'pendingPortalPlayerId foi limpo após resolução bem-sucedida');
 
+// 6. Teste de exclusão individual e reset de movimentações do baú
+assert(typeof vm.runInContext("deletePartyStashHistoryItem", sandbox) === 'function', 'Função deletePartyStashHistoryItem exportada');
+assert(typeof vm.runInContext("clearPartyStashHistory", sandbox) === 'function', 'Função clearPartyStashHistory exportada');
+
+// Adiciona 3 movimentações de teste
+vm.runInContext(`
+  const c = getActiveCampaign();
+  c.partyStash = c.partyStash || { gold: 0, items: [], history: [] };
+  c.partyStash.history = [
+    { date: '2026-09-14', text: 'Movimentacao 1', type: 'gold_in' },
+    { date: '2026-09-14', text: 'Movimentacao 2', type: 'item_in' },
+    { date: '2026-09-14', text: 'Movimentacao 3', type: 'gold_out' }
+  ];
+  // Exclui a movimentação do meio (índice 1)
+  deletePartyStashHistoryItem(1);
+`, sandbox);
+
+const historyAfterDelete = vm.runInContext("getActiveCampaign().partyStash.history", sandbox);
+assert(historyAfterDelete.length === 2, 'deletePartyStashHistoryItem removeu exatamente 1 registro do histórico');
+assert(!historyAfterDelete.some(h => h.text === 'Movimentacao 2'), 'Registro específico excluído com precisão');
+
+// Limpa todo o histórico
+vm.runInContext("clearPartyStashHistory()", sandbox);
+const historyAfterClear = vm.runInContext("getActiveCampaign().partyStash.history", sandbox);
+assert(Array.isArray(historyAfterClear) && historyAfterClear.length === 0, 'clearPartyStashHistory resetou com sucesso todo o histórico do baú');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

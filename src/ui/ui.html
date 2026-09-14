@@ -1320,7 +1320,10 @@
 
             <!-- HISTÓRICO RECENTE DE TRANSAÇÕES -->
             <div style="margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 10px;">
-              <span style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">📜 Movimentações Recentes do Baú:</span>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">📜 Movimentações Recentes do Baú:</span>
+                <button class="btn-secondary" style="font-size: 9px; padding: 2px 6px; color: #f87171; border-color: rgba(239, 68, 68, 0.3);" onclick="clearPartyStashHistory()" title="Resetar/limpar todo o histórico de movimentações do baú">🧹 Limpar Histórico</button>
+              </div>
               <div id="stash-history-list" style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px;"></div>
             </div>
           </div>
@@ -2188,8 +2191,11 @@
 
         <!-- Histórico do Tesouro -->
         <div>
-          <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); margin-bottom: 4px;">📜 Histórico Recente de Movimentações</div>
-          <div id="party-stash-modal-history" style="display: flex; flex-direction: column; gap: 3px; max-height: 100px; overflow-y: auto;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <div style="font-size: 11px; font-weight: 800; color: var(--text-muted);">📜 Histórico Recente de Movimentações</div>
+            <button class="btn-secondary" style="font-size: 9.5px; padding: 2px 6px; color: #f87171; border-color: rgba(239, 68, 68, 0.3);" onclick="clearPartyStashHistory()" title="Resetar/limpar todo o histórico de movimentações do baú">🧹 Limpar Histórico</button>
+          </div>
+          <div id="party-stash-modal-history" style="display: flex; flex-direction: column; gap: 3px; max-height: 120px; overflow-y: auto;">
           </div>
         </div>
       </div>

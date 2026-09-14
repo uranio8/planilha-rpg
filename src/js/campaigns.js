@@ -272,14 +272,19 @@ function renderCampaignPartyStash(camp, campPlayers) {
   }
 
   if (historyList) {
-    const hist = (stash.history || []).slice(-6).reverse();
+    const rawHist = (stash.history || []);
+    const indexed = rawHist.map((h, i) => ({ ...h, origIdx: i }));
+    const hist = indexed.slice(-8).reverse();
     if (hist.length === 0) {
       historyList.innerHTML = `<div style="color:var(--text-muted); font-size:11px; text-align:center;">Nenhuma movimentação registrada.</div>`;
     } else {
       historyList.innerHTML = hist.map(h => `
-        <div class="stash-history-item ${h.type || 'gold_in'}">
-          <span>${h.text}</span>
-          <span style="font-size:10px; color:var(--text-dim);">${h.date || ''}</span>
+        <div class="stash-history-item ${h.type || 'gold_in'}" style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
+          <span style="flex: 1;">${h.text}</span>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <span style="font-size:10px; color:var(--text-dim); white-space: nowrap;">${h.date || ''}</span>
+            <button class="btn-secondary" style="padding: 1px 4px; font-size: 9px; color: #f87171; border-color: rgba(239, 68, 68, 0.2); line-height: 1;" onclick="deletePartyStashHistoryItem(${h.origIdx})" title="Excluir este registro">🗑️</button>
+          </div>
         </div>
       `).join('');
     }
@@ -890,18 +895,60 @@ function renderPartyStashViewer() {
 
   const histEl = document.getElementById('party-stash-modal-history');
   if (histEl) {
-    const hist = (stash.history || []).slice(-6).reverse();
+    const rawHist = (stash.history || []);
+    const indexed = rawHist.map((h, i) => ({ ...h, origIdx: i }));
+    const hist = indexed.slice(-12).reverse();
     if (hist.length === 0) {
       histEl.innerHTML = `<div style="color:var(--text-muted); font-size:11px; text-align:center;">Nenhuma movimentação registrada.</div>`;
     } else {
       histEl.innerHTML = hist.map(h => `
-        <div class="stash-history-item ${h.type || 'gold_in'}" style="font-size:10.5px; padding:3px 6px;">
-          <span>${h.text}</span>
-          <span style="font-size:9px; color:var(--text-dim);">${h.date || ''}</span>
+        <div class="stash-history-item ${h.type || 'gold_in'}" style="font-size:10.5px; padding:3px 6px; display: flex; justify-content: space-between; align-items: center; gap: 6px;">
+          <span style="flex: 1;">${h.text}</span>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <span style="font-size:9px; color:var(--text-dim); white-space: nowrap;">${h.date || ''}</span>
+            <button class="btn-secondary" style="padding: 1px 4px; font-size: 9px; color: #f87171; border-color: rgba(239, 68, 68, 0.2); line-height: 1;" onclick="deletePartyStashHistoryItem(${h.origIdx})" title="Excluir este registro">🗑️</button>
+          </div>
         </div>
       `).join('');
     }
   }
+}
+
+function clearPartyStashHistory() {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+  camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+  if (!camp.partyStash.history || camp.partyStash.history.length === 0) {
+    alert('O histórico de movimentações do baú já está vazio.');
+    return;
+  }
+  if (!confirm('Deseja realmente limpar e resetar todo o histórico de movimentações do baú coletivo desta campanha?')) return;
+  camp.partyStash.history = [];
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderCampaigns();
+  renderPartyStashViewer();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof addLog === 'function') addLog('🧹 <b>Baú do Grupo:</b> Histórico de movimentações resetado pelo mestre.');
+}
+
+function deletePartyStashHistoryItem(origIndex) {
+  const camp = getActiveCampaign();
+  if (!camp || !camp.partyStash || !Array.isArray(camp.partyStash.history)) return;
+  const idx = parseInt(origIndex);
+  if (isNaN(idx) || idx < 0 || idx >= camp.partyStash.history.length) return;
+
+  const item = camp.partyStash.history[idx];
+  const itemText = item ? item.text : 'registro';
+
+  if (!confirm(`Excluir este registro do histórico?\n"${itemText}"`)) return;
+
+  camp.partyStash.history.splice(idx, 1);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderCampaigns();
+  renderPartyStashViewer();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
 }
 
 function takePartyItemToPlayer(itemId, targetPlayerId = null) {
@@ -1227,5 +1274,28 @@ function renderChroniclesViewerContent() {
       ` : ''}
     </div>
   `).join('');
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    getActiveCampaign,
+    saveCampaignsState,
+    loadCampaignsState,
+    renderCampaigns,
+    renderCampaignPartyStash,
+    renderPartyStashViewer,
+    openPartyStashModal,
+    closePartyStashModal,
+    openPartyItemModal,
+    closePartyItemModal,
+    savePartyItem,
+    deletePartyItem,
+    addItemToPartyStash,
+    clearPartyStashHistory,
+    deletePartyStashHistoryItem,
+    promptAdjustPartyGold,
+    splitPartyGold,
+    takePartyItemToPlayer
+  };
 }
 
