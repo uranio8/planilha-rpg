@@ -4372,17 +4372,39 @@
       transform: scale(1.05);
     }
 
-    /* Modais de Perícias */
+    /* Modais de Perícias & Salvaguardas */
     .skills-modal-saves-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      grid-template-columns: repeat(6, 1fr);
       gap: 6px;
     }
+    @media (max-width: 768px) {
+      .skills-modal-saves-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    @media (max-width: 480px) {
+      .skills-modal-saves-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
     .skills-modal-skills-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      grid-template-columns: repeat(3, 1fr);
       gap: 6px;
     }
+    @media (max-width: 820px) {
+      .skills-modal-skills-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 520px) {
+      .skills-modal-skills-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .skill-modal-chip {
       background: #080c16;
       border: 1px solid var(--border-color);
@@ -4390,9 +4412,11 @@
       padding: 6px 8px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       cursor: pointer;
       transition: all 0.15s ease;
+      min-width: 0;
+      box-sizing: border-box;
     }
     .skill-modal-chip:hover {
       background: #0f172a;
@@ -4402,14 +4426,25 @@
       border-color: var(--primary);
       background: rgba(245, 158, 11, 0.08);
     }
+    .skill-modal-chip input[type="checkbox"] {
+      flex-shrink: 0;
+      cursor: pointer;
+      width: 15px;
+      height: 15px;
+      accent-color: var(--primary);
+      margin: 0;
+    }
     .skill-mod-badge {
       font-family: var(--font-mono);
       font-weight: 800;
-      font-size: 12px;
-      background: rgba(255, 255, 255, 0.05);
+      font-size: 11.5px;
+      background: rgba(255, 255, 255, 0.06);
       padding: 2px 6px;
       border-radius: 4px;
       color: #fff;
+      min-width: 22px;
+      text-align: center;
+      flex-shrink: 0;
     }
     .skill-mod-badge.prof {
       background: var(--primary);
@@ -4426,7 +4461,7 @@
       box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
     }
     .btn-expert-toggle {
-      font-size: 10px;
+      font-size: 9.5px;
       padding: 2px 6px;
       border-radius: 4px;
       border: 1px solid rgba(255, 255, 255, 0.15);
@@ -4437,6 +4472,8 @@
       display: flex;
       align-items: center;
       gap: 3px;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
     .btn-expert-toggle:hover {
       background: rgba(245, 158, 11, 0.2);

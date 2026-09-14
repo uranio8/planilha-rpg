@@ -4375,17 +4375,39 @@
       transform: scale(1.05);
     }
 
-    /* Modais de Perícias */
+    /* Modais de Perícias & Salvaguardas */
     .skills-modal-saves-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      grid-template-columns: repeat(6, 1fr);
       gap: 6px;
     }
+    @media (max-width: 768px) {
+      .skills-modal-saves-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    @media (max-width: 480px) {
+      .skills-modal-saves-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
     .skills-modal-skills-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      grid-template-columns: repeat(3, 1fr);
       gap: 6px;
     }
+    @media (max-width: 820px) {
+      .skills-modal-skills-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 520px) {
+      .skills-modal-skills-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .skill-modal-chip {
       background: #080c16;
       border: 1px solid var(--border-color);
@@ -4393,9 +4415,11 @@
       padding: 6px 8px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       cursor: pointer;
       transition: all 0.15s ease;
+      min-width: 0;
+      box-sizing: border-box;
     }
     .skill-modal-chip:hover {
       background: #0f172a;
@@ -4405,14 +4429,25 @@
       border-color: var(--primary);
       background: rgba(245, 158, 11, 0.08);
     }
+    .skill-modal-chip input[type="checkbox"] {
+      flex-shrink: 0;
+      cursor: pointer;
+      width: 15px;
+      height: 15px;
+      accent-color: var(--primary);
+      margin: 0;
+    }
     .skill-mod-badge {
       font-family: var(--font-mono);
       font-weight: 800;
-      font-size: 12px;
-      background: rgba(255, 255, 255, 0.05);
+      font-size: 11.5px;
+      background: rgba(255, 255, 255, 0.06);
       padding: 2px 6px;
       border-radius: 4px;
       color: #fff;
+      min-width: 22px;
+      text-align: center;
+      flex-shrink: 0;
     }
     .skill-mod-badge.prof {
       background: var(--primary);
@@ -4429,7 +4464,7 @@
       box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
     }
     .btn-expert-toggle {
-      font-size: 10px;
+      font-size: 9.5px;
       padding: 2px 6px;
       border-radius: 4px;
       border: 1px solid rgba(255, 255, 255, 0.15);
@@ -4440,6 +4475,8 @@
       display: flex;
       align-items: center;
       gap: 3px;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
     .btn-expert-toggle:hover {
       background: rgba(245, 158, 11, 0.2);
@@ -8177,16 +8214,19 @@
 
   <!-- MODAL: CONFIGURAÇÃO DE PERÍCIAS E SALVAGUARDAS (P1) -->
   <div id="modal-player-skills" class="modal-overlay">
-    <div class="modal-body" style="max-width: 640px; max-height: 90vh; display: flex; flex-direction: column;">
-      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-        <div>
-          <span style="font-weight: 800; font-size: 16px; color: #fff;">🎯 Perícias & Salvaguardas</span>
-          <div id="skills-modal-player-name" style="font-size: 11px; color: var(--primary-light); margin-top: 2px;">Personagem</div>
+    <div class="modal-body" style="max-width: 860px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 22px;">🎯</span>
+          <div>
+            <div style="font-weight: 800; font-size: 16px; color: #fff;">Perícias & Salvaguardas</div>
+            <div id="skills-modal-player-name" style="font-size: 11px; color: var(--primary-light); margin-top: 2px;">Personagem</div>
+          </div>
         </div>
         <button class="btn-secondary" onclick="closePlayerSkillsModal()">✕</button>
       </div>
 
-      <div style="flex: 1; overflow-y: auto; padding-right: 4px; margin-top: 10px;">
+      <div style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-right: 4px; margin-top: 10px;">
         <div style="font-size: 12px; font-weight: 800; color: #fff; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
           <span>🛡️ Testes de Resistência / Salvaguardas</span>
           <span style="font-size: 10px; color: var(--text-muted); font-weight: normal;">(Marque onde possui proficiência)</span>
@@ -8196,7 +8236,7 @@
         <div style="font-size: 12px; font-weight: 800; color: #fff; margin: 14px 0 6px 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
           <div style="display: flex; align-items: center; gap: 6px;">
             <span>🎯 Perícias D&D 5E (18)</span>
-            <span style="font-size: 10px; color: var(--text-muted); font-weight: normal;">(Clique no card para Proficiência ★ ou em "🌟 Especialista" para Expertise ★★)</span>
+            <span style="font-size: 10px; color: var(--text-muted); font-weight: normal;">(Clique no card para Proficiência ★ ou no botão para Especialização ★★)</span>
           </div>
           <div id="skills-modal-counters" style="font-size: 11px; color: var(--accent-gold); font-weight: 800;"></div>
         </div>
@@ -8204,7 +8244,7 @@
       </div>
 
       <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
-        <button class="btn-action" onclick="closePlayerSkillsModal()">Concluir & Salvar</button>
+        <button class="btn-action" style="padding: 8px 20px; font-size: 13px; font-weight: 800;" onclick="closePlayerSkillsModal()">Concluir & Salvar</button>
       </div>
     </div>
   </div>
@@ -29870,9 +29910,9 @@ function renderSkillsModalContent() {
       return `
         <div class="skill-modal-chip ${isProf ? 'active' : ''}" onclick="togglePlayerSaveProf('${p.id}', '${a.key}')">
           <input type="checkbox" ${isProf ? 'checked' : ''} onclick="event.stopPropagation(); togglePlayerSaveProf('${p.id}', '${a.key}')">
-          <div style="flex:1;">
-            <div style="font-weight:700; font-size:12px;">${a.name}</div>
-            <div style="font-size:10px; color:var(--text-muted);">Base: ${mod >= 0 ? '+' + mod : mod} ${isProf ? `+ Prof (+${prof})` : ''}</div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:700; font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${a.name}</div>
+            <div style="font-size:9.5px; color:var(--text-muted);">${mod >= 0 ? '+' + mod : mod} ${isProf ? `(+${prof})` : ''}</div>
           </div>
           <span class="skill-mod-badge ${isProf ? 'prof' : ''}">${modStr}</span>
         </div>
@@ -29894,17 +29934,17 @@ function renderSkillsModalContent() {
       return `
         <div class="skill-modal-chip ${isExpert ? 'expert' : (isProf ? 'active' : '')}" onclick="togglePlayerSkillProf('${p.id}', '${s.key}')">
           <input type="checkbox" ${isProf || isExpert ? 'checked' : ''} onclick="event.stopPropagation(); togglePlayerSkillProf('${p.id}', '${s.key}')">
-          <div style="flex:1;">
-            <div style="font-weight:700; font-size:12px; display:flex; align-items:center; gap:4px;">
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:700; font-size:11.5px; display:flex; align-items:center; gap:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
               <span>${s.name}</span>
               <span style="font-size:10px; color:var(--primary-light); font-weight:normal;">(${s.label})</span>
             </div>
-            <div style="font-size:10px; color:var(--text-muted);">
+            <div style="font-size:9.5px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
               ${isExpert ? `🌟 Especialista (+${prof * 2})` : (isProf ? `★ Proficiente (+${prof})` : `Base (${mod >= 0 ? '+' + mod : mod})`)}
             </div>
           </div>
-          <button class="btn-expert-toggle ${isExpert ? 'active' : ''}" onclick="togglePlayerSkillExpertise('${p.id}', '${s.key}', event)" title="Alternar Especialização / Expertise (Dobra o bônus de proficiência)">
-            ${isExpert ? '★★ Especialista' : '🌟 Especializar'}
+          <button class="btn-expert-toggle ${isExpert ? 'active' : ''}" onclick="togglePlayerSkillExpertise('${p.id}', '${s.key}', event)" title="Alternar Especialização / Expertise (Dobra bônus de proficiência)">
+            ${isExpert ? '★★ Perito' : '🌟 Exp'}
           </button>
           <span class="skill-mod-badge ${isExpert ? 'expert' : (isProf ? 'prof' : '')}">${modStr}</span>
         </div>

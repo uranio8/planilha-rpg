@@ -1398,9 +1398,9 @@ function renderSkillsModalContent() {
       return `
         <div class="skill-modal-chip ${isProf ? 'active' : ''}" onclick="togglePlayerSaveProf('${p.id}', '${a.key}')">
           <input type="checkbox" ${isProf ? 'checked' : ''} onclick="event.stopPropagation(); togglePlayerSaveProf('${p.id}', '${a.key}')">
-          <div style="flex:1;">
-            <div style="font-weight:700; font-size:12px;">${a.name}</div>
-            <div style="font-size:10px; color:var(--text-muted);">Base: ${mod >= 0 ? '+' + mod : mod} ${isProf ? `+ Prof (+${prof})` : ''}</div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:700; font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${a.name}</div>
+            <div style="font-size:9.5px; color:var(--text-muted);">${mod >= 0 ? '+' + mod : mod} ${isProf ? `(+${prof})` : ''}</div>
           </div>
           <span class="skill-mod-badge ${isProf ? 'prof' : ''}">${modStr}</span>
         </div>
@@ -1422,17 +1422,17 @@ function renderSkillsModalContent() {
       return `
         <div class="skill-modal-chip ${isExpert ? 'expert' : (isProf ? 'active' : '')}" onclick="togglePlayerSkillProf('${p.id}', '${s.key}')">
           <input type="checkbox" ${isProf || isExpert ? 'checked' : ''} onclick="event.stopPropagation(); togglePlayerSkillProf('${p.id}', '${s.key}')">
-          <div style="flex:1;">
-            <div style="font-weight:700; font-size:12px; display:flex; align-items:center; gap:4px;">
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:700; font-size:11.5px; display:flex; align-items:center; gap:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
               <span>${s.name}</span>
               <span style="font-size:10px; color:var(--primary-light); font-weight:normal;">(${s.label})</span>
             </div>
-            <div style="font-size:10px; color:var(--text-muted);">
+            <div style="font-size:9.5px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
               ${isExpert ? `🌟 Especialista (+${prof * 2})` : (isProf ? `★ Proficiente (+${prof})` : `Base (${mod >= 0 ? '+' + mod : mod})`)}
             </div>
           </div>
-          <button class="btn-expert-toggle ${isExpert ? 'active' : ''}" onclick="togglePlayerSkillExpertise('${p.id}', '${s.key}', event)" title="Alternar Especialização / Expertise (Dobra o bônus de proficiência)">
-            ${isExpert ? '★★ Especialista' : '🌟 Especializar'}
+          <button class="btn-expert-toggle ${isExpert ? 'active' : ''}" onclick="togglePlayerSkillExpertise('${p.id}', '${s.key}', event)" title="Alternar Especialização / Expertise (Dobra bônus de proficiência)">
+            ${isExpert ? '★★ Perito' : '🌟 Exp'}
           </button>
           <span class="skill-mod-badge ${isExpert ? 'expert' : (isProf ? 'prof' : '')}">${modStr}</span>
         </div>
