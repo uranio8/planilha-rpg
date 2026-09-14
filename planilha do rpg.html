@@ -208,29 +208,96 @@
     .tab-pane.active { display: flex; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* CONTROLS BAR */
+    /* CONTROLS BAR & COMBAT COMMAND DECK */
     .controls-bar {
-      background: var(--bg-surface);
+      background: rgba(11, 15, 25, 0.95);
       border: 1px solid var(--border-color);
-      padding: 12px 16px;
+      padding: 8px 12px;
       border-radius: 12px;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      gap: 8px 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      backdrop-filter: blur(10px);
+    }
+    .combat-bar-cluster {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 4px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .combat-bar-cluster.cluster-turn {
+      background: rgba(245, 158, 11, 0.05);
+      border-color: rgba(245, 158, 11, 0.2);
     }
     .round-badge {
       background: #07090e;
       border: 1px solid var(--border-color);
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 800;
       color: var(--primary);
       font-family: var(--font-mono);
       letter-spacing: 0.5px;
+      user-select: none;
+    }
+    .turn-timer-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #080c16;
+      border: 1px solid var(--border-color);
+      padding: 3px 8px;
+      border-radius: 7px;
+      position: relative;
+      overflow: hidden;
+    }
+    .turn-timer-box #combat-timer-display {
+      font-family: var(--font-mono, monospace);
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--primary-light);
+      min-width: 42px;
+      text-align: center;
+    }
+    .timer-auto-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .btn-next-turn-hero {
+      padding: 7px 16px !important;
+      font-size: 13px !important;
+      background: linear-gradient(135deg, var(--primary), #d97706) !important;
+      color: #07090e !important;
+      font-weight: 800 !important;
+      box-shadow: 0 2px 10px rgba(245, 158, 11, 0.4) !important;
+      border-radius: 8px !important;
+      cursor: pointer !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+      border: none !important;
+      transition: all 0.2s !important;
+    }
+    .btn-next-turn-hero:hover {
+      opacity: 0.95 !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.5) !important;
+    }
+    .btn-next-turn-hero:active {
+      transform: translateY(0) !important;
     }
 
     /* BOTÕES GERAIS */
@@ -6303,31 +6370,37 @@
     <!-- TAB 1: COMBATE -->
     <div id="tab-combat" class="tab-pane active">
       <div class="controls-bar">
-        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <!-- CLUSTER 1: FLUXO DE TURNO E CRONÔMETRO -->
+        <div class="combat-bar-cluster cluster-turn">
           <div class="round-badge">RODADA <span id="lbl-round">1</span></div>
           <div id="combat-difficulty-badge" class="diff-meter diff-trivial">Encontro: Trivial</div>
-          <button class="btn-action" onclick="nextTurn()">Próximo Turno ➔ <kbd style="font-size:10px; background:rgba(0,0,0,0.3); padding:2px 5px; border-radius:4px;">Espaço</kbd></button>
+          <button class="btn-next-turn-hero" onclick="nextTurn()" title="Avançar para o próximo combatente na iniciativa (Atalho: Barra de Espaço)">Próximo Turno ➔ <kbd style="font-size:10px; background:rgba(0,0,0,0.3); color:#fff; padding:2px 5px; border-radius:4px;">Espaço</kbd></button>
           
           <!-- M6: TEMPORIZADOR DE TURNO -->
-          <div class="turn-timer-box" style="display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); padding: 3px 8px; border-radius: 6px; position: relative; overflow: hidden;">
+          <div class="turn-timer-box">
             <div id="combat-timer-bar" style="position: absolute; bottom: 0; left: 0; height: 3px; width: 100%; background: var(--accent-green); transition: width 0.3s linear, background-color 0.3s;"></div>
-            <span id="combat-timer-display" style="font-family: monospace; font-size: 13px; font-weight: 700; color: var(--primary-light); min-width: 44px; text-align: center;">01:00</span>
+            <span id="combat-timer-display">01:00</span>
             <button id="btn-timer-toggle" class="btn-micro" onclick="toggleTurnTimer()" title="Iniciar / Pausar Cronômetro de Turno">▶️</button>
             <button class="btn-micro" onclick="resetTurnTimer()" title="Reiniciar Cronômetro">🔄</button>
             <button class="btn-micro" onclick="addTurnTimerSeconds(15)" title="+15s no Turno">+15s</button>
-            <label style="font-size: 10px; color: var(--text-muted); display: flex; align-items: center; gap: 3px; cursor: pointer;" title="Reinicia o cronômetro automaticamente ao avançar para o próximo turno">
+            <label class="timer-auto-label" title="Reinicia o cronômetro automaticamente ao avançar para o próximo turno">
               <input type="checkbox" id="chk-timer-autoreset" onchange="toggleTurnTimerAutoReset(this.checked)" checked> Auto
             </label>
           </div>
-
-          <button class="btn-secondary" onclick="resetCombat()">Reiniciar Rodada</button>
-          <button class="btn-secondary" style="color: #f87171;" onclick="clearCombat()">Limpar Mesa</button>
         </div>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+
+        <!-- CLUSTER 2: GERAÇÃO E ADIÇÃO DE CRIATURAS -->
+        <div class="combat-bar-cluster">
+          <button class="btn-action" style="padding: 7px 12px; font-size: 12px;" onclick="openAddModal()">➕ Novo Combatente</button>
+          <button class="btn-secondary" onclick="rollMonsterInit()" title="Rolar iniciativa de todos os monstros simultaneamente">🎲 Inic. Monstros</button>
           <button class="btn-secondary" style="border-color: #eab308; color: #facc15;" onclick="openEncounterBuilderModal()" title="Balanceador & Orçamento de XP de Encontros (D&D 5E DMG)">⚖️ Balanceador</button>
-          <button class="btn-secondary" onclick="openPlayerView()">📺 Modo Telão</button>
-          <button class="btn-secondary" onclick="rollMonsterInit()">🎲 Rolar Inic. Monstros</button>
-          <button class="btn-action" onclick="openAddModal()">➕ Novo Combatente</button>
+        </div>
+
+        <!-- CLUSTER 3: TELÃO E RESET DA MESA -->
+        <div class="combat-bar-cluster">
+          <button class="btn-secondary" onclick="openPlayerView()" title="Abrir Modo Telão para os Jogadores">📺 Telão</button>
+          <button class="btn-secondary" onclick="resetCombat()" title="Reiniciar para o início da Rodada 1">🔄 Reiniciar</button>
+          <button class="btn-secondary" style="color: #f87171; border-color: rgba(239, 68, 68, 0.3);" onclick="clearCombat()" title="Limpar todos os combatentes da mesa">🗑️ Limpar</button>
         </div>
       </div>
 
