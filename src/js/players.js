@@ -529,10 +529,20 @@ function renderPlayers() {
                     const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
                     return !sp || sp.level > 0;
                   });
-                  const countLabel = prepInfo.isPreparedCaster ? `${leveledSpells.length}/${prepInfo.max} prep` : `${(p.preparedSpells || []).length}`;
-                  return `<span>🔮 Magias (${countLabel})</span>`;
+                  const cantripSpells = (p.preparedSpells || []).filter(sName => {
+                    const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+                    return sp && sp.level === 0;
+                  });
+
+                  if (prepInfo.isPreparedCaster) {
+                    return `<span>🔮 Magias Preparadas (${leveledSpells.length}/${prepInfo.maxLeveled}) ${cantripSpells.length > 0 ? `• <span style="color:#34d399; font-size:10px;">${cantripSpells.length} truques</span>` : ''}</span>`;
+                  } else if (prepInfo.isKnownCaster) {
+                    return `<span>🔮 Magias Conhecidas (${leveledSpells.length}/${prepInfo.maxLeveled}) ${cantripSpells.length > 0 ? `• <span style="color:#34d399; font-size:10px;">${cantripSpells.length}/${prepInfo.maxCantrips} truques</span>` : ''}</span>`;
+                  } else {
+                    return `<span>🔮 Magias (${(p.preparedSpells || []).length})</span>`;
+                  }
                 })()}
-                <button class="btn-secondary" style="font-size: 10px; padding: 2px 6px;" onclick="openSpellPickerModal('${p.id}')">📖 Escolher</button>
+                <button class="btn-secondary dm-only-btn" style="font-size: 10px; padding: 2px 6px;" onclick="openSpellPickerModal('${p.id}')" title="Mestre: Selecionar e editar as magias deste herói">📖 Escolher</button>
               </div>
               ${(p.preparedSpells && p.preparedSpells.length > 0) ? `
                 <div class="player-spells-chips-grid">
@@ -1713,50 +1723,207 @@ const FIGHTING_STYLES = {
   druidic: { id: 'druidic', name: 'Guerreiro Druídico', icon: '🍃', desc: 'Você aprende 2 Truques da lista de magias de Druida que contam como magias de Patrulheiro.' }
 };
 
+const DND5E_KNOWN_SPELLS_TABLE = {
+  bardo: [0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 15, 16, 18, 19, 19, 20, 22, 22, 22],
+  feiticeiro: [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 12, 13, 13, 14, 14, 15, 15, 15, 15],
+  bruxo: [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15],
+  patrulheiro: [0, 0, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11],
+  cavaleiro_arcano: [0, 0, 0, 3, 4, 4, 4, 5, 6, 6, 7, 8, 8, 9, 10, 10, 11, 11, 11, 12, 13],
+  trapaceiro_arcano: [0, 0, 0, 3, 4, 4, 4, 5, 6, 6, 7, 8, 8, 9, 10, 10, 11, 11, 11, 12, 13]
+};
+
+const DND5E_CANTRIPS_KNOWN_TABLE = {
+  bardo: [0, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+  clérigo: [0, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+  druida: [0, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+  feiticeiro: [0, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+  mago: [0, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+  bruxo: [0, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+  cavaleiro_arcano: [0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
+  trapaceiro_arcano: [0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+};
+
 function getMaxPreparedSpells(p) {
-  if (!p) return { max: 0, formula: 'Nenhuma', isPreparedCaster: false };
-  const lvl = parseInt(p.level, 10) || 1;
+  if (!p) return { max: 0, maxLeveled: 0, maxCantrips: 0, formula: 'Nenhuma', isPreparedCaster: false, isKnownCaster: false };
+  const lvl = Math.max(1, Math.min(20, parseInt(p.level, 10) || 1));
   const norm = (p.className || '').toLowerCase();
   const intMod = Math.floor(((p.int || 10) - 10) / 2);
   const wisMod = Math.floor(((p.wis || 10) - 10) / 2);
   const chaMod = Math.floor(((p.cha || 10) - 10) / 2);
 
+  // 1. CONJURADORES DE MAGIAS PREPARADAS
   if (norm.includes('mago') || norm.includes('wizard')) {
     const max = Math.max(1, lvl + intMod);
+    const cantrips = DND5E_CANTRIPS_KNOWN_TABLE.mago[lvl] || 3;
     return {
+      type: 'prepared',
       max,
+      maxLeveled: max,
+      maxCantrips: cantrips,
       formula: `Nível (${lvl}) + INT (${intMod >= 0 ? '+' : ''}${intMod}) = ${max}`,
       isPreparedCaster: true,
-      attrLabel: 'INT'
+      isKnownCaster: false,
+      attrLabel: 'INT',
+      className: 'Mago'
     };
   }
 
-  if (norm.includes('clérigo') || norm.includes('clerigo') || norm.includes('druida')) {
+  if (norm.includes('clérigo') || norm.includes('clerigo')) {
     const max = Math.max(1, lvl + wisMod);
+    const cantrips = DND5E_CANTRIPS_KNOWN_TABLE.clérigo[lvl] || 3;
     return {
+      type: 'prepared',
       max,
+      maxLeveled: max,
+      maxCantrips: cantrips,
       formula: `Nível (${lvl}) + SAB (${wisMod >= 0 ? '+' : ''}${wisMod}) = ${max}`,
       isPreparedCaster: true,
-      attrLabel: 'SAB'
+      isKnownCaster: false,
+      attrLabel: 'SAB',
+      className: 'Clérigo'
+    };
+  }
+
+  if (norm.includes('druida')) {
+    const max = Math.max(1, lvl + wisMod);
+    const cantrips = DND5E_CANTRIPS_KNOWN_TABLE.druida[lvl] || 2;
+    return {
+      type: 'prepared',
+      max,
+      maxLeveled: max,
+      maxCantrips: cantrips,
+      formula: `Nível (${lvl}) + SAB (${wisMod >= 0 ? '+' : ''}${wisMod}) = ${max}`,
+      isPreparedCaster: true,
+      isKnownCaster: false,
+      attrLabel: 'SAB',
+      className: 'Druida'
     };
   }
 
   if (norm.includes('paladino')) {
     const halfLvl = Math.max(1, Math.floor(lvl / 2));
     const max = Math.max(1, halfLvl + chaMod);
+    const cantrips = p.fightingStyle === 'blessed' ? 2 : 0;
     return {
+      type: 'prepared',
       max,
+      maxLeveled: max,
+      maxCantrips: cantrips,
       formula: `Metade do Nível (${halfLvl}) + CAR (${chaMod >= 0 ? '+' : ''}${chaMod}) = ${max}`,
       isPreparedCaster: true,
-      attrLabel: 'CAR'
+      isKnownCaster: false,
+      attrLabel: 'CAR',
+      className: 'Paladino'
+    };
+  }
+
+  // 2. CONJURADORES DE MAGIAS CONHECIDAS (LIMITES D&D 5E POR NÍVEL)
+  if (norm.includes('bardo')) {
+    const max = DND5E_KNOWN_SPELLS_TABLE.bardo[lvl] || 4;
+    const cantrips = DND5E_CANTRIPS_KNOWN_TABLE.bardo[lvl] || 2;
+    return {
+      type: 'known',
+      max,
+      maxLeveled: max,
+      maxCantrips: cantrips,
+      formula: `Tabela D&D 5E de Bardo Nv ${lvl} = ${max} magias conhecidas`,
+      isPreparedCaster: false,
+      isKnownCaster: true,
+      attrLabel: 'CAR',
+      className: 'Bardo'
+    };
+  }
+
+  if (norm.includes('feiticeiro')) {
+    const max = DND5E_KNOWN_SPELLS_TABLE.feiticeiro[lvl] || 2;
+    const cantrips = DND5E_CANTRIPS_KNOWN_TABLE.feiticeiro[lvl] || 4;
+    return {
+      type: 'known',
+      max,
+      maxLeveled: max,
+      maxCantrips: cantrips,
+      formula: `Tabela D&D 5E de Feiticeiro Nv ${lvl} = ${max} magias conhecidas`,
+      isPreparedCaster: false,
+      isKnownCaster: true,
+      attrLabel: 'CAR',
+      className: 'Feiticeiro'
+    };
+  }
+
+  if (norm.includes('bruxo') || norm.includes('warlock')) {
+    const max = DND5E_KNOWN_SPELLS_TABLE.bruxo[lvl] || 2;
+    const cantrips = DND5E_CANTRIPS_KNOWN_TABLE.bruxo[lvl] || 2;
+    return {
+      type: 'known',
+      max,
+      maxLeveled: max,
+      maxCantrips: cantrips,
+      formula: `Tabela D&D 5E de Bruxo Nv ${lvl} = ${max} magias conhecidas`,
+      isPreparedCaster: false,
+      isKnownCaster: true,
+      attrLabel: 'CAR',
+      className: 'Bruxo'
+    };
+  }
+
+  if (norm.includes('patrulheiro') || norm.includes('ranger')) {
+    const max = DND5E_KNOWN_SPELLS_TABLE.patrulheiro[lvl] || 0;
+    const cantrips = p.fightingStyle === 'druidic' ? 2 : 0;
+    return {
+      type: 'known',
+      max,
+      maxLeveled: max,
+      maxCantrips: cantrips,
+      formula: `Tabela D&D 5E de Patrulheiro Nv ${lvl} = ${max} magias conhecidas`,
+      isPreparedCaster: false,
+      isKnownCaster: true,
+      attrLabel: 'SAB',
+      className: 'Patrulheiro'
+    };
+  }
+
+  if (norm.includes('cavaleiro') || norm.includes('eldritch')) {
+    const max = DND5E_KNOWN_SPELLS_TABLE.cavaleiro_arcano[lvl] || 0;
+    const cantrips = DND5E_CANTRIPS_KNOWN_TABLE.cavaleiro_arcano[lvl] || 0;
+    return {
+      type: 'known',
+      max,
+      maxLeveled: max,
+      maxCantrips: cantrips,
+      formula: `Tabela D&D 5E de Cavaleiro Arcano Nv ${lvl} = ${max} magias conhecidas`,
+      isPreparedCaster: false,
+      isKnownCaster: true,
+      attrLabel: 'INT',
+      className: 'Cavaleiro Arcano'
+    };
+  }
+
+  if (norm.includes('trapaceiro') || norm.includes('trickster')) {
+    const max = DND5E_KNOWN_SPELLS_TABLE.trapaceiro_arcano[lvl] || 0;
+    const cantrips = DND5E_CANTRIPS_KNOWN_TABLE.trapaceiro_arcano[lvl] || 0;
+    return {
+      type: 'known',
+      max,
+      maxLeveled: max,
+      maxCantrips: cantrips,
+      formula: `Tabela D&D 5E de Trapaceiro Arcano Nv ${lvl} = ${max} magias conhecidas`,
+      isPreparedCaster: false,
+      isKnownCaster: true,
+      attrLabel: 'INT',
+      className: 'Trapaceiro Arcano'
     };
   }
 
   return {
+    type: 'none',
     max: Array.isArray(p.preparedSpells) ? p.preparedSpells.length : 0,
-    formula: `Magias Conhecidas (Sempre preparadas)`,
+    maxLeveled: Array.isArray(p.preparedSpells) ? p.preparedSpells.length : 0,
+    maxCantrips: 0,
+    formula: `Sem conjuração de classe`,
     isPreparedCaster: false,
-    attrLabel: null
+    isKnownCaster: false,
+    attrLabel: null,
+    className: p.className || 'Classe'
   };
 }
 
@@ -2038,28 +2205,59 @@ function renderSpellPickerList() {
   const prepBox = document.getElementById('picker-prep-meter-box');
   if (prepBox && p) {
     const prepInfo = getMaxPreparedSpells(p);
+    const leveledCount = Array.from(pickerSelectedSpells).filter(sName => {
+      const s = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(x => x.name.toLowerCase() === sName.toLowerCase()) : null;
+      return !s || s.level > 0;
+    }).length;
+    const cantripsCount = Array.from(pickerSelectedSpells).filter(sName => {
+      const s = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(x => x.name.toLowerCase() === sName.toLowerCase()) : null;
+      return s && s.level === 0;
+    }).length;
+
     if (prepInfo.isPreparedCaster) {
-      const leveledCount = Array.from(pickerSelectedSpells).filter(sName => {
-        const s = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(x => x.name.toLowerCase() === sName.toLowerCase()) : null;
-        return !s || s.level > 0;
-      }).length;
-      const isOver = leveledCount > prepInfo.max;
+      const isOverLeveled = leveledCount > prepInfo.maxLeveled;
+      const isOverCantrips = prepInfo.maxCantrips > 0 && cantripsCount > prepInfo.maxCantrips;
+      const isOver = isOverLeveled || isOverCantrips;
+
       prepBox.innerHTML = `
         <div class="prepared-spells-meter" style="${isOver ? 'background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); color:#fca5a5;' : ''}">
           <span style="font-size: 14px;">🔮</span>
           <div style="flex: 1;">
-            <b>Limite Diário:</b> <span style="font-weight:800; color:#fff;">${leveledCount} / ${prepInfo.max}</span> magias preparadas (${prepInfo.formula})
-            <div style="font-size: 9px; opacity: 0.85;">* Truques (Nv 0) estão sempre ativos e não contam no limite diário.</div>
+            <div>
+              <b>Magias Preparadas Diariamente:</b> <span style="font-weight:800; color:#fff;">${leveledCount} / ${prepInfo.maxLeveled}</span> (${prepInfo.formula})
+            </div>
+            <div style="font-size: 10px; color:${isOverCantrips ? '#f87171' : 'var(--primary-light)'}; margin-top:2px;">
+              ✨ Truques Conhecidos: <b>${cantripsCount} ${prepInfo.maxCantrips > 0 ? `/ ${prepInfo.maxCantrips}` : ''}</b> ${isOverCantrips ? '(Limite de truques excedido)' : ''}
+            </div>
           </div>
           <span class="badge ${isOver ? 'badge-warn' : 'badge-cls'}" style="font-size: 10px;">${isOver ? '⚠️ Acima do Limite' : '✅ Válido'}</span>
+        </div>
+      `;
+    } else if (prepInfo.isKnownCaster) {
+      const isOverLeveled = leveledCount > prepInfo.maxLeveled;
+      const isOverCantrips = prepInfo.maxCantrips > 0 && cantripsCount > prepInfo.maxCantrips;
+      const isOver = isOverLeveled || isOverCantrips;
+
+      prepBox.innerHTML = `
+        <div class="prepared-spells-meter" style="${isOver ? 'background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); color:#fca5a5;' : 'background:rgba(168,85,247,0.1); border-color:rgba(168,85,247,0.3);'}">
+          <span style="font-size: 14px;">📖</span>
+          <div style="flex: 1;">
+            <div>
+              <b>Magias Conhecidas (${prepInfo.className}):</b> <span style="font-weight:800; color:#fff;">${leveledCount} / ${prepInfo.maxLeveled}</span> (${prepInfo.formula})
+            </div>
+            <div style="font-size: 10px; color:${isOverCantrips ? '#f87171' : 'var(--primary-light)'}; margin-top:2px;">
+              ✨ Truques Conhecidos: <b>${cantripsCount} ${prepInfo.maxCantrips > 0 ? `/ ${prepInfo.maxCantrips}` : ''}</b> ${isOverCantrips ? '(Limite de truques excedido)' : ''}
+            </div>
+          </div>
+          <span class="badge ${isOver ? 'badge-warn' : 'badge-sub'}" style="font-size: 10px;">${isOver ? '⚠️ Acima do Limite' : '✅ Válido'}</span>
         </div>
       `;
     } else {
       prepBox.innerHTML = `
         <div class="prepared-spells-meter">
-          <span style="font-size: 14px;">📖</span>
+          <span style="font-size: 14px;">📜</span>
           <div style="flex: 1;">
-            <b>Conjurador de Magias Conhecidas:</b> Todas as suas magias selecionadas estão sempre preparadas para uso.
+            <b>Conjurador Especial / Customizado:</b> ${pickerSelectedSpells.size} magias selecionadas pelo Mestre.
           </div>
         </div>
       `;

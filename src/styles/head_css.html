@@ -5475,6 +5475,25 @@
       color: #f87171;
     }
 
+    /* --- 7. MODO PORTAL DO ALUNO / JOGADOR (VISÃO LIMITADA DO ALUNO) --- */
+    body.mode-player-portal .dm-only-btn,
+    body.mode-player-portal .btn-levelup-trigger,
+    body.mode-player-portal .btn-header-backup,
+    body.mode-player-portal .player-actions-group .btn-secondary[onclick*="deletePlayerDirect"],
+    body.mode-player-portal .player-actions-group .btn-secondary[onclick*="openPlayerModal"],
+    body.mode-player-portal .player-actions-group .btn-secondary[onclick*="clonePlayerSheet"],
+    body.mode-player-portal .btn-spell-prep-toggle {
+      display: none !important;
+    }
+
+    body.mode-player-portal .spell-chip-actions-bar {
+      justify-content: stretch;
+    }
+
+    body.mode-player-portal .btn-spell-cast {
+      width: 100%;
+    }
+
     @media print {
       body {
         background: #fff !important;

@@ -1343,7 +1343,19 @@ const paladinPrep = vm.runInContext("getMaxPreparedSpells({ className: 'Paladino
 assert(paladinPrep.isPreparedCaster && paladinPrep.max === 4, 'Paladino Nv 4 com CAR 14 (+2) pode preparar até 4 magias (2 + 2 = 4)');
 
 const sorcererPrep = vm.runInContext("getMaxPreparedSpells({ className: 'Feiticeiro', level: 5, cha: 16 })", sandbox);
-assert(!sorcererPrep.isPreparedCaster, 'Feiticeiro é identificado como Conjurador de Magias Conhecidas');
+assert(!sorcererPrep.isPreparedCaster && sorcererPrep.isKnownCaster && sorcererPrep.maxLeveled === 6 && sorcererPrep.maxCantrips === 5, 'Feiticeiro Nv 5 conhece exatamente 6 magias e 5 truques');
+
+const bardPrep = vm.runInContext("getMaxPreparedSpells({ className: 'Bardo', level: 2, cha: 16 })", sandbox);
+assert(bardPrep.isKnownCaster && bardPrep.maxLeveled === 5 && bardPrep.maxCantrips === 2, 'Bardo Nv 2 conhece exatamente 5 magias e 2 truques');
+
+const warlockPrep = vm.runInContext("getMaxPreparedSpells({ className: 'Bruxo', level: 3, cha: 16 })", sandbox);
+assert(warlockPrep.isKnownCaster && warlockPrep.maxLeveled === 4 && warlockPrep.maxCantrips === 2, 'Bruxo Nv 3 conhece exatamente 4 magias e 2 truques');
+
+const rangerPrep = vm.runInContext("getMaxPreparedSpells({ className: 'Patrulheiro', level: 2, wis: 14 })", sandbox);
+assert(rangerPrep.isKnownCaster && rangerPrep.maxLeveled === 2, 'Patrulheiro Nv 2 conhece exatamente 2 magias');
+
+const eldritchPrep = vm.runInContext("getMaxPreparedSpells({ className: 'Cavaleiro Arcano', level: 3, int: 14 })", sandbox);
+assert(eldritchPrep.isKnownCaster && eldritchPrep.maxLeveled === 3 && eldritchPrep.maxCantrips === 2, 'Cavaleiro Arcano Nv 3 conhece exatamente 3 magias e 2 truques');
 
 // 3. Validação de Especialização (Expertise - Dobro da Proficiência)
 const testRogue = {
