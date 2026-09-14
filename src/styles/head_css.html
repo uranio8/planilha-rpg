@@ -252,6 +252,69 @@
     }
     .btn-action:active { transform: translateY(0); }
 
+    /* BESTIARY & MONSTER QUANTITY CONTROLS (HIGH CONTRAST) */
+    .monster-qty-stepper {
+      display: inline-flex;
+      align-items: center;
+      background: #080d1a !important;
+      border: 1.5px solid rgba(59, 130, 246, 0.6) !important;
+      border-radius: 8px !important;
+      padding: 2px 4px !important;
+      gap: 3px !important;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    .monster-qty-label {
+      font-size: 11px !important;
+      font-weight: 800 !important;
+      color: #93c5fd !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.5px !important;
+      padding-left: 2px !important;
+      user-select: none !important;
+    }
+    .monster-qty-input {
+      width: 48px !important;
+      min-width: 48px !important;
+      height: 26px !important;
+      background: #030712 !important;
+      border: 1px solid #1e3a8a !important;
+      border-radius: 5px !important;
+      color: #facc15 !important;
+      font-family: var(--font-mono, monospace) !important;
+      font-size: 15px !important;
+      font-weight: 900 !important;
+      text-align: center !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      box-shadow: 0 0 8px rgba(250, 204, 21, 0.15) !important;
+    }
+    .monster-qty-input:focus {
+      outline: 2px solid #60a5fa !important;
+      background: #0b1528 !important;
+      color: #ffffff !important;
+    }
+    .monster-qty-btn {
+      width: 22px !important;
+      height: 22px !important;
+      padding: 0 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-size: 13px !important;
+      font-weight: 900 !important;
+      background: rgba(255, 255, 255, 0.08) !important;
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      color: #93c5fd !important;
+      border-radius: 4px !important;
+      cursor: pointer !important;
+      transition: all 0.15s ease !important;
+    }
+    .monster-qty-btn:hover {
+      background: #1d4ed8 !important;
+      color: #fff !important;
+      border-color: #3b82f6 !important;
+    }
+
     .btn-secondary {
       background: var(--bg-surface-elevated);
       color: var(--text-main);

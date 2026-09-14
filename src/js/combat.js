@@ -425,9 +425,9 @@ function renderEncounterBuilder() {
               <b style="color:#fff; font-size:12px;">${m.name}</b>
               <span style="font-size:10px; color:var(--primary-light);"> (ND ${m.cr} • ${xp} XP)</span>
             </div>
-            <div style="display:flex; align-items:center; gap:6px;">
-              <span style="font-size:11px; color:var(--text-muted);">Qtd:</span>
-              <input type="number" min="1" max="30" value="${m.qty}" style="width:40px; text-align:center; padding:2px; font-size:11px; background:#080c16; border:1px solid var(--border-color); color:#fff; border-radius:4px;" onchange="updateEncounterMonsterQty(${idx}, this.value)">
+            <div style="display:flex; align-items:center; gap:4px;">
+              <span class="monster-qty-label" style="font-size:10px;">Qtd:</span>
+              <input type="number" min="1" max="50" value="${m.qty}" class="monster-qty-input" style="width:44px; height:24px; font-size:13px;" onchange="updateEncounterMonsterQty(${idx}, this.value)">
               <button class="btn-secondary" style="padding:2px 6px; font-size:10px; color:#f87171;" onclick="removeEncounterDraftMonster(${idx})">✕</button>
             </div>
           </div>

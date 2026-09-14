@@ -571,18 +571,20 @@ function renderBestiary() {
           </div>
         </div>
 
-        <div style="display: flex; gap: 4px; align-items: center; margin-top: 6px; flex-wrap: wrap;">
-          <div style="display: flex; align-items: center; background: #080c16; border: 1px solid var(--border-color); border-radius: 6px; padding: 2px 6px;" title="Quantidade de criaturas a adicionar">
-            <span style="font-size: 10px; color: var(--text-dim); margin-right: 4px;">Qtd:</span>
-            <input type="number" id="qty-mon-${idx}" min="1" max="50" value="1" style="width: 34px; text-align: center; border: none; background: transparent; color: #fff; font-weight: bold; font-size: 11px;">
+        <div style="display: flex; gap: 6px; align-items: center; margin-top: 8px; flex-wrap: wrap;">
+          <div class="monster-qty-stepper" title="Quantidade de criaturas a adicionar">
+            <span class="monster-qty-label">Qtd:</span>
+            <button type="button" class="monster-qty-btn" onclick="const el=document.getElementById('qty-mon-${idx}'); if(el){ el.value=Math.max(1, (parseInt(el.value)||1)-1); }" title="Diminuir">-</button>
+            <input type="number" id="qty-mon-${idx}" class="monster-qty-input" min="1" max="50" value="1">
+            <button type="button" class="monster-qty-btn" onclick="const el=document.getElementById('qty-mon-${idx}'); if(el){ el.value=Math.min(50, (parseInt(el.value)||1)+1); }" title="Aumentar">+</button>
           </div>
-          <button class="btn-action" style="flex: 1; justify-content: center; font-size: 11px; padding: 5px 8px; min-width: 100px;" onclick="addMonsterToCombat('${m.name.replace(/'/g, "\\'")}', ${m.ac}, ${m.hp}, '${m.attack.replace(/'/g, "\\'")}', 'qty-mon-${idx}')">
+          <button class="btn-action" style="flex: 1; justify-content: center; font-size: 11.5px; padding: 6px 10px; min-width: 95px;" onclick="addMonsterToCombat('${m.name.replace(/'/g, "\\'")}', ${m.ac}, ${m.hp}, '${m.attack.replace(/'/g, "\\'")}', 'qty-mon-${idx}')">
             ⚔️ Combate
           </button>
-          <button class="btn-secondary" style="font-size: 11px; padding: 5px 8px; color: var(--primary-light); border-color: rgba(245, 158, 11, 0.4);" onclick="openQuickInitModal('${m.name.replace(/'/g, "\\'")}', ${m.ac}, ${m.hp}, '${m.attack.replace(/'/g, "\\'")}', '${m.cr}')" title="Iniciativa Relâmpago (DM4)">
+          <button class="btn-secondary" style="font-size: 11px; padding: 6px 9px; color: var(--primary-light); border-color: rgba(245, 158, 11, 0.4);" onclick="openQuickInitModal('${m.name.replace(/'/g, "\\'")}', ${m.ac}, ${m.hp}, '${m.attack.replace(/'/g, "\\'")}', '${m.cr}')" title="Iniciativa Relâmpago (DM4)">
             ⚡ Relâmpago
           </button>
-          <button class="btn-secondary" style="font-size: 11px; padding: 5px 8px;" onclick="addMonsterToEncounterDraft('${m.name.replace(/'/g, "\\'")}', '${m.cr}', ${m.ac}, ${m.hp}, '${m.attack.replace(/'/g, "\\'")}')" title="Adicionar ao Balanceador de Encontros (DM1)">
+          <button class="btn-secondary" style="font-size: 11px; padding: 6px 9px;" onclick="addMonsterToEncounterDraft('${m.name.replace(/'/g, "\\'")}', '${m.cr}', ${m.ac}, ${m.hp}, '${m.attack.replace(/'/g, "\\'")}')" title="Adicionar ao Balanceador de Encontros (DM1)">
             ⚖️ +Encontro
           </button>
         </div>

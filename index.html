@@ -255,6 +255,69 @@
     }
     .btn-action:active { transform: translateY(0); }
 
+    /* BESTIARY & MONSTER QUANTITY CONTROLS (HIGH CONTRAST) */
+    .monster-qty-stepper {
+      display: inline-flex;
+      align-items: center;
+      background: #080d1a !important;
+      border: 1.5px solid rgba(59, 130, 246, 0.6) !important;
+      border-radius: 8px !important;
+      padding: 2px 4px !important;
+      gap: 3px !important;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    .monster-qty-label {
+      font-size: 11px !important;
+      font-weight: 800 !important;
+      color: #93c5fd !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.5px !important;
+      padding-left: 2px !important;
+      user-select: none !important;
+    }
+    .monster-qty-input {
+      width: 48px !important;
+      min-width: 48px !important;
+      height: 26px !important;
+      background: #030712 !important;
+      border: 1px solid #1e3a8a !important;
+      border-radius: 5px !important;
+      color: #facc15 !important;
+      font-family: var(--font-mono, monospace) !important;
+      font-size: 15px !important;
+      font-weight: 900 !important;
+      text-align: center !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      box-shadow: 0 0 8px rgba(250, 204, 21, 0.15) !important;
+    }
+    .monster-qty-input:focus {
+      outline: 2px solid #60a5fa !important;
+      background: #0b1528 !important;
+      color: #ffffff !important;
+    }
+    .monster-qty-btn {
+      width: 22px !important;
+      height: 22px !important;
+      padding: 0 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-size: 13px !important;
+      font-weight: 900 !important;
+      background: rgba(255, 255, 255, 0.08) !important;
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      color: #93c5fd !important;
+      border-radius: 4px !important;
+      cursor: pointer !important;
+      transition: all 0.15s ease !important;
+    }
+    .monster-qty-btn:hover {
+      background: #1d4ed8 !important;
+      color: #fff !important;
+      border-color: #3b82f6 !important;
+    }
+
     .btn-secondary {
       background: var(--bg-surface-elevated);
       color: var(--text-main);
@@ -28188,9 +28251,9 @@ function renderEncounterBuilder() {
               <b style="color:#fff; font-size:12px;">${m.name}</b>
               <span style="font-size:10px; color:var(--primary-light);"> (ND ${m.cr} • ${xp} XP)</span>
             </div>
-            <div style="display:flex; align-items:center; gap:6px;">
-              <span style="font-size:11px; color:var(--text-muted);">Qtd:</span>
-              <input type="number" min="1" max="30" value="${m.qty}" style="width:40px; text-align:center; padding:2px; font-size:11px; background:#080c16; border:1px solid var(--border-color); color:#fff; border-radius:4px;" onchange="updateEncounterMonsterQty(${idx}, this.value)">
+            <div style="display:flex; align-items:center; gap:4px;">
+              <span class="monster-qty-label" style="font-size:10px;">Qtd:</span>
+              <input type="number" min="1" max="50" value="${m.qty}" class="monster-qty-input" style="width:44px; height:24px; font-size:13px;" onchange="updateEncounterMonsterQty(${idx}, this.value)">
               <button class="btn-secondary" style="padding:2px 6px; font-size:10px; color:#f87171;" onclick="removeEncounterDraftMonster(${idx})">✕</button>
             </div>
           </div>
@@ -34102,18 +34165,20 @@ function renderBestiary() {
           </div>
         </div>
 
-        <div style="display: flex; gap: 4px; align-items: center; margin-top: 6px; flex-wrap: wrap;">
-          <div style="display: flex; align-items: center; background: #080c16; border: 1px solid var(--border-color); border-radius: 6px; padding: 2px 6px;" title="Quantidade de criaturas a adicionar">
-            <span style="font-size: 10px; color: var(--text-dim); margin-right: 4px;">Qtd:</span>
-            <input type="number" id="qty-mon-${idx}" min="1" max="50" value="1" style="width: 34px; text-align: center; border: none; background: transparent; color: #fff; font-weight: bold; font-size: 11px;">
+        <div style="display: flex; gap: 6px; align-items: center; margin-top: 8px; flex-wrap: wrap;">
+          <div class="monster-qty-stepper" title="Quantidade de criaturas a adicionar">
+            <span class="monster-qty-label">Qtd:</span>
+            <button type="button" class="monster-qty-btn" onclick="const el=document.getElementById('qty-mon-${idx}'); if(el){ el.value=Math.max(1, (parseInt(el.value)||1)-1); }" title="Diminuir">-</button>
+            <input type="number" id="qty-mon-${idx}" class="monster-qty-input" min="1" max="50" value="1">
+            <button type="button" class="monster-qty-btn" onclick="const el=document.getElementById('qty-mon-${idx}'); if(el){ el.value=Math.min(50, (parseInt(el.value)||1)+1); }" title="Aumentar">+</button>
           </div>
-          <button class="btn-action" style="flex: 1; justify-content: center; font-size: 11px; padding: 5px 8px; min-width: 100px;" onclick="addMonsterToCombat('${m.name.replace(/'/g, "\\'")}', ${m.ac}, ${m.hp}, '${m.attack.replace(/'/g, "\\'")}', 'qty-mon-${idx}')">
+          <button class="btn-action" style="flex: 1; justify-content: center; font-size: 11.5px; padding: 6px 10px; min-width: 95px;" onclick="addMonsterToCombat('${m.name.replace(/'/g, "\\'")}', ${m.ac}, ${m.hp}, '${m.attack.replace(/'/g, "\\'")}', 'qty-mon-${idx}')">
             ⚔️ Combate
           </button>
-          <button class="btn-secondary" style="font-size: 11px; padding: 5px 8px; color: var(--primary-light); border-color: rgba(245, 158, 11, 0.4);" onclick="openQuickInitModal('${m.name.replace(/'/g, "\\'")}', ${m.ac}, ${m.hp}, '${m.attack.replace(/'/g, "\\'")}', '${m.cr}')" title="Iniciativa Relâmpago (DM4)">
+          <button class="btn-secondary" style="font-size: 11px; padding: 6px 9px; color: var(--primary-light); border-color: rgba(245, 158, 11, 0.4);" onclick="openQuickInitModal('${m.name.replace(/'/g, "\\'")}', ${m.ac}, ${m.hp}, '${m.attack.replace(/'/g, "\\'")}', '${m.cr}')" title="Iniciativa Relâmpago (DM4)">
             ⚡ Relâmpago
           </button>
-          <button class="btn-secondary" style="font-size: 11px; padding: 5px 8px;" onclick="addMonsterToEncounterDraft('${m.name.replace(/'/g, "\\'")}', '${m.cr}', ${m.ac}, ${m.hp}, '${m.attack.replace(/'/g, "\\'")}')" title="Adicionar ao Balanceador de Encontros (DM1)">
+          <button class="btn-secondary" style="font-size: 11px; padding: 6px 9px;" onclick="addMonsterToEncounterDraft('${m.name.replace(/'/g, "\\'")}', '${m.cr}', ${m.ac}, ${m.hp}, '${m.attack.replace(/'/g, "\\'")}')" title="Adicionar ao Balanceador de Encontros (DM1)">
             ⚖️ +Encontro
           </button>
         </div>
