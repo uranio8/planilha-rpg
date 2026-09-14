@@ -75,6 +75,80 @@ function togglePlayerItemEquipped(playerId, itemIdx) {
   saveToLocalStorage();
 }
 
+function getItemActionInfo(itemName) {
+  const n = (itemName || '').toLowerCase();
+  if (n.includes('flecha') || n.includes('arrow') || n.includes('virote') || n.includes('balas') || n.includes('dardo') || n.includes('munição') || n.includes('municao')) {
+    return { icon: '🏹', label: 'Disparar', verb: 'Disparar', sound: 'sword', isConsumable: true, isHealPotion: false };
+  }
+  if (n.includes('poção') || n.includes('pocao') || n.includes('potion')) {
+    const isHeal = n.includes('cura') || n.includes('healing');
+    return { icon: '🧪', label: 'Beber', verb: 'Beber', sound: 'heal', isConsumable: true, isHealPotion: isHeal };
+  }
+  if (n.includes('ração') || n.includes('racao') || n.includes('comida') || n.includes('odre') || n.includes('água') || n.includes('agua')) {
+    return { icon: '🍖', label: 'Comer', verb: 'Comer', sound: 'heal', isConsumable: true, isHealPotion: false };
+  }
+  if (n.includes('tocha') || n.includes('vela')) {
+    return { icon: '🔥', label: 'Acender', verb: 'Acender', sound: 'spell', isConsumable: true, isHealPotion: false };
+  }
+  if (n.includes('pergaminho') || n.includes('scroll')) {
+    return { icon: '📜', label: 'Ler/Usar', verb: 'Ler/Usar', sound: 'spell', isConsumable: true, isHealPotion: false };
+  }
+  return { icon: '⚡', label: 'Usar', verb: 'Usar', sound: 'sword', isConsumable: true, isHealPotion: false };
+}
+
+function usePlayerInventoryItem(playerId, itemIdx) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p || !p.inventory || !p.inventory[itemIdx]) return;
+  const it = p.inventory[itemIdx];
+  const currentQty = parseInt(it.qty, 10) || 1;
+
+  if (currentQty <= 0) {
+    alert(`Você não possui mais unidades de "${it.name}"!`);
+    return;
+  }
+
+  // Decrementa 1 unidade daquele item
+  it.qty = Math.max(0, currentQty - 1);
+  const remaining = it.qty;
+  const actionInfo = getItemActionInfo(it.name);
+  const nameLower = (it.name || '').toLowerCase();
+
+  let effectMsg = '';
+
+  // Efeitos interativos para itens comuns de D&D 5E
+  if (nameLower.includes('poção') || nameLower.includes('pocao') || nameLower.includes('potion')) {
+    if (nameLower.includes('cura') || nameLower.includes('healing')) {
+      let healRoll = 0;
+      if (nameLower.includes('suprema') || nameLower.includes('supreme')) {
+        healRoll = Array.from({ length: 10 }, () => Math.floor(Math.random() * 4) + 1).reduce((a, b) => a + b, 0) + 20;
+      } else if (nameLower.includes('superior')) {
+        healRoll = Array.from({ length: 8 }, () => Math.floor(Math.random() * 4) + 1).reduce((a, b) => a + b, 0) + 8;
+      } else if (nameLower.includes('maior') || nameLower.includes('greater')) {
+        healRoll = Array.from({ length: 4 }, () => Math.floor(Math.random() * 4) + 1).reduce((a, b) => a + b, 0) + 4;
+      } else {
+        const d1 = Math.floor(Math.random() * 4) + 1;
+        const d2 = Math.floor(Math.random() * 4) + 1;
+        healRoll = d1 + d2 + 2;
+      }
+      const prevHp = p.hp;
+      p.hp = Math.min(p.maxHp, p.hp + healRoll);
+      effectMsg = ` • Recuperou +${healRoll} PV (${prevHp} ➔ ${p.hp}/${p.maxHp} PV)`;
+
+      const comb = (typeof state !== 'undefined' && state.combatants) ? state.combatants.find(c => (c.playerId && c.playerId === p.id) || c.name.includes(p.name)) : null;
+      if (comb) { comb.hp = p.hp; if (typeof renderCombat === 'function') renderCombat(); }
+    }
+  }
+
+  if (typeof playFX === 'function') playFX(actionInfo.sound || 'sword');
+
+  const logStr = `${actionInfo.label.toLowerCase()} 1x <b>${it.name}</b>${effectMsg} (${remaining}x restantes)`;
+  addLog(`${actionInfo.icon} <b>${p.name}</b> ${logStr}`);
+  addPlayerActionLog(p.id, actionInfo.icon, `${actionInfo.label} 1x ${it.name}${effectMsg} (${remaining}x restantes)`, 'item');
+
+  renderPlayers();
+  saveToLocalStorage();
+}
+
 let playerSkillSearchTerms = {};
 function filterSkillsCard(playerId, term) {
   playerSkillSearchTerms[playerId] = (term || '').toLowerCase().trim();
@@ -844,23 +918,30 @@ function renderPlayers() {
               </div>
 
               <div style="display: flex; flex-direction: column; gap: 4px; max-height: 250px; overflow-y: auto;">
-                ${(p.inventory && p.inventory.length > 0) ? p.inventory.map((it, idx) => `
-                  <div class="inventory-item-row ${it.equipped ? 'equipped' : ''}">
-                    <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 4px;">
-                      <span style="font-weight: 700; color: #fff;">${it.equipped ? '⚔️ ' : ''}${it.name}</span>
-                      <span style="font-size: 9px; color: var(--text-dim);">${it.weight ? ' • ' + it.weight + 'kg' : ''}</span>
+                ${(p.inventory && p.inventory.length > 0) ? p.inventory.map((it, idx) => {
+                  const actionInfo = typeof getItemActionInfo === 'function' ? getItemActionInfo(it.name) : { icon: '⚡', label: 'Usar' };
+                  const itemQty = parseInt(it.qty, 10) || 0;
+                  return `
+                    <div class="inventory-item-row ${it.equipped ? 'equipped' : ''}">
+                      <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 4px;">
+                        <span style="font-weight: 700; color: #fff;">${it.equipped ? '⚔️ ' : ''}${it.name}</span>
+                        <span style="font-size: 9px; color: var(--text-dim);">${it.weight ? ' • ' + it.weight + 'kg' : ''}</span>
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 2px;">
+                        <button class="btn-item-use ${itemQty <= 0 ? 'empty' : ''}" onclick="usePlayerInventoryItem('${p.id}', ${idx})" title="${itemQty > 0 ? `${actionInfo.label} 1x ${it.name} (gasta 1 da quantidade)` : 'Item esgotado'}" ${itemQty <= 0 ? 'disabled' : ''}>
+                          ${actionInfo.icon} ${actionInfo.label}
+                        </button>
+                        <button class="btn-item-equip ${it.equipped ? 'active' : ''}" onclick="togglePlayerItemEquipped('${p.id}', ${idx})" title="${it.equipped ? 'Item Equipado (clique para guardar)' : 'Item na Mochila (clique para equipar)'}">
+                          ${it.equipped ? '⚔️' : '🎒'}
+                        </button>
+                        <button class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, -1)" title="Diminuir quantidade" style="padding: 1px 4px; font-size: 9px;">−</button>
+                        <span style="font-weight: 800; min-width: 14px; text-align: center; color: ${itemQty > 0 ? 'var(--primary-light)' : 'var(--text-dim)'}; font-size: 10px;">${itemQty}x</span>
+                        <button class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, 1)" title="Aumentar quantidade" style="padding: 1px 4px; font-size: 9px;">+</button>
+                        <button class="btn-micro" style="color: #f87171; padding: 1px 4px; font-size: 9px;" onclick="removePlayerItem('${p.id}', ${idx})" title="Remover item">🗑️</button>
+                      </div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 2px;">
-                      <button class="btn-item-equip ${it.equipped ? 'active' : ''}" onclick="togglePlayerItemEquipped('${p.id}', ${idx})" title="${it.equipped ? 'Item Equipado (clique para guardar)' : 'Item na Mochila (clique para equipar)'}">
-                        ${it.equipped ? '⚔️ Equipado' : '🎒'}
-                      </button>
-                      <button class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, -1)" title="Diminuir quantidade" style="padding: 1px 4px; font-size: 9px;">−</button>
-                      <span style="font-weight: 800; min-width: 14px; text-align: center; color: var(--primary-light); font-size: 10px;">${it.qty || 1}x</span>
-                      <button class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, 1)" title="Aumentar quantidade" style="padding: 1px 4px; font-size: 9px;">+</button>
-                      <button class="btn-micro" style="color: #f87171; padding: 1px 4px; font-size: 9px;" onclick="removePlayerItem('${p.id}', ${idx})" title="Remover item">🗑️</button>
-                    </div>
-                  </div>
-                `).join('') : `
+                  `;
+                }).join('') : `
                   <div style="background: #080c16; padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border-color); color: #cbd5e1; font-size: 10px; line-height: 1.4;">
                     ${p.spells || 'Mochila de Aventureiro padrão.'}
                   </div>

@@ -1517,6 +1517,46 @@ vm.runInContext("togglePlayerItemEquipped('char_item_test', 0)", sandbox);
 const updatedItemChar = vm.runInContext("PLAYERS.find(p => p.id === 'char_item_test')", sandbox);
 assert(updatedItemChar.inventory[0].equipped === true, 'togglePlayerItemEquipped equipou a Espada Longa');
 
+// 5. Teste 3.56: Uso e Consumo Rápido de Itens do Inventário (Flechas, Poções, Ração)
+assert(typeof vm.runInContext("getItemActionInfo", sandbox) === 'function', 'getItemActionInfo exportado');
+assert(typeof vm.runInContext("usePlayerInventoryItem", sandbox) === 'function', 'usePlayerInventoryItem exportado');
+
+const arrowInfo = vm.runInContext("getItemActionInfo('Flechas')", sandbox);
+assert(arrowInfo.isConsumable === true && arrowInfo.verb.includes('Disparar'), 'Flechas identificadas como consumíveis de disparo');
+
+const potionInfo = vm.runInContext("getItemActionInfo('Poção de Cura')", sandbox);
+assert(potionInfo.isConsumable === true && potionInfo.isHealPotion === true && potionInfo.verb.includes('Beber'), 'Poção de Cura identificada com efeito de cura');
+
+// Teste de consumo no inventário
+const testConsumableChar = {
+  id: 'char_consume_test',
+  name: 'Arqueiro Ranger',
+  hp: 12,
+  maxHp: 20,
+  inventory: [
+    { name: 'Flechas', qty: 20, weight: 1.0 },
+    { name: 'Poção de Cura', qty: 2, weight: 0.5 },
+    { name: 'Tocha', qty: 0, weight: 0.5 }
+  ]
+};
+vm.runInContext(`PLAYERS.push(${JSON.stringify(testConsumableChar)})`, sandbox);
+
+// Disparar 1 flecha (20 -> 19)
+vm.runInContext("usePlayerInventoryItem('char_consume_test', 0)", sandbox);
+let updatedConsumeChar = vm.runInContext("PLAYERS.find(p => p.id === 'char_consume_test')", sandbox);
+assert(updatedConsumeChar.inventory[0].qty === 19, 'Disparo de flecha reduziu a contagem de 20 para 19');
+
+// Beber 1 poção de cura (2 -> 1) e curar o herói
+vm.runInContext("usePlayerInventoryItem('char_consume_test', 1)", sandbox);
+updatedConsumeChar = vm.runInContext("PLAYERS.find(p => p.id === 'char_consume_test')", sandbox);
+assert(updatedConsumeChar.inventory[1].qty === 1, 'Consumo de poção reduziu a contagem de 2 para 1');
+assert(updatedConsumeChar.hp > 12, 'Poção de cura restaurou pontos de vida do personagem');
+
+// Tentativa de consumir item esgotado (qty = 0)
+vm.runInContext("usePlayerInventoryItem('char_consume_test', 2)", sandbox);
+updatedConsumeChar = vm.runInContext("PLAYERS.find(p => p.id === 'char_consume_test')", sandbox);
+assert(updatedConsumeChar.inventory[2].qty === 0, 'Item esgotado permanece com contagem 0 sem erros');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

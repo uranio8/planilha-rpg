@@ -4426,6 +4426,36 @@
       color: var(--primary-light);
       font-weight: 700;
     }
+    .btn-item-use {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.25));
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      color: #fef08a;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      white-space: nowrap;
+    }
+    .btn-item-use:hover {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #07090e;
+      transform: scale(1.04);
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+    }
+    .btn-item-use:disabled,
+    .btn-item-use.empty {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: #334155;
+      color: #64748b;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
 
     /* --- M5: BLOCO DE NOTAS PRIVADO --- */
     .player-notes-container {
