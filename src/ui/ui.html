@@ -62,6 +62,9 @@
       <button class="btn-top" onclick="toggleDMNotesDrawer()" title="Notas Rápidas do Mestre (Atalho: Ctrl+N)">📝 Notas <kbd style="font-size:9px; opacity:0.8;">Ctrl+N</kbd></button>
       <button class="btn-top" onclick="openDiceModal()" title="Abrir Painel de Rolagem de Dados">🎲 Dados</button>
       <button class="btn-top" onclick="openPlayerView()" title="Abrir Modo Telão para Projetor da Sala de Aula">📺 Telão</button>
+      <button class="btn-top" onclick="publishMasterCampaignToCloud()" title="Publicar/Sincronizar a mesa atual na nuvem para os jogadores" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.35)); border-color: #10b981; color: #a7f3d0; font-weight: 700;">
+        📤 Publicar Mesa
+      </button>
       <button class="btn-top" onclick="openPlayerLoginModal()" title="Entrar no Portal do Jogador (Escolher Herói)" style="background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(217,119,6,0.3)); border-color: #f59e0b; color: #fef08a; font-weight: 700;">
         🎮 Entrar como Jogador
       </button>
@@ -2009,6 +2012,7 @@
           <div style="display: flex; gap: 6px; margin-top: 3px;">
             <input type="text" id="inp-login-room" placeholder="Ex: turma_principal" style="font-size: 12px; padding: 5px 8px; background: #080c16; border: 1px solid var(--border-color); border-radius: 4px; color: #fff; font-family: var(--font-mono); width: 100%;">
             <button class="btn-secondary" style="font-size: 11px; padding: 4px 10px; white-space: nowrap;" onclick="refreshLoginRoom()">🔄 Conectar Sala</button>
+            <button class="btn-action" style="font-size: 11px; padding: 4px 10px; white-space: nowrap; background: linear-gradient(135deg, #f59e0b, #d97706);" onclick="copyLobbyShareLink()" title="Copiar link do lobby desta sala para enviar aos alunos">📋 Copiar Link</button>
           </div>
         </div>
         <div style="flex: 1.2;">
@@ -2022,11 +2026,14 @@
         <!-- Preenchido dinamicamente por renderPlayerLoginList() -->
       </div>
 
-      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 12px; flex-wrap: wrap; gap: 8px;">
         <span style="font-size: 11px; color: var(--text-muted);">
           💡 Seus pontos de vida, magias e inventário sincronizam automaticamente com a mesa do mestre.
         </span>
-        <button class="btn-secondary" onclick="closePlayerLoginModal()">Cancelar</button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-action dm-only-btn" style="font-size: 11px; padding: 5px 10px; background: linear-gradient(135deg, #10b981, #059669);" onclick="publishMasterCampaignToCloud()" title="Enviar todos os heróis da mesa atual para esta sala na nuvem">📤 Publicar Mesa</button>
+          <button class="btn-secondary" onclick="closePlayerLoginModal()">Fechar</button>
+        </div>
       </div>
     </div>
   </div>

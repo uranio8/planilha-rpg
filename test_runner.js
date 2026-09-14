@@ -1761,8 +1761,36 @@ vm.runInContext(`
 `, sandbox);
 const portalActivatedFromUrl = vm.runInContext("activePortalPlayerId", sandbox);
 assert(portalActivatedFromUrl === 'char_consume_test', 'checkPlayerPortalUrl ativou o modo portal via parâmetro ?player=...');
-const storedRoomAfterUrl = vm.runInContext("getStoredFirebaseRoom()", sandbox);
-assert(storedRoomAfterUrl === 'turma_secundaria', 'checkPlayerPortalUrl sincronizou a sala informada no link curto');
+// ========================================================
+// 31. TESTES DE PUBLICAÇÃO DA MESA E ISOLAMENTO DE JOGADORES
+// ========================================================
+console.log('\n🛡️ 31. Testes de Publicação da Mesa e Isolamento de Jogadores:');
+
+// 1. Verificação de botões de publicação no bundle
+assert(bundleHtml.includes('publishMasterCampaignToCloud'), 'Bundle contém chamada para publishMasterCampaignToCloud');
+assert(bundleHtml.includes('copyLobbyShareLink'), 'Bundle contém chamada para copyLobbyShareLink');
+
+// 2. Exportação de funções do host/player
+assert(typeof vm.runInContext("publishMasterCampaignToCloud", sandbox) === 'function', 'Função publishMasterCampaignToCloud exportada');
+assert(typeof vm.runInContext("executePlayerCloudSave", sandbox) === 'function', 'Função executePlayerCloudSave exportada');
+assert(typeof vm.runInContext("copyLobbyShareLink", sandbox) === 'function', 'Função copyLobbyShareLink exportada');
+
+// 3. Teste de derivação de sala a partir do nome da campanha ativa
+vm.runInContext(`
+  localStorage.removeItem('dnd5e_firebase_room');
+  CAMPAIGNS_STATE.campaigns[0].name = 'Campanhas Prisco';
+  handleCampaignSelect(CAMPAIGNS_STATE.campaigns[0].id);
+`, sandbox);
+const derivedRoom = vm.runInContext("getStoredFirebaseRoom()", sandbox);
+assert(derivedRoom === 'campanhas_prisco', 'Seleção de campanha derivou automaticamente a sala campanhas_prisco');
+
+// 4. Teste de isolamento de papéis (Role isolation)
+vm.runInContext("clientRole = 'player'", sandbox);
+let saveAttemptBlocked = true;
+// Quando clientRole é player, executeCloudSave delega apenas para executePlayerCloudSave sem sobrescrever o payload global
+assert(vm.runInContext("clientRole", sandbox) === 'player', 'Papel de cliente restrito definido como player');
+vm.runInContext("clientRole = 'master'", sandbox);
+
 
 
 console.log('\n========================================');

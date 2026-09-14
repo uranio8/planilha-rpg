@@ -3740,6 +3740,7 @@ function initPlayerPortalMode(playerId) {
   if (!p) return;
 
   activePortalPlayerId = p.id;
+  if (typeof clientRole !== 'undefined') clientRole = 'player';
   if (typeof document !== 'undefined' && document.body && document.body.classList) {
     document.body.classList.add('mode-player-portal');
   }
@@ -3752,7 +3753,12 @@ function initPlayerPortalMode(playerId) {
 }
 
 function exitPlayerPortalMode() {
+  if (typeof confirm === 'function') {
+    const ok = confirm('Deseja realmente sair da sua ficha de jogador e voltar para a visão do Mestre?');
+    if (!ok) return;
+  }
   activePortalPlayerId = null;
+  if (typeof clientRole !== 'undefined') clientRole = 'master';
   if (typeof document !== 'undefined' && document.body && document.body.classList) {
     document.body.classList.remove('mode-player-portal');
   }
@@ -3892,10 +3898,37 @@ function renderPlayerLoginList() {
   const container = document.getElementById('player-login-list-container');
   if (!container) return;
 
+  const currentRoom = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
   const inpFilter = document.getElementById('inp-filter-login-players');
   const term = (inpFilter && inpFilter.value) ? inpFilter.value.trim().toLowerCase() : '';
 
-  const filtered = (PLAYERS || []).filter(p => {
+  // Determina se estamos aguardando dados da nuvem
+  const isUrlWithRoom = typeof window !== 'undefined' && window.location && window.location.search && window.location.search.includes('room=');
+  const isLoaded = typeof isCloudRoomDataLoaded !== 'undefined' ? isCloudRoomDataLoaded : true;
+
+  // Se o aluno acessou por link com sala e a nuvem ainda não respondeu, exibe estado de carregamento
+  if (isUrlWithRoom && !isLoaded && (!PLAYERS || PLAYERS.length === 0 || (PLAYERS.length === 5 && PLAYERS[0]?.id === 'p1'))) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 36px 16px; color: var(--text-muted);">
+        <div style="font-size: 32px; margin-bottom: 10px; animation: pulse 1.5s infinite;">🔄</div>
+        <div style="font-size: 15px; font-weight: 700; color: #fff;">Conectando à mesa "${currentRoom}"...</div>
+        <div style="font-size: 12px; margin-top: 6px; color: var(--primary-light);">Baixando os personagens reais da campanha... Aguarde um instante.</div>
+      </div>
+    `;
+    return;
+  }
+
+  // Filtra os personagens da campanha ativa se houver vinculação
+  let candidates = PLAYERS || [];
+  const activeCamp = (typeof getActiveCampaign === 'function') ? getActiveCampaign() : null;
+  if (activeCamp && Array.isArray(activeCamp.playerIds) && activeCamp.playerIds.length > 0) {
+    const linked = candidates.filter(p => activeCamp.playerIds.includes(p.id));
+    if (linked.length > 0) {
+      candidates = linked;
+    }
+  }
+
+  const filtered = candidates.filter(p => {
     if (!term) return true;
     const nameMatch = (p.name || '').toLowerCase().includes(term);
     const studentMatch = (p.student || '').toLowerCase().includes(term);
@@ -3906,11 +3939,13 @@ function renderPlayerLoginList() {
 
   if (filtered.length === 0) {
     container.innerHTML = `
-      <div style="grid-column: 1 / -1; text-align: center; padding: 24px 12px; color: var(--text-muted); background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px dashed var(--border-color);">
-        <div style="font-size: 28px; margin-bottom: 6px;">👥</div>
-        <div style="font-size: 14px; font-weight: 700; color: #fff;">Nenhum personagem encontrado</div>
-        <div style="font-size: 11.5px; margin-top: 4px; color: var(--text-dim);">
-          ${term ? 'Tente buscar com outro termo.' : 'Verifique se a sala conectada está correta ou se o mestre já cadastrou os heróis.'}
+      <div style="grid-column: 1 / -1; text-align: center; padding: 28px 14px; color: var(--text-muted); background: rgba(0,0,0,0.25); border-radius: 8px; border: 1px dashed var(--border-color);">
+        <div style="font-size: 30px; margin-bottom: 8px;">👥</div>
+        <div style="font-size: 15px; font-weight: 700; color: #fff;">
+          ${term ? 'Nenhum personagem encontrado com essa busca' : `Nenhum herói publicado na sala "${currentRoom}"`}
+        </div>
+        <div style="font-size: 12px; margin-top: 6px; color: var(--accent-gold);">
+          ${term ? 'Tente buscar com outro nome de herói ou aluno.' : 'Peça ao Mestre para abrir a planilha e clicar no botão <b>"📤 Publicar Mesa"</b>.'}
         </div>
       </div>
     `;

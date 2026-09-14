@@ -24,6 +24,9 @@ let isFirebaseSyncing = false;
 let isApplyingCloudUpdate = false;
 let firebaseCloudDebounceTimer = null;
 let localClientId = 'client_' + Math.random().toString(36).substring(2, 9);
+let clientRole = (typeof window !== 'undefined' && window.location && (window.location.search.includes('view=player') || window.location.search.includes('player=') || window.location.search.includes('lobby=true') || window.location.search.includes('login=player'))) ? 'player' : 'master';
+let isCloudRoomDataLoaded = false;
+let lastReceivedCloudData = null;
 
 // --- UTILITÁRIOS DE CONFIGURAÇÃO ---
 
@@ -191,13 +194,18 @@ function startFirebaseRoomListener(roomId) {
 function applyCloudDataToLocal(cloudData) {
   if (!cloudData) return;
 
-  // Proteção: Se a nuvem estiver vazia/zerada e tivermos fichas locais válidas, NÃO zere o local; suba o local para a nuvem
+  isCloudRoomDataLoaded = true;
+  lastReceivedCloudData = cloudData;
+
+  // Proteção: Se a nuvem estiver vazia/zerada e tivermos fichas locais válidas,
+  // APENAS o Mestre pode publicar manualmente via publishMasterCampaignToCloud.
+  // Um cliente/jogador (role === 'player') NUNCA deve subir seus dados locais (ou mocks) para a nuvem!
   const localHasPlayers = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS) && PLAYERS.length > 0);
   const cloudHasPlayers = (cloudData.players && Array.isArray(cloudData.players) && cloudData.players.length > 0);
 
   if (localHasPlayers && !cloudHasPlayers) {
-    console.warn('🛡️ Nuvem vazia detectada! Preservando fichas locais e sincronizando com a nuvem...');
-    executeCloudSave();
+    console.warn('🛡️ Nuvem vazia detectada! Preservando fichas locais.');
+    if (typeof renderPlayerLoginList === 'function') renderPlayerLoginList();
     return;
   }
 
@@ -230,6 +238,9 @@ function applyCloudDataToLocal(cloudData) {
           }
           return remoteP;
         });
+      } else if (clientRole === 'player') {
+        // Visão do jogador no lobby antes de escolher o herói: adota os heróis reais da nuvem
+        PLAYERS = cloudData.players;
       } else {
         // Modo Mestre: atualiza todos os jogadores recebidos da nuvem
         PLAYERS = cloudData.players.map(p => {
@@ -243,6 +254,7 @@ function applyCloudDataToLocal(cloudData) {
 
       if (typeof renderPlayers === 'function') renderPlayers();
       if (typeof updatePlayerPortalBanner === 'function') updatePlayerPortalBanner();
+      if (typeof renderPlayerLoginList === 'function') renderPlayerLoginList();
     }
 
     // 2. Atualiza Estado de Combate
@@ -286,14 +298,11 @@ function applyCloudDataToLocal(cloudData) {
       } catch (e) {}
     }
 
-    updateFirebaseUiStatus('connected', `Sincronizado`);
-    if (typeof playFX === 'function') playFX('dice');
-  } catch (e) {
-    console.error('Erro ao aplicar dados recebidos da nuvem:', e);
+    console.log('✅ Sincronização em Nuvem aplicada com sucesso!');
+  } catch (err) {
+    console.error('Erro ao processar dados da nuvem:', err);
   } finally {
-    setTimeout(() => {
-      isApplyingCloudUpdate = false;
-    }, 200);
+    isApplyingCloudUpdate = false;
   }
 }
 
@@ -318,6 +327,12 @@ function syncLocalChangesToFirebase(immediate = false) {
 function executeCloudSave() {
   if (!isFirebaseConnected || (!firestoreDb && !realtimeDb)) return;
 
+  // Segurança: se for cliente jogador, apenas envia atualizações do seu próprio herói
+  if (clientRole === 'player') {
+    executePlayerCloudSave();
+    return;
+  }
+
   const roomId = getStoredFirebaseRoom();
   const payload = {
     players: (typeof PLAYERS !== 'undefined') ? PLAYERS : [],
@@ -326,7 +341,8 @@ function executeCloudSave() {
     campaigns: (typeof CAMPAIGNS_STATE !== 'undefined') ? CAMPAIGNS_STATE : null,
     dmNotes: (typeof localStorage !== 'undefined') ? (localStorage.getItem('dnd_tracker_dm_notes_v3') || '') : '',
     lastUpdatedBy: localClientId,
-    lastUpdateIso: new Date().toISOString()
+    lastUpdateIso: new Date().toISOString(),
+    publishedBy: 'master'
   };
 
   updateFirebaseUiStatus('syncing', 'Salvando...');
@@ -353,6 +369,87 @@ function executeCloudSave() {
         console.warn('Erro ao salvar no Firestore:', err);
       });
   }
+}
+
+function executePlayerCloudSave() {
+  if (!isFirebaseConnected || !activePortalPlayerId) return;
+  const myPlayer = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(p => p.id === activePortalPlayerId) : null;
+  if (!myPlayer) return;
+
+  const roomId = getStoredFirebaseRoom();
+  if (realtimeDb) {
+    realtimeDb.ref(`dnd_rooms/${roomId}/players`).transaction(playersList => {
+      if (!Array.isArray(playersList)) return playersList;
+      const idx = playersList.findIndex(p => p.id === activePortalPlayerId);
+      if (idx >= 0) {
+        playersList[idx] = Object.assign({}, playersList[idx], myPlayer);
+      }
+      return playersList;
+    }).catch(err => console.warn('Erro ao sincronizar ficha do jogador:', err));
+  }
+}
+
+function publishMasterCampaignToCloud() {
+  if (!isFirebaseConnected) {
+    initFirebaseSync();
+  }
+
+  if (typeof saveSafetySnapshot === 'function') {
+    saveSafetySnapshot('Backup antes de Publicar Mesa na Nuvem');
+  }
+
+  const activeCamp = (typeof getActiveCampaign === 'function') ? getActiveCampaign() : null;
+  let roomId = getStoredFirebaseRoom();
+  if ((!roomId || roomId === 'turma_principal') && activeCamp && activeCamp.name) {
+    const derived = activeCamp.name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9_-]/g, '_');
+    if (derived) {
+      setStoredFirebaseRoom(derived);
+      roomId = derived;
+    }
+  }
+
+  const payload = {
+    room: roomId,
+    campaignName: activeCamp ? activeCamp.name : roomId,
+    campaigns: (typeof CAMPAIGNS_STATE !== 'undefined') ? CAMPAIGNS_STATE : null,
+    players: (typeof PLAYERS !== 'undefined') ? PLAYERS : [],
+    state: (typeof state !== 'undefined') ? state : { combatants: [], round: 1, current: 0 },
+    gridState: (typeof gridState !== 'undefined') ? gridState : null,
+    dmNotes: (typeof localStorage !== 'undefined') ? (localStorage.getItem('dnd_tracker_dm_notes_v3') || '') : '',
+    lastUpdatedBy: localClientId,
+    publishedAtIso: new Date().toISOString(),
+    publishedBy: 'master'
+  };
+
+  updateFirebaseUiStatus('syncing', 'Publicando...');
+
+  const promises = [];
+  if (realtimeDb) {
+    promises.push(realtimeDb.ref('dnd_rooms/' + roomId).set(payload));
+  }
+  if (firestoreDb) {
+    const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
+    promises.push(roomDocRef.set(payload, { merge: true }));
+  }
+
+  if (promises.length === 0) {
+    alert(`⚠️ Conexão com Firebase não está pronta. Verifique sua conexão com a internet para publicar na sala '${roomId}'.`);
+    return;
+  }
+
+  Promise.all(promises)
+    .then(() => {
+      updateFirebaseUiStatus('connected', `Nuvem: ${roomId}`);
+      if (typeof addLog === 'function') {
+        addLog(`📡 <b>Mesa Publicada:</b> Sala <b>${roomId}</b> com ${payload.players.length} personagens sincronizada na nuvem!`);
+      }
+      alert(`✅ Mesa publicada com sucesso na sala: ${roomId}!\n\n${payload.players.length} personagens estão disponíveis para os alunos no link do lobby.`);
+    })
+    .catch(err => {
+      console.error('Erro ao publicar mesa na nuvem:', err);
+      updateFirebaseUiStatus('error', 'Erro na Publicação');
+      alert(`⚠️ Erro ao publicar mesa na nuvem: ${err.message || err}.`);
+    });
 }
 
 // --- INTERFACE DO USUÁRIO & MODAL DE CONFIGURAÇÃO ---
@@ -587,6 +684,8 @@ if (typeof module !== 'undefined' && module.exports) {
     openFirebaseModal,
     closeFirebaseModal,
     manualPushToCloud,
-    manualPullFromCloud
+    manualPullFromCloud,
+    publishMasterCampaignToCloud,
+    executePlayerCloudSave
   };
 }
