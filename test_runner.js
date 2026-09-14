@@ -1557,6 +1557,56 @@ vm.runInContext("usePlayerInventoryItem('char_consume_test', 2)", sandbox);
 updatedConsumeChar = vm.runInContext("PLAYERS.find(p => p.id === 'char_consume_test')", sandbox);
 assert(updatedConsumeChar.inventory[2].qty === 0, 'Item esgotado permanece com contagem 0 sem erros');
 
+// ========================================================
+// 28. TESTES DO BAÚ DO GRUPO E NAVEGAÇÃO DO PORTAL DO JOGADOR
+// ========================================================
+console.log('\n🎒 28. Testes do Baú do Grupo e Navegação do Portal do Jogador:');
+
+assert(typeof vm.runInContext("openPartyStashModal", sandbox) === 'function', 'Função openPartyStashModal exportada');
+assert(typeof vm.runInContext("closePartyStashModal", sandbox) === 'function', 'Função closePartyStashModal exportada');
+assert(typeof vm.runInContext("renderPartyStashViewer", sandbox) === 'function', 'Função renderPartyStashViewer exportada');
+assert(typeof vm.runInContext("takePartyItemToPlayer", sandbox) === 'function', 'Função takePartyItemToPlayer exportada');
+
+// 1. Configura um item de teste no baú da campanha ativa
+vm.runInContext(`
+  const activeCamp = getActiveCampaign();
+  activeCamp.partyStash = activeCamp.partyStash || { gold: 150, items: [], history: [] };
+  activeCamp.partyStash.gold = 250;
+  activeCamp.partyStash.items.push({
+    id: 'stash_item_test_1',
+    name: 'Corda Élfica (15m)',
+    qty: 2,
+    category: 'Aventura',
+    carrier: 'Baú do Grupo',
+    desc: 'Corda mágica super resistente'
+  });
+`, sandbox);
+
+const campAfterStash = vm.runInContext("getActiveCampaign()", sandbox);
+assert(campAfterStash.partyStash.gold === 250, 'Ouro do baú do grupo configurado corretamente (250 PO)');
+assert(campAfterStash.partyStash.items.length > 0, 'Item inserido no baú do grupo com sucesso');
+
+// 2. Transfere 1 unidade do item para o jogador
+vm.runInContext(`
+  activePortalPlayerId = 'char_consume_test';
+  takePartyItemToPlayer('stash_item_test_1');
+`, sandbox);
+
+const updatedCampStash = vm.runInContext("getActiveCampaign()", sandbox);
+const testRecipient = vm.runInContext("PLAYERS.find(p => p.id === 'char_consume_test')", sandbox);
+
+assert(testRecipient.inventory.some(i => i.name === 'Corda Élfica (15m)'), 'Item transferido para o inventário do jogador com sucesso');
+const itemInStash = updatedCampStash.partyStash.items.find(i => i.id === 'stash_item_test_1');
+assert(itemInStash && itemInStash.qty === 1, 'Quantidade no baú do grupo decrementada para 1x');
+
+// 3. Validação de tags e elementos no bundle HTML
+const bundleHtml = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(bundleHtml.includes('id="player-portal-banner"'), 'Bundle contém player-portal-banner');
+assert(bundleHtml.includes('id="modal-party-stash-view"'), 'Bundle contém modal-party-stash-view');
+assert(bundleHtml.includes('id="pnav-spells"'), 'Bundle contém botão de navegação para Grimório no portal');
+assert(bundleHtml.includes('id="pnav-stash"'), 'Bundle contém botão de navegação para Baú do Grupo no portal');
+assert(bundleHtml.includes('id="pnav-equipment"'), 'Bundle contém botão de navegação para Itens no portal');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

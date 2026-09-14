@@ -716,6 +716,7 @@ function savePartyItem() {
   saveCampaignsState();
   closePartyItemModal();
   renderCampaigns();
+  renderPartyStashViewer();
   if (typeof addLog === 'function') addLog(`🎒 <b>Baú do Grupo:</b> Item "${name}" (${qty}x) salvo com sucesso.`);
 }
 
@@ -736,7 +737,118 @@ function deletePartyItem(itemId) {
 
   saveCampaignsState();
   renderCampaigns();
+  renderPartyStashViewer();
   if (typeof addLog === 'function') addLog(`🗑️ <b>Baú do Grupo:</b> "${it.name}" removido.`);
+}
+
+// --- VISUALIZADOR MODAL DO BAÚ DO GRUPO (PARA JOGADORES E MESTRE) ---
+function openPartyStashModal() {
+  const modal = document.getElementById('modal-party-stash-view');
+  if (!modal) return;
+  renderPartyStashViewer();
+  modal.classList.add('open');
+}
+
+function closePartyStashModal() {
+  const modal = document.getElementById('modal-party-stash-view');
+  if (modal) modal.classList.remove('open');
+}
+
+function renderPartyStashViewer() {
+  const modal = document.getElementById('modal-party-stash-view');
+  if (!modal) return;
+
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const stash = camp.partyStash || { gold: 0, items: [], history: [] };
+
+  const goldEl = document.getElementById('party-stash-modal-gold');
+  if (goldEl) goldEl.innerText = `${stash.gold || 0} PO`;
+
+  const tbody = document.getElementById('party-stash-modal-tbody');
+  if (tbody) {
+    if (!stash.items || stash.items.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">O baú coletivo está vazio.</td></tr>`;
+    } else {
+      tbody.innerHTML = stash.items.map(it => `
+        <tr>
+          <td>
+            <b style="color:#fff;">${it.name}</b>
+            ${it.desc ? `<div style="font-size:10px; color:var(--text-dim);">${it.desc}</div>` : ''}
+          </td>
+          <td style="text-align:center;"><span class="badge badge-lvl">${it.qty || 1}</span></td>
+          <td><span style="font-size:11px; color:var(--text-muted);">${it.category || 'Geral'}</span></td>
+          <td><span class="carrier-badge">🎒 ${it.carrier || 'Baú do Grupo'}</span></td>
+          <td style="text-align:right;">
+            <button class="btn-secondary" style="padding:2px 6px; font-size:10px;" onclick="takePartyItemToPlayer('${it.id}')" title="Pegar 1x para minha mochila">📥 Pegar</button>
+            <button class="btn-secondary" style="padding:2px 6px; font-size:10px;" onclick="openPartyItemModal('${it.id}')" title="Editar item">✏️</button>
+            <button class="btn-secondary" style="padding:2px 6px; font-size:10px; color:#f87171;" onclick="deletePartyItem('${it.id}')" title="Remover item">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+  }
+
+  const histEl = document.getElementById('party-stash-modal-history');
+  if (histEl) {
+    const hist = (stash.history || []).slice(-6).reverse();
+    if (hist.length === 0) {
+      histEl.innerHTML = `<div style="color:var(--text-muted); font-size:11px; text-align:center;">Nenhuma movimentação registrada.</div>`;
+    } else {
+      histEl.innerHTML = hist.map(h => `
+        <div class="stash-history-item ${h.type || 'gold_in'}" style="font-size:10.5px; padding:3px 6px;">
+          <span>${h.text}</span>
+          <span style="font-size:9px; color:var(--text-dim);">${h.date || ''}</span>
+        </div>
+      `).join('');
+    }
+  }
+}
+
+function takePartyItemToPlayer(itemId) {
+  const camp = getActiveCampaign();
+  if (!camp || !camp.partyStash?.items) return;
+  const it = camp.partyStash.items.find(x => x.id === itemId);
+  if (!it) return;
+
+  const targetPlayer = (activePortalPlayerId && PLAYERS.find(p => p.id === activePortalPlayerId)) || PLAYERS[0];
+  if (!targetPlayer) {
+    alert('Nenhum herói disponível para receber o item.');
+    return;
+  }
+
+  targetPlayer.inventory = targetPlayer.inventory || [];
+  const existing = targetPlayer.inventory.find(x => x.name.toLowerCase() === it.name.toLowerCase());
+  if (existing) {
+    existing.qty = (parseInt(existing.qty) || 0) + 1;
+  } else {
+    targetPlayer.inventory.push({
+      name: it.name,
+      qty: 1,
+      equipped: false,
+      weight: 0.5
+    });
+  }
+
+  if (it.qty > 1) {
+    it.qty -= 1;
+  } else {
+    camp.partyStash.items = camp.partyStash.items.filter(x => x.id !== itemId);
+  }
+
+  camp.partyStash.history.push({
+    date: new Date().toISOString().split('T')[0],
+    text: `1x ${it.name} transferido para a mochila de ${targetPlayer.name}`,
+    type: 'item_out'
+  });
+
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderPartyStashViewer();
+  renderCampaignPartyStash(camp, (camp.playerIds || []).map(id => PLAYERS.find(p => p.id === id)).filter(p => p));
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof addLog === 'function') addLog(`🎒 <b>Baú do Grupo:</b> 1x "${it.name}" transferido para a mochila de <b>${targetPlayer.name}</b>.`);
 }
 
 // --- NOTAS RÁPIDAS DO MESTRE (DM2 - Ctrl+N) ---

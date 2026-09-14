@@ -54,15 +54,24 @@
 
   <!-- BANNER: MODO PORTAL DO JOGADOR -->
   <div id="player-portal-banner" class="player-portal-banner" style="display: none;">
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <span style="font-size: 20px;">📱</span>
-      <div>
-        <div style="font-weight: 800; font-size: 13px; color: #fff;" id="portal-char-title">Portal do Jogador</div>
-        <div style="font-size: 11px; color: var(--primary-light);" id="portal-char-sub">Ficha Interativa • Grimório • Itens • Classes • Raças</div>
+    <div class="portal-banner-main">
+      <div class="portal-char-info">
+        <span style="font-size: 22px;">📱</span>
+        <div>
+          <div style="font-weight: 800; font-size: 13.5px; color: #fff;" id="portal-char-title">Portal do Jogador</div>
+          <div style="font-size: 11px; color: var(--primary-light);" id="portal-char-sub">Ficha Interativa • Grimório • Itens • Classes • Raças</div>
+        </div>
       </div>
-    </div>
-    <div style="display: flex; gap: 8px; align-items: center;">
-      <button class="btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="exitPlayerPortalMode()" title="Retornar à Central do Mestre">⚙️ Visão do Mestre</button>
+      <div class="portal-nav-group">
+        <button class="portal-nav-btn active" id="pnav-players" onclick="switchTab('players')">👤 Minha Ficha</button>
+        <button class="portal-nav-btn" id="pnav-stash" onclick="openPartyStashModal()">🎒 Baú do Grupo</button>
+        <button class="portal-nav-btn" id="pnav-spells" onclick="switchTab('spells')">✨ Grimório</button>
+        <button class="portal-nav-btn" id="pnav-equipment" onclick="switchTab('equipment')">🛡️ Itens</button>
+        <button class="portal-nav-btn" id="pnav-classes" onclick="switchTab('classes')">🌳 Classes</button>
+        <button class="portal-nav-btn" id="pnav-species" onclick="switchTab('species')">🧬 Raças</button>
+        <button class="portal-nav-btn" id="pnav-dice" onclick="openDiceModal()">🎲 Dados</button>
+        <button class="btn-secondary btn-portal-exit" onclick="exitPlayerPortalMode()" title="Retornar à Central do Mestre">⚙️ Visão do Mestre</button>
+      </div>
     </div>
   </div>
 
@@ -2047,6 +2056,69 @@
       <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
         <button class="btn-secondary" onclick="closeSessionModal()">Cancelar</button>
         <button class="btn-action" onclick="saveSessionLog()">Salvar Registro de Sessão</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: VISUALIZADOR DO BAÚ DO GRUPO / TESOURO COLETIVO -->
+  <div id="modal-party-stash-view" class="modal-overlay">
+    <div class="modal-body" style="max-width: 720px; width: 95%;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">🎒</span>
+          <div>
+            <div style="font-weight: 800; font-size: 15px; color: #fff;">Baú & Tesouro do Grupo</div>
+            <div style="font-size: 11px; color: var(--primary-light);">Inventário Coletivo e Ouro da Campanha</div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closePartyStashModal()">✕</button>
+      </div>
+
+      <div style="margin-top: 12px;">
+        <!-- Card de Ouro da Campanha -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(180,83,9,0.22) 100%); border: 1px solid rgba(245,158,11,0.4); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px;">
+          <div>
+            <div style="font-size: 10px; color: #fef08a; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">Tesouro Coletivo</div>
+            <div style="font-size: 22px; font-weight: 900; color: #fff; font-family: var(--font-mono);" id="party-stash-modal-gold">0 PO</div>
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="promptAdjustPartyGold('add')">➕ Depositar PO</button>
+            <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="promptAdjustPartyGold('remove')">➖ Retirar PO</button>
+            <button class="btn-action" style="font-size: 11px; padding: 4px 10px;" onclick="openPartyItemModal()">➕ Item no Baú</button>
+          </div>
+        </div>
+
+        <!-- Tabela de Itens do Baú -->
+        <div style="margin-bottom: 12px;">
+          <div style="font-size: 11px; font-weight: 800; color: var(--primary-light); margin-bottom: 6px;">📦 Itens Guardados no Baú / Carroça</div>
+          <div style="max-height: 240px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px;">
+            <table class="data-table" style="width: 100%; margin: 0; font-size: 11px;">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th style="text-align: center; width: 50px;">Qtd</th>
+                  <th>Categoria</th>
+                  <th>Portador</th>
+                  <th style="text-align: right; width: 110px;">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="party-stash-modal-tbody">
+                <tr><td colspan="5" style="text-align:center; padding:15px; color:var(--text-muted);">Carregando baú...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Histórico do Tesouro -->
+        <div>
+          <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); margin-bottom: 4px;">📜 Histórico Recente de Movimentações</div>
+          <div id="party-stash-modal-history" style="display: flex; flex-direction: column; gap: 3px; max-height: 100px; overflow-y: auto;">
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 12px;">
+        <button class="btn-secondary" onclick="closePartyStashModal()">Fechar</button>
       </div>
     </div>
   </div>

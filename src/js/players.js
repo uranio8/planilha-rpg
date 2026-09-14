@@ -1,3 +1,4 @@
+
 let activePortalPlayerId = null;
 
 // Helpers de Estilização & Gameplay para Fichas (Pacote Completo)
@@ -5,7 +6,7 @@ function getPlayerClassBadge(p) {
   const cls = (p.className || '').toLowerCase();
   let icon = '🛡️';
   let cssClass = 'class-fighter';
-  
+
   if (cls.includes('bárbaro') || cls.includes('barbaro') || cls.includes('barbarian')) { icon = '🪓'; cssClass = 'class-barbarian'; }
   else if (cls.includes('bardo') || cls.includes('bard')) { icon = '🎵'; cssClass = 'class-bard'; }
   else if (cls.includes('clérigo') || cls.includes('clerigo') || cls.includes('cleric')) { icon = '✨'; cssClass = 'class-cleric'; }
@@ -18,7 +19,7 @@ function getPlayerClassBadge(p) {
   else if (cls.includes('feiticeiro') || cls.includes('sorcerer')) { icon = '🔮'; cssClass = 'class-sorcerer'; }
   else if (cls.includes('bruxo') || cls.includes('warlock')) { icon = '👁️'; cssClass = 'class-warlock'; }
   else if (cls.includes('mago') || cls.includes('wizard')) { icon = '📖'; cssClass = 'class-wizard'; }
-  
+
   return `<span class="class-badge ${cssClass}">${icon} ${p.className || 'Aventureiro'}</span>`;
 }
 
@@ -174,19 +175,19 @@ function getPlayerCarryCapacity(p) {
   const str = p.str || 10;
   const maxKg = Math.round(str * 7.5 * 10) / 10;
   const heavyKg = Math.round(str * 2.5 * 10) / 10;
-  
+
   let itemsWeight = 0;
   if (p.inventory && Array.isArray(p.inventory)) {
     p.inventory.forEach(it => {
       itemsWeight += (parseFloat(it.weight) || 0) * (parseInt(it.qty) || 1);
     });
   }
-  
+
   // Moedas: 50 moedas = 0.5 kg (ou seja, 1 moeda = 0.01 kg)
   const coins = p.coins || { cp: 0, sp: 0, ep: 0, gp: p.gold || 0, pp: 0 };
   const totalCoins = (coins.cp || 0) + (coins.sp || 0) + (coins.ep || 0) + (coins.gp || 0) + (coins.pp || 0);
   const coinsWeight = Math.round((totalCoins * 0.01) * 10) / 10;
-  
+
   const totalWeight = Math.round((itemsWeight + coinsWeight) * 10) / 10;
   const pct = Math.min(100, Math.max(0, Math.round((totalWeight / maxKg) * 100)));
   const isEncumbered = totalWeight > heavyKg;
@@ -396,20 +397,20 @@ function renderPlayers() {
       slotsHtml = `
         <div class="slots-grid">
           ${p.slots.map((maxSlots, lvlIdx) => {
-            if (maxSlots <= 0) return '';
-            const used = p.slotsUsed[lvlIdx] || 0;
-            let bubbles = '';
-            for (let i = 0; i < maxSlots; i++) {
-              const isUsed = i < used;
-              bubbles += `<div class="slot-bubble lvl-${lvlIdx + 1} ${isUsed ? 'used' : ''}" title="${isUsed ? 'Gasto (clique para restaurar)' : 'Disponível (clique para gastar)'}" onclick="togglePlayerSlot('${p.id}', ${lvlIdx}, ${i})"></div>`;
-            }
-            return `
+        if (maxSlots <= 0) return '';
+        const used = p.slotsUsed[lvlIdx] || 0;
+        let bubbles = '';
+        for (let i = 0; i < maxSlots; i++) {
+          const isUsed = i < used;
+          bubbles += `<div class="slot-bubble lvl-${lvlIdx + 1} ${isUsed ? 'used' : ''}" title="${isUsed ? 'Gasto (clique para restaurar)' : 'Disponível (clique para gastar)'}" onclick="togglePlayerSlot('${p.id}', ${lvlIdx}, ${i})"></div>`;
+        }
+        return `
               <div class="slot-row">
                 <span class="slot-label">${lvlIdx + 1}º Círculo (${maxSlots - used}/${maxSlots})</span>
                 <div class="slot-bubbles">${bubbles}</div>
               </div>
             `;
-          }).join('')}
+      }).join('')}
         </div>
       `;
     }
@@ -428,9 +429,9 @@ function renderPlayers() {
           </div>
           <div style="display: flex; flex-direction: column; gap: 4px;">
             ${p.featureCharges.map(f => {
-              const remaining = f.max - f.used;
-              if (f.max > 10) {
-                return `
+        const remaining = f.max - f.used;
+        if (f.max > 10) {
+          return `
                   <div class="charge-row-counter" style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 4px 6px; border-radius: 4px; font-size: 11px;">
                     <span style="color: #e2e8f0;">${f.icon || '⚡'} <b>${f.name}</b> <small style="color: var(--text-muted);">(${f.restType === 'short' ? 'Curto' : 'Longo'})</small></span>
                     <div style="display: flex; align-items: center; gap: 3px;">
@@ -442,19 +443,19 @@ function renderPlayers() {
                     </div>
                   </div>
                 `;
-              }
-              let bubbles = '';
-              for (let i = 0; i < f.max; i++) {
-                const isUsed = i < f.used;
-                bubbles += `<div class="slot-bubble charge-bubble ${isUsed ? 'used' : ''}" title="${isUsed ? 'Gasto (clique para restaurar 1)' : 'Disponível (clique para gastar 1)'}" onclick="${isUsed ? `restorePlayerFeatureCharge('${p.id}', '${f.id}', 1)` : `usePlayerFeatureCharge('${p.id}', '${f.id}', 1)`}"></div>`;
-              }
-              return `
+        }
+        let bubbles = '';
+        for (let i = 0; i < f.max; i++) {
+          const isUsed = i < f.used;
+          bubbles += `<div class="slot-bubble charge-bubble ${isUsed ? 'used' : ''}" title="${isUsed ? 'Gasto (clique para restaurar 1)' : 'Disponível (clique para gastar 1)'}" onclick="${isUsed ? `restorePlayerFeatureCharge('${p.id}', '${f.id}', 1)` : `usePlayerFeatureCharge('${p.id}', '${f.id}', 1)`}"></div>`;
+        }
+        return `
                 <div class="slot-row" style="margin-bottom: 2px;">
                   <span class="slot-label" style="font-size: 10px; color: #cbd5e1;">${f.icon || '⚡'} ${f.name} <small style="color: var(--text-muted);">(${f.restType === 'short' ? 'Curto' : 'Longo'})</small></span>
                   <div class="slot-bubbles">${bubbles}</div>
                 </div>
               `;
-            }).join('')}
+      }).join('')}
           </div>
         </div>
       `;
@@ -503,7 +504,7 @@ function renderPlayers() {
     `).join('');
 
     return `
-      <div class="player-card ${activePortalPlayerId && p.id === activePortalPlayerId ? 'portal-view' : ''} ${p.compact ? 'is-compact' : ''} cls-${(classBadgeHtml.match(/class-(\w+)/) || ['',''])[1]}">
+      <div class="player-card ${activePortalPlayerId && p.id === activePortalPlayerId ? 'portal-view' : ''} ${p.compact ? 'is-compact' : ''} cls-${(classBadgeHtml.match(/class-(\w+)/) || ['', ''])[1]}">
         <div class="player-card-top">
           <div class="player-title-row">
             <div style="display: flex; align-items: center; gap: 12px;">
@@ -628,9 +629,9 @@ function renderPlayers() {
                 </div>
                 <div class="player-conds-chips">
                   ${(p.conditions && p.conditions.length > 0) ? p.conditions.map(cId => {
-                    const condObj = (typeof CONDITIONS_LIST !== 'undefined' ? CONDITIONS_LIST.find(c => c.id === cId) : null) || { name: cId, desc: '' };
-                    return `<span class="player-cond-chip" onclick="togglePlayerCondition('${p.id}', '${cId}')" title="${escapeAttr(condObj.desc || '')} • Clique para remover">${condObj.name} ✕</span>`;
-                  }).join('') : '<span style="color: var(--text-dim); font-size: 10px; font-style: italic;">Normal (Sem condições)</span>'}
+      const condObj = (typeof CONDITIONS_LIST !== 'undefined' ? CONDITIONS_LIST.find(c => c.id === cId) : null) || { name: cId, desc: '' };
+      return `<span class="player-cond-chip" onclick="togglePlayerCondition('${p.id}', '${cId}')" title="${escapeAttr(condObj.desc || '')} • Clique para remover">${condObj.name} ✕</span>`;
+    }).join('') : '<span style="color: var(--text-dim); font-size: 10px; font-style: italic;">Normal (Sem condições)</span>'}
                 </div>
               </div>
             </div>
@@ -684,18 +685,18 @@ function renderPlayers() {
               </div>
               <div class="saves-card-bar">
                 ${['str', 'dex', 'con', 'int', 'wis', 'cha'].map(attrKey => {
-                  const attrNames = { str: 'FOR', dex: 'DES', con: 'CON', int: 'INT', wis: 'SAB', cha: 'CAR' };
-                  const isProf = (p.saveProficiencies || []).includes(attrKey);
-                  const baseMod = Math.floor(((p[attrKey] || 10) - 10) / 2);
-                  const totalMod = baseMod + (isProf ? prof : 0);
-                  const modStr = totalMod >= 0 ? '+' + totalMod : `${totalMod}`;
-                  return `
+      const attrNames = { str: 'FOR', dex: 'DES', con: 'CON', int: 'INT', wis: 'SAB', cha: 'CAR' };
+      const isProf = (p.saveProficiencies || []).includes(attrKey);
+      const baseMod = Math.floor(((p[attrKey] || 10) - 10) / 2);
+      const totalMod = baseMod + (isProf ? prof : 0);
+      const modStr = totalMod >= 0 ? '+' + totalMod : `${totalMod}`;
+      return `
                     <div class="save-card-chip ${isProf ? 'prof' : ''}" onclick="rollPlayerSavingThrow('${p.id}', '${attrKey}')" title="Rolar Salvaguarda de ${attrNames[attrKey]} (${modStr})${isProf ? ' • Proficiente' : ''}">
                       <div class="save-chip-name">${attrNames[attrKey]} ${isProf ? '<span class="save-prof-dot"></span>' : ''}</div>
                       <div class="save-chip-val">${modStr}</div>
                     </div>
                   `;
-                }).join('')}
+    }).join('')}
               </div>
             </div>
           </div>
@@ -716,31 +717,31 @@ function renderPlayers() {
             <div class="powers-section-box">
               <div class="powers-section-header">
                 ${(() => {
-                  const prepInfo = getMaxPreparedSpells(p);
-                  const leveledSpells = (p.preparedSpells || []).filter(sName => {
-                    const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
-                    return !sp || sp.level > 0;
-                  });
-                  const cantripSpells = (p.preparedSpells || []).filter(sName => {
-                    const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
-                    return sp && sp.level === 0;
-                  });
+        const prepInfo = getMaxPreparedSpells(p);
+        const leveledSpells = (p.preparedSpells || []).filter(sName => {
+          const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+          return !sp || sp.level > 0;
+        });
+        const cantripSpells = (p.preparedSpells || []).filter(sName => {
+          const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+          return sp && sp.level === 0;
+        });
 
-                  if (prepInfo.isPreparedCaster) {
-                    return `<span>🔮 Magias Preparadas (${leveledSpells.length}/${prepInfo.maxLeveled}) ${cantripSpells.length > 0 ? `• <span style="color:#34d399; font-size:10px;">${cantripSpells.length} truques</span>` : ''}</span>`;
-                  } else if (prepInfo.isKnownCaster) {
-                    return `<span>🔮 Magias Conhecidas (${leveledSpells.length}/${prepInfo.maxLeveled}) ${cantripSpells.length > 0 ? `• <span style="color:#34d399; font-size:10px;">${cantripSpells.length}/${prepInfo.maxCantrips} truques</span>` : ''}</span>`;
-                  } else {
-                    return `<span>🔮 Magias (${(p.preparedSpells || []).length})</span>`;
-                  }
-                })()}
+        if (prepInfo.isPreparedCaster) {
+          return `<span>🔮 Magias Preparadas (${leveledSpells.length}/${prepInfo.maxLeveled}) ${cantripSpells.length > 0 ? `• <span style="color:#34d399; font-size:10px;">${cantripSpells.length} truques</span>` : ''}</span>`;
+        } else if (prepInfo.isKnownCaster) {
+          return `<span>🔮 Magias Conhecidas (${leveledSpells.length}/${prepInfo.maxLeveled}) ${cantripSpells.length > 0 ? `• <span style="color:#34d399; font-size:10px;">${cantripSpells.length}/${prepInfo.maxCantrips} truques</span>` : ''}</span>`;
+        } else {
+          return `<span>🔮 Magias (${(p.preparedSpells || []).length})</span>`;
+        }
+      })()}
                 <button class="btn-secondary dm-only-btn" style="font-size: 10px; padding: 2px 6px;" onclick="openSpellPickerModal('${p.id}')" title="Mestre: Selecionar e editar as magias deste herói">📖 Escolher</button>
               </div>
 
               ${(() => {
-                const castStats = getPlayerSpellcastingStats(p);
-                if (!castStats.isCaster && (!p.preparedSpells || p.preparedSpells.length === 0) && (!p.slots || !p.slots.some(s => s > 0))) return '';
-                return `
+        const castStats = getPlayerSpellcastingStats(p);
+        if (!castStats.isCaster && (!p.preparedSpells || p.preparedSpells.length === 0) && (!p.slots || !p.slots.some(s => s > 0))) return '';
+        return `
                   <div class="spellcasting-hud-bar">
                     <div class="spell-stat-chip" title="CD de Salvaguarda de Magia: Inimigos devem tirar ${castStats.saveDc} ou mais no d20 para resistir às suas magias (${castStats.formula})">
                       <span class="spell-stat-label">CD DA MAGIA</span>
@@ -756,17 +757,17 @@ function renderPlayers() {
                     </div>
                   </div>
                 `;
-              })()}
+      })()}
               ${(p.preparedSpells && p.preparedSpells.length > 0) ? `
                 <div class="player-spells-chips-grid">
                   ${p.preparedSpells.map(sName => {
-                    const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
-                    const isCantrip = sp && sp.level === 0;
-                    const lvlBadge = sp ? (isCantrip ? 'Truque' : `${sp.level}º Círc.`) : 'Magia';
-                    const school = sp ? sp.school : '';
-                    const range = sp ? sp.range : '';
-                    const castTime = sp ? sp.castTime : '';
-                    return `
+        const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+        const isCantrip = sp && sp.level === 0;
+        const lvlBadge = sp ? (isCantrip ? 'Truque' : `${sp.level}º Círc.`) : 'Magia';
+        const school = sp ? sp.school : '';
+        const range = sp ? sp.range : '';
+        const castTime = sp ? sp.castTime : '';
+        return `
                       <div class="spell-action-chip">
                         <div class="spell-chip-top">
                           <div class="spell-chip-name" title="${escapeAttr(sName)}">${sName}</div>
@@ -787,7 +788,7 @@ function renderPlayers() {
                         </div>
                       </div>
                     `;
-                  }).join('')}
+      }).join('')}
                 </div>
               ` : `
                 <div style="background: rgba(0,0,0,0.25); border: 1px dashed var(--border-color); padding: 8px; border-radius: 6px; text-align: center; color: var(--text-muted); font-size: 11px;">
@@ -833,31 +834,31 @@ function renderPlayers() {
 
               <div class="skills-card-grid" id="skills-grid-${p.id}">
                 ${(() => {
-                  const skillsList = typeof DND5E_SKILLS !== 'undefined' ? DND5E_SKILLS : [];
-                  const attrGroups = [
-                    { attr: 'str', label: 'Força (FOR)', css: 'attr-str' },
-                    { attr: 'dex', label: 'Destreza (DES)', css: 'attr-dex' },
-                    { attr: 'int', label: 'Inteligência (INT)', css: 'attr-int' },
-                    { attr: 'wis', label: 'Sabedoria (SAB)', css: 'attr-wis' },
-                    { attr: 'cha', label: 'Carisma (CAR)', css: 'attr-cha' }
-                  ];
+        const skillsList = typeof DND5E_SKILLS !== 'undefined' ? DND5E_SKILLS : [];
+        const attrGroups = [
+          { attr: 'str', label: 'Força (FOR)', css: 'attr-str' },
+          { attr: 'dex', label: 'Destreza (DES)', css: 'attr-dex' },
+          { attr: 'int', label: 'Inteligência (INT)', css: 'attr-int' },
+          { attr: 'wis', label: 'Sabedoria (SAB)', css: 'attr-wis' },
+          { attr: 'cha', label: 'Carisma (CAR)', css: 'attr-cha' }
+        ];
 
-                  return attrGroups.map(grp => {
-                    const grpSkills = skillsList.filter(sk => sk.attr === grp.attr);
-                    if (grpSkills.length === 0) return '';
-                    return `
+        return attrGroups.map(grp => {
+          const grpSkills = skillsList.filter(sk => sk.attr === grp.attr);
+          if (grpSkills.length === 0) return '';
+          return `
                       <div class="skill-attr-group-header ${grp.css}" style="grid-column: 1 / -1;">
                         <span>${grp.label}</span>
                       </div>
                       ${grpSkills.map(sk => {
-                        const isProf = (p.skillProficiencies || []).includes(sk.key);
-                        const isExpert = (p.skillExpertises || []).includes(sk.key);
-                        const baseMod = Math.floor(((p[sk.attr] || 10) - 10) / 2);
-                        const profBonus = isExpert ? (prof * 2) : (isProf ? prof : 0);
-                        const totalMod = baseMod + profBonus;
-                        const modStr = totalMod >= 0 ? '+' + totalMod : `${totalMod}`;
-                        const starIcon = isExpert ? '<span style="color:#fbbf24; font-size:10px;" title="Especialização (Bônus Dobrado)">★★</span>' : (isProf ? '<span style="color:var(--primary); font-size:10px;" title="Proficiente">★</span>' : '');
-                        return `
+            const isProf = (p.skillProficiencies || []).includes(sk.key);
+            const isExpert = (p.skillExpertises || []).includes(sk.key);
+            const baseMod = Math.floor(((p[sk.attr] || 10) - 10) / 2);
+            const profBonus = isExpert ? (prof * 2) : (isProf ? prof : 0);
+            const totalMod = baseMod + profBonus;
+            const modStr = totalMod >= 0 ? '+' + totalMod : `${totalMod}`;
+            const starIcon = isExpert ? '<span style="color:#fbbf24; font-size:10px;" title="Especialização (Bônus Dobrado)">★★</span>' : (isProf ? '<span style="color:var(--primary); font-size:10px;" title="Proficiente">★</span>' : '');
+            return `
                           <div class="skill-card-item ${isExpert ? 'expert' : (isProf ? 'prof' : '')}" data-skill-name="${sk.name.toLowerCase()}">
                             <div class="skill-card-name ${isExpert ? 'expert' : ''}">
                               ${starIcon}
@@ -869,10 +870,10 @@ function renderPlayers() {
                             </button>
                           </div>
                         `;
-                      }).join('')}
+          }).join('')}
                     `;
-                  }).join('');
-                })()}
+        }).join('');
+      })()}
               </div>
             </div>
 
@@ -888,6 +889,11 @@ function renderPlayers() {
 
             <!-- ABA 3: MOCHILA / INVENTÁRIO / OURO (M-B4) -->
             <div class="p-tab-content ${activeTab === 'inventory' ? 'active' : ''}">
+              <div class="party-stash-quickbar">
+                <span style="font-size: 10px; font-weight: 700; color: #fbbf24;">📦 Baú do Grupo: <b>${(typeof getActiveCampaign === 'function' && getActiveCampaign()?.partyStash?.gold !== undefined) ? getActiveCampaign().partyStash.gold : 0} PO</b></span>
+                <button class="btn-secondary" style="font-size: 9px; padding: 2px 8px; border-color: rgba(245,158,11,0.4); color: #fef08a;" onclick="openPartyStashModal()">🎒 Ver Baú do Grupo</button>
+              </div>
+
               <div style="background: #080c16; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 6px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                   <span style="font-weight: 800; font-size: 11px; color: #fbbf24;">🪙 Carteira: ${(purse && purse.totalGp !== undefined) ? purse.totalGp : p.gold} PO</span>
@@ -919,9 +925,9 @@ function renderPlayers() {
 
               <div style="display: flex; flex-direction: column; gap: 4px; max-height: 250px; overflow-y: auto;">
                 ${(p.inventory && p.inventory.length > 0) ? p.inventory.map((it, idx) => {
-                  const actionInfo = typeof getItemActionInfo === 'function' ? getItemActionInfo(it.name) : { icon: '⚡', label: 'Usar' };
-                  const itemQty = parseInt(it.qty, 10) || 0;
-                  return `
+        const actionInfo = typeof getItemActionInfo === 'function' ? getItemActionInfo(it.name) : { icon: '⚡', label: 'Usar' };
+        const itemQty = parseInt(it.qty, 10) || 0;
+        return `
                     <div class="inventory-item-row ${it.equipped ? 'equipped' : ''}">
                       <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 4px;">
                         <span style="font-weight: 700; color: #fff;">${it.equipped ? '⚔️ ' : ''}${it.name}</span>
@@ -941,7 +947,7 @@ function renderPlayers() {
                       </div>
                     </div>
                   `;
-                }).join('') : `
+      }).join('') : `
                   <div style="background: #080c16; padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border-color); color: #cbd5e1; font-size: 10px; line-height: 1.4;">
                     ${p.spells || 'Mochila de Aventureiro padrão.'}
                   </div>
@@ -1889,7 +1895,7 @@ function escapeAttr(str) {
 function calculateSpellSlots(className, level) {
   const norm = (className || '').toLowerCase();
   level = parseInt(level) || 1;
-  
+
   // Full Casters: Bardo, Clérigo, Druida, Feiticeiro, Mago
   if (norm.includes('bardo') || norm.includes('clérigo') || norm.includes('clerigo') || norm.includes('druida') || norm.includes('feiticeiro') || norm.includes('mago')) {
     const fullTable = [
@@ -2273,7 +2279,7 @@ function togglePlayerSpellPrepared(playerId, spellName) {
   const p = PLAYERS.find(x => x.id === playerId);
   if (!p) return;
   p.preparedSpells = p.preparedSpells || [];
-  
+
   if (p.preparedSpells.includes(spellName)) {
     p.preparedSpells = p.preparedSpells.filter(s => s !== spellName);
     addLog(`💤 <b>${p.name}</b> desmarcou a magia <b>${spellName}</b> das preparadas.`);
@@ -2348,7 +2354,7 @@ function getUnlockedClassFeatures(className, level, subclassIdx = 0) {
   if (typeof CLASSES_DATA === 'undefined') return [];
   const cls = findClassData(className);
   if (!cls) return [];
-  
+
   level = parseInt(level) || 1;
   const unlocked = [];
 
@@ -2426,7 +2432,7 @@ function renderPlayerUnlockedFeatures(p) {
 function openPlayerFeatureModal(name, desc, type, source) {
   const modal = document.getElementById('modal-skill-detail');
   if (!modal) return;
-  
+
   const iconEl = document.getElementById('skill-modal-icon');
   if (iconEl) iconEl.innerText = '🛡️';
 
@@ -2482,7 +2488,7 @@ function openSpellPickerModal(playerId) {
   if (!p) return;
 
   currentPickerPlayerId = playerId;
-  
+
   // Se preparedSpells já existe, usa; senão tenta extrair de p.spells
   let initialSpells = Array.isArray(p.preparedSpells) ? [...p.preparedSpells] : [];
   if (initialSpells.length === 0 && p.spells && typeof SPELLS_DATA !== 'undefined') {
@@ -2607,7 +2613,7 @@ function renderSpellPickerList() {
   }
 
   let spells = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA : [];
-  
+
   // Filtragem por apenas selecionadas
   if (pickerShowOnlySelected) {
     spells = spells.filter(s => pickerSelectedSpells.has(s.name));
@@ -2709,7 +2715,7 @@ function saveSpellPickerSelection() {
   if (!p) return;
 
   p.preparedSpells = Array.from(pickerSelectedSpells);
-  
+
   const cantrips = [];
   const leveled = [];
   p.preparedSpells.forEach(sName => {
@@ -2717,7 +2723,7 @@ function saveSpellPickerSelection() {
     if (s && s.level === 0) cantrips.push(sName);
     else leveled.push(sName);
   });
-  
+
   let summary = '';
   if (cantrips.length > 0) summary += `Truques: ${cantrips.join(', ')}\n`;
   if (leveled.length > 0) summary += `Preparadas: ${leveled.join(', ')}`;
@@ -2832,9 +2838,9 @@ function executeCastSpell(playerId, spellName, slotLevel) {
   }
 
   const slotText = slotLevel === 0 ? (sp && sp.level === 0 ? 'como Truque' : 'sem gastar espaço') : `gastando 1 espaço de ${slotLevel}º Círculo`;
-  
+
   if (typeof playFX === 'function') playFX('spell');
-  
+
   const logMsg = `✨ <b>${p.name}</b> conjurou <b>${spellName}</b> (${slotText})!`;
   addLog(logMsg);
   addPlayerActionLog(p.id, '✨', `Conjurou ${spellName} (${slotText})`, 'spell');
@@ -2933,7 +2939,7 @@ function openPlayerModal(id) {
     document.getElementById('pm-id').value = p.id;
     document.getElementById('pm-student').value = p.student;
     document.getElementById('pm-name').value = p.name;
-    
+
     if (raceSel) {
       const pRaceNorm = (p.race || '').trim().toLowerCase();
       const optionsArr = Array.from(raceSel.options).filter(o => o.value !== 'custom');
@@ -3036,7 +3042,7 @@ function openPlayerModal(id) {
     document.getElementById('pm-attacks').value = 'Espada Longa (+4, 1d8+2 cortante)';
     document.getElementById('pm-features').value = '';
     document.getElementById('pm-spells').value = '';
-    
+
     // Novos campos de Origem & Background (P3)
     const bgInp = document.getElementById('pm-background');
     if (bgInp) bgInp.value = 'Aventureiro';
@@ -3507,7 +3513,7 @@ function serializePlayerForShare(p) {
 
   try {
     const jsonStr = JSON.stringify(clean);
-    const base64 = (typeof btoa === 'function') 
+    const base64 = (typeof btoa === 'function')
       ? btoa(encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1)))
       : Buffer.from(jsonStr, 'utf8').toString('base64');
     return base64;
@@ -3600,7 +3606,7 @@ function copyShareLink() {
   if (!inp) return;
   inp.select();
   inp.setSelectionRange(0, 99999);
-  
+
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(inp.value);
@@ -3640,7 +3646,7 @@ function exportSinglePlayerCode() {
   if (!p) return;
   const code = serializePlayerForShare(p);
   if (!code) return;
-  
+
   const formatted = `DND5E_PLAYER:${code}`;
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(formatted);
@@ -3871,20 +3877,20 @@ function handleAvatarFileUpload(event) {
   if (!p) return;
 
   const reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = function (e) {
     const img = new Image();
-    img.onload = function() {
+    img.onload = function () {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const size = 128;
       canvas.width = size;
       canvas.height = size;
-      
+
       const minDim = Math.min(img.width, img.height);
       const sx = (img.width - minDim) / 2;
       const sy = (img.height - minDim) / 2;
       ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
-      
+
       const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
       p.avatar = compressedDataUrl;
       renderPlayers();
@@ -3917,17 +3923,17 @@ function openPlayerCoinsModal(id) {
   if (!p) return;
   activeCoinsPlayerId = id;
   p.coins = p.coins || { cp: 0, sp: 0, ep: 0, gp: p.gold || 0, pp: 0 };
-  
+
   const modal = document.getElementById('modal-player-coins');
   if (!modal) return;
-  
+
   document.getElementById('player-coins-char-name').innerText = `${p.name} • ${p.className}`;
   document.getElementById('inp-coin-cp').value = p.coins.cp || 0;
   document.getElementById('inp-coin-sp').value = p.coins.sp || 0;
   document.getElementById('inp-coin-ep').value = p.coins.ep || 0;
   document.getElementById('inp-coin-gp').value = (p.coins.gp !== undefined) ? p.coins.gp : (p.gold || 0);
   document.getElementById('inp-coin-pp').value = p.coins.pp || 0;
-  
+
   updateCoinsModalTotal();
   modal.style.display = 'flex';
 }
@@ -3944,7 +3950,7 @@ function updateCoinsModalTotal() {
   const ep = parseInt(document.getElementById('inp-coin-ep')?.value) || 0;
   const gp = parseInt(document.getElementById('inp-coin-gp')?.value) || 0;
   const pp = parseInt(document.getElementById('inp-coin-pp')?.value) || 0;
-  
+
   const totalGp = (cp / 100) + (sp / 10) + (ep / 2) + gp + (pp * 10);
   const totalDisplay = document.getElementById('player-coins-total-gp');
   if (totalDisplay) totalDisplay.innerText = `${Math.round(totalGp * 100) / 100} PO`;
@@ -3954,7 +3960,7 @@ function savePlayerCoinsFromModal() {
   if (!activeCoinsPlayerId) return;
   const p = PLAYERS.find(x => x.id === activeCoinsPlayerId);
   if (!p) return;
-  
+
   const cp = Math.max(0, parseInt(document.getElementById('inp-coin-cp')?.value) || 0);
   const sp = Math.max(0, parseInt(document.getElementById('inp-coin-sp')?.value) || 0);
   const ep = Math.max(0, parseInt(document.getElementById('inp-coin-ep')?.value) || 0);
@@ -3963,7 +3969,7 @@ function savePlayerCoinsFromModal() {
 
   p.coins = { cp, sp, ep, gp, pp };
   const purse = getPlayerCoinPurse(p);
-  
+
   addPlayerActionLog(p.id, '🪙', `Atualizou carteira: ${purse.totalGp} PO total (${cp}pc, ${sp}pp, ${ep}pe, ${gp}po, ${pp}pl)`, 'general');
   if (typeof playFX === 'function') playFX('crit');
   closePlayerCoinsModal();
@@ -4043,7 +4049,7 @@ function addItemToPlayerFromCatalog(itemIdx) {
   if (!p || !it) return;
 
   p.inventory = p.inventory || [];
-  
+
   // Extrai peso em kg numérico aproximado
   let numWeight = 0;
   if (it.weight) {
@@ -4347,10 +4353,10 @@ function renderLevelUpWizardStep() {
         </div>
         <div class="levelup-choice-grid" style="margin: 0 0 14px 0;">
           ${currentClasses.map(c => {
-            const isSel = !levelUpWizardState.isNewClass && levelUpWizardState.selectedClassKey === c.className;
-            const clsData = availableClasses.find(x => x.name.toLowerCase() === c.className.toLowerCase() || x.id === c.className.toLowerCase());
-            const icon = clsData ? clsData.icon : '⚔️';
-            return `
+      const isSel = !levelUpWizardState.isNewClass && levelUpWizardState.selectedClassKey === c.className;
+      const clsData = availableClasses.find(x => x.name.toLowerCase() === c.className.toLowerCase() || x.id === c.className.toLowerCase());
+      const icon = clsData ? clsData.icon : '⚔️';
+      return `
               <div class="levelup-choice-card ${isSel ? 'selected' : ''}" onclick="selectLevelUpClass('${c.className}', false)">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                   <span style="font-size: 20px;">${icon}</span>
@@ -4360,7 +4366,7 @@ function renderLevelUpWizardStep() {
                 <div style="font-size: 11px; color: var(--primary-light);">➔ Avançar para Nível <b>${c.level + 1}</b></div>
               </div>
             `;
-          }).join('')}
+    }).join('')}
         </div>
 
         <div style="font-size: 11px; font-weight: 700; color: var(--accent-purple); text-transform: uppercase; margin: 16px 0 6px 0;">
@@ -4368,17 +4374,17 @@ function renderLevelUpWizardStep() {
         </div>
         <div class="levelup-choice-grid" style="margin: 0;">
           ${availableClasses.map(c => {
-            const isExisting = currentClasses.some(x => x.className.toLowerCase() === c.name.toLowerCase() || x.className.toLowerCase() === c.id);
-            if (isExisting) return '';
-            const isSel = levelUpWizardState.isNewClass && levelUpWizardState.selectedClassKey === c.name;
-            const prereqCheck = checkMulticlassPrerequisites(p, c.name);
-            const prereqHtml = prereqCheck.details.map(d => `
+      const isExisting = currentClasses.some(x => x.className.toLowerCase() === c.name.toLowerCase() || x.className.toLowerCase() === c.id);
+      if (isExisting) return '';
+      const isSel = levelUpWizardState.isNewClass && levelUpWizardState.selectedClassKey === c.name;
+      const prereqCheck = checkMulticlassPrerequisites(p, c.name);
+      const prereqHtml = prereqCheck.details.map(d => `
               <span class="levelup-prereq-badge ${d.met ? 'valid' : 'warn'}">
                 ${d.met ? '✅' : '⚠️'} ${d.text}
               </span>
             `).join(' ');
 
-            return `
+      return `
               <div class="levelup-choice-card ${isSel ? 'selected' : ''}" onclick="selectLevelUpClass('${c.name}', true)">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                   <span style="font-size: 18px;">${c.icon}</span>
@@ -4390,7 +4396,7 @@ function renderLevelUpWizardStep() {
                 </div>
               </div>
             `;
-          }).join('')}
+    }).join('')}
         </div>
       </div>
     `;
@@ -4402,7 +4408,7 @@ function renderLevelUpWizardStep() {
     const clsName = levelUpWizardState.selectedClassKey;
     const targetLvl = levelUpWizardState.targetClassLevel;
     const clsData = findClassData(clsName);
-    
+
     // Novas habilidades adquiridas especificamente no targetLvl
     let newFeatures = [];
     if (clsData && clsData.features) {
@@ -4442,10 +4448,10 @@ function renderLevelUpWizardStep() {
       featuresListHtml = `
         <div style="display: flex; flex-direction: column; gap: 10px; padding: 0 20px 14px 20px;">
           ${newFeatures.map(f => {
-            const formattedDesc = typeof formatFeatureToTopics === 'function' 
-              ? formatFeatureToTopics(f.desc || '') 
-              : `<div class="skill-concept-box">${f.desc || ''}</div>`;
-            return `
+        const formattedDesc = typeof formatFeatureToTopics === 'function'
+          ? formatFeatureToTopics(f.desc || '')
+          : `<div class="skill-concept-box">${f.desc || ''}</div>`;
+        return `
               <div class="skill-modal-card" style="padding: 12px; border-color: rgba(255,255,255,0.1);">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
                   <div style="font-weight: 800; color: #fff; font-size: 14px; font-family: var(--font-title);">
@@ -4458,7 +4464,7 @@ function renderLevelUpWizardStep() {
                 ${formattedDesc}
               </div>
             `;
-          }).join('')}
+      }).join('')}
         </div>
       `;
     } else {
@@ -4491,8 +4497,8 @@ function renderLevelUpWizardStep() {
     const dieSides = getHitDieSides(hitDieStr);
     const conMod = Math.floor((getPlayerAttr(p, 'con') - 10) / 2);
     const avgGain = Math.max(1, Math.floor(dieSides / 2) + 1 + conMod);
-    const rolledGain = levelUpWizardState.rolledHp !== null 
-      ? Math.max(1, levelUpWizardState.rolledHp + conMod) 
+    const rolledGain = levelUpWizardState.rolledHp !== null
+      ? Math.max(1, levelUpWizardState.rolledHp + conMod)
       : null;
 
     const chosenGain = levelUpWizardState.hpMethod === 'roll' && rolledGain !== null ? rolledGain : avgGain;
@@ -4651,7 +4657,7 @@ function applyLevelUpConfirm() {
 
   p.multiclass = classesList;
   p.level = classesList.reduce((sum, c) => sum + c.level, 0);
-  
+
   // Atualiza string amigável de classes
   p.className = classesList.map(c => `${c.className} ${c.level}`).join(' / ');
 

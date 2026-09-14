@@ -317,12 +317,16 @@ function normalizeStr(str) {
 function switchTab(tabId) {
   document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.portal-nav-btn').forEach(el => el.classList.remove('active'));
 
   const targetPane = document.getElementById('tab-' + tabId);
   if (targetPane) targetPane.classList.add('active');
 
   const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick')?.includes(tabId));
   if (activeBtn) activeBtn.classList.add('active');
+
+  const activePortalBtn = document.getElementById('pnav-' + tabId);
+  if (activePortalBtn) activePortalBtn.classList.add('active');
 
   if (tabId === 'combat' && typeof renderCombat === 'function') renderCombat();
   else if (tabId === 'players' && typeof renderPlayers === 'function') renderPlayers();
