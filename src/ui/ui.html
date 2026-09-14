@@ -7,25 +7,42 @@
       </div>
     </div>
 
-    <nav id="navbar">
-      <button class="tab-btn active" onclick="switchTab('combat')">⚔️ Combate</button>
-      <button class="tab-btn" onclick="switchTab('grid')">🗺️ Mapa & Grid</button>
-      <button class="tab-btn" onclick="switchTab('grid-config')">⚙️ Config. do Grid</button>
-      <button class="tab-btn" onclick="switchTab('players')">👤 Fichas <span class="tab-count" id="cnt-players">0</span></button>
-      <button class="tab-btn" onclick="switchTab('dmscreen')">🛡️ Escudo do Mestre</button>
-      <button class="tab-btn" onclick="switchTab('generators')">🎲 Geradores</button>
-      <button class="tab-btn" onclick="switchTab('spells')">✨ Grimório <span class="tab-count" id="cnt-spells">0</span></button>
-      <button class="tab-btn" onclick="switchTab('bestiary')">🐉 Bestiário <span class="tab-count" id="cnt-bestiary">0</span></button>
-      <button class="tab-btn" onclick="switchTab('equipment')">🛡️ Itens <span class="tab-count" id="cnt-equip">0</span></button>
-      <button class="tab-btn" onclick="switchTab('classes')">🌳 Classes & Habilidades</button>
-      <button class="tab-btn" onclick="switchTab('species')">🧬 Raças & Espécies</button>
-      <button class="tab-btn" onclick="switchTab('campaigns')">👑 Campanhas & Gestão</button>
-    </nav>
+    <nav id="navbar" class="main-navbar">
+      <!-- CLUSTER 1: MESA DE JOGO ATIVA -->
+      <div class="nav-cluster">
+        <span class="nav-cluster-label">Mesa</span>
+        <button class="tab-btn active" onclick="switchTab('combat')">⚔️ Combate</button>
+        <button class="tab-btn" onclick="switchTab('grid')">🗺️ Mapa VTT</button>
+        <button class="tab-btn" onclick="switchTab('players')">👤 Fichas <span class="tab-count" id="cnt-players">0</span></button>
+        <button class="tab-btn" onclick="switchTab('campaigns')">👑 Campanhas</button>
+      </div>
 
+      <div class="nav-divider"></div>
+
+      <!-- CLUSTER 2: COMPÊNDIO D&D 5E -->
+      <div class="nav-cluster">
+        <span class="nav-cluster-label">Compêndio</span>
+        <button class="tab-btn" onclick="switchTab('bestiary')">🐉 Bestiário <span class="tab-count" id="cnt-bestiary">0</span></button>
+        <button class="tab-btn" onclick="switchTab('spells')">✨ Grimório <span class="tab-count" id="cnt-spells">0</span></button>
+        <button class="tab-btn" onclick="switchTab('equipment')">🛡️ Itens <span class="tab-count" id="cnt-equip">0</span></button>
+        <button class="tab-btn" onclick="switchTab('classes')">🌳 Classes</button>
+        <button class="tab-btn" onclick="switchTab('species')">🧬 Raças</button>
+      </div>
+
+      <div class="nav-divider"></div>
+
+      <!-- CLUSTER 3: FERRAMENTAS DO MESTRE -->
+      <div class="nav-cluster">
+        <span class="nav-cluster-label">Mestre</span>
+        <button class="tab-btn" onclick="switchTab('dmscreen')">🛡️ Escudo</button>
+        <button class="tab-btn" onclick="switchTab('generators')">🎲 Geradores</button>
+        <button class="tab-btn" onclick="switchTab('grid-config')">⚙️ Config. Grid</button>
+      </div>
+    </nav>
 
     <div class="top-actions">
       <span id="save-status">💾 Salvo</span>
-      <!-- V6: CONTROLE DE ÁUDIO & AMBIENTE -->
+      <!-- CONTROLE DE ÁUDIO & AMBIENTE -->
       <div class="audio-top-widget" style="display: flex; align-items: center; gap: 4px; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 6px;">
         <button id="btn-audio-mute" class="btn-micro" onclick="toggleAudioMute()" title="Mutar / Desmutar Sons" style="font-size: 13px;">🔊</button>
         <select id="sel-audio-ambiance" onchange="setAudioAmbiance(this.value)" style="font-size: 11px; padding: 2px 4px; background: transparent; border: none; color: var(--primary-light); cursor: pointer; max-width: 105px; font-weight: 600;">
@@ -37,15 +54,14 @@
         </select>
         <input type="range" id="rng-audio-vol" min="0" max="1" step="0.05" value="0.5" oninput="setAudioMasterVolume(this.value)" style="width: 45px; height: 4px; cursor: pointer;" title="Volume Geral do Áudio">
       </div>
-      <!-- V7: STATUS & CONEXÃO GOOGLE FIREBASE -->
+      <!-- STATUS & CONEXÃO GOOGLE FIREBASE -->
       <button class="btn-top" onclick="openFirebaseModal()" title="Configurar Sincronização em Nuvem (Google Firebase)" style="display: flex; align-items: center; gap: 5px;">
         <span id="firebase-status-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
         <span id="firebase-status-text">☁️ Nuvem</span>
       </button>
       <button class="btn-top" onclick="toggleDMNotesDrawer()" title="Notas Rápidas do Mestre (Atalho: Ctrl+N)">📝 Notas <kbd style="font-size:9px; opacity:0.8;">Ctrl+N</kbd></button>
-      <button class="btn-top" onclick="toggleGlobalDiceDrawer()" title="Abrir Painel de Rolagem de Dados">🎲 Dados</button>
+      <button class="btn-top" onclick="openDiceModal()" title="Abrir Painel de Rolagem de Dados">🎲 Dados</button>
       <button class="btn-top" onclick="openPlayerView()" title="Abrir Modo Telão para Projetor da Sala de Aula">📺 Telão</button>
-      <button class="btn-top" onclick="openDiceModal()">🎲 Rolador</button>
       <button class="btn-top" onclick="exportData()" title="Salvar Arquivo de Backup JSON Completo">💾 Backup</button>
       <button class="btn-top" onclick="importData()" title="Carregar Arquivo de Backup JSON">📂 Carregar</button>
       <button class="btn-top" onclick="openSnapshotsModal()" title="Histórico de Pontos de Restauração Automáticos" style="color: #60a5fa; border-color: rgba(96, 165, 250, 0.4);">🛡️ Recuperar</button>
