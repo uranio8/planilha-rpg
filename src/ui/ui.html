@@ -62,6 +62,9 @@
       <button class="btn-top" onclick="toggleDMNotesDrawer()" title="Notas Rápidas do Mestre (Atalho: Ctrl+N)">📝 Notas <kbd style="font-size:9px; opacity:0.8;">Ctrl+N</kbd></button>
       <button class="btn-top" onclick="openDiceModal()" title="Abrir Painel de Rolagem de Dados">🎲 Dados</button>
       <button class="btn-top" onclick="openPlayerView()" title="Abrir Modo Telão para Projetor da Sala de Aula">📺 Telão</button>
+      <button class="btn-top" onclick="openPlayerLoginModal()" title="Entrar no Portal do Jogador (Escolher Herói)" style="background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(217,119,6,0.3)); border-color: #f59e0b; color: #fef08a; font-weight: 700;">
+        🎮 Entrar como Jogador
+      </button>
       <button class="btn-top" onclick="exportData()" title="Salvar Arquivo de Backup JSON Completo">💾 Backup</button>
       <button class="btn-top" onclick="importData()" title="Carregar Arquivo de Backup JSON">📂 Carregar</button>
       <button class="btn-top" onclick="openSnapshotsModal()" title="Histórico de Pontos de Restauração Automáticos" style="color: #60a5fa; border-color: rgba(96, 165, 250, 0.4);">🛡️ Recuperar</button>
@@ -1948,11 +1951,21 @@
       </div>
 
       <!-- Link direto e Ações de Compartilhamento -->
-      <div style="margin-top: 12px; text-align: left;">
-        <label style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Link de Acesso Direto (com dados embutidos):</label>
-        <div style="display: flex; gap: 6px; margin-top: 4px;">
-          <input type="text" id="inp-share-url" readonly style="font-size: 11px; background: rgba(0,0,0,0.4); color: var(--primary-light); cursor: text; padding: 6px 10px;" onclick="this.select()">
-          <button class="btn-action" id="btn-copy-share" style="white-space: nowrap; font-size: 11px; padding: 6px 12px;" onclick="copyShareLink()">📋 Copiar</button>
+      <div style="margin-top: 12px; text-align: left; display: flex; flex-direction: column; gap: 8px;">
+        <div>
+          <label style="font-size: 10px; font-weight: 800; color: var(--primary-light); text-transform: uppercase;">💻 Link Curto para Computador (PC / Web):</label>
+          <div style="display: flex; gap: 6px; margin-top: 3px;">
+            <input type="text" id="inp-share-url-short" readonly style="font-size: 11px; background: rgba(0,0,0,0.4); color: #67e8f9; cursor: text; padding: 6px 10px;" onclick="this.select()">
+            <button class="btn-action" id="btn-copy-share-short" style="white-space: nowrap; font-size: 11px; padding: 6px 12px; background: linear-gradient(135deg, #0284c7, #0369a1);" onclick="copyShortShareLink()">📋 Copiar Link Curto</button>
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">📱 Link Completo Offline (para Celular / WhatsApp):</label>
+          <div style="display: flex; gap: 6px; margin-top: 3px;">
+            <input type="text" id="inp-share-url" readonly style="font-size: 11px; background: rgba(0,0,0,0.4); color: var(--text-muted); cursor: text; padding: 6px 10px;" onclick="this.select()">
+            <button class="btn-secondary" id="btn-copy-share" style="white-space: nowrap; font-size: 11px; padding: 6px 12px;" onclick="copyShareLink()">📋 Copiar</button>
+          </div>
         </div>
       </div>
 
@@ -1968,6 +1981,52 @@
       <div style="display: flex; justify-content: space-between; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
         <button class="btn-secondary" style="font-size: 12px;" onclick="openPlayerPortalDirect()" title="Abrir em nova aba para testar a visão do aluno">🌐 Abrir Portal</button>
         <button class="btn-action" style="font-size: 12px;" onclick="closeSharePlayerModal()">Concluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LOGIN / ESCOLHA DE PERSONAGEM PARA O JOGADOR (ACESSO NO COMPUTADOR) -->
+  <div id="modal-player-login" class="modal-overlay">
+    <div class="modal-body" style="max-width: 680px; width: 95%;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 26px;">🎮</span>
+          <div>
+            <div style="font-size: 17px; font-weight: 800; font-family: var(--font-title); color: #fff;">
+              Portal do Aventureiro • Entrar como Jogador
+            </div>
+            <div style="font-size: 11.5px; color: var(--primary-light);">
+              Selecione seu herói abaixo para abrir sua ficha interativa no computador
+            </div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closePlayerLoginModal()">✕</button>
+      </div>
+
+      <div style="display: flex; gap: 8px; align-items: center; margin: 12px 0 8px 0; background: rgba(0,0,0,0.25); padding: 8px; border-radius: 6px; border: 1px solid var(--border-color);">
+        <div style="flex: 1;">
+          <label style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Sala Conectada:</label>
+          <div style="display: flex; gap: 6px; margin-top: 3px;">
+            <input type="text" id="inp-login-room" placeholder="Ex: turma_principal" style="font-size: 12px; padding: 5px 8px; background: #080c16; border: 1px solid var(--border-color); border-radius: 4px; color: #fff; font-family: var(--font-mono); width: 100%;">
+            <button class="btn-secondary" style="font-size: 11px; padding: 4px 10px; white-space: nowrap;" onclick="refreshLoginRoom()">🔄 Conectar Sala</button>
+          </div>
+        </div>
+        <div style="flex: 1.2;">
+          <label style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Buscar Personagem / Aluno:</label>
+          <input type="text" id="inp-filter-login-players" placeholder="Filtrar por nome do herói ou aluno..." oninput="renderPlayerLoginList()" style="font-size: 12px; padding: 5px 8px; margin-top: 3px; background: #080c16; border: 1px solid var(--border-color); border-radius: 4px; color: #fff; width: 100%;">
+        </div>
+      </div>
+
+      <!-- Grade de Cards de Personagens -->
+      <div id="player-login-list-container" class="player-login-grid" style="max-height: 380px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; padding: 6px 2px;">
+        <!-- Preenchido dinamicamente por renderPlayerLoginList() -->
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 12px;">
+        <span style="font-size: 11px; color: var(--text-muted);">
+          💡 Seus pontos de vida, magias e inventário sincronizam automaticamente com a mesa do mestre.
+        </span>
+        <button class="btn-secondary" onclick="closePlayerLoginModal()">Cancelar</button>
       </div>
     </div>
   </div>

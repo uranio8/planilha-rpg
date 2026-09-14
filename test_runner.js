@@ -146,7 +146,17 @@ const sandbox = {
     addEventListener: () => {},
     removeEventListener: () => {}
   },
+  URLSearchParams: global.URLSearchParams || require('url').URLSearchParams,
   window: {
+    location: {
+      href: 'http://localhost/rpg.html',
+      search: '',
+      hash: '',
+      pathname: '/rpg.html'
+    },
+    history: {
+      replaceState: () => {}
+    },
     addEventListener: () => {},
     removeEventListener: () => {},
     AudioContext: function() {
@@ -201,7 +211,17 @@ const jsComp = fs.readFileSync(path.join(srcDir, 'js', 'compendium.js'), 'utf8')
 const jsCampaigns = fs.readFileSync(path.join(srcDir, 'js', 'campaigns.js'), 'utf8');
 const jsDice = fs.readFileSync(path.join(srcDir, 'js', 'dice_roller.js'), 'utf8');
 const jsGrid = fs.readFileSync(path.join(srcDir, 'js', 'vtt_grid.js'), 'utf8');
+const jsScreen = fs.readFileSync(path.join(srcDir, 'js', 'screen_sync.js'), 'utf8');
 const jsFirebase = fs.readFileSync(path.join(srcDir, 'js', 'firebase_sync.js'), 'utf8');
+
+sandbox.BroadcastChannel = function(name) {
+  return {
+    name,
+    postMessage: () => {},
+    onmessage: null,
+    close: () => {}
+  };
+};
 
 vm.runInContext(dataRulesXp, sandbox);
 vm.runInContext(dataSpells, sandbox);
@@ -217,6 +237,7 @@ vm.runInContext(jsComp, sandbox);
 vm.runInContext(jsCampaigns, sandbox);
 vm.runInContext(jsDice, sandbox);
 vm.runInContext(jsGrid, sandbox);
+vm.runInContext(jsScreen, sandbox);
 
 // Teste 3.1: Proficiência D&D 5E
 assert(vm.runInContext('getProfBonus(1)', sandbox) === 2, 'Bônus de Proficiência Nv 1 = +2');
@@ -1625,6 +1646,124 @@ assert(bundleHtml.includes('id="pnav-spells"'), 'Bundle contém botão de navega
 assert(bundleHtml.includes('id="pnav-stash"'), 'Bundle contém botão de navegação para Baú do Grupo no portal');
 assert(bundleHtml.includes('id="pnav-equipment"'), 'Bundle contém botão de navegação para Itens no portal');
 assert(!bundleHtml.includes('btn-portal-exit'), 'Botão de saída para Visão do Mestre removido do portal dos jogadores');
+
+// ========================================================
+// 29. TESTES DE SINCRONIZAÇÃO EM TEMPO REAL MESTRE ↔ JOGADORES
+// ========================================================
+console.log('\n🔄 29. Testes de Sincronização em Tempo Real (Mestre ↔ Jogadores & Baú):');
+
+// 1. Validação de geração de URL com parâmetro room
+const shareUrlSample = vm.runInContext("generatePlayerShareUrl('char_consume_test', false)", sandbox);
+assert(shareUrlSample.includes('room='), 'generatePlayerShareUrl embute parâmetro de sala na URL');
+assert(shareUrlSample.includes('view=player'), 'generatePlayerShareUrl embute view=player');
+assert(shareUrlSample.includes('id=char_consume_test'), 'generatePlayerShareUrl embute id do herói');
+
+// 2. Validação da função updatePlayerPortalBanner
+assert(typeof vm.runInContext("updatePlayerPortalBanner", sandbox) === 'function', 'Função updatePlayerPortalBanner exportada');
+
+// 3. Teste de Merge Inteligente de Fichas (Preservação de Dados do Jogador no Portal)
+vm.runInContext(`
+  activePortalPlayerId = 'char_consume_test';
+  const playerInLocal = PLAYERS.find(p => p.id === 'char_consume_test');
+  playerInLocal.inventory = [{ name: 'Adaga de Prata', qty: 1, equipped: true, weight: 0.5 }];
+  
+  // Simula recebimento de payload da nuvem vindo do Mestre (com PV alterado e sem a adaga de prata)
+  const incomingCloud = {
+    players: [
+      {
+        id: 'char_consume_test',
+        name: 'Guerreiro Teste',
+        student: 'Aluno Teste',
+        race: 'Humano',
+        className: 'Guerreiro',
+        level: 3,
+        hp: 18,
+        maxHp: 28,
+        tempHp: 5,
+        conditions: ['envenenado'],
+        inventory: []
+      }
+    ],
+    campaigns: getActiveCampaign()
+  };
+  
+  applyCloudDataToLocal(incomingCloud);
+`, sandbox);
+
+const mergedChar = vm.runInContext("PLAYERS.find(p => p.id === 'char_consume_test')", sandbox);
+assert(mergedChar.hp === 18, 'Merge remoto aplicou dano/PV enviado pelo mestre');
+assert(mergedChar.tempHp === 5, 'Merge remoto aplicou PV temporário');
+assert(mergedChar.conditions.includes('envenenado'), 'Merge remoto aplicou condição envenenado');
+assert(mergedChar.inventory.some(i => i.name === 'Adaga de Prata'), 'Merge inteligente preservou inventário local ativo do jogador');
+
+// 4. Teste de recepção de CAMPAIGNS_UPDATE no BroadcastChannel
+const syncMsgEvent = {
+  data: {
+    type: 'CAMPAIGNS_UPDATE',
+    campaignsState: {
+      activeCampaignId: 'camp_sync_test',
+      campaigns: [{ id: 'camp_sync_test', name: 'Campanha Sincronizada', partyStash: { gold: 777, items: [], history: [] } }]
+    }
+  }
+};
+vm.runInContext(`
+  if (syncChannel && typeof syncChannel.onmessage === 'function') {
+    syncChannel.onmessage(${JSON.stringify(syncMsgEvent)});
+  }
+`, sandbox);
+const campAfterBroadcast = vm.runInContext("CAMPAIGNS_STATE", sandbox);
+assert(campAfterBroadcast.activeCampaignId === 'camp_sync_test', 'BroadcastChannel atualizou CAMPAIGNS_STATE com sucesso');
+
+// ========================================================
+// 30. TESTES DE LINKS CURTOS E LOBBY DE ENTRADA (PC / WEB)
+// ========================================================
+console.log('\n💻 30. Testes de Links Curtos e Lobby de Entrada para Jogadores (PC/Web):');
+
+// 1. Verificação de elementos no bundle compilado
+assert(bundleHtml.includes('id="modal-player-login"'), 'Bundle contém modal-player-login');
+assert(bundleHtml.includes('id="inp-share-url-short"'), 'Bundle contém inp-share-url-short');
+assert(bundleHtml.includes('id="btn-copy-share-short"'), 'Bundle contém btn-copy-share-short');
+assert(bundleHtml.includes('openPlayerLoginModal'), 'Bundle contém acionamento de openPlayerLoginModal');
+
+// 2. Teste de geração de Link Curto sem hash pdata
+const shortUrl = vm.runInContext("getShortPlayerShareUrl('char_consume_test')", sandbox);
+assert(shortUrl.includes('?room='), 'Link Curto contém query param room');
+assert(shortUrl.includes('&player=char_consume_test'), 'Link Curto contém query param player');
+assert(!shortUrl.includes('#pdata='), 'Link Curto não contém payload base64 gigantesco');
+
+// 3. Teste do Modal de Login de Jogador
+assert(typeof vm.runInContext("openPlayerLoginModal", sandbox) === 'function', 'Função openPlayerLoginModal exportada');
+assert(typeof vm.runInContext("closePlayerLoginModal", sandbox) === 'function', 'Função closePlayerLoginModal exportada');
+assert(typeof vm.runInContext("renderPlayerLoginList", sandbox) === 'function', 'Função renderPlayerLoginList exportada');
+assert(typeof vm.runInContext("selectLoginCharacter", sandbox) === 'function', 'Função selectLoginCharacter exportada');
+
+// Abre modal e valida classe open
+vm.runInContext("openPlayerLoginModal()", sandbox);
+const loginModalEl = domElements['modal-player-login'];
+assert(loginModalEl && loginModalEl.classList.contains('open'), 'openPlayerLoginModal abriu modal com classe open');
+
+// Valida renderização da lista de heróis no container do login
+const loginListContainer = domElements['player-login-list-container'];
+assert(loginListContainer && loginListContainer.innerHTML.includes('player-login-card'), 'renderPlayerLoginList gerou cards de seleção de heróis');
+assert(loginListContainer.innerHTML.includes('Guerreiro Teste'), 'Card contém nome do herói cadastrado');
+
+// Seleciona personagem pelo lobby
+vm.runInContext("selectLoginCharacter('char_consume_test')", sandbox);
+const selectedPortalId = vm.runInContext("activePortalPlayerId", sandbox);
+assert(selectedPortalId === 'char_consume_test', 'selectLoginCharacter ativou o herói escolhido no modo portal');
+assert(loginModalEl && !loginModalEl.classList.contains('open'), 'selectLoginCharacter fechou o modal de login automaticamente');
+
+// 4. Teste de Auto-Ativação do Portal via Query Param ?room=...&player=...
+vm.runInContext(`
+  activePortalPlayerId = null;
+  window.location.search = '?room=turma_secundaria&player=char_consume_test';
+  checkPlayerPortalUrl();
+`, sandbox);
+const portalActivatedFromUrl = vm.runInContext("activePortalPlayerId", sandbox);
+assert(portalActivatedFromUrl === 'char_consume_test', 'checkPlayerPortalUrl ativou o modo portal via parâmetro ?player=...');
+const storedRoomAfterUrl = vm.runInContext("getStoredFirebaseRoom()", sandbox);
+assert(storedRoomAfterUrl === 'turma_secundaria', 'checkPlayerPortalUrl sincronizou a sala informada no link curto');
+
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

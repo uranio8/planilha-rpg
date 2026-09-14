@@ -6240,6 +6240,86 @@
       width: 100%;
     }
 
+    /* --- 8. CARDS E GRADE DE LOGIN DO JOGADOR --- */
+    .player-login-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .player-login-card {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.8) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .player-login-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), 0 0 12px rgba(245, 158, 11, 0.3);
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(45, 55, 72, 0.9) 100%);
+    }
+
+    .player-login-card .card-avatar {
+      font-size: 28px;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .player-login-card .card-name {
+      font-weight: 800;
+      font-size: 14px;
+      color: #fff;
+      font-family: var(--font-title);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .player-login-card .card-sub {
+      font-size: 11px;
+      color: var(--primary-light);
+    }
+
+    .player-login-card .card-stats {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 8px;
+    }
+
+    .player-login-card .btn-enter {
+      margin-top: 4px;
+      width: 100%;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      border: none;
+      border-radius: 6px;
+      color: #000;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .player-login-card .btn-enter:hover {
+      opacity: 0.9;
+    }
+
     @media print {
       body {
         background: #fff !important;
@@ -6337,6 +6417,9 @@
       <button class="btn-top" onclick="toggleDMNotesDrawer()" title="Notas Rápidas do Mestre (Atalho: Ctrl+N)">📝 Notas <kbd style="font-size:9px; opacity:0.8;">Ctrl+N</kbd></button>
       <button class="btn-top" onclick="openDiceModal()" title="Abrir Painel de Rolagem de Dados">🎲 Dados</button>
       <button class="btn-top" onclick="openPlayerView()" title="Abrir Modo Telão para Projetor da Sala de Aula">📺 Telão</button>
+      <button class="btn-top" onclick="openPlayerLoginModal()" title="Entrar no Portal do Jogador (Escolher Herói)" style="background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(217,119,6,0.3)); border-color: #f59e0b; color: #fef08a; font-weight: 700;">
+        🎮 Entrar como Jogador
+      </button>
       <button class="btn-top" onclick="exportData()" title="Salvar Arquivo de Backup JSON Completo">💾 Backup</button>
       <button class="btn-top" onclick="importData()" title="Carregar Arquivo de Backup JSON">📂 Carregar</button>
       <button class="btn-top" onclick="openSnapshotsModal()" title="Histórico de Pontos de Restauração Automáticos" style="color: #60a5fa; border-color: rgba(96, 165, 250, 0.4);">🛡️ Recuperar</button>
@@ -8223,11 +8306,21 @@
       </div>
 
       <!-- Link direto e Ações de Compartilhamento -->
-      <div style="margin-top: 12px; text-align: left;">
-        <label style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Link de Acesso Direto (com dados embutidos):</label>
-        <div style="display: flex; gap: 6px; margin-top: 4px;">
-          <input type="text" id="inp-share-url" readonly style="font-size: 11px; background: rgba(0,0,0,0.4); color: var(--primary-light); cursor: text; padding: 6px 10px;" onclick="this.select()">
-          <button class="btn-action" id="btn-copy-share" style="white-space: nowrap; font-size: 11px; padding: 6px 12px;" onclick="copyShareLink()">📋 Copiar</button>
+      <div style="margin-top: 12px; text-align: left; display: flex; flex-direction: column; gap: 8px;">
+        <div>
+          <label style="font-size: 10px; font-weight: 800; color: var(--primary-light); text-transform: uppercase;">💻 Link Curto para Computador (PC / Web):</label>
+          <div style="display: flex; gap: 6px; margin-top: 3px;">
+            <input type="text" id="inp-share-url-short" readonly style="font-size: 11px; background: rgba(0,0,0,0.4); color: #67e8f9; cursor: text; padding: 6px 10px;" onclick="this.select()">
+            <button class="btn-action" id="btn-copy-share-short" style="white-space: nowrap; font-size: 11px; padding: 6px 12px; background: linear-gradient(135deg, #0284c7, #0369a1);" onclick="copyShortShareLink()">📋 Copiar Link Curto</button>
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">📱 Link Completo Offline (para Celular / WhatsApp):</label>
+          <div style="display: flex; gap: 6px; margin-top: 3px;">
+            <input type="text" id="inp-share-url" readonly style="font-size: 11px; background: rgba(0,0,0,0.4); color: var(--text-muted); cursor: text; padding: 6px 10px;" onclick="this.select()">
+            <button class="btn-secondary" id="btn-copy-share" style="white-space: nowrap; font-size: 11px; padding: 6px 12px;" onclick="copyShareLink()">📋 Copiar</button>
+          </div>
         </div>
       </div>
 
@@ -8243,6 +8336,52 @@
       <div style="display: flex; justify-content: space-between; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
         <button class="btn-secondary" style="font-size: 12px;" onclick="openPlayerPortalDirect()" title="Abrir em nova aba para testar a visão do aluno">🌐 Abrir Portal</button>
         <button class="btn-action" style="font-size: 12px;" onclick="closeSharePlayerModal()">Concluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LOGIN / ESCOLHA DE PERSONAGEM PARA O JOGADOR (ACESSO NO COMPUTADOR) -->
+  <div id="modal-player-login" class="modal-overlay">
+    <div class="modal-body" style="max-width: 680px; width: 95%;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 26px;">🎮</span>
+          <div>
+            <div style="font-size: 17px; font-weight: 800; font-family: var(--font-title); color: #fff;">
+              Portal do Aventureiro • Entrar como Jogador
+            </div>
+            <div style="font-size: 11.5px; color: var(--primary-light);">
+              Selecione seu herói abaixo para abrir sua ficha interativa no computador
+            </div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closePlayerLoginModal()">✕</button>
+      </div>
+
+      <div style="display: flex; gap: 8px; align-items: center; margin: 12px 0 8px 0; background: rgba(0,0,0,0.25); padding: 8px; border-radius: 6px; border: 1px solid var(--border-color);">
+        <div style="flex: 1;">
+          <label style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Sala Conectada:</label>
+          <div style="display: flex; gap: 6px; margin-top: 3px;">
+            <input type="text" id="inp-login-room" placeholder="Ex: turma_principal" style="font-size: 12px; padding: 5px 8px; background: #080c16; border: 1px solid var(--border-color); border-radius: 4px; color: #fff; font-family: var(--font-mono); width: 100%;">
+            <button class="btn-secondary" style="font-size: 11px; padding: 4px 10px; white-space: nowrap;" onclick="refreshLoginRoom()">🔄 Conectar Sala</button>
+          </div>
+        </div>
+        <div style="flex: 1.2;">
+          <label style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Buscar Personagem / Aluno:</label>
+          <input type="text" id="inp-filter-login-players" placeholder="Filtrar por nome do herói ou aluno..." oninput="renderPlayerLoginList()" style="font-size: 12px; padding: 5px 8px; margin-top: 3px; background: #080c16; border: 1px solid var(--border-color); border-radius: 4px; color: #fff; width: 100%;">
+        </div>
+      </div>
+
+      <!-- Grade de Cards de Personagens -->
+      <div id="player-login-list-container" class="player-login-grid" style="max-height: 380px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; padding: 6px 2px;">
+        <!-- Preenchido dinamicamente por renderPlayerLoginList() -->
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 12px;">
+        <span style="font-size: 11px; color: var(--text-muted);">
+          💡 Seus pontos de vida, magias e inventário sincronizam automaticamente com a mesa do mestre.
+        </span>
+        <button class="btn-secondary" onclick="closePlayerLoginModal()">Cancelar</button>
       </div>
     </div>
   </div>
@@ -27750,16 +27889,40 @@ function applyCloudDataToLocal(cloudData) {
       saveSafetySnapshot('Antes de aplicar sincronização da Nuvem');
     }
 
-    // 1. Atualiza Fichas de Jogadores
+    // 1. Atualiza Fichas de Jogadores com Merge Inteligente (evita sobrescrever alterações locais ativas)
     if (cloudData.players && Array.isArray(cloudData.players)) {
-      PLAYERS = cloudData.players.map(p => {
-        if (!p.skillProficiencies) p.skillProficiencies = [];
-        if (!p.saveProficiencies) p.saveProficiencies = [];
-        if (!p.actionLogs) p.actionLogs = [];
-        if (p.playerNotes === undefined) p.playerNotes = '';
-        return p;
-      });
+      if (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId) {
+        // Modo Portal do Jogador: mescla dados remotos dos outros heróis e atualiza campos do mestre no herói local
+        const localChar = PLAYERS.find(p => p.id === activePortalPlayerId);
+        PLAYERS = cloudData.players.map(remoteP => {
+          if (localChar && remoteP.id === activePortalPlayerId) {
+            // Preserva inventário e notas locais se o jogador acabou de mexer, mas aceita PV, condições e XP do mestre
+            return Object.assign({}, remoteP, {
+              hp: remoteP.hp,
+              maxHp: remoteP.maxHp,
+              tempHp: remoteP.tempHp,
+              conditions: remoteP.conditions || localChar.conditions || [],
+              xp: remoteP.xp !== undefined ? remoteP.xp : localChar.xp,
+              level: remoteP.level || localChar.level,
+              // Mantém inventário mais recente entre ambos
+              inventory: (localChar.inventory && localChar.inventory.length > 0) ? localChar.inventory : (remoteP.inventory || [])
+            });
+          }
+          return remoteP;
+        });
+      } else {
+        // Modo Mestre: atualiza todos os jogadores recebidos da nuvem
+        PLAYERS = cloudData.players.map(p => {
+          if (!p.skillProficiencies) p.skillProficiencies = [];
+          if (!p.saveProficiencies) p.saveProficiencies = [];
+          if (!p.actionLogs) p.actionLogs = [];
+          if (p.playerNotes === undefined) p.playerNotes = '';
+          return p;
+        });
+      }
+
       if (typeof renderPlayers === 'function') renderPlayers();
+      if (typeof updatePlayerPortalBanner === 'function') updatePlayerPortalBanner();
     }
 
     // 2. Atualiza Estado de Combate
@@ -27775,11 +27938,12 @@ function applyCloudDataToLocal(cloudData) {
       if (typeof renderVttCombatHud === 'function') renderVttCombatHud();
     }
 
-    // 4. Atualiza Campanhas e Mesas de Jogo
+    // 4. Atualiza Campanhas, Baú do Grupo e Mesas de Jogo
     if (cloudData.campaigns && typeof CAMPAIGNS_STATE !== 'undefined') {
       CAMPAIGNS_STATE = cloudData.campaigns;
       if (typeof saveCampaignsState === 'function') saveCampaignsState();
       if (typeof renderCampaigns === 'function') renderCampaigns();
+      if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
     }
 
     // 5. Atualiza Notas Rápidas do Mestre
@@ -28086,6 +28250,25 @@ function manualPullFromCloud() {
         alert('Erro ao buscar dados do Firestore: ' + err.message);
       });
   }
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    getStoredFirebaseConfig,
+    saveFirebaseConfigToStorage,
+    getStoredFirebaseRoom,
+    setStoredFirebaseRoom,
+    isFirebaseAutoSyncEnabled,
+    setFirebaseAutoSyncEnabled,
+    initFirebaseSync,
+    applyCloudDataToLocal,
+    syncLocalChangesToFirebase,
+    executeCloudSave,
+    openFirebaseModal,
+    closeFirebaseModal,
+    manualPushToCloud,
+    manualPullFromCloud
+  };
 }
 
 // src_js_combat.js - Initiative, combat rounds, attacks, damage dispatcher and dice rolling
@@ -32701,7 +32884,8 @@ function generatePlayerShareUrl(playerId, embedData = true) {
   if (!p) return href;
 
   let base = href.split('?')[0].split('#')[0];
-  let url = `${base}?view=player&id=${encodeURIComponent(playerId)}`;
+  const room = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
+  let url = `${base}?view=player&id=${encodeURIComponent(playerId)}&room=${encodeURIComponent(room)}`;
 
   if (embedData) {
     const payload = serializePlayerForShare(p);
@@ -32710,6 +32894,13 @@ function generatePlayerShareUrl(playerId, embedData = true) {
     }
   }
   return url;
+}
+
+function getShortPlayerShareUrl(playerId) {
+  const href = (typeof window !== 'undefined' && window.location && window.location.href) ? window.location.href : 'https://uranio8.github.io/planilha-rpg/';
+  let base = href.split('?')[0].split('#')[0];
+  const room = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
+  return `${base}?room=${encodeURIComponent(room)}&player=${encodeURIComponent(playerId)}`;
 }
 
 function openSharePlayerModal(playerId) {
@@ -32723,17 +32914,27 @@ function openSharePlayerModal(playerId) {
   const charNameEl = document.getElementById('share-modal-char-name');
   const charMetaEl = document.getElementById('share-modal-char-meta');
   const inpUrl = document.getElementById('inp-share-url');
+  const inpUrlShort = document.getElementById('inp-share-url-short');
   const qrContainer = document.getElementById('share-qrcode-render');
   const btnCopy = document.getElementById('btn-copy-share');
+  const btnCopyShort = document.getElementById('btn-copy-share-short');
 
   if (charNameEl) charNameEl.innerText = `${p.name} (${p.student})`;
   if (charMetaEl) charMetaEl.innerText = `${p.race} • ${p.className} • Nível ${p.level} • CA ${p.ac} • ${p.hp}/${p.maxHp} PV`;
 
   const shareUrl = generatePlayerShareUrl(playerId, true);
+  const shortUrl = getShortPlayerShareUrl(playerId);
+
   if (inpUrl) inpUrl.value = shareUrl;
+  if (inpUrlShort) inpUrlShort.value = shortUrl;
+
   if (btnCopy) {
     btnCopy.innerText = '📋 Copiar';
     btnCopy.style.background = '';
+  }
+  if (btnCopyShort) {
+    btnCopyShort.innerText = '📋 Copiar Link Curto';
+    btnCopyShort.style.background = '';
   }
 
   // Renderiza QR Code com payload embutido
@@ -32752,6 +32953,35 @@ function openSharePlayerModal(playerId) {
 function closeSharePlayerModal() {
   const modal = document.getElementById('modal-share-sheet');
   if (modal) modal.classList.remove('open');
+}
+
+function copyShortShareLink() {
+  const inp = document.getElementById('inp-share-url-short');
+  const btn = document.getElementById('btn-copy-share-short');
+  if (!inp) return;
+  inp.select();
+  inp.setSelectionRange(0, 99999);
+
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(inp.value);
+    } else {
+      document.execCommand('copy');
+    }
+    if (btn) {
+      btn.innerText = '✅ Link Curto Copiado!';
+      btn.style.background = 'linear-gradient(135deg, #10b981, #047857)';
+      setTimeout(() => {
+        if (btn) {
+          btn.innerText = '📋 Copiar Link Curto';
+          btn.style.background = '';
+        }
+      }, 2000);
+    }
+    if (typeof addLog === 'function') addLog('💻 <b>Link Curto Copiado:</b> Link simplificado para computador copiado com sucesso.');
+  } catch (e) {
+    alert('Link selecionado. Pressione Ctrl+C para copiar.');
+  }
 }
 
 function copyShareLink() {
@@ -32816,6 +33046,20 @@ function openPlayerPortalDirect() {
   window.open(shareUrl, '_blank');
 }
 
+function updatePlayerPortalBanner() {
+  if (!activePortalPlayerId) return;
+  const p = PLAYERS.find(x => x.id === activePortalPlayerId);
+  if (!p) return;
+
+  const banner = document.getElementById('player-portal-banner');
+  const titleEl = document.getElementById('portal-char-title');
+  const subEl = document.getElementById('portal-char-sub');
+
+  if (banner) banner.style.display = 'flex';
+  if (titleEl) titleEl.innerText = `👤 ${p.name} (${p.student})`;
+  if (subEl) subEl.innerText = `${p.race} • ${p.className} (Nível ${p.level}) • CA ${p.ac} • ${p.hp}/${p.maxHp} PV`;
+}
+
 function initPlayerPortalMode(playerId) {
   const p = PLAYERS.find(x => x.id === playerId) || PLAYERS[0];
   if (!p) return;
@@ -32825,13 +33069,8 @@ function initPlayerPortalMode(playerId) {
     document.body.classList.add('mode-player-portal');
   }
 
-  const banner = document.getElementById('player-portal-banner');
-  const titleEl = document.getElementById('portal-char-title');
-  const subEl = document.getElementById('portal-char-sub');
-
-  if (banner) banner.style.display = 'flex';
-  if (titleEl) titleEl.innerText = `👤 ${p.name} (${p.student})`;
-  if (subEl) subEl.innerText = `${p.race} • ${p.className} (Nível ${p.level}) • CA ${p.ac} • ${p.hp}/${p.maxHp} PV`;
+  updatePlayerPortalBanner();
+  renderPlayers();
 
   // Força aba inicial em Minha Ficha
   switchTab('players');
@@ -32850,6 +33089,22 @@ function exitPlayerPortalMode() {
 
 function checkPlayerPortalUrl() {
   try {
+    const params = new URLSearchParams(window.location.search);
+
+    // Conecta automaticamente à sala do mestre especificada na URL
+    const roomParam = params.get('room');
+    if (roomParam) {
+      if (typeof setStoredFirebaseRoom === 'function') {
+        setStoredFirebaseRoom(roomParam);
+      }
+      if (typeof setFirebaseAutoSyncEnabled === 'function') {
+        setFirebaseAutoSyncEnabled(true);
+      }
+      if (typeof initFirebaseSync === 'function') {
+        setTimeout(() => initFirebaseSync(), 100);
+      }
+    }
+
     // 1. Verifica se há payload de dados codificado no Hash (#pdata=...) ou na Busca (?pdata=...)
     let encodedData = '';
     const hash = window.location.hash || '';
@@ -32859,7 +33114,6 @@ function checkPlayerPortalUrl() {
       encodedData = hash.split('import_player=')[1].split('&')[0];
     }
 
-    const params = new URLSearchParams(window.location.search);
     if (!encodedData && params.get('pdata')) {
       encodedData = params.get('pdata');
     }
@@ -32886,11 +33140,19 @@ function checkPlayerPortalUrl() {
     }
 
     const view = params.get('view');
-    const playerId = params.get('id') || params.get('playerId');
+    const playerId = params.get('id') || params.get('playerId') || params.get('player');
 
-    if (view === 'player' && playerId) {
+    if ((view === 'player' || params.has('player')) && playerId) {
       initPlayerPortalMode(playerId);
       return true;
+    }
+
+    // Se a URL solicita abertura direta do lobby / seleção de herói
+    if (params.get('login') === 'player' || params.get('player_login') === 'true' || params.get('lobby') === 'true') {
+      setTimeout(() => {
+        openPlayerLoginModal();
+      }, 200);
+      return false;
     }
 
     // Se a URL não for de portal, garante que o modo portal esteja desativado
@@ -32904,6 +33166,140 @@ function checkPlayerPortalUrl() {
     console.warn('Erro ao processar URL do portal do jogador:', e);
   }
   return false;
+}
+
+// --- MODAL DE LOGIN / ENTRADA RÁPIDA DE JOGADOR NO COMPUTADOR ---
+
+function openPlayerLoginModal() {
+  const modal = document.getElementById('modal-player-login');
+  if (!modal) return;
+
+  const inpRoom = document.getElementById('inp-login-room');
+  if (inpRoom) {
+    const currentRoom = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
+    inpRoom.value = currentRoom;
+  }
+
+  const inpFilter = document.getElementById('inp-filter-login-players');
+  if (inpFilter) inpFilter.value = '';
+
+  renderPlayerLoginList();
+  modal.classList.add('open');
+}
+
+function closePlayerLoginModal() {
+  const modal = document.getElementById('modal-player-login');
+  if (modal) modal.classList.remove('open');
+}
+
+function refreshLoginRoom() {
+  const inpRoom = document.getElementById('inp-login-room');
+  if (!inpRoom) return;
+  const newRoom = inpRoom.value.trim() || 'turma_principal';
+  if (typeof setStoredFirebaseRoom === 'function') {
+    setStoredFirebaseRoom(newRoom);
+  }
+  if (typeof setFirebaseAutoSyncEnabled === 'function') {
+    setFirebaseAutoSyncEnabled(true);
+  }
+  if (typeof initFirebaseSync === 'function') {
+    initFirebaseSync();
+  }
+  if (typeof addLog === 'function') {
+    addLog(`🌐 Conectando à sala <b>${newRoom}</b>... Aguarde sincronização.`);
+  }
+  setTimeout(() => {
+    renderPlayerLoginList();
+  }, 400);
+}
+
+function renderPlayerLoginList() {
+  const container = document.getElementById('player-login-list-container');
+  if (!container) return;
+
+  const inpFilter = document.getElementById('inp-filter-login-players');
+  const term = (inpFilter && inpFilter.value) ? inpFilter.value.trim().toLowerCase() : '';
+
+  const filtered = (PLAYERS || []).filter(p => {
+    if (!term) return true;
+    const nameMatch = (p.name || '').toLowerCase().includes(term);
+    const studentMatch = (p.student || '').toLowerCase().includes(term);
+    const classMatch = (p.className || '').toLowerCase().includes(term);
+    const raceMatch = (p.race || '').toLowerCase().includes(term);
+    return nameMatch || studentMatch || classMatch || raceMatch;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 24px 12px; color: var(--text-muted); background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px dashed var(--border-color);">
+        <div style="font-size: 28px; margin-bottom: 6px;">👥</div>
+        <div style="font-size: 14px; font-weight: 700; color: #fff;">Nenhum personagem encontrado</div>
+        <div style="font-size: 11.5px; margin-top: 4px; color: var(--text-dim);">
+          ${term ? 'Tente buscar com outro termo.' : 'Verifique se a sala conectada está correta ou se o mestre já cadastrou os heróis.'}
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(p => {
+    const isCurrent = activePortalPlayerId === p.id;
+    const initial = (p.name || '?').charAt(0).toUpperCase();
+    const hpPct = Math.max(0, Math.min(100, Math.round(((p.hp || 0) / (p.maxHp || 1)) * 100)));
+    const hpColor = hpPct > 50 ? '#10b981' : (hpPct > 25 ? '#f59e0b' : '#ef4444');
+
+    return `
+      <div class="player-login-card ${isCurrent ? 'active' : ''}" onclick="selectLoginCharacter('${p.id}')">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 38px; height: 38px; border-radius: 8px; background: linear-gradient(135deg, rgba(235, 180, 56, 0.2), rgba(0,0,0,0.5)); border: 1px solid var(--accent-gold); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: var(--accent-gold); flex-shrink: 0;">
+            ${p.avatar ? `<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:7px;" onerror="this.outerHTML='${initial}'">` : initial}
+          </div>
+          <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+            <div style="font-weight: 800; font-size: 13.5px; color: #fff; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${p.name || 'Sem Nome'}</div>
+            <div style="font-size: 11px; color: var(--primary-light); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">👤 ${p.student || 'Aluno'}</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 8px; font-size: 11px; color: var(--text-muted);">
+          🛡️ ${p.race || 'Raça'} • ${p.className || 'Classe'} (Nv. ${p.level || 1})
+        </div>
+
+        <div style="margin-top: 6px; display: flex; align-items: center; justify-content: space-between; font-size: 11px;">
+          <span style="color: ${hpColor}; font-weight: 700;">❤️ ${p.hp || 0}/${p.maxHp || 10} PV</span>
+          <span style="color: var(--accent-gold); font-weight: 700;">🛡️ CA ${p.ac || 10}</span>
+        </div>
+
+        <div style="margin-top: 8px;">
+          <button class="btn-action" style="width: 100%; font-size: 11px; padding: 5px 0; border-radius: 4px; pointer-events: none;">
+            ${isCurrent ? '✅ Personagem Ativo' : '🎮 Entrar com este Herói'}
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectLoginCharacter(playerId) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+
+  initPlayerPortalMode(playerId);
+  closePlayerLoginModal();
+
+  // Atualiza a URL no navegador sem recarregar para facilitar bookmark / compartilhamento
+  try {
+    if (typeof window !== 'undefined' && window.history && window.history.replaceState) {
+      const room = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
+      const cleanUrl = `${window.location.pathname}?room=${encodeURIComponent(room)}&player=${encodeURIComponent(playerId)}`;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  } catch (e) {
+    // Silencioso em caso de restrição de ambiente
+  }
+
+  if (typeof addLog === 'function') {
+    addLog(`🎮 <b>Entrou como Jogador:</b> Você está controlando a ficha de <b>${p.name}</b> (${p.student}). Bom jogo!`);
+  }
 }
 
 // --- CONDIÇÕES DE STATUS NAS FICHAS (M2) ---
@@ -36389,7 +36785,9 @@ function promptAdjustPartyGold(type) {
   }
 
   saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   renderCampaigns();
+  renderPartyStashViewer();
   if (typeof addLog === 'function') addLog(`💰 <b>Baú do Grupo:</b> ${type === 'add' ? '+' : '-'}${val} PO (${reason}). Saldo: ${camp.partyStash.gold} PO.`);
 }
 
@@ -36428,6 +36826,7 @@ function splitPartyGold() {
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   renderCampaigns();
+  renderPartyStashViewer();
   if (typeof renderPlayers === 'function') renderPlayers();
   if (typeof addLog === 'function') addLog(`💰 <b>Divisão de Tesouro:</b> ${each} PO distribuídos para cada um dos ${campPlayers.length} heróis. Sobra: ${remainder} PO.`);
 }
@@ -36515,6 +36914,7 @@ function savePartyItem() {
   }
 
   saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   closePartyItemModal();
   renderCampaigns();
   renderPartyStashViewer();
@@ -36537,6 +36937,7 @@ function deletePartyItem(itemId) {
   });
 
   saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   renderCampaigns();
   renderPartyStashViewer();
   if (typeof addLog === 'function') addLog(`🗑️ <b>Baú do Grupo:</b> "${it.name}" removido.`);
@@ -40193,6 +40594,19 @@ if (syncChannel) {
       }
     } else if (event.data.type === 'PV_VIEW_MODE') {
       switchPlayerViewMode(event.data.mode, false);
+    } else if (event.data.type === 'CAMPAIGNS_UPDATE') {
+      if (event.data.campaignsState) {
+        CAMPAIGNS_STATE = event.data.campaignsState;
+        if (typeof renderCampaigns === 'function') renderCampaigns();
+        if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
+      }
+    } else if (event.data.type === 'GLOBAL_DICE_ROLL' && event.data.roll) {
+      if (typeof updateDiceResultUI === 'function') {
+        updateDiceResultUI(event.data.roll);
+      }
+      if (typeof showLiveDiceRoll === 'function') {
+        showLiveDiceRoll(event.data.roll.label, event.data.roll.total, event.data.roll.breakdown, event.data.roll.isCrit, event.data.roll.isFumble);
+      }
     }
   };
 }

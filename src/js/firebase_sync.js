@@ -209,16 +209,40 @@ function applyCloudDataToLocal(cloudData) {
       saveSafetySnapshot('Antes de aplicar sincronização da Nuvem');
     }
 
-    // 1. Atualiza Fichas de Jogadores
+    // 1. Atualiza Fichas de Jogadores com Merge Inteligente (evita sobrescrever alterações locais ativas)
     if (cloudData.players && Array.isArray(cloudData.players)) {
-      PLAYERS = cloudData.players.map(p => {
-        if (!p.skillProficiencies) p.skillProficiencies = [];
-        if (!p.saveProficiencies) p.saveProficiencies = [];
-        if (!p.actionLogs) p.actionLogs = [];
-        if (p.playerNotes === undefined) p.playerNotes = '';
-        return p;
-      });
+      if (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId) {
+        // Modo Portal do Jogador: mescla dados remotos dos outros heróis e atualiza campos do mestre no herói local
+        const localChar = PLAYERS.find(p => p.id === activePortalPlayerId);
+        PLAYERS = cloudData.players.map(remoteP => {
+          if (localChar && remoteP.id === activePortalPlayerId) {
+            // Preserva inventário e notas locais se o jogador acabou de mexer, mas aceita PV, condições e XP do mestre
+            return Object.assign({}, remoteP, {
+              hp: remoteP.hp,
+              maxHp: remoteP.maxHp,
+              tempHp: remoteP.tempHp,
+              conditions: remoteP.conditions || localChar.conditions || [],
+              xp: remoteP.xp !== undefined ? remoteP.xp : localChar.xp,
+              level: remoteP.level || localChar.level,
+              // Mantém inventário mais recente entre ambos
+              inventory: (localChar.inventory && localChar.inventory.length > 0) ? localChar.inventory : (remoteP.inventory || [])
+            });
+          }
+          return remoteP;
+        });
+      } else {
+        // Modo Mestre: atualiza todos os jogadores recebidos da nuvem
+        PLAYERS = cloudData.players.map(p => {
+          if (!p.skillProficiencies) p.skillProficiencies = [];
+          if (!p.saveProficiencies) p.saveProficiencies = [];
+          if (!p.actionLogs) p.actionLogs = [];
+          if (p.playerNotes === undefined) p.playerNotes = '';
+          return p;
+        });
+      }
+
       if (typeof renderPlayers === 'function') renderPlayers();
+      if (typeof updatePlayerPortalBanner === 'function') updatePlayerPortalBanner();
     }
 
     // 2. Atualiza Estado de Combate
@@ -234,11 +258,12 @@ function applyCloudDataToLocal(cloudData) {
       if (typeof renderVttCombatHud === 'function') renderVttCombatHud();
     }
 
-    // 4. Atualiza Campanhas e Mesas de Jogo
+    // 4. Atualiza Campanhas, Baú do Grupo e Mesas de Jogo
     if (cloudData.campaigns && typeof CAMPAIGNS_STATE !== 'undefined') {
       CAMPAIGNS_STATE = cloudData.campaigns;
       if (typeof saveCampaignsState === 'function') saveCampaignsState();
       if (typeof renderCampaigns === 'function') renderCampaigns();
+      if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
     }
 
     // 5. Atualiza Notas Rápidas do Mestre
@@ -545,4 +570,23 @@ function manualPullFromCloud() {
         alert('Erro ao buscar dados do Firestore: ' + err.message);
       });
   }
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    getStoredFirebaseConfig,
+    saveFirebaseConfigToStorage,
+    getStoredFirebaseRoom,
+    setStoredFirebaseRoom,
+    isFirebaseAutoSyncEnabled,
+    setFirebaseAutoSyncEnabled,
+    initFirebaseSync,
+    applyCloudDataToLocal,
+    syncLocalChangesToFirebase,
+    executeCloudSave,
+    openFirebaseModal,
+    closeFirebaseModal,
+    manualPushToCloud,
+    manualPullFromCloud
+  };
 }

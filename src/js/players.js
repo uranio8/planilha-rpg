@@ -3559,7 +3559,8 @@ function generatePlayerShareUrl(playerId, embedData = true) {
   if (!p) return href;
 
   let base = href.split('?')[0].split('#')[0];
-  let url = `${base}?view=player&id=${encodeURIComponent(playerId)}`;
+  const room = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
+  let url = `${base}?view=player&id=${encodeURIComponent(playerId)}&room=${encodeURIComponent(room)}`;
 
   if (embedData) {
     const payload = serializePlayerForShare(p);
@@ -3568,6 +3569,13 @@ function generatePlayerShareUrl(playerId, embedData = true) {
     }
   }
   return url;
+}
+
+function getShortPlayerShareUrl(playerId) {
+  const href = (typeof window !== 'undefined' && window.location && window.location.href) ? window.location.href : 'https://uranio8.github.io/planilha-rpg/';
+  let base = href.split('?')[0].split('#')[0];
+  const room = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
+  return `${base}?room=${encodeURIComponent(room)}&player=${encodeURIComponent(playerId)}`;
 }
 
 function openSharePlayerModal(playerId) {
@@ -3581,17 +3589,27 @@ function openSharePlayerModal(playerId) {
   const charNameEl = document.getElementById('share-modal-char-name');
   const charMetaEl = document.getElementById('share-modal-char-meta');
   const inpUrl = document.getElementById('inp-share-url');
+  const inpUrlShort = document.getElementById('inp-share-url-short');
   const qrContainer = document.getElementById('share-qrcode-render');
   const btnCopy = document.getElementById('btn-copy-share');
+  const btnCopyShort = document.getElementById('btn-copy-share-short');
 
   if (charNameEl) charNameEl.innerText = `${p.name} (${p.student})`;
   if (charMetaEl) charMetaEl.innerText = `${p.race} • ${p.className} • Nível ${p.level} • CA ${p.ac} • ${p.hp}/${p.maxHp} PV`;
 
   const shareUrl = generatePlayerShareUrl(playerId, true);
+  const shortUrl = getShortPlayerShareUrl(playerId);
+
   if (inpUrl) inpUrl.value = shareUrl;
+  if (inpUrlShort) inpUrlShort.value = shortUrl;
+
   if (btnCopy) {
     btnCopy.innerText = '📋 Copiar';
     btnCopy.style.background = '';
+  }
+  if (btnCopyShort) {
+    btnCopyShort.innerText = '📋 Copiar Link Curto';
+    btnCopyShort.style.background = '';
   }
 
   // Renderiza QR Code com payload embutido
@@ -3610,6 +3628,35 @@ function openSharePlayerModal(playerId) {
 function closeSharePlayerModal() {
   const modal = document.getElementById('modal-share-sheet');
   if (modal) modal.classList.remove('open');
+}
+
+function copyShortShareLink() {
+  const inp = document.getElementById('inp-share-url-short');
+  const btn = document.getElementById('btn-copy-share-short');
+  if (!inp) return;
+  inp.select();
+  inp.setSelectionRange(0, 99999);
+
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(inp.value);
+    } else {
+      document.execCommand('copy');
+    }
+    if (btn) {
+      btn.innerText = '✅ Link Curto Copiado!';
+      btn.style.background = 'linear-gradient(135deg, #10b981, #047857)';
+      setTimeout(() => {
+        if (btn) {
+          btn.innerText = '📋 Copiar Link Curto';
+          btn.style.background = '';
+        }
+      }, 2000);
+    }
+    if (typeof addLog === 'function') addLog('💻 <b>Link Curto Copiado:</b> Link simplificado para computador copiado com sucesso.');
+  } catch (e) {
+    alert('Link selecionado. Pressione Ctrl+C para copiar.');
+  }
 }
 
 function copyShareLink() {
@@ -3674,6 +3721,20 @@ function openPlayerPortalDirect() {
   window.open(shareUrl, '_blank');
 }
 
+function updatePlayerPortalBanner() {
+  if (!activePortalPlayerId) return;
+  const p = PLAYERS.find(x => x.id === activePortalPlayerId);
+  if (!p) return;
+
+  const banner = document.getElementById('player-portal-banner');
+  const titleEl = document.getElementById('portal-char-title');
+  const subEl = document.getElementById('portal-char-sub');
+
+  if (banner) banner.style.display = 'flex';
+  if (titleEl) titleEl.innerText = `👤 ${p.name} (${p.student})`;
+  if (subEl) subEl.innerText = `${p.race} • ${p.className} (Nível ${p.level}) • CA ${p.ac} • ${p.hp}/${p.maxHp} PV`;
+}
+
 function initPlayerPortalMode(playerId) {
   const p = PLAYERS.find(x => x.id === playerId) || PLAYERS[0];
   if (!p) return;
@@ -3683,13 +3744,8 @@ function initPlayerPortalMode(playerId) {
     document.body.classList.add('mode-player-portal');
   }
 
-  const banner = document.getElementById('player-portal-banner');
-  const titleEl = document.getElementById('portal-char-title');
-  const subEl = document.getElementById('portal-char-sub');
-
-  if (banner) banner.style.display = 'flex';
-  if (titleEl) titleEl.innerText = `👤 ${p.name} (${p.student})`;
-  if (subEl) subEl.innerText = `${p.race} • ${p.className} (Nível ${p.level}) • CA ${p.ac} • ${p.hp}/${p.maxHp} PV`;
+  updatePlayerPortalBanner();
+  renderPlayers();
 
   // Força aba inicial em Minha Ficha
   switchTab('players');
@@ -3708,6 +3764,22 @@ function exitPlayerPortalMode() {
 
 function checkPlayerPortalUrl() {
   try {
+    const params = new URLSearchParams(window.location.search);
+
+    // Conecta automaticamente à sala do mestre especificada na URL
+    const roomParam = params.get('room');
+    if (roomParam) {
+      if (typeof setStoredFirebaseRoom === 'function') {
+        setStoredFirebaseRoom(roomParam);
+      }
+      if (typeof setFirebaseAutoSyncEnabled === 'function') {
+        setFirebaseAutoSyncEnabled(true);
+      }
+      if (typeof initFirebaseSync === 'function') {
+        setTimeout(() => initFirebaseSync(), 100);
+      }
+    }
+
     // 1. Verifica se há payload de dados codificado no Hash (#pdata=...) ou na Busca (?pdata=...)
     let encodedData = '';
     const hash = window.location.hash || '';
@@ -3717,7 +3789,6 @@ function checkPlayerPortalUrl() {
       encodedData = hash.split('import_player=')[1].split('&')[0];
     }
 
-    const params = new URLSearchParams(window.location.search);
     if (!encodedData && params.get('pdata')) {
       encodedData = params.get('pdata');
     }
@@ -3744,11 +3815,19 @@ function checkPlayerPortalUrl() {
     }
 
     const view = params.get('view');
-    const playerId = params.get('id') || params.get('playerId');
+    const playerId = params.get('id') || params.get('playerId') || params.get('player');
 
-    if (view === 'player' && playerId) {
+    if ((view === 'player' || params.has('player')) && playerId) {
       initPlayerPortalMode(playerId);
       return true;
+    }
+
+    // Se a URL solicita abertura direta do lobby / seleção de herói
+    if (params.get('login') === 'player' || params.get('player_login') === 'true' || params.get('lobby') === 'true') {
+      setTimeout(() => {
+        openPlayerLoginModal();
+      }, 200);
+      return false;
     }
 
     // Se a URL não for de portal, garante que o modo portal esteja desativado
@@ -3762,6 +3841,140 @@ function checkPlayerPortalUrl() {
     console.warn('Erro ao processar URL do portal do jogador:', e);
   }
   return false;
+}
+
+// --- MODAL DE LOGIN / ENTRADA RÁPIDA DE JOGADOR NO COMPUTADOR ---
+
+function openPlayerLoginModal() {
+  const modal = document.getElementById('modal-player-login');
+  if (!modal) return;
+
+  const inpRoom = document.getElementById('inp-login-room');
+  if (inpRoom) {
+    const currentRoom = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
+    inpRoom.value = currentRoom;
+  }
+
+  const inpFilter = document.getElementById('inp-filter-login-players');
+  if (inpFilter) inpFilter.value = '';
+
+  renderPlayerLoginList();
+  modal.classList.add('open');
+}
+
+function closePlayerLoginModal() {
+  const modal = document.getElementById('modal-player-login');
+  if (modal) modal.classList.remove('open');
+}
+
+function refreshLoginRoom() {
+  const inpRoom = document.getElementById('inp-login-room');
+  if (!inpRoom) return;
+  const newRoom = inpRoom.value.trim() || 'turma_principal';
+  if (typeof setStoredFirebaseRoom === 'function') {
+    setStoredFirebaseRoom(newRoom);
+  }
+  if (typeof setFirebaseAutoSyncEnabled === 'function') {
+    setFirebaseAutoSyncEnabled(true);
+  }
+  if (typeof initFirebaseSync === 'function') {
+    initFirebaseSync();
+  }
+  if (typeof addLog === 'function') {
+    addLog(`🌐 Conectando à sala <b>${newRoom}</b>... Aguarde sincronização.`);
+  }
+  setTimeout(() => {
+    renderPlayerLoginList();
+  }, 400);
+}
+
+function renderPlayerLoginList() {
+  const container = document.getElementById('player-login-list-container');
+  if (!container) return;
+
+  const inpFilter = document.getElementById('inp-filter-login-players');
+  const term = (inpFilter && inpFilter.value) ? inpFilter.value.trim().toLowerCase() : '';
+
+  const filtered = (PLAYERS || []).filter(p => {
+    if (!term) return true;
+    const nameMatch = (p.name || '').toLowerCase().includes(term);
+    const studentMatch = (p.student || '').toLowerCase().includes(term);
+    const classMatch = (p.className || '').toLowerCase().includes(term);
+    const raceMatch = (p.race || '').toLowerCase().includes(term);
+    return nameMatch || studentMatch || classMatch || raceMatch;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 24px 12px; color: var(--text-muted); background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px dashed var(--border-color);">
+        <div style="font-size: 28px; margin-bottom: 6px;">👥</div>
+        <div style="font-size: 14px; font-weight: 700; color: #fff;">Nenhum personagem encontrado</div>
+        <div style="font-size: 11.5px; margin-top: 4px; color: var(--text-dim);">
+          ${term ? 'Tente buscar com outro termo.' : 'Verifique se a sala conectada está correta ou se o mestre já cadastrou os heróis.'}
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(p => {
+    const isCurrent = activePortalPlayerId === p.id;
+    const initial = (p.name || '?').charAt(0).toUpperCase();
+    const hpPct = Math.max(0, Math.min(100, Math.round(((p.hp || 0) / (p.maxHp || 1)) * 100)));
+    const hpColor = hpPct > 50 ? '#10b981' : (hpPct > 25 ? '#f59e0b' : '#ef4444');
+
+    return `
+      <div class="player-login-card ${isCurrent ? 'active' : ''}" onclick="selectLoginCharacter('${p.id}')">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 38px; height: 38px; border-radius: 8px; background: linear-gradient(135deg, rgba(235, 180, 56, 0.2), rgba(0,0,0,0.5)); border: 1px solid var(--accent-gold); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: var(--accent-gold); flex-shrink: 0;">
+            ${p.avatar ? `<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:7px;" onerror="this.outerHTML='${initial}'">` : initial}
+          </div>
+          <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+            <div style="font-weight: 800; font-size: 13.5px; color: #fff; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${p.name || 'Sem Nome'}</div>
+            <div style="font-size: 11px; color: var(--primary-light); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">👤 ${p.student || 'Aluno'}</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 8px; font-size: 11px; color: var(--text-muted);">
+          🛡️ ${p.race || 'Raça'} • ${p.className || 'Classe'} (Nv. ${p.level || 1})
+        </div>
+
+        <div style="margin-top: 6px; display: flex; align-items: center; justify-content: space-between; font-size: 11px;">
+          <span style="color: ${hpColor}; font-weight: 700;">❤️ ${p.hp || 0}/${p.maxHp || 10} PV</span>
+          <span style="color: var(--accent-gold); font-weight: 700;">🛡️ CA ${p.ac || 10}</span>
+        </div>
+
+        <div style="margin-top: 8px;">
+          <button class="btn-action" style="width: 100%; font-size: 11px; padding: 5px 0; border-radius: 4px; pointer-events: none;">
+            ${isCurrent ? '✅ Personagem Ativo' : '🎮 Entrar com este Herói'}
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectLoginCharacter(playerId) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+
+  initPlayerPortalMode(playerId);
+  closePlayerLoginModal();
+
+  // Atualiza a URL no navegador sem recarregar para facilitar bookmark / compartilhamento
+  try {
+    if (typeof window !== 'undefined' && window.history && window.history.replaceState) {
+      const room = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
+      const cleanUrl = `${window.location.pathname}?room=${encodeURIComponent(room)}&player=${encodeURIComponent(playerId)}`;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  } catch (e) {
+    // Silencioso em caso de restrição de ambiente
+  }
+
+  if (typeof addLog === 'function') {
+    addLog(`🎮 <b>Entrou como Jogador:</b> Você está controlando a ficha de <b>${p.name}</b> (${p.student}). Bom jogo!`);
+  }
 }
 
 // --- CONDIÇÕES DE STATUS NAS FICHAS (M2) ---

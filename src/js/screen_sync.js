@@ -239,6 +239,19 @@ if (syncChannel) {
       }
     } else if (event.data.type === 'PV_VIEW_MODE') {
       switchPlayerViewMode(event.data.mode, false);
+    } else if (event.data.type === 'CAMPAIGNS_UPDATE') {
+      if (event.data.campaignsState) {
+        CAMPAIGNS_STATE = event.data.campaignsState;
+        if (typeof renderCampaigns === 'function') renderCampaigns();
+        if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
+      }
+    } else if (event.data.type === 'GLOBAL_DICE_ROLL' && event.data.roll) {
+      if (typeof updateDiceResultUI === 'function') {
+        updateDiceResultUI(event.data.roll);
+      }
+      if (typeof showLiveDiceRoll === 'function') {
+        showLiveDiceRoll(event.data.roll.label, event.data.roll.total, event.data.roll.breakdown, event.data.roll.isCrit, event.data.roll.isFumble);
+      }
     }
   };
 }

@@ -588,7 +588,9 @@ function promptAdjustPartyGold(type) {
   }
 
   saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   renderCampaigns();
+  renderPartyStashViewer();
   if (typeof addLog === 'function') addLog(`💰 <b>Baú do Grupo:</b> ${type === 'add' ? '+' : '-'}${val} PO (${reason}). Saldo: ${camp.partyStash.gold} PO.`);
 }
 
@@ -627,6 +629,7 @@ function splitPartyGold() {
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   renderCampaigns();
+  renderPartyStashViewer();
   if (typeof renderPlayers === 'function') renderPlayers();
   if (typeof addLog === 'function') addLog(`💰 <b>Divisão de Tesouro:</b> ${each} PO distribuídos para cada um dos ${campPlayers.length} heróis. Sobra: ${remainder} PO.`);
 }
@@ -714,6 +717,7 @@ function savePartyItem() {
   }
 
   saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   closePartyItemModal();
   renderCampaigns();
   renderPartyStashViewer();
@@ -736,6 +740,7 @@ function deletePartyItem(itemId) {
   });
 
   saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   renderCampaigns();
   renderPartyStashViewer();
   if (typeof addLog === 'function') addLog(`🗑️ <b>Baú do Grupo:</b> "${it.name}" removido.`);

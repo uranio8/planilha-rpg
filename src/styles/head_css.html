@@ -6237,6 +6237,86 @@
       width: 100%;
     }
 
+    /* --- 8. CARDS E GRADE DE LOGIN DO JOGADOR --- */
+    .player-login-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .player-login-card {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.8) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .player-login-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), 0 0 12px rgba(245, 158, 11, 0.3);
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(45, 55, 72, 0.9) 100%);
+    }
+
+    .player-login-card .card-avatar {
+      font-size: 28px;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .player-login-card .card-name {
+      font-weight: 800;
+      font-size: 14px;
+      color: #fff;
+      font-family: var(--font-title);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .player-login-card .card-sub {
+      font-size: 11px;
+      color: var(--primary-light);
+    }
+
+    .player-login-card .card-stats {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 8px;
+    }
+
+    .player-login-card .btn-enter {
+      margin-top: 4px;
+      width: 100%;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      border: none;
+      border-radius: 6px;
+      color: #000;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .player-login-card .btn-enter:hover {
+      opacity: 0.9;
+    }
+
     @media print {
       body {
         background: #fff !important;
