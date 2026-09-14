@@ -865,8 +865,8 @@ function renderPlayers() {
                               <span>${sk.name}</span>
                               <span class="skill-card-attr">(${sk.label})</span>
                             </div>
-                            <button class="skill-card-roll-btn ${isExpert ? 'expert' : ''}" onclick="rollPlayerSkill('${p.id}', '${sk.key}')" title="Rolar teste de ${sk.name} (${modStr})${isExpert ? ' • Especialista (Bônus Dobrado +2x PB)' : (isProf ? ' • Proficiente' : '')}">
-                              🎲 ${modStr}
+                            <button class="skill-card-roll-btn ${isExpert ? 'expert' : (isProf ? 'prof' : '')}" onclick="rollPlayerSkill('${p.id}', '${sk.key}')" title="Rolar teste de ${sk.name} (${modStr})${isExpert ? ' • Especialista (Bônus Dobrado +2x PB)' : (isProf ? ' • Proficiente' : '')}">
+                              <span>🎲</span> <span class="roll-mod">${modStr}</span>
                             </button>
                           </div>
                         `;
