@@ -182,63 +182,32 @@
     <!-- TAB 1.5: MAPA & GRID DE BATALHA (VTT EXPANDIDO DEDICADO DO MESTRE) -->
     <div id="tab-grid" class="tab-pane">
       <div class="battlegrid-container" id="battlegrid-container">
-        <!-- BARRA SUPERIOR DE FERRAMENTAS DO MESTRE (COMPACTA E DE JOGO) -->
+        <!-- BARRA SUPERIOR DE FERRAMENTAS DO MESTRE (CLEAN & MODERNA) -->
         <div class="battlegrid-toolbar">
+          <!-- GRUPO 1: GESTÃO DE CENAS & MAPAS -->
           <div class="toolbar-group">
             <span style="font-family: var(--font-title); font-weight: 800; font-size: 13px; color: var(--primary-light); display: flex; align-items: center; gap: 4px; padding-right: 4px; border-right: 1px solid var(--border-color);">
               <span>🗺️</span> <span>Mapa</span>
             </span>
-
-            <!-- GESTÃO RÁPIDA DE CENAS -->
             <select id="sel-scene-active" onchange="switchScene(this.value)" title="Alternar Cena / Mapa Ativo" style="font-weight: 600; max-width: 140px;">
               <option value="scene-1">🏰 Cena 1: Masmorra</option>
             </select>
             <button class="btn-secondary" onclick="openCreateSceneModal()" title="Criar Nova Cena">➕</button>
-            <button class="btn-secondary" onclick="switchTab('grid-config')" title="Abrir Configurações Completas do Grid & Cenários">⚙️ Configurar Mapa</button>
-            
-            <!-- CENÁRIO E UPLOAD (COMPATIBILIDADE) -->
-            <select id="bg-map-theme" onchange="setGridMapBackground(this.value)" title="Tema do mapa" style="display:none;">
-              <option value="bg-dungeon">🏰 Masmorra</option>
-              <option value="bg-forest">🌲 Floresta</option>
-              <option value="bg-tavern">🍺 Taverna</option>
-              <option value="bg-cave">🌋 Caverna</option>
-              <option value="bg-ruins">🏛️ Ruínas</option>
-              <option value="bg-desert">🏜️ Deserto</option>
-              <option value="bg-tundra">❄️ Tundra</option>
-              <option value="bg-ship">🏴‍☠️ Navio</option>
-              <option value="bg-magma">🔥 Magma</option>
-              <option value="bg-astral">🌌 Astral</option>
-              <option value="custom" id="opt-custom-map" style="display: none;">🖼️ Custom</option>
-            </select>
-            <input type="file" id="inp-custom-map-file" accept="image/*" style="display: none;" onchange="handleCustomMapUpload(this)">
-
-            <!-- GRADE (COMPATIBILIDADE) -->
-            <select id="sel-grid-line-style" onchange="setGridLineStyle(this.value)" title="Estilo das linhas da grade" style="display:none;">
-              <option value="default">⚪ Grade</option>
-              <option value="gold">🟡 Grade Dourada</option>
-              <option value="dark">⚫ Grade Escura</option>
-              <option value="hidden">🚫 Sem Linhas</option>
-            </select>
-
-            <select id="sel-grid-size" onchange="changeGridCellSize(this.value)" title="Tamanho da célula" style="display:none;">
-              <option value="35">35px</option>
-              <option value="45">45px</option>
-              <option value="50" selected>50px</option>
-              <option value="60">60px</option>
-              <option value="75">75px</option>
-              <option value="90">90px</option>
-            </select>
+            <button class="btn-secondary" onclick="switchTab('grid-config')" title="Abrir Configurações do Grid & Mapas">⚙️ Config</button>
           </div>
 
+          <!-- GRUPO 2: DOCK DE FERRAMENTAS TÁTICAS (SEGMENTED PILL) -->
           <div class="toolbar-group">
-            <!-- MODOS E FERRAMENTAS -->
-            <button id="btn-toggle-pan-mode" class="btn-secondary" onclick="togglePanMode()" title="Modo Mover Mapa (ou segure Espaço / botão direito)">🖐️ Mover</button>
-            <button id="btn-tool-select" class="btn-secondary active" onclick="setPanMode(false); setVttTool('select');" title="Modo Seleção de Tokens">🎯 Tokens</button>
-            <button id="btn-tool-ruler" class="btn-secondary" onclick="toggleRulerTool()" title="Régua Tática de Medição (ft / m / quadrados)">📏 Régua</button>
-            
-            <!-- PINCEL DE ANOTAÇÃO E PALETA RÁPIDA -->
-            <button id="btn-tool-draw" class="btn-secondary" onclick="toggleDrawingTool()" title="Pincel / Giz de Desenho Tático (Ctrl+Z para desfazer)">✏️ Giz</button>
-            <div id="vtt-drawing-controls" style="display: none; align-items: center; gap: 4px;">
+            <div class="vtt-pill-group">
+              <button id="btn-toggle-pan-mode" onclick="togglePanMode()" title="Modo Mover Mapa (Espaço)">🖐️ Mover</button>
+              <button id="btn-tool-select" class="active" onclick="setPanMode(false); setVttTool('select');" title="Seleção & Movimentação de Tokens">🎯 Tokens</button>
+              <button id="btn-tool-ruler" onclick="toggleRulerTool()" title="Régua de Medição">📏 Régua</button>
+              <button id="btn-tool-draw" onclick="toggleDrawingTool()" title="Giz de Desenho Tático (Ctrl+Z)">✏️ Giz</button>
+              <button id="btn-tool-ping" onclick="togglePingTool()" title="Radar Ping">📍 Ping</button>
+            </div>
+
+            <!-- CONTROLES DO PINCEL / GIZ (EXPANSÃO CONTEXTUAL) -->
+            <div id="vtt-drawing-controls" style="display: none; align-items: center; gap: 4px; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 6px; border: 1px solid var(--border-color);">
               <div class="drawing-palette">
                 <span class="drawing-color-dot active" style="background: #f59e0b;" onclick="setDrawingColor('#f59e0b', this)" title="Amarelo / Dourado"></span>
                 <span class="drawing-color-dot" style="background: #ef4444;" onclick="setDrawingColor('#ef4444', this)" title="Vermelho"></span>
@@ -252,17 +221,14 @@
                 <button class="drawing-size-btn" onclick="setDrawingSize(5, this)" title="Pincel Médio">▬</button>
                 <button class="drawing-size-btn" onclick="setDrawingSize(10, this)" title="Pincel Grosso">█</button>
               </div>
-              <button class="btn-secondary" style="padding: 1px 5px; font-size: 10px;" onclick="undoLastDrawing()" title="Desfazer último traço (Ctrl+Z)">↩️</button>
-              <button class="btn-secondary" style="padding: 1px 4px; font-size: 10px;" onclick="clearDrawings()" title="Limpar todos os Desenhos">🗑️</button>
+              <button class="btn-secondary" style="padding: 1px 5px; font-size: 10px;" onclick="undoLastDrawing()" title="Desfazer traço (Ctrl+Z)">↩️</button>
+              <button class="btn-secondary" style="padding: 1px 4px; font-size: 10px;" onclick="clearDrawings()" title="Limpar Desenhos">🗑️</button>
             </div>
+          </div>
 
-            <button id="btn-tool-ping" class="btn-secondary" onclick="togglePingTool()" title="Ponteiro / Radar Ping (chama atenção no mapa)">📍 Ping</button>
-            <button id="btn-toggle-coords" class="btn-secondary" onclick="toggleGridCoordinates()" title="Coordenadas A-Z / 1-50">🔢 Coord</button>
-            <button id="btn-toggle-combatants-drawer" class="btn-secondary" onclick="toggleCombatantsDrawer()" title="Painel Lateral de Combatentes">👥 Lista</button>
-            <button class="btn-secondary" onclick="syncCombatantsToGrid()" title="Povoar tokens da mesa de combate">🔄 Povoar</button>
-            
-            <!-- MARCADORES E AOE -->
-            <select id="sel-add-marker" onchange="if(this.value){addMapMarker(this.value); this.value='';}" title="Marcador de Terreno">
+          <!-- GRUPO 3: ELEMENTOS, MAGIAS & NÉVOA -->
+          <div class="toolbar-group">
+            <select id="sel-add-marker" onchange="if(this.value){addMapMarker(this.value); this.value='';}" title="Inserir Marcador no Mapa" style="max-width: 120px;">
               <option value="">➕ Marcador...</option>
               <option value="🔥 Fogueira">🔥 Fogueira</option>
               <option value="📦 Baú de Tesouro">📦 Baú</option>
@@ -274,7 +240,7 @@
               <option value="🗝️ Alavanca / Chave">🗝️ Alavanca</option>
             </select>
 
-            <select id="sel-add-aoe" onchange="if(this.value){addAoETemplate(this.value); this.value='';}" title="Magia em Área">
+            <select id="sel-add-aoe" onchange="if(this.value){addAoETemplate(this.value); this.value='';}" title="Inserir Modelo de Magia em Área (AoE)" style="max-width: 125px;">
               <option value="">🔮 Magia AoE...</option>
               <option value="circle_6m">🔴 Bola de Fogo (6m / 20ft)</option>
               <option value="circle_4m">🟡 Espírito Guardião (4,5m / 15ft)</option>
@@ -287,7 +253,7 @@
 
             <!-- NÉVOA RÁPIDA -->
             <div style="display: flex; align-items: center; gap: 2px; background: rgba(0,0,0,0.4); padding: 1px 4px; border-radius: 6px; border: 1px solid var(--border-color);">
-              <button id="btn-toggle-fow" class="btn-secondary" style="padding: 2px 5px; font-size: 10px;" onclick="toggleFogOfWar()" title="Ativar/Desativar Névoa de Guerra">🌫️ Névoa</button>
+              <button id="btn-toggle-fow" class="btn-secondary" style="padding: 2px 6px; font-size: 11px;" onclick="toggleFogOfWar()" title="Ativar/Desativar Névoa de Guerra">🌫️ Névoa</button>
               <select id="sel-fow-brush" onchange="setFogBrushMode(this.value)" style="display: none; padding: 1px 3px; font-size: 10px;">
                 <option value="reveal">🖌️ Revelar</option>
                 <option value="hide">⬛ Cobrir</option>
@@ -300,21 +266,56 @@
               <button id="btn-fow-reset" class="btn-secondary" style="display: none; padding: 1px 4px; font-size: 9px;" onclick="coverAllFog()" title="Cobrir Tudo">⬛</button>
               <button id="btn-fow-reveal-all" class="btn-secondary" style="display: none; padding: 1px 4px; font-size: 9px;" onclick="revealAllFog()" title="Revelar Tudo">👁️</button>
             </div>
+
+            <button id="btn-toggle-combatants-drawer" class="btn-secondary" onclick="toggleCombatantsDrawer()" title="Painel Lateral de Tokens">👥 Tokens</button>
+            <button id="btn-toggle-coords" class="btn-secondary" onclick="toggleGridCoordinates()" title="Coordenadas A-Z / 1-50">🔢</button>
           </div>
 
+          <!-- GRUPO 4: FOCO, TELA CHEIA, SALVAR & TELÃO -->
           <div class="toolbar-group">
-            <!-- CLIMA & TELÃO (COMPATIBILIDADE) -->
-            <select id="sel-weather-effect" onchange="setWeatherEffect(this.value)" title="Efeito climático no telão" style="display:none;">
-              <option value="none">☀️ Clima: Nenhum</option>
-              <option value="rain">🌧️ Tempestade</option>
-              <option value="embers">🔥 Brasas</option>
-              <option value="fog">🌫️ Névoa</option>
-            </select>
             <span id="grid-dimensions-badge" style="font-size: 10px; color: var(--primary-light); font-family: var(--font-mono); padding: 0 2px;">1200x800</span>
-            <button class="btn-secondary" style="padding: 3px 8px; font-size: 11px; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;" onclick="scrollGridIntoFocus()" title="Rolar a página e focar visão no grid">⬇️ Foco no Grid</button>
-            <button class="btn-secondary" style="padding: 3px 7px; font-size: 11px;" onclick="toggleGridFullscreen()" title="Alternar Tela Cheia do Mapa">⛶</button>
+            <button class="btn-secondary" style="padding: 3px 7px; font-size: 11px; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;" onclick="scrollGridIntoFocus()" title="Focar visão no grid">⬇️ Foco</button>
+            <button class="btn-secondary" style="padding: 3px 7px; font-size: 11px;" onclick="toggleGridFullscreen()" title="Tela Cheia">⛶</button>
             <button class="btn-action" style="padding: 3px 8px; font-size: 11px;" onclick="saveGridStatePermanently()" title="Salvar posições no mapa">💾 Salvar</button>
             <button class="btn-action" style="padding: 3px 10px; font-size: 11px; background: linear-gradient(135deg, #0ea5e9, #0284c7);" onclick="openPlayerView()" title="Abrir janela do projetor/telão">📺 Telão</button>
+          </div>
+
+          <!-- ELEMENTOS TÉCNICOS OCULTOS DE COMPATIBILIDADE -->
+          <div class="is-hidden-vtt" style="display: none !important;">
+            <select id="bg-map-theme" onchange="setGridMapBackground(this.value)">
+              <option value="bg-dungeon">Masmorra</option>
+              <option value="bg-forest">Floresta</option>
+              <option value="bg-tavern">Taverna</option>
+              <option value="bg-cave">Caverna</option>
+              <option value="bg-ruins">Ruínas</option>
+              <option value="bg-desert">Deserto</option>
+              <option value="bg-tundra">Tundra</option>
+              <option value="bg-ship">Navio</option>
+              <option value="bg-magma">Magma</option>
+              <option value="bg-astral">Astral</option>
+              <option value="custom" id="opt-custom-map">Custom</option>
+            </select>
+            <input type="file" id="inp-custom-map-file" accept="image/*" onchange="handleCustomMapUpload(this)">
+            <select id="sel-grid-line-style" onchange="setGridLineStyle(this.value)">
+              <option value="default">Grade</option>
+              <option value="gold">Grade Dourada</option>
+              <option value="dark">Grade Escura</option>
+              <option value="hidden">Sem Linhas</option>
+            </select>
+            <select id="sel-grid-size" onchange="changeGridCellSize(this.value)">
+              <option value="35">35px</option>
+              <option value="45">45px</option>
+              <option value="50" selected>50px</option>
+              <option value="60">60px</option>
+              <option value="75">75px</option>
+              <option value="90">90px</option>
+            </select>
+            <select id="sel-weather-effect" onchange="setWeatherEffect(this.value)">
+              <option value="none">Nenhum</option>
+              <option value="rain">Tempestade</option>
+              <option value="embers">Brasas</option>
+              <option value="fog">Névoa</option>
+            </select>
           </div>
         </div>
 
