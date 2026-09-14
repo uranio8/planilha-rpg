@@ -1461,6 +1461,62 @@ vm.runInContext(`
 const postCloudCount = vm.runInContext("PLAYERS.length", sandbox);
 assert(postCloudCount > 0, 'Nuvem vazia não apagou fichas locais existentes');
 
+// ========================================================
+// 27. TESTES DE MELHORIAS DA SEÇÃO DE FICHAS (PACOTE COMPLETO)
+// ========================================================
+console.log('\n🃏 27. Testes de Melhorias da Seção de Fichas (Layout & Gameplay):');
+
+assert(typeof vm.runInContext("getPlayerClassBadge", sandbox) === 'function', 'Função getPlayerClassBadge exportada');
+assert(typeof vm.runInContext("getPlayerRestStatus", sandbox) === 'function', 'Função getPlayerRestStatus exportada');
+assert(typeof vm.runInContext("togglePlayerCardCompact", sandbox) === 'function', 'Função togglePlayerCardCompact exportada');
+assert(typeof vm.runInContext("applyQuickDamage", sandbox) === 'function', 'Função applyQuickDamage exportada');
+assert(typeof vm.runInContext("applyQuickHeal", sandbox) === 'function', 'Função applyQuickHeal exportada');
+assert(typeof vm.runInContext("togglePlayerItemEquipped", sandbox) === 'function', 'Função togglePlayerItemEquipped exportada');
+assert(typeof vm.runInContext("filterSkillsCard", sandbox) === 'function', 'Função filterSkillsCard exportada');
+
+// 1. Teste de Badges de Classe
+const barbarianBadge = vm.runInContext("getPlayerClassBadge({ className: 'Bárbaro' })", sandbox);
+assert(barbarianBadge.includes('class-barbarian') && barbarianBadge.includes('🪓'), 'Badge de Bárbaro formatado corretamente');
+
+const wizardBadge = vm.runInContext("getPlayerClassBadge({ className: 'Mago' })", sandbox);
+assert(wizardBadge.includes('class-wizard') && wizardBadge.includes('📖'), 'Badge de Mago formatado corretamente');
+
+// 2. Teste de Status de Descanso
+const restedChar = { hp: 30, maxHp: 30, slots: [2, 0, 0, 0, 0], slotsUsed: [0, 0, 0, 0, 0] };
+const restedStatus = vm.runInContext(`getPlayerRestStatus(${JSON.stringify(restedChar)})`, sandbox);
+assert(restedStatus.css === 'rested', 'Personagem com PV cheio e slots livres classificado como Descansado');
+
+const tiredChar = { hp: 20, maxHp: 30, slots: [2, 0, 0, 0, 0], slotsUsed: [1, 0, 0, 0, 0] };
+const tiredStatus = vm.runInContext(`getPlayerRestStatus(${JSON.stringify(tiredChar)})`, sandbox);
+assert(tiredStatus.css === 'tired', 'Personagem ferido ou com slot gasto classificado como Cansado');
+
+const deadChar = { hp: 0, maxHp: 30 };
+const deadStatus = vm.runInContext(`getPlayerRestStatus(${JSON.stringify(deadChar)})`, sandbox);
+assert(deadStatus.css === 'unconscious', 'Personagem com 0 PV classificado como Inconsciente');
+
+// 3. Teste de Modo Compacto (togglePlayerCardCompact)
+const testCompactChar = { id: 'char_compact_test', name: 'Herói', hp: 20, maxHp: 20, level: 1 };
+vm.runInContext(`PLAYERS.push(${JSON.stringify(testCompactChar)})`, sandbox);
+vm.runInContext("togglePlayerCardCompact('char_compact_test')", sandbox);
+const updatedCompactChar = vm.runInContext("PLAYERS.find(p => p.id === 'char_compact_test')", sandbox);
+assert(updatedCompactChar.compact === true, 'togglePlayerCardCompact ativou modo compacto');
+
+vm.runInContext("togglePlayerCardCompact('char_compact_test')", sandbox);
+assert(updatedCompactChar.compact === false, 'togglePlayerCardCompact desativou modo compacto');
+
+// 4. Teste de Equipar / Guardar Itens no Inventário
+const testItemChar = {
+  id: 'char_item_test',
+  name: 'Herói com Item',
+  hp: 20,
+  maxHp: 20,
+  inventory: [{ name: 'Espada Longa', qty: 1, weight: 1.5, equipped: false }]
+};
+vm.runInContext(`PLAYERS.push(${JSON.stringify(testItemChar)})`, sandbox);
+vm.runInContext("togglePlayerItemEquipped('char_item_test', 0)", sandbox);
+const updatedItemChar = vm.runInContext("PLAYERS.find(p => p.id === 'char_item_test')", sandbox);
+assert(updatedItemChar.inventory[0].equipped === true, 'togglePlayerItemEquipped equipou a Espada Longa');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

@@ -1,5 +1,101 @@
 let activePortalPlayerId = null;
 
+// Helpers de Estilização & Gameplay para Fichas (Pacote Completo)
+function getPlayerClassBadge(p) {
+  const cls = (p.className || '').toLowerCase();
+  let icon = '🛡️';
+  let cssClass = 'class-fighter';
+  
+  if (cls.includes('bárbaro') || cls.includes('barbaro') || cls.includes('barbarian')) { icon = '🪓'; cssClass = 'class-barbarian'; }
+  else if (cls.includes('bardo') || cls.includes('bard')) { icon = '🎵'; cssClass = 'class-bard'; }
+  else if (cls.includes('clérigo') || cls.includes('clerigo') || cls.includes('cleric')) { icon = '✨'; cssClass = 'class-cleric'; }
+  else if (cls.includes('druida') || cls.includes('druid')) { icon = '🌿'; cssClass = 'class-druid'; }
+  else if (cls.includes('guerreiro') || cls.includes('fighter')) { icon = '⚔️'; cssClass = 'class-fighter'; }
+  else if (cls.includes('monge') || cls.includes('monk')) { icon = '👊'; cssClass = 'class-monk'; }
+  else if (cls.includes('paladino') || cls.includes('paladin')) { icon = '🛡️'; cssClass = 'class-paladin'; }
+  else if (cls.includes('patrulheiro') || cls.includes('ranger')) { icon = '🏹'; cssClass = 'class-ranger'; }
+  else if (cls.includes('ladino') || cls.includes('rogue')) { icon = '🗡️'; cssClass = 'class-rogue'; }
+  else if (cls.includes('feiticeiro') || cls.includes('sorcerer')) { icon = '🔮'; cssClass = 'class-sorcerer'; }
+  else if (cls.includes('bruxo') || cls.includes('warlock')) { icon = '👁️'; cssClass = 'class-warlock'; }
+  else if (cls.includes('mago') || cls.includes('wizard')) { icon = '📖'; cssClass = 'class-wizard'; }
+  
+  return `<span class="class-badge ${cssClass}">${icon} ${p.className || 'Aventureiro'}</span>`;
+}
+
+function getPlayerRestStatus(p) {
+  if (p.hp <= 0) {
+    return { label: '💀 Inconsciente', css: 'unconscious', title: '0 PV - Necessita de Estabilização ou Cura' };
+  }
+  const totalSlots = (p.slots || []).reduce((a, b) => a + b, 0);
+  const usedSlots = (p.slotsUsed || []).reduce((a, b) => a + b, 0);
+  const hpPct = p.maxHp > 0 ? (p.hp / p.maxHp) : 1;
+
+  if (hpPct <= 0.35 || (totalSlots > 0 && usedSlots / totalSlots >= 0.8)) {
+    return { label: '🔴 Exausto', css: 'exhausted', title: 'PV crítico ou quase sem magias' };
+  }
+  if (hpPct <= 0.75 || usedSlots > 0) {
+    return { label: '🟡 Cansado', css: 'tired', title: 'Sofreu dano ou gastou recursos' };
+  }
+  return { label: '🟢 Descansado', css: 'rested', title: 'PV cheio e recursos disponíveis' };
+}
+
+function togglePlayerCardCompact(id) {
+  const p = PLAYERS.find(x => x.id === id);
+  if (!p) return;
+  p.compact = !p.compact;
+  renderPlayers();
+  saveToLocalStorage();
+}
+
+function applyQuickDamage(id) {
+  const input = document.getElementById(`hp-quick-val-${id}`);
+  const val = input ? parseInt(input.value, 10) : 0;
+  if (val > 0) {
+    adjustPlayerHp(id, -val);
+    if (input) input.value = '';
+  }
+}
+
+function applyQuickHeal(id) {
+  const input = document.getElementById(`hp-quick-val-${id}`);
+  const val = input ? parseInt(input.value, 10) : 0;
+  if (val > 0) {
+    adjustPlayerHp(id, val);
+    if (input) input.value = '';
+  }
+}
+
+function togglePlayerItemEquipped(playerId, itemIdx) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p || !p.inventory || !p.inventory[itemIdx]) return;
+  p.inventory[itemIdx].equipped = !p.inventory[itemIdx].equipped;
+  const statusStr = p.inventory[itemIdx].equipped ? 'equipou' : 'guardou na mochila';
+  addPlayerActionLog(p.id, '🛡️', `${statusStr} ${p.inventory[itemIdx].name}`, 'general');
+  renderPlayers();
+  saveToLocalStorage();
+}
+
+let playerSkillSearchTerms = {};
+function filterSkillsCard(playerId, term) {
+  playerSkillSearchTerms[playerId] = (term || '').toLowerCase().trim();
+  const container = document.getElementById(`skills-grid-${playerId}`);
+  if (!container) return;
+  const items = container.querySelectorAll('.skill-card-item, .skill-attr-group-header');
+  const q = playerSkillSearchTerms[playerId];
+  items.forEach(el => {
+    if (el.classList.contains('skill-attr-group-header')) {
+      el.style.display = q ? 'none' : 'flex';
+      return;
+    }
+    const name = el.getAttribute('data-skill-name') || '';
+    if (!q || name.includes(q)) {
+      el.style.display = 'flex';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+}
+
 function getPlayerCarryCapacity(p) {
   const str = p.str || 10;
   const maxKg = Math.round(str * 7.5 * 10) / 10;
@@ -179,10 +275,10 @@ function renderPlayers() {
     const prof = getProfBonus(p.level);
     const wisMod = Math.floor((p.wis - 10) / 2);
     const dexMod = Math.floor((p.dex - 10) / 2);
-    const isWisProf = (p.skillProficiencies || []).includes('perception');
-    const isWisExpert = (p.skillExpertises || []).includes('perception');
+    const isWisProf = (p.skillProficiencies || []).includes('percepcao') || (p.skillProficiencies || []).includes('perception');
+    const isWisExpert = (p.skillExpertises || []).includes('percepcao') || (p.skillExpertises || []).includes('perception');
     const passPerc = 10 + wisMod + (isWisExpert ? (prof * 2) : (isWisProf ? prof : 0));
-    const activeTab = p.activeCardTab || 'attacks';
+    const activeTab = p.activeCardTab || 'skills';
 
     // Normaliza slots e dados
     p.slots = p.slots || [0, 0, 0, 0, 0];
@@ -202,6 +298,9 @@ function renderPlayers() {
 
     const carry = getPlayerCarryCapacity(p);
     const purse = getPlayerCoinPurse(p);
+    const hdPool = typeof getPlayerHitDicePool === 'function' ? getPlayerHitDicePool(p) : { dieType: 'd8', total: p.level || 1, available: p.level || 1, spent: 0 };
+    const restStatus = getPlayerRestStatus(p);
+    const classBadgeHtml = getPlayerClassBadge(p);
 
     // M3: Inicialização e automação de cargas de habilidades
     initPlayerFeatureCharges(p);
@@ -216,7 +315,7 @@ function renderPlayers() {
       ? `<img src="${p.avatar}" class="player-avatar-img" alt="${p.name}">`
       : `<span class="player-avatar-emoji">${p.avatar || '👤'}</span>`;
 
-    // Slots de magia
+    // Slots de magia coloridos por círculo (M-L6)
     const hasSpellSlots = p.slots.some(s => s > 0);
     let slotsHtml = '';
     if (hasSpellSlots) {
@@ -228,7 +327,7 @@ function renderPlayers() {
             let bubbles = '';
             for (let i = 0; i < maxSlots; i++) {
               const isUsed = i < used;
-              bubbles += `<div class="slot-bubble ${isUsed ? 'used' : ''}" title="${isUsed ? 'Gasto (clique para restaurar)' : 'Disponível (clique para gastar)'}" onclick="togglePlayerSlot('${p.id}', ${lvlIdx}, ${i})"></div>`;
+              bubbles += `<div class="slot-bubble lvl-${lvlIdx + 1} ${isUsed ? 'used' : ''}" title="${isUsed ? 'Gasto (clique para restaurar)' : 'Disponível (clique para gastar)'}" onclick="togglePlayerSlot('${p.id}', ${lvlIdx}, ${i})"></div>`;
             }
             return `
               <div class="slot-row">
@@ -241,20 +340,24 @@ function renderPlayers() {
       `;
     }
 
-    // M3: Feature charges UI
+    // M3 & M-A1: Feature charges UI
     let featureChargesHtml = '';
     if (p.featureCharges && p.featureCharges.length > 0) {
       featureChargesHtml = `
-        <div class="player-charges-container" style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,0.08);">
-          <div style="font-size: 10px; font-weight: 700; color: var(--primary-light); text-transform: uppercase; margin-bottom: 4px; display: flex; justify-content: space-between;">
-            <span>⚡ Habilidades & Cargas (M3):</span>
+        <div class="player-charges-container" style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px;">
+          <div style="font-size: 10px; font-weight: 800; color: var(--primary-light); text-transform: uppercase; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+            <span>⚡ Habilidades & Cargas de Classe:</span>
+            <div style="display: flex; gap: 4px;">
+              <button class="btn-micro" onclick="playerShortRest('${p.id}')" title="Descanso Curto (1h)">🏕️ Curto</button>
+              <button class="btn-micro" onclick="playerLongRest('${p.id}')" title="Descanso Longo (8h)">🌙 Longo</button>
+            </div>
           </div>
           <div style="display: flex; flex-direction: column; gap: 4px;">
             ${p.featureCharges.map(f => {
               const remaining = f.max - f.used;
               if (f.max > 10) {
                 return `
-                  <div class="charge-row-counter" style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.25); padding: 3px 6px; border-radius: 4px; font-size: 11px;">
+                  <div class="charge-row-counter" style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 4px 6px; border-radius: 4px; font-size: 11px;">
                     <span style="color: #e2e8f0;">${f.icon || '⚡'} <b>${f.name}</b> <small style="color: var(--text-muted);">(${f.restType === 'short' ? 'Curto' : 'Longo'})</small></span>
                     <div style="display: flex; align-items: center; gap: 3px;">
                       <button class="btn-micro" onclick="usePlayerFeatureCharge('${p.id}', '${f.id}', 5)" title="Gastar 5">-5</button>
@@ -326,7 +429,7 @@ function renderPlayers() {
     `).join('');
 
     return `
-      <div class="player-card ${activePortalPlayerId && p.id === activePortalPlayerId ? 'portal-view' : ''}">
+      <div class="player-card ${activePortalPlayerId && p.id === activePortalPlayerId ? 'portal-view' : ''} ${p.compact ? 'is-compact' : ''}">
         <div class="player-card-top">
           <div class="player-title-row">
             <div style="display: flex; align-items: center; gap: 10px;">
@@ -337,9 +440,14 @@ function renderPlayers() {
               <div class="player-title">
                 <span>${p.name}</span>
                 <span class="badge badge-src">Nv ${p.level}</span>
+                ${classBadgeHtml}
+                <span class="rest-status-badge ${restStatus.css}" title="${restStatus.title}">${restStatus.label}</span>
               </div>
             </div>
             <div style="display: flex; gap: 4px; align-items: center;">
+              <button class="btn-micro" onclick="togglePlayerCardCompact('${p.id}')" title="${p.compact ? 'Expandir Ficha Completa' : 'Compactar Ficha'}">
+                ${p.compact ? '🔍 Expandir' : '🗜️'}
+              </button>
               <button class="btn-insp ${p.inspiration ? 'active' : ''}" onclick="togglePlayerInspiration('${p.id}')" title="Alternar Inspiração Heroica (D&D 5E/2024)">
                 ⭐ Inspiração
               </button>
@@ -396,7 +504,7 @@ function renderPlayers() {
           </div>
         </div>
 
-        <!-- CORPO DA FICHA EM GRID MULTI-COLUNAS -->
+        <!-- CORPO DA FICHA EM GRID MULTI-COLUNAS (M-L1) -->
         <div class="player-sheet-grid">
           <!-- COLUNA 1: VITALIDADE, DEFESAS, ATRIBUTOS & SALVAGUARDAS -->
           <div class="player-col-vital">
@@ -409,20 +517,31 @@ function renderPlayers() {
                   ${p.tempHp > 0 ? `<span class="hp-temp-badge">+${p.tempHp} Temp</span>` : ''}
                 </div>
 
+                <div class="hit-dice-badge" onclick="openShortRestModal('${p.id}')" title="Dados de Vida: ${hdPool.available}/${hdPool.total} (${hdPool.dieType}) disponíveis. Clique para Descanso Curto">
+                  <span>🎲 <b>${hdPool.available}/${hdPool.total}</b> ${hdPool.dieType}</span>
+                </div>
+              </div>
+
+              <div class="hp-bar-bg" style="height: 9px;">
+                <div class="hp-bar-fill" style="width: ${hpPct}%; background-color: ${hpColor};"></div>
+              </div>
+
+              <!-- CONTROLE RÁPIDO DE PV: INPUT NUMÉRICO + BOTÕES INSTANTÂNEOS (M-A2) -->
+              <div class="hp-header-row" style="margin-top: 2px;">
+                <div class="hp-quick-input-box">
+                  <input type="number" id="hp-quick-val-${p.id}" class="hp-quick-input" placeholder="0" min="1" max="999" onkeydown="if(event.key==='Enter') applyQuickDamage('${p.id}')" title="Digite um valor e clique em Dano ou Cura">
+                  <button class="btn-hp-dmg" onclick="applyQuickDamage('${p.id}')" title="Aplicar Dano">💀 DMG</button>
+                  <button class="btn-hp-heal" onclick="applyQuickHeal('${p.id}')" title="Aplicar Cura">💖 HEAL</button>
+                </div>
+
                 <div class="hp-btn-group">
                   <button class="btn-hp-adj minus" onclick="adjustPlayerHp('${p.id}', -5)">-5</button>
                   <button class="btn-hp-adj minus" onclick="adjustPlayerHp('${p.id}', -1)">-1</button>
                   <button class="btn-hp-adj plus" onclick="adjustPlayerHp('${p.id}', 1)">+1</button>
                   <button class="btn-hp-adj plus" onclick="adjustPlayerHp('${p.id}', 5)">+5</button>
-                  <button class="btn-secondary" style="padding: 4px 7px; font-size: 10px;" onclick="setPlayerTempHp('${p.id}')" title="Definir PV Temporários">🛡️ Temp</button>
-                  <button class="btn-secondary" style="padding: 4px 7px; font-size: 10px; color: var(--accent-green);" onclick="adjustPlayerHp('${p.id}', ${p.maxHp})" title="Cura Total">💖 Full</button>
-                  <button class="btn-secondary" style="padding: 4px 7px; font-size: 10px; border-color: #d97706; color: #fbbf24;" onclick="openShortRestModal('${p.id}')" title="Descanso Curto (Gastar Dados de Vida e recuperar habilidades)">🏕️ Curto</button>
-                  <button class="btn-secondary" style="padding: 4px 7px; font-size: 10px; color: #a78bfa;" onclick="playerLongRest('${p.id}')" title="Descanso Longo (8h - Recupera PV total, magias e todas as cargas)">🌙 Longo</button>
+                  <button class="btn-secondary" style="padding: 3px 6px; font-size: 10px;" onclick="setPlayerTempHp('${p.id}')" title="Definir PV Temporários">🛡️ Temp</button>
+                  <button class="btn-secondary" style="padding: 3px 6px; font-size: 10px; color: var(--accent-green);" onclick="adjustPlayerHp('${p.id}', ${p.maxHp})" title="Cura Total">💖 Full</button>
                 </div>
-              </div>
-
-              <div class="hp-bar-bg" style="height: 8px;">
-                <div class="hp-bar-fill" style="width: ${hpPct}%; background-color: ${hpColor};"></div>
               </div>
 
               ${deathSavesHtml}
@@ -451,32 +570,32 @@ function renderPlayers() {
             </div>
 
             <div class="attrs-chips-grid">
-              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'str')" title="Clique para rolar teste de Força">
+              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'str')" title="Rolar Teste de Força (FOR ${p.str || 10})">
                 <span class="attr-name">FOR</span>
                 <span class="attr-mod">${getMod(p.str)}</span>
                 <span class="attr-raw">${p.str}</span>
               </button>
-              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'dex')" title="Clique para rolar teste de Destreza">
+              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'dex')" title="Rolar Teste de Destreza (DES ${p.dex || 10})">
                 <span class="attr-name">DES</span>
                 <span class="attr-mod">${getMod(p.dex)}</span>
                 <span class="attr-raw">${p.dex}</span>
               </button>
-              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'con')" title="Clique para rolar teste de Constituição">
+              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'con')" title="Rolar Teste de Constituição (CON ${p.con || 10})">
                 <span class="attr-name">CON</span>
                 <span class="attr-mod">${getMod(p.con)}</span>
                 <span class="attr-raw">${p.con}</span>
               </button>
-              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'int')" title="Clique para rolar teste de Inteligência">
+              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'int')" title="Rolar Teste de Inteligência (INT ${p.int || 10})">
                 <span class="attr-name">INT</span>
                 <span class="attr-mod">${getMod(p.int)}</span>
                 <span class="attr-raw">${p.int}</span>
               </button>
-              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'wis')" title="Clique para rolar teste de Sabedoria">
+              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'wis')" title="Rolar Teste de Sabedoria (SAB ${p.wis || 10})">
                 <span class="attr-name">SAB</span>
                 <span class="attr-mod">${getMod(p.wis)}</span>
                 <span class="attr-raw">${p.wis}</span>
               </button>
-              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'cha')" title="Clique para rolar teste de Carisma">
+              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'cha')" title="Rolar Teste de Carisma (CAR ${p.cha || 10})">
                 <span class="attr-name">CAR</span>
                 <span class="attr-mod">${getMod(p.cha)}</span>
                 <span class="attr-raw">${p.cha}</span>
@@ -510,7 +629,6 @@ function renderPlayers() {
           <!-- COLUNA 2: ARSENAL, PODERES & MAGIAS -->
           <div class="player-col-powers">
             ${slotsHtml}
-            ${featureChargesHtml}
 
             <div class="powers-section-box">
               <div class="powers-section-header">
@@ -617,48 +735,84 @@ function renderPlayers() {
             </div>
           </div>
 
-          <!-- COLUNA 3: PERÍCIAS, MOCHILA, ORIGEM & HISTÓRICO -->
+          <!-- COLUNA 3: PERÍCIAS, CARGAS, MOCHILA, ORIGEM, HISTÓRICO & NOTAS -->
           <div class="player-col-utility">
             <div class="player-tab-nav">
               <button class="p-tab-btn ${activeTab === 'skills' ? 'active' : ''}" onclick="switchPlayerCardTab('${p.id}', 'skills')">🎯 Perícias (${(p.skillProficiencies || []).length})</button>
+              <button class="p-tab-btn ${activeTab === 'charges' ? 'active' : ''}" onclick="switchPlayerCardTab('${p.id}', 'charges')">⚡ Cargas</button>
               <button class="p-tab-btn ${activeTab === 'inventory' ? 'active' : ''}" onclick="switchPlayerCardTab('${p.id}', 'inventory')">🎒 Mochila/PO</button>
               <button class="p-tab-btn ${activeTab === 'background' ? 'active' : ''}" onclick="switchPlayerCardTab('${p.id}', 'background')">📖 Origem</button>
               <button class="p-tab-btn ${activeTab === 'history' ? 'active' : ''}" onclick="switchPlayerCardTab('${p.id}', 'history')">⏳ Histórico (${(p.actionLogs || []).length})</button>
               <button class="p-tab-btn ${activeTab === 'notes' ? 'active' : ''}" onclick="switchPlayerCardTab('${p.id}', 'notes')">📝 Notas</button>
             </div>
 
-            <!-- ABA: PERÍCIAS -->
+            <!-- ABA 1: PERÍCIAS COM FILTRO E AGRUPAMENTO POR ATRIBUTO (M-L2) -->
             <div class="p-tab-content ${activeTab === 'skills' ? 'active' : ''}">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <span style="font-size: 11px; font-weight: 800; color: var(--primary-light);">🎯 Perícias D&D 5E (Profic: +${prof})</span>
                 <button class="btn-secondary" style="font-size: 9px; padding: 2px 6px;" onclick="openPlayerSkillsModal('${p.id}')">⚙️ Proficiências</button>
               </div>
-              <div class="skills-card-grid">
-                ${(typeof DND5E_SKILLS !== 'undefined' ? DND5E_SKILLS : []).map(sk => {
-                  const isProf = (p.skillProficiencies || []).includes(sk.key);
-                  const isExpert = (p.skillExpertises || []).includes(sk.key);
-                  const baseMod = Math.floor(((p[sk.attr] || 10) - 10) / 2);
-                  const profBonus = isExpert ? (prof * 2) : (isProf ? prof : 0);
-                  const totalMod = baseMod + profBonus;
-                  const modStr = totalMod >= 0 ? '+' + totalMod : `${totalMod}`;
-                  const starIcon = isExpert ? '<span style="color:#fbbf24; font-size:10px;" title="Especialização (Bônus Dobrado)">★★</span>' : (isProf ? '<span style="color:var(--primary); font-size:10px;" title="Proficiente">★</span>' : '');
-                  return `
-                    <div class="skill-card-item ${isExpert ? 'expert' : (isProf ? 'prof' : '')}">
-                      <div class="skill-card-name ${isExpert ? 'expert' : ''}">
-                        ${starIcon}
-                        <span>${sk.name}</span>
-                        <span class="skill-card-attr">(${sk.label})</span>
+
+              <div class="skill-filter-box">
+                <input type="text" class="skill-filter-input" placeholder="🔍 Filtrar perícia..." oninput="filterSkillsCard('${p.id}', this.value)" title="Digite para filtrar instantaneamente as perícias">
+              </div>
+
+              <div class="skills-card-grid" id="skills-grid-${p.id}">
+                ${(() => {
+                  const skillsList = typeof DND5E_SKILLS !== 'undefined' ? DND5E_SKILLS : [];
+                  const attrGroups = [
+                    { attr: 'str', label: 'Força (FOR)', css: 'attr-str' },
+                    { attr: 'dex', label: 'Destreza (DES)', css: 'attr-dex' },
+                    { attr: 'int', label: 'Inteligência (INT)', css: 'attr-int' },
+                    { attr: 'wis', label: 'Sabedoria (SAB)', css: 'attr-wis' },
+                    { attr: 'cha', label: 'Carisma (CAR)', css: 'attr-cha' }
+                  ];
+
+                  return attrGroups.map(grp => {
+                    const grpSkills = skillsList.filter(sk => sk.attr === grp.attr);
+                    if (grpSkills.length === 0) return '';
+                    return `
+                      <div class="skill-attr-group-header ${grp.css}" style="grid-column: 1 / -1;">
+                        <span>${grp.label}</span>
                       </div>
-                      <button class="skill-card-roll-btn ${isExpert ? 'expert' : ''}" onclick="rollPlayerSkill('${p.id}', '${sk.key}')" title="Rolar teste de ${sk.name} (${modStr})${isExpert ? ' • Especialista (Bônus Dobrado +2x PB)' : (isProf ? ' • Proficiente' : '')}">
-                        🎲 ${modStr}
-                      </button>
-                    </div>
-                  `;
-                }).join('')}
+                      ${grpSkills.map(sk => {
+                        const isProf = (p.skillProficiencies || []).includes(sk.key);
+                        const isExpert = (p.skillExpertises || []).includes(sk.key);
+                        const baseMod = Math.floor(((p[sk.attr] || 10) - 10) / 2);
+                        const profBonus = isExpert ? (prof * 2) : (isProf ? prof : 0);
+                        const totalMod = baseMod + profBonus;
+                        const modStr = totalMod >= 0 ? '+' + totalMod : `${totalMod}`;
+                        const starIcon = isExpert ? '<span style="color:#fbbf24; font-size:10px;" title="Especialização (Bônus Dobrado)">★★</span>' : (isProf ? '<span style="color:var(--primary); font-size:10px;" title="Proficiente">★</span>' : '');
+                        return `
+                          <div class="skill-card-item ${isExpert ? 'expert' : (isProf ? 'prof' : '')}" data-skill-name="${sk.name.toLowerCase()}">
+                            <div class="skill-card-name ${isExpert ? 'expert' : ''}">
+                              ${starIcon}
+                              <span>${sk.name}</span>
+                              <span class="skill-card-attr">(${sk.label})</span>
+                            </div>
+                            <button class="skill-card-roll-btn ${isExpert ? 'expert' : ''}" onclick="rollPlayerSkill('${p.id}', '${sk.key}')" title="Rolar teste de ${sk.name} (${modStr})${isExpert ? ' • Especialista (Bônus Dobrado +2x PB)' : (isProf ? ' • Proficiente' : '')}">
+                              🎲 ${modStr}
+                            </button>
+                          </div>
+                        `;
+                      }).join('')}
+                    `;
+                  }).join('');
+                })()}
               </div>
             </div>
 
-            <!-- ABA: MOCHILA / INVENTÁRIO / OURO -->
+            <!-- ABA 2: HABILIDADES & CARGAS (M-A1) -->
+            <div class="p-tab-content ${activeTab === 'charges' ? 'active' : ''}">
+              ${featureChargesHtml || `
+                <div style="background: rgba(0,0,0,0.25); border: 1px dashed var(--border-color); padding: 12px; border-radius: 6px; text-align: center; color: var(--text-muted); font-size: 11px;">
+                  Nenhuma habilidade com cargas configurada para esta classe.<br>
+                  <small style="color: var(--text-dim);">As cargas de classes (Fúria, Ki, Surto de Ação, Cura pelas Mãos, etc.) aparecem aqui automaticamente.</small>
+                </div>
+              `}
+            </div>
+
+            <!-- ABA 3: MOCHILA / INVENTÁRIO / OURO (M-B4) -->
             <div class="p-tab-content ${activeTab === 'inventory' ? 'active' : ''}">
               <div style="background: #080c16; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 6px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
@@ -689,14 +843,17 @@ function renderPlayers() {
                 <button class="btn-action" style="font-size: 9px; padding: 2px 6px;" onclick="openAddPlayerItemModal('${p.id}')">➕ Item</button>
               </div>
 
-              <div style="display: flex; flex-direction: column; gap: 3px; max-height: 250px; overflow-y: auto;">
+              <div style="display: flex; flex-direction: column; gap: 4px; max-height: 250px; overflow-y: auto;">
                 ${(p.inventory && p.inventory.length > 0) ? p.inventory.map((it, idx) => `
-                  <div style="background: #080c16; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 6px; display: flex; justify-content: space-between; align-items: center; font-size: 10px;">
+                  <div class="inventory-item-row ${it.equipped ? 'equipped' : ''}">
                     <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 4px;">
-                      <span style="font-weight: 700; color: #fff;">${it.name}</span>
+                      <span style="font-weight: 700; color: #fff;">${it.equipped ? '⚔️ ' : ''}${it.name}</span>
                       <span style="font-size: 9px; color: var(--text-dim);">${it.weight ? ' • ' + it.weight + 'kg' : ''}</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 2px;">
+                      <button class="btn-item-equip ${it.equipped ? 'active' : ''}" onclick="togglePlayerItemEquipped('${p.id}', ${idx})" title="${it.equipped ? 'Item Equipado (clique para guardar)' : 'Item na Mochila (clique para equipar)'}">
+                        ${it.equipped ? '⚔️ Equipado' : '🎒'}
+                      </button>
                       <button class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, -1)" title="Diminuir quantidade" style="padding: 1px 4px; font-size: 9px;">−</button>
                       <span style="font-weight: 800; min-width: 14px; text-align: center; color: var(--primary-light); font-size: 10px;">${it.qty || 1}x</span>
                       <button class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, 1)" title="Aumentar quantidade" style="padding: 1px 4px; font-size: 9px;">+</button>
@@ -711,7 +868,7 @@ function renderPlayers() {
               </div>
             </div>
 
-            <!-- ABA: ORIGEM -->
+            <!-- ABA 4: ORIGEM -->
             <div class="p-tab-content ${activeTab === 'background' ? 'active' : ''}">
               <div class="background-info-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -739,7 +896,7 @@ function renderPlayers() {
               </div>
             </div>
 
-            <!-- ABA: HISTÓRICO -->
+            <!-- ABA 5: HISTÓRICO COM CATEGORIZAÇÃO VISUAL (M-L7) -->
             <div class="p-tab-content ${activeTab === 'history' ? 'active' : ''}">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <span style="font-size: 11px; font-weight: 700; color: var(--primary-light);">📜 Histórico de Ações da Sessão</span>
@@ -747,7 +904,7 @@ function renderPlayers() {
               </div>
               <div class="action-logs-timeline">
                 ${(p.actionLogs && p.actionLogs.length > 0) ? p.actionLogs.map(log => `
-                  <div class="action-log-entry">
+                  <div class="action-log-entry" data-type="${log.type || 'general'}">
                     <span class="action-log-icon">${log.icon || '⚡'}</span>
                     <div style="flex:1;">
                       <div class="action-log-text">${log.text}</div>
@@ -762,7 +919,7 @@ function renderPlayers() {
               </div>
             </div>
 
-            <!-- ABA: NOTAS -->
+            <!-- ABA 6: NOTAS -->
             <div class="p-tab-content ${activeTab === 'notes' ? 'active' : ''}">
               <div class="player-notes-container">
                 <div style="display: flex; justify-content: space-between; align-items: center;">

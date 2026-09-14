@@ -624,6 +624,13 @@
       border-color: rgba(245, 158, 11, 0.4);
       box-shadow: 0 8px 24px rgba(0,0,0,0.45);
     }
+    .player-card.is-compact .player-sheet-grid {
+      display: none !important;
+    }
+    .player-card.is-compact {
+      gap: 6px;
+      padding: 12px 14px;
+    }
     
     /* Topo do Card */
     .player-card-top {
@@ -655,6 +662,49 @@
       line-height: 1.4;
     }
 
+    /* BADGES DE CLASSE D&D */
+    .class-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.05);
+    }
+    .class-badge.class-barbarian { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; }
+    .class-badge.class-bard { background: rgba(236, 72, 153, 0.15); border-color: rgba(236, 72, 153, 0.4); color: #f472b6; }
+    .class-badge.class-cleric { background: rgba(234, 179, 8, 0.15); border-color: rgba(234, 179, 8, 0.4); color: #fde047; }
+    .class-badge.class-druid { background: rgba(34, 197, 94, 0.15); border-color: rgba(34, 197, 94, 0.4); color: #86efac; }
+    .class-badge.class-fighter { background: rgba(249, 115, 22, 0.15); border-color: rgba(249, 115, 22, 0.4); color: #fdba74; }
+    .class-badge.class-monk { background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.4); color: #7dd3fc; }
+    .class-badge.class-paladin { background: rgba(250, 204, 21, 0.18); border-color: rgba(250, 204, 21, 0.5); color: #fef08a; }
+    .class-badge.class-ranger { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7; }
+    .class-badge.class-rogue { background: rgba(148, 163, 184, 0.15); border-color: rgba(148, 163, 184, 0.4); color: #cbd5e1; }
+    .class-badge.class-sorcerer { background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.4); color: #d8b4fe; }
+    .class-badge.class-warlock { background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.4); color: #c4b5fd; }
+    .class-badge.class-wizard { background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.4); color: #a5b4fc; }
+
+    /* STATUS DE DESCANSO */
+    .rest-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+    }
+    .rest-status-badge.rested { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #34d399; }
+    .rest-status-badge.tired { background: rgba(234, 179, 8, 0.15); border-color: rgba(234, 179, 8, 0.4); color: #facc15; }
+    .rest-status-badge.exhausted { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #f87171; }
+    .rest-status-badge.unconscious { background: rgba(0, 0, 0, 0.5); border-color: #ef4444; color: #ef4444; animation: pulseGlow 1.5s infinite; }
+
     /* Barra de Ações Rápidas do Cabeçalho */
     .player-toolbar {
       display: flex;
@@ -666,7 +716,7 @@
     }
     .player-actions-group {
       display: flex;
-      gap: 6px;
+      gap: 5px;
       align-items: center;
       flex-wrap: wrap;
     }
@@ -749,16 +799,97 @@
       color: #f1f5f9;
       font-size: 11px;
       font-weight: 700;
-      padding: 5px 9px;
+      padding: 4px 8px;
       border-radius: 6px;
       cursor: pointer;
       transition: all 0.15s;
-      min-width: 32px;
+      min-width: 28px;
       text-align: center;
     }
     .btn-hp-adj:hover { background: #222e49; border-color: var(--primary); transform: translateY(-1px); }
     .btn-hp-adj.minus:hover { border-color: var(--accent-red); color: var(--accent-red); background: rgba(239, 68, 68, 0.15); }
     .btn-hp-adj.plus:hover { border-color: var(--accent-green); color: var(--accent-green); background: rgba(16, 185, 129, 0.15); }
+
+    .hp-quick-input-box {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 2px 4px;
+    }
+    .hp-quick-input {
+      width: 38px;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: 12px;
+      text-align: center;
+      outline: none;
+    }
+    .btn-hp-dmg {
+      background: rgba(239, 68, 68, 0.25);
+      border: 1px solid rgba(239, 68, 68, 0.6);
+      color: #fca5a5;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-hp-dmg:hover {
+      background: #ef4444;
+      color: #fff;
+    }
+    .btn-hp-heal {
+      background: rgba(16, 185, 129, 0.25);
+      border: 1px solid rgba(16, 185, 129, 0.6);
+      color: #86efac;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-hp-heal:hover {
+      background: #10b981;
+      color: #fff;
+    }
+
+    /* DADOS DE VIDA (HD) WIDGET */
+    .hit-dice-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border-color);
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 10px;
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .hit-dice-badge:hover {
+      border-color: #fbbf24;
+      background: rgba(251, 191, 36, 0.1);
+    }
+    .hd-bubble {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      display: inline-block;
+    }
+    .hd-bubble.used {
+      background: #475569;
+      opacity: 0.5;
+    }
 
     /* STATS CHIP */
     .stat-chip {
@@ -825,10 +956,10 @@
     .save-dot.success { background: var(--accent-green); border-color: var(--accent-green); box-shadow: 0 0 6px rgba(16, 185, 129, 0.5); }
     .save-dot.failure { background: var(--accent-red); border-color: var(--accent-red); box-shadow: 0 0 6px rgba(239, 68, 68, 0.5); }
 
-    /* SPELL SLOTS TRACKER */
+    /* SPELL SLOTS TRACKER - M-L6 */
     .slots-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
       gap: 6px;
       background: #080c16;
       padding: 8px 10px;
@@ -840,37 +971,48 @@
       flex-direction: column;
       gap: 3px;
     }
-    .slot-label { font-size: 9px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; }
+    .slot-label { font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
     .slot-bubbles { display: flex; gap: 5px; flex-wrap: wrap; }
     .slot-bubble {
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       border-radius: 4px;
       border: 1.5px solid #38bdf8;
-      background: rgba(56, 189, 248, 0.3);
+      background: rgba(56, 189, 248, 0.35);
       cursor: pointer;
       transition: all 0.15s;
     }
+    .slot-bubble:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 6px rgba(56, 189, 248, 0.6);
+    }
+    .slot-bubble.lvl-0 { border-color: #cbd5e1; background: rgba(203, 213, 225, 0.3); }
+    .slot-bubble.lvl-1 { border-color: #38bdf8; background: rgba(56, 189, 248, 0.3); }
+    .slot-bubble.lvl-2 { border-color: #34d399; background: rgba(52, 211, 153, 0.3); }
+    .slot-bubble.lvl-3 { border-color: #fbbf24; background: rgba(251, 191, 36, 0.3); }
+    .slot-bubble.lvl-4 { border-color: #fb923c; background: rgba(251, 146, 60, 0.3); }
+    .slot-bubble.lvl-5 { border-color: #c084fc; background: rgba(192, 132, 252, 0.3); }
     .slot-bubble.used {
-      background: transparent;
-      border-color: #334155;
-      opacity: 0.5;
+      background: transparent !important;
+      border-color: #334155 !important;
+      opacity: 0.45;
+      box-shadow: none !important;
     }
 
     /* CARD TABS INTERNAS */
     .player-tab-nav {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      display: flex;
       gap: 4px;
       border-bottom: 1px solid var(--border-color);
       padding-bottom: 6px;
       margin-top: 4px;
+      flex-wrap: wrap;
     }
     .p-tab-btn {
       background: #0d1322;
       color: var(--text-muted);
       border: 1px solid var(--border-color);
-      padding: 6px 4px;
+      padding: 5px 8px;
       border-radius: 6px;
       font-size: 11px;
       font-weight: 600;
@@ -878,8 +1020,7 @@
       transition: all 0.2s;
       text-align: center;
       white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      flex: 1 1 auto;
     }
     .p-tab-btn:hover { color: #fff; background: var(--bg-surface-elevated); border-color: #384869; }
     .p-tab-btn.active {
@@ -887,6 +1028,7 @@
       color: var(--primary-light);
       border-color: var(--primary);
       font-weight: 700;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
     .p-tab-content { display: none; flex-direction: column; gap: 6px; font-size: 12px; }
     .p-tab-content.active { display: flex; }
@@ -3427,33 +3569,28 @@
       width: 100%;
     }
 
-    /* Layout Multi-Colunas Apenas em Telas Grandes (Desktop >= 1080px) */
+    /* Layout Multi-Colunas em Telas Grandes (Desktop >= 1080px) - M-L1 */
     @media (min-width: 1080px) {
-      body.mode-player-portal .player-sheet-grid,
-      .player-card.portal-view .player-sheet-grid {
+      .player-sheet-grid {
         display: grid !important;
-        grid-template-columns: minmax(330px, 370px) minmax(380px, 1.25fr) minmax(330px, 1fr) !important;
-        gap: 18px;
+        grid-template-columns: minmax(300px, 340px) minmax(350px, 1.2fr) minmax(300px, 1fr) !important;
+        gap: 16px;
         align-items: start;
       }
-      body.mode-player-portal .player-col-powers .player-spells-chips-grid,
-      .player-card.portal-view .player-col-powers .player-spells-chips-grid {
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      .player-col-powers .player-spells-chips-grid {
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
       }
     }
 
     /* Em Tablets e Celulares (< 1080px), pilha vertical limpa sem compressão */
     @media (max-width: 1079px) {
-      body.mode-player-portal .player-sheet-grid,
-      .player-card.portal-view .player-sheet-grid,
       .player-sheet-grid {
         display: flex !important;
         flex-direction: column !important;
         gap: 14px !important;
         width: 100% !important;
       }
-      body.mode-player-portal .player-col-utility,
-      .player-card.portal-view .player-col-utility {
+      .player-col-utility {
         grid-column: unset;
       }
     }
@@ -3929,7 +4066,45 @@
       border-color: var(--primary);
     }
 
-    /* --- P1: PERÍCIAS & SALVAGUARDAS --- */
+    /* --- P1: PERÍCIAS & SALVAGUARDAS (M-L2) --- */
+    .skill-filter-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #080c16;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 4px 8px;
+      margin-bottom: 6px;
+    }
+    .skill-filter-input {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 11px;
+      width: 100%;
+      outline: none;
+    }
+    .skill-attr-group-header {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 3px 6px;
+      border-radius: 4px;
+      margin-top: 4px;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .skill-attr-group-header.attr-str { background: rgba(248, 113, 113, 0.15); color: #fca5a5; }
+    .skill-attr-group-header.attr-dex { background: rgba(56, 189, 248, 0.15); color: #7dd3fc; }
+    .skill-attr-group-header.attr-con { background: rgba(251, 146, 60, 0.15); color: #fdba74; }
+    .skill-attr-group-header.attr-int { background: rgba(168, 85, 247, 0.15); color: #d8b4fe; }
+    .skill-attr-group-header.attr-wis { background: rgba(52, 211, 153, 0.15); color: #6ee7b7; }
+    .skill-attr-group-header.attr-cha { background: rgba(244, 114, 182, 0.15); color: #f472b6; }
+
     .saves-card-bar {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
@@ -3983,9 +4158,9 @@
 
     .skills-card-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 6px;
-      max-height: 280px;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 5px;
+      max-height: 290px;
       overflow-y: auto;
       padding-right: 2px;
     }
@@ -3993,7 +4168,7 @@
       background: #090e1a;
       border: 1px solid var(--border-color);
       border-radius: 6px;
-      padding: 6px 8px;
+      padding: 5px 7px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -4168,7 +4343,7 @@
       font-weight: 700;
     }
 
-    /* --- P2: HISTÓRICO DE AÇÕES DO PERSONAGEM --- */
+    /* --- P2: HISTÓRICO DE AÇÕES DO PERSONAGEM (M-L7) --- */
     .action-logs-timeline {
       display: flex;
       flex-direction: column;
@@ -4182,12 +4357,27 @@
       align-items: flex-start;
       gap: 8px;
       background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-left: 3px solid #64748b;
       border-radius: 6px;
       padding: 6px 8px;
       font-size: 11px;
       line-height: 1.35;
+      transition: all 0.15s ease;
     }
+    .action-log-entry:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .action-log-entry[data-type="damage"] { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.06); }
+    .action-log-entry[data-type="heal"] { border-left-color: #10b981; background: rgba(16, 185, 129, 0.06); }
+    .action-log-entry[data-type="spell"] { border-left-color: #a855f7; background: rgba(168, 85, 247, 0.06); }
+    .action-log-entry[data-type="rest"] { border-left-color: #38bdf8; background: rgba(56, 189, 248, 0.06); }
+    .action-log-entry[data-type="xp"] { border-left-color: #f59e0b; background: rgba(245, 158, 11, 0.06); }
+    .action-log-entry[data-type="skill"],
+    .action-log-entry[data-type="save"],
+    .action-log-entry[data-type="check"] { border-left-color: #fbbf24; }
+    .action-log-entry[data-type="feature"] { border-left-color: #ec4899; }
+
     .action-log-time {
       font-family: var(--font-mono);
       font-size: 9px;
@@ -4205,6 +4395,39 @@
     }
     .action-log-text b {
       color: #fff;
+    }
+
+    /* ITENS DO INVENTÁRIO - EQUIPADO VS MOCHILA (M-B4) */
+    .inventory-item-row {
+      background: #080c16;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 5px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      transition: border-color 0.15s;
+    }
+    .inventory-item-row.equipped {
+      border-color: rgba(245, 158, 11, 0.45);
+      background: rgba(245, 158, 11, 0.05);
+    }
+    .btn-item-equip {
+      font-size: 9px;
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-item-equip.active {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: var(--primary);
+      color: var(--primary-light);
+      font-weight: 700;
     }
 
     /* --- M5: BLOCO DE NOTAS PRIVADO --- */
@@ -27989,6 +28212,102 @@ function rollMonsterAttackAction(atkName, toHitBonus, dmgFormula, monName = 'Mon
 
 let activePortalPlayerId = null;
 
+// Helpers de Estilização & Gameplay para Fichas (Pacote Completo)
+function getPlayerClassBadge(p) {
+  const cls = (p.className || '').toLowerCase();
+  let icon = '🛡️';
+  let cssClass = 'class-fighter';
+  
+  if (cls.includes('bárbaro') || cls.includes('barbaro') || cls.includes('barbarian')) { icon = '🪓'; cssClass = 'class-barbarian'; }
+  else if (cls.includes('bardo') || cls.includes('bard')) { icon = '🎵'; cssClass = 'class-bard'; }
+  else if (cls.includes('clérigo') || cls.includes('clerigo') || cls.includes('cleric')) { icon = '✨'; cssClass = 'class-cleric'; }
+  else if (cls.includes('druida') || cls.includes('druid')) { icon = '🌿'; cssClass = 'class-druid'; }
+  else if (cls.includes('guerreiro') || cls.includes('fighter')) { icon = '⚔️'; cssClass = 'class-fighter'; }
+  else if (cls.includes('monge') || cls.includes('monk')) { icon = '👊'; cssClass = 'class-monk'; }
+  else if (cls.includes('paladino') || cls.includes('paladin')) { icon = '🛡️'; cssClass = 'class-paladin'; }
+  else if (cls.includes('patrulheiro') || cls.includes('ranger')) { icon = '🏹'; cssClass = 'class-ranger'; }
+  else if (cls.includes('ladino') || cls.includes('rogue')) { icon = '🗡️'; cssClass = 'class-rogue'; }
+  else if (cls.includes('feiticeiro') || cls.includes('sorcerer')) { icon = '🔮'; cssClass = 'class-sorcerer'; }
+  else if (cls.includes('bruxo') || cls.includes('warlock')) { icon = '👁️'; cssClass = 'class-warlock'; }
+  else if (cls.includes('mago') || cls.includes('wizard')) { icon = '📖'; cssClass = 'class-wizard'; }
+  
+  return `<span class="class-badge ${cssClass}">${icon} ${p.className || 'Aventureiro'}</span>`;
+}
+
+function getPlayerRestStatus(p) {
+  if (p.hp <= 0) {
+    return { label: '💀 Inconsciente', css: 'unconscious', title: '0 PV - Necessita de Estabilização ou Cura' };
+  }
+  const totalSlots = (p.slots || []).reduce((a, b) => a + b, 0);
+  const usedSlots = (p.slotsUsed || []).reduce((a, b) => a + b, 0);
+  const hpPct = p.maxHp > 0 ? (p.hp / p.maxHp) : 1;
+
+  if (hpPct <= 0.35 || (totalSlots > 0 && usedSlots / totalSlots >= 0.8)) {
+    return { label: '🔴 Exausto', css: 'exhausted', title: 'PV crítico ou quase sem magias' };
+  }
+  if (hpPct <= 0.75 || usedSlots > 0) {
+    return { label: '🟡 Cansado', css: 'tired', title: 'Sofreu dano ou gastou recursos' };
+  }
+  return { label: '🟢 Descansado', css: 'rested', title: 'PV cheio e recursos disponíveis' };
+}
+
+function togglePlayerCardCompact(id) {
+  const p = PLAYERS.find(x => x.id === id);
+  if (!p) return;
+  p.compact = !p.compact;
+  renderPlayers();
+  saveToLocalStorage();
+}
+
+function applyQuickDamage(id) {
+  const input = document.getElementById(`hp-quick-val-${id}`);
+  const val = input ? parseInt(input.value, 10) : 0;
+  if (val > 0) {
+    adjustPlayerHp(id, -val);
+    if (input) input.value = '';
+  }
+}
+
+function applyQuickHeal(id) {
+  const input = document.getElementById(`hp-quick-val-${id}`);
+  const val = input ? parseInt(input.value, 10) : 0;
+  if (val > 0) {
+    adjustPlayerHp(id, val);
+    if (input) input.value = '';
+  }
+}
+
+function togglePlayerItemEquipped(playerId, itemIdx) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p || !p.inventory || !p.inventory[itemIdx]) return;
+  p.inventory[itemIdx].equipped = !p.inventory[itemIdx].equipped;
+  const statusStr = p.inventory[itemIdx].equipped ? 'equipou' : 'guardou na mochila';
+  addPlayerActionLog(p.id, '🛡️', `${statusStr} ${p.inventory[itemIdx].name}`, 'general');
+  renderPlayers();
+  saveToLocalStorage();
+}
+
+let playerSkillSearchTerms = {};
+function filterSkillsCard(playerId, term) {
+  playerSkillSearchTerms[playerId] = (term || '').toLowerCase().trim();
+  const container = document.getElementById(`skills-grid-${playerId}`);
+  if (!container) return;
+  const items = container.querySelectorAll('.skill-card-item, .skill-attr-group-header');
+  const q = playerSkillSearchTerms[playerId];
+  items.forEach(el => {
+    if (el.classList.contains('skill-attr-group-header')) {
+      el.style.display = q ? 'none' : 'flex';
+      return;
+    }
+    const name = el.getAttribute('data-skill-name') || '';
+    if (!q || name.includes(q)) {
+      el.style.display = 'flex';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+}
+
 function getPlayerCarryCapacity(p) {
   const str = p.str || 10;
   const maxKg = Math.round(str * 7.5 * 10) / 10;
@@ -28168,10 +28487,10 @@ function renderPlayers() {
     const prof = getProfBonus(p.level);
     const wisMod = Math.floor((p.wis - 10) / 2);
     const dexMod = Math.floor((p.dex - 10) / 2);
-    const isWisProf = (p.skillProficiencies || []).includes('perception');
-    const isWisExpert = (p.skillExpertises || []).includes('perception');
+    const isWisProf = (p.skillProficiencies || []).includes('percepcao') || (p.skillProficiencies || []).includes('perception');
+    const isWisExpert = (p.skillExpertises || []).includes('percepcao') || (p.skillExpertises || []).includes('perception');
     const passPerc = 10 + wisMod + (isWisExpert ? (prof * 2) : (isWisProf ? prof : 0));
-    const activeTab = p.activeCardTab || 'attacks';
+    const activeTab = p.activeCardTab || 'skills';
 
     // Normaliza slots e dados
     p.slots = p.slots || [0, 0, 0, 0, 0];
@@ -28191,6 +28510,9 @@ function renderPlayers() {
 
     const carry = getPlayerCarryCapacity(p);
     const purse = getPlayerCoinPurse(p);
+    const hdPool = typeof getPlayerHitDicePool === 'function' ? getPlayerHitDicePool(p) : { dieType: 'd8', total: p.level || 1, available: p.level || 1, spent: 0 };
+    const restStatus = getPlayerRestStatus(p);
+    const classBadgeHtml = getPlayerClassBadge(p);
 
     // M3: Inicialização e automação de cargas de habilidades
     initPlayerFeatureCharges(p);
@@ -28205,7 +28527,7 @@ function renderPlayers() {
       ? `<img src="${p.avatar}" class="player-avatar-img" alt="${p.name}">`
       : `<span class="player-avatar-emoji">${p.avatar || '👤'}</span>`;
 
-    // Slots de magia
+    // Slots de magia coloridos por círculo (M-L6)
     const hasSpellSlots = p.slots.some(s => s > 0);
     let slotsHtml = '';
     if (hasSpellSlots) {
@@ -28217,7 +28539,7 @@ function renderPlayers() {
             let bubbles = '';
             for (let i = 0; i < maxSlots; i++) {
               const isUsed = i < used;
-              bubbles += `<div class="slot-bubble ${isUsed ? 'used' : ''}" title="${isUsed ? 'Gasto (clique para restaurar)' : 'Disponível (clique para gastar)'}" onclick="togglePlayerSlot('${p.id}', ${lvlIdx}, ${i})"></div>`;
+              bubbles += `<div class="slot-bubble lvl-${lvlIdx + 1} ${isUsed ? 'used' : ''}" title="${isUsed ? 'Gasto (clique para restaurar)' : 'Disponível (clique para gastar)'}" onclick="togglePlayerSlot('${p.id}', ${lvlIdx}, ${i})"></div>`;
             }
             return `
               <div class="slot-row">
@@ -28230,20 +28552,24 @@ function renderPlayers() {
       `;
     }
 
-    // M3: Feature charges UI
+    // M3 & M-A1: Feature charges UI
     let featureChargesHtml = '';
     if (p.featureCharges && p.featureCharges.length > 0) {
       featureChargesHtml = `
-        <div class="player-charges-container" style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,0.08);">
-          <div style="font-size: 10px; font-weight: 700; color: var(--primary-light); text-transform: uppercase; margin-bottom: 4px; display: flex; justify-content: space-between;">
-            <span>⚡ Habilidades & Cargas (M3):</span>
+        <div class="player-charges-container" style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px;">
+          <div style="font-size: 10px; font-weight: 800; color: var(--primary-light); text-transform: uppercase; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+            <span>⚡ Habilidades & Cargas de Classe:</span>
+            <div style="display: flex; gap: 4px;">
+              <button class="btn-micro" onclick="playerShortRest('${p.id}')" title="Descanso Curto (1h)">🏕️ Curto</button>
+              <button class="btn-micro" onclick="playerLongRest('${p.id}')" title="Descanso Longo (8h)">🌙 Longo</button>
+            </div>
           </div>
           <div style="display: flex; flex-direction: column; gap: 4px;">
             ${p.featureCharges.map(f => {
               const remaining = f.max - f.used;
               if (f.max > 10) {
                 return `
-                  <div class="charge-row-counter" style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.25); padding: 3px 6px; border-radius: 4px; font-size: 11px;">
+                  <div class="charge-row-counter" style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 4px 6px; border-radius: 4px; font-size: 11px;">
                     <span style="color: #e2e8f0;">${f.icon || '⚡'} <b>${f.name}</b> <small style="color: var(--text-muted);">(${f.restType === 'short' ? 'Curto' : 'Longo'})</small></span>
                     <div style="display: flex; align-items: center; gap: 3px;">
                       <button class="btn-micro" onclick="usePlayerFeatureCharge('${p.id}', '${f.id}', 5)" title="Gastar 5">-5</button>
@@ -28315,7 +28641,7 @@ function renderPlayers() {
     `).join('');
 
     return `
-      <div class="player-card ${activePortalPlayerId && p.id === activePortalPlayerId ? 'portal-view' : ''}">
+      <div class="player-card ${activePortalPlayerId && p.id === activePortalPlayerId ? 'portal-view' : ''} ${p.compact ? 'is-compact' : ''}">
         <div class="player-card-top">
           <div class="player-title-row">
             <div style="display: flex; align-items: center; gap: 10px;">
@@ -28326,9 +28652,14 @@ function renderPlayers() {
               <div class="player-title">
                 <span>${p.name}</span>
                 <span class="badge badge-src">Nv ${p.level}</span>
+                ${classBadgeHtml}
+                <span class="rest-status-badge ${restStatus.css}" title="${restStatus.title}">${restStatus.label}</span>
               </div>
             </div>
             <div style="display: flex; gap: 4px; align-items: center;">
+              <button class="btn-micro" onclick="togglePlayerCardCompact('${p.id}')" title="${p.compact ? 'Expandir Ficha Completa' : 'Compactar Ficha'}">
+                ${p.compact ? '🔍 Expandir' : '🗜️'}
+              </button>
               <button class="btn-insp ${p.inspiration ? 'active' : ''}" onclick="togglePlayerInspiration('${p.id}')" title="Alternar Inspiração Heroica (D&D 5E/2024)">
                 ⭐ Inspiração
               </button>
@@ -28385,7 +28716,7 @@ function renderPlayers() {
           </div>
         </div>
 
-        <!-- CORPO DA FICHA EM GRID MULTI-COLUNAS -->
+        <!-- CORPO DA FICHA EM GRID MULTI-COLUNAS (M-L1) -->
         <div class="player-sheet-grid">
           <!-- COLUNA 1: VITALIDADE, DEFESAS, ATRIBUTOS & SALVAGUARDAS -->
           <div class="player-col-vital">
@@ -28398,20 +28729,31 @@ function renderPlayers() {
                   ${p.tempHp > 0 ? `<span class="hp-temp-badge">+${p.tempHp} Temp</span>` : ''}
                 </div>
 
+                <div class="hit-dice-badge" onclick="openShortRestModal('${p.id}')" title="Dados de Vida: ${hdPool.available}/${hdPool.total} (${hdPool.dieType}) disponíveis. Clique para Descanso Curto">
+                  <span>🎲 <b>${hdPool.available}/${hdPool.total}</b> ${hdPool.dieType}</span>
+                </div>
+              </div>
+
+              <div class="hp-bar-bg" style="height: 9px;">
+                <div class="hp-bar-fill" style="width: ${hpPct}%; background-color: ${hpColor};"></div>
+              </div>
+
+              <!-- CONTROLE RÁPIDO DE PV: INPUT NUMÉRICO + BOTÕES INSTANTÂNEOS (M-A2) -->
+              <div class="hp-header-row" style="margin-top: 2px;">
+                <div class="hp-quick-input-box">
+                  <input type="number" id="hp-quick-val-${p.id}" class="hp-quick-input" placeholder="0" min="1" max="999" onkeydown="if(event.key==='Enter') applyQuickDamage('${p.id}')" title="Digite um valor e clique em Dano ou Cura">
+                  <button class="btn-hp-dmg" onclick="applyQuickDamage('${p.id}')" title="Aplicar Dano">💀 DMG</button>
+                  <button class="btn-hp-heal" onclick="applyQuickHeal('${p.id}')" title="Aplicar Cura">💖 HEAL</button>
+                </div>
+
                 <div class="hp-btn-group">
                   <button class="btn-hp-adj minus" onclick="adjustPlayerHp('${p.id}', -5)">-5</button>
                   <button class="btn-hp-adj minus" onclick="adjustPlayerHp('${p.id}', -1)">-1</button>
                   <button class="btn-hp-adj plus" onclick="adjustPlayerHp('${p.id}', 1)">+1</button>
                   <button class="btn-hp-adj plus" onclick="adjustPlayerHp('${p.id}', 5)">+5</button>
-                  <button class="btn-secondary" style="padding: 4px 7px; font-size: 10px;" onclick="setPlayerTempHp('${p.id}')" title="Definir PV Temporários">🛡️ Temp</button>
-                  <button class="btn-secondary" style="padding: 4px 7px; font-size: 10px; color: var(--accent-green);" onclick="adjustPlayerHp('${p.id}', ${p.maxHp})" title="Cura Total">💖 Full</button>
-                  <button class="btn-secondary" style="padding: 4px 7px; font-size: 10px; border-color: #d97706; color: #fbbf24;" onclick="openShortRestModal('${p.id}')" title="Descanso Curto (Gastar Dados de Vida e recuperar habilidades)">🏕️ Curto</button>
-                  <button class="btn-secondary" style="padding: 4px 7px; font-size: 10px; color: #a78bfa;" onclick="playerLongRest('${p.id}')" title="Descanso Longo (8h - Recupera PV total, magias e todas as cargas)">🌙 Longo</button>
+                  <button class="btn-secondary" style="padding: 3px 6px; font-size: 10px;" onclick="setPlayerTempHp('${p.id}')" title="Definir PV Temporários">🛡️ Temp</button>
+                  <button class="btn-secondary" style="padding: 3px 6px; font-size: 10px; color: var(--accent-green);" onclick="adjustPlayerHp('${p.id}', ${p.maxHp})" title="Cura Total">💖 Full</button>
                 </div>
-              </div>
-
-              <div class="hp-bar-bg" style="height: 8px;">
-                <div class="hp-bar-fill" style="width: ${hpPct}%; background-color: ${hpColor};"></div>
               </div>
 
               ${deathSavesHtml}
@@ -28440,32 +28782,32 @@ function renderPlayers() {
             </div>
 
             <div class="attrs-chips-grid">
-              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'str')" title="Clique para rolar teste de Força">
+              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'str')" title="Rolar Teste de Força (FOR ${p.str || 10})">
                 <span class="attr-name">FOR</span>
                 <span class="attr-mod">${getMod(p.str)}</span>
                 <span class="attr-raw">${p.str}</span>
               </button>
-              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'dex')" title="Clique para rolar teste de Destreza">
+              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'dex')" title="Rolar Teste de Destreza (DES ${p.dex || 10})">
                 <span class="attr-name">DES</span>
                 <span class="attr-mod">${getMod(p.dex)}</span>
                 <span class="attr-raw">${p.dex}</span>
               </button>
-              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'con')" title="Clique para rolar teste de Constituição">
+              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'con')" title="Rolar Teste de Constituição (CON ${p.con || 10})">
                 <span class="attr-name">CON</span>
                 <span class="attr-mod">${getMod(p.con)}</span>
                 <span class="attr-raw">${p.con}</span>
               </button>
-              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'int')" title="Clique para rolar teste de Inteligência">
+              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'int')" title="Rolar Teste de Inteligência (INT ${p.int || 10})">
                 <span class="attr-name">INT</span>
                 <span class="attr-mod">${getMod(p.int)}</span>
                 <span class="attr-raw">${p.int}</span>
               </button>
-              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'wis')" title="Clique para rolar teste de Sabedoria">
+              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'wis')" title="Rolar Teste de Sabedoria (SAB ${p.wis || 10})">
                 <span class="attr-name">SAB</span>
                 <span class="attr-mod">${getMod(p.wis)}</span>
                 <span class="attr-raw">${p.wis}</span>
               </button>
-              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'cha')" title="Clique para rolar teste de Carisma">
+              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'cha')" title="Rolar Teste de Carisma (CAR ${p.cha || 10})">
                 <span class="attr-name">CAR</span>
                 <span class="attr-mod">${getMod(p.cha)}</span>
                 <span class="attr-raw">${p.cha}</span>
@@ -28499,7 +28841,6 @@ function renderPlayers() {
           <!-- COLUNA 2: ARSENAL, PODERES & MAGIAS -->
           <div class="player-col-powers">
             ${slotsHtml}
-            ${featureChargesHtml}
 
             <div class="powers-section-box">
               <div class="powers-section-header">
@@ -28606,48 +28947,84 @@ function renderPlayers() {
             </div>
           </div>
 
-          <!-- COLUNA 3: PERÍCIAS, MOCHILA, ORIGEM & HISTÓRICO -->
+          <!-- COLUNA 3: PERÍCIAS, CARGAS, MOCHILA, ORIGEM, HISTÓRICO & NOTAS -->
           <div class="player-col-utility">
             <div class="player-tab-nav">
               <button class="p-tab-btn ${activeTab === 'skills' ? 'active' : ''}" onclick="switchPlayerCardTab('${p.id}', 'skills')">🎯 Perícias (${(p.skillProficiencies || []).length})</button>
+              <button class="p-tab-btn ${activeTab === 'charges' ? 'active' : ''}" onclick="switchPlayerCardTab('${p.id}', 'charges')">⚡ Cargas</button>
               <button class="p-tab-btn ${activeTab === 'inventory' ? 'active' : ''}" onclick="switchPlayerCardTab('${p.id}', 'inventory')">🎒 Mochila/PO</button>
               <button class="p-tab-btn ${activeTab === 'background' ? 'active' : ''}" onclick="switchPlayerCardTab('${p.id}', 'background')">📖 Origem</button>
               <button class="p-tab-btn ${activeTab === 'history' ? 'active' : ''}" onclick="switchPlayerCardTab('${p.id}', 'history')">⏳ Histórico (${(p.actionLogs || []).length})</button>
               <button class="p-tab-btn ${activeTab === 'notes' ? 'active' : ''}" onclick="switchPlayerCardTab('${p.id}', 'notes')">📝 Notas</button>
             </div>
 
-            <!-- ABA: PERÍCIAS -->
+            <!-- ABA 1: PERÍCIAS COM FILTRO E AGRUPAMENTO POR ATRIBUTO (M-L2) -->
             <div class="p-tab-content ${activeTab === 'skills' ? 'active' : ''}">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <span style="font-size: 11px; font-weight: 800; color: var(--primary-light);">🎯 Perícias D&D 5E (Profic: +${prof})</span>
                 <button class="btn-secondary" style="font-size: 9px; padding: 2px 6px;" onclick="openPlayerSkillsModal('${p.id}')">⚙️ Proficiências</button>
               </div>
-              <div class="skills-card-grid">
-                ${(typeof DND5E_SKILLS !== 'undefined' ? DND5E_SKILLS : []).map(sk => {
-                  const isProf = (p.skillProficiencies || []).includes(sk.key);
-                  const isExpert = (p.skillExpertises || []).includes(sk.key);
-                  const baseMod = Math.floor(((p[sk.attr] || 10) - 10) / 2);
-                  const profBonus = isExpert ? (prof * 2) : (isProf ? prof : 0);
-                  const totalMod = baseMod + profBonus;
-                  const modStr = totalMod >= 0 ? '+' + totalMod : `${totalMod}`;
-                  const starIcon = isExpert ? '<span style="color:#fbbf24; font-size:10px;" title="Especialização (Bônus Dobrado)">★★</span>' : (isProf ? '<span style="color:var(--primary); font-size:10px;" title="Proficiente">★</span>' : '');
-                  return `
-                    <div class="skill-card-item ${isExpert ? 'expert' : (isProf ? 'prof' : '')}">
-                      <div class="skill-card-name ${isExpert ? 'expert' : ''}">
-                        ${starIcon}
-                        <span>${sk.name}</span>
-                        <span class="skill-card-attr">(${sk.label})</span>
+
+              <div class="skill-filter-box">
+                <input type="text" class="skill-filter-input" placeholder="🔍 Filtrar perícia..." oninput="filterSkillsCard('${p.id}', this.value)" title="Digite para filtrar instantaneamente as perícias">
+              </div>
+
+              <div class="skills-card-grid" id="skills-grid-${p.id}">
+                ${(() => {
+                  const skillsList = typeof DND5E_SKILLS !== 'undefined' ? DND5E_SKILLS : [];
+                  const attrGroups = [
+                    { attr: 'str', label: 'Força (FOR)', css: 'attr-str' },
+                    { attr: 'dex', label: 'Destreza (DES)', css: 'attr-dex' },
+                    { attr: 'int', label: 'Inteligência (INT)', css: 'attr-int' },
+                    { attr: 'wis', label: 'Sabedoria (SAB)', css: 'attr-wis' },
+                    { attr: 'cha', label: 'Carisma (CAR)', css: 'attr-cha' }
+                  ];
+
+                  return attrGroups.map(grp => {
+                    const grpSkills = skillsList.filter(sk => sk.attr === grp.attr);
+                    if (grpSkills.length === 0) return '';
+                    return `
+                      <div class="skill-attr-group-header ${grp.css}" style="grid-column: 1 / -1;">
+                        <span>${grp.label}</span>
                       </div>
-                      <button class="skill-card-roll-btn ${isExpert ? 'expert' : ''}" onclick="rollPlayerSkill('${p.id}', '${sk.key}')" title="Rolar teste de ${sk.name} (${modStr})${isExpert ? ' • Especialista (Bônus Dobrado +2x PB)' : (isProf ? ' • Proficiente' : '')}">
-                        🎲 ${modStr}
-                      </button>
-                    </div>
-                  `;
-                }).join('')}
+                      ${grpSkills.map(sk => {
+                        const isProf = (p.skillProficiencies || []).includes(sk.key);
+                        const isExpert = (p.skillExpertises || []).includes(sk.key);
+                        const baseMod = Math.floor(((p[sk.attr] || 10) - 10) / 2);
+                        const profBonus = isExpert ? (prof * 2) : (isProf ? prof : 0);
+                        const totalMod = baseMod + profBonus;
+                        const modStr = totalMod >= 0 ? '+' + totalMod : `${totalMod}`;
+                        const starIcon = isExpert ? '<span style="color:#fbbf24; font-size:10px;" title="Especialização (Bônus Dobrado)">★★</span>' : (isProf ? '<span style="color:var(--primary); font-size:10px;" title="Proficiente">★</span>' : '');
+                        return `
+                          <div class="skill-card-item ${isExpert ? 'expert' : (isProf ? 'prof' : '')}" data-skill-name="${sk.name.toLowerCase()}">
+                            <div class="skill-card-name ${isExpert ? 'expert' : ''}">
+                              ${starIcon}
+                              <span>${sk.name}</span>
+                              <span class="skill-card-attr">(${sk.label})</span>
+                            </div>
+                            <button class="skill-card-roll-btn ${isExpert ? 'expert' : ''}" onclick="rollPlayerSkill('${p.id}', '${sk.key}')" title="Rolar teste de ${sk.name} (${modStr})${isExpert ? ' • Especialista (Bônus Dobrado +2x PB)' : (isProf ? ' • Proficiente' : '')}">
+                              🎲 ${modStr}
+                            </button>
+                          </div>
+                        `;
+                      }).join('')}
+                    `;
+                  }).join('');
+                })()}
               </div>
             </div>
 
-            <!-- ABA: MOCHILA / INVENTÁRIO / OURO -->
+            <!-- ABA 2: HABILIDADES & CARGAS (M-A1) -->
+            <div class="p-tab-content ${activeTab === 'charges' ? 'active' : ''}">
+              ${featureChargesHtml || `
+                <div style="background: rgba(0,0,0,0.25); border: 1px dashed var(--border-color); padding: 12px; border-radius: 6px; text-align: center; color: var(--text-muted); font-size: 11px;">
+                  Nenhuma habilidade com cargas configurada para esta classe.<br>
+                  <small style="color: var(--text-dim);">As cargas de classes (Fúria, Ki, Surto de Ação, Cura pelas Mãos, etc.) aparecem aqui automaticamente.</small>
+                </div>
+              `}
+            </div>
+
+            <!-- ABA 3: MOCHILA / INVENTÁRIO / OURO (M-B4) -->
             <div class="p-tab-content ${activeTab === 'inventory' ? 'active' : ''}">
               <div style="background: #080c16; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 6px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
@@ -28678,14 +29055,17 @@ function renderPlayers() {
                 <button class="btn-action" style="font-size: 9px; padding: 2px 6px;" onclick="openAddPlayerItemModal('${p.id}')">➕ Item</button>
               </div>
 
-              <div style="display: flex; flex-direction: column; gap: 3px; max-height: 250px; overflow-y: auto;">
+              <div style="display: flex; flex-direction: column; gap: 4px; max-height: 250px; overflow-y: auto;">
                 ${(p.inventory && p.inventory.length > 0) ? p.inventory.map((it, idx) => `
-                  <div style="background: #080c16; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 6px; display: flex; justify-content: space-between; align-items: center; font-size: 10px;">
+                  <div class="inventory-item-row ${it.equipped ? 'equipped' : ''}">
                     <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 4px;">
-                      <span style="font-weight: 700; color: #fff;">${it.name}</span>
+                      <span style="font-weight: 700; color: #fff;">${it.equipped ? '⚔️ ' : ''}${it.name}</span>
                       <span style="font-size: 9px; color: var(--text-dim);">${it.weight ? ' • ' + it.weight + 'kg' : ''}</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 2px;">
+                      <button class="btn-item-equip ${it.equipped ? 'active' : ''}" onclick="togglePlayerItemEquipped('${p.id}', ${idx})" title="${it.equipped ? 'Item Equipado (clique para guardar)' : 'Item na Mochila (clique para equipar)'}">
+                        ${it.equipped ? '⚔️ Equipado' : '🎒'}
+                      </button>
                       <button class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, -1)" title="Diminuir quantidade" style="padding: 1px 4px; font-size: 9px;">−</button>
                       <span style="font-weight: 800; min-width: 14px; text-align: center; color: var(--primary-light); font-size: 10px;">${it.qty || 1}x</span>
                       <button class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, 1)" title="Aumentar quantidade" style="padding: 1px 4px; font-size: 9px;">+</button>
@@ -28700,7 +29080,7 @@ function renderPlayers() {
               </div>
             </div>
 
-            <!-- ABA: ORIGEM -->
+            <!-- ABA 4: ORIGEM -->
             <div class="p-tab-content ${activeTab === 'background' ? 'active' : ''}">
               <div class="background-info-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -28728,7 +29108,7 @@ function renderPlayers() {
               </div>
             </div>
 
-            <!-- ABA: HISTÓRICO -->
+            <!-- ABA 5: HISTÓRICO COM CATEGORIZAÇÃO VISUAL (M-L7) -->
             <div class="p-tab-content ${activeTab === 'history' ? 'active' : ''}">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <span style="font-size: 11px; font-weight: 700; color: var(--primary-light);">📜 Histórico de Ações da Sessão</span>
@@ -28736,7 +29116,7 @@ function renderPlayers() {
               </div>
               <div class="action-logs-timeline">
                 ${(p.actionLogs && p.actionLogs.length > 0) ? p.actionLogs.map(log => `
-                  <div class="action-log-entry">
+                  <div class="action-log-entry" data-type="${log.type || 'general'}">
                     <span class="action-log-icon">${log.icon || '⚡'}</span>
                     <div style="flex:1;">
                       <div class="action-log-text">${log.text}</div>
@@ -28751,7 +29131,7 @@ function renderPlayers() {
               </div>
             </div>
 
-            <!-- ABA: NOTAS -->
+            <!-- ABA 6: NOTAS -->
             <div class="p-tab-content ${activeTab === 'notes' ? 'active' : ''}">
               <div class="player-notes-container">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
