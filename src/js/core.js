@@ -229,9 +229,16 @@ let managingCondCombatantId = null;
 // --- LOCAL STORAGE AUTO-SAVE ---
 const STORAGE_KEY = 'dnd5e_prisco_sheet_state_v2';
 let lastSafetySnapshotTime = 0;
+let isStorageLoaded = false;
 
 function saveToLocalStorage() {
   try {
+    // Proteção essencial: Nunca sobrescreva o localStorage com valores default da memória
+    // antes de tentar carregar os dados salvos existentes
+    if (!isStorageLoaded) {
+      loadFromLocalStorage();
+    }
+
     const payload = {
       state,
       players: PLAYERS,
@@ -278,12 +285,14 @@ function saveGridStatePermanently() {
 }
 
 function loadFromLocalStorage() {
+  isStorageLoaded = true;
   try {
     if (typeof loadCampaignsState === 'function') loadCampaignsState();
     
     let loadedPlayers = null;
     let loadedState = null;
     let loadedGrid = null;
+    let loadedFromFallback = false;
 
     // 1. Tenta carregar da chave principal v2
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -310,6 +319,7 @@ function loadFromLocalStorage() {
           const list = JSON.parse(rawPlayersV3);
           if (Array.isArray(list) && list.length > 0) {
             loadedPlayers = list;
+            loadedFromFallback = true;
           }
         }
       } catch (e) {}
@@ -325,6 +335,7 @@ function loadFromLocalStorage() {
             loadedPlayers = snap.players;
             if (!loadedState && snap.state) loadedState = snap.state;
             if (!loadedGrid && snap.gridState) loadedGrid = snap.gridState;
+            loadedFromFallback = true;
           }
         }
       } catch (e) {}
@@ -341,6 +352,7 @@ function loadFromLocalStorage() {
                 loadedPlayers = snap.players;
                 if (!loadedState && snap.state) loadedState = snap.state;
                 if (!loadedGrid && snap.gridState) loadedGrid = snap.gridState;
+                loadedFromFallback = true;
                 break;
               }
             }
@@ -357,6 +369,7 @@ function loadFromLocalStorage() {
           const dataV1 = JSON.parse(rawV1);
           if (dataV1 && dataV1.players && Array.isArray(dataV1.players) && dataV1.players.length > 0) {
             loadedPlayers = dataV1.players;
+            loadedFromFallback = true;
           }
         }
       } catch (e) {}
@@ -390,8 +403,10 @@ function loadFromLocalStorage() {
       gridState = loadedGrid;
     }
 
-    // Migra e persiste no formato atual
-    saveToLocalStorage();
+    // Se recuperou de fallback, persiste no formato atual v2
+    if (loadedFromFallback) {
+      saveToLocalStorage();
+    }
     return true;
   } catch (e) {
     return false;
@@ -936,7 +951,18 @@ if (typeof module !== 'undefined' && module.exports) {
     restoreSafetySnapshot,
     openSnapshotsModal,
     closeSnapshotsModal,
-    renderSnapshotsModal
+    renderSnapshotsModal,
+    loadFromLocalStorage,
+    saveToLocalStorage
   };
+} else {
+  // Execução síncrona imediata no navegador para garantir que PLAYERS e state sejam carregados antes de qualquer render
+  try {
+    if (typeof localStorage !== 'undefined') {
+      loadFromLocalStorage();
+    }
+  } catch (e) {
+    console.warn('Erro ao carregar dados no início de core.js:', e);
+  }
 }
 

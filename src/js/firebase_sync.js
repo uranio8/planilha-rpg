@@ -60,7 +60,7 @@ function setStoredFirebaseRoom(roomId) {
 }
 
 function isFirebaseAutoSyncEnabled() {
-  return localStorage.getItem(FIREBASE_AUTOSYNC_KEY) !== 'false';
+  return localStorage.getItem(FIREBASE_AUTOSYNC_KEY) === 'true';
 }
 
 function setFirebaseAutoSyncEnabled(enabled) {
@@ -70,6 +70,12 @@ function setFirebaseAutoSyncEnabled(enabled) {
 // --- INICIALIZAÇÃO DO FIREBASE ---
 
 function initFirebaseSync() {
+  // Se a sincronização não estiver explicitamente habilitada pelo usuário, opera em modo local seguro
+  if (!isFirebaseAutoSyncEnabled()) {
+    updateFirebaseUiStatus('offline', 'Modo Local');
+    return false;
+  }
+
   const config = getStoredFirebaseConfig();
   if (!config || !config.apiKey || (!config.projectId && !config.databaseURL)) {
     updateFirebaseUiStatus('offline', 'Modo Local');
@@ -221,14 +227,18 @@ function applyCloudDataToLocal(cloudData) {
       if (notesEl) notesEl.value = cloudData.dmNotes;
     }
 
-    // Salva no cache local (localStorage) sem re-despachar para a nuvem
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        players: PLAYERS,
-        state: state,
-        gridState: (typeof gridState !== 'undefined') ? gridState : null
-      }));
-    } catch (e) {}
+    // Salva no cache local sincronizando todas as chaves e snapshots
+    if (typeof saveToLocalStorage === 'function') {
+      saveToLocalStorage();
+    } else {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          players: PLAYERS,
+          state: state,
+          gridState: (typeof gridState !== 'undefined') ? gridState : null
+        }));
+      } catch (e) {}
+    }
 
     updateFirebaseUiStatus('connected', `Sincronizado`);
     if (typeof playFX === 'function') playFX('dice');
