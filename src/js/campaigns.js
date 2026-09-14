@@ -586,6 +586,8 @@ function promptAdjustPartyGold(type) {
   const camp = getActiveCampaign();
   if (!camp) return;
   camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+  camp.partyStash.items = camp.partyStash.items || [];
+  camp.partyStash.history = camp.partyStash.history || [];
 
   const promptMsg = type === 'add' ? 'Quantas Peças de Ouro (PO) deseja ADICIONAR ao Baú do Grupo?' : 'Quantas Peças de Ouro (PO) deseja RETIRAR do Baú do Grupo?';
   const valStr = prompt(promptMsg, '50');
@@ -621,10 +623,14 @@ function promptAdjustPartyGold(type) {
 function splitPartyGold() {
   const camp = getActiveCampaign();
   if (!camp) return;
-  const campPlayers = (camp.playerIds || []).map(id => PLAYERS.find(p => p.id === id)).filter(p => p);
+  camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+  camp.partyStash.items = camp.partyStash.items || [];
+  camp.partyStash.history = camp.partyStash.history || [];
+
+  const campPlayers = (camp.playerIds && camp.playerIds.length > 0 ? camp.playerIds.map(id => PLAYERS.find(p => p.id === id)).filter(p => p) : PLAYERS) || [];
 
   if (campPlayers.length === 0) {
-    alert('Nenhum herói vinculado a esta campanha para receber a divisão de ouro.');
+    alert('Nenhum herói disponível para receber a divisão de ouro.');
     return;
   }
 
@@ -663,7 +669,10 @@ let currentEditItemId = null;
 
 function openPartyItemModal(itemId = null) {
   const camp = getActiveCampaign();
-  if (!camp) return;
+  if (!camp) {
+    alert('Nenhuma campanha ativa selecionada.');
+    return;
+  }
 
   currentEditItemId = itemId;
   const modal = document.getElementById('modal-party-item');
@@ -671,13 +680,22 @@ function openPartyItemModal(itemId = null) {
 
   const isEdit = !!itemId;
   const it = isEdit ? (camp.partyStash?.items || []).find(x => x.id === itemId) : null;
-  const campPlayers = (camp.playerIds || []).map(id => PLAYERS.find(p => p.id === id)).filter(p => p);
+  const campPlayers = (camp.playerIds && camp.playerIds.length > 0 ? camp.playerIds.map(id => PLAYERS.find(p => p.id === id)).filter(p => p) : PLAYERS) || [];
 
-  document.getElementById('party-item-modal-title').innerText = isEdit ? '✏️ Editar Item do Grupo' : '➕ Adicionar Item ao Baú do Grupo';
-  document.getElementById('inp-pitem-name').value = it ? it.name : '';
-  document.getElementById('inp-pitem-qty').value = it ? it.qty : 1;
-  document.getElementById('inp-pitem-cat').value = it ? (it.category || 'Equipamento de Aventura') : 'Equipamento de Aventura';
-  document.getElementById('inp-pitem-desc').value = it ? (it.desc || '') : '';
+  const titleEl = document.getElementById('party-item-modal-title');
+  if (titleEl) titleEl.innerText = isEdit ? '✏️ Editar Item do Grupo' : '➕ Adicionar Item ao Baú do Grupo';
+
+  const nameEl = document.getElementById('inp-pitem-name');
+  if (nameEl) nameEl.value = it ? it.name : '';
+
+  const qtyEl = document.getElementById('inp-pitem-qty');
+  if (qtyEl) qtyEl.value = it ? (it.qty || 1) : 1;
+
+  const catEl = document.getElementById('inp-pitem-cat');
+  if (catEl) catEl.value = it ? (it.category || 'Equipamento de Aventura') : 'Equipamento de Aventura';
+
+  const descEl = document.getElementById('inp-pitem-desc');
+  if (descEl) descEl.value = it ? (it.desc || '') : '';
 
   const selCarrier = document.getElementById('inp-pitem-carrier');
   if (selCarrier) {
@@ -685,12 +703,15 @@ function openPartyItemModal(itemId = null) {
       <option value="Baú do Grupo" ${(!it || it.carrier === 'Baú do Grupo') ? 'selected' : ''}>Baú do Grupo</option>
       <option value="Mochila Coletiva" ${(it && it.carrier === 'Mochila Coletiva') ? 'selected' : ''}>Mochila Coletiva / Carroça</option>
       ${campPlayers.map(p => `
-        <option value="${p.name}" ${(it && it.carrier === p.name) ? 'selected' : ''}>${p.name} (${p.student})</option>
+        <option value="${p.name}" ${(it && it.carrier === p.name) ? 'selected' : ''}>${p.name} (${p.student || 'Personagem'})</option>
       `).join('')}
     `;
   }
 
   modal.classList.add('open');
+  setTimeout(() => {
+    if (nameEl) nameEl.focus();
+  }, 100);
 }
 
 function closePartyItemModal() {
@@ -700,18 +721,24 @@ function closePartyItemModal() {
 
 function savePartyItem() {
   const camp = getActiveCampaign();
-  if (!camp) return;
+  if (!camp) {
+    alert('Nenhuma campanha ativa selecionada.');
+    return;
+  }
   camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
   camp.partyStash.items = camp.partyStash.items || [];
+  camp.partyStash.history = camp.partyStash.history || [];
 
-  const name = document.getElementById('inp-pitem-name').value.trim();
-  const qty = parseInt(document.getElementById('inp-pitem-qty').value) || 1;
-  const category = document.getElementById('inp-pitem-cat').value;
-  const carrier = document.getElementById('inp-pitem-carrier').value;
-  const desc = document.getElementById('inp-pitem-desc').value.trim();
+  const nameInput = document.getElementById('inp-pitem-name');
+  const name = nameInput ? nameInput.value.trim() : '';
+  const qty = parseInt(document.getElementById('inp-pitem-qty')?.value) || 1;
+  const category = document.getElementById('inp-pitem-cat')?.value || 'Equipamento de Aventura';
+  const carrier = document.getElementById('inp-pitem-carrier')?.value || 'Baú do Grupo';
+  const desc = document.getElementById('inp-pitem-desc')?.value?.trim() || '';
 
   if (!name) {
     alert('Por favor, informe o nome do item.');
+    if (nameInput) nameInput.focus();
     return;
   }
 
@@ -723,10 +750,15 @@ function savePartyItem() {
       it.category = category;
       it.carrier = carrier;
       it.desc = desc;
+      camp.partyStash.history.push({
+        date: new Date().toISOString().split('T')[0],
+        text: `✏️ Item "${name}" atualizado (${qty}x, ${carrier})`,
+        type: 'item_edit'
+      });
     }
   } else {
     camp.partyStash.items.push({
-      id: 'it_' + Date.now(),
+      id: 'it_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
       name,
       qty,
       category,
@@ -751,6 +783,8 @@ function savePartyItem() {
 function deletePartyItem(itemId) {
   const camp = getActiveCampaign();
   if (!camp || !camp.partyStash?.items) return;
+  camp.partyStash.history = camp.partyStash.history || [];
+
   const it = camp.partyStash.items.find(x => x.id === itemId);
   if (!it) return;
 
@@ -770,12 +804,47 @@ function deletePartyItem(itemId) {
   if (typeof addLog === 'function') addLog(`🗑️ <b>Baú do Grupo:</b> "${it.name}" removido.`);
 }
 
+// Função de utilidade para outros módulos (ex: Compêndio) adicionarem itens ao Baú com facilidade
+function addItemToPartyStash(name, qty = 1, category = 'Equipamento de Aventura', desc = '', carrier = 'Baú do Grupo') {
+  const camp = getActiveCampaign();
+  if (!camp) return false;
+  camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+  camp.partyStash.items = camp.partyStash.items || [];
+  camp.partyStash.history = camp.partyStash.history || [];
+
+  const existing = camp.partyStash.items.find(x => x.name.toLowerCase() === name.toLowerCase() && (x.carrier || 'Baú do Grupo') === carrier);
+  if (existing) {
+    existing.qty = (parseInt(existing.qty) || 0) + qty;
+  } else {
+    camp.partyStash.items.push({
+      id: 'it_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      name,
+      qty,
+      category,
+      carrier,
+      desc
+    });
+  }
+
+  camp.partyStash.history.push({
+    date: new Date().toISOString().split('T')[0],
+    text: `+${qty}x ${name} adicionado (${carrier})`,
+    type: 'item_in'
+  });
+
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderCampaigns();
+  renderPartyStashViewer();
+  if (typeof addLog === 'function') addLog(`🎒 <b>Baú do Grupo:</b> +${qty}x "${name}" guardado no baú coletivo.`);
+  return true;
+}
+
 // --- VISUALIZADOR MODAL DO BAÚ DO GRUPO (PARA JOGADORES E MESTRE) ---
 function openPartyStashModal() {
   const modal = document.getElementById('modal-party-stash-view');
-  if (!modal) return;
+  if (modal) modal.classList.add('open');
   renderPartyStashViewer();
-  modal.classList.add('open');
 }
 
 function closePartyStashModal() {
@@ -810,7 +879,7 @@ function renderPartyStashViewer() {
           <td><span style="font-size:11px; color:var(--text-muted);">${it.category || 'Geral'}</span></td>
           <td><span class="carrier-badge">🎒 ${it.carrier || 'Baú do Grupo'}</span></td>
           <td style="text-align:right;">
-            <button class="btn-secondary" style="padding:2px 6px; font-size:10px;" onclick="takePartyItemToPlayer('${it.id}')" title="Pegar 1x para minha mochila">📥 Pegar</button>
+            <button class="btn-secondary" style="padding:2px 6px; font-size:10px;" onclick="takePartyItemToPlayer('${it.id}')" title="Transferir 1x para a mochila de um herói">📥 Pegar</button>
             <button class="btn-secondary" style="padding:2px 6px; font-size:10px;" onclick="openPartyItemModal('${it.id}')" title="Editar item">✏️</button>
             <button class="btn-secondary" style="padding:2px 6px; font-size:10px; color:#f87171;" onclick="deletePartyItem('${it.id}')" title="Remover item">🗑️</button>
           </td>
@@ -835,13 +904,34 @@ function renderPartyStashViewer() {
   }
 }
 
-function takePartyItemToPlayer(itemId) {
+function takePartyItemToPlayer(itemId, targetPlayerId = null) {
   const camp = getActiveCampaign();
   if (!camp || !camp.partyStash?.items) return;
+  camp.partyStash.history = camp.partyStash.history || [];
+
   const it = camp.partyStash.items.find(x => x.id === itemId);
   if (!it) return;
 
-  const targetPlayer = (activePortalPlayerId && PLAYERS.find(p => p.id === activePortalPlayerId)) || PLAYERS[0];
+  let targetPlayer = null;
+  if (targetPlayerId) {
+    targetPlayer = PLAYERS.find(p => p.id === targetPlayerId);
+  } else if (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId) {
+    targetPlayer = PLAYERS.find(p => p.id === activePortalPlayerId);
+  } else if (PLAYERS.length === 1) {
+    targetPlayer = PLAYERS[0];
+  } else if (PLAYERS.length > 1) {
+    const heroList = PLAYERS.map((p, i) => `${i + 1}. ${p.name} (${p.student || 'Personagem'})`).join('\n');
+    const choice = prompt(`Para qual herói deseja transferir 1x "${it.name}"?\nDigite o número correspondente:\n\n${heroList}`, '1');
+    if (!choice) return;
+    const idx = parseInt(choice) - 1;
+    if (idx >= 0 && idx < PLAYERS.length) {
+      targetPlayer = PLAYERS[idx];
+    } else {
+      alert('Opção inválida.');
+      return;
+    }
+  }
+
   if (!targetPlayer) {
     alert('Nenhum herói disponível para receber o item.');
     return;
@@ -875,7 +965,9 @@ function takePartyItemToPlayer(itemId) {
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   renderPartyStashViewer();
-  renderCampaignPartyStash(camp, (camp.playerIds || []).map(id => PLAYERS.find(p => p.id === id)).filter(p => p));
+  if (typeof renderCampaignPartyStash === 'function') {
+    renderCampaignPartyStash(camp, (camp.playerIds || []).map(id => PLAYERS.find(p => p.id === id)).filter(p => p));
+  }
   if (typeof renderPlayers === 'function') renderPlayers();
   if (typeof addLog === 'function') addLog(`🎒 <b>Baú do Grupo:</b> 1x "${it.name}" transferido para a mochila de <b>${targetPlayer.name}</b>.`);
 }

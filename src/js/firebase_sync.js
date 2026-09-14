@@ -219,7 +219,20 @@ function applyCloudDataToLocal(cloudData) {
 
     // 1. Atualiza Fichas de Jogadores com Merge Inteligente (evita sobrescrever alterações locais ativas)
     if (cloudData.players && Array.isArray(cloudData.players)) {
-      if (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId) {
+      if (typeof pendingPortalPlayerId !== 'undefined' && pendingPortalPlayerId) {
+        // Link curto estava aguardando os dados do herói chegarem da nuvem
+        PLAYERS = cloudData.players;
+        const targetHero = PLAYERS.find(p => p.id === pendingPortalPlayerId);
+        if (targetHero) {
+          if (typeof initPlayerPortalMode === 'function') {
+            initPlayerPortalMode(targetHero.id);
+          }
+        } else {
+          console.warn('Herói com ID', pendingPortalPlayerId, 'não encontrado na sala.');
+          pendingPortalPlayerId = null;
+          if (typeof openPlayerLoginModal === 'function') openPlayerLoginModal();
+        }
+      } else if (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId) {
         // Modo Portal do Jogador: mescla dados remotos dos outros heróis e atualiza campos do mestre no herói local
         const localChar = PLAYERS.find(p => p.id === activePortalPlayerId);
         PLAYERS = cloudData.players.map(remoteP => {
@@ -389,12 +402,12 @@ function executePlayerCloudSave() {
   }
 }
 
-function publishMasterCampaignToCloud() {
+function publishMasterCampaignToCloud(silent = false) {
   if (!isFirebaseConnected) {
     initFirebaseSync();
   }
 
-  if (typeof saveSafetySnapshot === 'function') {
+  if (!silent && typeof saveSafetySnapshot === 'function') {
     saveSafetySnapshot('Backup antes de Publicar Mesa na Nuvem');
   }
 
@@ -433,22 +446,24 @@ function publishMasterCampaignToCloud() {
   }
 
   if (promises.length === 0) {
-    alert(`⚠️ Conexão com Firebase não está pronta. Verifique sua conexão com a internet para publicar na sala '${roomId}'.`);
+    if (!silent) alert(`⚠️ Conexão com Firebase não está pronta. Verifique sua conexão com a internet para publicar na sala '${roomId}'.`);
     return;
   }
 
   Promise.all(promises)
     .then(() => {
       updateFirebaseUiStatus('connected', `Nuvem: ${roomId}`);
-      if (typeof addLog === 'function') {
+      if (typeof addLog === 'function' && !silent) {
         addLog(`📡 <b>Mesa Publicada:</b> Sala <b>${roomId}</b> com ${payload.players.length} personagens sincronizada na nuvem!`);
       }
-      alert(`✅ Mesa publicada com sucesso na sala: ${roomId}!\n\n${payload.players.length} personagens estão disponíveis para os alunos no link do lobby.`);
+      if (!silent) {
+        alert(`✅ Mesa publicada com sucesso na sala: ${roomId}!\n\n${payload.players.length} personagens estão disponíveis para os alunos no link do lobby.`);
+      }
     })
     .catch(err => {
       console.error('Erro ao publicar mesa na nuvem:', err);
       updateFirebaseUiStatus('error', 'Erro na Publicação');
-      alert(`⚠️ Erro ao publicar mesa na nuvem: ${err.message || err}.`);
+      if (!silent) alert(`⚠️ Erro ao publicar mesa na nuvem: ${err.message || err}.`);
     });
 }
 

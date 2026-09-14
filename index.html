@@ -8556,7 +8556,7 @@
   </div>
 
   <!-- MODAL: ADICIONAR / EDITAR ITEM DO BAÚ DO GRUPO -->
-  <div id="modal-party-item" class="modal-overlay">
+  <div id="modal-party-item" class="modal-overlay" style="z-index: 150;">
     <div class="modal-body" style="max-width: 480px;">
       <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
         <span id="party-item-modal-title" style="font-weight: 800; font-size: 16px; color: #fff;">➕ Item do Grupo</span>
@@ -27906,7 +27906,20 @@ function applyCloudDataToLocal(cloudData) {
 
     // 1. Atualiza Fichas de Jogadores com Merge Inteligente (evita sobrescrever alterações locais ativas)
     if (cloudData.players && Array.isArray(cloudData.players)) {
-      if (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId) {
+      if (typeof pendingPortalPlayerId !== 'undefined' && pendingPortalPlayerId) {
+        // Link curto estava aguardando os dados do herói chegarem da nuvem
+        PLAYERS = cloudData.players;
+        const targetHero = PLAYERS.find(p => p.id === pendingPortalPlayerId);
+        if (targetHero) {
+          if (typeof initPlayerPortalMode === 'function') {
+            initPlayerPortalMode(targetHero.id);
+          }
+        } else {
+          console.warn('Herói com ID', pendingPortalPlayerId, 'não encontrado na sala.');
+          pendingPortalPlayerId = null;
+          if (typeof openPlayerLoginModal === 'function') openPlayerLoginModal();
+        }
+      } else if (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId) {
         // Modo Portal do Jogador: mescla dados remotos dos outros heróis e atualiza campos do mestre no herói local
         const localChar = PLAYERS.find(p => p.id === activePortalPlayerId);
         PLAYERS = cloudData.players.map(remoteP => {
@@ -28076,12 +28089,12 @@ function executePlayerCloudSave() {
   }
 }
 
-function publishMasterCampaignToCloud() {
+function publishMasterCampaignToCloud(silent = false) {
   if (!isFirebaseConnected) {
     initFirebaseSync();
   }
 
-  if (typeof saveSafetySnapshot === 'function') {
+  if (!silent && typeof saveSafetySnapshot === 'function') {
     saveSafetySnapshot('Backup antes de Publicar Mesa na Nuvem');
   }
 
@@ -28120,22 +28133,24 @@ function publishMasterCampaignToCloud() {
   }
 
   if (promises.length === 0) {
-    alert(`⚠️ Conexão com Firebase não está pronta. Verifique sua conexão com a internet para publicar na sala '${roomId}'.`);
+    if (!silent) alert(`⚠️ Conexão com Firebase não está pronta. Verifique sua conexão com a internet para publicar na sala '${roomId}'.`);
     return;
   }
 
   Promise.all(promises)
     .then(() => {
       updateFirebaseUiStatus('connected', `Nuvem: ${roomId}`);
-      if (typeof addLog === 'function') {
+      if (typeof addLog === 'function' && !silent) {
         addLog(`📡 <b>Mesa Publicada:</b> Sala <b>${roomId}</b> com ${payload.players.length} personagens sincronizada na nuvem!`);
       }
-      alert(`✅ Mesa publicada com sucesso na sala: ${roomId}!\n\n${payload.players.length} personagens estão disponíveis para os alunos no link do lobby.`);
+      if (!silent) {
+        alert(`✅ Mesa publicada com sucesso na sala: ${roomId}!\n\n${payload.players.length} personagens estão disponíveis para os alunos no link do lobby.`);
+      }
     })
     .catch(err => {
       console.error('Erro ao publicar mesa na nuvem:', err);
       updateFirebaseUiStatus('error', 'Erro na Publicação');
-      alert(`⚠️ Erro ao publicar mesa na nuvem: ${err.message || err}.`);
+      if (!silent) alert(`⚠️ Erro ao publicar mesa na nuvem: ${err.message || err}.`);
     });
 }
 
@@ -29431,6 +29446,7 @@ function rollMonsterAttackAction(atkName, toHitBonus, dmgFormula, monName = 'Mon
 
 
 let activePortalPlayerId = null;
+let pendingPortalPlayerId = null;
 
 // Helpers de Estilização & Gameplay para Fichas (Pacote Completo)
 function getPlayerClassBadge(p) {
@@ -33031,6 +33047,11 @@ function openSharePlayerModal(playerId) {
   const shareUrl = generatePlayerShareUrl(playerId, true);
   const shortUrl = getShortPlayerShareUrl(playerId);
 
+  // Auto-publica silenciosamente a mesa na nuvem para garantir que o link curto encontre os dados
+  if (typeof publishMasterCampaignToCloud === 'function' && clientRole !== 'player') {
+    publishMasterCampaignToCloud(true);
+  }
+
   if (inpUrl) inpUrl.value = shareUrl;
   if (inpUrlShort) inpUrlShort.value = shortUrl;
 
@@ -33067,6 +33088,11 @@ function copyShortShareLink() {
   if (!inp) return;
   inp.select();
   inp.setSelectionRange(0, 99999);
+
+  // Garante publicação mais recente na nuvem ao copiar
+  if (typeof publishMasterCampaignToCloud === 'function' && clientRole !== 'player') {
+    publishMasterCampaignToCloud(true);
+  }
 
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -33153,23 +33179,43 @@ function openPlayerPortalDirect() {
 }
 
 function updatePlayerPortalBanner() {
-  if (!activePortalPlayerId) return;
-  const p = PLAYERS.find(x => x.id === activePortalPlayerId);
-  if (!p) return;
-
   const banner = document.getElementById('player-portal-banner');
   const titleEl = document.getElementById('portal-char-title');
   const subEl = document.getElementById('portal-char-sub');
 
+  if (typeof pendingPortalPlayerId !== 'undefined' && pendingPortalPlayerId && !activePortalPlayerId) {
+    if (banner) banner.style.display = 'flex';
+    if (titleEl) titleEl.innerText = `⏳ Sincronizando com a Nuvem...`;
+    if (subEl) subEl.innerText = `Carregando ficha do seu herói na mesa...`;
+    return;
+  }
+
+  if (!activePortalPlayerId) return;
+  const p = PLAYERS.find(x => x.id === activePortalPlayerId);
+  if (!p) return;
+
   if (banner) banner.style.display = 'flex';
-  if (titleEl) titleEl.innerText = `👤 ${p.name} (${p.student})`;
+  if (titleEl) titleEl.innerText = `👤 ${p.name} (${p.student || 'Personagem'})`;
   if (subEl) subEl.innerText = `${p.race} • ${p.className} (Nível ${p.level}) • CA ${p.ac} • ${p.hp}/${p.maxHp} PV`;
 }
 
 function initPlayerPortalMode(playerId) {
-  const p = PLAYERS.find(x => x.id === playerId) || PLAYERS[0];
-  if (!p) return;
+  if (!playerId) return;
 
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) {
+    // Herói ainda não está na memória local (ex: aguardando resposta do Firebase)
+    pendingPortalPlayerId = playerId;
+    if (typeof clientRole !== 'undefined') clientRole = 'player';
+    if (typeof document !== 'undefined' && document.body && document.body.classList) {
+      document.body.classList.add('mode-player-portal');
+    }
+    updatePlayerPortalBanner();
+    switchTab('players');
+    return;
+  }
+
+  pendingPortalPlayerId = null;
   activePortalPlayerId = p.id;
   if (typeof clientRole !== 'undefined') clientRole = 'player';
   if (typeof document !== 'undefined' && document.body && document.body.classList) {
@@ -33188,6 +33234,7 @@ function exitPlayerPortalMode() {
     const ok = confirm('Deseja realmente sair da sua ficha de jogador e voltar para a visão do Mestre?');
     if (!ok) return;
   }
+  pendingPortalPlayerId = null;
   activePortalPlayerId = null;
   if (typeof clientRole !== 'undefined') clientRole = 'master';
   if (typeof document !== 'undefined' && document.body && document.body.classList) {
@@ -35126,7 +35173,13 @@ function renderEquipment() {
   if (badge) badge.innerText = filtered.length;
   if (!grid) return;
 
-  grid.innerHTML = filtered.map(e => `
+  grid.innerHTML = filtered.map(e => {
+    const safeName = (e.name || '').replace(/'/g, "\\'");
+    const safeCat = (e.category || '').replace(/'/g, "\\'");
+    const safeWeight = (e.weight || '1 lb').replace(/'/g, "\\'");
+    const safeProp = (e.prop || '').replace(/'/g, "\\'");
+
+    return `
     <div class="item-card">
       <div>
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
@@ -35145,9 +35198,73 @@ function renderEquipment() {
         <div style="font-size: 12px; color: #cbd5e1; line-height: 1.4;">
           <b style="color: var(--primary-light);">Propriedades:</b> ${e.prop}
         </div>
+
+        <div style="display: flex; gap: 6px; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+          <button class="btn-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px; border-color: rgba(245,158,11,0.4); color: #fef08a;" onclick="promptAddEquipmentToPartyStash('${safeName}', '${safeCat}', '${safeProp}')" title="Adicionar ao Baú Coletivo do Grupo">🎒 + Baú</button>
+          <button class="btn-action" style="flex: 1; font-size: 10px; padding: 4px 6px;" onclick="promptGiveEquipmentToPlayer('${safeName}', '${safeWeight}', '${safeProp}')" title="Dar diretamente para a mochila de um herói">👤 Dar a Herói</button>
+        </div>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
+}
+
+function promptAddEquipmentToPartyStash(name, category, prop) {
+  const qtyStr = prompt(`Quantas unidades de "${name}" deseja adicionar ao Baú do Grupo?`, '1');
+  if (qtyStr === null) return;
+  const qty = parseInt(qtyStr);
+  if (isNaN(qty) || qty <= 0) return;
+
+  if (typeof addItemToPartyStash === 'function') {
+    addItemToPartyStash(name, qty, category, prop, 'Baú do Grupo');
+    alert(`✅ ${qty}x "${name}" adicionado com sucesso ao Baú do Grupo!`);
+  } else {
+    alert('Função do baú não disponível.');
+  }
+}
+
+function promptGiveEquipmentToPlayer(name, weightStr, prop) {
+  if (typeof PLAYERS === 'undefined' || PLAYERS.length === 0) {
+    alert('Nenhum herói cadastrado para receber o item.');
+    return;
+  }
+
+  const heroList = PLAYERS.map((p, i) => `${i + 1}. ${p.name} (${p.student || 'Personagem'})`).join('\n');
+  const choice = prompt(`Para qual herói deseja entregar "${name}"?\nDigite o número correspondente:\n\n${heroList}`, '1');
+  if (!choice) return;
+  const idx = parseInt(choice) - 1;
+  if (idx < 0 || idx >= PLAYERS.length) {
+    alert('Herói inválido selecionado.');
+    return;
+  }
+
+  const targetPlayer = PLAYERS[idx];
+  const qtyStr = prompt(`Quantas unidades de "${name}" deseja entregar para ${targetPlayer.name}?`, '1');
+  if (qtyStr === null) return;
+  const qty = parseInt(qtyStr);
+  if (isNaN(qty) || qty <= 0) return;
+
+  const parsedWeight = parseFloat(weightStr) || 0.5;
+
+  targetPlayer.inventory = targetPlayer.inventory || [];
+  const existing = targetPlayer.inventory.find(x => x.name.toLowerCase() === name.toLowerCase());
+  if (existing) {
+    existing.qty = (parseInt(existing.qty) || 0) + qty;
+  } else {
+    targetPlayer.inventory.push({
+      name: name,
+      qty: qty,
+      equipped: false,
+      weight: parsedWeight,
+      desc: prop || ''
+    });
+  }
+
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof addLog === 'function') addLog(`🎁 <b>Equipamento Entregue:</b> ${qty}x "${name}" entregue para a mochila de <b>${targetPlayer.name}</b>.`);
+  alert(`✅ ${qty}x "${name}" entregue para ${targetPlayer.name}!`);
 }
 
 // --- GERADORES DE NPCS, TESOUROS E ENCONTROS ---
@@ -36924,6 +37041,8 @@ function promptAdjustPartyGold(type) {
   const camp = getActiveCampaign();
   if (!camp) return;
   camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+  camp.partyStash.items = camp.partyStash.items || [];
+  camp.partyStash.history = camp.partyStash.history || [];
 
   const promptMsg = type === 'add' ? 'Quantas Peças de Ouro (PO) deseja ADICIONAR ao Baú do Grupo?' : 'Quantas Peças de Ouro (PO) deseja RETIRAR do Baú do Grupo?';
   const valStr = prompt(promptMsg, '50');
@@ -36959,10 +37078,14 @@ function promptAdjustPartyGold(type) {
 function splitPartyGold() {
   const camp = getActiveCampaign();
   if (!camp) return;
-  const campPlayers = (camp.playerIds || []).map(id => PLAYERS.find(p => p.id === id)).filter(p => p);
+  camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+  camp.partyStash.items = camp.partyStash.items || [];
+  camp.partyStash.history = camp.partyStash.history || [];
+
+  const campPlayers = (camp.playerIds && camp.playerIds.length > 0 ? camp.playerIds.map(id => PLAYERS.find(p => p.id === id)).filter(p => p) : PLAYERS) || [];
 
   if (campPlayers.length === 0) {
-    alert('Nenhum herói vinculado a esta campanha para receber a divisão de ouro.');
+    alert('Nenhum herói disponível para receber a divisão de ouro.');
     return;
   }
 
@@ -37001,7 +37124,10 @@ let currentEditItemId = null;
 
 function openPartyItemModal(itemId = null) {
   const camp = getActiveCampaign();
-  if (!camp) return;
+  if (!camp) {
+    alert('Nenhuma campanha ativa selecionada.');
+    return;
+  }
 
   currentEditItemId = itemId;
   const modal = document.getElementById('modal-party-item');
@@ -37009,13 +37135,22 @@ function openPartyItemModal(itemId = null) {
 
   const isEdit = !!itemId;
   const it = isEdit ? (camp.partyStash?.items || []).find(x => x.id === itemId) : null;
-  const campPlayers = (camp.playerIds || []).map(id => PLAYERS.find(p => p.id === id)).filter(p => p);
+  const campPlayers = (camp.playerIds && camp.playerIds.length > 0 ? camp.playerIds.map(id => PLAYERS.find(p => p.id === id)).filter(p => p) : PLAYERS) || [];
 
-  document.getElementById('party-item-modal-title').innerText = isEdit ? '✏️ Editar Item do Grupo' : '➕ Adicionar Item ao Baú do Grupo';
-  document.getElementById('inp-pitem-name').value = it ? it.name : '';
-  document.getElementById('inp-pitem-qty').value = it ? it.qty : 1;
-  document.getElementById('inp-pitem-cat').value = it ? (it.category || 'Equipamento de Aventura') : 'Equipamento de Aventura';
-  document.getElementById('inp-pitem-desc').value = it ? (it.desc || '') : '';
+  const titleEl = document.getElementById('party-item-modal-title');
+  if (titleEl) titleEl.innerText = isEdit ? '✏️ Editar Item do Grupo' : '➕ Adicionar Item ao Baú do Grupo';
+
+  const nameEl = document.getElementById('inp-pitem-name');
+  if (nameEl) nameEl.value = it ? it.name : '';
+
+  const qtyEl = document.getElementById('inp-pitem-qty');
+  if (qtyEl) qtyEl.value = it ? (it.qty || 1) : 1;
+
+  const catEl = document.getElementById('inp-pitem-cat');
+  if (catEl) catEl.value = it ? (it.category || 'Equipamento de Aventura') : 'Equipamento de Aventura';
+
+  const descEl = document.getElementById('inp-pitem-desc');
+  if (descEl) descEl.value = it ? (it.desc || '') : '';
 
   const selCarrier = document.getElementById('inp-pitem-carrier');
   if (selCarrier) {
@@ -37023,12 +37158,15 @@ function openPartyItemModal(itemId = null) {
       <option value="Baú do Grupo" ${(!it || it.carrier === 'Baú do Grupo') ? 'selected' : ''}>Baú do Grupo</option>
       <option value="Mochila Coletiva" ${(it && it.carrier === 'Mochila Coletiva') ? 'selected' : ''}>Mochila Coletiva / Carroça</option>
       ${campPlayers.map(p => `
-        <option value="${p.name}" ${(it && it.carrier === p.name) ? 'selected' : ''}>${p.name} (${p.student})</option>
+        <option value="${p.name}" ${(it && it.carrier === p.name) ? 'selected' : ''}>${p.name} (${p.student || 'Personagem'})</option>
       `).join('')}
     `;
   }
 
   modal.classList.add('open');
+  setTimeout(() => {
+    if (nameEl) nameEl.focus();
+  }, 100);
 }
 
 function closePartyItemModal() {
@@ -37038,18 +37176,24 @@ function closePartyItemModal() {
 
 function savePartyItem() {
   const camp = getActiveCampaign();
-  if (!camp) return;
+  if (!camp) {
+    alert('Nenhuma campanha ativa selecionada.');
+    return;
+  }
   camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
   camp.partyStash.items = camp.partyStash.items || [];
+  camp.partyStash.history = camp.partyStash.history || [];
 
-  const name = document.getElementById('inp-pitem-name').value.trim();
-  const qty = parseInt(document.getElementById('inp-pitem-qty').value) || 1;
-  const category = document.getElementById('inp-pitem-cat').value;
-  const carrier = document.getElementById('inp-pitem-carrier').value;
-  const desc = document.getElementById('inp-pitem-desc').value.trim();
+  const nameInput = document.getElementById('inp-pitem-name');
+  const name = nameInput ? nameInput.value.trim() : '';
+  const qty = parseInt(document.getElementById('inp-pitem-qty')?.value) || 1;
+  const category = document.getElementById('inp-pitem-cat')?.value || 'Equipamento de Aventura';
+  const carrier = document.getElementById('inp-pitem-carrier')?.value || 'Baú do Grupo';
+  const desc = document.getElementById('inp-pitem-desc')?.value?.trim() || '';
 
   if (!name) {
     alert('Por favor, informe o nome do item.');
+    if (nameInput) nameInput.focus();
     return;
   }
 
@@ -37061,10 +37205,15 @@ function savePartyItem() {
       it.category = category;
       it.carrier = carrier;
       it.desc = desc;
+      camp.partyStash.history.push({
+        date: new Date().toISOString().split('T')[0],
+        text: `✏️ Item "${name}" atualizado (${qty}x, ${carrier})`,
+        type: 'item_edit'
+      });
     }
   } else {
     camp.partyStash.items.push({
-      id: 'it_' + Date.now(),
+      id: 'it_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
       name,
       qty,
       category,
@@ -37089,6 +37238,8 @@ function savePartyItem() {
 function deletePartyItem(itemId) {
   const camp = getActiveCampaign();
   if (!camp || !camp.partyStash?.items) return;
+  camp.partyStash.history = camp.partyStash.history || [];
+
   const it = camp.partyStash.items.find(x => x.id === itemId);
   if (!it) return;
 
@@ -37108,12 +37259,47 @@ function deletePartyItem(itemId) {
   if (typeof addLog === 'function') addLog(`🗑️ <b>Baú do Grupo:</b> "${it.name}" removido.`);
 }
 
+// Função de utilidade para outros módulos (ex: Compêndio) adicionarem itens ao Baú com facilidade
+function addItemToPartyStash(name, qty = 1, category = 'Equipamento de Aventura', desc = '', carrier = 'Baú do Grupo') {
+  const camp = getActiveCampaign();
+  if (!camp) return false;
+  camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+  camp.partyStash.items = camp.partyStash.items || [];
+  camp.partyStash.history = camp.partyStash.history || [];
+
+  const existing = camp.partyStash.items.find(x => x.name.toLowerCase() === name.toLowerCase() && (x.carrier || 'Baú do Grupo') === carrier);
+  if (existing) {
+    existing.qty = (parseInt(existing.qty) || 0) + qty;
+  } else {
+    camp.partyStash.items.push({
+      id: 'it_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      name,
+      qty,
+      category,
+      carrier,
+      desc
+    });
+  }
+
+  camp.partyStash.history.push({
+    date: new Date().toISOString().split('T')[0],
+    text: `+${qty}x ${name} adicionado (${carrier})`,
+    type: 'item_in'
+  });
+
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderCampaigns();
+  renderPartyStashViewer();
+  if (typeof addLog === 'function') addLog(`🎒 <b>Baú do Grupo:</b> +${qty}x "${name}" guardado no baú coletivo.`);
+  return true;
+}
+
 // --- VISUALIZADOR MODAL DO BAÚ DO GRUPO (PARA JOGADORES E MESTRE) ---
 function openPartyStashModal() {
   const modal = document.getElementById('modal-party-stash-view');
-  if (!modal) return;
+  if (modal) modal.classList.add('open');
   renderPartyStashViewer();
-  modal.classList.add('open');
 }
 
 function closePartyStashModal() {
@@ -37148,7 +37334,7 @@ function renderPartyStashViewer() {
           <td><span style="font-size:11px; color:var(--text-muted);">${it.category || 'Geral'}</span></td>
           <td><span class="carrier-badge">🎒 ${it.carrier || 'Baú do Grupo'}</span></td>
           <td style="text-align:right;">
-            <button class="btn-secondary" style="padding:2px 6px; font-size:10px;" onclick="takePartyItemToPlayer('${it.id}')" title="Pegar 1x para minha mochila">📥 Pegar</button>
+            <button class="btn-secondary" style="padding:2px 6px; font-size:10px;" onclick="takePartyItemToPlayer('${it.id}')" title="Transferir 1x para a mochila de um herói">📥 Pegar</button>
             <button class="btn-secondary" style="padding:2px 6px; font-size:10px;" onclick="openPartyItemModal('${it.id}')" title="Editar item">✏️</button>
             <button class="btn-secondary" style="padding:2px 6px; font-size:10px; color:#f87171;" onclick="deletePartyItem('${it.id}')" title="Remover item">🗑️</button>
           </td>
@@ -37173,13 +37359,34 @@ function renderPartyStashViewer() {
   }
 }
 
-function takePartyItemToPlayer(itemId) {
+function takePartyItemToPlayer(itemId, targetPlayerId = null) {
   const camp = getActiveCampaign();
   if (!camp || !camp.partyStash?.items) return;
+  camp.partyStash.history = camp.partyStash.history || [];
+
   const it = camp.partyStash.items.find(x => x.id === itemId);
   if (!it) return;
 
-  const targetPlayer = (activePortalPlayerId && PLAYERS.find(p => p.id === activePortalPlayerId)) || PLAYERS[0];
+  let targetPlayer = null;
+  if (targetPlayerId) {
+    targetPlayer = PLAYERS.find(p => p.id === targetPlayerId);
+  } else if (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId) {
+    targetPlayer = PLAYERS.find(p => p.id === activePortalPlayerId);
+  } else if (PLAYERS.length === 1) {
+    targetPlayer = PLAYERS[0];
+  } else if (PLAYERS.length > 1) {
+    const heroList = PLAYERS.map((p, i) => `${i + 1}. ${p.name} (${p.student || 'Personagem'})`).join('\n');
+    const choice = prompt(`Para qual herói deseja transferir 1x "${it.name}"?\nDigite o número correspondente:\n\n${heroList}`, '1');
+    if (!choice) return;
+    const idx = parseInt(choice) - 1;
+    if (idx >= 0 && idx < PLAYERS.length) {
+      targetPlayer = PLAYERS[idx];
+    } else {
+      alert('Opção inválida.');
+      return;
+    }
+  }
+
   if (!targetPlayer) {
     alert('Nenhum herói disponível para receber o item.');
     return;
@@ -37213,7 +37420,9 @@ function takePartyItemToPlayer(itemId) {
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   renderPartyStashViewer();
-  renderCampaignPartyStash(camp, (camp.playerIds || []).map(id => PLAYERS.find(p => p.id === id)).filter(p => p));
+  if (typeof renderCampaignPartyStash === 'function') {
+    renderCampaignPartyStash(camp, (camp.playerIds || []).map(id => PLAYERS.find(p => p.id === id)).filter(p => p));
+  }
   if (typeof renderPlayers === 'function') renderPlayers();
   if (typeof addLog === 'function') addLog(`🎒 <b>Baú do Grupo:</b> 1x "${it.name}" transferido para a mochila de <b>${targetPlayer.name}</b>.`);
 }

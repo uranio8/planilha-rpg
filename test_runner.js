@@ -1787,11 +1787,63 @@ assert(derivedRoom === 'campanhas_prisco', 'Seleção de campanha derivou automa
 // 4. Teste de isolamento de papéis (Role isolation)
 vm.runInContext("clientRole = 'player'", sandbox);
 let saveAttemptBlocked = true;
-// Quando clientRole é player, executeCloudSave delega apenas para executePlayerCloudSave sem sobrescrever o payload global
-assert(vm.runInContext("clientRole", sandbox) === 'player', 'Papel de cliente restrito definido como player');
-vm.runInContext("clientRole = 'master'", sandbox);
+// ========================================================
+// 32. TESTES DO BAÚ COLETIVO, CADASTRO DEFENSIVO E LINK CURTO
+// ========================================================
+console.log('\n🎒 32. Testes do Baú Coletivo, Cadastro Defensivo e Link Curto:');
 
+// 1. Verificação de funções exportadas
+assert(typeof vm.runInContext("addItemToPartyStash", sandbox) === 'function', 'Função addItemToPartyStash exportada');
+assert(typeof vm.runInContext("promptAddEquipmentToPartyStash", sandbox) === 'function', 'Função promptAddEquipmentToPartyStash exportada');
+assert(typeof vm.runInContext("promptGiveEquipmentToPlayer", sandbox) === 'function', 'Função promptGiveEquipmentToPlayer exportada');
 
+// 2. Teste de cadastro defensivo quando partyStash não possui history (corrige TypeError)
+vm.runInContext(`
+  const testCamp = getActiveCampaign();
+  testCamp.partyStash = { gold: 100, items: [] }; // history propositalmente undefined
+  addItemToPartyStash('Poção de Invisibilidade', 2, 'Poções', 'Fica invisível por 1 hora');
+`, sandbox);
+
+const updatedStash = vm.runInContext("getActiveCampaign().partyStash", sandbox);
+assert(Array.isArray(updatedStash.history), 'partyStash.history foi inicializado defensivamente');
+assert(updatedStash.history.length > 0, 'Histórico de transação registrado com sucesso no baú');
+assert(updatedStash.items.some(it => it.name === 'Poção de Invisibilidade' && it.qty === 2), 'Item cadastrado com sucesso no baú coletivo sem erros');
+
+// 3. Teste de empilhamento do modal no bundle (z-index: 150)
+assert(bundleHtml.includes('id="modal-party-item"') && bundleHtml.includes('z-index: 150'), 'Modal de adicionar item possui z-index: 150 para sobreposição perfeita');
+
+// 4. Teste de botões rápidos nos cards do Compêndio
+assert(bundleHtml.includes('promptAddEquipmentToPartyStash'), 'Cards de equipamento incluem botão para adicionar ao baú');
+assert(bundleHtml.includes('promptGiveEquipmentToPlayer'), 'Cards de equipamento incluem botão para entregar a um herói');
+
+// 5. Teste de resolução assíncrona do link curto (pendingPortalPlayerId)
+vm.runInContext(`
+  activePortalPlayerId = null;
+  pendingPortalPlayerId = null;
+  window.location.search = '?room=campanhas_prisco&player=char_hero_cloud_only';
+  checkPlayerPortalUrl();
+`, sandbox);
+
+const pendingId = vm.runInContext("pendingPortalPlayerId", sandbox);
+const activeId = vm.runInContext("activePortalPlayerId", sandbox);
+assert(pendingId === 'char_hero_cloud_only', 'checkPlayerPortalUrl registrou pendingPortalPlayerId para o herói ainda não baixado');
+assert(activeId === null, 'checkPlayerPortalUrl NÃO fez fallback incorreto para Aeloria enquanto aguarda a nuvem');
+
+// Simula chegada dos dados do Firebase com o herói aguardado
+vm.runInContext(`
+  applyCloudDataToLocal({
+    players: [
+      { id: 'char_hero_cloud_only', name: 'Grommash', student: 'Carlos', className: 'Bárbaro', level: 3, hp: 35, maxHp: 35, ac: 14 }
+    ],
+    state: { combatants: [], round: 1, current: 0 },
+    lastUpdatedBy: 'server'
+  });
+`, sandbox);
+
+const resolvedActiveId = vm.runInContext("activePortalPlayerId", sandbox);
+const clearedPendingId = vm.runInContext("pendingPortalPlayerId", sandbox);
+assert(resolvedActiveId === 'char_hero_cloud_only', 'applyCloudDataToLocal autenticou e ativou com sucesso o herói que estava pendente');
+assert(clearedPendingId === null, 'pendingPortalPlayerId foi limpo após resolução bem-sucedida');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

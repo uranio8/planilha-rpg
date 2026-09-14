@@ -731,7 +731,13 @@ function renderEquipment() {
   if (badge) badge.innerText = filtered.length;
   if (!grid) return;
 
-  grid.innerHTML = filtered.map(e => `
+  grid.innerHTML = filtered.map(e => {
+    const safeName = (e.name || '').replace(/'/g, "\\'");
+    const safeCat = (e.category || '').replace(/'/g, "\\'");
+    const safeWeight = (e.weight || '1 lb').replace(/'/g, "\\'");
+    const safeProp = (e.prop || '').replace(/'/g, "\\'");
+
+    return `
     <div class="item-card">
       <div>
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
@@ -750,9 +756,73 @@ function renderEquipment() {
         <div style="font-size: 12px; color: #cbd5e1; line-height: 1.4;">
           <b style="color: var(--primary-light);">Propriedades:</b> ${e.prop}
         </div>
+
+        <div style="display: flex; gap: 6px; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+          <button class="btn-secondary" style="flex: 1; font-size: 10px; padding: 4px 6px; border-color: rgba(245,158,11,0.4); color: #fef08a;" onclick="promptAddEquipmentToPartyStash('${safeName}', '${safeCat}', '${safeProp}')" title="Adicionar ao Baú Coletivo do Grupo">🎒 + Baú</button>
+          <button class="btn-action" style="flex: 1; font-size: 10px; padding: 4px 6px;" onclick="promptGiveEquipmentToPlayer('${safeName}', '${safeWeight}', '${safeProp}')" title="Dar diretamente para a mochila de um herói">👤 Dar a Herói</button>
+        </div>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
+}
+
+function promptAddEquipmentToPartyStash(name, category, prop) {
+  const qtyStr = prompt(`Quantas unidades de "${name}" deseja adicionar ao Baú do Grupo?`, '1');
+  if (qtyStr === null) return;
+  const qty = parseInt(qtyStr);
+  if (isNaN(qty) || qty <= 0) return;
+
+  if (typeof addItemToPartyStash === 'function') {
+    addItemToPartyStash(name, qty, category, prop, 'Baú do Grupo');
+    alert(`✅ ${qty}x "${name}" adicionado com sucesso ao Baú do Grupo!`);
+  } else {
+    alert('Função do baú não disponível.');
+  }
+}
+
+function promptGiveEquipmentToPlayer(name, weightStr, prop) {
+  if (typeof PLAYERS === 'undefined' || PLAYERS.length === 0) {
+    alert('Nenhum herói cadastrado para receber o item.');
+    return;
+  }
+
+  const heroList = PLAYERS.map((p, i) => `${i + 1}. ${p.name} (${p.student || 'Personagem'})`).join('\n');
+  const choice = prompt(`Para qual herói deseja entregar "${name}"?\nDigite o número correspondente:\n\n${heroList}`, '1');
+  if (!choice) return;
+  const idx = parseInt(choice) - 1;
+  if (idx < 0 || idx >= PLAYERS.length) {
+    alert('Herói inválido selecionado.');
+    return;
+  }
+
+  const targetPlayer = PLAYERS[idx];
+  const qtyStr = prompt(`Quantas unidades de "${name}" deseja entregar para ${targetPlayer.name}?`, '1');
+  if (qtyStr === null) return;
+  const qty = parseInt(qtyStr);
+  if (isNaN(qty) || qty <= 0) return;
+
+  const parsedWeight = parseFloat(weightStr) || 0.5;
+
+  targetPlayer.inventory = targetPlayer.inventory || [];
+  const existing = targetPlayer.inventory.find(x => x.name.toLowerCase() === name.toLowerCase());
+  if (existing) {
+    existing.qty = (parseInt(existing.qty) || 0) + qty;
+  } else {
+    targetPlayer.inventory.push({
+      name: name,
+      qty: qty,
+      equipped: false,
+      weight: parsedWeight,
+      desc: prop || ''
+    });
+  }
+
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof addLog === 'function') addLog(`🎁 <b>Equipamento Entregue:</b> ${qty}x "${name}" entregue para a mochila de <b>${targetPlayer.name}</b>.`);
+  alert(`✅ ${qty}x "${name}" entregue para ${targetPlayer.name}!`);
 }
 
 // --- GERADORES DE NPCS, TESOUROS E ENCONTROS ---

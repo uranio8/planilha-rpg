@@ -1,5 +1,6 @@
 
 let activePortalPlayerId = null;
+let pendingPortalPlayerId = null;
 
 // Helpers de Estilização & Gameplay para Fichas (Pacote Completo)
 function getPlayerClassBadge(p) {
@@ -3600,6 +3601,11 @@ function openSharePlayerModal(playerId) {
   const shareUrl = generatePlayerShareUrl(playerId, true);
   const shortUrl = getShortPlayerShareUrl(playerId);
 
+  // Auto-publica silenciosamente a mesa na nuvem para garantir que o link curto encontre os dados
+  if (typeof publishMasterCampaignToCloud === 'function' && clientRole !== 'player') {
+    publishMasterCampaignToCloud(true);
+  }
+
   if (inpUrl) inpUrl.value = shareUrl;
   if (inpUrlShort) inpUrlShort.value = shortUrl;
 
@@ -3636,6 +3642,11 @@ function copyShortShareLink() {
   if (!inp) return;
   inp.select();
   inp.setSelectionRange(0, 99999);
+
+  // Garante publicação mais recente na nuvem ao copiar
+  if (typeof publishMasterCampaignToCloud === 'function' && clientRole !== 'player') {
+    publishMasterCampaignToCloud(true);
+  }
 
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -3722,23 +3733,43 @@ function openPlayerPortalDirect() {
 }
 
 function updatePlayerPortalBanner() {
-  if (!activePortalPlayerId) return;
-  const p = PLAYERS.find(x => x.id === activePortalPlayerId);
-  if (!p) return;
-
   const banner = document.getElementById('player-portal-banner');
   const titleEl = document.getElementById('portal-char-title');
   const subEl = document.getElementById('portal-char-sub');
 
+  if (typeof pendingPortalPlayerId !== 'undefined' && pendingPortalPlayerId && !activePortalPlayerId) {
+    if (banner) banner.style.display = 'flex';
+    if (titleEl) titleEl.innerText = `⏳ Sincronizando com a Nuvem...`;
+    if (subEl) subEl.innerText = `Carregando ficha do seu herói na mesa...`;
+    return;
+  }
+
+  if (!activePortalPlayerId) return;
+  const p = PLAYERS.find(x => x.id === activePortalPlayerId);
+  if (!p) return;
+
   if (banner) banner.style.display = 'flex';
-  if (titleEl) titleEl.innerText = `👤 ${p.name} (${p.student})`;
+  if (titleEl) titleEl.innerText = `👤 ${p.name} (${p.student || 'Personagem'})`;
   if (subEl) subEl.innerText = `${p.race} • ${p.className} (Nível ${p.level}) • CA ${p.ac} • ${p.hp}/${p.maxHp} PV`;
 }
 
 function initPlayerPortalMode(playerId) {
-  const p = PLAYERS.find(x => x.id === playerId) || PLAYERS[0];
-  if (!p) return;
+  if (!playerId) return;
 
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) {
+    // Herói ainda não está na memória local (ex: aguardando resposta do Firebase)
+    pendingPortalPlayerId = playerId;
+    if (typeof clientRole !== 'undefined') clientRole = 'player';
+    if (typeof document !== 'undefined' && document.body && document.body.classList) {
+      document.body.classList.add('mode-player-portal');
+    }
+    updatePlayerPortalBanner();
+    switchTab('players');
+    return;
+  }
+
+  pendingPortalPlayerId = null;
   activePortalPlayerId = p.id;
   if (typeof clientRole !== 'undefined') clientRole = 'player';
   if (typeof document !== 'undefined' && document.body && document.body.classList) {
@@ -3757,6 +3788,7 @@ function exitPlayerPortalMode() {
     const ok = confirm('Deseja realmente sair da sua ficha de jogador e voltar para a visão do Mestre?');
     if (!ok) return;
   }
+  pendingPortalPlayerId = null;
   activePortalPlayerId = null;
   if (typeof clientRole !== 'undefined') clientRole = 'master';
   if (typeof document !== 'undefined' && document.body && document.body.classList) {
