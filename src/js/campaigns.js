@@ -23,6 +23,7 @@ function saveCampaignsState() {
     localStorage.setItem('dnd5e_prisco_campaigns_v1', JSON.stringify(CAMPAIGNS_STATE));
     if (typeof showSaveStatus === 'function') showSaveStatus();
     if (typeof broadcastCampaignState === 'function') broadcastCampaignState();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
   } catch (e) {
     console.warn('Erro ao salvar campanhas:', e);
   }

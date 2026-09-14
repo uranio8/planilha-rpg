@@ -228,6 +228,7 @@ let managingCondCombatantId = null;
 
 // --- LOCAL STORAGE AUTO-SAVE ---
 const STORAGE_KEY = 'dnd5e_prisco_sheet_state_v2';
+let lastSafetySnapshotTime = 0;
 
 function saveToLocalStorage() {
   try {
@@ -239,6 +240,16 @@ function saveToLocalStorage() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     if (typeof saveCampaignsState === 'function') saveCampaignsState();
     if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+
+    // Snapshot periódico de segurança a cada 5 minutos de atividade
+    const now = Date.now();
+    if (now - lastSafetySnapshotTime > 5 * 60 * 1000) {
+      lastSafetySnapshotTime = now;
+      if (typeof saveSafetySnapshot === 'function') {
+        saveSafetySnapshot('Backup Automático de Sessão');
+      }
+    }
+
     showSaveStatus();
   } catch (e) {
     console.warn('Erro ao salvar no localStorage:', e);
@@ -468,18 +479,187 @@ function formatFeatureToTopics(rawDesc, options = {}) {
   return html;
 }
 
-// --- SISTEMA DE BACKUP & RESTAURAÇÃO TOTAL (JSON) ---
+// --- SISTEMA DE BACKUP, SNAPSHOTS DE SEGURANÇA & RESTAURAÇÃO TOTAL (JSON) ---
+const SAFETY_SNAPSHOTS_KEY = 'dnd5e_safety_snapshots_history_v1';
+
+function saveSafetySnapshot(reason = 'Backup Automático') {
+  try {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('pt-BR') + ' ' + now.toLocaleTimeString('pt-BR');
+    const snapshot = {
+      id: 'snap_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      timestamp: Date.now(),
+      dateStr: dateStr,
+      reason: reason,
+      playersCount: (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS)) ? PLAYERS.length : 0,
+      players: (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS)) ? JSON.parse(JSON.stringify(PLAYERS)) : [],
+      state: (typeof state !== 'undefined') ? JSON.parse(JSON.stringify(state)) : null,
+      gridState: (typeof gridState !== 'undefined') ? JSON.parse(JSON.stringify(gridState)) : null,
+      campaignsState: (typeof CAMPAIGNS_STATE !== 'undefined') ? JSON.parse(JSON.stringify(CAMPAIGNS_STATE)) : null,
+      dmNotes: (typeof localStorage !== 'undefined') ? (localStorage.getItem('dnd_tracker_dm_notes_v3') || '') : ''
+    };
+
+    let history = [];
+    try {
+      const raw = localStorage.getItem(SAFETY_SNAPSHOTS_KEY);
+      if (raw) history = JSON.parse(raw);
+    } catch (e) {}
+
+    // Mantém os últimos 15 snapshots
+    history.unshift(snapshot);
+    if (history.length > 15) history = history.slice(0, 15);
+
+    localStorage.setItem(SAFETY_SNAPSHOTS_KEY, JSON.stringify(history));
+    localStorage.setItem('dnd5e_prisco_safety_snapshot_latest', JSON.stringify(snapshot));
+    return true;
+  } catch (e) {
+    console.warn('Erro ao salvar snapshot de segurança:', e);
+    return false;
+  }
+}
+
+function getSafetySnapshots() {
+  try {
+    const raw = localStorage.getItem(SAFETY_SNAPSHOTS_KEY);
+    if (raw) {
+      const list = JSON.parse(raw);
+      if (Array.isArray(list)) return list;
+    }
+  } catch (e) {}
+  return [];
+}
+
+function restoreSafetySnapshot(snapshotId) {
+  const list = getSafetySnapshots();
+  const target = list.find(s => s.id === snapshotId);
+  if (!target) {
+    alert('Ponto de restauração não encontrado.');
+    return false;
+  }
+
+  const pCount = target.playersCount || (target.players ? target.players.length : 0);
+  if (confirm(`Deseja restaurar o backup de "${target.dateStr}" (${target.reason})?\nContém: ${pCount} ficha(s).\nIsso atualizará a planilha com os dados salvos neste ponto.`)) {
+    // Salva snapshot de segurança do estado atual antes de reverter
+    saveSafetySnapshot('Antes de reverter para ponto de restauração');
+
+    if (target.players && Array.isArray(target.players)) {
+      PLAYERS = target.players.map(p => {
+        if (!p.skillProficiencies) p.skillProficiencies = [];
+        if (!p.saveProficiencies) p.saveProficiencies = [];
+        if (!p.actionLogs) p.actionLogs = [];
+        if (p.playerNotes === undefined) p.playerNotes = '';
+        return p;
+      });
+    }
+
+    if (target.state && Array.isArray(target.state.combatants)) {
+      state = target.state;
+    }
+
+    if (target.gridState && typeof gridState !== 'undefined') {
+      gridState = target.gridState;
+    }
+
+    if (target.campaignsState && typeof CAMPAIGNS_STATE !== 'undefined') {
+      CAMPAIGNS_STATE = target.campaignsState;
+      if (typeof saveCampaignsState === 'function') saveCampaignsState();
+    }
+
+    if (target.dmNotes && typeof localStorage !== 'undefined') {
+      localStorage.setItem('dnd_tracker_dm_notes_v3', target.dmNotes);
+      const notesTextarea = document.getElementById('inp-dm-quick-notes');
+      if (notesTextarea) notesTextarea.value = target.dmNotes;
+    }
+
+    saveToLocalStorage();
+    if (typeof renderPlayers === 'function') renderPlayers();
+    if (typeof renderCombat === 'function') renderCombat();
+    if (typeof renderBattleGrid === 'function') renderBattleGrid();
+    if (typeof renderCampaigns === 'function') renderCampaigns();
+    if (typeof broadcastGridState === 'function') broadcastGridState();
+
+    if (typeof playFX === 'function') playFX('crit');
+    if (typeof addLog === 'function') {
+      addLog(`🛡️ <b>Backup Restaurado:</b> Dados recuperados com sucesso do ponto de [${target.dateStr}]!`);
+    }
+
+    closeSnapshotsModal();
+    alert(`Backup restaurado com sucesso! (${pCount} fichas recuperadas)`);
+    return true;
+  }
+  return false;
+}
+
+function openSnapshotsModal() {
+  const modal = document.getElementById('modal-safety-snapshots');
+  if (modal) {
+    renderSnapshotsModal();
+    modal.classList.add('active');
+  }
+}
+
+function closeSnapshotsModal() {
+  const modal = document.getElementById('modal-safety-snapshots');
+  if (modal) modal.classList.remove('active');
+}
+
+function renderSnapshotsModal() {
+  const container = document.getElementById('snapshots-list-container');
+  if (!container) return;
+
+  const list = getSafetySnapshots();
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 25px 15px; color: var(--text-muted);">
+        <div style="font-size: 32px; margin-bottom: 8px;">🛡️</div>
+        <div style="font-size: 13px; font-weight: 700; color: #cbd5e1;">Nenhum Ponto de Restauração Automático Encontrado</div>
+        <div style="font-size: 11px; margin-top: 4px;">Os snapshots são criados automaticamente sempre que você edita fichas ou antes de sincronizações com a nuvem.</div>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = list.map((snap, idx) => {
+    const pCount = snap.playersCount || (snap.players ? snap.players.length : 0);
+    const pNames = snap.players ? snap.players.slice(0, 3).map(p => p.name || p.student).join(', ') + (snap.players.length > 3 ? '...' : '') : 'Nenhuma ficha';
+    const cCount = snap.campaignsState && snap.campaignsState.campaigns ? snap.campaignsState.campaigns.length : 0;
+    const isLatest = idx === 0;
+
+    return `
+      <div style="background: ${isLatest ? 'rgba(59, 130, 246, 0.1)' : 'rgba(0,0,0,0.25)'}; border: 1px solid ${isLatest ? 'var(--primary)' : 'var(--border-color)'}; border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+        <div style="flex: 1;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-weight: 800; font-size: 13px; color: #fff;">📅 ${snap.dateStr}</span>
+            ${isLatest ? '<span class="badge badge-lvl" style="font-size: 9px; padding: 1px 6px;">Mais Recente</span>' : ''}
+          </div>
+          <div style="font-size: 11px; color: var(--primary-light); margin-top: 2px;">
+            Motivo: <strong>${snap.reason || 'Backup Automático'}</strong>
+          </div>
+          <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">
+            👥 ${pCount} Fichas (${pNames}) • 👑 ${cCount} Campanhas/Mesas
+          </div>
+        </div>
+        <div>
+          <button class="btn-action" style="font-size: 11px; padding: 6px 12px; white-space: nowrap;" onclick="restoreSafetySnapshot('${snap.id}')">
+            🔄 Restaurar Este
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 function exportCompleteBackupJson() {
   try {
     const backupData = {
       appName: 'Planilha RPG D&D 5E Assistant & VTT',
-      version: '3.5',
+      version: '3.6',
       exportDate: new Date().toISOString(),
       players: typeof PLAYERS !== 'undefined' ? PLAYERS : [],
       combatState: typeof state !== 'undefined' ? state : { round: 1, turnIndex: 0, combatants: [] },
       gridState: typeof gridState !== 'undefined' ? gridState : null,
       scenesState: typeof scenesState !== 'undefined' ? scenesState : null,
-      campaignsState: typeof campaignsState !== 'undefined' ? campaignsState : null,
+      campaignsState: typeof CAMPAIGNS_STATE !== 'undefined' ? CAMPAIGNS_STATE : (typeof campaignsState !== 'undefined' ? campaignsState : null),
       dmNotes: typeof localStorage !== 'undefined' ? localStorage.getItem('dnd_tracker_dm_notes_v3') || '' : '',
       customMonsters: typeof CUSTOM_MONSTERS !== 'undefined' ? CUSTOM_MONSTERS : [],
       customSpells: typeof CUSTOM_SPELLS !== 'undefined' ? CUSTOM_SPELLS : [],
@@ -504,7 +684,7 @@ function exportCompleteBackupJson() {
 
     if (typeof playFX === 'function') playFX('heal');
     if (typeof addLog === 'function') {
-      addLog(`💾 <b>Backup Concluído:</b> Todos os dados do RPG foram salvos no arquivo [${filename}]!`);
+      addLog(`💾 <b>Backup Concluído:</b> Todos os dados do RPG (Fichas, Mesas e Campanhas) foram salvos no arquivo [${filename}]!`);
     }
   } catch (e) {
     console.error('Erro ao exportar backup:', e);
@@ -548,13 +728,16 @@ function handleBackupFileSelected(input) {
       const hasPlayers = Array.isArray(data.players) || Array.isArray(data.PLAYERS);
       const hasCombat = data.combatState || data.state;
       const hasGrid = data.gridState || data.scenesState;
-      const hasCampaigns = data.campaignsState;
+      const hasCampaigns = data.campaignsState || data.campaigns || data.CAMPAIGNS_STATE;
 
       if (!hasPlayers && !hasCombat && !hasGrid && !hasCampaigns) {
         throw new Error('O arquivo não contém dados reconhecidos da Planilha RPG.');
       }
 
-      if (confirm(`Deseja restaurar o backup de "${file.name}" gerado em ${data.exportDate || 'data desconhecida'}? Isso atualizará fichas, combate, mapa e notas.`)) {
+      if (confirm(`Deseja restaurar o backup de "${file.name}" gerado em ${data.exportDate || 'data desconhecida'}? Isso atualizará fichas, mesas de campanhas, combate, mapa e notas.`)) {
+        // Salva snapshot de segurança antes de sobrescrever com o arquivo
+        saveSafetySnapshot(`Antes de importar arquivo ${file.name}`);
+
         // Restaura jogadores
         if (hasPlayers) {
           const importedPlayers = data.players || data.PLAYERS || [];
@@ -582,9 +765,13 @@ function handleBackupFileSelected(input) {
           scenesState = data.scenesState;
         }
 
-        // Restaura campanhas
-        if (data.campaignsState && typeof campaignsState !== 'undefined') {
-          campaignsState = data.campaignsState;
+        // Restaura campanhas e mesas
+        if (hasCampaigns) {
+          const importedCamps = data.campaignsState || data.campaigns || data.CAMPAIGNS_STATE;
+          if (typeof CAMPAIGNS_STATE !== 'undefined') {
+            CAMPAIGNS_STATE = importedCamps;
+            if (typeof saveCampaignsState === 'function') saveCampaignsState();
+          }
         }
 
         // Restaura notas do mestre
@@ -626,7 +813,13 @@ if (typeof module !== 'undefined' && module.exports) {
     exportData,
     importBackupJson,
     importData,
-    handleBackupFileSelected
+    handleBackupFileSelected,
+    saveSafetySnapshot,
+    getSafetySnapshots,
+    restoreSafetySnapshot,
+    openSnapshotsModal,
+    closeSnapshotsModal,
+    renderSnapshotsModal
   };
 }
 

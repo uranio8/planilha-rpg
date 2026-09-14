@@ -1390,6 +1390,50 @@ vm.runInContext("togglePlayerSpellPrepared('test_caster_prep', 'Escudo Arcano')"
 const finalCaster = vm.runInContext("PLAYERS.find(p => p.id === 'test_caster_prep')", sandbox);
 assert(!finalCaster.preparedSpells.includes('Escudo Arcano'), 'togglePlayerSpellPrepared desmarcou Escudo Arcano');
 
+// ========================================================
+// 26. TESTES DE SNAPSHOTS DE SEGURANÇA E PRESERVAÇÃO DE DADOS
+// ========================================================
+console.log('\n🛡️ 26. Testes de Snapshots de Segurança, Recuperação e Preservação de Dados:');
+
+assert(typeof vm.runInContext("saveSafetySnapshot", sandbox) === 'function', 'Função saveSafetySnapshot exportada');
+assert(typeof vm.runInContext("getSafetySnapshots", sandbox) === 'function', 'Função getSafetySnapshots exportada');
+assert(typeof vm.runInContext("restoreSafetySnapshot", sandbox) === 'function', 'Função restoreSafetySnapshot exportada');
+assert(typeof vm.runInContext("openSnapshotsModal", sandbox) === 'function', 'Função openSnapshotsModal exportada');
+assert(typeof vm.runInContext("closeSnapshotsModal", sandbox) === 'function', 'Função closeSnapshotsModal exportada');
+assert(typeof vm.runInContext("renderSnapshotsModal", sandbox) === 'function', 'Função renderSnapshotsModal exportada');
+
+// 1. Criação de snapshot de segurança
+vm.runInContext(`
+  saveSafetySnapshot('Teste Unitário de Segurança');
+`, sandbox);
+
+const snapshotsList = vm.runInContext("getSafetySnapshots()", sandbox);
+assert(Array.isArray(snapshotsList) && snapshotsList.length > 0, 'Snapshot de segurança registrado na lista');
+assert(snapshotsList[0].reason === 'Teste Unitário de Segurança', 'Motivo do snapshot preservado');
+assert(snapshotsList[0].players && snapshotsList[0].players.length > 0, 'Fichas de personagens capturadas no snapshot');
+
+// 2. Modifica dados e restaura a partir do snapshot
+const snapId = snapshotsList[0].id;
+vm.runInContext(`
+  // Altera o nome do primeiro jogador
+  PLAYERS[0].name = 'Nome Modificado';
+  // Executa restauração
+  restoreSafetySnapshot('${snapId}');
+`, sandbox);
+
+const restoredPlayer = vm.runInContext("PLAYERS[0]", sandbox);
+assert(restoredPlayer && restoredPlayer.name !== 'Nome Modificado', 'Restauração de snapshot reverteu alterações com sucesso');
+
+// 3. Teste de proteção contra nuvem vazia (Safeguard de applyCloudDataToLocal)
+vm.runInContext(`
+  const initialPlayersCount = PLAYERS.length;
+  // Simula recebimento de payload vazio da nuvem
+  applyCloudDataToLocal({ players: [] });
+`, sandbox);
+
+const postCloudCount = vm.runInContext("PLAYERS.length", sandbox);
+assert(postCloudCount > 0, 'Nuvem vazia não apagou fichas locais existentes');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

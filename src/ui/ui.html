@@ -46,8 +46,9 @@
       <button class="btn-top" onclick="toggleGlobalDiceDrawer()" title="Abrir Painel de Rolagem de Dados">🎲 Dados</button>
       <button class="btn-top" onclick="openPlayerView()" title="Abrir Modo Telão para Projetor da Sala de Aula">📺 Telão</button>
       <button class="btn-top" onclick="openDiceModal()">🎲 Rolador</button>
-      <button class="btn-top" onclick="exportData()" title="Salvar Backup">💾 Backup</button>
-      <button class="btn-top" onclick="importData()" title="Carregar Backup">📂 Carregar</button>
+      <button class="btn-top" onclick="exportData()" title="Salvar Arquivo de Backup JSON Completo">💾 Backup</button>
+      <button class="btn-top" onclick="importData()" title="Carregar Arquivo de Backup JSON">📂 Carregar</button>
+      <button class="btn-top" onclick="openSnapshotsModal()" title="Histórico de Pontos de Restauração Automáticos" style="color: #60a5fa; border-color: rgba(96, 165, 250, 0.4);">🛡️ Recuperar</button>
     </div>
   </header>
 
@@ -2659,6 +2660,40 @@
     </div>
   </div>
 
+  <!-- MODAL: HISTÓRICO DE SNAPSHOTS DE SEGURANÇA & RECUPERAÇÃO -->
+  <div id="modal-safety-snapshots" class="modal-overlay">
+    <div class="modal-body" style="max-width: 580px;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 22px;">🛡️</span>
+          <div>
+            <div style="font-size: 16px; font-weight: 800; font-family: var(--font-title); color: #fff;">
+              Pontos de Restauração Automáticos
+            </div>
+            <div style="font-size: 11px; color: var(--primary-light);">
+              Recupere instantaneamente fichas, mesas e campanhas salvas em momentos anteriores
+            </div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeSnapshotsModal()">✕</button>
+      </div>
 
+      <div style="margin-bottom: 12px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 6px; padding: 8px 12px; font-size: 11px; color: #cbd5e1; line-height: 1.4;">
+        💡 <b>Como funciona:</b> O sistema cria automaticamente cópias de segurança locais antes de qualquer sincronização com a nuvem, importação de arquivo ou alteração importante. Clique em <b>"Restaurar Este"</b> no ponto desejado para recuperar seus dados.
+      </div>
 
+      <!-- Lista de Snapshots -->
+      <div id="snapshots-list-container" style="max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;">
+        <!-- Preenchido dinamicamente por renderSnapshotsModal() -->
+      </div>
 
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 12px;">
+        <button class="btn-secondary" style="font-size: 11px;" onclick="saveSafetySnapshot('Snapshot Manual do Usuário'); renderSnapshotsModal();" title="Criar um ponto de restauração agora">
+          📸 Criar Ponto Agora
+        </button>
+        <div style="display: flex; gap: 6px;">
+          <button class="btn-secondary" onclick="closeSnapshotsModal()">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>

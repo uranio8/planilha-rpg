@@ -163,9 +163,25 @@ function startFirebaseRoomListener(roomId) {
 
 function applyCloudDataToLocal(cloudData) {
   if (!cloudData) return;
+
+  // Proteção: Se a nuvem estiver vazia/zerada e tivermos fichas locais válidas, NÃO zere o local; suba o local para a nuvem
+  const localHasPlayers = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS) && PLAYERS.length > 0);
+  const cloudHasPlayers = (cloudData.players && Array.isArray(cloudData.players) && cloudData.players.length > 0);
+
+  if (localHasPlayers && !cloudHasPlayers) {
+    console.warn('🛡️ Nuvem vazia detectada! Preservando fichas locais e sincronizando com a nuvem...');
+    executeCloudSave();
+    return;
+  }
+
   isApplyingCloudUpdate = true;
 
   try {
+    // 0. Salva Snapshot de Segurança Automático antes de aplicar alterações remotas
+    if (typeof saveSafetySnapshot === 'function') {
+      saveSafetySnapshot('Antes de aplicar sincronização da Nuvem');
+    }
+
     // 1. Atualiza Fichas de Jogadores
     if (cloudData.players && Array.isArray(cloudData.players)) {
       PLAYERS = cloudData.players.map(p => {
@@ -189,6 +205,20 @@ function applyCloudDataToLocal(cloudData) {
       gridState = Object.assign({}, gridState, cloudData.gridState);
       if (typeof renderBattleGrid === 'function') renderBattleGrid();
       if (typeof renderVttCombatHud === 'function') renderVttCombatHud();
+    }
+
+    // 4. Atualiza Campanhas e Mesas de Jogo
+    if (cloudData.campaigns && typeof CAMPAIGNS_STATE !== 'undefined') {
+      CAMPAIGNS_STATE = cloudData.campaigns;
+      if (typeof saveCampaignsState === 'function') saveCampaignsState();
+      if (typeof renderCampaigns === 'function') renderCampaigns();
+    }
+
+    // 5. Atualiza Notas Rápidas do Mestre
+    if (cloudData.dmNotes && typeof localStorage !== 'undefined') {
+      localStorage.setItem('dnd_tracker_dm_notes_v3', cloudData.dmNotes);
+      const notesEl = document.getElementById('inp-dm-quick-notes');
+      if (notesEl) notesEl.value = cloudData.dmNotes;
     }
 
     // Salva no cache local (localStorage) sem re-despachar para a nuvem
@@ -236,6 +266,9 @@ function executeCloudSave() {
   const payload = {
     players: (typeof PLAYERS !== 'undefined') ? PLAYERS : [],
     state: (typeof state !== 'undefined') ? state : { combatants: [], round: 1, current: 0 },
+    gridState: (typeof gridState !== 'undefined') ? gridState : null,
+    campaigns: (typeof CAMPAIGNS_STATE !== 'undefined') ? CAMPAIGNS_STATE : null,
+    dmNotes: (typeof localStorage !== 'undefined') ? (localStorage.getItem('dnd_tracker_dm_notes_v3') || '') : '',
     lastUpdatedBy: localClientId,
     lastUpdateIso: new Date().toISOString()
   };
