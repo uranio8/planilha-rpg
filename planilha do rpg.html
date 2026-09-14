@@ -27644,19 +27644,30 @@ function initFirebaseSync() {
       } catch (e) {}
     }
 
-    firebaseApp = firebase.initializeApp(config);
+    // Auto-deriva a URL do Realtime Database se faltar no objeto colado do console
+    const finalConfig = Object.assign({}, config);
+    if (!finalConfig.databaseURL && finalConfig.projectId) {
+      finalConfig.databaseURL = `https://${finalConfig.projectId}-default-rtdb.firebaseio.com`;
+    }
 
-    // Suporte tanto para Realtime Database quanto para Firestore
-    if (typeof firebase.database === 'function' && (config.databaseURL || !config.projectId)) {
+    firebaseApp = firebase.initializeApp(finalConfig);
+
+    // 1. Suporte prioritário para Realtime Database (conforme configurado no console)
+    if (typeof firebase.database === 'function') {
       try {
         realtimeDb = firebase.database();
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Realtime Database fallback:', e);
+      }
     }
+
+    // 2. Suporte para Cloud Firestore
     if (typeof firebase.firestore === 'function') {
       try {
         firestoreDb = firebase.firestore();
-        firestoreDb.enablePersistence({ synchronizeTabs: true }).catch(err => {});
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Firestore fallback:', e);
+      }
     }
 
     isFirebaseConnected = true;
@@ -28035,25 +28046,46 @@ function manualPushToCloud() {
 }
 
 function manualPullFromCloud() {
-  if (!isFirebaseConnected || !firestoreDb) {
+  if (!isFirebaseConnected || (!firestoreDb && !realtimeDb)) {
     alert('Conecte o Firebase primeiro.');
     return;
   }
   const roomId = getStoredFirebaseRoom();
   updateFirebaseUiStatus('syncing', 'Buscando dados...');
 
-  firestoreDb.collection('dnd_rooms').doc(roomId).get()
-    .then(doc => {
-      if (doc.exists) {
-        applyCloudDataToLocal(doc.data());
-        alert('⬇️ Fichas e estado de combate atualizados a partir da nuvem!');
-      } else {
-        alert(`A sala '${roomId}' ainda não possui dados na nuvem.`);
-      }
-    })
-    .catch(err => {
-      alert('Erro ao buscar dados da nuvem: ' + err.message);
-    });
+  // 1. Busca no Realtime Database
+  if (realtimeDb) {
+    realtimeDb.ref('dnd_rooms/' + roomId).once('value')
+      .then(snapshot => {
+        const cloudData = snapshot.val();
+        if (cloudData) {
+          applyCloudDataToLocal(cloudData);
+          alert('⬇️ Fichas e estado de combate atualizados a partir do Realtime Database!');
+        } else {
+          alert(`A sala '${roomId}' ainda não possui dados salvos na nuvem.`);
+        }
+      })
+      .catch(err => {
+        alert('Erro ao buscar dados do Realtime Database: ' + err.message);
+      });
+    return;
+  }
+
+  // 2. Busca no Firestore
+  if (firestoreDb) {
+    firestoreDb.collection('dnd_rooms').doc(roomId).get()
+      .then(doc => {
+        if (doc.exists) {
+          applyCloudDataToLocal(doc.data());
+          alert('⬇️ Fichas e estado de combate atualizados a partir do Firestore!');
+        } else {
+          alert(`A sala '${roomId}' ainda não possui dados na nuvem.`);
+        }
+      })
+      .catch(err => {
+        alert('Erro ao buscar dados do Firestore: ' + err.message);
+      });
+  }
 }
 
 // src_js_combat.js - Initiative, combat rounds, attacks, damage dispatcher and dice rolling
