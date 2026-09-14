@@ -119,11 +119,37 @@ function broadcastCombatState(actionNarrative = null) {
   } catch (e) {}
 }
 
+function broadcastStateSync() {
+  if (syncChannel) {
+    try {
+      syncChannel.postMessage({
+        type: 'STATE_SYNC',
+        players: (typeof PLAYERS !== 'undefined') ? PLAYERS : [],
+        state: (typeof state !== 'undefined') ? state : null,
+        gridState: (typeof gridState !== 'undefined') ? gridState : null
+      });
+    } catch (e) {}
+  }
+}
+
 if (syncChannel) {
   syncChannel.onmessage = (event) => {
     if (!event.data) return;
     
-    if (event.data.type === 'COMBAT_UPDATE') {
+    if (event.data.type === 'STATE_SYNC') {
+      if (event.data.players && Array.isArray(event.data.players)) {
+        PLAYERS = event.data.players;
+        if (typeof renderPlayers === 'function') renderPlayers();
+      }
+      if (event.data.state && Array.isArray(event.data.state.combatants)) {
+        state = event.data.state;
+        if (typeof renderCombat === 'function') renderCombat();
+      }
+      if (event.data.gridState && typeof gridState !== 'undefined') {
+        gridState = event.data.gridState;
+        if (typeof renderBattleGrid === 'function') renderBattleGrid();
+      }
+    } else if (event.data.type === 'COMBAT_UPDATE') {
       if (document.body.classList.contains('mode-screen-only')) {
         renderStandaloneScreen(event.data);
       }
@@ -218,7 +244,14 @@ if (syncChannel) {
 }
 
 window.addEventListener('storage', (e) => {
-  if (e.key === 'dnd5e_prisco_live_combat' && e.newValue) {
+  if (e.key === 'dnd5e_prisco_sheet_state_v2' || e.key === 'dnd_tracker_players_v3' || e.key === 'dnd5e_prisco_campaigns_v1') {
+    if (typeof loadFromLocalStorage === 'function') {
+      loadFromLocalStorage();
+      if (typeof renderPlayers === 'function') renderPlayers();
+      if (typeof renderCombat === 'function') renderCombat();
+      if (typeof renderCampaigns === 'function') renderCampaigns();
+    }
+  } else if (e.key === 'dnd5e_prisco_live_combat' && e.newValue) {
     if (document.body.classList.contains('mode-screen-only')) {
       try {
         const data = JSON.parse(e.newValue);
@@ -572,3 +605,13 @@ window.onload = () => {
   renderAll();
   if (typeof checkPlayerPortalUrl === 'function') checkPlayerPortalUrl();
 };
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    broadcastStateSync,
+    broadcastCombatState,
+    setPlayerViewTheme,
+    openPlayerView,
+    renderAll
+  };
+}

@@ -254,6 +254,7 @@ function saveToLocalStorage() {
 
     if (typeof saveCampaignsState === 'function') saveCampaignsState();
     if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+    if (typeof broadcastStateSync === 'function') broadcastStateSync();
 
     // Snapshot periódico de segurança a cada 5 minutos de atividade
     const now = Date.now();
