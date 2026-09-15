@@ -1977,6 +1977,55 @@ vm.runInContext(`
 const recoveredSessions = vm.runInContext("getActiveCampaign().sessions", sandbox);
 assert(recoveredSessions.length > 0, 'recoverSessionsFromSnapshots restaurou sessões com sucesso a partir dos backups');
 
+// 4. Teste de addHookToCampaignJournal (Compêndio -> Diário de Campanha)
+assert(typeof vm.runInContext("addHookToCampaignJournal", sandbox) === 'function', 'Função addHookToCampaignJournal exportada');
+vm.runInContext(`
+  const countBeforeHook = getActiveCampaign().sessions.length;
+  addHookToCampaignJournal('Gancho Misterioso na Taverna', 'O taverneiro entrega um mapa antigo.', 'Gundren Rockseeker');
+  const countAfterHook = getActiveCampaign().sessions.length;
+  const addedHookSession = getActiveCampaign().sessions[getActiveCampaign().sessions.length - 1];
+`, sandbox);
+assert(vm.runInContext("countAfterHook === countBeforeHook + 1", sandbox), 'addHookToCampaignJournal adicionou nova sessão com sucesso');
+assert(vm.runInContext("addedHookSession.title === 'Gancho Misterioso na Taverna'", sandbox), 'addHookToCampaignJournal registrou título do gancho');
+assert(vm.runInContext("addedHookSession.keyNpcs === 'Gundren Rockseeker'", sandbox), 'addHookToCampaignJournal registrou NPCs do gancho');
+assert(vm.runInContext("addedHookSession.notes.includes('mapa antigo')", sandbox), 'addHookToCampaignJournal registrou narrativa do gancho em notes');
+
+// 5. Teste de detecção de rascunho não salvo em renderCampaignSessions
+vm.runInContext(`
+  localStorage.setItem('dnd5e_session_draft', JSON.stringify({
+    title: 'Rascunho de Teste',
+    notes: 'Anotações que não foram perdidas',
+    num: 99
+  }));
+  renderCampaignSessions(getActiveCampaign());
+  const timelineHtml = document.getElementById('camp-sessions-timeline').innerHTML;
+`, sandbox);
+assert(vm.runInContext("timelineHtml.includes('Rascunho não salvo detectado')", sandbox), 'renderCampaignSessions exibe banner de aviso quando há rascunho no localStorage');
+assert(vm.runInContext("timelineHtml.includes('Restaurar Rascunho')", sandbox), 'renderCampaignSessions inclui botão de restauração de rascunho com 1 clique');
+
+// 6. Teste de proteção de foco em Notas do Mestre (renderDMNotes e Firebase Sync)
+vm.runInContext(`
+  const dmNotesCamp = getActiveCampaign();
+  dmNotesCamp.dmNotes = 'Notas originais salvas';
+  const dmNotesEl = document.getElementById('inp-dm-quick-notes');
+  if (dmNotesEl) {
+    dmNotesEl.value = 'Digitando nova ideia que ainda não foi salva...';
+    // Simula campo em foco
+    document.activeElement = dmNotesEl;
+    renderDMNotes();
+  }
+`, sandbox);
+assert(vm.runInContext("document.getElementById('inp-dm-quick-notes').value === 'Digitando nova ideia que ainda não foi salva...'", sandbox), 'renderDMNotes não sobrescreveu o textarea enquanto o mestre está digitando');
+
+vm.runInContext(`
+  // Testa salvamento de DM notes
+  saveDMNotes();
+  const savedDmNotesLocal = localStorage.getItem('dnd_tracker_dm_notes_v3');
+  document.activeElement = document.body;
+`, sandbox);
+assert(vm.runInContext("savedDmNotesLocal === 'Digitando nova ideia que ainda não foi salva...'", sandbox), 'saveDMNotes sincronizou as notas para dnd_tracker_dm_notes_v3');
+
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

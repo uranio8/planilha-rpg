@@ -8462,11 +8462,11 @@
       <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 8px; margin-top: 12px;">
         <div>
           <label>Nº da Sessão</label>
-          <input type="number" id="inp-sess-num" min="1" value="1">
+          <input type="number" id="inp-sess-num" min="1" value="1" oninput="saveSessionDraft()">
         </div>
         <div>
           <label>Data da Sessão</label>
-          <input type="date" id="inp-sess-date">
+          <input type="date" id="inp-sess-date" oninput="saveSessionDraft()">
         </div>
       </div>
       <div>
@@ -28089,11 +28089,15 @@ function applyCloudDataToLocal(cloudData) {
       if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
     }
 
-    // 5. Atualiza Notas Rápidas do Mestre
-    if (cloudData.dmNotes && typeof localStorage !== 'undefined') {
-      localStorage.setItem('dnd_tracker_dm_notes_v3', cloudData.dmNotes);
+    // 5. Atualiza Notas Rápidas do Mestre (respeitando foco de digitação local)
+    if (cloudData.dmNotes !== undefined && typeof localStorage !== 'undefined') {
       const notesEl = document.getElementById('inp-dm-quick-notes');
-      if (notesEl) notesEl.value = cloudData.dmNotes;
+      if (!notesEl || document.activeElement !== notesEl) {
+        localStorage.setItem('dnd_tracker_dm_notes_v3', cloudData.dmNotes);
+        if (notesEl) notesEl.value = cloudData.dmNotes;
+        const activeCamp = (typeof getActiveCampaign === 'function') ? getActiveCampaign() : null;
+        if (activeCamp) activeCamp.dmNotes = cloudData.dmNotes;
+      }
     }
 
     // Salva no cache local sincronizando todas as chaves e snapshots
@@ -35965,26 +35969,46 @@ function copyAdventureHook() {
   });
 }
 
-function addHookToCampaignJournal() {
-  if (!lastGeneratedHook) return;
-  if (typeof activeCampaign === 'undefined' || !activeCampaign) {
+function addHookToCampaignJournal(customHook = null) {
+  let hook = null;
+  if (typeof customHook === 'string') {
+    hook = {
+      title: arguments[0],
+      notes: arguments[1] || '',
+      keyNpcs: arguments[2] || '',
+      location: arguments[3] || 'Local Desconhecido'
+    };
+  } else if (customHook && typeof customHook === 'object') {
+    hook = customHook;
+  } else {
+    hook = lastGeneratedHook;
+  }
+  if (!hook) return;
+
+  const camp = (typeof getActiveCampaign === 'function') ? getActiveCampaign() : null;
+  if (!camp) {
     alert('Nenhuma campanha ativa no momento.');
     return;
   }
+  const nextNum = (camp.sessions && camp.sessions.length > 0) ? Math.max(...camp.sessions.map(s => s.number || 1)) + 1 : 1;
   const sessionEntry = {
-    id: 'entry_' + Date.now(),
-    date: new Date().toLocaleDateString('pt-BR'),
-    title: lastGeneratedHook.title,
-    summary: `Missão concedida por: ${lastGeneratedHook.patron}.\nLocal: ${lastGeneratedHook.location}.\nObjetivo: ${lastGeneratedHook.objective}.\nReviravolta Oculta: ${lastGeneratedHook.twist}.\nRecompensa Prometida: ${lastGeneratedHook.reward}.`,
-    xpAwarded: 0,
-    npcsMet: [lastGeneratedHook.patron.split(' ')[1] || 'Patrono']
+    id: 'sess_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+    number: nextNum,
+    date: new Date().toISOString().split('T')[0],
+    title: hook.title || `Missão: ${hook.patron || 'Gancho de Aventura'}`,
+    location: hook.location || 'Local Desconhecido',
+    xpAwarded: hook.xpAwarded || 100,
+    keyNpcs: hook.keyNpcs || hook.patron || '',
+    notes: hook.notes || `Missão concedida por: ${hook.patron || ''}.\nLocal: ${hook.location || ''}.\nObjetivo: ${hook.objective || ''}.\nReviravolta Oculta: ${hook.twist || ''}.\nRecompensa Prometida: ${hook.reward || ''}.`
   };
-  if (!activeCampaign.sessions) activeCampaign.sessions = [];
-  activeCampaign.sessions.unshift(sessionEntry);
-  if (typeof saveCampaignsToLocalStorage === 'function') saveCampaignsToLocalStorage();
+  camp.sessions = camp.sessions || [];
+  camp.sessions.push(sessionEntry);
+  if (typeof saveCampaignsState === 'function') saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof saveSafetySnapshot === 'function') saveSafetySnapshot(`Missão adicionada ao Diário: ${sessionEntry.title}`);
   if (typeof renderCampaigns === 'function') renderCampaigns();
   if (typeof playFX === 'function') playFX('spell');
-  alert('✅ Missão registrada automaticamente no Diário de Sessões da Campanha Ativa!');
+  alert('✅ Missão registrada com sucesso no Diário de Sessões da Campanha Ativa!');
 }
 
 // --- DM6: TABELA & GERADOR DE CLIMA E EVENTOS DE VIAGEM ---
@@ -36667,6 +36691,23 @@ function loadCampaignsState() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.campaigns) && parsed.campaigns.length > 0) {
+        if (CAMPAIGNS_STATE && Array.isArray(CAMPAIGNS_STATE.campaigns) && CAMPAIGNS_STATE.campaigns.length > 0) {
+          CAMPAIGNS_STATE.campaigns.forEach(memCamp => {
+            const parsedCamp = parsed.campaigns.find(c => c.id === memCamp.id);
+            if (parsedCamp) {
+              const memSessions = memCamp.sessions || [];
+              const parsedSessions = parsedCamp.sessions || [];
+              memSessions.forEach(ms => {
+                if (!parsedSessions.some(ps => ps.id === ms.id || (ps.number === ms.number && ps.date === ms.date))) {
+                  parsedSessions.push(ms);
+                }
+              });
+              parsedCamp.sessions = parsedSessions;
+            } else {
+              parsed.campaigns.push(memCamp);
+            }
+          });
+        }
         CAMPAIGNS_STATE = parsed;
         const activeCamp = getActiveCampaign();
         if (activeCamp && (!activeCamp.sessions || activeCamp.sessions.length === 0)) {
@@ -36841,8 +36882,33 @@ function renderCampaignSessions(camp) {
 
   const sessions = (camp.sessions || []).slice().sort((a, b) => b.number - a.number);
 
+  // Verifica se há rascunho não salvo armazenado no navegador
+  let draftNoticeHtml = '';
+  try {
+    const rawDraft = localStorage.getItem('dnd5e_session_draft');
+    if (rawDraft) {
+      const draft = JSON.parse(rawDraft);
+      if (draft && (draft.notes || draft.title)) {
+        const previewText = (draft.notes || draft.title || '').substring(0, 60);
+        draftNoticeHtml = `
+          <div style="background: rgba(234, 179, 8, 0.15); border: 1px solid rgba(234, 179, 8, 0.4); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <div style="font-size: 12px; color: #fde047; display: flex; align-items: center; gap: 6px;">
+              <span>⚠️</span>
+              <span><b>Rascunho não salvo detectado:</b> "${previewText}..."</span>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn-action" style="padding: 4px 10px; font-size: 11px; background: #eab308; color: #000; font-weight: 700;" onclick="openSessionModal()">Restaurar Rascunho</button>
+              <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="localStorage.removeItem('dnd5e_session_draft'); renderCampaignSessions(getActiveCampaign());">Descartar</button>
+            </div>
+          </div>
+        `;
+      }
+    }
+  } catch(e) {}
+
   if (sessions.length === 0) {
     container.innerHTML = `
+      ${draftNoticeHtml}
       <div style="text-align: center; padding: 30px; background: rgba(0,0,0,0.2); border: 1px dashed var(--border-color); border-radius: 8px; color: var(--text-muted); font-size: 12px;">
         📖 Nenhuma crônica de sessão registrada nesta campanha.
         <br><button class="btn-action" style="margin-top: 10px; padding: 6px 14px; font-size: 12px;" onclick="openSessionModal()">➕ Escrever Diário da Sessão 1</button>
@@ -36851,7 +36917,7 @@ function renderCampaignSessions(camp) {
     return;
   }
 
-  container.innerHTML = sessions.map(s => `
+  container.innerHTML = draftNoticeHtml + sessions.map(s => `
     <div class="session-log-card">
       <div class="session-log-header">
         <div>
@@ -37198,6 +37264,7 @@ function openSessionModal(sessionId = null) {
 }
 
 function closeSessionModal() {
+  currentEditSessionId = null;
   const modal = document.getElementById('modal-campaign-session');
   if (modal) modal.classList.remove('open');
 }
@@ -37774,8 +37841,10 @@ function renderDMNotes() {
 
   if (titleEl) titleEl.innerText = `Notas: ${camp.name}`;
   if (textarea) {
-    textarea.value = camp.dmNotes || '';
-    if (countEl) countEl.innerText = `${(camp.dmNotes || '').length} caracteres`;
+    if (document.activeElement !== textarea) {
+      textarea.value = camp.dmNotes || '';
+    }
+    if (countEl) countEl.innerText = `${(textarea.value || '').length} caracteres`;
   }
 }
 
@@ -37803,7 +37872,13 @@ function saveDMNotes() {
   const statusEl = document.getElementById('dm-notes-save-status');
   if (textarea) {
     camp.dmNotes = textarea.value;
+    try {
+      localStorage.setItem('dnd_tracker_dm_notes_v3', textarea.value);
+    } catch(e) {}
     saveCampaignsState();
+    if (typeof syncLocalChangesToFirebase === 'function') {
+      syncLocalChangesToFirebase();
+    }
     if (statusEl) {
       statusEl.innerText = '💾 Salvo';
       setTimeout(() => { if (statusEl) statusEl.innerText = ''; }, 1500);

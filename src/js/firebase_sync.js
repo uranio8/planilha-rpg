@@ -361,11 +361,15 @@ function applyCloudDataToLocal(cloudData) {
       if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
     }
 
-    // 5. Atualiza Notas Rápidas do Mestre
-    if (cloudData.dmNotes && typeof localStorage !== 'undefined') {
-      localStorage.setItem('dnd_tracker_dm_notes_v3', cloudData.dmNotes);
+    // 5. Atualiza Notas Rápidas do Mestre (respeitando foco de digitação local)
+    if (cloudData.dmNotes !== undefined && typeof localStorage !== 'undefined') {
       const notesEl = document.getElementById('inp-dm-quick-notes');
-      if (notesEl) notesEl.value = cloudData.dmNotes;
+      if (!notesEl || document.activeElement !== notesEl) {
+        localStorage.setItem('dnd_tracker_dm_notes_v3', cloudData.dmNotes);
+        if (notesEl) notesEl.value = cloudData.dmNotes;
+        const activeCamp = (typeof getActiveCampaign === 'function') ? getActiveCampaign() : null;
+        if (activeCamp) activeCamp.dmNotes = cloudData.dmNotes;
+      }
     }
 
     // Salva no cache local sincronizando todas as chaves e snapshots

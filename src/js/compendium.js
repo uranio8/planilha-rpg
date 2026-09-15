@@ -1410,26 +1410,46 @@ function copyAdventureHook() {
   });
 }
 
-function addHookToCampaignJournal() {
-  if (!lastGeneratedHook) return;
-  if (typeof activeCampaign === 'undefined' || !activeCampaign) {
+function addHookToCampaignJournal(customHook = null) {
+  let hook = null;
+  if (typeof customHook === 'string') {
+    hook = {
+      title: arguments[0],
+      notes: arguments[1] || '',
+      keyNpcs: arguments[2] || '',
+      location: arguments[3] || 'Local Desconhecido'
+    };
+  } else if (customHook && typeof customHook === 'object') {
+    hook = customHook;
+  } else {
+    hook = lastGeneratedHook;
+  }
+  if (!hook) return;
+
+  const camp = (typeof getActiveCampaign === 'function') ? getActiveCampaign() : null;
+  if (!camp) {
     alert('Nenhuma campanha ativa no momento.');
     return;
   }
+  const nextNum = (camp.sessions && camp.sessions.length > 0) ? Math.max(...camp.sessions.map(s => s.number || 1)) + 1 : 1;
   const sessionEntry = {
-    id: 'entry_' + Date.now(),
-    date: new Date().toLocaleDateString('pt-BR'),
-    title: lastGeneratedHook.title,
-    summary: `Missão concedida por: ${lastGeneratedHook.patron}.\nLocal: ${lastGeneratedHook.location}.\nObjetivo: ${lastGeneratedHook.objective}.\nReviravolta Oculta: ${lastGeneratedHook.twist}.\nRecompensa Prometida: ${lastGeneratedHook.reward}.`,
-    xpAwarded: 0,
-    npcsMet: [lastGeneratedHook.patron.split(' ')[1] || 'Patrono']
+    id: 'sess_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+    number: nextNum,
+    date: new Date().toISOString().split('T')[0],
+    title: hook.title || `Missão: ${hook.patron || 'Gancho de Aventura'}`,
+    location: hook.location || 'Local Desconhecido',
+    xpAwarded: hook.xpAwarded || 100,
+    keyNpcs: hook.keyNpcs || hook.patron || '',
+    notes: hook.notes || `Missão concedida por: ${hook.patron || ''}.\nLocal: ${hook.location || ''}.\nObjetivo: ${hook.objective || ''}.\nReviravolta Oculta: ${hook.twist || ''}.\nRecompensa Prometida: ${hook.reward || ''}.`
   };
-  if (!activeCampaign.sessions) activeCampaign.sessions = [];
-  activeCampaign.sessions.unshift(sessionEntry);
-  if (typeof saveCampaignsToLocalStorage === 'function') saveCampaignsToLocalStorage();
+  camp.sessions = camp.sessions || [];
+  camp.sessions.push(sessionEntry);
+  if (typeof saveCampaignsState === 'function') saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof saveSafetySnapshot === 'function') saveSafetySnapshot(`Missão adicionada ao Diário: ${sessionEntry.title}`);
   if (typeof renderCampaigns === 'function') renderCampaigns();
   if (typeof playFX === 'function') playFX('spell');
-  alert('✅ Missão registrada automaticamente no Diário de Sessões da Campanha Ativa!');
+  alert('✅ Missão registrada com sucesso no Diário de Sessões da Campanha Ativa!');
 }
 
 // --- DM6: TABELA & GERADOR DE CLIMA E EVENTOS DE VIAGEM ---
