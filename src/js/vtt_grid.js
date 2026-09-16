@@ -45,6 +45,16 @@ let scenesState = {
   ]
 };
 
+// Debounced saveToLocalStorage para movimentações e arraste contínuo no VTT
+let _vttSaveTimeout = null;
+function debouncedVttSave(delay = 400) {
+  if (_vttSaveTimeout) clearTimeout(_vttSaveTimeout);
+  _vttSaveTimeout = setTimeout(() => {
+    saveToLocalStorage();
+    _vttSaveTimeout = null;
+  }, delay);
+}
+
 // ESTADO DAS FERRAMENTAS DO VTT
 let activeVttTool = 'select'; // 'select' | 'ruler' | 'draw' | 'ping'
 let activeDrawingColor = '#f59e0b';
@@ -1957,7 +1967,7 @@ function onMarkerDrag(e) {
 function endMarkerDrag() {
   document.removeEventListener('mousemove', onMarkerDrag);
   document.removeEventListener('mouseup', endMarkerDrag);
-  if (draggingMarker) { broadcastGridState(); saveToLocalStorage(); }
+  if (draggingMarker) { broadcastGridState(); debouncedVttSave(); }
   draggingMarker = null;
 }
 
@@ -1990,7 +2000,7 @@ function onAoEDrag(e) {
 function endAoEDrag() {
   document.removeEventListener('mousemove', onAoEDrag);
   document.removeEventListener('mouseup', endAoEDrag);
-  if (draggingAoE) { broadcastGridState(); saveToLocalStorage(); }
+  if (draggingAoE) { broadcastGridState(); debouncedVttSave(); }
   draggingAoE = null;
 }
 
@@ -2117,7 +2127,7 @@ function endTokenDrag() {
 
   if (draggingToken) {
     broadcastGridState();
-    saveToLocalStorage();
+    debouncedVttSave();
     if (typeof playFX === 'function') playFX('sword');
   }
 
@@ -2513,7 +2523,9 @@ function renderVttCombatHud() {
   if (actionsList) {
     let actionsHtml = '';
     if (isPlayer) {
-      const pl = typeof PLAYERS !== 'undefined' ? PLAYERS.find(p => (active.playerId && p.id === active.playerId) || active.name.includes(p.name)) : null;
+      const pl = typeof findPlayerForCombatant === 'function'
+        ? findPlayerForCombatant(active, typeof PLAYERS !== 'undefined' ? PLAYERS : [])
+        : (typeof PLAYERS !== 'undefined' ? PLAYERS.find(p => (active.playerId && p.id === active.playerId) || active.name.includes(p.name)) : null);
       if (pl && Array.isArray(pl.attacks) && pl.attacks.length > 0) {
         actionsHtml = pl.attacks.map(atk => `
           <button class="vtt-action-chip" onclick="rollVttPlayerAttack('${pl.id}', '${(atk.name||'').replace(/'/g, "\\'")}', '${atk.bonus||0}', '${atk.damage||'1d6'}')">

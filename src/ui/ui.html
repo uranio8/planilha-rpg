@@ -1,9 +1,12 @@
   <header>
-    <div class="brand">
-      <div class="brand-icon">⚔️</div>
-      <div>
-        <div class="brand-title">Central do Mestre D&D 5e</div>
-        <div class="brand-sub">Clube de RPG Prisco Bezerra • Base Expandida</div>
+    <div class="header-left">
+      <button id="btn-nav-hamburger" class="btn-hamburger" onclick="toggleNavDrawer()" title="Abrir Menu de Navegação (Mesa, Compêndio, Mestre)" aria-label="Abrir Menu">☰</button>
+      <div class="brand">
+        <div class="brand-icon">⚔️</div>
+        <div>
+          <div class="brand-title">Central do Mestre D&D 5e</div>
+          <div class="brand-sub">Clube de RPG Prisco Bezerra • Base Expandida</div>
+        </div>
       </div>
     </div>
 
@@ -80,7 +83,10 @@
       <div class="portal-char-info">
         <span style="font-size: 22px;">📱</span>
         <div>
-          <div style="font-weight: 800; font-size: 13.5px; color: #fff;" id="portal-char-title">Portal do Jogador</div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="font-weight: 800; font-size: 13.5px; color: #fff;" id="portal-char-title">Portal do Jogador</div>
+            <span id="portal-sync-status-badge" class="portal-sync-badge sync-online" style="font-size: 10px; padding: 2px 7px; border-radius: 12px; background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); font-weight: 700;">🟢 Conectado</span>
+          </div>
           <div style="font-size: 11px; color: var(--primary-light);" id="portal-char-sub">Ficha Interativa • Grimório • Itens • Classes • Raças</div>
         </div>
       </div>
@@ -2891,3 +2897,188 @@
       </div>
     </div>
   </div>
+
+  <!-- ===================================================
+       📱 DRAWER LATERAL DE NAVEGAÇÃO (DESKTOP + MOBILE)
+       =================================================== -->
+  <div id="nav-drawer-backdrop" class="nav-drawer-backdrop" onclick="closeNavDrawer()"></div>
+  <aside id="nav-drawer" class="nav-drawer" aria-label="Menu Lateral de Navegação">
+    <div class="drawer-header">
+      <div class="drawer-brand">
+        <div class="drawer-brand-icon">⚔️</div>
+        <div>
+          <div class="drawer-brand-title">Central D&D 5e</div>
+          <div class="drawer-brand-sub">Clube Prisco Bezerra</div>
+        </div>
+      </div>
+      <button class="drawer-close-btn" onclick="closeNavDrawer()" title="Fechar Menu" aria-label="Fechar Menu">✕</button>
+    </div>
+
+    <div class="drawer-body">
+      <!-- CLUSTER 1: MESA DE JOGO -->
+      <div class="drawer-section">
+        <div class="drawer-cluster-title">Mesa de Jogo</div>
+        <button class="drawer-item active" id="drawer-btn-combat" onclick="switchTab('combat'); closeNavDrawer();">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">⚔️</span>
+            <span>Combate & Turnos</span>
+          </div>
+        </button>
+        <button class="drawer-item" id="drawer-btn-grid" onclick="switchTab('grid'); closeNavDrawer();">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">🗺️</span>
+            <span>Mapa Tático VTT</span>
+          </div>
+        </button>
+        <button class="drawer-item" id="drawer-btn-players" onclick="switchTab('players'); closeNavDrawer();">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">👤</span>
+            <span>Fichas dos Jogadores</span>
+          </div>
+          <span class="drawer-item-badge" id="drawer-cnt-players">0</span>
+        </button>
+        <button class="drawer-item" id="drawer-btn-campaigns" onclick="switchTab('campaigns'); closeNavDrawer();">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">👑</span>
+            <span>Campanhas & Diário</span>
+          </div>
+        </button>
+      </div>
+
+      <!-- CLUSTER 2: COMPÊNDIO D&D 5E -->
+      <div class="drawer-section">
+        <div class="drawer-cluster-title">Compêndio D&D 5E</div>
+        <button class="drawer-item" id="drawer-btn-bestiary" onclick="switchTab('bestiary'); closeNavDrawer();">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">🐉</span>
+            <span>Bestiário</span>
+          </div>
+          <span class="drawer-item-badge" id="drawer-cnt-bestiary">0</span>
+        </button>
+        <button class="drawer-item" id="drawer-btn-spells" onclick="switchTab('spells'); closeNavDrawer();">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">✨</span>
+            <span>Grimório de Magias</span>
+          </div>
+          <span class="drawer-item-badge" id="drawer-cnt-spells">0</span>
+        </button>
+        <button class="drawer-item" id="drawer-btn-equipment" onclick="switchTab('equipment'); closeNavDrawer();">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">🛡️</span>
+            <span>Itens & Equipamentos</span>
+          </div>
+          <span class="drawer-item-badge" id="drawer-cnt-equip">0</span>
+        </button>
+        <button class="drawer-item" id="drawer-btn-classes" onclick="switchTab('classes'); closeNavDrawer();">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">🌳</span>
+            <span>Classes & Subclasses</span>
+          </div>
+        </button>
+        <button class="drawer-item" id="drawer-btn-species" onclick="switchTab('species'); closeNavDrawer();">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">🧬</span>
+            <span>Raças & Linhagens</span>
+          </div>
+        </button>
+      </div>
+
+      <!-- CLUSTER 3: FERRAMENTAS DO MESTRE -->
+      <div class="drawer-section">
+        <div class="drawer-cluster-title">Ferramentas do Mestre</div>
+        <button class="drawer-item" id="drawer-btn-dmscreen" onclick="switchTab('dmscreen'); closeNavDrawer();">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">🛡️</span>
+            <span>Escudo do Mestre (Regras)</span>
+          </div>
+        </button>
+        <button class="drawer-item" id="drawer-btn-generators" onclick="switchTab('generators'); closeNavDrawer();">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">🎲</span>
+            <span>Geradores & Enigmas</span>
+          </div>
+        </button>
+        <button class="drawer-item" id="drawer-btn-grid-config" onclick="switchTab('grid-config'); closeNavDrawer();">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">⚙️</span>
+            <span>Configurações do Grid</span>
+          </div>
+        </button>
+      </div>
+
+      <!-- CLUSTER 4: ATALHOS RÁPIDOS -->
+      <div class="drawer-section">
+        <div class="drawer-cluster-title">Ações do Sistema</div>
+        <button class="drawer-item" onclick="openDiceModal(); closeNavDrawer();">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">🎲</span>
+            <span>Rolador de Dados 3D</span>
+          </div>
+        </button>
+        <button class="drawer-item" onclick="toggleDMNotesDrawer(); closeNavDrawer();">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">📝</span>
+            <span>Notas Rápidas do Mestre</span>
+          </div>
+        </button>
+        <button class="drawer-item" onclick="openPlayerView(); closeNavDrawer();">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">📺</span>
+            <span>Modo Telão (Projetor)</span>
+          </div>
+        </button>
+        <button class="drawer-item" onclick="openFirebaseModal(); closeNavDrawer();">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">☁️</span>
+            <span>Sincronização Nuvem (Firebase)</span>
+          </div>
+        </button>
+        <button class="drawer-item" onclick="exportData(); closeNavDrawer();">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">💾</span>
+            <span>Fazer Backup JSON</span>
+          </div>
+        </button>
+        <button class="drawer-item" onclick="openSnapshotsModal(); closeNavDrawer();">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">🛡️</span>
+            <span>Pontos de Restauração</span>
+          </div>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===================================================
+       ⚡ FAB SPEED DIAL UNIVERSAL
+       =================================================== -->
+  <div id="fab-speed-dial" class="fab-speed-dial-container">
+    <button class="fab-main-btn" id="fab-main-btn" onclick="toggleFabMenu()" title="Menu de Ações Rápidas (Atalho Universal)" aria-label="Ações Rápidas">⚡</button>
+    <div class="fab-actions-menu" id="fab-actions-menu">
+      <div class="fab-action-btn-row" onclick="handleFabQuickAction('dice')">
+        <span class="fab-action-label">Rolar Dados</span>
+        <button class="fab-action-circle" title="Rolar Dados">🎲</button>
+      </div>
+      <div class="fab-action-btn-row" onclick="handleFabQuickAction('turn')">
+        <span class="fab-action-label" id="fab-turn-label">Próximo Turno</span>
+        <button class="fab-action-circle" title="Próximo Turno / Combate">⚔️</button>
+      </div>
+      <div class="fab-action-btn-row" onclick="handleFabQuickAction('players')">
+        <span class="fab-action-label">Fichas / Heróis</span>
+        <button class="fab-action-circle" title="Ver Fichas">👤</button>
+      </div>
+      <div class="fab-action-btn-row" onclick="handleFabQuickAction('dmscreen')">
+        <span class="fab-action-label">Escudo & Regras</span>
+        <button class="fab-action-circle" title="Escudo do Mestre">🛡️</button>
+      </div>
+      <div class="fab-action-btn-row" onclick="handleFabQuickAction('cloud')">
+        <span class="fab-action-label">Sincronizar Nuvem</span>
+        <button class="fab-action-circle" title="Nuvem Firebase">☁️</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================
+       🔔 CONTAINER DE NOTIFICAÇÕES TOAST
+       =================================================== -->
+  <div id="toast-container" aria-live="polite"></div>

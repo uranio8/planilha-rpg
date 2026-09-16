@@ -1440,7 +1440,8 @@ function addHookToCampaignJournal(customHook = null) {
     location: hook.location || 'Local Desconhecido',
     xpAwarded: hook.xpAwarded || 100,
     keyNpcs: hook.keyNpcs || hook.patron || '',
-    notes: hook.notes || `Missão concedida por: ${hook.patron || ''}.\nLocal: ${hook.location || ''}.\nObjetivo: ${hook.objective || ''}.\nReviravolta Oculta: ${hook.twist || ''}.\nRecompensa Prometida: ${hook.reward || ''}.`
+    notes: hook.notes || `Missão concedida por: ${hook.patron || ''}.\nLocal: ${hook.location || ''}.\nObjetivo: ${hook.objective || ''}.\nReviravolta Oculta: ${hook.twist || ''}.\nRecompensa Prometida: ${hook.reward || ''}.`,
+    updatedAt: Date.now()
   };
   camp.sessions = camp.sessions || [];
   camp.sessions.push(sessionEntry);

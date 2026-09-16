@@ -136,7 +136,9 @@ function usePlayerInventoryItem(playerId, itemIdx) {
       p.hp = Math.min(p.maxHp, p.hp + healRoll);
       effectMsg = ` • Recuperou +${healRoll} PV (${prevHp} ➔ ${p.hp}/${p.maxHp} PV)`;
 
-      const comb = (typeof state !== 'undefined' && state.combatants) ? state.combatants.find(c => (c.playerId && c.playerId === p.id) || c.name.includes(p.name)) : null;
+      const comb = (typeof findCombatantForPlayer === 'function')
+        ? findCombatantForPlayer(p, typeof state !== 'undefined' ? state.combatants : [])
+        : ((typeof state !== 'undefined' && state.combatants) ? state.combatants.find(c => (c.playerId && c.playerId === p.id) || c.name.includes(p.name)) : null);
       if (comb) { comb.hp = p.hp; if (typeof renderCombat === 'function') renderCombat(); }
     }
   }
@@ -504,8 +506,10 @@ function renderPlayers() {
       </div>
     `).join('');
 
+    const isCritical = p.hp > 0 && p.maxHp > 0 && (p.hp / p.maxHp) <= 0.25;
+
     return `
-      <div class="player-card ${activePortalPlayerId && p.id === activePortalPlayerId ? 'portal-view' : ''} ${p.compact ? 'is-compact' : ''} cls-${(classBadgeHtml.match(/class-(\w+)/) || ['', ''])[1]}">
+      <div class="player-card ${activePortalPlayerId && p.id === activePortalPlayerId ? 'portal-view' : ''} ${p.compact ? 'is-compact' : ''} ${isCritical ? 'hp-critical' : ''} cls-${(classBadgeHtml.match(/class-(\w+)/) || ['', ''])[1]}">
         <div class="player-card-top">
           <div class="player-title-row">
             <div style="display: flex; align-items: center; gap: 12px;">
@@ -1215,6 +1219,10 @@ function adjustPlayerHp(id, delta) {
     addLog(`⚔️ <b>${p.name}</b> sofreu ${Math.abs(delta)} de dano (${prev} ➔ ${p.hp} PV)`);
     addPlayerActionLog(p.id, '⚔️', `Sofreu ${Math.abs(delta)} de dano (${prev} ➔ ${p.hp} PV)`, 'damage');
     if (typeof playFX === 'function') playFX('sword');
+    if (typeof showToast === 'function') {
+      const toastType = p.hp === 0 ? 'error' : (p.hp <= p.maxHp * 0.25 ? 'warning' : 'info');
+      showToast(`⚔️ ${p.name}: ${delta} PV (${p.hp}/${p.maxHp})`, toastType);
+    }
     if (p.hp === 0) {
       p.deathSaves = { success: 0, fail: 0 };
       addLog(`💀 <b>${p.name}</b> caiu inconsciente a 0 PV!`);
@@ -1226,9 +1234,14 @@ function adjustPlayerHp(id, delta) {
     addLog(`💚 <b>${p.name}</b> recuperou ${delta} PV (${prev} ➔ ${p.hp} PV)`);
     addPlayerActionLog(p.id, '💚', `Recuperou ${delta} PV (${prev} ➔ ${p.hp} PV)`, 'heal');
     if (typeof playFX === 'function') playFX('heal');
+    if (typeof showToast === 'function') {
+      showToast(`💚 ${p.name}: +${delta} PV (${p.hp}/${p.maxHp})`, 'success');
+    }
   }
 
-  const comb = state.combatants.find(c => (c.playerId && c.playerId === p.id) || c.name.includes(p.name));
+  const comb = typeof findCombatantForPlayer === 'function'
+    ? findCombatantForPlayer(p, typeof state !== 'undefined' && state ? state.combatants : [])
+    : (typeof state !== 'undefined' && state && state.combatants ? state.combatants.find(c => (c.playerId && c.playerId === p.id) || c.name.includes(p.name)) : null);
   if (comb) { comb.hp = p.hp; if (typeof renderCombat === 'function') renderCombat(); }
 
   renderPlayers();
@@ -1731,7 +1744,9 @@ function rollShortRestHitDie(playerId) {
   p.hp = Math.min(p.maxHp, p.hp + totalHealed);
   const actualHealed = p.hp - prevHp;
 
-  const comb = typeof state !== 'undefined' && state.combatants ? state.combatants.find(c => (c.playerId && c.playerId === p.id) || c.name.includes(p.name)) : null;
+  const comb = typeof findCombatantForPlayer === 'function'
+    ? findCombatantForPlayer(p, typeof state !== 'undefined' && state ? state.combatants : [])
+    : (typeof state !== 'undefined' && state.combatants ? state.combatants.find(c => (c.playerId && c.playerId === p.id) || c.name.includes(p.name)) : null);
   if (comb) { comb.hp = p.hp; if (typeof renderCombat === 'function') renderCombat(); }
 
   if (typeof playFX === 'function') playFX('heal');
@@ -3202,8 +3217,11 @@ function savePlayerSheet() {
   if (id) {
     const idx = PLAYERS.findIndex(x => x.id === id);
     if (idx !== -1) PLAYERS[idx] = data;
-    const comb = state.combatants.find(c => (c.playerId && c.playerId === id) || c.name.includes(data.name));
+    const comb = typeof findCombatantForPlayer === 'function'
+      ? findCombatantForPlayer(data, state ? state.combatants : [])
+      : (state && state.combatants ? state.combatants.find(c => (c.playerId && c.playerId === id) || c.name.includes(data.name)) : null);
     if (comb) {
+      comb.playerId = id;
       comb.name = `${data.name} (${data.student})`;
       comb.ac = data.ac;
       comb.hp = Math.min(comb.hp, data.hp);
@@ -3235,7 +3253,7 @@ function deletePlayerDirect(id) {
 
     if (state && Array.isArray(state.combatants)) {
       const prevCount = state.combatants.length;
-      state.combatants = state.combatants.filter(c => c.playerId !== id && !c.name.includes(p.name));
+      state.combatants = state.combatants.filter(c => (c.playerId ? c.playerId !== id : (c.name !== p.name && c.name !== `${p.name} (${p.student})` && !c.name.startsWith(p.name + ' '))));
       if (state.turnIndex >= state.combatants.length) state.turnIndex = 0;
       if (state.combatants.length !== prevCount) {
         addLog(`🗑️ <b>${p.name}</b> foi removido do combate.`);
@@ -3334,7 +3352,9 @@ function partyShortRestAll() {
     const conMod = Math.max(0, Math.floor((p.con - 10) / 2));
     const heal = Math.floor(Math.random() * 6) + 1 + conMod;
     p.hp = Math.min(p.maxHp, p.hp + heal);
-    const comb = state.combatants.find(c => (c.playerId && c.playerId === p.id) || c.name.includes(p.name));
+    const comb = typeof findCombatantForPlayer === 'function'
+      ? findCombatantForPlayer(p, state ? state.combatants : [])
+      : (state && state.combatants ? state.combatants.find(c => (c.playerId && c.playerId === p.id) || c.name.includes(p.name)) : null);
     if (comb) comb.hp = p.hp;
   });
   renderPlayers();
@@ -3736,11 +3756,16 @@ function updatePlayerPortalBanner() {
   const banner = document.getElementById('player-portal-banner');
   const titleEl = document.getElementById('portal-char-title');
   const subEl = document.getElementById('portal-char-sub');
+  const badgeEl = document.getElementById('portal-sync-status-badge');
 
   if (typeof pendingPortalPlayerId !== 'undefined' && pendingPortalPlayerId && !activePortalPlayerId) {
     if (banner) banner.style.display = 'flex';
     if (titleEl) titleEl.innerText = `⏳ Sincronizando com a Nuvem...`;
     if (subEl) subEl.innerText = `Carregando ficha do seu herói na mesa...`;
+    if (badgeEl) {
+      badgeEl.className = 'portal-sync-badge sync-waiting';
+      badgeEl.innerText = '🟡 Sincronizando...';
+    }
     return;
   }
 
@@ -3751,12 +3776,23 @@ function updatePlayerPortalBanner() {
   if (banner) banner.style.display = 'flex';
   if (titleEl) titleEl.innerText = `👤 ${p.name} (${p.student || 'Personagem'})`;
   if (subEl) subEl.innerText = `${p.race} • ${p.className} (Nível ${p.level}) • CA ${p.ac} • ${p.hp}/${p.maxHp} PV`;
+  if (badgeEl) {
+    badgeEl.className = 'portal-sync-badge sync-online';
+    badgeEl.innerText = '🟢 Conectado';
+  }
 }
 
 function initPlayerPortalMode(playerId) {
   if (!playerId) return;
 
-  const p = PLAYERS.find(x => x.id === playerId);
+  const normTarget = String(playerId).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const p = PLAYERS.find(x => {
+    if (x.id === playerId) return true;
+    const charName = String(x.name || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const studName = String(x.student || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return charName === normTarget || studName === normTarget || (charName && charName.includes(normTarget)) || (studName && studName.includes(normTarget));
+  });
+
   if (!p) {
     // Herói ainda não está na memória local (ex: aguardando resposta do Firebase)
     pendingPortalPlayerId = playerId;
@@ -4065,7 +4101,9 @@ function togglePlayerCondition(id, condId) {
   }
 
   if (state && Array.isArray(state.combatants)) {
-    const comb = state.combatants.find(c => (c.playerId && c.playerId === id) || c.name.includes(p.name));
+    const comb = typeof findCombatantForPlayer === 'function'
+      ? findCombatantForPlayer(p, state.combatants)
+      : state.combatants.find(c => (c.playerId && c.playerId === id) || c.name.includes(p.name));
     if (comb) {
       comb.conditions = [...p.conditions];
       if (typeof renderCombat === 'function') renderCombat();

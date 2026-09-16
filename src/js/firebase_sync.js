@@ -213,8 +213,18 @@ function mergeCloudCampaignsState(cloudCampaignsState) {
       remoteSessions.forEach(rs => {
         const localIdx = mergedSessions.findIndex(ls => ls.id === rs.id || (ls.number === rs.number && ls.date === rs.date));
         if (localIdx >= 0) {
-          if ((rs.notes || '').length > (mergedSessions[localIdx].notes || '').length) {
-            mergedSessions[localIdx] = Object.assign({}, mergedSessions[localIdx], rs);
+          const localSess = mergedSessions[localIdx];
+          const remoteTime = rs.updatedAt || 0;
+          const localTime = localSess.updatedAt || 0;
+          if (remoteTime > 0 || localTime > 0) {
+            if (remoteTime > localTime) {
+              mergedSessions[localIdx] = Object.assign({}, localSess, rs);
+            }
+          } else {
+            // Fallback de compatibilidade caso timestamps ainda não existam
+            if ((rs.notes || '').length > (localSess.notes || '').length) {
+              mergedSessions[localIdx] = Object.assign({}, localSess, rs);
+            }
           }
         } else {
           mergedSessions.push(rs);
@@ -305,7 +315,19 @@ function applyCloudDataToLocal(cloudData) {
         const localChar = PLAYERS.find(p => p.id === activePortalPlayerId);
         PLAYERS = cloudData.players.map(remoteP => {
           if (localChar && remoteP.id === activePortalPlayerId) {
-            // Preserva inventário e notas locais se o jogador acabou de mexer, mas aceita PV, condições e XP do mestre
+            // Notificação para o jogador quando PV for alterado pelo mestre
+            const hpDiff = (remoteP.hp !== undefined ? remoteP.hp : localChar.hp) - (localChar.hp !== undefined ? localChar.hp : localChar.maxHp);
+            if (hpDiff !== 0 && typeof addLog === 'function') {
+              if (hpDiff < 0) {
+                addLog(`⚔️ <b>Atenção:</b> Você sofreu ${Math.abs(hpDiff)} de dano! (${localChar.hp} ➔ ${remoteP.hp} PV)`);
+                if (typeof playFX === 'function') playFX('sword');
+              } else {
+                addLog(`💚 <b>Cura recebida:</b> +${hpDiff} PV recuperados! (${localChar.hp} ➔ ${remoteP.hp} PV)`);
+                if (typeof playFX === 'function') playFX('heal');
+              }
+            }
+
+            // Preserva inventário, moedas e notas locais se o jogador mexeu, mas aceita PV, condições e XP do mestre
             return Object.assign({}, remoteP, {
               hp: remoteP.hp,
               maxHp: remoteP.maxHp,
@@ -314,7 +336,9 @@ function applyCloudDataToLocal(cloudData) {
               xp: remoteP.xp !== undefined ? remoteP.xp : localChar.xp,
               level: remoteP.level || localChar.level,
               // Mantém inventário mais recente entre ambos
-              inventory: (localChar.inventory && localChar.inventory.length > 0) ? localChar.inventory : (remoteP.inventory || [])
+              inventory: (localChar.inventory && localChar.inventory.length > 0) ? localChar.inventory : (remoteP.inventory || []),
+              // Preserva moedas do jogador local
+              coins: localChar.coins !== undefined ? localChar.coins : (remoteP.coins || { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 })
             });
           }
           return remoteP;

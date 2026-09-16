@@ -36,7 +36,6 @@ function renderCombat() {
     if (activeDetails) activeDetails.innerHTML = `<div style="color: var(--text-dim); text-align: center; padding: 20px;">Nenhum combate ativo.</div>`;
     if (typeof updateCombatDifficulty === 'function') updateCombatDifficulty();
     if (typeof renderPlayerView === 'function') renderPlayerView();
-    saveToLocalStorage();
     return;
   }
 
@@ -46,6 +45,7 @@ function renderCombat() {
     const hpColor = hpPct > 50 ? 'var(--accent-green)' : (hpPct > 25 ? '#eab308' : 'var(--accent-red)');
     const isDying = c.hp === 0;
     const isBloodied = c.hp > 0 && hpPct <= 50;
+    const isCritical = c.hp > 0 && hpPct <= 25;
 
     const condsBadges = (c.conditions || []).map(condId => {
       const found = CONDITIONS_LIST.find(x => x.id === condId);
@@ -53,7 +53,7 @@ function renderCombat() {
     }).join('');
 
     return `
-      <div class="combatant-item ${isActive ? 'glow' : ''} ${isDying ? 'dying' : (isBloodied ? 'bloodied' : '')}">
+      <div class="combatant-item ${isActive ? 'glow' : ''} ${isDying ? 'dying' : (isBloodied ? 'bloodied' : '')} ${isCritical ? 'hp-critical' : ''}">
         <div class="combatant-header">
           <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
             <button class="btn-secondary" style="padding: 1px 6px; font-weight: 800; font-family: var(--font-mono); color: var(--primary); font-size: 13px; cursor: pointer; border: 1px dashed rgba(245,158,11,0.5);" onclick="editCombatantInit('${c.id}')" title="Clique para editar a Iniciativa">${c.init}</button>
@@ -125,7 +125,9 @@ function renderCombat() {
       </div>
 
       ${(active.type === 'player') ? (() => {
-        const playerObj = typeof PLAYERS !== 'undefined' ? PLAYERS.find(p => p.id === active.playerId || active.name.includes(p.name)) : null;
+        const playerObj = typeof findPlayerForCombatant === 'function' 
+          ? findPlayerForCombatant(active, typeof PLAYERS !== 'undefined' ? PLAYERS : [])
+          : (typeof PLAYERS !== 'undefined' ? PLAYERS.find(p => (active.playerId && p.id === active.playerId) || active.name.includes(p.name)) : null);
         if (!playerObj) return '';
         let extraHtml = '';
         
@@ -196,7 +198,6 @@ function renderCombat() {
   if (typeof updateCombatDifficulty === 'function') updateCombatDifficulty();
   if (typeof renderPlayerView === 'function') renderPlayerView();
   if (typeof renderVttCombatHud === 'function') renderVttCombatHud();
-  saveToLocalStorage();
 }
 
 function nextTurn() {
@@ -215,6 +216,7 @@ function nextTurn() {
   const turnNarrative = `É a vez de <b>${currentCombatant ? currentCombatant.name : 'combatente'}</b> agir!`;
   renderCombat();
   if (typeof renderPlayerView === 'function') renderPlayerView(turnNarrative);
+  saveToLocalStorage();
 }
 
 // --- M6: TEMPORIZADOR DE TURNO DE COMBATE ---
@@ -581,6 +583,7 @@ function resetCombat() {
   if (typeof startTurnTimer === 'function') startTurnTimer();
   addLog('🔄 Combate reiniciado na Rodada 1.');
   renderCombat();
+  saveToLocalStorage();
 }
 
 function clearCombat() {
@@ -591,6 +594,7 @@ function clearCombat() {
     if (typeof turnTimerInterval !== 'undefined') clearInterval(turnTimerInterval);
     addLog('🗑️ Mesa de combate limpa.');
     renderCombat();
+    saveToLocalStorage();
   }
 }
 
@@ -603,6 +607,7 @@ function rollMonsterInit() {
   state.combatants.sort((a, b) => b.init - a.init);
   addLog('🎲 Iniciativa dos monstros rolada novamente.');
   renderCombat();
+  saveToLocalStorage();
 }
 
 function applyCombatAction(type, customNarrative = null) {
@@ -645,7 +650,9 @@ function applyCombatAction(type, customNarrative = null) {
 
     // Regra D&D 5E: Dano sofrido a 0 PV adiciona falhas no teste contra a morte
     if (tar.type === 'player' && prevHp === 0 && dmg > 0) {
-      const pl = typeof PLAYERS !== 'undefined' ? PLAYERS.find(p => (tar.playerId && p.id === tar.playerId) || tar.name.includes(p.name)) : null;
+      const pl = typeof findPlayerForCombatant === 'function'
+        ? findPlayerForCombatant(tar, typeof PLAYERS !== 'undefined' ? PLAYERS : [])
+        : (typeof PLAYERS !== 'undefined' ? PLAYERS.find(p => (tar.playerId && p.id === tar.playerId) || tar.name.includes(p.name)) : null);
       if (pl) {
         pl.deathSaves = pl.deathSaves || { success: 0, fail: 0 };
         const addedFails = type === 'crit' ? 2 : 1;
@@ -664,16 +671,25 @@ function applyCombatAction(type, customNarrative = null) {
 
     addLog(msg);
     if (typeof playFX === 'function') playFX(type === 'crit' ? 'crit' : 'sword');
+    if (typeof showToast === 'function') {
+      const toastType = tar.hp === 0 ? 'error' : (tar.hp <= tar.maxHp * 0.25 ? 'warning' : 'info');
+      showToast(`⚔️ ${tar.name}: -${dmg} PV (${tar.hp}/${tar.maxHp})`, toastType);
+    }
   } else if (type === 'heal') {
     tar.hp = Math.min(tar.maxHp, tar.hp + dmg);
     addLog(`💚 [R${state.round}] <b>${att ? att.name : 'Curandeiro'}</b> curou <b>${dmg}</b> PV em <b>${tar.name}</b> (${prevHp} ➔ ${tar.hp} PV)`);
     narrativeBanner = `💚 <b>${att ? att.name : 'Curandeiro'}</b> restaurou <b>+${dmg} PV</b> para ${tar.name}!`;
     if (typeof playFX === 'function') playFX('heal');
+    if (typeof showToast === 'function') {
+      showToast(`💚 ${tar.name}: +${dmg} PV (${tar.hp}/${tar.maxHp})`, 'success');
+    }
   }
 
   // Sincroniza PV e Death Saves de volta para a ficha do jogador caso seja um Aluno
   if (tar.type === 'player' && typeof PLAYERS !== 'undefined') {
-    const pl = PLAYERS.find(p => (tar.playerId && p.id === tar.playerId) || tar.name.includes(p.name));
+    const pl = typeof findPlayerForCombatant === 'function'
+      ? findPlayerForCombatant(tar, PLAYERS)
+      : PLAYERS.find(p => (tar.playerId && p.id === tar.playerId) || tar.name.includes(p.name));
     if (pl) {
       pl.hp = tar.hp;
       if (type === 'heal' && tar.hp > 0) {
@@ -687,6 +703,7 @@ function applyCombatAction(type, customNarrative = null) {
   if (inp) inp.value = '';
   renderCombat();
   if (typeof renderPlayerView === 'function') renderPlayerView(narrativeBanner);
+  saveToLocalStorage();
 }
 
 function applyHalfDamage() {
@@ -746,6 +763,7 @@ function removeCombatant(id) {
   state.combatants = state.combatants.filter(c => c.id !== id);
   if (state.turnIndex >= state.combatants.length) state.turnIndex = 0;
   renderCombat();
+  saveToLocalStorage();
 }
 
 function editCombatantInit(id) {
@@ -759,6 +777,7 @@ function editCombatantInit(id) {
       state.combatants.sort((a, b) => b.init - a.init);
       addLog(`🎲 Iniciativa de <b>${c.name}</b> alterada para <b>${c.init}</b>`);
       renderCombat();
+      saveToLocalStorage();
     }
   }
 }
@@ -771,6 +790,10 @@ function quickAdjustCombatantHp(id, delta) {
     c.hp = Math.max(0, c.hp + delta);
     addLog(`⚔️ <b>${c.name}</b> sofreu ${Math.abs(delta)} de dano rápido (${prev} ➔ ${c.hp} PV)`);
     if (typeof playFX === 'function') playFX('sword');
+    if (typeof showToast === 'function') {
+      const toastType = c.hp === 0 ? 'error' : (c.hp <= c.maxHp * 0.25 ? 'warning' : 'info');
+      showToast(`⚔️ ${c.name}: ${delta} PV (${c.hp}/${c.maxHp})`, toastType);
+    }
     if (c.hp === 0) {
       addLog(`💀 <b>${c.name}</b> caiu a 0 PV!`);
       if (typeof playFX === 'function') playFX('fumble');
@@ -779,11 +802,16 @@ function quickAdjustCombatantHp(id, delta) {
     c.hp = Math.min(c.maxHp, c.hp + delta);
     addLog(`💚 <b>${c.name}</b> recuperou ${delta} PV rápidos (${prev} ➔ ${c.hp} PV)`);
     if (typeof playFX === 'function') playFX('heal');
+    if (typeof showToast === 'function') {
+      showToast(`💚 ${c.name}: +${delta} PV (${c.hp}/${c.maxHp})`, 'success');
+    }
   }
 
   // Sincroniza de volta para PLAYERS caso seja um jogador
   if (c.type === 'player' && typeof PLAYERS !== 'undefined') {
-    const pl = PLAYERS.find(p => (c.playerId && p.id === c.playerId) || c.name.includes(p.name));
+    const pl = typeof findPlayerForCombatant === 'function'
+      ? findPlayerForCombatant(c, PLAYERS)
+      : PLAYERS.find(p => (c.playerId && p.id === c.playerId) || c.name.includes(p.name));
     if (pl) {
       pl.hp = c.hp;
       if (typeof renderPlayers === 'function') renderPlayers();
@@ -792,6 +820,7 @@ function quickAdjustCombatantHp(id, delta) {
 
   renderCombat();
   if (typeof renderPlayerView === 'function') renderPlayerView();
+  saveToLocalStorage();
 }
 
 function openAddModal() { document.getElementById('modal-add').classList.add('open'); }
@@ -815,6 +844,7 @@ function saveNewCombatant() {
   closeAddModal();
   document.getElementById('add-name').value = '';
   renderCombat();
+  saveToLocalStorage();
 }
 
 // --- GERENCIADOR DE CONDIÇÕES ---
@@ -842,6 +872,7 @@ function openCondModal(combatantId) {
 function closeCondModal() {
   document.getElementById('modal-conds').classList.remove('open');
   renderCombat();
+  saveToLocalStorage();
 }
 
 function toggleCond(condId) {
@@ -855,6 +886,7 @@ function toggleCond(condId) {
     addLog(`⚠️ <b>${c.name}</b> recebeu o status: <b>${condId.toUpperCase()}</b>.`);
   }
   openCondModal(managingCondCombatantId);
+  saveToLocalStorage();
 }
 
 function removeCond(combatantId, condId) {
@@ -862,6 +894,7 @@ function removeCond(combatantId, condId) {
   if (!c || !c.conditions) return;
   c.conditions = c.conditions.filter(id => id !== condId);
   renderCombat();
+  saveToLocalStorage();
 }
 
 // --- ROLADOR DE DADOS D&D 5E ---
@@ -938,19 +971,6 @@ function executeDiceRoll(sides, mode = 'normal') {
   showLiveDiceRoll(`🎲 Rolagem de Dado (d${sides})`, total, breakdown, isCrit, isFumble);
   addLog(`🎲 Rolagem: <b>${total}</b> (${breakdown})`);
 }
-
-// Listener para disparar dano direto com tecla Enter no despachante
-document.addEventListener('DOMContentLoaded', () => {
-  const inpDmg = document.getElementById('inp-damage');
-  if (inpDmg) {
-    inpDmg.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        applyCombatAction('damage');
-      }
-    });
-  }
-});
 
 // --- ROLAGEM RÁPIDA DE ATAQUES E AÇÕES DE MONSTROS ---
 function parseAndRenderMonsterActions(rawActions, monsterName = '', combatantId = '') {

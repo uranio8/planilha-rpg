@@ -641,6 +641,7 @@ function saveSessionLog() {
       sess.xpAwarded = xp;
       sess.keyNpcs = npcs;
       sess.notes = notes;
+      sess.updatedAt = Date.now();
     }
   } else {
     camp.sessions.push({
@@ -651,7 +652,8 @@ function saveSessionLog() {
       location,
       xpAwarded: xp,
       keyNpcs: npcs,
-      notes
+      notes,
+      updatedAt: Date.now()
     });
   }
 

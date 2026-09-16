@@ -576,6 +576,7 @@ function switchTab(tabId) {
   document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.portal-nav-btn').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.drawer-item').forEach(el => el.classList.remove('active'));
 
   const targetPane = document.getElementById('tab-' + tabId);
   if (targetPane) targetPane.classList.add('active');
@@ -585,6 +586,22 @@ function switchTab(tabId) {
 
   const activePortalBtn = document.getElementById('pnav-' + tabId);
   if (activePortalBtn) activePortalBtn.classList.add('active');
+
+  const activeDrawerBtn = document.getElementById('drawer-btn-' + tabId);
+  if (activeDrawerBtn) activeDrawerBtn.classList.add('active');
+
+  // Atualiza label contextual do FAB
+  const fabTurnLabel = document.getElementById('fab-turn-label');
+  if (fabTurnLabel) {
+    if (tabId === 'combat') {
+      fabTurnLabel.textContent = 'Próximo Turno';
+    } else {
+      fabTurnLabel.textContent = 'Ir ao Combate';
+    }
+  }
+
+  // Fecha o drawer automaticamente se estiver aberto
+  closeNavDrawer();
 
   if (tabId === 'combat' && typeof renderCombat === 'function') renderCombat();
   else if (tabId === 'players' && typeof renderPlayers === 'function') renderPlayers();
@@ -630,6 +647,287 @@ function switchTab(tabId) {
     }
   }
   else if (tabId === 'campaigns' && typeof renderCampaigns === 'function') renderCampaigns();
+}
+
+// --- SISTEMA DE NOTIFICAÇÕES TOAST ---
+function showToast(message, type = 'info', duration = 3000) {
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') return null;
+  let container = typeof document.getElementById === 'function' ? document.getElementById('toast-container') : null;
+  if (!container && document.body) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.setAttribute('aria-live', 'polite');
+    document.body.appendChild(container);
+  }
+  if (!container) return null;
+
+  const toast = document.createElement('div');
+  toast.className = `toast-notification toast-${type}`;
+
+  const iconMap = {
+    success: '✅',
+    error: '❌',
+    warning: '⚠️',
+    info: 'ℹ️'
+  };
+  const icon = iconMap[type] || 'ℹ️';
+
+  toast.innerHTML = `
+    <div class="toast-content">
+      <span class="toast-icon">${icon}</span>
+      <span class="toast-msg">${message}</span>
+    </div>
+    <button class="toast-close" title="Fechar">✕</button>
+  `;
+
+  container.appendChild(toast);
+
+  let timer = setTimeout(() => {
+    toast.classList.add('hide');
+    setTimeout(() => {
+      if (toast.parentElement) toast.remove();
+    }, 250);
+  }, duration);
+
+  const closeBtn = toast.querySelector('.toast-close');
+  if (closeBtn) {
+    closeBtn.onclick = () => {
+      clearTimeout(timer);
+      toast.classList.add('hide');
+      setTimeout(() => {
+        if (toast.parentElement) toast.remove();
+      }, 250);
+    };
+  }
+
+  return toast;
+}
+
+// --- DRAWER LATERAL DE NAVEGAÇÃO ---
+function toggleNavDrawer() {
+  if (typeof document === 'undefined' || !document.getElementById) return;
+  const drawer = document.getElementById('nav-drawer');
+  if (!drawer || !drawer.classList) return;
+  if (drawer.classList.contains('open')) {
+    closeNavDrawer();
+  } else {
+    openNavDrawer();
+  }
+}
+
+function openNavDrawer() {
+  if (typeof document === 'undefined' || !document.getElementById) return;
+  const drawer = document.getElementById('nav-drawer');
+  const backdrop = document.getElementById('nav-drawer-backdrop');
+  if (!drawer) return;
+  if (drawer.classList) drawer.classList.add('open');
+  if (backdrop && backdrop.classList) backdrop.classList.add('open');
+  if (document.body && document.body.style) {
+    document.body.style.overflow = 'hidden';
+  }
+  updateDrawerBadges();
+}
+
+function closeNavDrawer() {
+  if (typeof document === 'undefined' || !document.getElementById) return;
+  const drawer = document.getElementById('nav-drawer');
+  const backdrop = document.getElementById('nav-drawer-backdrop');
+  if (drawer && drawer.classList) drawer.classList.remove('open');
+  if (backdrop && backdrop.classList) backdrop.classList.remove('open');
+  if (document.body && document.body.style) {
+    document.body.style.overflow = '';
+  }
+}
+
+function updateDrawerBadges() {
+  if (typeof document === 'undefined' || !document.getElementById) return;
+  const pairs = [
+    ['cnt-players', 'drawer-cnt-players'],
+    ['cnt-bestiary', 'drawer-cnt-bestiary'],
+    ['cnt-spells', 'drawer-cnt-spells'],
+    ['cnt-equip', 'drawer-cnt-equip']
+  ];
+  for (const [srcId, dstId] of pairs) {
+    const src = document.getElementById(srcId);
+    const dst = document.getElementById(dstId);
+    if (src && dst) dst.textContent = src.textContent;
+  }
+}
+
+// --- FAB SPEED DIAL ---
+function toggleFabMenu() {
+  if (typeof document === 'undefined' || !document.getElementById) return;
+  const fab = document.getElementById('fab-speed-dial');
+  if (!fab || !fab.classList) return;
+  fab.classList.toggle('open');
+}
+
+function openFabMenu() {
+  if (typeof document === 'undefined' || !document.getElementById) return;
+  const fab = document.getElementById('fab-speed-dial');
+  if (fab && fab.classList) fab.classList.add('open');
+}
+
+function closeFabMenu() {
+  if (typeof document === 'undefined' || !document.getElementById) return;
+  const fab = document.getElementById('fab-speed-dial');
+  if (fab && fab.classList) fab.classList.remove('open');
+}
+
+function handleFabQuickAction(action) {
+  closeFabMenu();
+  if (action === 'dice') {
+    if (typeof openDiceModal === 'function') openDiceModal();
+  } else if (action === 'turn') {
+    const activeCombatTab = document.getElementById('tab-combat')?.classList.contains('active');
+    if (activeCombatTab && typeof nextTurn === 'function') {
+      nextTurn();
+    } else {
+      switchTab('combat');
+    }
+  } else if (action === 'players') {
+    switchTab('players');
+  } else if (action === 'dmscreen') {
+    const isPortalMode = (typeof document !== 'undefined' && document.body && document.body.classList.contains('mode-player-portal')) || (typeof activePortalPlayerId !== 'undefined' && !!activePortalPlayerId);
+    if (isPortalMode && typeof openPartyStashModal === 'function') {
+      openPartyStashModal();
+    } else {
+      switchTab('dmscreen');
+    }
+  } else if (action === 'cloud') {
+    if (typeof openFirebaseModal === 'function') openFirebaseModal();
+  }
+}
+
+// --- NAVEGAÇÃO POR GESTOS DE SWIPE (COM BLINDAGEM DO VTT GRID) ---
+function initSwipeNavigation() {
+  if (typeof document === 'undefined') return;
+
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchStartTime = 0;
+  let isSwipeIgnored = false;
+
+  const MASTER_TABS_ORDER = ['combat', 'grid', 'players', 'campaigns', 'bestiary', 'spells', 'equipment', 'classes', 'species', 'dmscreen', 'generators'];
+  const PORTAL_TABS_ORDER = ['players', 'spells', 'equipment', 'classes', 'species'];
+
+  document.addEventListener('touchstart', (e) => {
+    if (!e.touches || e.touches.length !== 1) {
+      isSwipeIgnored = true;
+      return;
+    }
+
+    // Blindagem de segurança: NUNCA capturar swipes se estiver na aba Grid ou sobre elementos interativos do mapa/formulários/modais
+    const gridTab = document.getElementById('tab-grid');
+    const isGridActive = gridTab && gridTab.classList.contains('active');
+
+    const target = e.target;
+    const isInteractive = target && (
+      target.closest('#vtt-container') ||
+      target.closest('#grid-canvas') ||
+      target.closest('#vtt-hud') ||
+      target.closest('.canvas-container') ||
+      target.closest('.modal-overlay') ||
+      target.closest('.modal-body') ||
+      target.closest('input') ||
+      target.closest('textarea') ||
+      target.closest('select') ||
+      target.closest('button') ||
+      target.closest('.audio-top-widget') ||
+      target.closest('.nav-drawer') ||
+      target.closest('.fab-speed-dial-container')
+    );
+
+    if (isGridActive || isInteractive) {
+      isSwipeIgnored = true;
+      return;
+    }
+
+    isSwipeIgnored = false;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchStartTime = Date.now();
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    if (isSwipeIgnored || !e.changedTouches || e.changedTouches.length === 0) return;
+
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+    const elapsed = Date.now() - touchStartTime;
+
+    // Apenas se o gesto for rápido (< 650ms), com amplitude horizontal mínima (70px) e predominantemente horizontal
+    if (elapsed < 650 && Math.abs(deltaX) > 70 && Math.abs(deltaX) > Math.abs(deltaY) * 1.7) {
+      const isPortalMode = (document.body && document.body.classList.contains('mode-player-portal')) || (typeof activePortalPlayerId !== 'undefined' && !!activePortalPlayerId);
+      const tabOrder = isPortalMode ? PORTAL_TABS_ORDER : MASTER_TABS_ORDER;
+
+      // Encontrar aba ativa atual
+      let currentTabId = 'combat';
+      for (const t of tabOrder) {
+        const pane = document.getElementById('tab-' + t);
+        if (pane && pane.classList.contains('active')) {
+          currentTabId = t;
+          break;
+        }
+      }
+
+      const currentIndex = tabOrder.indexOf(currentTabId);
+      if (currentIndex === -1) return;
+
+      if (deltaX < 0) {
+        // Swipe para a esquerda ➔ Próxima aba
+        if (currentIndex < tabOrder.length - 1) {
+          const nextTab = tabOrder[currentIndex + 1];
+          switchTab(nextTab);
+          showToast(`Navegando: ${getTabTitle(nextTab)}`, 'info', 1200);
+        }
+      } else {
+        // Swipe para a direita ➔ Aba anterior
+        if (currentIndex > 0) {
+          const prevTab = tabOrder[currentIndex - 1];
+          switchTab(prevTab);
+          showToast(`Navegando: ${getTabTitle(prevTab)}`, 'info', 1200);
+        }
+      }
+    }
+  }, { passive: true });
+
+  // Fechamento defensivo com tecla Escape e clique fora do FAB
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeNavDrawer();
+      closeFabMenu();
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    const fab = document.getElementById('fab-speed-dial');
+    if (fab && fab.classList.contains('open')) {
+      if (!fab.contains(e.target)) {
+        closeFabMenu();
+      }
+    }
+  });
+}
+
+function getTabTitle(tabId) {
+  const map = {
+    combat: '⚔️ Combate',
+    grid: '🗺️ Mapa VTT',
+    players: '👤 Fichas',
+    campaigns: '👑 Campanhas',
+    bestiary: '🐉 Bestiário',
+    spells: '✨ Grimório',
+    equipment: '🛡️ Itens',
+    classes: '🌳 Classes',
+    species: '🧬 Raças',
+    dmscreen: '🛡️ Escudo',
+    generators: '🎲 Geradores',
+    'grid-config': '⚙️ Config. Grid'
+  };
+  return map[tabId] || tabId;
 }
 
 const renderedTabs = {};
@@ -947,7 +1245,7 @@ function exportCompleteBackupJson() {
   try {
     const backupData = {
       appName: 'Planilha RPG D&D 5E Assistant & VTT',
-      version: '3.6',
+      version: '3.7',
       exportDate: new Date().toISOString(),
       players: typeof PLAYERS !== 'undefined' ? PLAYERS : [],
       combatState: typeof state !== 'undefined' ? state : { round: 1, turnIndex: 0, combatants: [] },
@@ -1098,6 +1396,41 @@ function handleBackupFileSelected(input) {
   reader.readAsText(file);
 }
 
+// --- UTILITÁRIOS DE LOOKUP ROBUSTO (COMBATENTE ↔ FICHA DE JOGADOR) ---
+function findCombatantForPlayer(p, combatantsList = (typeof state !== 'undefined' && state ? state.combatants : [])) {
+  if (!p || !Array.isArray(combatantsList)) return null;
+  // 1. Chave primária exata por ID
+  let match = combatantsList.find(c => c.playerId && c.playerId === p.id);
+  if (match) return match;
+  // 2. Correspondência exata por nome com aluno ou nome puro
+  match = combatantsList.find(c => c.name === `${p.name} (${p.student})` || c.name === p.name);
+  if (match) return match;
+  // 3. Fallback defensivo com startsWith ou includes
+  match = combatantsList.find(c => c.name && p.name && (c.name.startsWith(p.name + ' ') || c.name.includes(p.name)));
+  if (match && typeof console !== 'undefined' && console.warn) {
+    console.warn(`[Lookup Warning] Combatente encontrado por includes em vez de playerId: "${match.name}" para ficha "${p.name}" (ID: ${p.id})`);
+  }
+  return match;
+}
+
+function findPlayerForCombatant(c, playersList = (typeof PLAYERS !== 'undefined' ? PLAYERS : [])) {
+  if (!c || !Array.isArray(playersList)) return null;
+  // 1. Chave primária exata por playerId
+  if (c.playerId) {
+    const byId = playersList.find(p => p.id === c.playerId);
+    if (byId) return byId;
+  }
+  // 2. Correspondência exata por nome com aluno ou nome puro
+  let match = playersList.find(p => c.name === `${p.name} (${p.student})` || c.name === p.name);
+  if (match) return match;
+  // 3. Fallback defensivo
+  match = playersList.find(p => p.name && c.name && (c.name.startsWith(p.name + ' ') || c.name.includes(p.name)));
+  if (match && typeof console !== 'undefined' && console.warn) {
+    console.warn(`[Lookup Warning] Jogador encontrado por includes em vez de playerId: "${match.name}" para combatente "${c.name}" (playerId: ${c.playerId || 'não definido'})`);
+  }
+  return match;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     highlightInlineRules,
@@ -1115,7 +1448,18 @@ if (typeof module !== 'undefined' && module.exports) {
     closeSnapshotsModal,
     renderSnapshotsModal,
     loadFromLocalStorage,
-    saveToLocalStorage
+    saveToLocalStorage,
+    findCombatantForPlayer,
+    findPlayerForCombatant,
+    showToast,
+    toggleNavDrawer,
+    openNavDrawer,
+    closeNavDrawer,
+    toggleFabMenu,
+    openFabMenu,
+    closeFabMenu,
+    handleFabQuickAction,
+    initSwipeNavigation
   };
 } else {
   // Execução síncrona imediata no navegador para garantir que PLAYERS e state sejam carregados antes de qualquer render
@@ -1123,8 +1467,18 @@ if (typeof module !== 'undefined' && module.exports) {
     if (typeof localStorage !== 'undefined') {
       loadFromLocalStorage();
     }
+    if (typeof document !== 'undefined') {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+          initSwipeNavigation();
+        });
+      } else {
+        initSwipeNavigation();
+      }
+    }
   } catch (e) {
     console.warn('Erro ao carregar dados no início de core.js:', e);
   }
 }
+
 

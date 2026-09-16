@@ -50,7 +50,9 @@ function updateCombatDifficulty() {
 
   let budget = [0, 0, 0, 0];
   playerCombatants.forEach(pc => {
-    const found = PLAYERS.find(p => pc.name.includes(p.name));
+    const found = typeof findPlayerForCombatant === 'function'
+      ? findPlayerForCombatant(pc, PLAYERS)
+      : PLAYERS.find(p => (pc.playerId && pc.playerId === p.id) || pc.name.includes(p.name));
     const lvl = found ? Math.max(1, Math.min(20, found.level)) : 2;
     const t = XP_THRESHOLDS[lvl] || XP_THRESHOLDS[2];
     budget[0] += t[0];
@@ -631,7 +633,6 @@ function renderAll() {
 
 window.onload = () => {
   initStandaloneScreenMode();
-  loadFromLocalStorage();
   try {
     const savedGrid = localStorage.getItem('dnd5e_prisco_live_grid');
     if (savedGrid) {

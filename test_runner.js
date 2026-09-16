@@ -2026,6 +2026,168 @@ vm.runInContext(`
 assert(vm.runInContext("savedDmNotesLocal === 'Digitando nova ideia que ainda não foi salva...'", sandbox), 'saveDMNotes sincronizou as notas para dnd_tracker_dm_notes_v3');
 
 
+// ----------------------------------------------------
+// 35. Testes de Integridade de Lookup, Debounce VTT e Sincronização de Moedas/Sessões
+// ----------------------------------------------------
+console.log('\n🛡️ 35. Testes de Integridade de Lookup, Debounce VTT e Sincronização de Moedas/Sessões:');
+
+assert(vm.runInContext("typeof findCombatantForPlayer === 'function'", sandbox), 'Função findCombatantForPlayer exportada');
+assert(vm.runInContext("typeof findPlayerForCombatant === 'function'", sandbox), 'Função findPlayerForCombatant exportada');
+
+// 1. Teste de isolamento de nomes e chave primária por ID (evita colisão de substring)
+vm.runInContext(`
+  const mockPlayers = [
+    { id: 'p_lia', name: 'Lia', student: 'Ana', hp: 20, maxHp: 20 },
+    { id: 'p_elian', name: 'Elian', student: 'Carlos', hp: 30, maxHp: 30 }
+  ];
+  const mockCombatants = [
+    { id: 'c_1', playerId: 'p_elian', name: 'Elian (Carlos)', hp: 30, maxHp: 30 },
+    { id: 'c_2', playerId: 'p_lia', name: 'Lia (Ana)', hp: 20, maxHp: 20 }
+  ];
+
+  const foundForLia = findCombatantForPlayer(mockPlayers[0], mockCombatants);
+  const foundForElian = findCombatantForPlayer(mockPlayers[1], mockCombatants);
+`, sandbox);
+assert(vm.runInContext("foundForLia && foundForLia.id === 'c_2'", sandbox), 'findCombatantForPlayer associou Lia ao combatente correto c_2 sem colidir com Elian');
+assert(vm.runInContext("foundForElian && foundForElian.id === 'c_1'", sandbox), 'findCombatantForPlayer associou Elian ao combatente correto c_1');
+
+// 2. Teste de findPlayerForCombatant
+vm.runInContext(`
+  const playerForC1 = findPlayerForCombatant(mockCombatants[0], mockPlayers);
+`, sandbox);
+assert(vm.runInContext("playerForC1 && playerForC1.id === 'p_elian'", sandbox), 'findPlayerForCombatant associou combatente a Elian com precisão');
+
+// 3. Teste de persistência de moedas (coins) no portal
+vm.runInContext(`
+  const originalPlayer = {
+    id: 'p_local_active',
+    name: 'Herói Ativo',
+    hp: 25,
+    maxHp: 30,
+    coins: { cp: 10, sp: 5, ep: 0, gp: 50, pp: 1 },
+    inventory: [{ id: 'it_1', name: 'Espada de Aço', qty: 1 }]
+  };
+  PLAYERS = [originalPlayer];
+  activePortalPlayerId = 'p_local_active';
+
+  const remoteCloudUpdate = {
+    players: [
+      {
+        id: 'p_local_active',
+        name: 'Herói Ativo',
+        hp: 20, // Dano vindo do mestre
+        maxHp: 30,
+        coins: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 } // Nuvem desatualizada em moedas
+      }
+    ]
+  };
+  applyCloudDataToLocal(remoteCloudUpdate);
+  const mergedPlayer = PLAYERS.find(p => p.id === 'p_local_active');
+`, sandbox);
+assert(vm.runInContext("mergedPlayer && mergedPlayer.hp === 20", sandbox), 'applyCloudDataToLocal aplicou dano de 20 PV enviado pelo mestre');
+assert(vm.runInContext("mergedPlayer && mergedPlayer.coins && mergedPlayer.coins.gp === 50", sandbox), 'applyCloudDataToLocal preservou 50 GP locais do jogador ativo');
+
+// 4. Teste de merge de sessões com updatedAt mais recente
+vm.runInContext(`
+  const testCampState = {
+    campaigns: [{
+      id: 'camp_test_ts',
+      name: 'Campanha Teste',
+      sessions: [
+        { id: 'sess_1', number: 1, date: '2026-09-01', notes: 'Versão local antiga curta', updatedAt: 1000 }
+      ]
+    }]
+  };
+  CAMPAIGNS_STATE = testCampState;
+
+  const remoteCampUpdate = {
+    campaigns: [{
+      id: 'camp_test_ts',
+      sessions: [
+        { id: 'sess_1', number: 1, date: '2026-09-01', notes: 'Versão mais recente editada', updatedAt: 2000 }
+      ]
+    }]
+  };
+  mergeCloudCampaignsState(remoteCampUpdate);
+  const updatedSess = CAMPAIGNS_STATE.campaigns[0].sessions[0];
+`, sandbox);
+assert(vm.runInContext("updatedSess && updatedSess.notes === 'Versão mais recente editada'", sandbox), 'mergeCloudCampaignsState adotou versão mais recente baseada em updatedAt');
+
+// 5. Teste de normalização em initPlayerPortalMode
+vm.runInContext(`
+  PLAYERS.push({ id: 'p_norm_test', name: 'Valérius Martelo Negro', student: 'Arthur', hp: 28, maxHp: 28 });
+  initPlayerPortalMode('valerius');
+`, sandbox);
+assert(vm.runInContext("activePortalPlayerId === 'p_norm_test'", sandbox), 'initPlayerPortalMode localizou personagem por nome normalizado sem acento');
+
+// 6. Teste de presença dos elementos UI da versão 3.7
+const distHtml = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(distHtml.includes('portal-sync-status-badge'), 'Bundle contém badge visual de status de sincronização (portal-sync-status-badge)');
+assert(distHtml.includes('debouncedVttSave'), 'Bundle contém função debouncedVttSave para performance do VTT');
+
+// ========================================================
+// 36. TESTES DE USABILIDADE, MENU DRAWER, FAB, TOASTS & GESTOS
+// ========================================================
+console.log('\n📱 36. Testes de Usabilidade, Menu Drawer, FAB, Toasts e Gestos:');
+
+// 1. Validação de exportação de funções essenciais de UI/UX
+assert(typeof vm.runInContext("showToast", sandbox) === 'function', 'Função showToast exportada');
+assert(typeof vm.runInContext("toggleNavDrawer", sandbox) === 'function', 'Função toggleNavDrawer exportada');
+assert(typeof vm.runInContext("openNavDrawer", sandbox) === 'function', 'Função openNavDrawer exportada');
+assert(typeof vm.runInContext("closeNavDrawer", sandbox) === 'function', 'Função closeNavDrawer exportada');
+assert(typeof vm.runInContext("toggleFabMenu", sandbox) === 'function', 'Função toggleFabMenu exportada');
+assert(typeof vm.runInContext("openFabMenu", sandbox) === 'function', 'Função openFabMenu exportada');
+assert(typeof vm.runInContext("closeFabMenu", sandbox) === 'function', 'Função closeFabMenu exportada');
+assert(typeof vm.runInContext("handleFabQuickAction", sandbox) === 'function', 'Função handleFabQuickAction exportada');
+assert(typeof vm.runInContext("initSwipeNavigation", sandbox) === 'function', 'Função initSwipeNavigation exportada');
+
+// 2. Teste de manipulação do Drawer Lateral
+vm.runInContext(`
+  const mockDrawer = { classList: { add: (c) => mockDrawer.classes.add(c), remove: (c) => mockDrawer.classes.delete(c), contains: (c) => mockDrawer.classes.has(c) }, classes: new Set() };
+  const mockBackdrop = { classList: { add: (c) => mockBackdrop.classes.add(c), remove: (c) => mockBackdrop.classes.delete(c), contains: (c) => mockBackdrop.classes.has(c) }, classes: new Set() };
+  const origGetElementById = document.getElementById;
+  document.getElementById = (id) => {
+    if (id === 'nav-drawer') return mockDrawer;
+    if (id === 'nav-drawer-backdrop') return mockBackdrop;
+    return origGetElementById(id);
+  };
+  openNavDrawer();
+  const drawerOpened = mockDrawer.classList.contains('open') && mockBackdrop.classList.contains('open');
+  closeNavDrawer();
+  const drawerClosed = !mockDrawer.classList.contains('open') && !mockBackdrop.classList.contains('open');
+  document.getElementById = origGetElementById;
+`, sandbox);
+assert(vm.runInContext("drawerOpened", sandbox), 'openNavDrawer adicionou classe open ao drawer e backdrop');
+assert(vm.runInContext("drawerClosed", sandbox), 'closeNavDrawer removeu classe open do drawer e backdrop');
+
+// 3. Teste de manipulação do FAB Speed Dial
+vm.runInContext(`
+  const mockFab = { classList: { toggle: (c) => { if (mockFab.classes.has(c)) mockFab.classes.delete(c); else mockFab.classes.add(c); }, add: (c) => mockFab.classes.add(c), remove: (c) => mockFab.classes.delete(c), contains: (c) => mockFab.classes.has(c) }, classes: new Set() };
+  const origGetElementByIdFab = document.getElementById;
+  document.getElementById = (id) => {
+    if (id === 'fab-speed-dial') return mockFab;
+    return origGetElementByIdFab(id);
+  };
+  toggleFabMenu();
+  const fabToggledOpen = mockFab.classList.contains('open');
+  closeFabMenu();
+  const fabClosed = !mockFab.classList.contains('open');
+  document.getElementById = origGetElementByIdFab;
+`, sandbox);
+assert(vm.runInContext("fabToggledOpen", sandbox), 'toggleFabMenu abriu o FAB adicionando classe open');
+assert(vm.runInContext("fabClosed", sandbox), 'closeFabMenu fechou o FAB removendo classe open');
+
+// 4. Teste de presença e integridade dos componentes no Bundle HTML
+assert(distHtml.includes('id="btn-nav-hamburger"'), 'Bundle contém botão hamburguer (#btn-nav-hamburger)');
+assert(distHtml.includes('id="nav-drawer-backdrop"'), 'Bundle contém backdrop do drawer (#nav-drawer-backdrop)');
+assert(distHtml.includes('id="nav-drawer"'), 'Bundle contém container do menu lateral (#nav-drawer)');
+assert(distHtml.includes('id="fab-speed-dial"'), 'Bundle contém FAB Speed Dial (#fab-speed-dial)');
+assert(distHtml.includes('id="toast-container"'), 'Bundle contém container de notificações Toast (#toast-container)');
+assert(distHtml.includes('pulseCritical'), 'CSS contém keyframe pulseCritical para PV crítico');
+assert(distHtml.includes('hp-critical'), 'CSS contém classe hp-critical para destaque de perigo iminente');
+assert(distHtml.includes('safe-area-inset'), 'CSS contém suporte a safe-area-inset para notch de celular');
+assert(distHtml.includes('drawer-cluster-title'), 'CSS contém estilos dos clusters do menu lateral');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
