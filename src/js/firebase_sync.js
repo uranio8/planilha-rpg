@@ -23,6 +23,7 @@ let isFirebaseConnected = false;
 let isFirebaseSyncing = false;
 let isApplyingCloudUpdate = false;
 let firebaseCloudDebounceTimer = null;
+let hasPendingCloudSync = false;
 let localClientId = 'client_' + Math.random().toString(36).substring(2, 9);
 var clientRole = (typeof window !== 'undefined' && window.location && (window.location.search.includes('view=player') || window.location.search.includes('player=') || window.location.search.includes('lobby=true') || window.location.search.includes('login=player'))) ? 'player' : 'master';
 
@@ -155,6 +156,17 @@ function initFirebaseSync() {
     startFirebaseRoomListener(currentRoom);
 
     console.log('✅ Google Firebase conectado com sucesso! Sala:', currentRoom);
+
+    // Se havia alterações locais geradas antes da conexão firmar, despacha para a nuvem
+    if (hasPendingCloudSync && clientRole === 'master') {
+      hasPendingCloudSync = false;
+      setTimeout(() => {
+        if (typeof syncLocalChangesToFirebase === 'function') {
+          syncLocalChangesToFirebase(true);
+        }
+      }, 300);
+    }
+
     return true;
   } catch (err) {
     console.error('Erro ao conectar ao Firebase:', err);
@@ -225,8 +237,30 @@ function mergeCloudCampaignsState(cloudCampaignsState) {
   if (typeof CAMPAIGNS_STATE === 'undefined') return;
 
   if (!CAMPAIGNS_STATE.campaigns || CAMPAIGNS_STATE.campaigns.length === 0) {
-    CAMPAIGNS_STATE = cloudCampaignsState;
+    CAMPAIGNS_STATE = JSON.parse(JSON.stringify(cloudCampaignsState));
     return;
+  }
+
+  // Detecta se o aparelho local possui apenas a campanha inicial de exemplo (vazia)
+  // e a nuvem possui dados reais de campanha (sessões, baú ou IDs de campanha customizados)
+  const localIsOnlyEmptyDefault = (
+    CAMPAIGNS_STATE.campaigns.length === 1 &&
+    CAMPAIGNS_STATE.campaigns[0].id === 'camp_1' &&
+    (!CAMPAIGNS_STATE.campaigns[0].sessions || CAMPAIGNS_STATE.campaigns[0].sessions.length === 0)
+  );
+
+  const cloudHasRealData = cloudCampaignsState.campaigns.some(c => 
+    c.id !== 'camp_1' || (c.sessions && c.sessions.length > 0) || (c.partyStash && c.partyStash.items && c.partyStash.items.length > 0)
+  );
+
+  if (localIsOnlyEmptyDefault && cloudHasRealData) {
+    CAMPAIGNS_STATE = JSON.parse(JSON.stringify(cloudCampaignsState));
+    return;
+  }
+
+  // Sincroniza campanha ativa se indicada pela nuvem
+  if (cloudCampaignsState.activeCampaignId && CAMPAIGNS_STATE.campaigns.some(c => c.id === cloudCampaignsState.activeCampaignId)) {
+    CAMPAIGNS_STATE.activeCampaignId = cloudCampaignsState.activeCampaignId;
   }
 
   cloudCampaignsState.campaigns.forEach(remoteCamp => {
@@ -401,10 +435,18 @@ function applyCloudDataToLocal(cloudData) {
         const isRemoteOnlyMocks = remoteList.length > 0 && remoteList.every(p => ['p1','p2','p3','p4','p5'].includes(p.id));
         const localHasCustomPlayers = localList.some(p => !['p1','p2','p3','p4','p5'].includes(p.id));
 
+        // Detecta se o LOCAL possui apenas mocks padrão (ex: celular ou navegador aberto pela 1ª vez)
+        // e a NUVEM já possui personagens reais criados pelo mestre
+        const isLocalOnlyDefaultMocks = localList.length > 0 && localList.every(p => ['p1','p2','p3','p4','p5'].includes(p.id));
+        const remoteHasCustomPlayers = remoteList.some(p => !['p1','p2','p3','p4','p5'].includes(p.id));
+
+        // Se local só tem mocks iniciais e a nuvem tem heróis reais, descarta os mocks para adotar as fichas da nuvem
+        const effectiveLocalList = (isLocalOnlyDefaultMocks && remoteHasCustomPlayers) ? [] : localList;
+
         const mergedMap = new Map();
 
-        // Insere personagens locais (preservando todo trabalho local)
-        for (const localP of localList) {
+        // Insere personagens locais (preservando todo trabalho local legítimo)
+        for (const localP of effectiveLocalList) {
           if (localP && localP.id) {
             mergedMap.set(localP.id, Object.assign({}, localP));
           }
@@ -509,8 +551,16 @@ function applyCloudDataToLocal(cloudData) {
 // --- DESPACHO DE ALTERAÇÕES LOCAIS PARA A NUVEM ---
 
 function syncLocalChangesToFirebase(immediate = false) {
-  if (!isFirebaseConnected || (!firestoreDb && !realtimeDb) || isApplyingCloudUpdate) return;
+  if (isApplyingCloudUpdate) return;
   if (!isFirebaseAutoSyncEnabled()) return;
+
+  if (!isFirebaseConnected || (!firestoreDb && !realtimeDb)) {
+    hasPendingCloudSync = true;
+    if (typeof initFirebaseSync === 'function' && !isFirebaseConnected) {
+      setTimeout(() => initFirebaseSync(), 50);
+    }
+    return;
+  }
 
   if (firebaseCloudDebounceTimer) {
     clearTimeout(firebaseCloudDebounceTimer);
@@ -873,6 +923,89 @@ function manualPullFromCloud() {
   }
 }
 
+// --- PAREAMENTO MULTI-DISPOSITIVO (PC ➔ CELULAR / NAVEGADORES) ---
+
+function getMasterSyncDeviceUrl() {
+  const currentRoom = getStoredFirebaseRoom();
+  const href = (typeof window !== 'undefined' && window.location && window.location.href) ? window.location.href : 'https://uranio8.github.io/planilha-rpg/';
+  const base = href.split('?')[0].split('#')[0];
+  return `${base}?room=${encodeURIComponent(currentRoom)}`;
+}
+
+function openMasterSyncDeviceModal() {
+  if (typeof document === 'undefined') return;
+  const modal = document.getElementById('modal-master-sync-device');
+  if (!modal) return;
+
+  const currentRoom = getStoredFirebaseRoom();
+  const syncUrl = getMasterSyncDeviceUrl();
+
+  const inpRoom = document.getElementById('inp-sync-device-room');
+  if (inpRoom) inpRoom.value = currentRoom;
+
+  const imgQr = document.getElementById('img-master-sync-qrcode');
+  if (imgQr) {
+    imgQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(syncUrl)}`;
+  }
+
+  modal.classList.add('open');
+}
+
+function closeMasterSyncDeviceModal() {
+  if (typeof document === 'undefined') return;
+  const modal = document.getElementById('modal-master-sync-device');
+  if (modal) modal.classList.remove('open');
+}
+
+function copyMasterSyncDeviceUrl() {
+  const syncUrl = getMasterSyncDeviceUrl();
+  if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(syncUrl)
+      .then(() => {
+        if (typeof showToast === 'function') {
+          showToast('📋 Link do Celular copiado! Cole no seu navegador do celular.', 'success');
+        } else {
+          alert('📋 Link copiado com sucesso:\n' + syncUrl);
+        }
+      })
+      .catch(() => {
+        prompt('Copie o link abaixo:', syncUrl);
+      });
+  } else {
+    prompt('Copie o link abaixo:', syncUrl);
+  }
+}
+
+function handleUpdateSyncDeviceRoom() {
+  const inp = document.getElementById('inp-sync-device-room');
+  if (!inp) return;
+  const raw = inp.value.trim();
+  if (!raw) return;
+  const newRoom = setStoredFirebaseRoom(raw);
+  inp.value = newRoom;
+
+  // Reconecta e atualiza QR Code
+  initFirebaseSync();
+  const syncUrl = getMasterSyncDeviceUrl();
+  const imgQr = document.getElementById('img-master-sync-qrcode');
+  if (imgQr) {
+    imgQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(syncUrl)}`;
+  }
+
+  if (typeof showToast === 'function') {
+    showToast(`🌐 Conectado à sala ${newRoom}!`, 'success');
+  }
+}
+
+// Vincula no window para navegadores
+if (typeof window !== 'undefined') {
+  window.getMasterSyncDeviceUrl = getMasterSyncDeviceUrl;
+  window.openMasterSyncDeviceModal = openMasterSyncDeviceModal;
+  window.closeMasterSyncDeviceModal = closeMasterSyncDeviceModal;
+  window.copyMasterSyncDeviceUrl = copyMasterSyncDeviceUrl;
+  window.handleUpdateSyncDeviceRoom = handleUpdateSyncDeviceRoom;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     getStoredFirebaseConfig,
@@ -883,6 +1016,7 @@ if (typeof module !== 'undefined' && module.exports) {
     setFirebaseAutoSyncEnabled,
     initFirebaseSync,
     applyCloudDataToLocal,
+    mergeCloudCampaignsState,
     syncLocalChangesToFirebase,
     executeCloudSave,
     openFirebaseModal,
@@ -890,6 +1024,11 @@ if (typeof module !== 'undefined' && module.exports) {
     manualPushToCloud,
     manualPullFromCloud,
     publishMasterCampaignToCloud,
-    executePlayerCloudSave
+    executePlayerCloudSave,
+    getMasterSyncDeviceUrl,
+    openMasterSyncDeviceModal,
+    closeMasterSyncDeviceModal,
+    copyMasterSyncDeviceUrl,
+    handleUpdateSyncDeviceRoom
   };
 }

@@ -2410,6 +2410,97 @@ const emptyGridHtml = vm.runInContext("document.getElementById('grid-players').i
 assert(emptyGridHtml.includes('openSnapshotsModal()'), 'renderPlayers exibe botão para restaurar snapshots quando lista está vazia');
 assert(emptyGridHtml.includes('openPlayerModal()'), 'renderPlayers exibe botão para criar nova ficha quando lista está vazia');
 
+// ========================================
+// 41. Testes de Sincronização Cloud-First Multi-Dispositivo e Pareamento de Aparelhos (ISSUE-67):
+// ========================================
+console.log('\n📱 41. Testes de Sincronização Cloud-First Multi-Dispositivo e Pareamento de Aparelhos (ISSUE-67):');
+
+const firebaseSyncModule = require('./src/js/firebase_sync.js');
+assert(typeof firebaseSyncModule.getMasterSyncDeviceUrl === 'function', 'Função getMasterSyncDeviceUrl exportada');
+assert(typeof firebaseSyncModule.openMasterSyncDeviceModal === 'function', 'Função openMasterSyncDeviceModal exportada');
+assert(typeof firebaseSyncModule.closeMasterSyncDeviceModal === 'function', 'Função closeMasterSyncDeviceModal exportada');
+assert(typeof firebaseSyncModule.copyMasterSyncDeviceUrl === 'function', 'Função copyMasterSyncDeviceUrl exportada');
+assert(typeof firebaseSyncModule.handleUpdateSyncDeviceRoom === 'function', 'Função handleUpdateSyncDeviceRoom exportada');
+
+// Validação de URL de pareamento do Mestre
+vm.runInContext(`
+  setStoredFirebaseRoom('mesa_valerius');
+`, sandbox);
+const masterSyncUrl = vm.runInContext("getMasterSyncDeviceUrl()", sandbox);
+assert(masterSyncUrl.includes('?room=mesa_valerius'), 'getMasterSyncDeviceUrl gera link com parâmetro ?room= correto para o celular');
+
+// Teste de Hidratação Limpa em Dispositivo Novo: Descarte de Mocks Iniciais em favor das Fichas da Nuvem
+vm.runInContext(`
+  if (typeof setClientRole === 'function') setClientRole('master');
+  clientRole = 'master';
+  activePortalPlayerId = null;
+  pendingPortalPlayerId = null;
+  window.location.search = '';
+  localStorage.removeItem('dnd5e_deleted_player_ids');
+
+  // Simula celular aberto pela primeira vez (contendo apenas mocks p1..p5 do core.js)
+  PLAYERS = [
+    { id: 'p1', name: 'Valerius Mock', student: 'Mock 1' },
+    { id: 'p2', name: 'Lyra Mock', student: 'Mock 2' },
+    { id: 'p3', name: 'Thorin Mock', student: 'Mock 3' },
+    { id: 'p4', name: 'Aramil Mock', student: 'Mock 4' },
+    { id: 'p5', name: 'Eldrin Mock', student: 'Mock 5' }
+  ];
+
+  // A nuvem possui os heróis reais criados pelo mestre no computador
+  const cloudUpdateNewDevice = {
+    players: [
+      { id: 'char_prisco_hero_1', name: 'Gromm o Bárbaro', student: 'Lucas', hp: 45, maxHp: 45, updatedAt: 500 },
+      { id: 'char_prisco_hero_2', name: 'Serena a Paladina', student: 'Mariana', hp: 38, maxHp: 38, updatedAt: 500 }
+    ]
+  };
+
+  applyCloudDataToLocal(cloudUpdateNewDevice);
+`, sandbox);
+
+const playersOnNewDevice = vm.runInContext("PLAYERS", sandbox);
+assert(!playersOnNewDevice.some(p => p.id === 'p1'), 'Novo aparelho DESCARTA mock p1 ao receber fichas reais da nuvem');
+assert(playersOnNewDevice.some(p => p.id === 'char_prisco_hero_1'), 'Novo aparelho ADOTA ficha real Gromm da nuvem');
+assert(playersOnNewDevice.some(p => p.id === 'char_prisco_hero_2'), 'Novo aparelho ADOTA ficha real Serena da nuvem');
+assert(playersOnNewDevice.length === 2, 'Novo aparelho mantém estritamente as 2 fichas reais sem poluição de mocks');
+
+// Teste de Hidratação Limpa de Campanhas em Dispositivo Novo
+vm.runInContext(`
+  // Dispositivo novo com apenas a campanha inicial vazia
+  CAMPAIGNS_STATE = {
+    activeCampaignId: "camp_1",
+    campaigns: [
+      { id: "camp_1", name: "A Mina Perdida de Phandelver", sessions: [] }
+    ]
+  };
+
+  const cloudCampaignsUpdate = {
+    activeCampaignId: "camp_real_dragons",
+    campaigns: [
+      {
+        id: "camp_real_dragons",
+        name: "O Tesouro da Rainha Dragão",
+        sessions: [
+          { id: "sess_1", number: 1, title: "O Ataque a Greenest", date: "2026-09-17", notes: "Crônicas épicas" }
+        ],
+        partyStash: { gold: 250, items: [{ id: "it_1", name: "Anel de Proteção" }] }
+      }
+    ]
+  };
+
+  mergeCloudCampaignsState(cloudCampaignsUpdate);
+`, sandbox);
+
+const syncedCampaigns = vm.runInContext("CAMPAIGNS_STATE", sandbox);
+assert(syncedCampaigns.activeCampaignId === 'camp_real_dragons', 'Novo aparelho adotou a campanha ativa real da nuvem');
+assert(syncedCampaigns.campaigns.some(c => c.id === 'camp_real_dragons'), 'Campanha real foi incorporada com sucesso');
+assert(syncedCampaigns.campaigns.find(c => c.id === 'camp_real_dragons').sessions.length === 1, 'Sessões de diário foram hidratadas da nuvem no novo aparelho');
+
+// Validação dos elementos visuais no bundle compilado
+assert(distHtml.includes('id="modal-master-sync-device"'), 'Bundle contém modal de pareamento de celular (#modal-master-sync-device)');
+assert(distHtml.includes('openMasterSyncDeviceModal()'), 'Bundle contém atalho para abrir pareamento de celular');
+assert(distHtml.includes('img-master-sync-qrcode'), 'Bundle contém elemento de QR Code para leitura no celular');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

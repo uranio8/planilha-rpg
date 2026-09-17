@@ -642,6 +642,11 @@ window.onload = () => {
   if (typeof initScenes === 'function') initScenes();
   renderAll();
   if (typeof checkPlayerPortalUrl === 'function') checkPlayerPortalUrl();
+  if (typeof initFirebaseSync === 'function') {
+    setTimeout(() => {
+      initFirebaseSync();
+    }, 100);
+  }
 };
 
 if (typeof module !== 'undefined' && module.exports) {

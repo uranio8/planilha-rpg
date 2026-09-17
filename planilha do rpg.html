@@ -7466,6 +7466,7 @@
           <span style="font-size: 9px; opacity: 0.7;">▾</span>
         </button>
         <div class="nav-dropdown-menu right-aligned">
+          <button class="dropdown-item" onclick="openMasterSyncDeviceModal()" style="color: #38bdf8; font-weight: 700;">📱 Conectar Celular / Multi-Aparelho</button>
           <button class="dropdown-item" onclick="publishMasterCampaignToCloud()" style="color: #a7f3d0; font-weight: 700;">📤 Publicar Mesa na Nuvem</button>
           <button class="dropdown-item" onclick="openPlayerLoginModal()" style="color: #fef08a; font-weight: 700;">🎮 Entrar como Jogador</button>
           <button class="dropdown-item" onclick="toggleDMNotesDrawer()">📝 Notas do Mestre (Ctrl+N)</button>
@@ -9512,6 +9513,62 @@
     </div>
   </div>
 
+  <!-- MODAL: CONECTAR CELULAR / MULTI-DISPOSITIVO (PAREAMENTO DO MESTRE) -->
+  <div id="modal-master-sync-device" class="modal-overlay">
+    <div class="modal-body" style="max-width: 500px; text-align: center;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 14px; text-align: left;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 22px;">📱</span>
+          <div>
+            <div style="font-size: 16px; font-weight: 800; font-family: var(--font-title); color: #fff;">
+              Conectar Celular / Outro Aparelho
+            </div>
+            <div style="font-size: 11px; color: var(--primary-light);">
+              Sincronização instantânea de fichas, campanhas e combate em múltiplos aparelhos
+            </div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeMasterSyncDeviceModal()">✕</button>
+      </div>
+
+      <!-- QR CODE CONTAINER -->
+      <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 14px;">
+        <div style="background: #fff; padding: 12px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); display: inline-block;">
+          <img id="img-master-sync-qrcode" src="" alt="QR Code de Conexão do Celular" style="width: 210px; height: 210px; display: block; border-radius: 4px;">
+        </div>
+        <div style="font-size: 11.5px; color: #cbd5e1; margin-top: 10px; max-width: 380px; line-height: 1.4;">
+          📷 <b>Aponte a câmera do seu celular</b> para este QR Code. A mesa será aberta no celular na mesma sala com todas as suas fichas, campanhas e diários!
+        </div>
+      </div>
+
+      <!-- CÓDIGO DA SALA E LINK -->
+      <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; text-align: left; margin-bottom: 14px;">
+        <label style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">
+          🏷️ Código da Sala Conectada:
+        </label>
+        <div style="display: flex; gap: 6px; margin-top: 4px;">
+          <input type="text" id="inp-sync-device-room" style="font-family: monospace; font-size: 13px; font-weight: 700; color: var(--accent-gold); flex: 1;">
+          <button class="btn-action" style="font-size: 11.5px; padding: 6px 12px; white-space: nowrap;" onclick="handleUpdateSyncDeviceRoom()">🔄 Conectar Sala</button>
+        </div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">
+          Qualquer dispositivo que abrir esta sala terá os mesmos dados sincronizados em tempo real.
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button class="btn-secondary" onclick="copyMasterSyncDeviceUrl()" style="font-size: 12px; padding: 8px 12px; display: flex; align-items: center; justify-content: center; gap: 6px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.3);">
+          <span>📋 Copiar Link de Acesso do Celular</span>
+        </button>
+        <div style="display: flex; justify-content: space-between; gap: 8px; margin-top: 6px;">
+          <button class="btn-secondary" onclick="manualPushToCloud()" style="font-size: 11px; padding: 6px 10px;" title="Enviar estado deste computador para a nuvem">
+            ☁️ Enviar para Nuvem Agora
+          </button>
+          <button class="btn-secondary" onclick="closeMasterSyncDeviceModal()">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: PIN DO MESTRE (AUTENTICAÇÃO & PROTEÇÃO DE ACESSO) -->
   <div id="modal-master-pin" class="modal-overlay">
     <div class="modal-body">
@@ -10518,6 +10575,12 @@
       <!-- CLUSTER 4: ATALHOS RÁPIDOS -->
       <div class="drawer-section">
         <div class="drawer-cluster-title">Ações do Sistema</div>
+        <button class="drawer-item" onclick="openMasterSyncDeviceModal(); closeNavDrawer();" style="color: #38bdf8; font-weight: 700;">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">📱</span>
+            <span>Conectar Celular / Outro Aparelho</span>
+          </div>
+        </button>
         <button class="drawer-item" onclick="openPlayerLoginModal(); closeNavDrawer();" style="color: #fef08a; font-weight: 700;">
           <div class="drawer-item-left">
             <span class="drawer-item-icon">🎮</span>
@@ -30183,6 +30246,7 @@ let isFirebaseConnected = false;
 let isFirebaseSyncing = false;
 let isApplyingCloudUpdate = false;
 let firebaseCloudDebounceTimer = null;
+let hasPendingCloudSync = false;
 let localClientId = 'client_' + Math.random().toString(36).substring(2, 9);
 var clientRole = (typeof window !== 'undefined' && window.location && (window.location.search.includes('view=player') || window.location.search.includes('player=') || window.location.search.includes('lobby=true') || window.location.search.includes('login=player'))) ? 'player' : 'master';
 
@@ -30315,6 +30379,17 @@ function initFirebaseSync() {
     startFirebaseRoomListener(currentRoom);
 
     console.log('✅ Google Firebase conectado com sucesso! Sala:', currentRoom);
+
+    // Se havia alterações locais geradas antes da conexão firmar, despacha para a nuvem
+    if (hasPendingCloudSync && clientRole === 'master') {
+      hasPendingCloudSync = false;
+      setTimeout(() => {
+        if (typeof syncLocalChangesToFirebase === 'function') {
+          syncLocalChangesToFirebase(true);
+        }
+      }, 300);
+    }
+
     return true;
   } catch (err) {
     console.error('Erro ao conectar ao Firebase:', err);
@@ -30385,8 +30460,30 @@ function mergeCloudCampaignsState(cloudCampaignsState) {
   if (typeof CAMPAIGNS_STATE === 'undefined') return;
 
   if (!CAMPAIGNS_STATE.campaigns || CAMPAIGNS_STATE.campaigns.length === 0) {
-    CAMPAIGNS_STATE = cloudCampaignsState;
+    CAMPAIGNS_STATE = JSON.parse(JSON.stringify(cloudCampaignsState));
     return;
+  }
+
+  // Detecta se o aparelho local possui apenas a campanha inicial de exemplo (vazia)
+  // e a nuvem possui dados reais de campanha (sessões, baú ou IDs de campanha customizados)
+  const localIsOnlyEmptyDefault = (
+    CAMPAIGNS_STATE.campaigns.length === 1 &&
+    CAMPAIGNS_STATE.campaigns[0].id === 'camp_1' &&
+    (!CAMPAIGNS_STATE.campaigns[0].sessions || CAMPAIGNS_STATE.campaigns[0].sessions.length === 0)
+  );
+
+  const cloudHasRealData = cloudCampaignsState.campaigns.some(c => 
+    c.id !== 'camp_1' || (c.sessions && c.sessions.length > 0) || (c.partyStash && c.partyStash.items && c.partyStash.items.length > 0)
+  );
+
+  if (localIsOnlyEmptyDefault && cloudHasRealData) {
+    CAMPAIGNS_STATE = JSON.parse(JSON.stringify(cloudCampaignsState));
+    return;
+  }
+
+  // Sincroniza campanha ativa se indicada pela nuvem
+  if (cloudCampaignsState.activeCampaignId && CAMPAIGNS_STATE.campaigns.some(c => c.id === cloudCampaignsState.activeCampaignId)) {
+    CAMPAIGNS_STATE.activeCampaignId = cloudCampaignsState.activeCampaignId;
   }
 
   cloudCampaignsState.campaigns.forEach(remoteCamp => {
@@ -30561,10 +30658,18 @@ function applyCloudDataToLocal(cloudData) {
         const isRemoteOnlyMocks = remoteList.length > 0 && remoteList.every(p => ['p1','p2','p3','p4','p5'].includes(p.id));
         const localHasCustomPlayers = localList.some(p => !['p1','p2','p3','p4','p5'].includes(p.id));
 
+        // Detecta se o LOCAL possui apenas mocks padrão (ex: celular ou navegador aberto pela 1ª vez)
+        // e a NUVEM já possui personagens reais criados pelo mestre
+        const isLocalOnlyDefaultMocks = localList.length > 0 && localList.every(p => ['p1','p2','p3','p4','p5'].includes(p.id));
+        const remoteHasCustomPlayers = remoteList.some(p => !['p1','p2','p3','p4','p5'].includes(p.id));
+
+        // Se local só tem mocks iniciais e a nuvem tem heróis reais, descarta os mocks para adotar as fichas da nuvem
+        const effectiveLocalList = (isLocalOnlyDefaultMocks && remoteHasCustomPlayers) ? [] : localList;
+
         const mergedMap = new Map();
 
-        // Insere personagens locais (preservando todo trabalho local)
-        for (const localP of localList) {
+        // Insere personagens locais (preservando todo trabalho local legítimo)
+        for (const localP of effectiveLocalList) {
           if (localP && localP.id) {
             mergedMap.set(localP.id, Object.assign({}, localP));
           }
@@ -30669,8 +30774,16 @@ function applyCloudDataToLocal(cloudData) {
 // --- DESPACHO DE ALTERAÇÕES LOCAIS PARA A NUVEM ---
 
 function syncLocalChangesToFirebase(immediate = false) {
-  if (!isFirebaseConnected || (!firestoreDb && !realtimeDb) || isApplyingCloudUpdate) return;
+  if (isApplyingCloudUpdate) return;
   if (!isFirebaseAutoSyncEnabled()) return;
+
+  if (!isFirebaseConnected || (!firestoreDb && !realtimeDb)) {
+    hasPendingCloudSync = true;
+    if (typeof initFirebaseSync === 'function' && !isFirebaseConnected) {
+      setTimeout(() => initFirebaseSync(), 50);
+    }
+    return;
+  }
 
   if (firebaseCloudDebounceTimer) {
     clearTimeout(firebaseCloudDebounceTimer);
@@ -31033,6 +31146,89 @@ function manualPullFromCloud() {
   }
 }
 
+// --- PAREAMENTO MULTI-DISPOSITIVO (PC ➔ CELULAR / NAVEGADORES) ---
+
+function getMasterSyncDeviceUrl() {
+  const currentRoom = getStoredFirebaseRoom();
+  const href = (typeof window !== 'undefined' && window.location && window.location.href) ? window.location.href : 'https://uranio8.github.io/planilha-rpg/';
+  const base = href.split('?')[0].split('#')[0];
+  return `${base}?room=${encodeURIComponent(currentRoom)}`;
+}
+
+function openMasterSyncDeviceModal() {
+  if (typeof document === 'undefined') return;
+  const modal = document.getElementById('modal-master-sync-device');
+  if (!modal) return;
+
+  const currentRoom = getStoredFirebaseRoom();
+  const syncUrl = getMasterSyncDeviceUrl();
+
+  const inpRoom = document.getElementById('inp-sync-device-room');
+  if (inpRoom) inpRoom.value = currentRoom;
+
+  const imgQr = document.getElementById('img-master-sync-qrcode');
+  if (imgQr) {
+    imgQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(syncUrl)}`;
+  }
+
+  modal.classList.add('open');
+}
+
+function closeMasterSyncDeviceModal() {
+  if (typeof document === 'undefined') return;
+  const modal = document.getElementById('modal-master-sync-device');
+  if (modal) modal.classList.remove('open');
+}
+
+function copyMasterSyncDeviceUrl() {
+  const syncUrl = getMasterSyncDeviceUrl();
+  if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(syncUrl)
+      .then(() => {
+        if (typeof showToast === 'function') {
+          showToast('📋 Link do Celular copiado! Cole no seu navegador do celular.', 'success');
+        } else {
+          alert('📋 Link copiado com sucesso:\n' + syncUrl);
+        }
+      })
+      .catch(() => {
+        prompt('Copie o link abaixo:', syncUrl);
+      });
+  } else {
+    prompt('Copie o link abaixo:', syncUrl);
+  }
+}
+
+function handleUpdateSyncDeviceRoom() {
+  const inp = document.getElementById('inp-sync-device-room');
+  if (!inp) return;
+  const raw = inp.value.trim();
+  if (!raw) return;
+  const newRoom = setStoredFirebaseRoom(raw);
+  inp.value = newRoom;
+
+  // Reconecta e atualiza QR Code
+  initFirebaseSync();
+  const syncUrl = getMasterSyncDeviceUrl();
+  const imgQr = document.getElementById('img-master-sync-qrcode');
+  if (imgQr) {
+    imgQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(syncUrl)}`;
+  }
+
+  if (typeof showToast === 'function') {
+    showToast(`🌐 Conectado à sala ${newRoom}!`, 'success');
+  }
+}
+
+// Vincula no window para navegadores
+if (typeof window !== 'undefined') {
+  window.getMasterSyncDeviceUrl = getMasterSyncDeviceUrl;
+  window.openMasterSyncDeviceModal = openMasterSyncDeviceModal;
+  window.closeMasterSyncDeviceModal = closeMasterSyncDeviceModal;
+  window.copyMasterSyncDeviceUrl = copyMasterSyncDeviceUrl;
+  window.handleUpdateSyncDeviceRoom = handleUpdateSyncDeviceRoom;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     getStoredFirebaseConfig,
@@ -31043,6 +31239,7 @@ if (typeof module !== 'undefined' && module.exports) {
     setFirebaseAutoSyncEnabled,
     initFirebaseSync,
     applyCloudDataToLocal,
+    mergeCloudCampaignsState,
     syncLocalChangesToFirebase,
     executeCloudSave,
     openFirebaseModal,
@@ -31050,7 +31247,12 @@ if (typeof module !== 'undefined' && module.exports) {
     manualPushToCloud,
     manualPullFromCloud,
     publishMasterCampaignToCloud,
-    executePlayerCloudSave
+    executePlayerCloudSave,
+    getMasterSyncDeviceUrl,
+    openMasterSyncDeviceModal,
+    closeMasterSyncDeviceModal,
+    copyMasterSyncDeviceUrl,
+    handleUpdateSyncDeviceRoom
   };
 }
 
@@ -44625,6 +44827,11 @@ window.onload = () => {
   if (typeof initScenes === 'function') initScenes();
   renderAll();
   if (typeof checkPlayerPortalUrl === 'function') checkPlayerPortalUrl();
+  if (typeof initFirebaseSync === 'function') {
+    setTimeout(() => {
+      initFirebaseSync();
+    }, 100);
+  }
 };
 
 if (typeof module !== 'undefined' && module.exports) {
