@@ -229,6 +229,85 @@
       box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
     }
 
+    /* DROPDOWNS ELEGANTES (ZEN HEADER & COMBATE) */
+    .nav-dropdown, .combat-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    .nav-dropdown-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .nav-dropdown-menu, .combat-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      min-width: 220px;
+      background: linear-gradient(180deg, rgba(16, 23, 40, 0.98) 0%, rgba(10, 14, 26, 0.99) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 12px;
+      padding: 6px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7), 0 0 16px rgba(245, 158, 11, 0.15);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      z-index: 130;
+      display: none;
+      flex-direction: column;
+      gap: 3px;
+      animation: dropdownFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .nav-dropdown-menu.right-aligned, .combat-dropdown-menu.right-aligned {
+      left: auto;
+      right: 0;
+    }
+    .nav-dropdown:hover .nav-dropdown-menu,
+    .nav-dropdown:focus-within .nav-dropdown-menu,
+    .nav-dropdown.open .nav-dropdown-menu,
+    .combat-dropdown.open .combat-dropdown-menu {
+      display: flex;
+    }
+    @keyframes dropdownFadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .dropdown-item {
+      background: transparent;
+      border: none;
+      color: #cbd5e1;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      transition: all 0.16s ease;
+      white-space: nowrap;
+      width: 100%;
+      text-decoration: none;
+    }
+    .dropdown-item:hover {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fff;
+      transform: translateX(3px);
+    }
+    .dropdown-item.danger {
+      color: #fca5a5;
+    }
+    .dropdown-item.danger:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fff;
+    }
+    .dropdown-sep {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.08);
+      margin: 4px 0;
+    }
+
     /* SAVE INDICATOR */
     #save-status {
       font-size: 11px;
@@ -463,9 +542,13 @@
     .btn-secondary:active { transform: translateY(0); }
 
     /* GRIDS & PAINÉIS */
-    .grid-3col { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    .grid-3col { display: grid; grid-template-columns: 1fr; gap: 16px; transition: all 0.25s ease; }
     @media (min-width: 1024px) {
       .grid-3col { grid-template-columns: 330px 1fr 310px; }
+      .grid-3col.focus-mode { grid-template-columns: 390px 1fr !important; }
+    }
+    .grid-3col.focus-mode .combat-side-column {
+      display: none !important;
     }
 
     .card-panel {

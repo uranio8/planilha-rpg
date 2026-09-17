@@ -577,12 +577,20 @@ function switchTab(tabId) {
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.portal-nav-btn').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.drawer-item').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.dropdown-item').forEach(el => el.classList.remove('active'));
 
   const targetPane = document.getElementById('tab-' + tabId);
   if (targetPane) targetPane.classList.add('active');
 
-  const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick')?.includes(tabId));
-  if (activeBtn) activeBtn.classList.add('active');
+  const activeBtn = Array.from(document.querySelectorAll('.tab-btn, .dropdown-item')).find(b => b.getAttribute('onclick')?.includes(tabId));
+  if (activeBtn) {
+    activeBtn.classList.add('active');
+    const parentDropdown = activeBtn.closest('.nav-dropdown');
+    if (parentDropdown) {
+      const parentBtn = parentDropdown.querySelector('.nav-dropdown-btn');
+      if (parentBtn) parentBtn.classList.add('active');
+    }
+  }
 
   const activePortalBtn = document.getElementById('pnav-' + tabId);
   if (activePortalBtn) activePortalBtn.classList.add('active');
@@ -797,6 +805,72 @@ function handleFabQuickAction(action) {
   } else if (action === 'cloud') {
     if (typeof openFirebaseModal === 'function') openFirebaseModal();
   }
+}
+
+// --- CONTROLES DE COMBATE & MODO FOCO (CLEAN UI) ---
+function toggleCombatOptionsDropdown(e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+  const menu = document.getElementById('combat-options-menu');
+  if (!menu) return;
+  const parent = menu.closest('.combat-dropdown');
+  if (parent) parent.classList.toggle('open');
+}
+
+function closeCombatOptionsDropdown() {
+  if (typeof document === 'undefined') return;
+  const menus = document.querySelectorAll('.combat-dropdown.open');
+  menus.forEach(m => m.classList.remove('open'));
+}
+
+function toggleCombatFocusMode() {
+  if (typeof document === 'undefined') return;
+  const grid = document.querySelector('.grid-3col');
+  const btn = document.getElementById('btn-toggle-combat-focus');
+  const lbl = document.getElementById('lbl-toggle-focus');
+  if (!grid) return;
+  const isFocus = grid.classList.toggle('focus-mode');
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('dnd_combat_focus_mode', isFocus ? 'true' : 'false');
+    }
+  } catch (err) {}
+  if (btn) {
+    btn.classList.toggle('active', isFocus);
+  }
+  if (lbl) {
+    lbl.textContent = isFocus ? '👁️ Exibir Painel' : '👁️ Modo Foco';
+  }
+  if (typeof showToast === 'function') {
+    showToast(isFocus ? '👁️ Modo Foco Ativado (Histórico Oculto)' : '👁️ Painel Completo Visível', 'info');
+  }
+}
+
+function initCombatFocusMode() {
+  if (typeof localStorage === 'undefined' || typeof document === 'undefined') return;
+  try {
+    const saved = localStorage.getItem('dnd_combat_focus_mode');
+    if (saved === 'true') {
+      const grid = document.querySelector('.grid-3col');
+      const btn = document.getElementById('btn-toggle-combat-focus');
+      const lbl = document.getElementById('lbl-toggle-focus');
+      if (grid) grid.classList.add('focus-mode');
+      if (btn) btn.classList.add('active');
+      if (lbl) lbl.textContent = '👁️ Exibir Painel';
+    }
+  } catch (e) {}
+}
+
+// Fechamento de dropdowns ao clicar fora
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', (e) => {
+    if (!e.target || typeof e.target.closest !== 'function') return;
+    if (!e.target.closest('.combat-dropdown')) {
+      closeCombatOptionsDropdown();
+    }
+    if (!e.target.closest('.nav-dropdown')) {
+      document.querySelectorAll('.nav-dropdown.open').forEach(d => d.classList.remove('open'));
+    }
+  });
 }
 
 // --- NAVEGAÇÃO POR GESTOS DE SWIPE (COM BLINDAGEM DO VTT GRID) ---
@@ -1459,7 +1533,11 @@ if (typeof module !== 'undefined' && module.exports) {
     openFabMenu,
     closeFabMenu,
     handleFabQuickAction,
-    initSwipeNavigation
+    initSwipeNavigation,
+    toggleCombatOptionsDropdown,
+    closeCombatOptionsDropdown,
+    toggleCombatFocusMode,
+    initCombatFocusMode
   };
 } else {
   // Execução síncrona imediata no navegador para garantir que PLAYERS e state sejam carregados antes de qualquer render
@@ -1471,9 +1549,11 @@ if (typeof module !== 'undefined' && module.exports) {
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
           initSwipeNavigation();
+          initCombatFocusMode();
         });
       } else {
         initSwipeNavigation();
+        initCombatFocusMode();
       }
     }
   } catch (e) {

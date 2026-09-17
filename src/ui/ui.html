@@ -14,9 +14,8 @@
     </div>
 
     <nav id="navbar" class="main-navbar">
-      <!-- CLUSTER 1: MESA DE JOGO ATIVA -->
+      <!-- CLUSTER 1: MESA DE JOGO ATIVA (FOCADO) -->
       <div class="nav-cluster">
-        <span class="nav-cluster-label">Mesa</span>
         <button class="tab-btn active" onclick="switchTab('combat')">⚔️ Combate</button>
         <button class="tab-btn" onclick="switchTab('grid')">🗺️ Mapa VTT</button>
         <button class="tab-btn" onclick="switchTab('players')">👤 Fichas <span class="tab-count" id="cnt-players">0</span></button>
@@ -25,58 +24,87 @@
 
       <div class="nav-divider"></div>
 
-      <!-- CLUSTER 2: COMPÊNDIO D&D 5E -->
-      <div class="nav-cluster">
-        <span class="nav-cluster-label">Compêndio</span>
-        <button class="tab-btn" onclick="switchTab('bestiary')">🐉 Bestiário <span class="tab-count" id="cnt-bestiary">0</span></button>
-        <button class="tab-btn" onclick="switchTab('spells')">✨ Grimório <span class="tab-count" id="cnt-spells">0</span></button>
-        <button class="tab-btn" onclick="switchTab('equipment')">🛡️ Itens <span class="tab-count" id="cnt-equip">0</span></button>
-        <button class="tab-btn" onclick="switchTab('classes')">🌳 Classes</button>
-        <button class="tab-btn" onclick="switchTab('species')">🧬 Raças</button>
+      <!-- DROPDOWN 1: COMPÊNDIO D&D 5E -->
+      <div class="nav-dropdown">
+        <button class="tab-btn nav-dropdown-btn" type="button">
+          <span>📚 Compêndio</span>
+          <span style="font-size: 9px; opacity: 0.7;">▾</span>
+        </button>
+        <div class="nav-dropdown-menu">
+          <button class="dropdown-item" onclick="switchTab('bestiary')">
+            <span>🐉 Bestiário</span>
+            <span class="tab-count" id="cnt-bestiary">0</span>
+          </button>
+          <button class="dropdown-item" onclick="switchTab('spells')">
+            <span>✨ Grimório de Magias</span>
+            <span class="tab-count" id="cnt-spells">0</span>
+          </button>
+          <button class="dropdown-item" onclick="switchTab('equipment')">
+            <span>🛡️ Itens & Equipamentos</span>
+            <span class="tab-count" id="cnt-equip">0</span>
+          </button>
+          <div class="dropdown-sep"></div>
+          <button class="dropdown-item" onclick="switchTab('classes')">🌳 Classes & Subclasses</button>
+          <button class="dropdown-item" onclick="switchTab('species')">🧬 Raças & Linhagens</button>
+        </div>
       </div>
 
-      <div class="nav-divider"></div>
-
-      <!-- CLUSTER 3: FERRAMENTAS DO MESTRE -->
-      <div class="nav-cluster">
-        <span class="nav-cluster-label">Mestre</span>
-        <button class="tab-btn" onclick="switchTab('dmscreen')">🛡️ Escudo</button>
-        <button class="tab-btn" onclick="switchTab('generators')">🎲 Geradores</button>
-        <button class="tab-btn" onclick="switchTab('grid-config')">⚙️ Config. Grid</button>
+      <!-- DROPDOWN 2: FERRAMENTAS DO MESTRE -->
+      <div class="nav-dropdown">
+        <button class="tab-btn nav-dropdown-btn" type="button">
+          <span>🛡️ Mestre</span>
+          <span style="font-size: 9px; opacity: 0.7;">▾</span>
+        </button>
+        <div class="nav-dropdown-menu">
+          <button class="dropdown-item" onclick="switchTab('dmscreen')">🛡️ Escudo do Mestre (Regras)</button>
+          <button class="dropdown-item" onclick="switchTab('generators')">🎲 Geradores & Enigmas</button>
+          <button class="dropdown-item" onclick="switchTab('grid-config')">⚙️ Configurações do Grid</button>
+        </div>
       </div>
     </nav>
 
     <div class="top-actions">
       <span id="save-status">💾 Salvo</span>
-      <!-- CONTROLE DE ÁUDIO & AMBIENTE -->
-      <div class="audio-top-widget" style="display: flex; align-items: center; gap: 4px; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 6px;">
-        <button id="btn-audio-mute" class="btn-micro" onclick="toggleAudioMute()" title="Mutar / Desmutar Sons" style="font-size: 13px;">🔊</button>
-        <select id="sel-audio-ambiance" onchange="setAudioAmbiance(this.value)" style="font-size: 11px; padding: 2px 4px; background: transparent; border: none; color: var(--primary-light); cursor: pointer; max-width: 105px; font-weight: 600;">
-          <option value="none">🔇 Ambiente: Off</option>
-          <option value="tavern">🍺 Taverna</option>
-          <option value="rain">🌧️ Tempestade</option>
-          <option value="dungeon">🏰 Masmorra</option>
-          <option value="battle">🥁 Tambores</option>
-        </select>
-        <input type="range" id="rng-audio-vol" min="0" max="1" step="0.05" value="0.5" oninput="setAudioMasterVolume(this.value)" style="width: 45px; height: 4px; cursor: pointer;" title="Volume Geral do Áudio">
-      </div>
-      <!-- STATUS & CONEXÃO GOOGLE FIREBASE -->
+      
+      <!-- CONEXÃO NUVEM -->
       <button class="btn-top" onclick="openFirebaseModal()" title="Configurar Sincronização em Nuvem (Google Firebase)" style="display: flex; align-items: center; gap: 5px;">
         <span id="firebase-status-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
         <span id="firebase-status-text">☁️ Nuvem</span>
       </button>
-      <button class="btn-top" onclick="toggleDMNotesDrawer()" title="Notas Rápidas do Mestre (Atalho: Ctrl+N)">📝 Notas <kbd style="font-size:9px; opacity:0.8;">Ctrl+N</kbd></button>
+
+      <!-- ATALHOS RÁPIDOS ESSENCIAIS -->
       <button class="btn-top" onclick="openDiceModal()" title="Abrir Painel de Rolagem de Dados">🎲 Dados</button>
       <button class="btn-top" onclick="openPlayerView()" title="Abrir Modo Telão para Projetor da Sala de Aula">📺 Telão</button>
-      <button class="btn-top" onclick="publishMasterCampaignToCloud()" title="Publicar/Sincronizar a mesa atual na nuvem para os jogadores" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.35)); border-color: #10b981; color: #a7f3d0; font-weight: 700;">
-        📤 Publicar Mesa
-      </button>
-      <button class="btn-top" onclick="openPlayerLoginModal()" title="Entrar no Portal do Jogador (Escolher Herói)" style="background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(217,119,6,0.3)); border-color: #f59e0b; color: #fef08a; font-weight: 700;">
-        🎮 Entrar como Jogador
-      </button>
-      <button class="btn-top" onclick="exportData()" title="Salvar Arquivo de Backup JSON Completo">💾 Backup</button>
-      <button class="btn-top" onclick="importData()" title="Carregar Arquivo de Backup JSON">📂 Carregar</button>
-      <button class="btn-top" onclick="openSnapshotsModal()" title="Histórico de Pontos de Restauração Automáticos" style="color: #60a5fa; border-color: rgba(96, 165, 250, 0.4);">🛡️ Recuperar</button>
+
+      <!-- MENU SUSPENSO: MAIS AÇÕES E FERRAMENTAS DO SISTEMA -->
+      <div class="nav-dropdown">
+        <button class="btn-top nav-dropdown-btn" type="button" title="Mais Ferramentas da Mesa">
+          <span>⚡ Mais</span>
+          <span style="font-size: 9px; opacity: 0.7;">▾</span>
+        </button>
+        <div class="nav-dropdown-menu right-aligned">
+          <button class="dropdown-item" onclick="publishMasterCampaignToCloud()" style="color: #a7f3d0; font-weight: 700;">📤 Publicar Mesa na Nuvem</button>
+          <button class="dropdown-item" onclick="openPlayerLoginModal()" style="color: #fef08a; font-weight: 700;">🎮 Entrar como Jogador</button>
+          <button class="dropdown-item" onclick="toggleDMNotesDrawer()">📝 Notas do Mestre (Ctrl+N)</button>
+          <div class="dropdown-sep"></div>
+          <!-- CONTROLE DE ÁUDIO EMBUTIDO -->
+          <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 6px 8px; display: flex; align-items: center; gap: 6px;">
+            <button id="btn-audio-mute" class="btn-micro" onclick="toggleAudioMute()" title="Mutar / Desmutar Sons" style="font-size: 13px; background: transparent; border: none; cursor: pointer; color: #fff;">🔊</button>
+            <select id="sel-audio-ambiance" onchange="setAudioAmbiance(this.value)" style="font-size: 11px; background: #0a0e1a; border: 1px solid var(--border-color); color: var(--primary-light); cursor: pointer; border-radius: 4px; padding: 3px 6px; flex: 1; font-weight: 600;">
+              <option value="none">🔇 Ambiente: Off</option>
+              <option value="tavern">🍺 Taverna</option>
+              <option value="rain">🌧️ Tempestade</option>
+              <option value="dungeon">🏰 Masmorra</option>
+              <option value="battle">🥁 Tambores</option>
+            </select>
+            <input type="range" id="rng-audio-vol" min="0" max="1" step="0.05" value="0.5" oninput="setAudioMasterVolume(this.value)" style="width: 44px; height: 4px; cursor: pointer;" title="Volume Geral do Áudio">
+          </div>
+          <div class="dropdown-sep"></div>
+          <button class="dropdown-item" onclick="exportData()">💾 Backup Completo (JSON)</button>
+          <button class="dropdown-item" onclick="importData()">📂 Carregar Backup (JSON)</button>
+          <button class="dropdown-item" onclick="openSnapshotsModal()" style="color: #60a5fa;">🛡️ Recuperar Snapshot</button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -117,18 +145,31 @@
           <button class="btn-next-turn-hero" onclick="nextTurn()" title="Avançar para o próximo combatente na iniciativa (Atalho: Barra de Espaço)">Próximo Turno ➔ <kbd style="font-size:10px; background:rgba(0,0,0,0.3); color:#fff; padding:2px 5px; border-radius:4px;">Espaço</kbd></button>
         </div>
 
-        <!-- CLUSTER 2: GERAÇÃO E ADIÇÃO DE CRIATURAS -->
+        <!-- CLUSTER 2: AÇÃO PRINCIPAL -->
         <div class="combat-bar-cluster">
-          <button class="btn-action" style="padding: 7px 12px; font-size: 12px;" onclick="openAddModal()">➕ Novo Combatente</button>
-          <button class="btn-secondary" onclick="rollMonsterInit()" title="Rolar iniciativa de todos os monstros simultaneamente">🎲 Inic. Monstros</button>
-          <button class="btn-secondary" style="border-color: #eab308; color: #facc15;" onclick="openEncounterBuilderModal()" title="Balanceador & Orçamento de XP de Encontros (D&D 5E DMG)">⚖️ Balanceador</button>
+          <button class="btn-action" style="padding: 8px 14px; font-size: 13px;" onclick="openAddModal()">➕ Novo Combatente</button>
         </div>
 
-        <!-- CLUSTER 3: TELÃO E RESET DA MESA -->
+        <!-- CLUSTER 3: OPÇÕES DO COMBATE & MODO FOCO -->
         <div class="combat-bar-cluster">
-          <button class="btn-secondary" onclick="openPlayerView()" title="Abrir Modo Telão para os Jogadores">📺 Telão</button>
-          <button class="btn-secondary" onclick="resetCombat()" title="Reiniciar para o início da Rodada 1">🔄 Reiniciar</button>
-          <button class="btn-secondary" style="color: #f87171; border-color: rgba(239, 68, 68, 0.3);" onclick="clearCombat()" title="Limpar todos os combatentes da mesa">🗑️ Limpar</button>
+          <div class="combat-dropdown" id="combat-dropdown-wrapper">
+            <button class="btn-secondary" onclick="toggleCombatOptionsDropdown(event)" title="Mais Ações e Configurações de Combate">
+              <span>⚙️ Opções</span>
+              <span style="font-size: 9px; opacity: 0.7;">▾</span>
+            </button>
+            <div class="combat-dropdown-menu right-aligned" id="combat-options-menu">
+              <button class="dropdown-item" onclick="rollMonsterInit(); closeCombatOptionsDropdown();">🎲 Inic. dos Monstros</button>
+              <button class="dropdown-item" onclick="openEncounterBuilderModal(); closeCombatOptionsDropdown();">⚖️ Balanceador DMG</button>
+              <button class="dropdown-item" onclick="openPlayerView(); closeCombatOptionsDropdown();">📺 Modo Telão</button>
+              <div class="dropdown-sep"></div>
+              <button class="dropdown-item" onclick="resetCombat(); closeCombatOptionsDropdown();">🔄 Reiniciar Rodada 1</button>
+              <button class="dropdown-item danger" onclick="clearCombat(); closeCombatOptionsDropdown();">🗑️ Limpar Combate</button>
+            </div>
+          </div>
+
+          <button class="btn-secondary" id="btn-toggle-combat-focus" onclick="toggleCombatFocusMode()" title="Alternar Modo Foco: amplia a visão dos combatentes e recolhe o histórico lateral">
+            <span id="lbl-toggle-focus">👁️ Modo Foco</span>
+          </button>
         </div>
       </div>
 
@@ -181,8 +222,8 @@
           </div>
         </div>
 
-        <!-- COL 3: HISTÓRICO E ENIGMA -->
-        <div style="display: flex; flex-direction: column; gap: 16px;">
+        <!-- COL 3: HISTÓRICO E ENIGMA (RECOLHÍVEL NO MODO FOCO) -->
+        <div class="combat-side-column" id="combat-side-col" style="display: flex; flex-direction: column; gap: 16px;">
           <div class="card-panel" style="flex: 1; max-height: 380px;">
             <div class="panel-header">
               <span>Histórico de Combate</span>

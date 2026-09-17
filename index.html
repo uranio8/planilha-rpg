@@ -232,6 +232,85 @@
       box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
     }
 
+    /* DROPDOWNS ELEGANTES (ZEN HEADER & COMBATE) */
+    .nav-dropdown, .combat-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    .nav-dropdown-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .nav-dropdown-menu, .combat-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      min-width: 220px;
+      background: linear-gradient(180deg, rgba(16, 23, 40, 0.98) 0%, rgba(10, 14, 26, 0.99) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 12px;
+      padding: 6px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7), 0 0 16px rgba(245, 158, 11, 0.15);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      z-index: 130;
+      display: none;
+      flex-direction: column;
+      gap: 3px;
+      animation: dropdownFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .nav-dropdown-menu.right-aligned, .combat-dropdown-menu.right-aligned {
+      left: auto;
+      right: 0;
+    }
+    .nav-dropdown:hover .nav-dropdown-menu,
+    .nav-dropdown:focus-within .nav-dropdown-menu,
+    .nav-dropdown.open .nav-dropdown-menu,
+    .combat-dropdown.open .combat-dropdown-menu {
+      display: flex;
+    }
+    @keyframes dropdownFadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .dropdown-item {
+      background: transparent;
+      border: none;
+      color: #cbd5e1;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      transition: all 0.16s ease;
+      white-space: nowrap;
+      width: 100%;
+      text-decoration: none;
+    }
+    .dropdown-item:hover {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fff;
+      transform: translateX(3px);
+    }
+    .dropdown-item.danger {
+      color: #fca5a5;
+    }
+    .dropdown-item.danger:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fff;
+    }
+    .dropdown-sep {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.08);
+      margin: 4px 0;
+    }
+
     /* SAVE INDICATOR */
     #save-status {
       font-size: 11px;
@@ -466,9 +545,13 @@
     .btn-secondary:active { transform: translateY(0); }
 
     /* GRIDS & PAINÉIS */
-    .grid-3col { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    .grid-3col { display: grid; grid-template-columns: 1fr; gap: 16px; transition: all 0.25s ease; }
     @media (min-width: 1024px) {
       .grid-3col { grid-template-columns: 330px 1fr 310px; }
+      .grid-3col.focus-mode { grid-template-columns: 390px 1fr !important; }
+    }
+    .grid-3col.focus-mode .combat-side-column {
+      display: none !important;
     }
 
     .card-panel {
@@ -6876,9 +6959,8 @@
     </div>
 
     <nav id="navbar" class="main-navbar">
-      <!-- CLUSTER 1: MESA DE JOGO ATIVA -->
+      <!-- CLUSTER 1: MESA DE JOGO ATIVA (FOCADO) -->
       <div class="nav-cluster">
-        <span class="nav-cluster-label">Mesa</span>
         <button class="tab-btn active" onclick="switchTab('combat')">⚔️ Combate</button>
         <button class="tab-btn" onclick="switchTab('grid')">🗺️ Mapa VTT</button>
         <button class="tab-btn" onclick="switchTab('players')">👤 Fichas <span class="tab-count" id="cnt-players">0</span></button>
@@ -6887,58 +6969,87 @@
 
       <div class="nav-divider"></div>
 
-      <!-- CLUSTER 2: COMPÊNDIO D&D 5E -->
-      <div class="nav-cluster">
-        <span class="nav-cluster-label">Compêndio</span>
-        <button class="tab-btn" onclick="switchTab('bestiary')">🐉 Bestiário <span class="tab-count" id="cnt-bestiary">0</span></button>
-        <button class="tab-btn" onclick="switchTab('spells')">✨ Grimório <span class="tab-count" id="cnt-spells">0</span></button>
-        <button class="tab-btn" onclick="switchTab('equipment')">🛡️ Itens <span class="tab-count" id="cnt-equip">0</span></button>
-        <button class="tab-btn" onclick="switchTab('classes')">🌳 Classes</button>
-        <button class="tab-btn" onclick="switchTab('species')">🧬 Raças</button>
+      <!-- DROPDOWN 1: COMPÊNDIO D&D 5E -->
+      <div class="nav-dropdown">
+        <button class="tab-btn nav-dropdown-btn" type="button">
+          <span>📚 Compêndio</span>
+          <span style="font-size: 9px; opacity: 0.7;">▾</span>
+        </button>
+        <div class="nav-dropdown-menu">
+          <button class="dropdown-item" onclick="switchTab('bestiary')">
+            <span>🐉 Bestiário</span>
+            <span class="tab-count" id="cnt-bestiary">0</span>
+          </button>
+          <button class="dropdown-item" onclick="switchTab('spells')">
+            <span>✨ Grimório de Magias</span>
+            <span class="tab-count" id="cnt-spells">0</span>
+          </button>
+          <button class="dropdown-item" onclick="switchTab('equipment')">
+            <span>🛡️ Itens & Equipamentos</span>
+            <span class="tab-count" id="cnt-equip">0</span>
+          </button>
+          <div class="dropdown-sep"></div>
+          <button class="dropdown-item" onclick="switchTab('classes')">🌳 Classes & Subclasses</button>
+          <button class="dropdown-item" onclick="switchTab('species')">🧬 Raças & Linhagens</button>
+        </div>
       </div>
 
-      <div class="nav-divider"></div>
-
-      <!-- CLUSTER 3: FERRAMENTAS DO MESTRE -->
-      <div class="nav-cluster">
-        <span class="nav-cluster-label">Mestre</span>
-        <button class="tab-btn" onclick="switchTab('dmscreen')">🛡️ Escudo</button>
-        <button class="tab-btn" onclick="switchTab('generators')">🎲 Geradores</button>
-        <button class="tab-btn" onclick="switchTab('grid-config')">⚙️ Config. Grid</button>
+      <!-- DROPDOWN 2: FERRAMENTAS DO MESTRE -->
+      <div class="nav-dropdown">
+        <button class="tab-btn nav-dropdown-btn" type="button">
+          <span>🛡️ Mestre</span>
+          <span style="font-size: 9px; opacity: 0.7;">▾</span>
+        </button>
+        <div class="nav-dropdown-menu">
+          <button class="dropdown-item" onclick="switchTab('dmscreen')">🛡️ Escudo do Mestre (Regras)</button>
+          <button class="dropdown-item" onclick="switchTab('generators')">🎲 Geradores & Enigmas</button>
+          <button class="dropdown-item" onclick="switchTab('grid-config')">⚙️ Configurações do Grid</button>
+        </div>
       </div>
     </nav>
 
     <div class="top-actions">
       <span id="save-status">💾 Salvo</span>
-      <!-- CONTROLE DE ÁUDIO & AMBIENTE -->
-      <div class="audio-top-widget" style="display: flex; align-items: center; gap: 4px; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 6px;">
-        <button id="btn-audio-mute" class="btn-micro" onclick="toggleAudioMute()" title="Mutar / Desmutar Sons" style="font-size: 13px;">🔊</button>
-        <select id="sel-audio-ambiance" onchange="setAudioAmbiance(this.value)" style="font-size: 11px; padding: 2px 4px; background: transparent; border: none; color: var(--primary-light); cursor: pointer; max-width: 105px; font-weight: 600;">
-          <option value="none">🔇 Ambiente: Off</option>
-          <option value="tavern">🍺 Taverna</option>
-          <option value="rain">🌧️ Tempestade</option>
-          <option value="dungeon">🏰 Masmorra</option>
-          <option value="battle">🥁 Tambores</option>
-        </select>
-        <input type="range" id="rng-audio-vol" min="0" max="1" step="0.05" value="0.5" oninput="setAudioMasterVolume(this.value)" style="width: 45px; height: 4px; cursor: pointer;" title="Volume Geral do Áudio">
-      </div>
-      <!-- STATUS & CONEXÃO GOOGLE FIREBASE -->
+      
+      <!-- CONEXÃO NUVEM -->
       <button class="btn-top" onclick="openFirebaseModal()" title="Configurar Sincronização em Nuvem (Google Firebase)" style="display: flex; align-items: center; gap: 5px;">
         <span id="firebase-status-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
         <span id="firebase-status-text">☁️ Nuvem</span>
       </button>
-      <button class="btn-top" onclick="toggleDMNotesDrawer()" title="Notas Rápidas do Mestre (Atalho: Ctrl+N)">📝 Notas <kbd style="font-size:9px; opacity:0.8;">Ctrl+N</kbd></button>
+
+      <!-- ATALHOS RÁPIDOS ESSENCIAIS -->
       <button class="btn-top" onclick="openDiceModal()" title="Abrir Painel de Rolagem de Dados">🎲 Dados</button>
       <button class="btn-top" onclick="openPlayerView()" title="Abrir Modo Telão para Projetor da Sala de Aula">📺 Telão</button>
-      <button class="btn-top" onclick="publishMasterCampaignToCloud()" title="Publicar/Sincronizar a mesa atual na nuvem para os jogadores" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.35)); border-color: #10b981; color: #a7f3d0; font-weight: 700;">
-        📤 Publicar Mesa
-      </button>
-      <button class="btn-top" onclick="openPlayerLoginModal()" title="Entrar no Portal do Jogador (Escolher Herói)" style="background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(217,119,6,0.3)); border-color: #f59e0b; color: #fef08a; font-weight: 700;">
-        🎮 Entrar como Jogador
-      </button>
-      <button class="btn-top" onclick="exportData()" title="Salvar Arquivo de Backup JSON Completo">💾 Backup</button>
-      <button class="btn-top" onclick="importData()" title="Carregar Arquivo de Backup JSON">📂 Carregar</button>
-      <button class="btn-top" onclick="openSnapshotsModal()" title="Histórico de Pontos de Restauração Automáticos" style="color: #60a5fa; border-color: rgba(96, 165, 250, 0.4);">🛡️ Recuperar</button>
+
+      <!-- MENU SUSPENSO: MAIS AÇÕES E FERRAMENTAS DO SISTEMA -->
+      <div class="nav-dropdown">
+        <button class="btn-top nav-dropdown-btn" type="button" title="Mais Ferramentas da Mesa">
+          <span>⚡ Mais</span>
+          <span style="font-size: 9px; opacity: 0.7;">▾</span>
+        </button>
+        <div class="nav-dropdown-menu right-aligned">
+          <button class="dropdown-item" onclick="publishMasterCampaignToCloud()" style="color: #a7f3d0; font-weight: 700;">📤 Publicar Mesa na Nuvem</button>
+          <button class="dropdown-item" onclick="openPlayerLoginModal()" style="color: #fef08a; font-weight: 700;">🎮 Entrar como Jogador</button>
+          <button class="dropdown-item" onclick="toggleDMNotesDrawer()">📝 Notas do Mestre (Ctrl+N)</button>
+          <div class="dropdown-sep"></div>
+          <!-- CONTROLE DE ÁUDIO EMBUTIDO -->
+          <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 6px 8px; display: flex; align-items: center; gap: 6px;">
+            <button id="btn-audio-mute" class="btn-micro" onclick="toggleAudioMute()" title="Mutar / Desmutar Sons" style="font-size: 13px; background: transparent; border: none; cursor: pointer; color: #fff;">🔊</button>
+            <select id="sel-audio-ambiance" onchange="setAudioAmbiance(this.value)" style="font-size: 11px; background: #0a0e1a; border: 1px solid var(--border-color); color: var(--primary-light); cursor: pointer; border-radius: 4px; padding: 3px 6px; flex: 1; font-weight: 600;">
+              <option value="none">🔇 Ambiente: Off</option>
+              <option value="tavern">🍺 Taverna</option>
+              <option value="rain">🌧️ Tempestade</option>
+              <option value="dungeon">🏰 Masmorra</option>
+              <option value="battle">🥁 Tambores</option>
+            </select>
+            <input type="range" id="rng-audio-vol" min="0" max="1" step="0.05" value="0.5" oninput="setAudioMasterVolume(this.value)" style="width: 44px; height: 4px; cursor: pointer;" title="Volume Geral do Áudio">
+          </div>
+          <div class="dropdown-sep"></div>
+          <button class="dropdown-item" onclick="exportData()">💾 Backup Completo (JSON)</button>
+          <button class="dropdown-item" onclick="importData()">📂 Carregar Backup (JSON)</button>
+          <button class="dropdown-item" onclick="openSnapshotsModal()" style="color: #60a5fa;">🛡️ Recuperar Snapshot</button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -6979,18 +7090,31 @@
           <button class="btn-next-turn-hero" onclick="nextTurn()" title="Avançar para o próximo combatente na iniciativa (Atalho: Barra de Espaço)">Próximo Turno ➔ <kbd style="font-size:10px; background:rgba(0,0,0,0.3); color:#fff; padding:2px 5px; border-radius:4px;">Espaço</kbd></button>
         </div>
 
-        <!-- CLUSTER 2: GERAÇÃO E ADIÇÃO DE CRIATURAS -->
+        <!-- CLUSTER 2: AÇÃO PRINCIPAL -->
         <div class="combat-bar-cluster">
-          <button class="btn-action" style="padding: 7px 12px; font-size: 12px;" onclick="openAddModal()">➕ Novo Combatente</button>
-          <button class="btn-secondary" onclick="rollMonsterInit()" title="Rolar iniciativa de todos os monstros simultaneamente">🎲 Inic. Monstros</button>
-          <button class="btn-secondary" style="border-color: #eab308; color: #facc15;" onclick="openEncounterBuilderModal()" title="Balanceador & Orçamento de XP de Encontros (D&D 5E DMG)">⚖️ Balanceador</button>
+          <button class="btn-action" style="padding: 8px 14px; font-size: 13px;" onclick="openAddModal()">➕ Novo Combatente</button>
         </div>
 
-        <!-- CLUSTER 3: TELÃO E RESET DA MESA -->
+        <!-- CLUSTER 3: OPÇÕES DO COMBATE & MODO FOCO -->
         <div class="combat-bar-cluster">
-          <button class="btn-secondary" onclick="openPlayerView()" title="Abrir Modo Telão para os Jogadores">📺 Telão</button>
-          <button class="btn-secondary" onclick="resetCombat()" title="Reiniciar para o início da Rodada 1">🔄 Reiniciar</button>
-          <button class="btn-secondary" style="color: #f87171; border-color: rgba(239, 68, 68, 0.3);" onclick="clearCombat()" title="Limpar todos os combatentes da mesa">🗑️ Limpar</button>
+          <div class="combat-dropdown" id="combat-dropdown-wrapper">
+            <button class="btn-secondary" onclick="toggleCombatOptionsDropdown(event)" title="Mais Ações e Configurações de Combate">
+              <span>⚙️ Opções</span>
+              <span style="font-size: 9px; opacity: 0.7;">▾</span>
+            </button>
+            <div class="combat-dropdown-menu right-aligned" id="combat-options-menu">
+              <button class="dropdown-item" onclick="rollMonsterInit(); closeCombatOptionsDropdown();">🎲 Inic. dos Monstros</button>
+              <button class="dropdown-item" onclick="openEncounterBuilderModal(); closeCombatOptionsDropdown();">⚖️ Balanceador DMG</button>
+              <button class="dropdown-item" onclick="openPlayerView(); closeCombatOptionsDropdown();">📺 Modo Telão</button>
+              <div class="dropdown-sep"></div>
+              <button class="dropdown-item" onclick="resetCombat(); closeCombatOptionsDropdown();">🔄 Reiniciar Rodada 1</button>
+              <button class="dropdown-item danger" onclick="clearCombat(); closeCombatOptionsDropdown();">🗑️ Limpar Combate</button>
+            </div>
+          </div>
+
+          <button class="btn-secondary" id="btn-toggle-combat-focus" onclick="toggleCombatFocusMode()" title="Alternar Modo Foco: amplia a visão dos combatentes e recolhe o histórico lateral">
+            <span id="lbl-toggle-focus">👁️ Modo Foco</span>
+          </button>
         </div>
       </div>
 
@@ -7043,8 +7167,8 @@
           </div>
         </div>
 
-        <!-- COL 3: HISTÓRICO E ENIGMA -->
-        <div style="display: flex; flex-direction: column; gap: 16px;">
+        <!-- COL 3: HISTÓRICO E ENIGMA (RECOLHÍVEL NO MODO FOCO) -->
+        <div class="combat-side-column" id="combat-side-col" style="display: flex; flex-direction: column; gap: 16px;">
           <div class="card-panel" style="flex: 1; max-height: 380px;">
             <div class="panel-header">
               <span>Histórico de Combate</span>
@@ -27875,12 +27999,20 @@ function switchTab(tabId) {
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.portal-nav-btn').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.drawer-item').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.dropdown-item').forEach(el => el.classList.remove('active'));
 
   const targetPane = document.getElementById('tab-' + tabId);
   if (targetPane) targetPane.classList.add('active');
 
-  const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick')?.includes(tabId));
-  if (activeBtn) activeBtn.classList.add('active');
+  const activeBtn = Array.from(document.querySelectorAll('.tab-btn, .dropdown-item')).find(b => b.getAttribute('onclick')?.includes(tabId));
+  if (activeBtn) {
+    activeBtn.classList.add('active');
+    const parentDropdown = activeBtn.closest('.nav-dropdown');
+    if (parentDropdown) {
+      const parentBtn = parentDropdown.querySelector('.nav-dropdown-btn');
+      if (parentBtn) parentBtn.classList.add('active');
+    }
+  }
 
   const activePortalBtn = document.getElementById('pnav-' + tabId);
   if (activePortalBtn) activePortalBtn.classList.add('active');
@@ -28095,6 +28227,72 @@ function handleFabQuickAction(action) {
   } else if (action === 'cloud') {
     if (typeof openFirebaseModal === 'function') openFirebaseModal();
   }
+}
+
+// --- CONTROLES DE COMBATE & MODO FOCO (CLEAN UI) ---
+function toggleCombatOptionsDropdown(e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+  const menu = document.getElementById('combat-options-menu');
+  if (!menu) return;
+  const parent = menu.closest('.combat-dropdown');
+  if (parent) parent.classList.toggle('open');
+}
+
+function closeCombatOptionsDropdown() {
+  if (typeof document === 'undefined') return;
+  const menus = document.querySelectorAll('.combat-dropdown.open');
+  menus.forEach(m => m.classList.remove('open'));
+}
+
+function toggleCombatFocusMode() {
+  if (typeof document === 'undefined') return;
+  const grid = document.querySelector('.grid-3col');
+  const btn = document.getElementById('btn-toggle-combat-focus');
+  const lbl = document.getElementById('lbl-toggle-focus');
+  if (!grid) return;
+  const isFocus = grid.classList.toggle('focus-mode');
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('dnd_combat_focus_mode', isFocus ? 'true' : 'false');
+    }
+  } catch (err) {}
+  if (btn) {
+    btn.classList.toggle('active', isFocus);
+  }
+  if (lbl) {
+    lbl.textContent = isFocus ? '👁️ Exibir Painel' : '👁️ Modo Foco';
+  }
+  if (typeof showToast === 'function') {
+    showToast(isFocus ? '👁️ Modo Foco Ativado (Histórico Oculto)' : '👁️ Painel Completo Visível', 'info');
+  }
+}
+
+function initCombatFocusMode() {
+  if (typeof localStorage === 'undefined' || typeof document === 'undefined') return;
+  try {
+    const saved = localStorage.getItem('dnd_combat_focus_mode');
+    if (saved === 'true') {
+      const grid = document.querySelector('.grid-3col');
+      const btn = document.getElementById('btn-toggle-combat-focus');
+      const lbl = document.getElementById('lbl-toggle-focus');
+      if (grid) grid.classList.add('focus-mode');
+      if (btn) btn.classList.add('active');
+      if (lbl) lbl.textContent = '👁️ Exibir Painel';
+    }
+  } catch (e) {}
+}
+
+// Fechamento de dropdowns ao clicar fora
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', (e) => {
+    if (!e.target || typeof e.target.closest !== 'function') return;
+    if (!e.target.closest('.combat-dropdown')) {
+      closeCombatOptionsDropdown();
+    }
+    if (!e.target.closest('.nav-dropdown')) {
+      document.querySelectorAll('.nav-dropdown.open').forEach(d => d.classList.remove('open'));
+    }
+  });
 }
 
 // --- NAVEGAÇÃO POR GESTOS DE SWIPE (COM BLINDAGEM DO VTT GRID) ---
@@ -28757,7 +28955,11 @@ if (typeof module !== 'undefined' && module.exports) {
     openFabMenu,
     closeFabMenu,
     handleFabQuickAction,
-    initSwipeNavigation
+    initSwipeNavigation,
+    toggleCombatOptionsDropdown,
+    closeCombatOptionsDropdown,
+    toggleCombatFocusMode,
+    initCombatFocusMode
   };
 } else {
   // Execução síncrona imediata no navegador para garantir que PLAYERS e state sejam carregados antes de qualquer render
@@ -28769,9 +28971,11 @@ if (typeof module !== 'undefined' && module.exports) {
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
           initSwipeNavigation();
+          initCombatFocusMode();
         });
       } else {
         initSwipeNavigation();
+        initCombatFocusMode();
       }
     }
   } catch (e) {
