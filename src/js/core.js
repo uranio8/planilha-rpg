@@ -802,6 +802,8 @@ function handleFabQuickAction(action) {
     } else {
       switchTab('dmscreen');
     }
+  } else if (action === 'notes') {
+    if (typeof toggleDMNotesDrawer === 'function') toggleDMNotesDrawer();
   } else if (action === 'cloud') {
     if (typeof openFirebaseModal === 'function') openFirebaseModal();
   }

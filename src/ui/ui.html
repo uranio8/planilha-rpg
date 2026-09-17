@@ -68,7 +68,7 @@
           <span>🛡️ Mestre</span>
           <span style="font-size: 9px; opacity: 0.7;">▾</span>
         </button>
-        <div class="nav-dropdown-menu">
+        <div class="nav-dropdown-menu right-aligned">
           <button class="dropdown-item" onclick="switchTab('dmscreen')">🛡️ Escudo do Mestre (Regras)</button>
           <button class="dropdown-item" onclick="switchTab('generators')">🎲 Geradores & Enigmas</button>
           <button class="dropdown-item" onclick="switchTab('grid-config')">⚙️ Configurações do Grid</button>
@@ -2559,8 +2559,8 @@
     </div>
   </div>
 
-  <!-- BOTÕES FLUTUANTES (FAB) -->
-  <div id="fab-actions-container" class="fab-actions-container">
+  <!-- BOTÕES FLUTUANTES (FAB LEGADO - DESATIVADO EM FAVOR DO FAB SPEED DIAL) -->
+  <div id="fab-actions-container" class="fab-actions-container" style="display: none !important;">
     <button class="fab-btn" onclick="toggleDMNotesDrawer()" title="Abrir Notas do Mestre (Ctrl+N)">📝</button>
     <button class="fab-btn" onclick="toggleGlobalDiceDrawer()" title="Abrir Rolador de Dados Rápido">🎲</button>
   </div>
@@ -3192,6 +3192,10 @@
   <div id="fab-speed-dial" class="fab-speed-dial-container">
     <button class="fab-main-btn" id="fab-main-btn" onclick="toggleFabMenu()" title="Menu de Ações Rápidas (Atalho Universal)" aria-label="Ações Rápidas">⚡</button>
     <div class="fab-actions-menu" id="fab-actions-menu">
+      <div class="fab-action-btn-row" onclick="handleFabQuickAction('notes')">
+        <span class="fab-action-label">Notas do Mestre</span>
+        <button class="fab-action-circle" title="Notas do Mestre (Ctrl+N)">📝</button>
+      </div>
       <div class="fab-action-btn-row" onclick="handleFabQuickAction('dice')">
         <span class="fab-action-label">Rolar Dados</span>
         <button class="fab-action-circle" title="Rolar Dados">🎲</button>
@@ -3218,7 +3222,7 @@
   <!-- ===================================================
        🎮 BOTÃO FLUTUANTE DE ACESSO DO ALUNO (FAB ALUNO)
        =================================================== -->
-  <button id="btn-float-player-login" class="btn-float-player-login" onclick="openPlayerLoginModal()" title="Abrir seleção de heróis e ficha do aluno" aria-label="Acessar Ficha de Aluno">
+  <button id="btn-float-player-login" class="btn-float-player-login" onclick="openPlayerLoginModal()" title="Abrir seleção de heróis e ficha do aluno" aria-label="Acessar Ficha de Aluno" style="display: none !important;">
     <span style="font-size: 16px;">🎮</span>
     <span>Ficha do Aluno</span>
   </button>

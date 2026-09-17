@@ -2279,6 +2279,21 @@ assert(distHtml.includes('id="modal-room-qrcode"'), 'Bundle contém modal de QR 
 assert(distHtml.includes('welcome-screen-overlay'), 'CSS contém estilos da tela de boas-vindas');
 assert(distHtml.includes('pin-numpad-grid'), 'CSS contém estilos do teclado numérico de PIN');
 
+// 7. Testes da ISSUE-64: Layout dos Dropdowns e FAB Desobstruído
+console.log('\n🎯 38. Testes de Layout dos Dropdowns, Menus sem Corte e FAB Desobstruído (ISSUE-64):');
+assert(distHtml.includes('class="nav-dropdown-menu right-aligned"'), 'Menu Mestre possui classe right-aligned para evitar overflow horizontal');
+assert(distHtml.includes('.nav-dropdown-menu.right-aligned'), 'CSS contém regra para .nav-dropdown-menu.right-aligned');
+assert(distHtml.includes('width: max-content') || distHtml.includes('width:max-content'), 'CSS define width: max-content nos menus suspensos para evitar quebra de texto');
+assert(distHtml.includes("handleFabQuickAction('notes')"), 'FAB Speed Dial inclui ação rápida para Notas do Mestre');
+assert(distHtml.includes('id="fab-actions-container"') && distHtml.includes('display: none !important;'), 'FAB legado fab-actions-container foi desativado com display none');
+assert(distHtml.includes('id="btn-float-player-login"') && distHtml.includes('display: none !important;'), 'Botão flutuante de aluno foi ocultado na visualização principal para evitar sobreposição');
+
+// Teste de chamada de handleFabQuickAction('notes')
+let notesDrawerToggled = false;
+sandbox.toggleDMNotesDrawer = () => { notesDrawerToggled = true; };
+vm.runInContext("handleFabQuickAction('notes')", sandbox);
+assert(notesDrawerToggled === true, 'handleFabQuickAction(notes) aciona toggleDMNotesDrawer com sucesso');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

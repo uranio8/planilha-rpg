@@ -249,7 +249,10 @@
       position: absolute;
       top: calc(100% + 6px);
       left: 0;
-      min-width: 220px;
+      min-width: 230px;
+      width: max-content;
+      max-width: calc(100vw - 24px);
+      box-sizing: border-box;
       background: linear-gradient(180deg, rgba(16, 23, 40, 0.98) 0%, rgba(10, 14, 26, 0.99) 100%);
       border: 1px solid rgba(245, 158, 11, 0.35);
       border-radius: 12px;
@@ -263,7 +266,9 @@
       gap: 3px;
       animation: dropdownFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .nav-dropdown-menu.right-aligned, .combat-dropdown-menu.right-aligned {
+    .nav-dropdown:last-child .nav-dropdown-menu,
+    .nav-dropdown-menu.right-aligned,
+    .combat-dropdown-menu.right-aligned {
       left: auto;
       right: 0;
     }
@@ -4533,15 +4538,9 @@
       background: rgba(255, 255, 255, 0.06);
     }
 
-    /* --- FLOATING ACTION BUTTONS (FAB) --- */
+    /* --- FLOATING ACTION BUTTONS (FAB) LEGADO - DESATIVADO EM FAVOR DO FAB SPEED DIAL UNIFICADO --- */
     .fab-actions-container {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 85;
+      display: none !important;
     }
     .fab-btn {
       width: 46px;
@@ -7319,36 +7318,9 @@
     }
 
     /* ===================================================
-       🎮 BOTÃO FLUTUANTE DE LOGIN RÁPIDO DO ALUNO (FAB ALUNO)
+       🎮 BOTÃO FLUTUANTE DE ACESSO DO ALUNO (DESATIVADO NA TELA PRINCIPAL DO MESTRE)
        =================================================== */
     .btn-float-player-login {
-      position: fixed;
-      bottom: 85px;
-      right: 20px;
-      z-index: 95;
-      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-      color: #fff;
-      border: 1.5px solid rgba(56, 189, 248, 0.5);
-      border-radius: 30px;
-      padding: 9px 18px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12.5px;
-      font-weight: 800;
-      cursor: pointer;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 14px rgba(56, 189, 248, 0.35);
-      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    .btn-float-player-login:hover {
-      transform: scale(1.06) translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.6);
-      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-    }
-
-    /* Esconde botão flutuante quando o aluno já estiver na ficha */
-    body.mode-player-portal .btn-float-player-login {
       display: none !important;
     }
 
@@ -7444,7 +7416,7 @@
           <span>🛡️ Mestre</span>
           <span style="font-size: 9px; opacity: 0.7;">▾</span>
         </button>
-        <div class="nav-dropdown-menu">
+        <div class="nav-dropdown-menu right-aligned">
           <button class="dropdown-item" onclick="switchTab('dmscreen')">🛡️ Escudo do Mestre (Regras)</button>
           <button class="dropdown-item" onclick="switchTab('generators')">🎲 Geradores & Enigmas</button>
           <button class="dropdown-item" onclick="switchTab('grid-config')">⚙️ Configurações do Grid</button>
@@ -9935,8 +9907,8 @@
     </div>
   </div>
 
-  <!-- BOTÕES FLUTUANTES (FAB) -->
-  <div id="fab-actions-container" class="fab-actions-container">
+  <!-- BOTÕES FLUTUANTES (FAB LEGADO - DESATIVADO EM FAVOR DO FAB SPEED DIAL) -->
+  <div id="fab-actions-container" class="fab-actions-container" style="display: none !important;">
     <button class="fab-btn" onclick="toggleDMNotesDrawer()" title="Abrir Notas do Mestre (Ctrl+N)">📝</button>
     <button class="fab-btn" onclick="toggleGlobalDiceDrawer()" title="Abrir Rolador de Dados Rápido">🎲</button>
   </div>
@@ -10568,6 +10540,10 @@
   <div id="fab-speed-dial" class="fab-speed-dial-container">
     <button class="fab-main-btn" id="fab-main-btn" onclick="toggleFabMenu()" title="Menu de Ações Rápidas (Atalho Universal)" aria-label="Ações Rápidas">⚡</button>
     <div class="fab-actions-menu" id="fab-actions-menu">
+      <div class="fab-action-btn-row" onclick="handleFabQuickAction('notes')">
+        <span class="fab-action-label">Notas do Mestre</span>
+        <button class="fab-action-circle" title="Notas do Mestre (Ctrl+N)">📝</button>
+      </div>
       <div class="fab-action-btn-row" onclick="handleFabQuickAction('dice')">
         <span class="fab-action-label">Rolar Dados</span>
         <button class="fab-action-circle" title="Rolar Dados">🎲</button>
@@ -10594,7 +10570,7 @@
   <!-- ===================================================
        🎮 BOTÃO FLUTUANTE DE ACESSO DO ALUNO (FAB ALUNO)
        =================================================== -->
-  <button id="btn-float-player-login" class="btn-float-player-login" onclick="openPlayerLoginModal()" title="Abrir seleção de heróis e ficha do aluno" aria-label="Acessar Ficha de Aluno">
+  <button id="btn-float-player-login" class="btn-float-player-login" onclick="openPlayerLoginModal()" title="Abrir seleção de heróis e ficha do aluno" aria-label="Acessar Ficha de Aluno" style="display: none !important;">
     <span style="font-size: 16px;">🎮</span>
     <span>Ficha do Aluno</span>
   </button>
@@ -28814,6 +28790,8 @@ function handleFabQuickAction(action) {
     } else {
       switchTab('dmscreen');
     }
+  } else if (action === 'notes') {
+    if (typeof toggleDMNotesDrawer === 'function') toggleDMNotesDrawer();
   } else if (action === 'cloud') {
     if (typeof openFirebaseModal === 'function') openFirebaseModal();
   }
