@@ -30266,6 +30266,7 @@ if (typeof window !== 'undefined') {
 }
 let isCloudRoomDataLoaded = false;
 let lastReceivedCloudData = null;
+let cloudSyncCooldownUntil = 0;
 
 // --- UTILITÁRIOS DE CONFIGURAÇÃO ---
 
@@ -30459,8 +30460,47 @@ function mergeCloudCampaignsState(cloudCampaignsState) {
   if (!cloudCampaignsState || !Array.isArray(cloudCampaignsState.campaigns)) return;
   if (typeof CAMPAIGNS_STATE === 'undefined') return;
 
+  // Recupera tombstones para não ressuscitar campanhas ou itens deletados
+  let deletedCampaignIds = [];
+  if (typeof getDeletedCampaignIds === 'function') {
+    deletedCampaignIds = getDeletedCampaignIds();
+  } else {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const rawDel = localStorage.getItem('dnd5e_deleted_campaign_ids');
+        if (rawDel) deletedCampaignIds = JSON.parse(rawDel);
+      }
+    } catch(e) {}
+  }
+  if (!Array.isArray(deletedCampaignIds)) deletedCampaignIds = [];
+
+  let deletedPartyItemIds = [];
+  if (typeof getDeletedPartyItemIds === 'function') {
+    deletedPartyItemIds = getDeletedPartyItemIds();
+  } else {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const rawDelItems = localStorage.getItem('dnd5e_deleted_stash_item_ids');
+        if (rawDelItems) deletedPartyItemIds = JSON.parse(rawDelItems);
+      }
+    } catch(e) {}
+  }
+  if (!Array.isArray(deletedPartyItemIds)) deletedPartyItemIds = [];
+
+  const sanitizeRemoteCamp = (c) => {
+    if (!c) return c;
+    const clean = Object.assign({}, c);
+    if (clean.partyStash && Array.isArray(clean.partyStash.items)) {
+      clean.partyStash = Object.assign({}, clean.partyStash, {
+        items: clean.partyStash.items.filter(it => !deletedPartyItemIds.includes(it.id))
+      });
+    }
+    return clean;
+  };
+
   if (!CAMPAIGNS_STATE.campaigns || CAMPAIGNS_STATE.campaigns.length === 0) {
-    CAMPAIGNS_STATE = JSON.parse(JSON.stringify(cloudCampaignsState));
+    const validRemote = (cloudCampaignsState.campaigns || []).filter(c => !deletedCampaignIds.includes(c.id)).map(sanitizeRemoteCamp);
+    CAMPAIGNS_STATE = JSON.parse(JSON.stringify(Object.assign({}, cloudCampaignsState, { campaigns: validRemote })));
     return;
   }
 
@@ -30477,20 +30517,36 @@ function mergeCloudCampaignsState(cloudCampaignsState) {
   );
 
   if (localIsOnlyEmptyDefault && cloudHasRealData) {
-    CAMPAIGNS_STATE = JSON.parse(JSON.stringify(cloudCampaignsState));
+    const validRemote = cloudCampaignsState.campaigns.filter(c => !deletedCampaignIds.includes(c.id)).map(sanitizeRemoteCamp);
+    CAMPAIGNS_STATE = JSON.parse(JSON.stringify(Object.assign({}, cloudCampaignsState, { campaigns: validRemote })));
     return;
   }
 
-  // Sincroniza campanha ativa se indicada pela nuvem
-  if (cloudCampaignsState.activeCampaignId && CAMPAIGNS_STATE.campaigns.some(c => c.id === cloudCampaignsState.activeCampaignId)) {
-    CAMPAIGNS_STATE.activeCampaignId = cloudCampaignsState.activeCampaignId;
+  // Sincroniza campanha ativa se indicada pela nuvem e se não tiver sido deletada
+  if (cloudCampaignsState.activeCampaignId && !deletedCampaignIds.includes(cloudCampaignsState.activeCampaignId)) {
+    if (CAMPAIGNS_STATE.campaigns.some(c => c.id === cloudCampaignsState.activeCampaignId) || cloudCampaignsState.campaigns.some(c => c.id === cloudCampaignsState.activeCampaignId)) {
+      CAMPAIGNS_STATE.activeCampaignId = cloudCampaignsState.activeCampaignId;
+    }
   }
 
   cloudCampaignsState.campaigns.forEach(remoteCamp => {
+    if (!remoteCamp || !remoteCamp.id) return;
+    if (deletedCampaignIds.includes(remoteCamp.id)) return; // Nunca ressuscita campanha excluída
+
     const localCamp = CAMPAIGNS_STATE.campaigns.find(c => c.id === remoteCamp.id);
     if (!localCamp) {
-      CAMPAIGNS_STATE.campaigns.push(remoteCamp);
+      CAMPAIGNS_STATE.campaigns.push(sanitizeRemoteCamp(remoteCamp));
     } else {
+      const localCampUpdated = localCamp.updatedAt || 0;
+      const remoteCampUpdated = remoteCamp.updatedAt || 0;
+
+      if (remoteCampUpdated >= localCampUpdated) {
+        if (remoteCamp.name) localCamp.name = remoteCamp.name;
+        if (remoteCamp.system) localCamp.system = remoteCamp.system;
+        if (remoteCamp.description) localCamp.description = remoteCamp.description;
+        if (remoteCamp.updatedAt) localCamp.updatedAt = remoteCamp.updatedAt;
+      }
+
       // Mescla diário de sessões garantindo que nenhuma sessão local seja perdida ou apagada
       const localSessions = localCamp.sessions || [];
       const remoteSessions = remoteCamp.sessions || [];
@@ -30518,28 +30574,34 @@ function mergeCloudCampaignsState(cloudCampaignsState) {
       });
 
       localCamp.sessions = mergedSessions;
-      if (remoteCamp.name) localCamp.name = remoteCamp.name;
-      if (remoteCamp.system) localCamp.system = remoteCamp.system;
-      if (remoteCamp.description) localCamp.description = remoteCamp.description;
 
-      // Mescla Baú do Grupo e Tesouro
+      // Mescla Baú do Grupo e Tesouro com controle de timestamps e tombstones
       if (remoteCamp.partyStash) {
         if (!localCamp.partyStash) {
-          localCamp.partyStash = remoteCamp.partyStash;
-        } else {
-          if (remoteCamp.partyStash.gold !== undefined && (!localCamp.partyStash.gold || localCamp.partyStash.gold === 0)) {
-            localCamp.partyStash.gold = remoteCamp.partyStash.gold;
+          localCamp.partyStash = Object.assign({}, remoteCamp.partyStash);
+          if (localCamp.partyStash.items) {
+            localCamp.partyStash.items = localCamp.partyStash.items.filter(it => !deletedPartyItemIds.includes(it.id));
           }
-          const localItems = localCamp.partyStash.items || [];
-          const remoteItems = remoteCamp.partyStash.items || [];
-          const mergedItems = [...localItems];
-          remoteItems.forEach(ri => {
-            if (!mergedItems.some(li => li.id === ri.id || li.name === ri.name)) {
-              mergedItems.push(ri);
-            }
-          });
-          localCamp.partyStash.items = mergedItems;
+        } else {
+          const localStashUpdated = (localCamp.partyStash && localCamp.partyStash.updatedAt) || 0;
+          const remoteStashUpdated = (remoteCamp.partyStash && remoteCamp.partyStash.updatedAt) || 0;
 
+          if (remoteStashUpdated > localStashUpdated) {
+            // Nuvem tem baú mais recente
+            if (remoteCamp.partyStash.gold !== undefined) {
+              localCamp.partyStash.gold = remoteCamp.partyStash.gold;
+            }
+            const remoteItems = (remoteCamp.partyStash.items || []).filter(ri => !deletedPartyItemIds.includes(ri.id));
+            localCamp.partyStash.items = remoteItems;
+            localCamp.partyStash.updatedAt = remoteStashUpdated;
+          } else {
+            // Local tem baú mais recente ou igual: preserva ouro e itens locais, filtrando excluídos
+            if (localCamp.partyStash.items) {
+              localCamp.partyStash.items = localCamp.partyStash.items.filter(li => !deletedPartyItemIds.includes(li.id));
+            }
+          }
+
+          // Histórico: mescla eventos preservando novos registros
           const localHist = localCamp.partyStash.history || [];
           const remoteHist = remoteCamp.partyStash.history || [];
           const mergedHist = [...localHist];
@@ -30560,6 +30622,7 @@ function applyCloudDataToLocal(cloudData) {
 
   isCloudRoomDataLoaded = true;
   lastReceivedCloudData = cloudData;
+  cloudSyncCooldownUntil = Date.now() + 1500;
 
   // Proteção: Se a nuvem estiver vazia/zerada e tivermos fichas locais válidas,
   // APENAS o Mestre pode publicar manualmente via publishMasterCampaignToCloud.
@@ -30775,6 +30838,7 @@ function applyCloudDataToLocal(cloudData) {
 
 function syncLocalChangesToFirebase(immediate = false) {
   if (isApplyingCloudUpdate) return;
+  if (Date.now() < cloudSyncCooldownUntil) return;
   if (!isFirebaseAutoSyncEnabled()) return;
 
   if (!isFirebaseConnected || (!firestoreDb && !realtimeDb)) {
@@ -32334,6 +32398,21 @@ function rollMonsterAttackAction(atkName, toHitBonus, dmgFormula, monName = 'Mon
 let activePortalPlayerId = null;
 let pendingPortalPlayerId = null;
 
+function touchPlayer(playerOrId) {
+  if (!playerOrId) return null;
+  const p = (typeof playerOrId === 'string') 
+    ? (typeof PLAYERS !== 'undefined' ? PLAYERS.find(x => x.id === playerOrId) : null)
+    : playerOrId;
+  if (p) {
+    p.updatedAt = Date.now();
+  }
+  return p;
+}
+
+if (typeof window !== 'undefined') {
+  window.touchPlayer = touchPlayer;
+}
+
 // Helpers de Estilização & Gameplay para Fichas (Pacote Completo)
 function getPlayerClassBadge(p) {
   const cls = (p.className || '').toLowerCase();
@@ -32403,6 +32482,7 @@ function togglePlayerItemEquipped(playerId, itemIdx) {
   const p = PLAYERS.find(x => x.id === playerId);
   if (!p || !p.inventory || !p.inventory[itemIdx]) return;
   p.inventory[itemIdx].equipped = !p.inventory[itemIdx].equipped;
+  touchPlayer(p);
   const statusStr = p.inventory[itemIdx].equipped ? 'equipou' : 'guardou na mochila';
   addPlayerActionLog(p.id, '🛡️', `${statusStr} ${p.inventory[itemIdx].name}`, 'general');
   renderPlayers();
@@ -32443,6 +32523,7 @@ function usePlayerInventoryItem(playerId, itemIdx) {
 
   // Decrementa 1 unidade daquele item
   it.qty = Math.max(0, currentQty - 1);
+  touchPlayer(p);
   const remaining = it.qty;
   const actionInfo = getItemActionInfo(it.name);
   const nameLower = (it.name || '').toLowerCase();
@@ -33539,6 +33620,7 @@ function restorePlayerFeatureCharge(playerId, chargeId, amount = 1) {
 
   if (charge.used > 0) {
     charge.used = Math.max(0, charge.used - amount);
+    touchPlayer(p);
     addLog(`✨ <b>${p.name}</b> recuperou carga de <b>${charge.name}</b> (${charge.max - charge.used}/${charge.max}).`);
     addPlayerActionLog(p.id, charge.icon || '✨', `Recuperou ${charge.name} (${charge.max - charge.used}/${charge.max})`, 'feature');
     renderPlayers();
@@ -33550,6 +33632,7 @@ function adjustPlayerHp(id, delta) {
   const p = PLAYERS.find(x => x.id === id);
   if (!p) return;
 
+  touchPlayer(p);
   const prev = p.hp;
   if (delta < 0) {
     let dmg = Math.abs(delta);
@@ -36966,6 +37049,7 @@ function addItemToPlayerFromCatalog(itemIdx) {
   }
 
   addPlayerActionLog(p.id, '🎒', `Adicionou ao inventário: ${it.name} (1x)`, 'general');
+  touchPlayer(p);
   if (typeof playFX === 'function') playFX('crit');
   closeAddPlayerItemModal();
   renderPlayers();
@@ -36990,6 +37074,7 @@ function submitCustomItemToPlayer() {
 
   p.inventory = p.inventory || [];
   p.inventory.push({ name, qty, weight, cost, category, desc });
+  touchPlayer(p);
 
   addPlayerActionLog(p.id, '🎒', `Adicionou item personalizado: ${name} (${qty}x)`, 'general');
   if (typeof playFX === 'function') playFX('crit');
@@ -37008,6 +37093,7 @@ function adjustPlayerItemQty(playerId, itemIndex, delta) {
     p.inventory.splice(itemIndex, 1);
     addPlayerActionLog(p.id, '🗑️', `Removeu do inventário: ${removedName}`, 'general');
   }
+  touchPlayer(p);
   renderPlayers();
   saveToLocalStorage();
 }
@@ -37019,6 +37105,7 @@ function removePlayerItem(playerId, itemIndex) {
   const removedName = p.inventory[itemIndex].name;
   if (confirm(`Remover "${removedName}" do inventário de ${p.name}?`)) {
     p.inventory.splice(itemIndex, 1);
+    touchPlayer(p);
     addPlayerActionLog(p.id, '🗑️', `Removeu do inventário: ${removedName}`, 'general');
     renderPlayers();
     saveToLocalStorage();
@@ -37582,6 +37669,23 @@ function applyLevelUpConfirm() {
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    touchPlayer,
+    togglePlayerItemEquipped,
+    usePlayerInventoryItem,
+    addItemToPlayerFromCatalog,
+    submitCustomItemToPlayer,
+    adjustPlayerItemQty,
+    removePlayerItem,
+    adjustPlayerHp,
+    renderPlayers,
+    savePlayerEditModal,
+    trackDeletedPlayerId,
+    getDeletedPlayerIds
+  };
 }
 
 
@@ -39692,6 +39796,65 @@ let CAMPAIGNS_STATE = {
   campaigns: (typeof INITIAL_CAMPAIGNS !== 'undefined') ? JSON.parse(JSON.stringify(INITIAL_CAMPAIGNS)) : []
 };
 
+function touchCampaign(campaignOrId) {
+  if (!campaignOrId) return null;
+  const camp = (typeof campaignOrId === 'string')
+    ? (CAMPAIGNS_STATE && Array.isArray(CAMPAIGNS_STATE.campaigns) ? CAMPAIGNS_STATE.campaigns.find(c => c.id === campaignOrId) : null)
+    : campaignOrId;
+  if (camp) {
+    camp.updatedAt = Date.now();
+    if (!camp.partyStash) camp.partyStash = { gold: 0, items: [], history: [] };
+    camp.partyStash.updatedAt = Date.now();
+  }
+  return camp;
+}
+
+function trackDeletedCampaignId(campId) {
+  if (!campId || typeof localStorage === 'undefined') return;
+  try {
+    const raw = localStorage.getItem('dnd5e_deleted_campaign_ids');
+    let list = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(list)) list = [];
+    if (!list.includes(campId)) {
+      list.push(campId);
+      localStorage.setItem('dnd5e_deleted_campaign_ids', JSON.stringify(list));
+    }
+  } catch (e) {}
+}
+
+function getDeletedCampaignIds() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const raw = localStorage.getItem('dnd5e_deleted_campaign_ids');
+      if (raw) return JSON.parse(raw) || [];
+    }
+  } catch (e) {}
+  return [];
+}
+
+function trackDeletedPartyItemId(itemId) {
+  if (!itemId || typeof localStorage === 'undefined') return;
+  try {
+    const raw = localStorage.getItem('dnd5e_deleted_stash_item_ids');
+    let list = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(list)) list = [];
+    if (!list.includes(itemId)) {
+      list.push(itemId);
+      localStorage.setItem('dnd5e_deleted_stash_item_ids', JSON.stringify(list));
+    }
+  } catch (e) {}
+}
+
+function getDeletedPartyItemIds() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const raw = localStorage.getItem('dnd5e_deleted_stash_item_ids');
+      if (raw) return JSON.parse(raw) || [];
+    }
+  } catch (e) {}
+  return [];
+}
+
 function getActiveCampaign() {
   if (!CAMPAIGNS_STATE.campaigns || CAMPAIGNS_STATE.campaigns.length === 0) {
     CAMPAIGNS_STATE.campaigns = (typeof INITIAL_CAMPAIGNS !== 'undefined') ? JSON.parse(JSON.stringify(INITIAL_CAMPAIGNS)) : [];
@@ -39707,6 +39870,8 @@ function getActiveCampaign() {
 
 function saveCampaignsState() {
   try {
+    const camp = getActiveCampaign();
+    if (camp) touchCampaign(camp);
     localStorage.setItem('dnd5e_prisco_campaigns_v1', JSON.stringify(CAMPAIGNS_STATE));
     if (typeof showSaveStatus === 'function') showSaveStatus();
     if (typeof broadcastCampaignState === 'function') broadcastCampaignState();
@@ -39722,31 +39887,18 @@ function loadCampaignsState() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.campaigns) && parsed.campaigns.length > 0) {
-        if (CAMPAIGNS_STATE && Array.isArray(CAMPAIGNS_STATE.campaigns) && CAMPAIGNS_STATE.campaigns.length > 0) {
-          CAMPAIGNS_STATE.campaigns.forEach(memCamp => {
-            const parsedCamp = parsed.campaigns.find(c => c.id === memCamp.id);
-            if (parsedCamp) {
-              const memSessions = memCamp.sessions || [];
-              const parsedSessions = parsedCamp.sessions || [];
-              memSessions.forEach(ms => {
-                if (!parsedSessions.some(ps => ps.id === ms.id || (ps.number === ms.number && ps.date === ms.date))) {
-                  parsedSessions.push(ms);
-                }
-              });
-              parsedCamp.sessions = parsedSessions;
-            } else {
-              parsed.campaigns.push(memCamp);
+        const deletedIds = getDeletedCampaignIds();
+        parsed.campaigns = parsed.campaigns.filter(c => !deletedIds.includes(c.id));
+        if (parsed.campaigns.length > 0) {
+          CAMPAIGNS_STATE = parsed;
+          const activeCamp = getActiveCampaign();
+          if (activeCamp && (!activeCamp.sessions || activeCamp.sessions.length === 0)) {
+            if (typeof recoverSessionsFromSnapshots === 'function') {
+              recoverSessionsFromSnapshots(true);
             }
-          });
-        }
-        CAMPAIGNS_STATE = parsed;
-        const activeCamp = getActiveCampaign();
-        if (activeCamp && (!activeCamp.sessions || activeCamp.sessions.length === 0)) {
-          if (typeof recoverSessionsFromSnapshots === 'function') {
-            recoverSessionsFromSnapshots(true);
           }
+          return true;
         }
-        return true;
       }
     }
   } catch (e) {}
@@ -39758,6 +39910,7 @@ function broadcastCampaignState() {
   if (typeof syncChannel !== 'undefined' && syncChannel) {
     syncChannel.postMessage({
       type: 'CAMPAIGNS_UPDATE',
+      timestamp: Date.now(),
       campaignsState: CAMPAIGNS_STATE
     });
   }
@@ -40130,8 +40283,12 @@ function deleteCurrentCampaign() {
   }
   if (!confirm(`Tem certeza que deseja excluir a campanha "${camp.name}"? Todos os diários e o baú do grupo desta campanha serão removidos.`)) return;
 
-  CAMPAIGNS_STATE.campaigns = CAMPAIGNS_STATE.campaigns.filter(c => c.id !== camp.id);
+  const deletedCampId = camp.id;
+  trackDeletedCampaignId(deletedCampId);
+  CAMPAIGNS_STATE.campaigns = CAMPAIGNS_STATE.campaigns.filter(c => c.id !== deletedCampId);
   CAMPAIGNS_STATE.activeCampaignId = CAMPAIGNS_STATE.campaigns[0].id;
+  const newActive = getActiveCampaign();
+  if (newActive) touchCampaign(newActive);
 
   saveCampaignsState();
   renderCampaigns();
@@ -40616,7 +40773,10 @@ function deletePartyItem(itemId) {
 
   if (!confirm(`Remover "${it.name}" (${it.qty}x) do inventário do grupo?`)) return;
 
-  camp.partyStash.items = camp.partyStash.items.filter(x => x.id !== itemId);
+  const removedItemId = it.id;
+  trackDeletedPartyItemId(removedItemId);
+  camp.partyStash.items = camp.partyStash.items.filter(x => x.id !== removedItemId);
+  touchCampaign(camp);
   camp.partyStash.history.push({
     date: new Date().toISOString().split('T')[0],
     text: `-${it.qty}x ${it.name} removido do grupo`,
@@ -40821,8 +40981,12 @@ function takePartyItemToPlayer(itemId, targetPlayerId = null) {
   if (it.qty > 1) {
     it.qty -= 1;
   } else {
+    trackDeletedPartyItemId(itemId);
     camp.partyStash.items = camp.partyStash.items.filter(x => x.id !== itemId);
   }
+
+  touchCampaign(camp);
+  if (typeof touchPlayer === 'function') touchPlayer(targetPlayer);
 
   camp.partyStash.history.push({
     date: new Date().toISOString().split('T')[0],
@@ -41105,6 +41269,15 @@ function renderChroniclesViewerContent() {
   `).join('');
 }
 
+// Vincula em window para uso no browser
+if (typeof window !== 'undefined') {
+  window.touchCampaign = touchCampaign;
+  window.trackDeletedCampaignId = trackDeletedCampaignId;
+  window.getDeletedCampaignIds = getDeletedCampaignIds;
+  window.trackDeletedPartyItemId = trackDeletedPartyItemId;
+  window.getDeletedPartyItemIds = getDeletedPartyItemIds;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     getActiveCampaign,
@@ -41124,7 +41297,14 @@ if (typeof module !== 'undefined' && module.exports) {
     deletePartyStashHistoryItem,
     promptAdjustPartyGold,
     splitPartyGold,
-    takePartyItemToPlayer
+    takePartyItemToPlayer,
+    touchCampaign,
+    trackDeletedCampaignId,
+    getDeletedCampaignIds,
+    trackDeletedPartyItemId,
+    getDeletedPartyItemIds,
+    deleteCurrentCampaign,
+    saveCampaignForm
   };
 }
 
@@ -44307,6 +44487,7 @@ function broadcastCombatState(actionNarrative = null) {
 }
 
 let isApplyingRemoteSync = false;
+let lastReceivedBroadcastTimestamp = 0;
 
 function broadcastStateSync() {
   if (isApplyingRemoteSync) return;
@@ -44314,6 +44495,7 @@ function broadcastStateSync() {
     try {
       syncChannel.postMessage({
         type: 'STATE_SYNC',
+        timestamp: Date.now(),
         players: (typeof PLAYERS !== 'undefined') ? PLAYERS : [],
         state: (typeof state !== 'undefined') ? state : null,
         gridState: (typeof gridState !== 'undefined') ? gridState : null
@@ -44328,6 +44510,8 @@ if (syncChannel) {
     isApplyingRemoteSync = true;
     try {
       if (event.data.type === 'STATE_SYNC') {
+        if (event.data.timestamp && event.data.timestamp < lastReceivedBroadcastTimestamp) return;
+        if (event.data.timestamp) lastReceivedBroadcastTimestamp = Math.max(lastReceivedBroadcastTimestamp, event.data.timestamp);
         if (event.data.players && Array.isArray(event.data.players)) {
           PLAYERS = event.data.players;
           if (typeof renderPlayers === 'function') renderPlayers();
@@ -44436,7 +44620,13 @@ if (syncChannel) {
         switchPlayerViewMode(event.data.mode, false);
       } else if (event.data.type === 'CAMPAIGNS_UPDATE') {
         if (event.data.campaignsState) {
-          CAMPAIGNS_STATE = event.data.campaignsState;
+          if (event.data.timestamp && event.data.timestamp < lastReceivedBroadcastTimestamp) return;
+          if (event.data.timestamp) lastReceivedBroadcastTimestamp = Math.max(lastReceivedBroadcastTimestamp, event.data.timestamp);
+          if (typeof mergeCloudCampaignsState === 'function') {
+            mergeCloudCampaignsState(event.data.campaignsState);
+          } else {
+            CAMPAIGNS_STATE = event.data.campaignsState;
+          }
           try {
             localStorage.setItem('dnd5e_prisco_campaigns_v1', JSON.stringify(CAMPAIGNS_STATE));
           } catch(e) {}

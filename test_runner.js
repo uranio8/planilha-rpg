@@ -2501,6 +2501,118 @@ assert(distHtml.includes('id="modal-master-sync-device"'), 'Bundle contém modal
 assert(distHtml.includes('openMasterSyncDeviceModal()'), 'Bundle contém atalho para abrir pareamento de celular');
 assert(distHtml.includes('img-master-sync-qrcode'), 'Bundle contém elemento de QR Code para leitura no celular');
 
+// ========================================================
+// 42. TESTES DE ANTI-PERDA DE CAMPANHAS E ITENS (ISSUE-68)
+// ========================================================
+console.log('\n🛡️ 42. Testes de Anti-Perda de Campanhas, Itens e Resolução de Conflitos (ISSUE-68):');
+
+// 1. Funções de integridade e timestamps exportadas
+assert(typeof vm.runInContext('touchPlayer', sandbox) === 'function', 'Função touchPlayer exportada');
+assert(typeof vm.runInContext('touchCampaign', sandbox) === 'function', 'Função touchCampaign exportada');
+assert(typeof vm.runInContext('trackDeletedCampaignId', sandbox) === 'function', 'Função trackDeletedCampaignId exportada');
+assert(typeof vm.runInContext('getDeletedCampaignIds', sandbox) === 'function', 'Função getDeletedCampaignIds exportada');
+assert(typeof vm.runInContext('trackDeletedPartyItemId', sandbox) === 'function', 'Função trackDeletedPartyItemId exportada');
+assert(typeof vm.runInContext('getDeletedPartyItemIds', sandbox) === 'function', 'Função getDeletedPartyItemIds exportada');
+
+// 2. Teste de touchPlayer
+vm.runInContext(`
+  var s42_testHero = { id: 'p_touch_test', name: 'Alunoteste', hp: 20, maxHp: 20, inventory: [] };
+  touchPlayer(s42_testHero);
+`, sandbox);
+const heroTouched = vm.runInContext('s42_testHero', sandbox);
+assert(typeof heroTouched.updatedAt === 'number' && heroTouched.updatedAt > 0, 'touchPlayer atualizou updatedAt do herói');
+
+// 3. Teste de touchCampaign
+vm.runInContext(`
+  var s42_testCamp = { id: 'c_touch_test', name: 'Mesa Épica', partyStash: { gold: 50, items: [] } };
+  touchCampaign(s42_testCamp);
+`, sandbox);
+const campTouched = vm.runInContext('s42_testCamp', sandbox);
+assert(typeof campTouched.updatedAt === 'number' && campTouched.updatedAt > 0, 'touchCampaign atualizou updatedAt da campanha');
+assert(typeof campTouched.partyStash.updatedAt === 'number' && campTouched.partyStash.updatedAt > 0, 'touchCampaign atualizou updatedAt do baú da campanha');
+
+// 4. Teste de Tombstone de Campanha: Impede ressurreição de campanhas excluídas
+vm.runInContext(`
+  trackDeletedCampaignId('camp_zombie_to_kill');
+  var s42_cloudWithZombie = {
+    activeCampaignId: 'camp_zombie_to_kill',
+    campaigns: [
+      { id: 'camp_zombie_to_kill', name: 'Campanha Fantasma Morta', sessions: [], partyStash: { gold: 0, items: [] } }
+    ]
+  };
+  mergeCloudCampaignsState(s42_cloudWithZombie);
+`, sandbox);
+const campsAfterZombie = vm.runInContext('CAMPAIGNS_STATE.campaigns', sandbox);
+assert(!campsAfterZombie.some(c => c.id === 'camp_zombie_to_kill'), 'mergeCloudCampaignsState NÃO ressuscitou campanha excluída (Tombstone)');
+assert(vm.runInContext('getDeletedCampaignIds().includes("camp_zombie_to_kill")', sandbox), 'Tombstone de campanha persistida em getDeletedCampaignIds');
+
+// 5. Teste de Tombstone de Itens do Baú: Impede ressurreição de itens excluídos/transferidos
+vm.runInContext(`
+  trackDeletedPartyItemId('item_zombie_gem_99');
+  var s42_campWithZombieItem = {
+    id: 'camp_test_stash_anti_zombie',
+    name: 'Mesa do Baú',
+    updatedAt: 1000,
+    partyStash: {
+      gold: 100,
+      updatedAt: 2000,
+      items: [
+        { id: 'item_zombie_gem_99', name: 'Diamante Fantasma' },
+        { id: 'item_valid_potion_1', name: 'Poção de Cura Legítima' }
+      ]
+    }
+  };
+  mergeCloudCampaignsState({
+    activeCampaignId: 'camp_test_stash_anti_zombie',
+    campaigns: [s42_campWithZombieItem]
+  });
+`, sandbox);
+const stashAfterZombie = vm.runInContext(`
+  var s42_foundC = CAMPAIGNS_STATE.campaigns.find(c => c.id === 'camp_test_stash_anti_zombie');
+  s42_foundC ? s42_foundC.partyStash.items : [];
+`, sandbox);
+assert(!stashAfterZombie.some(i => i.id === 'item_zombie_gem_99'), 'mergeCloudCampaignsState NÃO ressuscitou item excluído do baú (Tombstone)');
+assert(stashAfterZombie.some(i => i.id === 'item_valid_potion_1'), 'mergeCloudCampaignsState preservou item legítimo do baú');
+
+// 6. Resolução de conflitos de Baú por timestamp
+vm.runInContext(`
+  var s42_activeC = CAMPAIGNS_STATE.campaigns.find(c => c.id === 'camp_test_stash_anti_zombie');
+  // Local é mais recente: 5000 vs Remoto antigo: 3000
+  s42_activeC.partyStash.gold = 999;
+  s42_activeC.partyStash.updatedAt = 5000;
+  
+  mergeCloudCampaignsState({
+    activeCampaignId: 'camp_test_stash_anti_zombie',
+    campaigns: [{
+      id: 'camp_test_stash_anti_zombie',
+      name: 'Mesa do Baú',
+      updatedAt: 1000,
+      partyStash: { gold: 50, updatedAt: 3000, items: [] }
+    }]
+  });
+`, sandbox);
+const goldPreserved = vm.runInContext(`
+  CAMPAIGNS_STATE.campaigns.find(c => c.id === 'camp_test_stash_anti_zombie').partyStash.gold
+`, sandbox);
+assert(goldPreserved === 999, 'Baú local mais recente preservou ouro de sobrescrita por snapshot remoto mais antigo');
+
+vm.runInContext(`
+  // Remoto mais recente: 7000 vs Local: 5000
+  mergeCloudCampaignsState({
+    activeCampaignId: 'camp_test_stash_anti_zombie',
+    campaigns: [{
+      id: 'camp_test_stash_anti_zombie',
+      name: 'Mesa do Baú',
+      updatedAt: 7000,
+      partyStash: { gold: 1500, updatedAt: 7000, items: [{ id: 'item_remote_wand', name: 'Varinha Mágica' }] }
+    }]
+  });
+`, sandbox);
+const goldUpdated = vm.runInContext(`
+  CAMPAIGNS_STATE.campaigns.find(c => c.id === 'camp_test_stash_anti_zombie').partyStash.gold
+`, sandbox);
+assert(goldUpdated === 1500, 'Baú remoto mais recente atualizou tesouro do grupo com sucesso');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

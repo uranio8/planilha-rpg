@@ -5,6 +5,65 @@ let CAMPAIGNS_STATE = {
   campaigns: (typeof INITIAL_CAMPAIGNS !== 'undefined') ? JSON.parse(JSON.stringify(INITIAL_CAMPAIGNS)) : []
 };
 
+function touchCampaign(campaignOrId) {
+  if (!campaignOrId) return null;
+  const camp = (typeof campaignOrId === 'string')
+    ? (CAMPAIGNS_STATE && Array.isArray(CAMPAIGNS_STATE.campaigns) ? CAMPAIGNS_STATE.campaigns.find(c => c.id === campaignOrId) : null)
+    : campaignOrId;
+  if (camp) {
+    camp.updatedAt = Date.now();
+    if (!camp.partyStash) camp.partyStash = { gold: 0, items: [], history: [] };
+    camp.partyStash.updatedAt = Date.now();
+  }
+  return camp;
+}
+
+function trackDeletedCampaignId(campId) {
+  if (!campId || typeof localStorage === 'undefined') return;
+  try {
+    const raw = localStorage.getItem('dnd5e_deleted_campaign_ids');
+    let list = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(list)) list = [];
+    if (!list.includes(campId)) {
+      list.push(campId);
+      localStorage.setItem('dnd5e_deleted_campaign_ids', JSON.stringify(list));
+    }
+  } catch (e) {}
+}
+
+function getDeletedCampaignIds() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const raw = localStorage.getItem('dnd5e_deleted_campaign_ids');
+      if (raw) return JSON.parse(raw) || [];
+    }
+  } catch (e) {}
+  return [];
+}
+
+function trackDeletedPartyItemId(itemId) {
+  if (!itemId || typeof localStorage === 'undefined') return;
+  try {
+    const raw = localStorage.getItem('dnd5e_deleted_stash_item_ids');
+    let list = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(list)) list = [];
+    if (!list.includes(itemId)) {
+      list.push(itemId);
+      localStorage.setItem('dnd5e_deleted_stash_item_ids', JSON.stringify(list));
+    }
+  } catch (e) {}
+}
+
+function getDeletedPartyItemIds() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const raw = localStorage.getItem('dnd5e_deleted_stash_item_ids');
+      if (raw) return JSON.parse(raw) || [];
+    }
+  } catch (e) {}
+  return [];
+}
+
 function getActiveCampaign() {
   if (!CAMPAIGNS_STATE.campaigns || CAMPAIGNS_STATE.campaigns.length === 0) {
     CAMPAIGNS_STATE.campaigns = (typeof INITIAL_CAMPAIGNS !== 'undefined') ? JSON.parse(JSON.stringify(INITIAL_CAMPAIGNS)) : [];
@@ -20,6 +79,8 @@ function getActiveCampaign() {
 
 function saveCampaignsState() {
   try {
+    const camp = getActiveCampaign();
+    if (camp) touchCampaign(camp);
     localStorage.setItem('dnd5e_prisco_campaigns_v1', JSON.stringify(CAMPAIGNS_STATE));
     if (typeof showSaveStatus === 'function') showSaveStatus();
     if (typeof broadcastCampaignState === 'function') broadcastCampaignState();
@@ -35,31 +96,18 @@ function loadCampaignsState() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.campaigns) && parsed.campaigns.length > 0) {
-        if (CAMPAIGNS_STATE && Array.isArray(CAMPAIGNS_STATE.campaigns) && CAMPAIGNS_STATE.campaigns.length > 0) {
-          CAMPAIGNS_STATE.campaigns.forEach(memCamp => {
-            const parsedCamp = parsed.campaigns.find(c => c.id === memCamp.id);
-            if (parsedCamp) {
-              const memSessions = memCamp.sessions || [];
-              const parsedSessions = parsedCamp.sessions || [];
-              memSessions.forEach(ms => {
-                if (!parsedSessions.some(ps => ps.id === ms.id || (ps.number === ms.number && ps.date === ms.date))) {
-                  parsedSessions.push(ms);
-                }
-              });
-              parsedCamp.sessions = parsedSessions;
-            } else {
-              parsed.campaigns.push(memCamp);
+        const deletedIds = getDeletedCampaignIds();
+        parsed.campaigns = parsed.campaigns.filter(c => !deletedIds.includes(c.id));
+        if (parsed.campaigns.length > 0) {
+          CAMPAIGNS_STATE = parsed;
+          const activeCamp = getActiveCampaign();
+          if (activeCamp && (!activeCamp.sessions || activeCamp.sessions.length === 0)) {
+            if (typeof recoverSessionsFromSnapshots === 'function') {
+              recoverSessionsFromSnapshots(true);
             }
-          });
-        }
-        CAMPAIGNS_STATE = parsed;
-        const activeCamp = getActiveCampaign();
-        if (activeCamp && (!activeCamp.sessions || activeCamp.sessions.length === 0)) {
-          if (typeof recoverSessionsFromSnapshots === 'function') {
-            recoverSessionsFromSnapshots(true);
           }
+          return true;
         }
-        return true;
       }
     }
   } catch (e) {}
@@ -71,6 +119,7 @@ function broadcastCampaignState() {
   if (typeof syncChannel !== 'undefined' && syncChannel) {
     syncChannel.postMessage({
       type: 'CAMPAIGNS_UPDATE',
+      timestamp: Date.now(),
       campaignsState: CAMPAIGNS_STATE
     });
   }
@@ -443,8 +492,12 @@ function deleteCurrentCampaign() {
   }
   if (!confirm(`Tem certeza que deseja excluir a campanha "${camp.name}"? Todos os diários e o baú do grupo desta campanha serão removidos.`)) return;
 
-  CAMPAIGNS_STATE.campaigns = CAMPAIGNS_STATE.campaigns.filter(c => c.id !== camp.id);
+  const deletedCampId = camp.id;
+  trackDeletedCampaignId(deletedCampId);
+  CAMPAIGNS_STATE.campaigns = CAMPAIGNS_STATE.campaigns.filter(c => c.id !== deletedCampId);
   CAMPAIGNS_STATE.activeCampaignId = CAMPAIGNS_STATE.campaigns[0].id;
+  const newActive = getActiveCampaign();
+  if (newActive) touchCampaign(newActive);
 
   saveCampaignsState();
   renderCampaigns();
@@ -929,7 +982,10 @@ function deletePartyItem(itemId) {
 
   if (!confirm(`Remover "${it.name}" (${it.qty}x) do inventário do grupo?`)) return;
 
-  camp.partyStash.items = camp.partyStash.items.filter(x => x.id !== itemId);
+  const removedItemId = it.id;
+  trackDeletedPartyItemId(removedItemId);
+  camp.partyStash.items = camp.partyStash.items.filter(x => x.id !== removedItemId);
+  touchCampaign(camp);
   camp.partyStash.history.push({
     date: new Date().toISOString().split('T')[0],
     text: `-${it.qty}x ${it.name} removido do grupo`,
@@ -1134,8 +1190,12 @@ function takePartyItemToPlayer(itemId, targetPlayerId = null) {
   if (it.qty > 1) {
     it.qty -= 1;
   } else {
+    trackDeletedPartyItemId(itemId);
     camp.partyStash.items = camp.partyStash.items.filter(x => x.id !== itemId);
   }
+
+  touchCampaign(camp);
+  if (typeof touchPlayer === 'function') touchPlayer(targetPlayer);
 
   camp.partyStash.history.push({
     date: new Date().toISOString().split('T')[0],
@@ -1418,6 +1478,15 @@ function renderChroniclesViewerContent() {
   `).join('');
 }
 
+// Vincula em window para uso no browser
+if (typeof window !== 'undefined') {
+  window.touchCampaign = touchCampaign;
+  window.trackDeletedCampaignId = trackDeletedCampaignId;
+  window.getDeletedCampaignIds = getDeletedCampaignIds;
+  window.trackDeletedPartyItemId = trackDeletedPartyItemId;
+  window.getDeletedPartyItemIds = getDeletedPartyItemIds;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     getActiveCampaign,
@@ -1437,7 +1506,14 @@ if (typeof module !== 'undefined' && module.exports) {
     deletePartyStashHistoryItem,
     promptAdjustPartyGold,
     splitPartyGold,
-    takePartyItemToPlayer
+    takePartyItemToPlayer,
+    touchCampaign,
+    trackDeletedCampaignId,
+    getDeletedCampaignIds,
+    trackDeletedPartyItemId,
+    getDeletedPartyItemIds,
+    deleteCurrentCampaign,
+    saveCampaignForm
   };
 }
 

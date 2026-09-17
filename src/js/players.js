@@ -2,6 +2,21 @@
 let activePortalPlayerId = null;
 let pendingPortalPlayerId = null;
 
+function touchPlayer(playerOrId) {
+  if (!playerOrId) return null;
+  const p = (typeof playerOrId === 'string') 
+    ? (typeof PLAYERS !== 'undefined' ? PLAYERS.find(x => x.id === playerOrId) : null)
+    : playerOrId;
+  if (p) {
+    p.updatedAt = Date.now();
+  }
+  return p;
+}
+
+if (typeof window !== 'undefined') {
+  window.touchPlayer = touchPlayer;
+}
+
 // Helpers de Estilização & Gameplay para Fichas (Pacote Completo)
 function getPlayerClassBadge(p) {
   const cls = (p.className || '').toLowerCase();
@@ -71,6 +86,7 @@ function togglePlayerItemEquipped(playerId, itemIdx) {
   const p = PLAYERS.find(x => x.id === playerId);
   if (!p || !p.inventory || !p.inventory[itemIdx]) return;
   p.inventory[itemIdx].equipped = !p.inventory[itemIdx].equipped;
+  touchPlayer(p);
   const statusStr = p.inventory[itemIdx].equipped ? 'equipou' : 'guardou na mochila';
   addPlayerActionLog(p.id, '🛡️', `${statusStr} ${p.inventory[itemIdx].name}`, 'general');
   renderPlayers();
@@ -111,6 +127,7 @@ function usePlayerInventoryItem(playerId, itemIdx) {
 
   // Decrementa 1 unidade daquele item
   it.qty = Math.max(0, currentQty - 1);
+  touchPlayer(p);
   const remaining = it.qty;
   const actionInfo = getItemActionInfo(it.name);
   const nameLower = (it.name || '').toLowerCase();
@@ -1207,6 +1224,7 @@ function restorePlayerFeatureCharge(playerId, chargeId, amount = 1) {
 
   if (charge.used > 0) {
     charge.used = Math.max(0, charge.used - amount);
+    touchPlayer(p);
     addLog(`✨ <b>${p.name}</b> recuperou carga de <b>${charge.name}</b> (${charge.max - charge.used}/${charge.max}).`);
     addPlayerActionLog(p.id, charge.icon || '✨', `Recuperou ${charge.name} (${charge.max - charge.used}/${charge.max})`, 'feature');
     renderPlayers();
@@ -1218,6 +1236,7 @@ function adjustPlayerHp(id, delta) {
   const p = PLAYERS.find(x => x.id === id);
   if (!p) return;
 
+  touchPlayer(p);
   const prev = p.hp;
   if (delta < 0) {
     let dmg = Math.abs(delta);
@@ -4634,6 +4653,7 @@ function addItemToPlayerFromCatalog(itemIdx) {
   }
 
   addPlayerActionLog(p.id, '🎒', `Adicionou ao inventário: ${it.name} (1x)`, 'general');
+  touchPlayer(p);
   if (typeof playFX === 'function') playFX('crit');
   closeAddPlayerItemModal();
   renderPlayers();
@@ -4658,6 +4678,7 @@ function submitCustomItemToPlayer() {
 
   p.inventory = p.inventory || [];
   p.inventory.push({ name, qty, weight, cost, category, desc });
+  touchPlayer(p);
 
   addPlayerActionLog(p.id, '🎒', `Adicionou item personalizado: ${name} (${qty}x)`, 'general');
   if (typeof playFX === 'function') playFX('crit');
@@ -4676,6 +4697,7 @@ function adjustPlayerItemQty(playerId, itemIndex, delta) {
     p.inventory.splice(itemIndex, 1);
     addPlayerActionLog(p.id, '🗑️', `Removeu do inventário: ${removedName}`, 'general');
   }
+  touchPlayer(p);
   renderPlayers();
   saveToLocalStorage();
 }
@@ -4687,6 +4709,7 @@ function removePlayerItem(playerId, itemIndex) {
   const removedName = p.inventory[itemIndex].name;
   if (confirm(`Remover "${removedName}" do inventário de ${p.name}?`)) {
     p.inventory.splice(itemIndex, 1);
+    touchPlayer(p);
     addPlayerActionLog(p.id, '🗑️', `Removeu do inventário: ${removedName}`, 'general');
     renderPlayers();
     saveToLocalStorage();
@@ -5250,6 +5273,23 @@ function applyLevelUpConfirm() {
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    touchPlayer,
+    togglePlayerItemEquipped,
+    usePlayerInventoryItem,
+    addItemToPlayerFromCatalog,
+    submitCustomItemToPlayer,
+    adjustPlayerItemQty,
+    removePlayerItem,
+    adjustPlayerHp,
+    renderPlayers,
+    savePlayerEditModal,
+    trackDeletedPlayerId,
+    getDeletedPlayerIds
+  };
 }
 
 

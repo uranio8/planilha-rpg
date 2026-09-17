@@ -43,6 +43,7 @@ if (typeof window !== 'undefined') {
 }
 let isCloudRoomDataLoaded = false;
 let lastReceivedCloudData = null;
+let cloudSyncCooldownUntil = 0;
 
 // --- UTILITÁRIOS DE CONFIGURAÇÃO ---
 
@@ -236,8 +237,47 @@ function mergeCloudCampaignsState(cloudCampaignsState) {
   if (!cloudCampaignsState || !Array.isArray(cloudCampaignsState.campaigns)) return;
   if (typeof CAMPAIGNS_STATE === 'undefined') return;
 
+  // Recupera tombstones para não ressuscitar campanhas ou itens deletados
+  let deletedCampaignIds = [];
+  if (typeof getDeletedCampaignIds === 'function') {
+    deletedCampaignIds = getDeletedCampaignIds();
+  } else {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const rawDel = localStorage.getItem('dnd5e_deleted_campaign_ids');
+        if (rawDel) deletedCampaignIds = JSON.parse(rawDel);
+      }
+    } catch(e) {}
+  }
+  if (!Array.isArray(deletedCampaignIds)) deletedCampaignIds = [];
+
+  let deletedPartyItemIds = [];
+  if (typeof getDeletedPartyItemIds === 'function') {
+    deletedPartyItemIds = getDeletedPartyItemIds();
+  } else {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const rawDelItems = localStorage.getItem('dnd5e_deleted_stash_item_ids');
+        if (rawDelItems) deletedPartyItemIds = JSON.parse(rawDelItems);
+      }
+    } catch(e) {}
+  }
+  if (!Array.isArray(deletedPartyItemIds)) deletedPartyItemIds = [];
+
+  const sanitizeRemoteCamp = (c) => {
+    if (!c) return c;
+    const clean = Object.assign({}, c);
+    if (clean.partyStash && Array.isArray(clean.partyStash.items)) {
+      clean.partyStash = Object.assign({}, clean.partyStash, {
+        items: clean.partyStash.items.filter(it => !deletedPartyItemIds.includes(it.id))
+      });
+    }
+    return clean;
+  };
+
   if (!CAMPAIGNS_STATE.campaigns || CAMPAIGNS_STATE.campaigns.length === 0) {
-    CAMPAIGNS_STATE = JSON.parse(JSON.stringify(cloudCampaignsState));
+    const validRemote = (cloudCampaignsState.campaigns || []).filter(c => !deletedCampaignIds.includes(c.id)).map(sanitizeRemoteCamp);
+    CAMPAIGNS_STATE = JSON.parse(JSON.stringify(Object.assign({}, cloudCampaignsState, { campaigns: validRemote })));
     return;
   }
 
@@ -254,20 +294,36 @@ function mergeCloudCampaignsState(cloudCampaignsState) {
   );
 
   if (localIsOnlyEmptyDefault && cloudHasRealData) {
-    CAMPAIGNS_STATE = JSON.parse(JSON.stringify(cloudCampaignsState));
+    const validRemote = cloudCampaignsState.campaigns.filter(c => !deletedCampaignIds.includes(c.id)).map(sanitizeRemoteCamp);
+    CAMPAIGNS_STATE = JSON.parse(JSON.stringify(Object.assign({}, cloudCampaignsState, { campaigns: validRemote })));
     return;
   }
 
-  // Sincroniza campanha ativa se indicada pela nuvem
-  if (cloudCampaignsState.activeCampaignId && CAMPAIGNS_STATE.campaigns.some(c => c.id === cloudCampaignsState.activeCampaignId)) {
-    CAMPAIGNS_STATE.activeCampaignId = cloudCampaignsState.activeCampaignId;
+  // Sincroniza campanha ativa se indicada pela nuvem e se não tiver sido deletada
+  if (cloudCampaignsState.activeCampaignId && !deletedCampaignIds.includes(cloudCampaignsState.activeCampaignId)) {
+    if (CAMPAIGNS_STATE.campaigns.some(c => c.id === cloudCampaignsState.activeCampaignId) || cloudCampaignsState.campaigns.some(c => c.id === cloudCampaignsState.activeCampaignId)) {
+      CAMPAIGNS_STATE.activeCampaignId = cloudCampaignsState.activeCampaignId;
+    }
   }
 
   cloudCampaignsState.campaigns.forEach(remoteCamp => {
+    if (!remoteCamp || !remoteCamp.id) return;
+    if (deletedCampaignIds.includes(remoteCamp.id)) return; // Nunca ressuscita campanha excluída
+
     const localCamp = CAMPAIGNS_STATE.campaigns.find(c => c.id === remoteCamp.id);
     if (!localCamp) {
-      CAMPAIGNS_STATE.campaigns.push(remoteCamp);
+      CAMPAIGNS_STATE.campaigns.push(sanitizeRemoteCamp(remoteCamp));
     } else {
+      const localCampUpdated = localCamp.updatedAt || 0;
+      const remoteCampUpdated = remoteCamp.updatedAt || 0;
+
+      if (remoteCampUpdated >= localCampUpdated) {
+        if (remoteCamp.name) localCamp.name = remoteCamp.name;
+        if (remoteCamp.system) localCamp.system = remoteCamp.system;
+        if (remoteCamp.description) localCamp.description = remoteCamp.description;
+        if (remoteCamp.updatedAt) localCamp.updatedAt = remoteCamp.updatedAt;
+      }
+
       // Mescla diário de sessões garantindo que nenhuma sessão local seja perdida ou apagada
       const localSessions = localCamp.sessions || [];
       const remoteSessions = remoteCamp.sessions || [];
@@ -295,28 +351,34 @@ function mergeCloudCampaignsState(cloudCampaignsState) {
       });
 
       localCamp.sessions = mergedSessions;
-      if (remoteCamp.name) localCamp.name = remoteCamp.name;
-      if (remoteCamp.system) localCamp.system = remoteCamp.system;
-      if (remoteCamp.description) localCamp.description = remoteCamp.description;
 
-      // Mescla Baú do Grupo e Tesouro
+      // Mescla Baú do Grupo e Tesouro com controle de timestamps e tombstones
       if (remoteCamp.partyStash) {
         if (!localCamp.partyStash) {
-          localCamp.partyStash = remoteCamp.partyStash;
-        } else {
-          if (remoteCamp.partyStash.gold !== undefined && (!localCamp.partyStash.gold || localCamp.partyStash.gold === 0)) {
-            localCamp.partyStash.gold = remoteCamp.partyStash.gold;
+          localCamp.partyStash = Object.assign({}, remoteCamp.partyStash);
+          if (localCamp.partyStash.items) {
+            localCamp.partyStash.items = localCamp.partyStash.items.filter(it => !deletedPartyItemIds.includes(it.id));
           }
-          const localItems = localCamp.partyStash.items || [];
-          const remoteItems = remoteCamp.partyStash.items || [];
-          const mergedItems = [...localItems];
-          remoteItems.forEach(ri => {
-            if (!mergedItems.some(li => li.id === ri.id || li.name === ri.name)) {
-              mergedItems.push(ri);
-            }
-          });
-          localCamp.partyStash.items = mergedItems;
+        } else {
+          const localStashUpdated = (localCamp.partyStash && localCamp.partyStash.updatedAt) || 0;
+          const remoteStashUpdated = (remoteCamp.partyStash && remoteCamp.partyStash.updatedAt) || 0;
 
+          if (remoteStashUpdated > localStashUpdated) {
+            // Nuvem tem baú mais recente
+            if (remoteCamp.partyStash.gold !== undefined) {
+              localCamp.partyStash.gold = remoteCamp.partyStash.gold;
+            }
+            const remoteItems = (remoteCamp.partyStash.items || []).filter(ri => !deletedPartyItemIds.includes(ri.id));
+            localCamp.partyStash.items = remoteItems;
+            localCamp.partyStash.updatedAt = remoteStashUpdated;
+          } else {
+            // Local tem baú mais recente ou igual: preserva ouro e itens locais, filtrando excluídos
+            if (localCamp.partyStash.items) {
+              localCamp.partyStash.items = localCamp.partyStash.items.filter(li => !deletedPartyItemIds.includes(li.id));
+            }
+          }
+
+          // Histórico: mescla eventos preservando novos registros
           const localHist = localCamp.partyStash.history || [];
           const remoteHist = remoteCamp.partyStash.history || [];
           const mergedHist = [...localHist];
@@ -337,6 +399,7 @@ function applyCloudDataToLocal(cloudData) {
 
   isCloudRoomDataLoaded = true;
   lastReceivedCloudData = cloudData;
+  cloudSyncCooldownUntil = Date.now() + 1500;
 
   // Proteção: Se a nuvem estiver vazia/zerada e tivermos fichas locais válidas,
   // APENAS o Mestre pode publicar manualmente via publishMasterCampaignToCloud.
@@ -552,6 +615,7 @@ function applyCloudDataToLocal(cloudData) {
 
 function syncLocalChangesToFirebase(immediate = false) {
   if (isApplyingCloudUpdate) return;
+  if (Date.now() < cloudSyncCooldownUntil) return;
   if (!isFirebaseAutoSyncEnabled()) return;
 
   if (!isFirebaseConnected || (!firestoreDb && !realtimeDb)) {

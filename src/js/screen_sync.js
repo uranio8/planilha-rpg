@@ -122,6 +122,7 @@ function broadcastCombatState(actionNarrative = null) {
 }
 
 let isApplyingRemoteSync = false;
+let lastReceivedBroadcastTimestamp = 0;
 
 function broadcastStateSync() {
   if (isApplyingRemoteSync) return;
@@ -129,6 +130,7 @@ function broadcastStateSync() {
     try {
       syncChannel.postMessage({
         type: 'STATE_SYNC',
+        timestamp: Date.now(),
         players: (typeof PLAYERS !== 'undefined') ? PLAYERS : [],
         state: (typeof state !== 'undefined') ? state : null,
         gridState: (typeof gridState !== 'undefined') ? gridState : null
@@ -143,6 +145,8 @@ if (syncChannel) {
     isApplyingRemoteSync = true;
     try {
       if (event.data.type === 'STATE_SYNC') {
+        if (event.data.timestamp && event.data.timestamp < lastReceivedBroadcastTimestamp) return;
+        if (event.data.timestamp) lastReceivedBroadcastTimestamp = Math.max(lastReceivedBroadcastTimestamp, event.data.timestamp);
         if (event.data.players && Array.isArray(event.data.players)) {
           PLAYERS = event.data.players;
           if (typeof renderPlayers === 'function') renderPlayers();
@@ -251,7 +255,13 @@ if (syncChannel) {
         switchPlayerViewMode(event.data.mode, false);
       } else if (event.data.type === 'CAMPAIGNS_UPDATE') {
         if (event.data.campaignsState) {
-          CAMPAIGNS_STATE = event.data.campaignsState;
+          if (event.data.timestamp && event.data.timestamp < lastReceivedBroadcastTimestamp) return;
+          if (event.data.timestamp) lastReceivedBroadcastTimestamp = Math.max(lastReceivedBroadcastTimestamp, event.data.timestamp);
+          if (typeof mergeCloudCampaignsState === 'function') {
+            mergeCloudCampaignsState(event.data.campaignsState);
+          } else {
+            CAMPAIGNS_STATE = event.data.campaignsState;
+          }
           try {
             localStorage.setItem('dnd5e_prisco_campaigns_v1', JSON.stringify(CAMPAIGNS_STATE));
           } catch(e) {}
