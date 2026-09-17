@@ -2294,6 +2294,36 @@ sandbox.toggleDMNotesDrawer = () => { notesDrawerToggled = true; };
 vm.runInContext("handleFabQuickAction('notes')", sandbox);
 assert(notesDrawerToggled === true, 'handleFabQuickAction(notes) aciona toggleDMNotesDrawer com sucesso');
 
+// 8. Testes da ISSUE-65: Correção e Estabilização do Login dos Alunos (ISSUE-65)
+console.log('\n🎯 39. Testes de Estabilização do Login dos Alunos e Resiliência no Lobby (ISSUE-65):');
+assert(distHtml.includes('portal-btn-switch') && distHtml.includes('Trocar Herói'), 'Banner do portal contém botão acessível de Trocar Herói (.portal-btn-switch)');
+assert(distHtml.includes('portal-btn-exit') && distHtml.includes('Modo Mestre'), 'Banner do portal contém botão acessível de saída para Modo Mestre (.portal-btn-exit)');
+assert(distHtml.includes("handleFabQuickAction('login')"), 'FAB Speed Dial inclui ação rápida para Login do Aluno');
+assert(distHtml.includes('Entrar como Jogador / Aluno'), 'Drawer lateral contém atalho direto para Login do Aluno');
+
+// Teste de handleWelcomeSelect('player')
+vm.runInContext(`
+  localStorage.removeItem('dnd5e_session_role');
+  handleWelcomeSelect('player');
+`, sandbox);
+assert(vm.runInContext("clientRole", sandbox) === 'player', "handleWelcomeSelect('player') define clientRole como 'player'");
+assert(vm.runInContext("localStorage.getItem('dnd5e_session_role')", sandbox) === 'player', "handleWelcomeSelect('player') salva dnd5e_session_role como 'player'");
+
+// Teste de restauração de sessão do aluno via checkPlayerPortalUrl
+vm.runInContext(`
+  const targetId = (Array.isArray(PLAYERS) && PLAYERS.length > 0) ? PLAYERS[0].id : 'p_local_active';
+  localStorage.setItem('dnd5e_last_portal_player_id', targetId);
+  const restoredPortal = checkPlayerPortalUrl();
+`, sandbox);
+assert(vm.runInContext("activePortalPlayerId", sandbox) === vm.runInContext("localStorage.getItem('dnd5e_last_portal_player_id')", sandbox), 'checkPlayerPortalUrl restaura activePortalPlayerId a partir do localStorage');
+assert(vm.runInContext("document.body.classList.contains('mode-player-portal')", sandbox) === true, 'checkPlayerPortalUrl reativa mode-player-portal automaticamente para o aluno');
+
+// Teste de chamada de handleFabQuickAction('login')
+let loginModalOpened = false;
+sandbox.openPlayerLoginModal = () => { loginModalOpened = true; };
+vm.runInContext("handleFabQuickAction('login')", sandbox);
+assert(loginModalOpened === true, 'handleFabQuickAction(login) aciona openPlayerLoginModal com sucesso');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

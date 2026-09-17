@@ -804,6 +804,8 @@ function handleFabQuickAction(action) {
     }
   } else if (action === 'notes') {
     if (typeof toggleDMNotesDrawer === 'function') toggleDMNotesDrawer();
+  } else if (action === 'login') {
+    if (typeof openPlayerLoginModal === 'function') openPlayerLoginModal();
   } else if (action === 'cloud') {
     if (typeof openFirebaseModal === 'function') openFirebaseModal();
   }
@@ -1519,6 +1521,7 @@ function findPlayerForCombatant(c, playersList = (typeof PLAYERS !== 'undefined'
 
 const MASTER_PIN_KEY = 'dnd5e_master_pin';
 const MASTER_SESSION_KEY = 'dnd5e_master_session_exp';
+const MASTER_ROLE_KEY = 'dnd5e_session_role';
 const DEFAULT_MASTER_SESSION_HOURS = 8;
 
 let currentPinDigits = '';
@@ -1540,15 +1543,25 @@ function isMasterPinConfigured() {
 function isMasterAuthorized() {
   try {
     if (typeof localStorage === 'undefined') return true;
-    // Se nenhum PIN foi configurado ainda pelo mestre, autoriza por padrão
-    if (!isMasterPinConfigured()) return true;
 
-    const expStr = localStorage.getItem(MASTER_SESSION_KEY) || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(MASTER_SESSION_KEY) : null);
-    if (!expStr) return false;
-    const expTime = parseInt(expStr, 10);
-    return !isNaN(expTime) && expTime > Date.now();
-  } catch (e) {
+    // Se um PIN está configurado pelo mestre, exige sessão de PIN válida e não expirada
+    if (isMasterPinConfigured()) {
+      const expStr = localStorage.getItem(MASTER_SESSION_KEY) || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(MASTER_SESSION_KEY) : null);
+      if (!expStr) return false;
+      const expTime = parseInt(expStr, 10);
+      return !isNaN(expTime) && expTime > Date.now();
+    }
+
+    // Se nenhum PIN foi configurado ainda pelo mestre:
+    // Não autoriza se o dispositivo estiver explicitamente como aluno
+    const role = localStorage.getItem(MASTER_ROLE_KEY) || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(MASTER_ROLE_KEY) : null);
+    if (role === 'player') return false;
+    const hasStudentHero = localStorage.getItem('dnd5e_last_portal_player_id');
+    if (hasStudentHero && role !== 'master') return false;
+
     return true;
+  } catch (e) {
+    return false;
   }
 }
 
@@ -1557,9 +1570,11 @@ function grantMasterSession(hours = DEFAULT_MASTER_SESSION_HOURS) {
     const expTime = Date.now() + (hours * 3600 * 1000);
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(MASTER_SESSION_KEY, String(expTime));
+      localStorage.setItem(MASTER_ROLE_KEY, 'master');
     }
     if (typeof sessionStorage !== 'undefined') {
       sessionStorage.setItem(MASTER_SESSION_KEY, String(expTime));
+      sessionStorage.setItem(MASTER_ROLE_KEY, 'master');
     }
     return true;
   } catch (e) {
@@ -1571,9 +1586,11 @@ function lockMasterSession() {
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem(MASTER_SESSION_KEY);
+      localStorage.removeItem(MASTER_ROLE_KEY);
     }
     if (typeof sessionStorage !== 'undefined') {
       sessionStorage.removeItem(MASTER_SESSION_KEY);
+      sessionStorage.removeItem(MASTER_ROLE_KEY);
     }
   } catch (e) {}
 

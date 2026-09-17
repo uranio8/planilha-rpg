@@ -162,7 +162,11 @@ function startFirebaseRoomListener(roomId) {
     const rtdbRef = realtimeDb.ref('dnd_rooms/' + roomId);
     const callback = snapshot => {
       const cloudData = snapshot.val();
-      if (!cloudData) return;
+      if (!cloudData) {
+        isCloudRoomDataLoaded = true;
+        if (typeof renderPlayerLoginList === 'function') renderPlayerLoginList();
+        return;
+      }
       if (cloudData.lastUpdatedBy === localClientId) return;
       console.log('☁️ Alteração remota recebida do Realtime Database!');
       applyCloudDataToLocal(cloudData);
@@ -177,15 +181,25 @@ function startFirebaseRoomListener(roomId) {
     const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
     firebaseUnsubscribe = roomDocRef.onSnapshot(
       docSnapshot => {
-        if (!docSnapshot.exists) return;
+        if (!docSnapshot.exists) {
+          isCloudRoomDataLoaded = true;
+          if (typeof renderPlayerLoginList === 'function') renderPlayerLoginList();
+          return;
+        }
         const cloudData = docSnapshot.data();
-        if (!cloudData) return;
+        if (!cloudData) {
+          isCloudRoomDataLoaded = true;
+          if (typeof renderPlayerLoginList === 'function') renderPlayerLoginList();
+          return;
+        }
         if (cloudData.lastUpdatedBy === localClientId) return;
         console.log('☁️ Alteração remota recebida do Firestore!');
         applyCloudDataToLocal(cloudData);
       },
       error => {
         console.warn('Erro na escuta do Firestore:', error);
+        isCloudRoomDataLoaded = true;
+        if (typeof renderPlayerLoginList === 'function') renderPlayerLoginList();
       }
     );
   }

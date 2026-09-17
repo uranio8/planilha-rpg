@@ -146,6 +146,8 @@
         <button class="portal-nav-btn" id="pnav-classes" onclick="switchTab('classes')">🌳 Classes</button>
         <button class="portal-nav-btn" id="pnav-species" onclick="switchTab('species')">🧬 Raças</button>
         <button class="portal-nav-btn" id="pnav-dice" onclick="openDiceModal()">🎲 Dados</button>
+        <button class="portal-nav-btn portal-btn-switch" onclick="openPlayerLoginModal()" title="Escolher outro herói ou trocar de personagem" style="color: #fef08a; border-color: rgba(254, 240, 138, 0.4);">🔄 Trocar Herói</button>
+        <button class="portal-nav-btn portal-btn-exit" onclick="exitPlayerPortalMode()" title="Sair do modo jogador e voltar ao Painel do Mestre" style="color: #f87171; border-color: rgba(239, 68, 68, 0.4);">👑 Modo Mestre</button>
       </div>
     </div>
   </div>
@@ -3146,6 +3148,12 @@
       <!-- CLUSTER 4: ATALHOS RÁPIDOS -->
       <div class="drawer-section">
         <div class="drawer-cluster-title">Ações do Sistema</div>
+        <button class="drawer-item" onclick="openPlayerLoginModal(); closeNavDrawer();" style="color: #fef08a; font-weight: 700;">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">🎮</span>
+            <span>Entrar como Jogador / Aluno</span>
+          </div>
+        </button>
         <button class="drawer-item" onclick="openDiceModal(); closeNavDrawer();">
           <div class="drawer-item-left">
             <span class="drawer-item-icon">🎲</span>
@@ -3192,6 +3200,10 @@
   <div id="fab-speed-dial" class="fab-speed-dial-container">
     <button class="fab-main-btn" id="fab-main-btn" onclick="toggleFabMenu()" title="Menu de Ações Rápidas (Atalho Universal)" aria-label="Ações Rápidas">⚡</button>
     <div class="fab-actions-menu" id="fab-actions-menu">
+      <div class="fab-action-btn-row" onclick="handleFabQuickAction('login')">
+        <span class="fab-action-label">Login do Aluno</span>
+        <button class="fab-action-circle" title="Acessar Ficha do Aluno">🎮</button>
+      </div>
       <div class="fab-action-btn-row" onclick="handleFabQuickAction('notes')">
         <span class="fab-action-label">Notas do Mestre</span>
         <button class="fab-action-circle" title="Notas do Mestre (Ctrl+N)">📝</button>

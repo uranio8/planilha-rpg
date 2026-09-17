@@ -3871,15 +3871,25 @@ function closeWelcomeScreen() {
 
 function handleWelcomeSelect(role) {
   if (role === 'player') {
+    if (typeof clientRole !== 'undefined') clientRole = 'player';
+    try {
+      if (typeof localStorage !== 'undefined') localStorage.setItem('dnd5e_session_role', 'player');
+    } catch (e) {}
     closeWelcomeScreen();
     openPlayerLoginModal();
   } else if (role === 'master') {
     if (typeof requestMasterAccess === 'function') {
       requestMasterAccess(() => {
+        try {
+          if (typeof localStorage !== 'undefined') localStorage.setItem('dnd5e_session_role', 'master');
+        } catch (e) {}
         closeWelcomeScreen();
         if (typeof switchTab === 'function') switchTab('combat');
       });
     } else {
+      try {
+        if (typeof localStorage !== 'undefined') localStorage.setItem('dnd5e_session_role', 'master');
+      } catch (e) {}
       closeWelcomeScreen();
       if (typeof switchTab === 'function') switchTab('combat');
     }
@@ -3954,6 +3964,7 @@ function checkPlayerPortalUrl() {
         if (typeof localStorage !== 'undefined') {
           localStorage.removeItem('dnd5e_master_pin');
           localStorage.removeItem('dnd5e_master_session_exp');
+          localStorage.removeItem('dnd5e_session_role');
         }
       } catch (e) {}
       if (typeof showToast === 'function') {
@@ -4005,32 +4016,20 @@ function checkPlayerPortalUrl() {
 
     // Se a URL solicita abertura direta do lobby / seleção de herói
     if (params.get('login') === 'player' || params.get('player_login') === 'true' || params.get('lobby') === 'true') {
+      if (typeof clientRole !== 'undefined') clientRole = 'player';
       setTimeout(() => {
         openPlayerLoginModal();
       }, 200);
       return false;
     }
 
-    // 2. VERIFICAÇÃO DE URL PURA (SEM PARÂMETROS EXPLÍCITOS DE PORTAL)
-    // Se o mestre já estiver com sessão autorizada neste navegador, deixa prosseguir para o painel do mestre
-    const isMasterAuth = (typeof isMasterAuthorized === 'function') ? isMasterAuthorized() : true;
-    if (isMasterAuth) {
-      // Mestre autorizado: desativa portal se não houver pedido de jogador
-      activePortalPlayerId = null;
-      if (typeof document !== 'undefined' && document.body && document.body.classList) {
-        document.body.classList.remove('mode-player-portal');
-      }
-      const banner = document.getElementById('player-portal-banner');
-      if (banner) banner.style.display = 'none';
-      return false;
-    }
-
-    // Se NÃO for mestre autorizado e não houver parâmetros na URL:
-    // Verifica se este dispositivo possui sessão de aluno salva anteriormente
+    // 2. VERIFICAÇÃO DE SESSÃO SALVA DE ALUNO (SEMPRE PRIORITÁRIA PARA NÃO PERDER O PORTAL)
     let lastPlayerId = null;
+    let savedRole = null;
     try {
       if (typeof localStorage !== 'undefined') {
         lastPlayerId = localStorage.getItem('dnd5e_last_portal_player_id');
+        savedRole = localStorage.getItem('dnd5e_session_role');
       }
     } catch (e) {}
 
@@ -4048,7 +4047,29 @@ function checkPlayerPortalUrl() {
       }
     }
 
-    // Se não há herói salvo e o mestre não está autenticado: abre tela de boas-vindas
+    if (savedRole === 'player') {
+      setTimeout(() => {
+        openPlayerLoginModal();
+      }, 150);
+      return false;
+    }
+
+    // 3. VERIFICAÇÃO DE SESSÃO DO MESTRE AUTORIZADA NESTE NAVEGADOR
+    const isMasterAuth = (typeof isMasterAuthorized === 'function') ? isMasterAuthorized() : true;
+    const hasChosenMaster = (savedRole === 'master' || (typeof isMasterPinConfigured === 'function' && isMasterPinConfigured()));
+
+    if (isMasterAuth && hasChosenMaster) {
+      // Mestre autorizado: desativa portal se não houver pedido de jogador
+      activePortalPlayerId = null;
+      if (typeof document !== 'undefined' && document.body && document.body.classList) {
+        document.body.classList.remove('mode-player-portal');
+      }
+      const banner = document.getElementById('player-portal-banner');
+      if (banner) banner.style.display = 'none';
+      return false;
+    }
+
+    // 4. VISITANTE SEM SESSÃO ATIVA (NOVO DISPOSITIVO OU ALUNO): ABRE TELA DE BOAS-VINDAS
     activePortalPlayerId = null;
     if (typeof document !== 'undefined' && document.body && document.body.classList) {
       document.body.classList.remove('mode-player-portal');
@@ -4067,6 +4088,8 @@ function checkPlayerPortalUrl() {
 }
 
 // --- MODAL DE LOGIN / ENTRADA RÁPIDA DE JOGADOR NO COMPUTADOR ---
+
+let loginCloudTimeoutHandle = null;
 
 function openPlayerLoginModal() {
   const modal = document.getElementById('modal-player-login');
@@ -4123,8 +4146,16 @@ function renderPlayerLoginList() {
   const isUrlWithRoom = typeof window !== 'undefined' && window.location && window.location.search && window.location.search.includes('room=');
   const isLoaded = typeof isCloudRoomDataLoaded !== 'undefined' ? isCloudRoomDataLoaded : true;
 
-  // Se o aluno acessou por link com sala e a nuvem ainda não respondeu, exibe estado de carregamento
+  // Se o aluno acessou por link com sala e a nuvem ainda não respondeu, exibe estado com timeout resiliente
   if (isUrlWithRoom && !isLoaded && (!PLAYERS || PLAYERS.length === 0 || (PLAYERS.length === 5 && PLAYERS[0]?.id === 'p1'))) {
+    if (!loginCloudTimeoutHandle && typeof setTimeout === 'function') {
+      loginCloudTimeoutHandle = setTimeout(() => {
+        loginCloudTimeoutHandle = null;
+        if (typeof isCloudRoomDataLoaded !== 'undefined') isCloudRoomDataLoaded = true;
+        renderPlayerLoginList();
+      }, 2500);
+    }
+
     container.innerHTML = `
       <div style="grid-column: 1 / -1; text-align: center; padding: 36px 16px; color: var(--text-muted);">
         <div style="font-size: 32px; margin-bottom: 10px; animation: pulse 1.5s infinite;">🔄</div>
@@ -4135,15 +4166,8 @@ function renderPlayerLoginList() {
     return;
   }
 
-  // Filtra os personagens da campanha ativa se houver vinculação
-  let candidates = PLAYERS || [];
-  const activeCamp = (typeof getActiveCampaign === 'function') ? getActiveCampaign() : null;
-  if (activeCamp && Array.isArray(activeCamp.playerIds) && activeCamp.playerIds.length > 0) {
-    const linked = candidates.filter(p => activeCamp.playerIds.includes(p.id));
-    if (linked.length > 0) {
-      candidates = linked;
-    }
-  }
+  // No portal de login de alunos, exibe TODOS os heróis cadastrados para busca direta por aluno ou personagem
+  const candidates = Array.isArray(PLAYERS) ? PLAYERS : [];
 
   const filtered = candidates.filter(p => {
     if (!term) return true;
@@ -4214,6 +4238,7 @@ function selectLoginCharacter(playerId) {
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('dnd5e_last_portal_player_id', playerId);
+      localStorage.setItem('dnd5e_session_role', 'player');
       const currentRoom = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
       localStorage.setItem('dnd5e_last_portal_room', currentRoom);
     }

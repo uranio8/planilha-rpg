@@ -4010,6 +4010,28 @@
       font-weight: 800;
     }
 
+    .portal-nav-btn.portal-btn-switch {
+      background: rgba(234, 179, 8, 0.12);
+      border-color: rgba(234, 179, 8, 0.35);
+      color: #fef08a;
+    }
+    .portal-nav-btn.portal-btn-switch:hover {
+      background: rgba(234, 179, 8, 0.25);
+      border-color: #facc15;
+      color: #fff;
+    }
+
+    .portal-nav-btn.portal-btn-exit {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
+    }
+    .portal-nav-btn.portal-btn-exit:hover {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: #ef4444;
+      color: #fff;
+    }
+
     .party-stash-quickbar {
       display: flex;
       justify-content: space-between;
@@ -7494,6 +7516,8 @@
         <button class="portal-nav-btn" id="pnav-classes" onclick="switchTab('classes')">🌳 Classes</button>
         <button class="portal-nav-btn" id="pnav-species" onclick="switchTab('species')">🧬 Raças</button>
         <button class="portal-nav-btn" id="pnav-dice" onclick="openDiceModal()">🎲 Dados</button>
+        <button class="portal-nav-btn portal-btn-switch" onclick="openPlayerLoginModal()" title="Escolher outro herói ou trocar de personagem" style="color: #fef08a; border-color: rgba(254, 240, 138, 0.4);">🔄 Trocar Herói</button>
+        <button class="portal-nav-btn portal-btn-exit" onclick="exitPlayerPortalMode()" title="Sair do modo jogador e voltar ao Painel do Mestre" style="color: #f87171; border-color: rgba(239, 68, 68, 0.4);">👑 Modo Mestre</button>
       </div>
     </div>
   </div>
@@ -10494,6 +10518,12 @@
       <!-- CLUSTER 4: ATALHOS RÁPIDOS -->
       <div class="drawer-section">
         <div class="drawer-cluster-title">Ações do Sistema</div>
+        <button class="drawer-item" onclick="openPlayerLoginModal(); closeNavDrawer();" style="color: #fef08a; font-weight: 700;">
+          <div class="drawer-item-left">
+            <span class="drawer-item-icon">🎮</span>
+            <span>Entrar como Jogador / Aluno</span>
+          </div>
+        </button>
         <button class="drawer-item" onclick="openDiceModal(); closeNavDrawer();">
           <div class="drawer-item-left">
             <span class="drawer-item-icon">🎲</span>
@@ -10540,6 +10570,10 @@
   <div id="fab-speed-dial" class="fab-speed-dial-container">
     <button class="fab-main-btn" id="fab-main-btn" onclick="toggleFabMenu()" title="Menu de Ações Rápidas (Atalho Universal)" aria-label="Ações Rápidas">⚡</button>
     <div class="fab-actions-menu" id="fab-actions-menu">
+      <div class="fab-action-btn-row" onclick="handleFabQuickAction('login')">
+        <span class="fab-action-label">Login do Aluno</span>
+        <button class="fab-action-circle" title="Acessar Ficha do Aluno">🎮</button>
+      </div>
       <div class="fab-action-btn-row" onclick="handleFabQuickAction('notes')">
         <span class="fab-action-label">Notas do Mestre</span>
         <button class="fab-action-circle" title="Notas do Mestre (Ctrl+N)">📝</button>
@@ -28792,6 +28826,8 @@ function handleFabQuickAction(action) {
     }
   } else if (action === 'notes') {
     if (typeof toggleDMNotesDrawer === 'function') toggleDMNotesDrawer();
+  } else if (action === 'login') {
+    if (typeof openPlayerLoginModal === 'function') openPlayerLoginModal();
   } else if (action === 'cloud') {
     if (typeof openFirebaseModal === 'function') openFirebaseModal();
   }
@@ -29507,6 +29543,7 @@ function findPlayerForCombatant(c, playersList = (typeof PLAYERS !== 'undefined'
 
 const MASTER_PIN_KEY = 'dnd5e_master_pin';
 const MASTER_SESSION_KEY = 'dnd5e_master_session_exp';
+const MASTER_ROLE_KEY = 'dnd5e_session_role';
 const DEFAULT_MASTER_SESSION_HOURS = 8;
 
 let currentPinDigits = '';
@@ -29528,15 +29565,25 @@ function isMasterPinConfigured() {
 function isMasterAuthorized() {
   try {
     if (typeof localStorage === 'undefined') return true;
-    // Se nenhum PIN foi configurado ainda pelo mestre, autoriza por padrão
-    if (!isMasterPinConfigured()) return true;
 
-    const expStr = localStorage.getItem(MASTER_SESSION_KEY) || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(MASTER_SESSION_KEY) : null);
-    if (!expStr) return false;
-    const expTime = parseInt(expStr, 10);
-    return !isNaN(expTime) && expTime > Date.now();
-  } catch (e) {
+    // Se um PIN está configurado pelo mestre, exige sessão de PIN válida e não expirada
+    if (isMasterPinConfigured()) {
+      const expStr = localStorage.getItem(MASTER_SESSION_KEY) || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(MASTER_SESSION_KEY) : null);
+      if (!expStr) return false;
+      const expTime = parseInt(expStr, 10);
+      return !isNaN(expTime) && expTime > Date.now();
+    }
+
+    // Se nenhum PIN foi configurado ainda pelo mestre:
+    // Não autoriza se o dispositivo estiver explicitamente como aluno
+    const role = localStorage.getItem(MASTER_ROLE_KEY) || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(MASTER_ROLE_KEY) : null);
+    if (role === 'player') return false;
+    const hasStudentHero = localStorage.getItem('dnd5e_last_portal_player_id');
+    if (hasStudentHero && role !== 'master') return false;
+
     return true;
+  } catch (e) {
+    return false;
   }
 }
 
@@ -29545,9 +29592,11 @@ function grantMasterSession(hours = DEFAULT_MASTER_SESSION_HOURS) {
     const expTime = Date.now() + (hours * 3600 * 1000);
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(MASTER_SESSION_KEY, String(expTime));
+      localStorage.setItem(MASTER_ROLE_KEY, 'master');
     }
     if (typeof sessionStorage !== 'undefined') {
       sessionStorage.setItem(MASTER_SESSION_KEY, String(expTime));
+      sessionStorage.setItem(MASTER_ROLE_KEY, 'master');
     }
     return true;
   } catch (e) {
@@ -29559,9 +29608,11 @@ function lockMasterSession() {
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem(MASTER_SESSION_KEY);
+      localStorage.removeItem(MASTER_ROLE_KEY);
     }
     if (typeof sessionStorage !== 'undefined') {
       sessionStorage.removeItem(MASTER_SESSION_KEY);
+      sessionStorage.removeItem(MASTER_ROLE_KEY);
     }
   } catch (e) {}
 
@@ -30039,7 +30090,11 @@ function startFirebaseRoomListener(roomId) {
     const rtdbRef = realtimeDb.ref('dnd_rooms/' + roomId);
     const callback = snapshot => {
       const cloudData = snapshot.val();
-      if (!cloudData) return;
+      if (!cloudData) {
+        isCloudRoomDataLoaded = true;
+        if (typeof renderPlayerLoginList === 'function') renderPlayerLoginList();
+        return;
+      }
       if (cloudData.lastUpdatedBy === localClientId) return;
       console.log('☁️ Alteração remota recebida do Realtime Database!');
       applyCloudDataToLocal(cloudData);
@@ -30054,15 +30109,25 @@ function startFirebaseRoomListener(roomId) {
     const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
     firebaseUnsubscribe = roomDocRef.onSnapshot(
       docSnapshot => {
-        if (!docSnapshot.exists) return;
+        if (!docSnapshot.exists) {
+          isCloudRoomDataLoaded = true;
+          if (typeof renderPlayerLoginList === 'function') renderPlayerLoginList();
+          return;
+        }
         const cloudData = docSnapshot.data();
-        if (!cloudData) return;
+        if (!cloudData) {
+          isCloudRoomDataLoaded = true;
+          if (typeof renderPlayerLoginList === 'function') renderPlayerLoginList();
+          return;
+        }
         if (cloudData.lastUpdatedBy === localClientId) return;
         console.log('☁️ Alteração remota recebida do Firestore!');
         applyCloudDataToLocal(cloudData);
       },
       error => {
         console.warn('Erro na escuta do Firestore:', error);
+        isCloudRoomDataLoaded = true;
+        if (typeof renderPlayerLoginList === 'function') renderPlayerLoginList();
       }
     );
   }
@@ -35627,15 +35692,25 @@ function closeWelcomeScreen() {
 
 function handleWelcomeSelect(role) {
   if (role === 'player') {
+    if (typeof clientRole !== 'undefined') clientRole = 'player';
+    try {
+      if (typeof localStorage !== 'undefined') localStorage.setItem('dnd5e_session_role', 'player');
+    } catch (e) {}
     closeWelcomeScreen();
     openPlayerLoginModal();
   } else if (role === 'master') {
     if (typeof requestMasterAccess === 'function') {
       requestMasterAccess(() => {
+        try {
+          if (typeof localStorage !== 'undefined') localStorage.setItem('dnd5e_session_role', 'master');
+        } catch (e) {}
         closeWelcomeScreen();
         if (typeof switchTab === 'function') switchTab('combat');
       });
     } else {
+      try {
+        if (typeof localStorage !== 'undefined') localStorage.setItem('dnd5e_session_role', 'master');
+      } catch (e) {}
       closeWelcomeScreen();
       if (typeof switchTab === 'function') switchTab('combat');
     }
@@ -35710,6 +35785,7 @@ function checkPlayerPortalUrl() {
         if (typeof localStorage !== 'undefined') {
           localStorage.removeItem('dnd5e_master_pin');
           localStorage.removeItem('dnd5e_master_session_exp');
+          localStorage.removeItem('dnd5e_session_role');
         }
       } catch (e) {}
       if (typeof showToast === 'function') {
@@ -35761,32 +35837,20 @@ function checkPlayerPortalUrl() {
 
     // Se a URL solicita abertura direta do lobby / seleção de herói
     if (params.get('login') === 'player' || params.get('player_login') === 'true' || params.get('lobby') === 'true') {
+      if (typeof clientRole !== 'undefined') clientRole = 'player';
       setTimeout(() => {
         openPlayerLoginModal();
       }, 200);
       return false;
     }
 
-    // 2. VERIFICAÇÃO DE URL PURA (SEM PARÂMETROS EXPLÍCITOS DE PORTAL)
-    // Se o mestre já estiver com sessão autorizada neste navegador, deixa prosseguir para o painel do mestre
-    const isMasterAuth = (typeof isMasterAuthorized === 'function') ? isMasterAuthorized() : true;
-    if (isMasterAuth) {
-      // Mestre autorizado: desativa portal se não houver pedido de jogador
-      activePortalPlayerId = null;
-      if (typeof document !== 'undefined' && document.body && document.body.classList) {
-        document.body.classList.remove('mode-player-portal');
-      }
-      const banner = document.getElementById('player-portal-banner');
-      if (banner) banner.style.display = 'none';
-      return false;
-    }
-
-    // Se NÃO for mestre autorizado e não houver parâmetros na URL:
-    // Verifica se este dispositivo possui sessão de aluno salva anteriormente
+    // 2. VERIFICAÇÃO DE SESSÃO SALVA DE ALUNO (SEMPRE PRIORITÁRIA PARA NÃO PERDER O PORTAL)
     let lastPlayerId = null;
+    let savedRole = null;
     try {
       if (typeof localStorage !== 'undefined') {
         lastPlayerId = localStorage.getItem('dnd5e_last_portal_player_id');
+        savedRole = localStorage.getItem('dnd5e_session_role');
       }
     } catch (e) {}
 
@@ -35804,7 +35868,29 @@ function checkPlayerPortalUrl() {
       }
     }
 
-    // Se não há herói salvo e o mestre não está autenticado: abre tela de boas-vindas
+    if (savedRole === 'player') {
+      setTimeout(() => {
+        openPlayerLoginModal();
+      }, 150);
+      return false;
+    }
+
+    // 3. VERIFICAÇÃO DE SESSÃO DO MESTRE AUTORIZADA NESTE NAVEGADOR
+    const isMasterAuth = (typeof isMasterAuthorized === 'function') ? isMasterAuthorized() : true;
+    const hasChosenMaster = (savedRole === 'master' || (typeof isMasterPinConfigured === 'function' && isMasterPinConfigured()));
+
+    if (isMasterAuth && hasChosenMaster) {
+      // Mestre autorizado: desativa portal se não houver pedido de jogador
+      activePortalPlayerId = null;
+      if (typeof document !== 'undefined' && document.body && document.body.classList) {
+        document.body.classList.remove('mode-player-portal');
+      }
+      const banner = document.getElementById('player-portal-banner');
+      if (banner) banner.style.display = 'none';
+      return false;
+    }
+
+    // 4. VISITANTE SEM SESSÃO ATIVA (NOVO DISPOSITIVO OU ALUNO): ABRE TELA DE BOAS-VINDAS
     activePortalPlayerId = null;
     if (typeof document !== 'undefined' && document.body && document.body.classList) {
       document.body.classList.remove('mode-player-portal');
@@ -35823,6 +35909,8 @@ function checkPlayerPortalUrl() {
 }
 
 // --- MODAL DE LOGIN / ENTRADA RÁPIDA DE JOGADOR NO COMPUTADOR ---
+
+let loginCloudTimeoutHandle = null;
 
 function openPlayerLoginModal() {
   const modal = document.getElementById('modal-player-login');
@@ -35879,8 +35967,16 @@ function renderPlayerLoginList() {
   const isUrlWithRoom = typeof window !== 'undefined' && window.location && window.location.search && window.location.search.includes('room=');
   const isLoaded = typeof isCloudRoomDataLoaded !== 'undefined' ? isCloudRoomDataLoaded : true;
 
-  // Se o aluno acessou por link com sala e a nuvem ainda não respondeu, exibe estado de carregamento
+  // Se o aluno acessou por link com sala e a nuvem ainda não respondeu, exibe estado com timeout resiliente
   if (isUrlWithRoom && !isLoaded && (!PLAYERS || PLAYERS.length === 0 || (PLAYERS.length === 5 && PLAYERS[0]?.id === 'p1'))) {
+    if (!loginCloudTimeoutHandle && typeof setTimeout === 'function') {
+      loginCloudTimeoutHandle = setTimeout(() => {
+        loginCloudTimeoutHandle = null;
+        if (typeof isCloudRoomDataLoaded !== 'undefined') isCloudRoomDataLoaded = true;
+        renderPlayerLoginList();
+      }, 2500);
+    }
+
     container.innerHTML = `
       <div style="grid-column: 1 / -1; text-align: center; padding: 36px 16px; color: var(--text-muted);">
         <div style="font-size: 32px; margin-bottom: 10px; animation: pulse 1.5s infinite;">🔄</div>
@@ -35891,15 +35987,8 @@ function renderPlayerLoginList() {
     return;
   }
 
-  // Filtra os personagens da campanha ativa se houver vinculação
-  let candidates = PLAYERS || [];
-  const activeCamp = (typeof getActiveCampaign === 'function') ? getActiveCampaign() : null;
-  if (activeCamp && Array.isArray(activeCamp.playerIds) && activeCamp.playerIds.length > 0) {
-    const linked = candidates.filter(p => activeCamp.playerIds.includes(p.id));
-    if (linked.length > 0) {
-      candidates = linked;
-    }
-  }
+  // No portal de login de alunos, exibe TODOS os heróis cadastrados para busca direta por aluno ou personagem
+  const candidates = Array.isArray(PLAYERS) ? PLAYERS : [];
 
   const filtered = candidates.filter(p => {
     if (!term) return true;
@@ -35970,6 +36059,7 @@ function selectLoginCharacter(playerId) {
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('dnd5e_last_portal_player_id', playerId);
+      localStorage.setItem('dnd5e_session_role', 'player');
       const currentRoom = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
       localStorage.setItem('dnd5e_last_portal_room', currentRoom);
     }
