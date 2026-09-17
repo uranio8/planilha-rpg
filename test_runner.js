@@ -98,6 +98,7 @@ console.log('\n🎲 3. Testes Unitários de Regras D&D 5E e Lógica:');
 // Cria ambiente simulado de navegador no Node
 const domElements = {};
 const sandbox = {
+  console: { log: console.log, warn: console.warn, error: console.error },
   document: {
     getElementById: (id) => {
       if (!domElements[id]) {
@@ -2323,6 +2324,91 @@ let loginModalOpened = false;
 sandbox.openPlayerLoginModal = () => { loginModalOpened = true; };
 vm.runInContext("handleFabQuickAction('login')", sandbox);
 assert(loginModalOpened === true, 'handleFabQuickAction(login) aciona openPlayerLoginModal com sucesso');
+
+// 9. Testes da ISSUE-66: Sistema de Banco de Dados, Smart Merge e Auto-Cura do PIN do Mestre
+console.log('\n🏛️ 40. Testes de Banco de Dados, Smart Merge na Nuvem, Hash do PIN e Auto-Cura (ISSUE-66):');
+
+// Validação de exportação de funções de banco de dados e hash
+const coreExports = require('./src/js/core.js');
+assert(typeof coreExports.initIndexedDB === 'function', 'Função initIndexedDB exportada');
+assert(typeof coreExports.idbSet === 'function', 'Função idbSet exportada');
+assert(typeof coreExports.idbGet === 'function', 'Função idbGet exportada');
+assert(typeof coreExports.checkAndRestoreFromIndexedDB === 'function', 'Função checkAndRestoreFromIndexedDB exportada');
+assert(typeof coreExports.computeSimplePinHash === 'function', 'Função computeSimplePinHash exportada');
+assert(typeof coreExports.getMasterPinHash === 'function', 'Função getMasterPinHash exportada');
+
+// Teste de hashing do PIN
+const hashA = coreExports.computeSimplePinHash('4321');
+const hashB = coreExports.computeSimplePinHash('4321');
+const hashDiff = coreExports.computeSimplePinHash('1234');
+assert(typeof hashA === 'string' && hashA.startsWith('pinhash_'), 'computeSimplePinHash gera hash prefixado consistente');
+assert(hashA === hashB, 'computeSimplePinHash é determinístico para o mesmo PIN');
+assert(hashA !== hashDiff, 'computeSimplePinHash gera hashes distintos para PINs diferentes');
+
+// Teste de autenticação remota e auto-cura do PIN do Mestre no sandbox
+vm.runInContext(`
+  localStorage.removeItem('dnd5e_master_pin');
+  localStorage.removeItem('dnd5e_master_session_exp');
+  localStorage.setItem('dnd5e_cloud_master_pin_hash', computeSimplePinHash('5678'));
+  
+  openMasterPinModal();
+  handlePinDigit('5');
+  handlePinDigit('6');
+  handlePinDigit('7');
+  handlePinDigit('8');
+  submitMasterPin();
+`, sandbox);
+assert(vm.runInContext("isMasterAuthorized()", sandbox) === true, 'submitMasterPin autorizou acesso com PIN correspondente ao hash da nuvem');
+assert(vm.runInContext("localStorage.getItem('dnd5e_master_pin')", sandbox) === '5678', 'PIN do mestre foi auto-curado e salvo no localStorage');
+
+// Teste de Smart Merge: Preservação de Heróis Locais contra Sobrescrita da Nuvem
+vm.runInContext(`
+  if (typeof setClientRole === 'function') setClientRole('master');
+  clientRole = 'master';
+  activePortalPlayerId = null;
+  pendingPortalPlayerId = null;
+  window.location.search = '';
+  localStorage.removeItem('dnd5e_deleted_player_ids');
+  PLAYERS = [
+    { id: 'p_custom_wesley', name: 'Wesley Mago', student: 'Wesley', hp: 28, maxHp: 28, updatedAt: 100 }
+  ];
+  const cloudUpdate1 = {
+    players: [
+      { id: 'p_cloud_elena', name: 'Elena Clériga', student: 'Elena', hp: 32, maxHp: 32, updatedAt: 90 }
+    ]
+  };
+  applyCloudDataToLocal(cloudUpdate1);
+`, sandbox);
+const smartMergePlayers = vm.runInContext("PLAYERS", sandbox);
+assert(smartMergePlayers.some(p => p.id === 'p_custom_wesley'), 'Smart Merge PRESERVOU personagem criado localmente pelo mestre');
+assert(smartMergePlayers.some(p => p.id === 'p_cloud_elena'), 'Smart Merge INCORPOROU novo personagem vindo da nuvem');
+assert(smartMergePlayers.length === 2, 'Smart Merge manteve ambos os personagens sem perda de dados');
+
+// Teste de Smart Merge: Respeito a Exclusões Intencionais
+vm.runInContext(`
+  if (typeof setClientRole === 'function') setClientRole('master');
+  clientRole = 'master';
+  activePortalPlayerId = null;
+  trackDeletedPlayerId('p_deleted_orc');
+  const cloudUpdate2 = {
+    players: [
+      { id: 'p_deleted_orc', name: 'Orc Guerreiro', student: 'NPC', hp: 15, maxHp: 15 },
+      { id: 'p_cloud_elena', name: 'Elena Clériga', student: 'Elena', hp: 32, maxHp: 32 }
+    ]
+  };
+  applyCloudDataToLocal(cloudUpdate2);
+`, sandbox);
+const smartMergeAfterDelete = vm.runInContext("PLAYERS", sandbox);
+assert(!smartMergeAfterDelete.some(p => p.id === 'p_deleted_orc'), 'Smart Merge NÃO ressuscitou personagem excluído intencionalmente');
+
+// Teste de Empty State e CTA de Restauração em renderPlayers
+vm.runInContext(`
+  PLAYERS = [];
+  renderPlayers();
+`, sandbox);
+const emptyGridHtml = vm.runInContext("document.getElementById('grid-players').innerHTML", sandbox);
+assert(emptyGridHtml.includes('openSnapshotsModal()'), 'renderPlayers exibe botão para restaurar snapshots quando lista está vazia');
+assert(emptyGridHtml.includes('openPlayerModal()'), 'renderPlayers exibe botão para criar nova ficha quando lista está vazia');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

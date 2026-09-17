@@ -24,7 +24,22 @@ let isFirebaseSyncing = false;
 let isApplyingCloudUpdate = false;
 let firebaseCloudDebounceTimer = null;
 let localClientId = 'client_' + Math.random().toString(36).substring(2, 9);
-let clientRole = (typeof window !== 'undefined' && window.location && (window.location.search.includes('view=player') || window.location.search.includes('player=') || window.location.search.includes('lobby=true') || window.location.search.includes('login=player'))) ? 'player' : 'master';
+var clientRole = (typeof window !== 'undefined' && window.location && (window.location.search.includes('view=player') || window.location.search.includes('player=') || window.location.search.includes('lobby=true') || window.location.search.includes('login=player'))) ? 'player' : 'master';
+
+function setClientRole(role) {
+  clientRole = role;
+  if (typeof window !== 'undefined') window.clientRole = role;
+}
+
+function getClientRole() {
+  return clientRole;
+}
+
+if (typeof window !== 'undefined') {
+  window.setClientRole = setClientRole;
+  window.getClientRole = getClientRole;
+  window.clientRole = clientRole;
+}
 let isCloudRoomDataLoaded = false;
 let lastReceivedCloudData = null;
 
@@ -303,6 +318,13 @@ function applyCloudDataToLocal(cloudData) {
 
   isApplyingCloudUpdate = true;
 
+  // Salva hash sincronizado do PIN do mestre da sala (se disponível)
+  if (cloudData.masterPinHash && typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem('dnd5e_cloud_master_pin_hash', cloudData.masterPinHash);
+    } catch (e) {}
+  }
+
   try {
     // 0. Salva Snapshot de Segurança Automático antes de aplicar alterações remotas
     if (typeof saveSafetySnapshot === 'function') {
@@ -361,8 +383,61 @@ function applyCloudDataToLocal(cloudData) {
         // Visão do jogador no lobby antes de escolher o herói: adota os heróis reais da nuvem
         PLAYERS = cloudData.players;
       } else {
-        // Modo Mestre: atualiza todos os jogadores recebidos da nuvem
-        PLAYERS = cloudData.players.map(p => {
+        // Modo Mestre: SMART MERGE ANTI-PERDA DE FICHAS
+        // 1. Obtém lista de exclusões intencionais locais
+        let deletedPlayerIds = [];
+        try {
+          if (typeof localStorage !== 'undefined') {
+            const rawDel = localStorage.getItem('dnd5e_deleted_player_ids');
+            if (rawDel) deletedPlayerIds = JSON.parse(rawDel);
+          }
+        } catch (e) {}
+        if (!Array.isArray(deletedPlayerIds)) deletedPlayerIds = [];
+
+        const remoteList = Array.isArray(cloudData.players) ? cloudData.players : [];
+        const localList = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS)) ? PLAYERS : [];
+
+        // Detecta se nuvem tem apenas mocks default (p1..p5) e local já possui personagens reais
+        const isRemoteOnlyMocks = remoteList.length > 0 && remoteList.every(p => ['p1','p2','p3','p4','p5'].includes(p.id));
+        const localHasCustomPlayers = localList.some(p => !['p1','p2','p3','p4','p5'].includes(p.id));
+
+        const mergedMap = new Map();
+
+        // Insere personagens locais (preservando todo trabalho local)
+        for (const localP of localList) {
+          if (localP && localP.id) {
+            mergedMap.set(localP.id, Object.assign({}, localP));
+          }
+        }
+
+        // Mescla com personagens remotos da nuvem
+        for (const remoteP of remoteList) {
+          if (!remoteP || !remoteP.id) continue;
+          // Se foi explicitamente deletado pelo mestre localmente, não ressuscita
+          if (deletedPlayerIds.includes(remoteP.id)) continue;
+
+          // Se a nuvem tem apenas mocks antigos e o mestre já tem fichas reais personalizadas, não aceita mocks
+          if (isRemoteOnlyMocks && localHasCustomPlayers && ['p1','p2','p3','p4','p5'].includes(remoteP.id) && !mergedMap.has(remoteP.id)) {
+            continue;
+          }
+
+          if (mergedMap.has(remoteP.id)) {
+            const currentLocal = mergedMap.get(remoteP.id);
+            const remoteUpdated = remoteP.updatedAt || 0;
+            const localUpdated = currentLocal.updatedAt || 0;
+            if (remoteUpdated >= localUpdated) {
+              mergedMap.set(remoteP.id, Object.assign({}, currentLocal, remoteP));
+            } else {
+              // Local é mais recente: preserva campos locais
+              mergedMap.set(remoteP.id, Object.assign({}, remoteP, currentLocal));
+            }
+          } else {
+            // Personagem novo vindo da nuvem
+            mergedMap.set(remoteP.id, Object.assign({}, remoteP));
+          }
+        }
+
+        PLAYERS = Array.from(mergedMap.values()).map(p => {
           if (!p.skillProficiencies) p.skillProficiencies = [];
           if (!p.saveProficiencies) p.saveProficiencies = [];
           if (!p.actionLogs) p.actionLogs = [];
@@ -465,6 +540,7 @@ function executeCloudSave() {
     gridState: (typeof gridState !== 'undefined') ? gridState : null,
     campaigns: (typeof CAMPAIGNS_STATE !== 'undefined') ? CAMPAIGNS_STATE : null,
     dmNotes: (typeof localStorage !== 'undefined') ? (localStorage.getItem('dnd_tracker_dm_notes_v3') || '') : '',
+    masterPinHash: (typeof getMasterPinHash === 'function') ? getMasterPinHash() : '',
     lastUpdatedBy: localClientId,
     lastUpdateIso: new Date().toISOString(),
     publishedBy: 'master'
@@ -541,6 +617,7 @@ function publishMasterCampaignToCloud(silent = false) {
     state: (typeof state !== 'undefined') ? state : { combatants: [], round: 1, current: 0 },
     gridState: (typeof gridState !== 'undefined') ? gridState : null,
     dmNotes: (typeof localStorage !== 'undefined') ? (localStorage.getItem('dnd_tracker_dm_notes_v3') || '') : '',
+    masterPinHash: (typeof getMasterPinHash === 'function') ? getMasterPinHash() : '',
     lastUpdatedBy: localClientId,
     publishedAtIso: new Date().toISOString(),
     publishedBy: 'master'

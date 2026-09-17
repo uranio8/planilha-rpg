@@ -355,6 +355,151 @@ let state = {
 let puzzleIdx = 0;
 let managingCondCombatantId = null;
 
+// ===================================================
+// 🏛️ CAMADA DE BANCO DE DADOS ROBUSTA (INDEXEDDB - COFRE RESILIENTE)
+// ===================================================
+const IDB_DB_NAME = 'dnd5e_vtt_database';
+const IDB_DB_VERSION = 1;
+const IDB_STORE_NAME = 'campaign_vault';
+
+let dndIndexedDB = null;
+let isIdbInitialized = false;
+
+function initIndexedDB() {
+  if (typeof window === 'undefined' || !window.indexedDB) {
+    return Promise.resolve(null);
+  }
+  if (dndIndexedDB) return Promise.resolve(dndIndexedDB);
+
+  return new Promise((resolve) => {
+    try {
+      const req = window.indexedDB.open(IDB_DB_NAME, IDB_DB_VERSION);
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(IDB_STORE_NAME)) {
+          db.createObjectStore(IDB_STORE_NAME, { keyPath: 'key' });
+        }
+      };
+      req.onsuccess = (e) => {
+        dndIndexedDB = e.target.result;
+        isIdbInitialized = true;
+        resolve(dndIndexedDB);
+      };
+      req.onerror = (e) => {
+        console.warn('⚠️ Falha ao abrir IndexedDB:', e);
+        resolve(null);
+      };
+    } catch (err) {
+      console.warn('⚠️ Exceção ao inicializar IndexedDB:', err);
+      resolve(null);
+    }
+  });
+}
+
+function idbSet(key, value) {
+  if (!dndIndexedDB) {
+    if (typeof window !== 'undefined' && window.indexedDB && !isIdbInitialized) {
+      return initIndexedDB().then(db => {
+        if (!db) return false;
+        return idbSet(key, value);
+      });
+    }
+    return Promise.resolve(false);
+  }
+  return new Promise((resolve) => {
+    try {
+      const tx = dndIndexedDB.transaction(IDB_STORE_NAME, 'readwrite');
+      const store = tx.objectStore(IDB_STORE_NAME);
+      store.put({ key, value, updatedAt: Date.now() });
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+    } catch (e) {
+      resolve(false);
+    }
+  });
+}
+
+function idbGet(key) {
+  if (!dndIndexedDB) {
+    if (typeof window !== 'undefined' && window.indexedDB && !isIdbInitialized) {
+      return initIndexedDB().then(db => {
+        if (!db) return null;
+        return idbGet(key);
+      });
+    }
+    return Promise.resolve(null);
+  }
+  return new Promise((resolve) => {
+    try {
+      const tx = dndIndexedDB.transaction(IDB_STORE_NAME, 'readonly');
+      const store = tx.objectStore(IDB_STORE_NAME);
+      const req = store.get(key);
+      req.onsuccess = () => resolve(req.result ? req.result.value : null);
+      req.onerror = () => resolve(null);
+    } catch (e) {
+      resolve(null);
+    }
+  });
+}
+
+async function checkAndRestoreFromIndexedDB() {
+  try {
+    const db = await initIndexedDB();
+    if (!db) return false;
+
+    // Se PLAYERS local já contém heróis reais (não apenas mocks p1..p5 vazios), apenas espelha no IDB
+    const hasCustomLocalPlayers = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS) && PLAYERS.length > 0 && PLAYERS.some(p => !['p1','p2','p3','p4','p5'].includes(p.id)));
+
+    if (!hasCustomLocalPlayers) {
+      // Tenta recuperar do cofre IndexedDB
+      const idbPayload = await idbGet(STORAGE_KEY);
+      const idbSnap = await idbGet('dnd5e_prisco_safety_snapshot_latest');
+      const candidate = (idbPayload && idbPayload.players && idbPayload.players.length > 0)
+        ? idbPayload
+        : (idbSnap && idbSnap.players && idbSnap.players.length > 0 ? idbSnap : null);
+
+      if (candidate && Array.isArray(candidate.players) && candidate.players.length > 0) {
+        PLAYERS = candidate.players.map(p => {
+          if (!p.skillProficiencies) p.skillProficiencies = [];
+          if (!p.saveProficiencies) p.saveProficiencies = [];
+          if (!p.actionLogs) p.actionLogs = [];
+          if (p.playerNotes === undefined) p.playerNotes = '';
+          return p;
+        });
+
+        if (candidate.state && Array.isArray(candidate.state.combatants)) {
+          state = candidate.state;
+        }
+
+        saveToLocalStorage();
+        if (typeof renderPlayers === 'function') renderPlayers();
+        if (typeof renderCombat === 'function') renderCombat();
+        if (typeof showToast === 'function') {
+          showToast(`🛡️ ${PLAYERS.length} ficha(s) restaurada(s) do Cofre IndexedDB com sucesso!`, 'success');
+        }
+        return true;
+      }
+    } else {
+      // Espelha estado atual robusto no IDB
+      if (typeof PLAYERS !== 'undefined') {
+        idbSet('dnd_tracker_players_v3', PLAYERS);
+        idbSet(STORAGE_KEY, { state, players: PLAYERS, gridState: (typeof gridState !== 'undefined' ? gridState : null) });
+      }
+    }
+
+    // Auto-restaura PIN se ausente no localStorage
+    if (typeof localStorage !== 'undefined' && !localStorage.getItem(MASTER_PIN_KEY)) {
+      const idbPin = await idbGet(MASTER_PIN_KEY);
+      if (idbPin && typeof idbPin === 'string' && idbPin.trim().length === 4) {
+        localStorage.setItem(MASTER_PIN_KEY, idbPin.trim());
+      }
+    }
+  } catch (err) {
+    console.warn('⚠️ Erro na checagem do cofre IndexedDB:', err);
+  }
+  return false;
+}
+
 // --- LOCAL STORAGE AUTO-SAVE ---
 const STORAGE_KEY = 'dnd5e_prisco_sheet_state_v2';
 let lastSafetySnapshotTime = 0;
@@ -379,6 +524,18 @@ function saveToLocalStorage() {
     try {
       localStorage.setItem('dnd_tracker_players_v3', JSON.stringify(PLAYERS));
       localStorage.setItem('dnd_tracker_state_v3', JSON.stringify(state));
+    } catch (e) {}
+
+    // Espelhamento assíncrono redundante no Cofre IndexedDB
+    try {
+      if (typeof idbSet === 'function') {
+        idbSet(STORAGE_KEY, payload);
+        idbSet('dnd_tracker_players_v3', PLAYERS);
+        idbSet('dnd_tracker_state_v3', state);
+        if (typeof CAMPAIGNS_STATE !== 'undefined') {
+          idbSet('dnd5e_prisco_campaigns_v1', CAMPAIGNS_STATE);
+        }
+      }
     } catch (e) {}
 
     if (typeof saveCampaignsState === 'function') saveCampaignsState();
@@ -1187,6 +1344,15 @@ function saveSafetySnapshot(reason = 'Backup Automático') {
 
     localStorage.setItem(SAFETY_SNAPSHOTS_KEY, JSON.stringify(history));
     localStorage.setItem('dnd5e_prisco_safety_snapshot_latest', JSON.stringify(snapshot));
+
+    // Espelhamento no Cofre IndexedDB
+    try {
+      if (typeof idbSet === 'function') {
+        idbSet(SAFETY_SNAPSHOTS_KEY, history);
+        idbSet('dnd5e_prisco_safety_snapshot_latest', snapshot);
+      }
+    } catch (e) {}
+
     return true;
   } catch (e) {
     console.warn('Erro ao salvar snapshot de segurança:', e);
@@ -1530,11 +1696,37 @@ let tempPinConfirmation = '';
 let activePinSuccessCb = null;
 let activePinCancelCb = null;
 
+function computeSimplePinHash(str) {
+  if (!str) return '';
+  let hash = 0;
+  const salted = 'dnd5e_pin_salt_v1_' + String(str).trim();
+  for (let i = 0; i < salted.length; i++) {
+    const char = salted.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return 'pinhash_' + Math.abs(hash).toString(36);
+}
+
+function getMasterPinHash() {
+  try {
+    if (typeof localStorage === 'undefined') return '';
+    const pin = localStorage.getItem(MASTER_PIN_KEY);
+    if (pin && pin.trim().length === 4) {
+      return computeSimplePinHash(pin.trim());
+    }
+  } catch (e) {}
+  return '';
+}
+
 function isMasterPinConfigured() {
   try {
     if (typeof localStorage === 'undefined') return false;
     const pin = localStorage.getItem(MASTER_PIN_KEY);
-    return !!(pin && pin.trim().length === 4);
+    if (pin && pin.trim().length === 4) return true;
+    const cloudHash = localStorage.getItem('dnd5e_cloud_master_pin_hash');
+    if (cloudHash && cloudHash.trim().length > 0) return true;
+    return false;
   } catch (e) {
     return false;
   }
@@ -1744,6 +1936,9 @@ function submitMasterPin() {
         if (typeof localStorage !== 'undefined') {
           localStorage.setItem(MASTER_PIN_KEY, currentPinDigits);
         }
+        if (typeof idbSet === 'function') {
+          idbSet(MASTER_PIN_KEY, currentPinDigits);
+        }
       } catch (e) {}
 
       isPinChangeMode = false;
@@ -1756,7 +1951,10 @@ function submitMasterPin() {
         closeWelcomeScreen();
       }
       if (typeof showToast === 'function') {
-        showToast('✅ PIN do Mestre configurado com sucesso!', 'success');
+        showToast('✅ PIN do Mestre configurado e protegido no cofre!', 'success');
+      }
+      if (typeof syncLocalChangesToFirebase === 'function') {
+        syncLocalChangesToFirebase();
       }
       if (typeof successCb === 'function') {
         successCb();
@@ -1776,14 +1974,36 @@ function submitMasterPin() {
 
   // MODO 2: AUTENTICAÇÃO NORMAL DE ACESSO DO MESTRE
   let savedPin = '1234'; // Fallback se nunca configurado
+  let hasConfiguredPin = false;
   try {
     if (typeof localStorage !== 'undefined') {
       const stored = localStorage.getItem(MASTER_PIN_KEY);
-      if (stored) savedPin = stored.trim();
+      if (stored && stored.trim().length === 4) {
+        savedPin = stored.trim();
+        hasConfiguredPin = true;
+      }
     }
   } catch (e) {}
 
-  if (currentPinDigits === savedPin) {
+  let isAuthorized = (currentPinDigits === savedPin);
+
+  // Auto-cura e verificação remota pelo hash sincronizado da sala
+  if (!isAuthorized) {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const cloudHash = localStorage.getItem('dnd5e_cloud_master_pin_hash');
+        if (cloudHash && computeSimplePinHash(currentPinDigits) === cloudHash) {
+          isAuthorized = true;
+          localStorage.setItem(MASTER_PIN_KEY, currentPinDigits);
+          if (typeof idbSet === 'function') {
+            idbSet(MASTER_PIN_KEY, currentPinDigits);
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  if (isAuthorized) {
     grantMasterSession();
     isPinChangeMode = false;
     tempPinConfirmation = '';
@@ -1818,7 +2038,7 @@ function requestMasterAccess(onSuccess = null) {
 }
 
 // Suporte para digitação física no teclado
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
   window.addEventListener('keydown', (e) => {
     const modal = document.getElementById('modal-master-pin');
     if (!modal || !modal.classList.contains('open')) return;
@@ -1878,7 +2098,13 @@ if (typeof module !== 'undefined' && module.exports) {
     toggleCombatOptionsDropdown,
     closeCombatOptionsDropdown,
     toggleCombatFocusMode,
-    initCombatFocusMode
+    initCombatFocusMode,
+    initIndexedDB,
+    idbSet,
+    idbGet,
+    checkAndRestoreFromIndexedDB,
+    computeSimplePinHash,
+    getMasterPinHash
   };
 } else {
   // Execução síncrona imediata no navegador para garantir que PLAYERS e state sejam carregados antes de qualquer render
@@ -1891,10 +2117,16 @@ if (typeof module !== 'undefined' && module.exports) {
         document.addEventListener('DOMContentLoaded', () => {
           initSwipeNavigation();
           initCombatFocusMode();
+          if (typeof checkAndRestoreFromIndexedDB === 'function') {
+            checkAndRestoreFromIndexedDB();
+          }
         });
       } else {
         initSwipeNavigation();
         initCombatFocusMode();
+        if (typeof checkAndRestoreFromIndexedDB === 'function') {
+          checkAndRestoreFromIndexedDB();
+        }
       }
     }
   } catch (e) {

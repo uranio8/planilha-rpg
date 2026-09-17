@@ -1032,6 +1032,21 @@ function renderPlayers() {
       </div>
     `;
   }).join('');
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div style="grid-column: 1 / -1; padding: 40px 20px; text-align: center; background: rgba(15, 23, 42, 0.6); border: 2px dashed #334155; border-radius: 12px; margin: 16px 0;">
+        <div style="font-size: 36px; margin-bottom: 12px;">🛡️</div>
+        <div style="font-size: 16px; font-weight: 700; color: #f8fafc; margin-bottom: 8px;">Nenhum personagem cadastrado ou visível</div>
+        <div style="font-size: 13px; color: #94a3b8; max-width: 480px; margin: 0 auto 18px; line-height: 1.5;">Não encontramos fichas com o filtro atual. Se você acabou de chegar ou perdeu fichas após uma limpeza do navegador, você pode criar uma nova ou restaurar de um ponto automático de segurança.</div>
+        <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+          <button class="btn-primary" onclick="openPlayerModal()" style="font-size: 12px; padding: 8px 16px; cursor: pointer;">➕ Criar Nova Ficha</button>
+          <button class="btn-secondary" onclick="openSnapshotsModal()" style="font-size: 12px; padding: 8px 16px; border-color: #3b82f6; color: #60a5fa; cursor: pointer;">🛡️ Recuperar Backup / Snapshot</button>
+          <button class="btn-secondary" onclick="importData()" style="font-size: 12px; padding: 8px 16px; border-color: #64748b; color: #cbd5e1; cursor: pointer;">📂 Carregar Arquivo JSON</button>
+        </div>
+      </div>
+    `;
+  }
 }
 
 function switchPlayerCardTab(id, tabName) {
@@ -3211,7 +3226,8 @@ function savePlayerSheet() {
     spells: document.getElementById('pm-spells').value || '',
     badges,
     activeCardTab: existing ? existing.activeCardTab : 'attacks',
-    present: true
+    present: true,
+    updatedAt: Date.now()
   };
 
   if (id) {
@@ -3242,6 +3258,22 @@ function savePlayerSheet() {
   }
 }
 
+function trackDeletedPlayerId(id) {
+  if (!id) return;
+  try {
+    if (typeof localStorage === 'undefined') return;
+    let list = [];
+    const raw = localStorage.getItem('dnd5e_deleted_player_ids');
+    if (raw) list = JSON.parse(raw);
+    if (!Array.isArray(list)) list = [];
+    if (!list.includes(id)) {
+      list.push(id);
+      if (list.length > 100) list = list.slice(-100);
+      localStorage.setItem('dnd5e_deleted_player_ids', JSON.stringify(list));
+    }
+  } catch (e) {}
+}
+
 function deletePlayerDirect(id) {
   const p = PLAYERS.find(x => x.id === id);
   if (!p) return;
@@ -3249,6 +3281,7 @@ function deletePlayerDirect(id) {
     if (typeof saveSafetySnapshot === 'function') {
       saveSafetySnapshot(`Antes de excluir ficha de ${p.name}`);
     }
+    trackDeletedPlayerId(id);
     PLAYERS = PLAYERS.filter(x => x.id !== id);
 
     if (state && Array.isArray(state.combatants)) {
