@@ -65,7 +65,7 @@
       gap: 12px;
       position: sticky;
       top: 0;
-      z-index: 40;
+      z-index: 90;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     }
     .header-left {
@@ -242,6 +242,9 @@
       align-items: center;
       gap: 5px;
     }
+    .combat-dropdown.open {
+      z-index: 140;
+    }
     .nav-dropdown-menu, .combat-dropdown-menu {
       position: absolute;
       top: calc(100% + 6px);
@@ -251,10 +254,10 @@
       border: 1px solid rgba(245, 158, 11, 0.35);
       border-radius: 12px;
       padding: 6px;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7), 0 0 16px rgba(245, 158, 11, 0.15);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8), 0 0 20px rgba(245, 158, 11, 0.2);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      z-index: 130;
+      z-index: 150;
       display: none;
       flex-direction: column;
       gap: 3px;
@@ -341,6 +344,8 @@
 
     /* CONTROLS BAR & COMBAT COMMAND DECK */
     .controls-bar {
+      position: relative;
+      z-index: 60;
       background: rgba(11, 15, 25, 0.95);
       border: 1px solid var(--border-color);
       padding: 8px 12px;
@@ -352,6 +357,11 @@
       gap: 8px 12px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.3);
       backdrop-filter: blur(10px);
+    }
+    .controls-bar.has-open-dropdown,
+    .controls-bar:has(.combat-dropdown.open),
+    .controls-bar:focus-within {
+      z-index: 75;
     }
     .combat-bar-cluster {
       display: inline-flex;
@@ -729,7 +739,7 @@
       inset: 0;
       background: rgba(4, 6, 10, 0.85);
       backdrop-filter: blur(6px);
-      z-index: 100;
+      z-index: 500;
       align-items: center;
       justify-content: center;
       padding: 16px;
@@ -28235,13 +28245,19 @@ function toggleCombatOptionsDropdown(e) {
   const menu = document.getElementById('combat-options-menu');
   if (!menu) return;
   const parent = menu.closest('.combat-dropdown');
-  if (parent) parent.classList.toggle('open');
+  const controlsBar = menu.closest('.controls-bar');
+  if (parent) {
+    const isOpen = parent.classList.toggle('open');
+    if (controlsBar) controlsBar.classList.toggle('has-open-dropdown', isOpen);
+  }
 }
 
 function closeCombatOptionsDropdown() {
   if (typeof document === 'undefined') return;
   const menus = document.querySelectorAll('.combat-dropdown.open');
   menus.forEach(m => m.classList.remove('open'));
+  const bars = document.querySelectorAll('.controls-bar.has-open-dropdown');
+  bars.forEach(b => b.classList.remove('has-open-dropdown'));
 }
 
 function toggleCombatFocusMode() {

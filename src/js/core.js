@@ -813,13 +813,19 @@ function toggleCombatOptionsDropdown(e) {
   const menu = document.getElementById('combat-options-menu');
   if (!menu) return;
   const parent = menu.closest('.combat-dropdown');
-  if (parent) parent.classList.toggle('open');
+  const controlsBar = menu.closest('.controls-bar');
+  if (parent) {
+    const isOpen = parent.classList.toggle('open');
+    if (controlsBar) controlsBar.classList.toggle('has-open-dropdown', isOpen);
+  }
 }
 
 function closeCombatOptionsDropdown() {
   if (typeof document === 'undefined') return;
   const menus = document.querySelectorAll('.combat-dropdown.open');
   menus.forEach(m => m.classList.remove('open'));
+  const bars = document.querySelectorAll('.controls-bar.has-open-dropdown');
+  bars.forEach(b => b.classList.remove('has-open-dropdown'));
 }
 
 function toggleCombatFocusMode() {
