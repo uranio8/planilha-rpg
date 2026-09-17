@@ -6942,4 +6942,425 @@
         color: #000 !important;
       }
     }
+    /* ===================================================
+       🌟 TELA DE BOAS-VINDAS (LANDING DE ACESSO DO ALUNO & MESTRE)
+       =================================================== */
+    .welcome-screen-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at center top, rgba(30, 41, 59, 0.95) 0%, rgba(8, 12, 22, 0.98) 70%, #030712 100%);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .welcome-screen-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .welcome-card-box {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 15, 29, 0.98) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 18px;
+      padding: 32px 28px;
+      max-width: 680px;
+      width: 100%;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(245, 158, 11, 0.15);
+      text-align: center;
+      position: relative;
+      animation: welcomeCardPop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes welcomeCardPop {
+      0% {
+        transform: scale(0.92) translateY(18px);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .welcome-brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--accent-gold);
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .welcome-title {
+      font-family: var(--font-title);
+      font-size: 26px;
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: 8px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+    }
+
+    .welcome-subtitle {
+      font-size: 13.5px;
+      color: var(--primary-light);
+      margin-bottom: 26px;
+      line-height: 1.5;
+    }
+
+    .welcome-options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin-bottom: 22px;
+      text-align: left;
+    }
+
+    .welcome-role-card {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1.5px solid var(--border-color);
+      border-radius: 14px;
+      padding: 20px 18px;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .welcome-role-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: transparent;
+      transition: background 0.25s ease;
+    }
+
+    .welcome-role-card.role-player:hover {
+      border-color: #38bdf8;
+      transform: translateY(-4px);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5), 0 0 20px rgba(56, 189, 248, 0.25);
+      background: rgba(15, 23, 42, 0.95);
+    }
+    .welcome-role-card.role-player:hover::before {
+      background: linear-gradient(90deg, #0284c7, #38bdf8);
+    }
+
+    .welcome-role-card.role-master:hover {
+      border-color: var(--accent-gold);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5), 0 0 20px rgba(245, 158, 11, 0.25);
+      background: rgba(15, 23, 42, 0.95);
+    }
+    .welcome-role-card.role-master:hover::before {
+      background: linear-gradient(90deg, #d97706, #f59e0b);
+    }
+
+    .welcome-role-icon {
+      font-size: 34px;
+      margin-bottom: 12px;
+      display: inline-block;
+    }
+
+    .welcome-role-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .welcome-role-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.45;
+      margin-bottom: 16px;
+    }
+
+    .welcome-role-btn {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .welcome-btn-player {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+    }
+    .welcome-btn-player:hover {
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    }
+
+    .welcome-btn-master {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #0b0f19;
+      font-weight: 800;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+    .welcome-btn-master:hover {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    }
+
+    .welcome-footer-hint {
+      font-size: 11.5px;
+      color: var(--text-dim);
+    }
+
+    /* ===================================================
+       🔐 MODAL DE PIN DO MESTRE (TECLADO NUMÉRICO ESTILO COFRE D&D)
+       =================================================== */
+    #modal-master-pin .modal-body {
+      max-width: 360px;
+      width: 92%;
+      background: linear-gradient(180deg, #0f172a 0%, #070a12 100%);
+      border: 1.5px solid rgba(245, 158, 11, 0.4);
+      border-radius: 18px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(245, 158, 11, 0.2);
+    }
+
+    .pin-display-dots {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin: 20px 0 16px 0;
+    }
+
+    .pin-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid rgba(245, 158, 11, 0.4);
+      background: rgba(0, 0, 0, 0.5);
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .pin-dot.filled {
+      background: var(--accent-gold);
+      border-color: #fef08a;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.8);
+      transform: scale(1.15);
+    }
+
+    .pin-numpad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      max-width: 260px;
+      margin: 0 auto;
+    }
+
+    .pin-num-btn {
+      height: 52px;
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      color: #fff;
+      font-size: 20px;
+      font-weight: 700;
+      font-family: var(--font-title);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .pin-num-btn:hover {
+      background: rgba(245, 158, 11, 0.18);
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
+      transform: scale(1.04);
+    }
+
+    .pin-num-btn:active {
+      transform: scale(0.96);
+    }
+
+    .pin-num-btn.btn-fn {
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--text-muted);
+    }
+
+    .pin-error-msg {
+      min-height: 20px;
+      font-size: 12px;
+      color: #ef4444;
+      font-weight: 600;
+      margin-top: 10px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .pin-error-msg.visible {
+      opacity: 1;
+    }
+
+    .pin-shake {
+      animation: pinShakeAnim 0.4s ease-in-out;
+    }
+
+    @keyframes pinShakeAnim {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+
+    /* ===================================================
+       👤 BANNER DE RETORNO DO ALUNO (BEM-VINDO DE VOLTA)
+       =================================================== */
+    .player-return-banner {
+      background: linear-gradient(90deg, rgba(14, 116, 144, 0.95) 0%, rgba(3, 105, 161, 0.95) 100%);
+      border-bottom: 1.5px solid #38bdf8;
+      color: #fff;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+      z-index: 105;
+      position: sticky;
+      top: 0;
+      animation: slideDownBanner 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideDownBanner {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .player-return-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+    }
+
+    .player-return-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-return-action {
+      background: #fff;
+      color: #0369a1;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-return-action:hover {
+      background: #f0fdf4;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-return-switch {
+      background: rgba(0, 0, 0, 0.25);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 11.5px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .btn-return-switch:hover {
+      background: rgba(0, 0, 0, 0.45);
+    }
+
+    /* ===================================================
+       🎮 BOTÃO FLUTUANTE DE LOGIN RÁPIDO DO ALUNO (FAB ALUNO)
+       =================================================== */
+    .btn-float-player-login {
+      position: fixed;
+      bottom: 85px;
+      right: 20px;
+      z-index: 95;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #fff;
+      border: 1.5px solid rgba(56, 189, 248, 0.5);
+      border-radius: 30px;
+      padding: 9px 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 14px rgba(56, 189, 248, 0.35);
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .btn-float-player-login:hover {
+      transform: scale(1.06) translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.6);
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    }
+
+    /* Esconde botão flutuante quando o aluno já estiver na ficha */
+    body.mode-player-portal .btn-float-player-login {
+      display: none !important;
+    }
+
+    @media (max-width: 600px) {
+      .btn-float-player-login {
+        bottom: 80px;
+        right: 15px;
+        padding: 8px 14px;
+        font-size: 11.5px;
+      }
+      .welcome-card-box {
+        padding: 24px 16px;
+      }
+      .welcome-title {
+        font-size: 22px;
+      }
+    }
   </style>

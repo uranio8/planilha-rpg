@@ -2188,6 +2188,97 @@ assert(distHtml.includes('hp-critical'), 'CSS contém classe hp-critical para de
 assert(distHtml.includes('safe-area-inset'), 'CSS contém suporte a safe-area-inset para notch de celular');
 assert(distHtml.includes('drawer-cluster-title'), 'CSS contém estilos dos clusters do menu lateral');
 
+// ========================================================
+// 37. TESTES DE LOGIN DO ALUNO, PIN DO MESTRE E TELA DE BOAS-VINDAS
+// ========================================================
+console.log('\n🔐 37. Testes de Login do Aluno, PIN do Mestre e Tela de Boas-Vindas:');
+
+// 1. Verificação de exportação das funções
+assert(typeof vm.runInContext("isMasterPinConfigured", sandbox) === 'function', 'Função isMasterPinConfigured exportada');
+assert(typeof vm.runInContext("isMasterAuthorized", sandbox) === 'function', 'Função isMasterAuthorized exportada');
+assert(typeof vm.runInContext("grantMasterSession", sandbox) === 'function', 'Função grantMasterSession exportada');
+assert(typeof vm.runInContext("lockMasterSession", sandbox) === 'function', 'Função lockMasterSession exportada');
+assert(typeof vm.runInContext("openMasterPinModal", sandbox) === 'function', 'Função openMasterPinModal exportada');
+assert(typeof vm.runInContext("closeMasterPinModal", sandbox) === 'function', 'Função closeMasterPinModal exportada');
+assert(typeof vm.runInContext("handlePinDigit", sandbox) === 'function', 'Função handlePinDigit exportada');
+assert(typeof vm.runInContext("handlePinBackspace", sandbox) === 'function', 'Função handlePinBackspace exportada');
+assert(typeof vm.runInContext("handlePinClear", sandbox) === 'function', 'Função handlePinClear exportada');
+assert(typeof vm.runInContext("submitMasterPin", sandbox) === 'function', 'Função submitMasterPin exportada');
+assert(typeof vm.runInContext("requestMasterAccess", sandbox) === 'function', 'Função requestMasterAccess exportada');
+assert(typeof vm.runInContext("openWelcomeScreen", sandbox) === 'function', 'Função openWelcomeScreen exportada');
+assert(typeof vm.runInContext("closeWelcomeScreen", sandbox) === 'function', 'Função closeWelcomeScreen exportada');
+assert(typeof vm.runInContext("handleWelcomeSelect", sandbox) === 'function', 'Função handleWelcomeSelect exportada');
+assert(typeof vm.runInContext("resumeLastPlayerSession", sandbox) === 'function', 'Função resumeLastPlayerSession exportada');
+assert(typeof vm.runInContext("dismissPlayerReturnBanner", sandbox) === 'function', 'Função dismissPlayerReturnBanner exportada');
+assert(typeof vm.runInContext("openRoomQrCodeModal", sandbox) === 'function', 'Função openRoomQrCodeModal exportada');
+assert(typeof vm.runInContext("closeRoomQrCodeModal", sandbox) === 'function', 'Função closeRoomQrCodeModal exportada');
+
+// 2. Teste de ciclo de autorização e PIN do Mestre
+vm.runInContext(`
+  localStorage.removeItem('dnd5e_master_pin');
+  localStorage.removeItem('dnd5e_master_session_exp');
+`, sandbox);
+assert(vm.runInContext("isMasterPinConfigured()", sandbox) === false, 'isMasterPinConfigured retorna false quando nenhum PIN existe');
+
+// Define PIN de 4 dígitos (ex: 4321)
+vm.runInContext(`
+  localStorage.setItem('dnd5e_master_pin', '4321');
+`, sandbox);
+assert(vm.runInContext("isMasterPinConfigured()", sandbox) === true, 'isMasterPinConfigured retorna true após gravar PIN');
+assert(vm.runInContext("isMasterAuthorized()", sandbox) === false, 'isMasterAuthorized bloqueia acesso se não houver sessão ativa');
+
+// Concede sessão de 8 horas
+vm.runInContext(`
+  grantMasterSession(8);
+`, sandbox);
+assert(vm.runInContext("isMasterAuthorized()", sandbox) === true, 'grantMasterSession autoriza acesso do mestre');
+
+// Bloqueia sessão do mestre
+vm.runInContext(`
+  lockMasterSession();
+`, sandbox);
+assert(vm.runInContext("isMasterAuthorized()", sandbox) === false, 'lockMasterSession revoga acesso do mestre');
+
+// 3. Teste de digitação do teclado virtual de PIN (handlePinDigit, handlePinBackspace, handlePinClear)
+vm.runInContext(`
+  handlePinClear();
+  handlePinDigit('4');
+  handlePinDigit('3');
+  handlePinDigit('2');
+`, sandbox);
+assert(vm.runInContext("currentPinDigits", sandbox) === '432', 'handlePinDigit acumulou os dígitos corretamente');
+vm.runInContext("handlePinBackspace()", sandbox);
+assert(vm.runInContext("currentPinDigits", sandbox) === '43', 'handlePinBackspace removeu o último dígito');
+vm.runInContext("handlePinClear()", sandbox);
+assert(vm.runInContext("currentPinDigits", sandbox) === '', 'handlePinClear limpou todos os dígitos');
+
+// 4. Teste de validação e sucesso de PIN
+vm.runInContext(`
+  handlePinDigit('4');
+  handlePinDigit('3');
+  handlePinDigit('2');
+  handlePinDigit('1');
+  submitMasterPin();
+`, sandbox);
+assert(vm.runInContext("isMasterAuthorized()", sandbox) === true, 'submitMasterPin com PIN correto concedeu acesso');
+
+// 5. Teste de persistência e restauração de sessão do Aluno
+vm.runInContext(`
+  const firstPlayerId = (Array.isArray(PLAYERS) && PLAYERS.length > 0) ? PLAYERS[0].id : 'char_consume_test';
+  selectLoginCharacter(firstPlayerId);
+`, sandbox);
+const savedPlayerId = vm.runInContext("localStorage.getItem('dnd5e_last_portal_player_id')", sandbox);
+assert(savedPlayerId && savedPlayerId.length > 0, 'selectLoginCharacter persistiu o id do aluno no localStorage');
+
+// 6. Teste de presença de elementos no Bundle HTML
+assert(distHtml.includes('id="welcome-screen"'), 'Bundle contém tela de boas-vindas (#welcome-screen)');
+assert(distHtml.includes('id="modal-master-pin"'), 'Bundle contém modal de PIN (#modal-master-pin)');
+assert(distHtml.includes('id="player-return-banner"'), 'Bundle contém banner de retorno (#player-return-banner)');
+assert(distHtml.includes('id="btn-float-player-login"'), 'Bundle contém botão flutuante de aluno (#btn-float-player-login)');
+assert(distHtml.includes('id="modal-room-qrcode"'), 'Bundle contém modal de QR Code (#modal-room-qrcode)');
+assert(distHtml.includes('welcome-screen-overlay'), 'CSS contém estilos da tela de boas-vindas');
+assert(distHtml.includes('pin-numpad-grid'), 'CSS contém estilos do teclado numérico de PIN');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

@@ -1511,8 +1511,324 @@ function findPlayerForCombatant(c, playersList = (typeof PLAYERS !== 'undefined'
   return match;
 }
 
+// ===================================================
+// 🔐 SISTEMA DE PROTEÇÃO POR PIN DO MESTRE & CONTROLE DE SESSÃO
+// ===================================================
+
+const MASTER_PIN_KEY = 'dnd5e_master_pin';
+const MASTER_SESSION_KEY = 'dnd5e_master_session_exp';
+const DEFAULT_MASTER_SESSION_HOURS = 8;
+
+let currentPinDigits = '';
+let isPinChangeMode = false;
+let tempPinConfirmation = '';
+let activePinSuccessCb = null;
+let activePinCancelCb = null;
+
+function isMasterPinConfigured() {
+  try {
+    if (typeof localStorage === 'undefined') return false;
+    const pin = localStorage.getItem(MASTER_PIN_KEY);
+    return !!(pin && pin.trim().length === 4);
+  } catch (e) {
+    return false;
+  }
+}
+
+function isMasterAuthorized() {
+  try {
+    if (typeof localStorage === 'undefined') return true;
+    // Se nenhum PIN foi configurado ainda pelo mestre, autoriza por padrão
+    if (!isMasterPinConfigured()) return true;
+
+    const expStr = localStorage.getItem(MASTER_SESSION_KEY) || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(MASTER_SESSION_KEY) : null);
+    if (!expStr) return false;
+    const expTime = parseInt(expStr, 10);
+    return !isNaN(expTime) && expTime > Date.now();
+  } catch (e) {
+    return true;
+  }
+}
+
+function grantMasterSession(hours = DEFAULT_MASTER_SESSION_HOURS) {
+  try {
+    const expTime = Date.now() + (hours * 3600 * 1000);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(MASTER_SESSION_KEY, String(expTime));
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem(MASTER_SESSION_KEY, String(expTime));
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function lockMasterSession() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(MASTER_SESSION_KEY);
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem(MASTER_SESSION_KEY);
+    }
+  } catch (e) {}
+
+  if (typeof showToast === 'function') {
+    showToast('🔒 Painel do Mestre bloqueado com sucesso.', 'info');
+  }
+
+  // Se houver tela de boas-vindas disponível, exibe-a
+  if (typeof openWelcomeScreen === 'function') {
+    openWelcomeScreen();
+  }
+}
+
+function updatePinDotsUi() {
+  if (typeof document === 'undefined') return;
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('pin-dot-' + i);
+    if (dot) {
+      if (i < currentPinDigits.length) {
+        dot.classList.add('filled');
+      } else {
+        dot.classList.remove('filled');
+      }
+    }
+  }
+}
+
+function showPinError(msg) {
+  if (typeof document === 'undefined') return;
+  const el = document.getElementById('pin-error-msg');
+  const modalBody = (typeof document.querySelector === 'function')
+    ? document.querySelector('#modal-master-pin .modal-body')
+    : document.getElementById('modal-master-pin');
+  if (el) {
+    el.innerText = msg || 'PIN incorreto. Tente novamente.';
+    el.classList.add('visible');
+  }
+  if (modalBody && modalBody.classList) {
+    modalBody.classList.remove('pin-shake');
+    void modalBody.offsetWidth; // trigger reflow
+    modalBody.classList.add('pin-shake');
+  }
+}
+
+function hidePinError() {
+  if (typeof document === 'undefined') return;
+  const el = document.getElementById('pin-error-msg');
+  if (el) {
+    el.classList.remove('visible');
+    el.innerText = '';
+  }
+}
+
+function openMasterPinModal(onSuccessCallback = null, onCancelCallback = null, forceChange = false) {
+  if (typeof document === 'undefined') return;
+  const modal = document.getElementById('modal-master-pin');
+  if (!modal) return;
+
+  activePinSuccessCb = onSuccessCallback;
+  activePinCancelCb = onCancelCallback;
+  currentPinDigits = '';
+  tempPinConfirmation = '';
+  isPinChangeMode = forceChange || !isMasterPinConfigured();
+
+  const titleEl = document.getElementById('master-pin-modal-title');
+  const subEl = document.getElementById('master-pin-modal-sub');
+  const btnSubmit = document.getElementById('btn-submit-pin');
+
+  if (isPinChangeMode) {
+    if (titleEl) titleEl.innerText = '🔑 Definir PIN do Mestre';
+    if (subEl) subEl.innerText = 'Crie uma senha de 4 dígitos para proteger as ferramentas do mestre neste navegador:';
+    if (btnSubmit) btnSubmit.innerText = 'Avançar ➔';
+  } else {
+    if (titleEl) titleEl.innerText = '🔐 Acesso do Mestre';
+    if (subEl) subEl.innerText = 'Digite seu PIN de 4 dígitos para acessar o painel do Dungeon Master:';
+    if (btnSubmit) btnSubmit.innerText = 'Entrar ➔';
+  }
+
+  hidePinError();
+  updatePinDotsUi();
+  modal.classList.add('open');
+}
+
+function closeMasterPinModal() {
+  if (typeof document === 'undefined') return;
+  const modal = document.getElementById('modal-master-pin');
+  if (modal) modal.classList.remove('open');
+
+  currentPinDigits = '';
+  tempPinConfirmation = '';
+  isPinChangeMode = false;
+  hidePinError();
+
+  if (typeof activePinCancelCb === 'function') {
+    activePinCancelCb();
+  }
+  activePinSuccessCb = null;
+  activePinCancelCb = null;
+}
+
+function handlePinDigit(digit) {
+  if (currentPinDigits.length >= 4) return;
+  currentPinDigits += String(digit).trim();
+  hidePinError();
+  updatePinDotsUi();
+
+  // Dispara submissão automática se preencheu os 4 dígitos
+  if (currentPinDigits.length === 4) {
+    setTimeout(() => {
+      submitMasterPin();
+    }, 120);
+  }
+}
+
+function handlePinBackspace() {
+  if (currentPinDigits.length > 0) {
+    currentPinDigits = currentPinDigits.slice(0, -1);
+    hidePinError();
+    updatePinDotsUi();
+  }
+}
+
+function handlePinClear() {
+  currentPinDigits = '';
+  hidePinError();
+  updatePinDotsUi();
+}
+
+function submitMasterPin() {
+  if (currentPinDigits.length !== 4) {
+    showPinError('Por favor, digite os 4 dígitos do PIN.');
+    return;
+  }
+
+  // MODO 1: CRIAÇÃO OU ALTERAÇÃO DE PIN
+  const needsPinSetup = isPinChangeMode && (!isMasterPinConfigured() || !!tempPinConfirmation);
+  if (needsPinSetup) {
+    if (!tempPinConfirmation) {
+      // Primeiro passo concluído: pede confirmação
+      tempPinConfirmation = currentPinDigits;
+      currentPinDigits = '';
+      updatePinDotsUi();
+      const subEl = document.getElementById('master-pin-modal-sub');
+      if (subEl) subEl.innerText = '🔄 Digite os 4 dígitos novamente para confirmar:';
+      return;
+    }
+
+    // Segundo passo: valida confirmação
+    if (currentPinDigits === tempPinConfirmation) {
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(MASTER_PIN_KEY, currentPinDigits);
+        }
+      } catch (e) {}
+
+      isPinChangeMode = false;
+      tempPinConfirmation = '';
+      grantMasterSession();
+      const successCb = activePinSuccessCb;
+      closeMasterPinModal();
+
+      if (typeof closeWelcomeScreen === 'function') {
+        closeWelcomeScreen();
+      }
+      if (typeof showToast === 'function') {
+        showToast('✅ PIN do Mestre configurado com sucesso!', 'success');
+      }
+      if (typeof successCb === 'function') {
+        successCb();
+      }
+      return;
+    } else {
+      // Confirmação não bateu
+      showPinError('Os dígitos não conferem. Vamos recomeçar.');
+      tempPinConfirmation = '';
+      currentPinDigits = '';
+      updatePinDotsUi();
+      const subEl = document.getElementById('master-pin-modal-sub');
+      if (subEl) subEl.innerText = 'Crie uma senha de 4 dígitos para proteger as ferramentas do mestre:';
+      return;
+    }
+  }
+
+  // MODO 2: AUTENTICAÇÃO NORMAL DE ACESSO DO MESTRE
+  let savedPin = '1234'; // Fallback se nunca configurado
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const stored = localStorage.getItem(MASTER_PIN_KEY);
+      if (stored) savedPin = stored.trim();
+    }
+  } catch (e) {}
+
+  if (currentPinDigits === savedPin) {
+    grantMasterSession();
+    isPinChangeMode = false;
+    tempPinConfirmation = '';
+    const successCb = activePinSuccessCb;
+    closeMasterPinModal();
+
+    if (typeof closeWelcomeScreen === 'function') {
+      closeWelcomeScreen();
+    }
+    if (typeof showToast === 'function') {
+      showToast('👑 Acesso concedido! Bom jogo, Mestre.', 'success');
+    }
+    if (typeof successCb === 'function') {
+      successCb();
+    }
+  } else {
+    showPinError('PIN incorreto. Tente novamente.');
+    currentPinDigits = '';
+    setTimeout(() => {
+      updatePinDotsUi();
+    }, 450);
+  }
+}
+
+function requestMasterAccess(onSuccess = null) {
+  if (isMasterAuthorized()) {
+    if (typeof onSuccess === 'function') onSuccess();
+    return true;
+  }
+  openMasterPinModal(onSuccess);
+  return false;
+}
+
+// Suporte para digitação física no teclado
+if (typeof window !== 'undefined') {
+  window.addEventListener('keydown', (e) => {
+    const modal = document.getElementById('modal-master-pin');
+    if (!modal || !modal.classList.contains('open')) return;
+
+    if (e.key >= '0' && e.key <= '9') {
+      handlePinDigit(e.key);
+    } else if (e.key === 'Backspace') {
+      handlePinBackspace();
+    } else if (e.key === 'Escape') {
+      closeMasterPinModal();
+    } else if (e.key === 'Enter') {
+      submitMasterPin();
+    }
+  });
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
+    isMasterPinConfigured,
+    isMasterAuthorized,
+    grantMasterSession,
+    lockMasterSession,
+    openMasterPinModal,
+    closeMasterPinModal,
+    handlePinDigit,
+    handlePinBackspace,
+    handlePinClear,
+    submitMasterPin,
+    requestMasterAccess,
     highlightInlineRules,
     getTopicIconForText,
     formatFeatureToTopics,

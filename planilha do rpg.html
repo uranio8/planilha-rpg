@@ -6945,6 +6945,427 @@
         color: #000 !important;
       }
     }
+    /* ===================================================
+       🌟 TELA DE BOAS-VINDAS (LANDING DE ACESSO DO ALUNO & MESTRE)
+       =================================================== */
+    .welcome-screen-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at center top, rgba(30, 41, 59, 0.95) 0%, rgba(8, 12, 22, 0.98) 70%, #030712 100%);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .welcome-screen-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .welcome-card-box {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 15, 29, 0.98) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 18px;
+      padding: 32px 28px;
+      max-width: 680px;
+      width: 100%;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(245, 158, 11, 0.15);
+      text-align: center;
+      position: relative;
+      animation: welcomeCardPop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes welcomeCardPop {
+      0% {
+        transform: scale(0.92) translateY(18px);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .welcome-brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--accent-gold);
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .welcome-title {
+      font-family: var(--font-title);
+      font-size: 26px;
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: 8px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+    }
+
+    .welcome-subtitle {
+      font-size: 13.5px;
+      color: var(--primary-light);
+      margin-bottom: 26px;
+      line-height: 1.5;
+    }
+
+    .welcome-options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin-bottom: 22px;
+      text-align: left;
+    }
+
+    .welcome-role-card {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1.5px solid var(--border-color);
+      border-radius: 14px;
+      padding: 20px 18px;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .welcome-role-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: transparent;
+      transition: background 0.25s ease;
+    }
+
+    .welcome-role-card.role-player:hover {
+      border-color: #38bdf8;
+      transform: translateY(-4px);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5), 0 0 20px rgba(56, 189, 248, 0.25);
+      background: rgba(15, 23, 42, 0.95);
+    }
+    .welcome-role-card.role-player:hover::before {
+      background: linear-gradient(90deg, #0284c7, #38bdf8);
+    }
+
+    .welcome-role-card.role-master:hover {
+      border-color: var(--accent-gold);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5), 0 0 20px rgba(245, 158, 11, 0.25);
+      background: rgba(15, 23, 42, 0.95);
+    }
+    .welcome-role-card.role-master:hover::before {
+      background: linear-gradient(90deg, #d97706, #f59e0b);
+    }
+
+    .welcome-role-icon {
+      font-size: 34px;
+      margin-bottom: 12px;
+      display: inline-block;
+    }
+
+    .welcome-role-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .welcome-role-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.45;
+      margin-bottom: 16px;
+    }
+
+    .welcome-role-btn {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .welcome-btn-player {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+    }
+    .welcome-btn-player:hover {
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    }
+
+    .welcome-btn-master {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #0b0f19;
+      font-weight: 800;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+    .welcome-btn-master:hover {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    }
+
+    .welcome-footer-hint {
+      font-size: 11.5px;
+      color: var(--text-dim);
+    }
+
+    /* ===================================================
+       🔐 MODAL DE PIN DO MESTRE (TECLADO NUMÉRICO ESTILO COFRE D&D)
+       =================================================== */
+    #modal-master-pin .modal-body {
+      max-width: 360px;
+      width: 92%;
+      background: linear-gradient(180deg, #0f172a 0%, #070a12 100%);
+      border: 1.5px solid rgba(245, 158, 11, 0.4);
+      border-radius: 18px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(245, 158, 11, 0.2);
+    }
+
+    .pin-display-dots {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin: 20px 0 16px 0;
+    }
+
+    .pin-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid rgba(245, 158, 11, 0.4);
+      background: rgba(0, 0, 0, 0.5);
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .pin-dot.filled {
+      background: var(--accent-gold);
+      border-color: #fef08a;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.8);
+      transform: scale(1.15);
+    }
+
+    .pin-numpad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      max-width: 260px;
+      margin: 0 auto;
+    }
+
+    .pin-num-btn {
+      height: 52px;
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      color: #fff;
+      font-size: 20px;
+      font-weight: 700;
+      font-family: var(--font-title);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .pin-num-btn:hover {
+      background: rgba(245, 158, 11, 0.18);
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
+      transform: scale(1.04);
+    }
+
+    .pin-num-btn:active {
+      transform: scale(0.96);
+    }
+
+    .pin-num-btn.btn-fn {
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--text-muted);
+    }
+
+    .pin-error-msg {
+      min-height: 20px;
+      font-size: 12px;
+      color: #ef4444;
+      font-weight: 600;
+      margin-top: 10px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .pin-error-msg.visible {
+      opacity: 1;
+    }
+
+    .pin-shake {
+      animation: pinShakeAnim 0.4s ease-in-out;
+    }
+
+    @keyframes pinShakeAnim {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+
+    /* ===================================================
+       👤 BANNER DE RETORNO DO ALUNO (BEM-VINDO DE VOLTA)
+       =================================================== */
+    .player-return-banner {
+      background: linear-gradient(90deg, rgba(14, 116, 144, 0.95) 0%, rgba(3, 105, 161, 0.95) 100%);
+      border-bottom: 1.5px solid #38bdf8;
+      color: #fff;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+      z-index: 105;
+      position: sticky;
+      top: 0;
+      animation: slideDownBanner 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideDownBanner {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .player-return-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+    }
+
+    .player-return-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-return-action {
+      background: #fff;
+      color: #0369a1;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-return-action:hover {
+      background: #f0fdf4;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-return-switch {
+      background: rgba(0, 0, 0, 0.25);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 11.5px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .btn-return-switch:hover {
+      background: rgba(0, 0, 0, 0.45);
+    }
+
+    /* ===================================================
+       🎮 BOTÃO FLUTUANTE DE LOGIN RÁPIDO DO ALUNO (FAB ALUNO)
+       =================================================== */
+    .btn-float-player-login {
+      position: fixed;
+      bottom: 85px;
+      right: 20px;
+      z-index: 95;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #fff;
+      border: 1.5px solid rgba(56, 189, 248, 0.5);
+      border-radius: 30px;
+      padding: 9px 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 14px rgba(56, 189, 248, 0.35);
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .btn-float-player-login:hover {
+      transform: scale(1.06) translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.6);
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    }
+
+    /* Esconde botão flutuante quando o aluno já estiver na ficha */
+    body.mode-player-portal .btn-float-player-login {
+      display: none !important;
+    }
+
+    @media (max-width: 600px) {
+      .btn-float-player-login {
+        bottom: 80px;
+        right: 15px;
+        padding: 8px 14px;
+        font-size: 11.5px;
+      }
+      .welcome-card-box {
+        padding: 24px 16px;
+      }
+      .welcome-title {
+        font-size: 22px;
+      }
+    }
   </style>
 
   <!-- Google Firebase SDK Compat (Nuvem em Tempo Real) -->
@@ -6953,6 +7374,19 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 </head>
 <body>
+  <!-- BANNER DE RETORNO DO ALUNO (SESSÃO ANTERIOR DETECTADA) -->
+  <div id="player-return-banner" class="player-return-banner" style="display: none;">
+    <div class="player-return-left">
+      <span style="font-size: 18px;">👋</span>
+      <span>Bem-vindo de volta! Continuar jogando com <b id="return-player-name">seu Herói</b>?</span>
+    </div>
+    <div class="player-return-actions">
+      <button class="btn-return-action" onclick="resumeLastPlayerSession()">🎮 Abrir Minha Ficha</button>
+      <button class="btn-return-switch" onclick="openPlayerLoginModal()">🔄 Trocar Herói</button>
+      <button class="btn-return-switch" onclick="dismissPlayerReturnBanner()" title="Fechar este aviso">✕</button>
+    </div>
+  </div>
+
   <header>
     <div class="header-left">
       <button id="btn-nav-hamburger" class="btn-hamburger" onclick="toggleNavDrawer()" title="Abrir Menu de Navegação (Mesa, Compêndio, Mestre)" aria-label="Abrir Menu">
@@ -7058,6 +7492,9 @@
           <button class="dropdown-item" onclick="exportData()">💾 Backup Completo (JSON)</button>
           <button class="dropdown-item" onclick="importData()">📂 Carregar Backup (JSON)</button>
           <button class="dropdown-item" onclick="openSnapshotsModal()" style="color: #60a5fa;">🛡️ Recuperar Snapshot</button>
+          <div class="dropdown-sep"></div>
+          <button class="dropdown-item" onclick="lockMasterSession()" style="color: #f87171; font-weight: 700;">🔒 Bloquear Painel do Mestre</button>
+          <button class="dropdown-item" onclick="openMasterPinModal(null, null, true)" style="color: #cbd5e1; font-size: 11.5px;">🔑 Alterar PIN do Mestre</button>
         </div>
       </div>
     </div>
@@ -9024,6 +9461,7 @@
             <input type="text" id="inp-login-room" placeholder="Ex: turma_principal" style="font-size: 12px; padding: 5px 8px; background: #080c16; border: 1px solid var(--border-color); border-radius: 4px; color: #fff; font-family: var(--font-mono); width: 100%;">
             <button class="btn-secondary" style="font-size: 11px; padding: 4px 10px; white-space: nowrap;" onclick="refreshLoginRoom()">🔄 Conectar Sala</button>
             <button class="btn-action" style="font-size: 11px; padding: 4px 10px; white-space: nowrap; background: linear-gradient(135deg, #f59e0b, #d97706);" onclick="copyLobbyShareLink()" title="Copiar link do lobby desta sala para enviar aos alunos">📋 Copiar Link</button>
+            <button class="btn-action" style="font-size: 11px; padding: 4px 10px; white-space: nowrap; background: linear-gradient(135deg, #0284c7, #0369a1);" onclick="openRoomQrCodeModal()" title="Exibir QR Code para projeção em sala de aula">📲 QR Code</button>
           </div>
         </div>
         <div style="flex: 1.2;">
@@ -9045,6 +9483,82 @@
           <button class="btn-action dm-only-btn" style="font-size: 11px; padding: 5px 10px; background: linear-gradient(135deg, #10b981, #059669);" onclick="publishMasterCampaignToCloud()" title="Enviar todos os heróis da mesa atual para esta sala na nuvem">📤 Publicar Mesa</button>
           <button class="btn-secondary" onclick="closePlayerLoginModal()">Fechar</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: QR CODE DA SALA PARA PROJEÇÃO AOS ALUNOS -->
+  <div id="modal-room-qrcode" class="modal-overlay">
+    <div class="modal-body" style="max-width: 420px; text-align: center;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 22px;">📲</span>
+          <span style="font-weight: 800; font-size: 16px; color: #fff;">QR Code da Sala de Aula</span>
+        </div>
+        <button class="btn-secondary" onclick="closeRoomQrCodeModal()">✕</button>
+      </div>
+      <div style="padding: 16px 0 10px 0;">
+        <div style="font-size: 13px; color: var(--primary-light); margin-bottom: 14px;">
+          Aponte a câmera do celular para entrar diretamente na seleção de fichas da sala:
+        </div>
+        <div style="display: inline-block; padding: 12px; background: #fff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.6); margin-bottom: 14px;">
+          <img id="img-room-qrcode" src="" alt="QR Code da Sala" style="width: 220px; height: 220px; display: block; border-radius: 4px;">
+        </div>
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; margin: 0 auto 12px auto; max-width: 340px;">
+          <div style="font-size: 10.5px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Sala Ativa:</div>
+          <div id="txt-qrcode-room-name" style="font-family: var(--font-mono); font-size: 14px; font-weight: 800; color: var(--accent-gold); margin-top: 2px;">turma_principal</div>
+        </div>
+        <div style="display: flex; justify-content: center; gap: 8px;">
+          <button class="btn-action" onclick="copyLobbyShareLink()" style="font-size: 12px; padding: 6px 14px; background: linear-gradient(135deg, #f59e0b, #d97706);">📋 Copiar Link Curto</button>
+          <button class="btn-secondary" onclick="closeRoomQrCodeModal()">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PIN DO MESTRE (AUTENTICAÇÃO & PROTEÇÃO DE ACESSO) -->
+  <div id="modal-master-pin" class="modal-overlay">
+    <div class="modal-body">
+      <div style="display: flex; justify-content: flex-end;">
+        <button class="btn-secondary" onclick="closeMasterPinModal()" style="padding: 2px 8px; font-size: 13px;">✕</button>
+      </div>
+      <div style="font-size: 38px; margin-bottom: 6px;">🔐</div>
+      <div id="master-pin-modal-title" style="font-family: var(--font-title); font-size: 19px; font-weight: 900; color: #fff; margin-bottom: 4px;">
+        Acesso do Mestre
+      </div>
+      <div id="master-pin-modal-sub" style="font-size: 12px; color: var(--primary-light); line-height: 1.4; max-width: 280px; margin: 0 auto;">
+        Digite seu PIN de 4 dígitos para acessar o painel do Dungeon Master
+      </div>
+
+      <!-- Indicadores Visuais de Dígitos -->
+      <div id="pin-display-dots" class="pin-display-dots">
+        <div class="pin-dot" id="pin-dot-0"></div>
+        <div class="pin-dot" id="pin-dot-1"></div>
+        <div class="pin-dot" id="pin-dot-2"></div>
+        <div class="pin-dot" id="pin-dot-3"></div>
+      </div>
+
+      <!-- Teclado Numérico Virtual (Numpad) -->
+      <div class="pin-numpad-grid">
+        <button class="pin-num-btn" onclick="handlePinDigit('1')">1</button>
+        <button class="pin-num-btn" onclick="handlePinDigit('2')">2</button>
+        <button class="pin-num-btn" onclick="handlePinDigit('3')">3</button>
+        <button class="pin-num-btn" onclick="handlePinDigit('4')">4</button>
+        <button class="pin-num-btn" onclick="handlePinDigit('5')">5</button>
+        <button class="pin-num-btn" onclick="handlePinDigit('6')">6</button>
+        <button class="pin-num-btn" onclick="handlePinDigit('7')">7</button>
+        <button class="pin-num-btn" onclick="handlePinDigit('8')">8</button>
+        <button class="pin-num-btn" onclick="handlePinDigit('9')">9</button>
+        <button class="pin-num-btn btn-fn" onclick="handlePinClear()" title="Limpar tudo">LIMPAR</button>
+        <button class="pin-num-btn" onclick="handlePinDigit('0')">0</button>
+        <button class="pin-num-btn btn-fn" onclick="handlePinBackspace()" title="Apagar dígito">⌫</button>
+      </div>
+
+      <div id="pin-error-msg" class="pin-error-msg">PIN incorreto. Tente novamente.</div>
+
+      <div style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <button class="btn-secondary" style="font-size: 11.5px; padding: 4px 10px;" onclick="closeMasterPinModal()">Cancelar</button>
+        <button class="btn-action" id="btn-submit-pin" style="font-size: 12px; padding: 5px 14px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 800;" onclick="submitMasterPin()">Entrar ➔</button>
       </div>
     </div>
   </div>
@@ -10073,6 +10587,72 @@
       <div class="fab-action-btn-row" onclick="handleFabQuickAction('cloud')">
         <span class="fab-action-label">Sincronizar Nuvem</span>
         <button class="fab-action-circle" title="Nuvem Firebase">☁️</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================
+       🎮 BOTÃO FLUTUANTE DE ACESSO DO ALUNO (FAB ALUNO)
+       =================================================== -->
+  <button id="btn-float-player-login" class="btn-float-player-login" onclick="openPlayerLoginModal()" title="Abrir seleção de heróis e ficha do aluno" aria-label="Acessar Ficha de Aluno">
+    <span style="font-size: 16px;">🎮</span>
+    <span>Ficha do Aluno</span>
+  </button>
+
+  <!-- ===================================================
+       🌟 TELA DE BOAS-VINDAS / LANDING DO ALUNO & MESTRE
+       =================================================== -->
+  <div id="welcome-screen" class="welcome-screen-overlay">
+    <div class="welcome-card-box">
+      <div class="welcome-brand-badge">
+        <span>⚔️</span>
+        <span>Clube de RPG Prisco Bezerra • D&D 5E</span>
+      </div>
+      <h1 class="welcome-title">Bem-vindo à Aventura</h1>
+      <p class="welcome-subtitle">
+        Escolha abaixo como você deseja acessar a mesa de RPG hoje:
+      </p>
+
+      <div class="welcome-options-grid">
+        <!-- OPÇÃO 1: ALUNO / JOGADOR -->
+        <div class="welcome-role-card role-player" onclick="handleWelcomeSelect('player')">
+          <div>
+            <span class="welcome-role-icon">🎮</span>
+            <div class="welcome-role-title">
+              <span>Sou Aluno / Jogador</span>
+              <span style="font-size: 11px; padding: 2px 7px; border-radius: 10px; background: rgba(56, 189, 248, 0.2); color: #38bdf8; font-weight: 700;">Acesso Rápido</span>
+            </div>
+            <div class="welcome-role-desc">
+              Acesse sua ficha interativa, role dados, consulte suas magias preparadas, inventário e histórico de batalha.
+            </div>
+          </div>
+          <button class="welcome-role-btn welcome-btn-player">
+            <span>🎮 Acessar Minha Ficha</span>
+            <span>➔</span>
+          </button>
+        </div>
+
+        <!-- OPÇÃO 2: MESTRE DA MESA -->
+        <div class="welcome-role-card role-master" onclick="handleWelcomeSelect('master')">
+          <div>
+            <span class="welcome-role-icon">👑</span>
+            <div class="welcome-role-title">
+              <span>Sou o Mestre (DM)</span>
+              <span style="font-size: 11px; padding: 2px 7px; border-radius: 10px; background: rgba(245, 158, 11, 0.2); color: var(--accent-gold); font-weight: 700;">🔒 Protegido</span>
+            </div>
+            <div class="welcome-role-desc">
+              Gerencie a iniciativa do combate, monstros, regras secretas, mapa tático VTT, enigmas e notas da campanha.
+            </div>
+          </div>
+          <button class="welcome-role-btn welcome-btn-master">
+            <span>⚔️ Painel do Mestre</span>
+            <span>🔒</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="welcome-footer-hint">
+        💡 Alunos só precisam acessar este mesmo link e clicar em "Sou Aluno" para jogar!
       </div>
     </div>
   </div>
@@ -28943,8 +29523,324 @@ function findPlayerForCombatant(c, playersList = (typeof PLAYERS !== 'undefined'
   return match;
 }
 
+// ===================================================
+// 🔐 SISTEMA DE PROTEÇÃO POR PIN DO MESTRE & CONTROLE DE SESSÃO
+// ===================================================
+
+const MASTER_PIN_KEY = 'dnd5e_master_pin';
+const MASTER_SESSION_KEY = 'dnd5e_master_session_exp';
+const DEFAULT_MASTER_SESSION_HOURS = 8;
+
+let currentPinDigits = '';
+let isPinChangeMode = false;
+let tempPinConfirmation = '';
+let activePinSuccessCb = null;
+let activePinCancelCb = null;
+
+function isMasterPinConfigured() {
+  try {
+    if (typeof localStorage === 'undefined') return false;
+    const pin = localStorage.getItem(MASTER_PIN_KEY);
+    return !!(pin && pin.trim().length === 4);
+  } catch (e) {
+    return false;
+  }
+}
+
+function isMasterAuthorized() {
+  try {
+    if (typeof localStorage === 'undefined') return true;
+    // Se nenhum PIN foi configurado ainda pelo mestre, autoriza por padrão
+    if (!isMasterPinConfigured()) return true;
+
+    const expStr = localStorage.getItem(MASTER_SESSION_KEY) || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(MASTER_SESSION_KEY) : null);
+    if (!expStr) return false;
+    const expTime = parseInt(expStr, 10);
+    return !isNaN(expTime) && expTime > Date.now();
+  } catch (e) {
+    return true;
+  }
+}
+
+function grantMasterSession(hours = DEFAULT_MASTER_SESSION_HOURS) {
+  try {
+    const expTime = Date.now() + (hours * 3600 * 1000);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(MASTER_SESSION_KEY, String(expTime));
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem(MASTER_SESSION_KEY, String(expTime));
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function lockMasterSession() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(MASTER_SESSION_KEY);
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem(MASTER_SESSION_KEY);
+    }
+  } catch (e) {}
+
+  if (typeof showToast === 'function') {
+    showToast('🔒 Painel do Mestre bloqueado com sucesso.', 'info');
+  }
+
+  // Se houver tela de boas-vindas disponível, exibe-a
+  if (typeof openWelcomeScreen === 'function') {
+    openWelcomeScreen();
+  }
+}
+
+function updatePinDotsUi() {
+  if (typeof document === 'undefined') return;
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('pin-dot-' + i);
+    if (dot) {
+      if (i < currentPinDigits.length) {
+        dot.classList.add('filled');
+      } else {
+        dot.classList.remove('filled');
+      }
+    }
+  }
+}
+
+function showPinError(msg) {
+  if (typeof document === 'undefined') return;
+  const el = document.getElementById('pin-error-msg');
+  const modalBody = (typeof document.querySelector === 'function')
+    ? document.querySelector('#modal-master-pin .modal-body')
+    : document.getElementById('modal-master-pin');
+  if (el) {
+    el.innerText = msg || 'PIN incorreto. Tente novamente.';
+    el.classList.add('visible');
+  }
+  if (modalBody && modalBody.classList) {
+    modalBody.classList.remove('pin-shake');
+    void modalBody.offsetWidth; // trigger reflow
+    modalBody.classList.add('pin-shake');
+  }
+}
+
+function hidePinError() {
+  if (typeof document === 'undefined') return;
+  const el = document.getElementById('pin-error-msg');
+  if (el) {
+    el.classList.remove('visible');
+    el.innerText = '';
+  }
+}
+
+function openMasterPinModal(onSuccessCallback = null, onCancelCallback = null, forceChange = false) {
+  if (typeof document === 'undefined') return;
+  const modal = document.getElementById('modal-master-pin');
+  if (!modal) return;
+
+  activePinSuccessCb = onSuccessCallback;
+  activePinCancelCb = onCancelCallback;
+  currentPinDigits = '';
+  tempPinConfirmation = '';
+  isPinChangeMode = forceChange || !isMasterPinConfigured();
+
+  const titleEl = document.getElementById('master-pin-modal-title');
+  const subEl = document.getElementById('master-pin-modal-sub');
+  const btnSubmit = document.getElementById('btn-submit-pin');
+
+  if (isPinChangeMode) {
+    if (titleEl) titleEl.innerText = '🔑 Definir PIN do Mestre';
+    if (subEl) subEl.innerText = 'Crie uma senha de 4 dígitos para proteger as ferramentas do mestre neste navegador:';
+    if (btnSubmit) btnSubmit.innerText = 'Avançar ➔';
+  } else {
+    if (titleEl) titleEl.innerText = '🔐 Acesso do Mestre';
+    if (subEl) subEl.innerText = 'Digite seu PIN de 4 dígitos para acessar o painel do Dungeon Master:';
+    if (btnSubmit) btnSubmit.innerText = 'Entrar ➔';
+  }
+
+  hidePinError();
+  updatePinDotsUi();
+  modal.classList.add('open');
+}
+
+function closeMasterPinModal() {
+  if (typeof document === 'undefined') return;
+  const modal = document.getElementById('modal-master-pin');
+  if (modal) modal.classList.remove('open');
+
+  currentPinDigits = '';
+  tempPinConfirmation = '';
+  isPinChangeMode = false;
+  hidePinError();
+
+  if (typeof activePinCancelCb === 'function') {
+    activePinCancelCb();
+  }
+  activePinSuccessCb = null;
+  activePinCancelCb = null;
+}
+
+function handlePinDigit(digit) {
+  if (currentPinDigits.length >= 4) return;
+  currentPinDigits += String(digit).trim();
+  hidePinError();
+  updatePinDotsUi();
+
+  // Dispara submissão automática se preencheu os 4 dígitos
+  if (currentPinDigits.length === 4) {
+    setTimeout(() => {
+      submitMasterPin();
+    }, 120);
+  }
+}
+
+function handlePinBackspace() {
+  if (currentPinDigits.length > 0) {
+    currentPinDigits = currentPinDigits.slice(0, -1);
+    hidePinError();
+    updatePinDotsUi();
+  }
+}
+
+function handlePinClear() {
+  currentPinDigits = '';
+  hidePinError();
+  updatePinDotsUi();
+}
+
+function submitMasterPin() {
+  if (currentPinDigits.length !== 4) {
+    showPinError('Por favor, digite os 4 dígitos do PIN.');
+    return;
+  }
+
+  // MODO 1: CRIAÇÃO OU ALTERAÇÃO DE PIN
+  const needsPinSetup = isPinChangeMode && (!isMasterPinConfigured() || !!tempPinConfirmation);
+  if (needsPinSetup) {
+    if (!tempPinConfirmation) {
+      // Primeiro passo concluído: pede confirmação
+      tempPinConfirmation = currentPinDigits;
+      currentPinDigits = '';
+      updatePinDotsUi();
+      const subEl = document.getElementById('master-pin-modal-sub');
+      if (subEl) subEl.innerText = '🔄 Digite os 4 dígitos novamente para confirmar:';
+      return;
+    }
+
+    // Segundo passo: valida confirmação
+    if (currentPinDigits === tempPinConfirmation) {
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(MASTER_PIN_KEY, currentPinDigits);
+        }
+      } catch (e) {}
+
+      isPinChangeMode = false;
+      tempPinConfirmation = '';
+      grantMasterSession();
+      const successCb = activePinSuccessCb;
+      closeMasterPinModal();
+
+      if (typeof closeWelcomeScreen === 'function') {
+        closeWelcomeScreen();
+      }
+      if (typeof showToast === 'function') {
+        showToast('✅ PIN do Mestre configurado com sucesso!', 'success');
+      }
+      if (typeof successCb === 'function') {
+        successCb();
+      }
+      return;
+    } else {
+      // Confirmação não bateu
+      showPinError('Os dígitos não conferem. Vamos recomeçar.');
+      tempPinConfirmation = '';
+      currentPinDigits = '';
+      updatePinDotsUi();
+      const subEl = document.getElementById('master-pin-modal-sub');
+      if (subEl) subEl.innerText = 'Crie uma senha de 4 dígitos para proteger as ferramentas do mestre:';
+      return;
+    }
+  }
+
+  // MODO 2: AUTENTICAÇÃO NORMAL DE ACESSO DO MESTRE
+  let savedPin = '1234'; // Fallback se nunca configurado
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const stored = localStorage.getItem(MASTER_PIN_KEY);
+      if (stored) savedPin = stored.trim();
+    }
+  } catch (e) {}
+
+  if (currentPinDigits === savedPin) {
+    grantMasterSession();
+    isPinChangeMode = false;
+    tempPinConfirmation = '';
+    const successCb = activePinSuccessCb;
+    closeMasterPinModal();
+
+    if (typeof closeWelcomeScreen === 'function') {
+      closeWelcomeScreen();
+    }
+    if (typeof showToast === 'function') {
+      showToast('👑 Acesso concedido! Bom jogo, Mestre.', 'success');
+    }
+    if (typeof successCb === 'function') {
+      successCb();
+    }
+  } else {
+    showPinError('PIN incorreto. Tente novamente.');
+    currentPinDigits = '';
+    setTimeout(() => {
+      updatePinDotsUi();
+    }, 450);
+  }
+}
+
+function requestMasterAccess(onSuccess = null) {
+  if (isMasterAuthorized()) {
+    if (typeof onSuccess === 'function') onSuccess();
+    return true;
+  }
+  openMasterPinModal(onSuccess);
+  return false;
+}
+
+// Suporte para digitação física no teclado
+if (typeof window !== 'undefined') {
+  window.addEventListener('keydown', (e) => {
+    const modal = document.getElementById('modal-master-pin');
+    if (!modal || !modal.classList.contains('open')) return;
+
+    if (e.key >= '0' && e.key <= '9') {
+      handlePinDigit(e.key);
+    } else if (e.key === 'Backspace') {
+      handlePinBackspace();
+    } else if (e.key === 'Escape') {
+      closeMasterPinModal();
+    } else if (e.key === 'Enter') {
+      submitMasterPin();
+    }
+  });
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
+    isMasterPinConfigured,
+    isMasterAuthorized,
+    grantMasterSession,
+    lockMasterSession,
+    openMasterPinModal,
+    closeMasterPinModal,
+    handlePinDigit,
+    handlePinBackspace,
+    handlePinClear,
+    submitMasterPin,
+    requestMasterAccess,
     highlightInlineRules,
     getTopicIconForText,
     formatFeatureToTopics,
@@ -34702,10 +35598,28 @@ function initPlayerPortalMode(playerId) {
 }
 
 function exitPlayerPortalMode() {
-  if (typeof confirm === 'function') {
-    const ok = confirm('Deseja realmente sair da sua ficha de jogador e voltar para a visão do Mestre?');
-    if (!ok) return;
+  // Se o usuário tentar voltar para o painel do Mestre:
+  // Se já estiver com sessão do mestre autorizada:
+  if (typeof isMasterAuthorized === 'function' && isMasterAuthorized()) {
+    if (typeof confirm === 'function') {
+      const ok = confirm('Deseja realmente sair da sua ficha de jogador e voltar para a visão do Mestre?');
+      if (!ok) return;
+    }
+    _executeExitPortalToMaster();
+    return;
   }
+
+  // Se NÃO for mestre autenticado, exige autenticação do PIN
+  if (typeof requestMasterAccess === 'function') {
+    requestMasterAccess(() => {
+      _executeExitPortalToMaster();
+    });
+  } else {
+    _executeExitPortalToMaster();
+  }
+}
+
+function _executeExitPortalToMaster() {
   pendingPortalPlayerId = null;
   activePortalPlayerId = null;
   if (typeof clientRole !== 'undefined') clientRole = 'master';
@@ -34714,8 +35628,84 @@ function exitPlayerPortalMode() {
   }
   const banner = document.getElementById('player-portal-banner');
   if (banner) banner.style.display = 'none';
+  dismissPlayerReturnBanner();
   renderPlayers();
   switchTab('combat');
+}
+
+// --- CONTROLES DA TELA DE BOAS-VINDAS E BANNER DE RETORNO DO ALUNO ---
+
+function openWelcomeScreen() {
+  if (typeof document === 'undefined') return;
+  const overlay = document.getElementById('welcome-screen');
+  if (overlay) overlay.classList.add('open');
+}
+
+function closeWelcomeScreen() {
+  if (typeof document === 'undefined') return;
+  const overlay = document.getElementById('welcome-screen');
+  if (overlay) overlay.classList.remove('open');
+}
+
+function handleWelcomeSelect(role) {
+  if (role === 'player') {
+    closeWelcomeScreen();
+    openPlayerLoginModal();
+  } else if (role === 'master') {
+    if (typeof requestMasterAccess === 'function') {
+      requestMasterAccess(() => {
+        closeWelcomeScreen();
+        if (typeof switchTab === 'function') switchTab('combat');
+      });
+    } else {
+      closeWelcomeScreen();
+      if (typeof switchTab === 'function') switchTab('combat');
+    }
+  }
+}
+
+function resumeLastPlayerSession() {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    const savedId = localStorage.getItem('dnd5e_last_portal_player_id');
+    if (savedId) {
+      dismissPlayerReturnBanner();
+      initPlayerPortalMode(savedId);
+    }
+  } catch (e) {}
+}
+
+function dismissPlayerReturnBanner() {
+  if (typeof document === 'undefined') return;
+  const banner = document.getElementById('player-return-banner');
+  if (banner) banner.style.display = 'none';
+}
+
+function openRoomQrCodeModal() {
+  if (typeof document === 'undefined') return;
+  const modal = document.getElementById('modal-room-qrcode');
+  if (!modal) return;
+
+  const currentRoom = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
+  const href = (typeof window !== 'undefined' && window.location && window.location.href) ? window.location.href : 'https://uranio8.github.io/planilha-rpg/';
+  const base = href.split('?')[0].split('#')[0];
+  const lobbyUrl = `${base}?room=${encodeURIComponent(currentRoom)}&lobby=true`;
+
+  const txtRoom = document.getElementById('txt-qrcode-room-name');
+  if (txtRoom) txtRoom.innerText = currentRoom;
+
+  const imgEl = document.getElementById('img-room-qrcode');
+  if (imgEl) {
+    imgEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(lobbyUrl)}`;
+  }
+
+  modal.classList.add('open');
+}
+
+function closeRoomQrCodeModal() {
+  if (typeof document === 'undefined') return;
+  const modal = document.getElementById('modal-room-qrcode');
+  if (modal) modal.classList.remove('open');
 }
 
 function checkPlayerPortalUrl() {
@@ -34733,6 +35723,19 @@ function checkPlayerPortalUrl() {
       }
       if (typeof initFirebaseSync === 'function') {
         setTimeout(() => initFirebaseSync(), 100);
+      }
+    }
+
+    // Suporte a Reset Seguro de PIN do Mestre via URL
+    if (params.get('reset_master_pin') === 'true' || params.get('reset_pin') === 'true') {
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem('dnd5e_master_pin');
+          localStorage.removeItem('dnd5e_master_session_exp');
+        }
+      } catch (e) {}
+      if (typeof showToast === 'function') {
+        showToast('🔑 PIN do Mestre foi resetado com sucesso.', 'warning');
       }
     }
 
@@ -34786,13 +35789,55 @@ function checkPlayerPortalUrl() {
       return false;
     }
 
-    // Se a URL não for de portal, garante que o modo portal esteja desativado
+    // 2. VERIFICAÇÃO DE URL PURA (SEM PARÂMETROS EXPLÍCITOS DE PORTAL)
+    // Se o mestre já estiver com sessão autorizada neste navegador, deixa prosseguir para o painel do mestre
+    const isMasterAuth = (typeof isMasterAuthorized === 'function') ? isMasterAuthorized() : true;
+    if (isMasterAuth) {
+      // Mestre autorizado: desativa portal se não houver pedido de jogador
+      activePortalPlayerId = null;
+      if (typeof document !== 'undefined' && document.body && document.body.classList) {
+        document.body.classList.remove('mode-player-portal');
+      }
+      const banner = document.getElementById('player-portal-banner');
+      if (banner) banner.style.display = 'none';
+      return false;
+    }
+
+    // Se NÃO for mestre autorizado e não houver parâmetros na URL:
+    // Verifica se este dispositivo possui sessão de aluno salva anteriormente
+    let lastPlayerId = null;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        lastPlayerId = localStorage.getItem('dnd5e_last_portal_player_id');
+      }
+    } catch (e) {}
+
+    if (lastPlayerId) {
+      const savedHero = Array.isArray(PLAYERS) ? PLAYERS.find(p => p.id === lastPlayerId) : null;
+      if (savedHero) {
+        // Exibe banner de boas-vindas de volta e inicializa ficha no modo portal
+        const returnBanner = document.getElementById('player-return-banner');
+        const heroNameEl = document.getElementById('return-player-name');
+        if (heroNameEl) heroNameEl.innerText = `${savedHero.name} (${savedHero.student || 'Personagem'})`;
+        if (returnBanner) returnBanner.style.display = 'flex';
+
+        initPlayerPortalMode(savedHero.id);
+        return true;
+      }
+    }
+
+    // Se não há herói salvo e o mestre não está autenticado: abre tela de boas-vindas
     activePortalPlayerId = null;
     if (typeof document !== 'undefined' && document.body && document.body.classList) {
       document.body.classList.remove('mode-player-portal');
     }
     const banner = document.getElementById('player-portal-banner');
     if (banner) banner.style.display = 'none';
+
+    setTimeout(() => {
+      openWelcomeScreen();
+    }, 150);
+
   } catch (e) {
     console.warn('Erro ao processar URL do portal do jogador:', e);
   }
@@ -34942,6 +35987,22 @@ function renderPlayerLoginList() {
 function selectLoginCharacter(playerId) {
   const p = PLAYERS.find(x => x.id === playerId);
   if (!p) return;
+
+  // Persiste a sessão do aluno para retorno automático em futuros acessos
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('dnd5e_last_portal_player_id', playerId);
+      const currentRoom = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
+      localStorage.setItem('dnd5e_last_portal_room', currentRoom);
+    }
+  } catch (e) {}
+
+  if (typeof dismissPlayerReturnBanner === 'function') {
+    dismissPlayerReturnBanner();
+  }
+  if (typeof closeWelcomeScreen === 'function') {
+    closeWelcomeScreen();
+  }
 
   initPlayerPortalMode(playerId);
   closePlayerLoginModal();

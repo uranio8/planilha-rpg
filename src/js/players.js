@@ -3820,10 +3820,28 @@ function initPlayerPortalMode(playerId) {
 }
 
 function exitPlayerPortalMode() {
-  if (typeof confirm === 'function') {
-    const ok = confirm('Deseja realmente sair da sua ficha de jogador e voltar para a visão do Mestre?');
-    if (!ok) return;
+  // Se o usuário tentar voltar para o painel do Mestre:
+  // Se já estiver com sessão do mestre autorizada:
+  if (typeof isMasterAuthorized === 'function' && isMasterAuthorized()) {
+    if (typeof confirm === 'function') {
+      const ok = confirm('Deseja realmente sair da sua ficha de jogador e voltar para a visão do Mestre?');
+      if (!ok) return;
+    }
+    _executeExitPortalToMaster();
+    return;
   }
+
+  // Se NÃO for mestre autenticado, exige autenticação do PIN
+  if (typeof requestMasterAccess === 'function') {
+    requestMasterAccess(() => {
+      _executeExitPortalToMaster();
+    });
+  } else {
+    _executeExitPortalToMaster();
+  }
+}
+
+function _executeExitPortalToMaster() {
   pendingPortalPlayerId = null;
   activePortalPlayerId = null;
   if (typeof clientRole !== 'undefined') clientRole = 'master';
@@ -3832,8 +3850,84 @@ function exitPlayerPortalMode() {
   }
   const banner = document.getElementById('player-portal-banner');
   if (banner) banner.style.display = 'none';
+  dismissPlayerReturnBanner();
   renderPlayers();
   switchTab('combat');
+}
+
+// --- CONTROLES DA TELA DE BOAS-VINDAS E BANNER DE RETORNO DO ALUNO ---
+
+function openWelcomeScreen() {
+  if (typeof document === 'undefined') return;
+  const overlay = document.getElementById('welcome-screen');
+  if (overlay) overlay.classList.add('open');
+}
+
+function closeWelcomeScreen() {
+  if (typeof document === 'undefined') return;
+  const overlay = document.getElementById('welcome-screen');
+  if (overlay) overlay.classList.remove('open');
+}
+
+function handleWelcomeSelect(role) {
+  if (role === 'player') {
+    closeWelcomeScreen();
+    openPlayerLoginModal();
+  } else if (role === 'master') {
+    if (typeof requestMasterAccess === 'function') {
+      requestMasterAccess(() => {
+        closeWelcomeScreen();
+        if (typeof switchTab === 'function') switchTab('combat');
+      });
+    } else {
+      closeWelcomeScreen();
+      if (typeof switchTab === 'function') switchTab('combat');
+    }
+  }
+}
+
+function resumeLastPlayerSession() {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    const savedId = localStorage.getItem('dnd5e_last_portal_player_id');
+    if (savedId) {
+      dismissPlayerReturnBanner();
+      initPlayerPortalMode(savedId);
+    }
+  } catch (e) {}
+}
+
+function dismissPlayerReturnBanner() {
+  if (typeof document === 'undefined') return;
+  const banner = document.getElementById('player-return-banner');
+  if (banner) banner.style.display = 'none';
+}
+
+function openRoomQrCodeModal() {
+  if (typeof document === 'undefined') return;
+  const modal = document.getElementById('modal-room-qrcode');
+  if (!modal) return;
+
+  const currentRoom = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
+  const href = (typeof window !== 'undefined' && window.location && window.location.href) ? window.location.href : 'https://uranio8.github.io/planilha-rpg/';
+  const base = href.split('?')[0].split('#')[0];
+  const lobbyUrl = `${base}?room=${encodeURIComponent(currentRoom)}&lobby=true`;
+
+  const txtRoom = document.getElementById('txt-qrcode-room-name');
+  if (txtRoom) txtRoom.innerText = currentRoom;
+
+  const imgEl = document.getElementById('img-room-qrcode');
+  if (imgEl) {
+    imgEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(lobbyUrl)}`;
+  }
+
+  modal.classList.add('open');
+}
+
+function closeRoomQrCodeModal() {
+  if (typeof document === 'undefined') return;
+  const modal = document.getElementById('modal-room-qrcode');
+  if (modal) modal.classList.remove('open');
 }
 
 function checkPlayerPortalUrl() {
@@ -3851,6 +3945,19 @@ function checkPlayerPortalUrl() {
       }
       if (typeof initFirebaseSync === 'function') {
         setTimeout(() => initFirebaseSync(), 100);
+      }
+    }
+
+    // Suporte a Reset Seguro de PIN do Mestre via URL
+    if (params.get('reset_master_pin') === 'true' || params.get('reset_pin') === 'true') {
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem('dnd5e_master_pin');
+          localStorage.removeItem('dnd5e_master_session_exp');
+        }
+      } catch (e) {}
+      if (typeof showToast === 'function') {
+        showToast('🔑 PIN do Mestre foi resetado com sucesso.', 'warning');
       }
     }
 
@@ -3904,13 +4011,55 @@ function checkPlayerPortalUrl() {
       return false;
     }
 
-    // Se a URL não for de portal, garante que o modo portal esteja desativado
+    // 2. VERIFICAÇÃO DE URL PURA (SEM PARÂMETROS EXPLÍCITOS DE PORTAL)
+    // Se o mestre já estiver com sessão autorizada neste navegador, deixa prosseguir para o painel do mestre
+    const isMasterAuth = (typeof isMasterAuthorized === 'function') ? isMasterAuthorized() : true;
+    if (isMasterAuth) {
+      // Mestre autorizado: desativa portal se não houver pedido de jogador
+      activePortalPlayerId = null;
+      if (typeof document !== 'undefined' && document.body && document.body.classList) {
+        document.body.classList.remove('mode-player-portal');
+      }
+      const banner = document.getElementById('player-portal-banner');
+      if (banner) banner.style.display = 'none';
+      return false;
+    }
+
+    // Se NÃO for mestre autorizado e não houver parâmetros na URL:
+    // Verifica se este dispositivo possui sessão de aluno salva anteriormente
+    let lastPlayerId = null;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        lastPlayerId = localStorage.getItem('dnd5e_last_portal_player_id');
+      }
+    } catch (e) {}
+
+    if (lastPlayerId) {
+      const savedHero = Array.isArray(PLAYERS) ? PLAYERS.find(p => p.id === lastPlayerId) : null;
+      if (savedHero) {
+        // Exibe banner de boas-vindas de volta e inicializa ficha no modo portal
+        const returnBanner = document.getElementById('player-return-banner');
+        const heroNameEl = document.getElementById('return-player-name');
+        if (heroNameEl) heroNameEl.innerText = `${savedHero.name} (${savedHero.student || 'Personagem'})`;
+        if (returnBanner) returnBanner.style.display = 'flex';
+
+        initPlayerPortalMode(savedHero.id);
+        return true;
+      }
+    }
+
+    // Se não há herói salvo e o mestre não está autenticado: abre tela de boas-vindas
     activePortalPlayerId = null;
     if (typeof document !== 'undefined' && document.body && document.body.classList) {
       document.body.classList.remove('mode-player-portal');
     }
     const banner = document.getElementById('player-portal-banner');
     if (banner) banner.style.display = 'none';
+
+    setTimeout(() => {
+      openWelcomeScreen();
+    }, 150);
+
   } catch (e) {
     console.warn('Erro ao processar URL do portal do jogador:', e);
   }
@@ -4060,6 +4209,22 @@ function renderPlayerLoginList() {
 function selectLoginCharacter(playerId) {
   const p = PLAYERS.find(x => x.id === playerId);
   if (!p) return;
+
+  // Persiste a sessão do aluno para retorno automático em futuros acessos
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('dnd5e_last_portal_player_id', playerId);
+      const currentRoom = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
+      localStorage.setItem('dnd5e_last_portal_room', currentRoom);
+    }
+  } catch (e) {}
+
+  if (typeof dismissPlayerReturnBanner === 'function') {
+    dismissPlayerReturnBanner();
+  }
+  if (typeof closeWelcomeScreen === 'function') {
+    closeWelcomeScreen();
+  }
 
   initPlayerPortalMode(playerId);
   closePlayerLoginModal();
