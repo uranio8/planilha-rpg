@@ -962,6 +962,9 @@ function renderPlayers() {
                         <button class="btn-item-equip ${it.equipped ? 'active' : ''}" onclick="togglePlayerItemEquipped('${p.id}', ${idx})" title="${it.equipped ? 'Item Equipado (clique para guardar)' : 'Item na Mochila (clique para equipar)'}">
                           ${it.equipped ? '⚔️' : '🎒'}
                         </button>
+                        <button class="btn-item-trade" onclick="openTradeItemModal('${p.id}', ${idx})" title="Passar este item para outro herói (Troca Direta)">
+                          🤝
+                        </button>
                         <button class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, -1)" title="Diminuir quantidade" style="padding: 1px 4px; font-size: 9px;">−</button>
                         <span style="font-weight: 800; min-width: 14px; text-align: center; color: ${itemQty > 0 ? 'var(--primary-light)' : 'var(--text-dim)'}; font-size: 10px;">${itemQty}x</span>
                         <button class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, 1)" title="Aumentar quantidade" style="padding: 1px 4px; font-size: 9px;">+</button>
@@ -5275,6 +5278,368 @@ function applyLevelUpConfirm() {
   saveToLocalStorage();
 }
 
+// --- SISTEMA DE TROCA DIRETA DE ITENS ENTRE HERÓIS (TRADE DE MOCHILA) ---
+let activeTradeContext = { donorId: null, itemIdx: null, maxQty: 1 };
+
+function openTradeItemModal(donorId, itemIdx) {
+  const donor = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(p => p.id === donorId) : null;
+  if (!donor || !donor.inventory || !donor.inventory[itemIdx]) return;
+
+  const item = donor.inventory[itemIdx];
+  const maxQty = parseInt(item.qty, 10) || 1;
+  activeTradeContext = { donorId, itemIdx, maxQty };
+
+  const modal = document.getElementById('modal-trade-item');
+  const nameEl = document.getElementById('trade-item-name');
+  const metaEl = document.getElementById('trade-item-meta');
+  const iconEl = document.getElementById('trade-item-icon');
+  const selReceiver = document.getElementById('sel-trade-receiver');
+  const inpQty = document.getElementById('inp-trade-qty');
+
+  if (nameEl) nameEl.innerText = item.name || 'Item';
+  if (metaEl) metaEl.innerText = `Doador: ${donor.name} • Disponível: ${maxQty}x ${item.weight ? `(${item.weight}kg cada)` : ''}`;
+  if (iconEl) {
+    const actionInfo = typeof getItemActionInfo === 'function' ? getItemActionInfo(item.name) : { icon: '🎒' };
+    iconEl.innerText = actionInfo.icon || '🎒';
+  }
+  if (inpQty) {
+    inpQty.value = 1;
+    inpQty.max = maxQty;
+  }
+
+  // Preenche destinatários disponíveis (todos os outros heróis)
+  if (selReceiver) {
+    const otherHeroes = (typeof PLAYERS !== 'undefined') ? PLAYERS.filter(p => p.id !== donorId) : [];
+    if (otherHeroes.length === 0) {
+      selReceiver.innerHTML = '<option value="">Nenhum outro herói na mesa</option>';
+    } else {
+      selReceiver.innerHTML = otherHeroes.map(h => `
+        <option value="${h.id}">${h.name} (${h.student || 'Aluno'}) - ${h.className || ''}</option>
+      `).join('');
+    }
+  }
+
+  if (modal) modal.classList.add('open');
+}
+
+function closeTradeItemModal() {
+  const modal = document.getElementById('modal-trade-item');
+  if (modal) modal.classList.remove('open');
+  activeTradeContext = { donorId: null, itemIdx: null, maxQty: 1 };
+}
+
+function adjustTradeQty(delta) {
+  const inp = document.getElementById('inp-trade-qty');
+  if (!inp) return;
+  let cur = parseInt(inp.value, 10) || 1;
+  cur = Math.max(1, Math.min(activeTradeContext.maxQty || 1, cur + delta));
+  inp.value = cur;
+}
+
+function setTradeQtyMax() {
+  const inp = document.getElementById('inp-trade-qty');
+  if (inp) inp.value = activeTradeContext.maxQty || 1;
+}
+
+function confirmTradeItem() {
+  if (!activeTradeContext.donorId || activeTradeContext.itemIdx === null) return;
+  const selReceiver = document.getElementById('sel-trade-receiver');
+  const inpQty = document.getElementById('inp-trade-qty');
+  const receiverId = selReceiver ? selReceiver.value : null;
+  const qty = inpQty ? Math.max(1, Math.min(activeTradeContext.maxQty, parseInt(inpQty.value, 10) || 1)) : 1;
+
+  if (!receiverId) {
+    alert('Por favor, selecione um herói para receber o item.');
+    return;
+  }
+
+  transferPlayerItem(activeTradeContext.donorId, activeTradeContext.itemIdx, receiverId, qty);
+  closeTradeItemModal();
+}
+
+function transferPlayerItem(donorId, itemIdx, receiverId, qty) {
+  const donor = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(p => p.id === donorId) : null;
+  const receiver = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(p => p.id === receiverId) : null;
+  if (!donor || !donor.inventory || !donor.inventory[itemIdx] || !receiver) {
+    return { success: false, error: 'Doador ou recebedor inválido' };
+  }
+
+  const it = donor.inventory[itemIdx];
+  const itemQty = parseInt(it.qty, 10) || 1;
+  const reqQty = parseInt(qty, 10) || 1;
+  if (reqQty > itemQty || reqQty <= 0) {
+    return { success: false, error: 'Quantidade indisponível para transferência' };
+  }
+  const transferQty = reqQty;
+  const itemName = it.name;
+
+  // Subtrai ou remove do doador
+  if (itemQty <= transferQty) {
+    donor.inventory.splice(itemIdx, 1);
+  } else {
+    it.qty = itemQty - transferQty;
+  }
+  touchPlayer(donor);
+
+  // Adiciona ao recebedor (se já tiver item com mesmo nome, soma a quantidade)
+  receiver.inventory = receiver.inventory || [];
+  const existingIdx = receiver.inventory.findIndex(ri => (ri.name || '').toLowerCase() === (itemName || '').toLowerCase());
+  if (existingIdx >= 0) {
+    receiver.inventory[existingIdx].qty = (parseInt(receiver.inventory[existingIdx].qty, 10) || 1) + transferQty;
+  } else {
+    const newItem = Object.assign({}, it, {
+      id: 'it_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      qty: transferQty,
+      equipped: false
+    });
+    receiver.inventory.push(newItem);
+  }
+  touchPlayer(receiver);
+
+  // Logs
+  if (typeof addPlayerActionLog === 'function') {
+    addPlayerActionLog(donor.id, '🤝', `Passou ${transferQty}x ${itemName} para ${receiver.name}`, 'general');
+    addPlayerActionLog(receiver.id, '🤝', `Recebeu ${transferQty}x ${itemName} de ${donor.name}`, 'general');
+  }
+  if (typeof addLog === 'function') {
+    addLog(`🤝 <b>Troca de Itens:</b> <b>${donor.name}</b> passou ${transferQty}x <b>${itemName}</b> para <b>${receiver.name}</b>.`);
+  }
+  if (typeof playFX === 'function') playFX('sword');
+
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof showToast === 'function') {
+    showToast(`🤝 ${transferQty}x ${itemName} entregue para ${receiver.name}!`, 'success');
+  }
+  return { success: true, transferredQty: transferQty };
+}
+
+// --- SISTEMA DE DISTRIBUIÇÃO DE SAQUE & XP EM LOTE (MESTRE) ---
+let batchRewardSelectedHeroIds = new Set();
+
+function openBatchRewardsModal() {
+  const modal = document.getElementById('modal-batch-rewards');
+  if (!modal) return;
+
+  // Seleciona todos os heróis cadastrados por padrão
+  batchRewardSelectedHeroIds = new Set((typeof PLAYERS !== 'undefined' ? PLAYERS : []).map(p => p.id));
+  renderBatchRewardHeroList();
+
+  const inpXp = document.getElementById('inp-batch-xp-total');
+  const inpCp = document.getElementById('inp-batch-cp');
+  const inpSp = document.getElementById('inp-batch-sp');
+  const inpEp = document.getElementById('inp-batch-ep');
+  const inpGp = document.getElementById('inp-batch-gp');
+  const inpPp = document.getElementById('inp-batch-pp');
+
+  if (inpXp) inpXp.value = '';
+  if (inpCp) inpCp.value = '';
+  if (inpSp) inpSp.value = '';
+  if (inpEp) inpEp.value = '';
+  if (inpGp) inpGp.value = '';
+  if (inpPp) inpPp.value = '';
+
+  updateBatchRewardCalculations();
+  modal.classList.add('open');
+}
+
+function closeBatchRewardsModal() {
+  const modal = document.getElementById('modal-batch-rewards');
+  if (modal) modal.classList.remove('open');
+}
+
+function renderBatchRewardHeroList() {
+  const container = document.getElementById('batch-reward-hero-list');
+  if (!container) return;
+
+  const heroes = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS)) ? PLAYERS : [];
+  if (heroes.length === 0) {
+    container.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); font-size: 11px; padding: 12px;">Nenhum herói cadastrado na mesa.</div>`;
+    return;
+  }
+
+  container.innerHTML = heroes.map(h => {
+    const isSelected = batchRewardSelectedHeroIds.has(h.id);
+    return `
+      <div class="reward-hero-chip ${isSelected ? 'selected' : ''}" onclick="toggleBatchRewardHero('${h.id}')">
+        <input type="checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleBatchRewardHero('${h.id}')">
+        <span style="font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${h.name}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleBatchRewardHero(heroId) {
+  if (batchRewardSelectedHeroIds.has(heroId)) {
+    batchRewardSelectedHeroIds.delete(heroId);
+  } else {
+    batchRewardSelectedHeroIds.add(heroId);
+  }
+  renderBatchRewardHeroList();
+  updateBatchRewardCalculations();
+}
+
+function toggleAllBatchRewardHeroes(select) {
+  if (select) {
+    batchRewardSelectedHeroIds = new Set((typeof PLAYERS !== 'undefined' ? PLAYERS : []).map(p => p.id));
+  } else {
+    batchRewardSelectedHeroIds.clear();
+  }
+  renderBatchRewardHeroList();
+  updateBatchRewardCalculations();
+}
+
+function setBatchXpQuick(amount) {
+  const inpXp = document.getElementById('inp-batch-xp-total');
+  if (!inpXp) return;
+  const cur = parseInt(inpXp.value, 10) || 0;
+  inpXp.value = cur + amount;
+  updateBatchRewardCalculations();
+}
+
+function updateBatchRewardCalculations() {
+  const n = batchRewardSelectedHeroIds.size;
+  const inpXp = document.getElementById('inp-batch-xp-total');
+  const inpGp = document.getElementById('inp-batch-gp');
+  const xpBadge = document.getElementById('batch-xp-per-hero-badge');
+  const goldBadge = document.getElementById('batch-gold-per-hero-badge');
+
+  const totalXp = inpXp ? (parseInt(inpXp.value, 10) || 0) : 0;
+  const totalGp = inpGp ? (parseInt(inpGp.value, 10) || 0) : 0;
+
+  if (xpBadge) {
+    const perHero = n > 0 ? Math.floor(totalXp / n) : 0;
+    xpBadge.innerText = `${perHero.toLocaleString()} XP / herói (${n} selecionados)`;
+  }
+  if (goldBadge) {
+    const perHero = n > 0 ? (Math.round((totalGp / n) * 10) / 10) : 0;
+    goldBadge.innerText = `${perHero} PO / herói (${n} selecionados)`;
+  }
+}
+
+function distributeBatchRewards(opts = null) {
+  let selectedIds = batchRewardSelectedHeroIds;
+  let totalXp = 0;
+  let cp = 0, sp = 0, ep = 0, gp = 0, pp = 0;
+
+  if (opts && typeof opts === 'object') {
+    if (opts.recipientIds && Array.isArray(opts.recipientIds)) {
+      selectedIds = new Set(opts.recipientIds);
+    }
+    totalXp = parseInt(opts.totalXp, 10) || 0;
+    if (opts.coins) {
+      cp = parseInt(opts.coins.cp, 10) || 0;
+      sp = parseInt(opts.coins.sp, 10) || 0;
+      ep = parseInt(opts.coins.ep, 10) || 0;
+      gp = parseInt(opts.coins.gp, 10) || 0;
+      pp = parseInt(opts.coins.pp, 10) || 0;
+    }
+  } else {
+    const inpXp = document.getElementById('inp-batch-xp-total');
+    const inpCp = document.getElementById('inp-batch-cp');
+    const inpSp = document.getElementById('inp-batch-sp');
+    const inpEp = document.getElementById('inp-batch-ep');
+    const inpGp = document.getElementById('inp-batch-gp');
+    const inpPp = document.getElementById('inp-batch-pp');
+
+    totalXp = inpXp ? (parseInt(inpXp.value, 10) || 0) : 0;
+    cp = inpCp ? (parseInt(inpCp.value, 10) || 0) : 0;
+    sp = inpSp ? (parseInt(inpSp.value, 10) || 0) : 0;
+    ep = inpEp ? (parseInt(inpEp.value, 10) || 0) : 0;
+    gp = inpGp ? (parseInt(inpGp.value, 10) || 0) : 0;
+    pp = inpPp ? (parseInt(inpPp.value, 10) || 0) : 0;
+  }
+
+  const n = selectedIds.size;
+  if (n === 0) {
+    if (!opts && typeof alert === 'function') alert('Por favor, selecione ao menos um aventureiro para receber as recompensas.');
+    return { success: false, error: 'Nenhum aventureiro selecionado' };
+  }
+
+  if (totalXp === 0 && cp === 0 && sp === 0 && ep === 0 && gp === 0 && pp === 0) {
+    if (!opts && typeof alert === 'function') alert('Preencha ao menos um valor de XP ou Moedas para distribuir.');
+    return { success: false, error: 'Nenhum valor para distribuir' };
+  }
+
+  const xpShare = Math.floor(totalXp / n);
+  const cpShare = Math.floor(cp / n);
+  const spShare = Math.floor(sp / n);
+  const epShare = Math.floor(ep / n);
+  const gpShare = Math.floor(gp / n);
+  const ppShare = Math.floor(pp / n);
+
+  const rewardedNames = [];
+
+  selectedIds.forEach(id => {
+    const p = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(x => x.id === id) : null;
+    if (!p) return;
+
+    rewardedNames.push(p.name);
+    if (xpShare > 0) {
+      p.xp = (p.xp || 0) + xpShare;
+    }
+
+    p.coins = p.coins || { cp: 0, sp: 0, ep: 0, gp: p.gold || 0, pp: 0 };
+    if (cpShare > 0) p.coins.cp = (p.coins.cp || 0) + cpShare;
+    if (spShare > 0) p.coins.sp = (p.coins.sp || 0) + spShare;
+    if (epShare > 0) p.coins.ep = (p.coins.ep || 0) + epShare;
+    if (gpShare > 0) p.coins.gp = (p.coins.gp || 0) + gpShare;
+    if (ppShare > 0) p.coins.pp = (p.coins.pp || 0) + ppShare;
+    p.gold = (p.coins.gp || 0);
+
+    touchPlayer(p);
+
+    if (typeof addPlayerActionLog === 'function') {
+      const parts = [];
+      if (xpShare > 0) parts.push(`+${xpShare} XP`);
+      if (gpShare > 0) parts.push(`+${gpShare} PO`);
+      if (spShare > 0) parts.push(`+${spShare} PP`);
+      if (cpShare > 0) parts.push(`+${cpShare} PC`);
+      addPlayerActionLog(p.id, '🎁', `Recompensa Coletiva: ${parts.join(', ')}`, 'xp');
+    }
+  });
+
+  // Log geral
+  if (typeof addLog === 'function') {
+    const summary = [];
+    if (totalXp > 0) summary.push(`<b>${totalXp} XP</b> (${xpShare}/herói)`);
+    if (gp > 0) summary.push(`<b>${gp} PO</b>`);
+    if (sp > 0) summary.push(`<b>${sp} PP</b>`);
+    addLog(`🎁 <b>Recompensa da Turma:</b> Mestre distribuiu ${summary.join(' e ')} para ${n} heróis (${rewardedNames.slice(0, 3).join(', ')}${n > 3 ? '...' : ''})!`);
+  }
+  if (typeof playFX === 'function') playFX('crit');
+
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  closeBatchRewardsModal();
+
+  if (typeof showToast === 'function') {
+    showToast(`🎁 Recompensas distribuídas com sucesso para ${n} heróis!`, 'success');
+  }
+  return { success: true, count: n, xpShare, gpShare };
+}
+
+// Vincula no window para navegadores
+if (typeof window !== 'undefined') {
+  window.openTradeItemModal = openTradeItemModal;
+  window.closeTradeItemModal = closeTradeItemModal;
+  window.adjustTradeQty = adjustTradeQty;
+  window.setTradeQtyMax = setTradeQtyMax;
+  window.confirmTradeItem = confirmTradeItem;
+  window.transferPlayerItem = transferPlayerItem;
+
+  window.openBatchRewardsModal = openBatchRewardsModal;
+  window.closeBatchRewardsModal = closeBatchRewardsModal;
+  window.renderBatchRewardHeroList = renderBatchRewardHeroList;
+  window.toggleBatchRewardHero = toggleBatchRewardHero;
+  window.toggleAllBatchRewardHeroes = toggleAllBatchRewardHeroes;
+  window.setBatchXpQuick = setBatchXpQuick;
+  window.updateBatchRewardCalculations = updateBatchRewardCalculations;
+  window.distributeBatchRewards = distributeBatchRewards;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     touchPlayer,
@@ -5288,7 +5653,21 @@ if (typeof module !== 'undefined' && module.exports) {
     renderPlayers,
     savePlayerEditModal,
     trackDeletedPlayerId,
-    getDeletedPlayerIds
+    getDeletedPlayerIds,
+    openTradeItemModal,
+    closeTradeItemModal,
+    adjustTradeQty,
+    setTradeQtyMax,
+    confirmTradeItem,
+    transferPlayerItem,
+    openBatchRewardsModal,
+    closeBatchRewardsModal,
+    renderBatchRewardHeroList,
+    toggleBatchRewardHero,
+    toggleAllBatchRewardHeroes,
+    setBatchXpQuick,
+    updateBatchRewardCalculations,
+    distributeBatchRewards
   };
 }
 

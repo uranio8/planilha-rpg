@@ -920,9 +920,11 @@ function renderRulerSvg(startX, startY, endX, endY, isScreen = false) {
   // B2: Definir width/height explícitos para o SVG funcionar corretamente no espaço do board
   const mapW = gridState.width || 1200;
   const mapH = gridState.height || 800;
-  svg.setAttribute('width', mapW);
-  svg.setAttribute('height', mapH);
-  svg.setAttribute('viewBox', `0 0 ${mapW} ${mapH}`);
+  if (typeof svg.setAttribute === 'function') {
+    svg.setAttribute('width', mapW);
+    svg.setAttribute('height', mapH);
+    svg.setAttribute('viewBox', `0 0 ${mapW} ${mapH}`);
+  }
 
   const cSize = gridState.cellSize || 50;
   const distPx = Math.hypot(endX - startX, endY - startY);
@@ -1732,6 +1734,53 @@ function handleBoardMouseDown(e) {
   }
 }
 
+// --- SUPORTE TOUCH PARA MOBILE (RÉGUA E PING NO CELULAR) ---
+let _rulerTouchClearTimeout = null;
+
+function handleBoardTouchStart(e) {
+  if (!e.touches || e.touches.length === 0) return;
+  const touch = e.touches[0];
+  const pos = clientToBoard(touch.clientX, touch.clientY);
+  
+  if (activeVttTool === 'ping') {
+    if (e.cancelable) e.preventDefault();
+    triggerGridPing(pos.x, pos.y);
+    return;
+  }
+  
+  if (activeVttTool === 'ruler') {
+    if (e.cancelable) e.preventDefault();
+    if (_rulerTouchClearTimeout) {
+      clearTimeout(_rulerTouchClearTimeout);
+      _rulerTouchClearTimeout = null;
+    }
+    startRulerMeasurement(pos.x, pos.y);
+    return;
+  }
+}
+
+function handleBoardTouchMove(e) {
+  if (!e.touches || e.touches.length === 0) return;
+  if (activeVttTool === 'ruler' && isRulerMeasuring) {
+    if (e.cancelable) e.preventDefault();
+    const touch = e.touches[0];
+    const pos = clientToBoard(touch.clientX, touch.clientY);
+    updateRulerMeasurement(pos.x, pos.y);
+  }
+}
+
+function handleBoardTouchEnd(e) {
+  if (activeVttTool === 'ruler' && isRulerMeasuring) {
+    if (e.cancelable) e.preventDefault();
+    if (_rulerTouchClearTimeout) clearTimeout(_rulerTouchClearTimeout);
+    // Mantém a régua visível por 2.5 segundos para o jogador/mestre ler a distância no celular
+    _rulerTouchClearTimeout = setTimeout(() => {
+      endRulerMeasurement();
+      _rulerTouchClearTimeout = null;
+    }, 2500);
+  }
+}
+
 function handleBoardContextMenu(e) {
   if (hasPannedWithRightClick) {
     e.preventDefault();
@@ -1884,7 +1933,7 @@ function renderBattleGrid() {
       const isDead = hpPct === 0;
 
       // Condições ativas
-      const conditions = (c.conditions || []).slice(0, 3);
+      const conditions = (c.conditions || []).slice(0, 4);
       const condChipsHtml = conditions.map(cond => {
         let condEmoji = '⚡';
         const cl = cond.toLowerCase();
@@ -1896,7 +1945,7 @@ function renderBattleGrid() {
         else if (cl.includes('para') || cl.includes('stun')) condEmoji = '⚡';
         else if (cl.includes('pres') || cl.includes('rest')) condEmoji = '🕸️';
         else if (cl.includes('invis')) condEmoji = '👁️‍🗨️';
-        return `<span class="token-cond-chip" title="${cond}">${condEmoji}</span>`;
+        return `<span class="token-cond-chip token-condition-badge" title="${cond}">${condEmoji}</span>`;
       }).join('');
 
       const auraHtml = (tok.aura && tok.aura.range && tok.aura.range !== 'none')
@@ -1921,7 +1970,7 @@ function renderBattleGrid() {
 
           <div class="token-label"${isLowHp && !isDead ? ' style="color:#f87171;font-weight:800;"' : ''}>${tok.name}${isLowHp && !isDead ? ' ⚠️' : ''}</div>
           
-          ${condChipsHtml ? `<div class="token-conditions-row">${condChipsHtml}</div>` : ''}
+          ${condChipsHtml ? `<div class="token-conditions-row token-conditions-badge-bar">${condChipsHtml}</div>` : ''}
           ${tok.altitude ? `<div class="token-altitude-badge">✈️ ${tok.altitude > 0 ? '+' : ''}${tok.altitude}m</div>` : ''}
           ${tok.hidden && !isReadOnly ? `<div class="token-hidden-badge" title="Oculto no Telão">👁️‍🗨️</div>` : ''}
         </div>
@@ -2201,11 +2250,14 @@ function openTokenContextMenu(e, tokenId) {
     ${token.aura && token.aura.range !== 'none' ? `
       <div style="display: flex; gap: 4px; padding: 2px 6px; align-items: center; justify-content: space-between;">
         <span style="font-size: 9px; color: var(--text-muted);">Cor:</span>
-        <div style="display: flex; gap: 4px;">
+        <div style="display: flex; gap: 4px; flex-wrap: wrap;">
           <span style="width: 12px; height: 12px; border-radius: 50%; background: #f59e0b; cursor: pointer; border: ${token.aura.color === 'gold' ? '2px solid #fff' : '1px solid #000'};" onclick="setTokenAura('${tokenId}', '${token.aura.range}', 'gold')" title="Dourada (Bênção / Paladino)"></span>
           <span style="width: 12px; height: 12px; border-radius: 50%; background: #38bdf8; cursor: pointer; border: ${token.aura.color === 'blue' ? '2px solid #fff' : '1px solid #000'};" onclick="setTokenAura('${tokenId}', '${token.aura.range}', 'blue')" title="Azul (Escudo / Proteção)"></span>
           <span style="width: 12px; height: 12px; border-radius: 50%; background: #ef4444; cursor: pointer; border: ${token.aura.color === 'red' ? '2px solid #fff' : '1px solid #000'};" onclick="setTokenAura('${tokenId}', '${token.aura.range}', 'red')" title="Vermelha (Fogo / Agressiva)"></span>
           <span style="width: 12px; height: 12px; border-radius: 50%; background: #10b981; cursor: pointer; border: ${token.aura.color === 'green' ? '2px solid #fff' : '1px solid #000'};" onclick="setTokenAura('${tokenId}', '${token.aura.range}', 'green')" title="Verde (Cura / Natureza)"></span>
+          <span style="width: 12px; height: 12px; border-radius: 50%; background: #a855f7; cursor: pointer; border: ${token.aura.color === 'purple' ? '2px solid #fff' : '1px solid #000'};" onclick="setTokenAura('${tokenId}', '${token.aura.range}', 'purple')" title="Roxa (Arcana / Maldição)"></span>
+          <span style="width: 12px; height: 12px; border-radius: 50%; background: #06b6d4; cursor: pointer; border: ${token.aura.color === 'cyan' ? '2px solid #fff' : '1px solid #000'};" onclick="setTokenAura('${tokenId}', '${token.aura.range}', 'cyan')" title="Ciano (Gelo / Mística)"></span>
+          <span style="width: 12px; height: 12px; border-radius: 50%; background: #f97316; cursor: pointer; border: ${token.aura.color === 'orange' ? '2px solid #fff' : '1px solid #000'};" onclick="setTokenAura('${tokenId}', '${token.aura.range}', 'orange')" title="Laranja (Chama / Solar)"></span>
         </div>
       </div>
     ` : ''}
@@ -2804,4 +2856,22 @@ function deleteCurrentSceneConfirm() {
     }
   }
 }
+
+// Exportações para Window e Node.js
+if (typeof window !== 'undefined') {
+  window.handleBoardTouchStart = handleBoardTouchStart;
+  window.handleBoardTouchMove = handleBoardTouchMove;
+  window.handleBoardTouchEnd = handleBoardTouchEnd;
+  window.setTokenAura = setTokenAura;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    ...(typeof module.exports === 'object' ? module.exports : {}),
+    handleBoardTouchStart,
+    handleBoardTouchMove,
+    handleBoardTouchEnd,
+    setTokenAura
+  };
+}
+
 

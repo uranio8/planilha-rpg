@@ -69,6 +69,7 @@
           <span style="font-size: 9px; opacity: 0.7;">▾</span>
         </button>
         <div class="nav-dropdown-menu right-aligned">
+          <button class="dropdown-item" onclick="openBatchRewardsModal()" style="color: #facc15; font-weight: 700;">🎁 Distribuir Saque & XP</button>
           <button class="dropdown-item" onclick="switchTab('dmscreen')">🛡️ Escudo do Mestre (Regras)</button>
           <button class="dropdown-item" onclick="switchTab('generators')">🎲 Geradores & Enigmas</button>
           <button class="dropdown-item" onclick="switchTab('grid-config')">⚙️ Configurações do Grid</button>
@@ -475,7 +476,7 @@
             <div id="grid-coord-top" class="grid-coord-top" style="display: none;"></div>
             <div id="grid-coord-left" class="grid-coord-left" style="display: none;"></div>
             
-            <div class="battlegrid-board bg-dungeon" id="battlegrid-board" onmousedown="handleBoardMouseDown(event)">
+            <div class="battlegrid-board bg-dungeon" id="battlegrid-board" onmousedown="handleBoardMouseDown(event)" ontouchstart="handleBoardTouchStart(event)" ontouchmove="handleBoardTouchMove(event)" ontouchend="handleBoardTouchEnd(event)">
               <div class="grid-lines-overlay" id="grid-lines-overlay"></div>
               <!-- Elemento de Seleção Múltipla Retangular -->
               <div id="grid-selection-box" class="grid-selection-box"></div>
@@ -738,6 +739,7 @@
         </div>
         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
           <button class="btn-action" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 700;" onclick="addAllPlayersToCombat()" title="Adicionar todas as fichas de alunos ao combate ativo de uma vez">⚔️ Todos no Combate</button>
+          <button class="btn-secondary" style="color: #fbbf24; border-color: rgba(245, 158, 11, 0.4);" onclick="openBatchRewardsModal()" title="Distribuir Experiência e Moedas em lote para o grupo">🎁 Recompensas</button>
           <button class="btn-secondary" onclick="partyShortRestAll()" title="Descanso Curto para todo o grupo (1h)">☕ Curto (Todos)</button>
           <button class="btn-secondary" onclick="partyLongRestAll()" title="Descanso Longo para todo o grupo (8h - restaura PV, magias e dados)">🌙 Longo (Todos)</button>
           <button class="btn-action" onclick="openPlayerModal(null)">➕ Nova Ficha</button>
@@ -3356,6 +3358,139 @@
 
       <div class="welcome-footer-hint">
         💡 Alunos só precisam acessar este mesmo link e clicar em "Sou Aluno" para jogar!
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================
+       🎁 MODAL DE DISTRIBUIÇÃO DE SAQUE & XP EM LOTE (MESTRE)
+       =================================================== -->
+  <div id="modal-batch-rewards" class="modal-overlay">
+    <div class="modal-box" style="max-width: 540px;">
+      <div class="modal-header">
+        <h3 style="display: flex; align-items: center; gap: 8px; font-family: var(--font-title); color: #fff;">
+          <span>🎁</span>
+          <span>Recompensa da Turma (Saque & XP)</span>
+        </h3>
+        <button class="modal-close" onclick="closeBatchRewardsModal()">✕</button>
+      </div>
+
+      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+        Premie os aventureiros dividindo experiência e moedas de forma equilibrada com apenas 1 clique.
+      </div>
+
+      <!-- SELEÇÃO DE HERÓIS -->
+      <div style="margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: 11px; font-weight: 700; color: var(--primary-light);">👥 Aventureiros Beneficiados:</span>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn-secondary" style="font-size: 10px; padding: 1px 6px;" onclick="toggleAllBatchRewardHeroes(true)">Marcar Todos</button>
+            <button class="btn-secondary" style="font-size: 10px; padding: 1px 6px;" onclick="toggleAllBatchRewardHeroes(false)">Desmarcar</button>
+          </div>
+        </div>
+        <div id="batch-reward-hero-list" class="reward-hero-pick-grid">
+          <!-- Renderizado dinamicamente -->
+        </div>
+      </div>
+
+      <!-- SEÇÃO XP -->
+      <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: 12px; font-weight: 700; color: #38bdf8;">✨ Experiência (XP):</span>
+          <span id="batch-xp-per-hero-badge" style="font-size: 11px; color: #a5f3fc; font-weight: 700;">0 XP / herói</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;">
+          <input type="number" id="inp-batch-xp-total" class="form-input" placeholder="XP Total a dividir..." min="0" oninput="updateBatchRewardCalculations()" style="font-weight: 700; font-size: 13px;">
+          <div style="display: flex; gap: 4px;">
+            <button class="btn-secondary" style="font-size: 10px; padding: 4px 6px;" onclick="setBatchXpQuick(250)">+250</button>
+            <button class="btn-secondary" style="font-size: 10px; padding: 4px 6px;" onclick="setBatchXpQuick(500)">+500</button>
+            <button class="btn-secondary" style="font-size: 10px; padding: 4px 6px;" onclick="setBatchXpQuick(1000)">+1000</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEÇÃO MOEDAS -->
+      <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: 12px; font-weight: 700; color: #fbbf24;">🪙 Tesouro & Moedas Totais:</span>
+          <span id="batch-gold-per-hero-badge" style="font-size: 11px; color: #fde68a; font-weight: 700;">0 PO / herói</span>
+        </div>
+        <div class="reward-coin-grid">
+          <div class="reward-coin-input-box">
+            <span style="font-size: 10px; color: #d97706; font-weight: 700;">PC (Cobre)</span>
+            <input type="number" id="inp-batch-cp" placeholder="0" min="0" oninput="updateBatchRewardCalculations()">
+          </div>
+          <div class="reward-coin-input-box">
+            <span style="font-size: 10px; color: #cbd5e1; font-weight: 700;">PP (Prata)</span>
+            <input type="number" id="inp-batch-sp" placeholder="0" min="0" oninput="updateBatchRewardCalculations()">
+          </div>
+          <div class="reward-coin-input-box">
+            <span style="font-size: 10px; color: #38bdf8; font-weight: 700;">PE (Electro)</span>
+            <input type="number" id="inp-batch-ep" placeholder="0" min="0" oninput="updateBatchRewardCalculations()">
+          </div>
+          <div class="reward-coin-input-box">
+            <span style="font-size: 10px; color: #f59e0b; font-weight: 700;">PO (Ouro)</span>
+            <input type="number" id="inp-batch-gp" placeholder="0" min="0" oninput="updateBatchRewardCalculations()">
+          </div>
+          <div class="reward-coin-input-box">
+            <span style="font-size: 10px; color: #c084fc; font-weight: 700;">PL (Platina)</span>
+            <input type="number" id="inp-batch-pp" placeholder="0" min="0" oninput="updateBatchRewardCalculations()">
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button class="btn-secondary" onclick="closeBatchRewardsModal()">Cancelar</button>
+        <button class="btn-action" style="font-weight: 800; padding: 7px 16px;" onclick="distributeBatchRewards()">
+          <span>🎁 Entregar Recompensas</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================
+       🤝 MODAL DE TROCA DE ITENS (TRADE DE MOCHILA)
+       =================================================== -->
+  <div id="modal-trade-item" class="modal-overlay">
+    <div class="modal-box" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 style="display: flex; align-items: center; gap: 8px; font-family: var(--font-title); color: #fff;">
+          <span>🤝</span>
+          <span>Passar Item para Herói</span>
+        </h3>
+        <button class="modal-close" onclick="closeTradeItemModal()">✕</button>
+      </div>
+
+      <div class="trade-item-preview-card">
+        <div class="trade-item-icon-box" id="trade-item-icon">🎒</div>
+        <div style="flex: 1; overflow: hidden;">
+          <div id="trade-item-name" style="font-size: 14px; font-weight: 800; color: #fff; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">Nome do Item</div>
+          <div id="trade-item-meta" style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Doador: Gromm • Disponível: 3x</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px;">Destinatário (Quem receberá o item?):</label>
+        <select id="sel-trade-receiver" class="form-input" style="font-size: 13px; font-weight: 600; width: 100%;">
+          <!-- Preenchido dinamicamente com os outros heróis -->
+        </select>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px;">Quantidade a transferir:</label>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <button class="btn-secondary" style="padding: 4px 10px; font-weight: 800;" onclick="adjustTradeQty(-1)">−</button>
+          <input type="number" id="inp-trade-qty" class="form-input" style="width: 70px; text-align: center; font-size: 14px; font-weight: 800;" value="1" min="1">
+          <button class="btn-secondary" style="padding: 4px 10px; font-weight: 800;" onclick="adjustTradeQty(1)">+</button>
+          <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="setTradeQtyMax()">Máximo</button>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button class="btn-secondary" onclick="closeTradeItemModal()">Cancelar</button>
+        <button class="btn-action" style="font-weight: 800; padding: 7px 16px;" onclick="confirmTradeItem()">
+          <span>🤝 Entregar Item</span>
+        </button>
       </div>
     </div>
   </div>

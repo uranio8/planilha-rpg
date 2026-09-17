@@ -6132,6 +6132,61 @@
       border: 1.5px dashed rgba(16, 185, 129, 0.4);
     }
 
+    .token-aura.aura-purple {
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.28) 0%, rgba(168, 85, 247, 0.08) 60%, transparent 80%);
+      border: 1.5px dashed rgba(168, 85, 247, 0.5);
+    }
+
+    .token-aura.aura-cyan {
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.28) 0%, rgba(6, 182, 212, 0.08) 60%, transparent 80%);
+      border: 1.5px dashed rgba(6, 182, 212, 0.5);
+    }
+
+    .token-aura.aura-orange {
+      background: radial-gradient(circle, rgba(249, 115, 22, 0.28) 0%, rgba(249, 115, 22, 0.08) 60%, transparent 80%);
+      border: 1.5px dashed rgba(249, 115, 22, 0.5);
+    }
+
+    /* Badges de Condição e Status sobre Tokens no VTT */
+    .token-conditions-badge-bar {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      display: flex;
+      gap: 2px;
+      z-index: 12;
+      pointer-events: none;
+    }
+    .token-condition-badge {
+      font-size: 10px;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 50%;
+      width: 17px;
+      height: 17px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.6);
+      line-height: 1;
+    }
+
+    /* Botão de Troca / Passar Item na Mochila */
+    .btn-item-trade {
+      background: rgba(168, 85, 247, 0.15);
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      color: #c084fc;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-item-trade:hover {
+      background: rgba(168, 85, 247, 0.35);
+      color: #fff;
+    }
+
     /* --- 3. MODAL DE DESCANSO CURTO & DADOS DE VIDA --- */
     .short-rest-card {
       background: rgba(15, 23, 42, 0.7);
@@ -7356,5 +7411,91 @@
       .welcome-title {
         font-size: 22px;
       }
+    /* ===================================================
+       🎁 MODAL DE DISTRIBUIÇÃO DE SAQUE & XP EM LOTE
+       =================================================== */
+    .reward-hero-pick-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 6px;
+      max-height: 180px;
+      overflow-y: auto;
+      padding: 4px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+    .reward-hero-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+      font-size: 11px;
+      user-select: none;
+      transition: all 0.2s;
+    }
+    .reward-hero-chip.selected {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: var(--accent-gold);
+      color: #fff;
+    }
+    .reward-hero-chip input[type="checkbox"] {
+      cursor: pointer;
+      accent-color: var(--accent-gold);
+    }
+    .reward-coin-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+    .reward-coin-input-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 6px 4px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+    }
+    .reward-coin-input-box input {
+      width: 100%;
+      text-align: center;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      color: #fff;
+      font-weight: 700;
+      font-size: 12px;
+      padding: 4px;
+    }
+
+    /* ===================================================
+       🤝 MODAL DE TROCA DE ITENS (TRADE DE MOCHILA)
+       =================================================== */
+    .trade-item-preview-card {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .trade-item-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(0, 0, 0, 0.6));
+      border: 1px solid rgba(168, 85, 247, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
     }
   </style>

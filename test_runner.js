@@ -2613,6 +2613,139 @@ const goldUpdated = vm.runInContext(`
 `, sandbox);
 assert(goldUpdated === 1500, 'Baú remoto mais recente atualizou tesouro do grupo com sucesso');
 
+// --- SUÍTE 43: Distribuição de Saque/XP em Lote, Trade de Mochila e Auras/Régua no VTT (ISSUE-69) ---
+console.log('\n🎁 43. Testes de Distribuição de Saque/XP em Lote, Trade de Mochila e Auras VTT (ISSUE-69):');
+
+// 1. Funções de Trade e Recompensas exportadas
+assert(typeof vm.runInContext("transferPlayerItem", sandbox) === 'function', 'Função transferPlayerItem exportada');
+assert(typeof vm.runInContext("openTradeItemModal", sandbox) === 'function', 'Função openTradeItemModal exportada');
+assert(typeof vm.runInContext("adjustTradeQty", sandbox) === 'function', 'Função adjustTradeQty exportada');
+assert(typeof vm.runInContext("distributeBatchRewards", sandbox) === 'function', 'Função distributeBatchRewards exportada');
+assert(typeof vm.runInContext("openBatchRewardsModal", sandbox) === 'function', 'Função openBatchRewardsModal exportada');
+
+// 2. Teste de Trade de Mochila entre heróis
+vm.runInContext(`
+  PLAYERS = [
+    {
+      id: 'trade_hero_1',
+      name: 'Eldrin o Mago',
+      inventory: [
+        { name: 'Poção de Cura Maior', qty: 3, weight: 0.5, desc: 'Restaura 4d4+4 PV' },
+        { name: 'Grimório Rúnico', qty: 1, weight: 2.0, desc: 'Magias arcanas' }
+      ],
+      coins: { cp: 10, sp: 5, ep: 0, gp: 50, pp: 0 }
+    },
+    {
+      id: 'trade_hero_2',
+      name: 'Thokk o Bárbaro',
+      inventory: [],
+      coins: { cp: 0, sp: 0, ep: 0, gp: 10, pp: 0 }
+    }
+  ];
+`, sandbox);
+
+// Transfere 2 poções de Eldrin para Thokk
+const tradeRes1 = vm.runInContext("transferPlayerItem('trade_hero_1', 0, 'trade_hero_2', 2)", sandbox);
+assert(tradeRes1 && tradeRes1.success, 'transferPlayerItem realizou transferência parcial com sucesso');
+
+const eldrinPots = vm.runInContext("PLAYERS.find(p => p.id === 'trade_hero_1').inventory[0].qty", sandbox);
+const thokkPots = vm.runInContext("PLAYERS.find(p => p.id === 'trade_hero_2').inventory[0].qty", sandbox);
+assert(eldrinPots === 1, 'Eldrin ficou com 1 poção restante (3 - 2)');
+assert(thokkPots === 2, 'Thokk recebeu 2 poções');
+
+// Transfere todo o Grimório (qty: 1)
+const tradeRes2 = vm.runInContext("transferPlayerItem('trade_hero_1', 1, 'trade_hero_2', 1)", sandbox);
+assert(tradeRes2 && tradeRes2.success, 'transferPlayerItem transferiu item completo com sucesso');
+const eldrinInvCount = vm.runInContext("PLAYERS.find(p => p.id === 'trade_hero_1').inventory.length", sandbox);
+const thokkHasBook = vm.runInContext("PLAYERS.find(p => p.id === 'trade_hero_2').inventory.some(i => i.name === 'Grimório Rúnico')", sandbox);
+assert(eldrinInvCount === 1, 'Grimório foi removido do inventário de Eldrin');
+assert(thokkHasBook === true, 'Grimório foi adicionado ao inventário de Thokk');
+
+// Validação de erro: tentar transferir mais do que possui
+const tradeFail = vm.runInContext("transferPlayerItem('trade_hero_1', 0, 'trade_hero_2', 99)", sandbox);
+assert(tradeFail && !tradeFail.success, 'transferPlayerItem bloqueou transferência quando quantidade solicitada excede posse');
+
+// 3. Teste de Distribuição de Saque e XP em Lote
+vm.runInContext(`
+  PLAYERS = [
+    { id: 'batch_h1', name: 'Alun 1', level: 1, xp: 100, coins: { cp: 0, sp: 0, ep: 0, gp: 10, pp: 0 } },
+    { id: 'batch_h2', name: 'Alun 2', level: 1, xp: 200, coins: { cp: 0, sp: 0, ep: 0, gp: 20, pp: 0 } },
+    { id: 'batch_h3', name: 'Alun 3', level: 1, xp: 50, coins: { cp: 0, sp: 0, ep: 0, gp: 5, pp: 0 } }
+  ];
+`, sandbox);
+
+// Mestre distribui 300 XP e 60 GP entre batch_h1 e batch_h2 (batch_h3 não selecionado)
+const rewardRes = vm.runInContext(`
+  distributeBatchRewards({
+    recipientIds: ['batch_h1', 'batch_h2'],
+    totalXp: 300,
+    coins: { gp: 60 }
+  })
+`, sandbox);
+
+assert(rewardRes && rewardRes.success, 'distributeBatchRewards executou divisão com sucesso');
+const h1Xp = vm.runInContext("PLAYERS.find(p => p.id === 'batch_h1').xp", sandbox);
+const h2Xp = vm.runInContext("PLAYERS.find(p => p.id === 'batch_h2').xp", sandbox);
+const h3Xp = vm.runInContext("PLAYERS.find(p => p.id === 'batch_h3').xp", sandbox);
+assert(h1Xp === 250, 'Alun 1 recebeu 150 XP (100 + 150)');
+assert(h2Xp === 350, 'Alun 2 recebeu 150 XP (200 + 150)');
+assert(h3Xp === 50, 'Alun 3 não selecionado manteve 50 XP inalterado');
+
+const h1Gp = vm.runInContext("PLAYERS.find(p => p.id === 'batch_h1').coins.gp", sandbox);
+const h2Gp = vm.runInContext("PLAYERS.find(p => p.id === 'batch_h2').coins.gp", sandbox);
+assert(h1Gp === 40, 'Alun 1 recebeu 30 GP (10 + 30)');
+assert(h2Gp === 50, 'Alun 2 recebeu 30 GP (20 + 30)');
+
+// 4. Testes de Auras VTT Novas Cores e Badges de Condição
+vm.runInContext(`
+  gridState.tokens = [
+    { id: 'tok-aura-p', combatantId: 'batch_h1', name: 'Alun 1', type: 'player', x: 200, y: 200, size: 'medium' }
+  ];
+  state.combatants = [
+    { id: 'batch_h1', name: 'Alun 1', hp: 12, maxHp: 15, conditions: ['Envenenado', 'Cego'] }
+  ];
+`, sandbox);
+
+// Aplica aura Roxa
+vm.runInContext("setTokenAura('tok-aura-p', '6m', 'purple')", sandbox);
+let tokAuraP = vm.runInContext("gridState.tokens[0]", sandbox);
+assert(tokAuraP.aura && tokAuraP.aura.color === 'purple', 'setTokenAura aplicou aura purple');
+vm.runInContext("renderBattleGrid()", sandbox);
+let tokensLayerHtml = vm.runInContext("document.getElementById('grid-tokens-layer').innerHTML", sandbox);
+assert(tokensLayerHtml.includes('aura-purple'), 'renderBattleGrid incluiu classe aura-purple');
+assert(tokensLayerHtml.includes('token-condition-badge'), 'renderBattleGrid renderizou badges de condições ativas');
+
+// Aplica aura Ciano
+vm.runInContext("setTokenAura('tok-aura-p', '3m', 'cyan')", sandbox);
+vm.runInContext("renderBattleGrid()", sandbox);
+tokensLayerHtml = vm.runInContext("document.getElementById('grid-tokens-layer').innerHTML", sandbox);
+assert(tokensLayerHtml.includes('aura-cyan'), 'renderBattleGrid incluiu classe aura-cyan');
+
+// Aplica aura Laranja
+vm.runInContext("setTokenAura('tok-aura-p', '9m', 'orange')", sandbox);
+vm.runInContext("renderBattleGrid()", sandbox);
+tokensLayerHtml = vm.runInContext("document.getElementById('grid-tokens-layer').innerHTML", sandbox);
+assert(tokensLayerHtml.includes('aura-orange'), 'renderBattleGrid incluiu classe aura-orange');
+
+// 5. Testes de Suporte Touch para Régua no VTT
+assert(typeof vm.runInContext("handleBoardTouchStart", sandbox) === 'function', 'Função handleBoardTouchStart exportada');
+assert(typeof vm.runInContext("handleBoardTouchMove", sandbox) === 'function', 'Função handleBoardTouchMove exportada');
+assert(typeof vm.runInContext("handleBoardTouchEnd", sandbox) === 'function', 'Função handleBoardTouchEnd exportada');
+
+vm.runInContext(`
+  activeVttTool = 'ruler';
+  handleBoardTouchStart({ touches: [{ clientX: 100, clientY: 100 }], cancelable: true, preventDefault: () => {} });
+`, sandbox);
+assert(vm.runInContext("isRulerMeasuring", sandbox) === true, 'handleBoardTouchStart iniciou medição da régua no celular');
+
+// 6. Elementos no Bundle compilado
+const builtHtml = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(builtHtml.includes('id="modal-batch-rewards"'), 'Bundle contém modal de saque e XP em lote (#modal-batch-rewards)');
+assert(builtHtml.includes('id="modal-trade-item"'), 'Bundle contém modal de troca de itens (#modal-trade-item)');
+assert(builtHtml.includes('.token-aura.aura-purple'), 'CSS no bundle contém classe de aura roxa');
+assert(builtHtml.includes('.token-aura.aura-cyan'), 'CSS no bundle contém classe de aura ciano');
+assert(builtHtml.includes('.token-aura.aura-orange'), 'CSS no bundle contém classe de aura laranja');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
