@@ -682,6 +682,85 @@
     }
     .cond-tag:hover { background: rgba(239, 68, 68, 0.3); }
 
+    /* INLINE PV EDIT & COMBATANT NOTES (ISSUE-80) */
+    .combatant-hp-inline {
+      cursor: pointer;
+      padding: 1px 4px;
+      border-radius: 4px;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .combatant-hp-inline:hover {
+      background: rgba(245, 158, 11, 0.15);
+      border-bottom: 1px dashed var(--primary);
+    }
+    .inline-hp-input {
+      width: 48px !important;
+      height: 22px !important;
+      padding: 1px 4px !important;
+      font-size: 12px !important;
+      font-weight: 800 !important;
+      color: #fff !important;
+      background: #090d18 !important;
+      border: 1.5px solid var(--accent-gold) !important;
+      border-radius: 4px !important;
+      text-align: center !important;
+      display: inline-block !important;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.3) !important;
+    }
+    .combatant-notes-details {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 6px;
+      padding: 4px 8px;
+      transition: all 0.2s ease;
+    }
+    .combatant-notes-details[open] {
+      background: rgba(8, 12, 22, 0.6);
+      border-color: rgba(245, 158, 11, 0.25);
+    }
+    .combatant-notes-summary {
+      outline: none;
+      font-weight: 600;
+      transition: color 0.15s;
+    }
+    .combatant-notes-summary:hover {
+      color: var(--primary-light) !important;
+    }
+    .combatant-notes-input {
+      width: 100% !important;
+      min-height: 44px !important;
+      max-height: 120px !important;
+      resize: vertical !important;
+      font-size: 11px !important;
+      color: #cbd5e1 !important;
+      background: rgba(0, 0, 0, 0.35) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 4px !important;
+      padding: 6px 8px !important;
+      margin-top: 5px !important;
+      box-sizing: border-box !important;
+    }
+    .combatant-notes-input:focus {
+      border-color: var(--primary) !important;
+      outline: none;
+      background: rgba(0, 0, 0, 0.5) !important;
+    }
+    .btn-announce-turn {
+      color: var(--accent-gold) !important;
+      border-color: rgba(245, 158, 11, 0.4) !important;
+      font-weight: 800 !important;
+      transition: all 0.2s ease !important;
+    }
+    .btn-announce-turn:hover {
+      background: rgba(245, 158, 11, 0.2) !important;
+      border-color: var(--accent-gold) !important;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.35) !important;
+      transform: translateY(-1px);
+    }
+
     /* DESPACHANTE DE COMBATE */
     .dispatch-box {
       background: #090d17;
@@ -30339,7 +30418,7 @@ function exportCompleteBackupJson() {
   try {
     const backupData = {
       appName: 'Planilha RPG D&D 5E Assistant & VTT',
-      version: '3.7',
+      version: '3.8',
       exportDate: new Date().toISOString(),
       players: typeof PLAYERS !== 'undefined' ? PLAYERS : [],
       combatState: typeof state !== 'undefined' ? state : { round: 1, turnIndex: 0, combatants: [] },
@@ -31382,7 +31461,7 @@ function applyCloudDataToLocal(cloudData) {
 
   isCloudRoomDataLoaded = true;
   lastReceivedCloudData = cloudData;
-  cloudSyncCooldownUntil = Date.now() + 1500;
+  cloudSyncCooldownUntil = Date.now() + 500;
 
   // Proteção: Se a nuvem estiver vazia/zerada e tivermos fichas locais válidas,
   // APENAS o Mestre pode publicar manualmente via publishMasterCampaignToCloud.
@@ -31554,8 +31633,8 @@ function applyCloudDataToLocal(cloudData) {
 
     }
 
-    // 2. Atualiza Estado de Combate
-    if (cloudData.state && Array.isArray(cloudData.state.combatants)) {
+    // 2. Atualiza Estado de Combate (apenas se publicado pelo Mestre ou origem legítima, nunca sobrescrito por snapshot de jogador)
+    if (cloudData.state && Array.isArray(cloudData.state.combatants) && cloudData.publishedBy !== 'player') {
       state = cloudData.state;
       if (typeof renderCombat === 'function') renderCombat();
     }
@@ -31613,7 +31692,15 @@ function applyCloudDataToLocal(cloudData) {
 
 function syncLocalChangesToFirebase(immediate = false) {
   if (isApplyingCloudUpdate) return;
-  if (Date.now() < cloudSyncCooldownUntil) return;
+  if (Date.now() < cloudSyncCooldownUntil) {
+    if (!firebaseCloudDebounceTimer) {
+      const waitTime = Math.max(50, cloudSyncCooldownUntil - Date.now() + 50);
+      firebaseCloudDebounceTimer = setTimeout(() => {
+        executeCloudSave();
+      }, waitTime);
+    }
+    return;
+  }
   if (!isFirebaseAutoSyncEnabled()) return;
 
   if (!isFirebaseConnected || (!firestoreDb && !realtimeDb)) {
@@ -31750,7 +31837,12 @@ function executePlayerCloudSave() {
     promises.push(fsPromise);
   }
 
-  Promise.all(promises)
+  // Timeout de resiliência: se a conexão com a nuvem oscilar, nunca trava a badge no amarelo
+  const safetyTimeout = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Timeout de sincronização com a nuvem')), 4000);
+  });
+
+  Promise.race([Promise.all(promises), safetyTimeout])
     .then(() => {
       if (syncBadge) {
         syncBadge.className = 'portal-sync-badge sync-online';
@@ -32243,7 +32335,9 @@ function renderCombat() {
         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted); margin-top: 2px;">
           <span>CA: <b style="color: #fff;">${c.ac}</b></span>
           <div style="display: flex; align-items: center; gap: 6px;">
-            <span>PV: <b style="color: ${hpColor};">${c.hp}</b> / ${c.maxHp}</span>
+            <span class="combatant-hp-inline" onclick="enableInlineHpEdit('${c.id}', event)" title="Clique para editar PV diretamente">
+              PV: <b style="color: ${hpColor};" id="hp-val-${c.id}">${c.hp}</b> / ${c.maxHp} <span style="font-size: 10px; opacity: 0.7;">✏️</span>
+            </span>
             <div style="display: flex; gap: 2px;">
               <button class="btn-hp-adj minus" style="width: 20px; height: 20px; font-size: 10px; padding: 0;" onclick="quickAdjustCombatantHp('${c.id}', -5)" title="Subtrair 5 PV">-5</button>
               <button class="btn-hp-adj minus" style="width: 20px; height: 20px; font-size: 10px; padding: 0;" onclick="quickAdjustCombatantHp('${c.id}', -1)" title="Subtrair 1 PV">-1</button>
@@ -32258,6 +32352,15 @@ function renderCombat() {
         </div>
 
         ${condsBadges ? `<div class="conditions-container">${condsBadges}</div>` : ''}
+
+        <div class="combatant-notes-section" style="margin-top: 6px;">
+          <details class="combatant-notes-details" ${c.notes ? 'open' : ''} onclick="event.stopPropagation()">
+            <summary class="combatant-notes-summary" style="font-size: 10px; color: var(--text-dim); cursor: pointer; user-select: none;">
+              📝 Anotações ${c.notes ? '•' : ''}
+            </summary>
+            <textarea class="combatant-notes-input" placeholder="Anotações táticas deste combatente..." onchange="updateCombatantNotes('${c.id}', this.value)" onkeydown="event.stopPropagation()">${typeof escapeAttr === 'function' ? escapeAttr(c.notes || '') : (c.notes || '').replace(/"/g, '&quot;')}</textarea>
+          </details>
+        </div>
       </div>
     `;
   }).join('');
@@ -32272,12 +32375,15 @@ function renderCombat() {
     const hpColor = hpPct > 50 ? 'var(--accent-green)' : (hpPct > 25 ? '#eab308' : 'var(--accent-red)');
 
     activeDetails.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
         <div>
           <div style="font-size: 18px; font-weight: 800; font-family: var(--font-title); color: #fff;">${active.name}</div>
           <div style="font-size: 12px; color: var(--text-muted);">Iniciativa: <b style="color: var(--primary);">${active.init}</b> • CA: <b style="color: #fff;">${active.ac}</b> • PV: <b style="color: ${hpColor};">${active.hp} / ${active.maxHp}</b></div>
         </div>
-        <button class="btn-action" style="padding: 6px 12px;" onclick="openCondModal('${active.id}')">🏷️ Status</button>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <button class="btn-secondary btn-announce-turn" onclick="announceActiveTurn('${active.id}')" title="Anunciar turno deste combatente no Telão e Log">📢 Turno!</button>
+          <button class="btn-action" style="padding: 6px 12px;" onclick="openCondModal('${active.id}')">🏷️ Status</button>
+        </div>
       </div>
 
       <div class="hp-bar-bg" style="height: 10px;">
@@ -32390,6 +32496,7 @@ function nextTurn() {
   renderCombat();
   if (typeof renderPlayerView === 'function') renderPlayerView(turnNarrative);
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
 
 // --- M6: TEMPORIZADOR DE TURNO DE COMBATE ---
@@ -32757,6 +32864,7 @@ function resetCombat() {
   addLog('🔄 Combate reiniciado na Rodada 1.');
   renderCombat();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
 
 function clearCombat() {
@@ -32768,6 +32876,7 @@ function clearCombat() {
     addLog('🗑️ Mesa de combate limpa.');
     renderCombat();
     saveToLocalStorage();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
   }
 }
 
@@ -32781,6 +32890,7 @@ function rollMonsterInit() {
   addLog('🎲 Iniciativa dos monstros rolada novamente.');
   renderCombat();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
 
 function applyCombatAction(type, customNarrative = null) {
@@ -32877,6 +32987,7 @@ function applyCombatAction(type, customNarrative = null) {
   renderCombat();
   if (typeof renderPlayerView === 'function') renderPlayerView(narrativeBanner);
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
 
 function applyHalfDamage() {
@@ -32937,6 +33048,7 @@ function removeCombatant(id) {
   if (state.turnIndex >= state.combatants.length) state.turnIndex = 0;
   renderCombat();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
 
 function editCombatantInit(id) {
@@ -32951,6 +33063,7 @@ function editCombatantInit(id) {
       addLog(`🎲 Iniciativa de <b>${c.name}</b> alterada para <b>${c.init}</b>`);
       renderCombat();
       saveToLocalStorage();
+      if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
     }
   }
 }
@@ -32994,6 +33107,7 @@ function quickAdjustCombatantHp(id, delta) {
   renderCombat();
   if (typeof renderPlayerView === 'function') renderPlayerView();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
 
 function openAddModal() { document.getElementById('modal-add').classList.add('open'); }
@@ -33018,6 +33132,7 @@ function saveNewCombatant() {
   document.getElementById('add-name').value = '';
   renderCombat();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
 
 // --- GERENCIADOR DE CONDIÇÕES ---
@@ -33243,6 +33358,99 @@ function rollMonsterAttackAction(atkName, toHitBonus, dmgFormula, monName = 'Mon
   if (typeof showLiveDiceRoll === 'function') {
     showLiveDiceRoll(`🐉 ${monName} - ${atkName}`, totalHit, `Ataque: ${hitStr} | Dano: ${dmgTotal}`, isCrit, isFumble);
   }
+}
+
+// --- FUNÇÕES DE MELHORIA UX DO COMBATE (ISSUE-80) ---
+
+function enableInlineHpEdit(combatantId, evt) {
+  if (evt) evt.stopPropagation();
+  const c = state.combatants.find(x => x.id === combatantId);
+  if (!c) return;
+  const hpValEl = document.getElementById(`hp-val-${combatantId}`);
+  const parentSpan = hpValEl ? hpValEl.parentElement : (evt?.currentTarget);
+  if (!parentSpan) return;
+  if (parentSpan.querySelector('input')) return;
+
+  const curHp = c.hp;
+  parentSpan.innerHTML = `PV: <input type="number" min="0" max="${c.maxHp}" value="${curHp}" class="inline-hp-input" id="inp-inline-hp-${combatantId}" onclick="event.stopPropagation()" onblur="saveInlineHpEdit('${combatantId}', this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"> / ${c.maxHp}`;
+  const inp = document.getElementById(`inp-inline-hp-${combatantId}`);
+  if (inp) {
+    inp.focus();
+    inp.select();
+  }
+}
+
+function saveInlineHpEdit(combatantId, newVal) {
+  const c = state.combatants.find(x => x.id === combatantId);
+  if (!c) return;
+  const parsed = parseInt(newVal, 10);
+  if (isNaN(parsed)) {
+    renderCombat();
+    return;
+  }
+  const oldHp = c.hp;
+  c.hp = Math.max(0, Math.min(c.maxHp, parsed));
+  if (c.hp !== oldHp) {
+    addLog(`✏️ PV de <b>${c.name}</b> ajustado para <b>${c.hp}/${c.maxHp}</b>.`);
+    if (c.type === 'player' && typeof PLAYERS !== 'undefined') {
+      const pl = typeof findPlayerForCombatant === 'function'
+        ? findPlayerForCombatant(c, PLAYERS)
+        : PLAYERS.find(p => (c.playerId && p.id === c.playerId) || c.name.includes(p.name));
+      if (pl) {
+        pl.hp = c.hp;
+        if (typeof renderPlayers === 'function') renderPlayers();
+      }
+    }
+  }
+  renderCombat();
+  if (typeof renderPlayerView === 'function') renderPlayerView();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+}
+
+function updateCombatantNotes(combatantId, text) {
+  const c = state.combatants.find(x => x.id === combatantId);
+  if (!c) return;
+  c.notes = (text || '').trim();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+}
+
+function announceActiveTurn(combatantId) {
+  const c = state.combatants.find(x => x.id === combatantId) || state.combatants[state.turnIndex];
+  if (!c) return;
+  const msg = `📢 É a vez de <b>${c.name}</b> agir!`;
+  addLog(msg);
+  if (typeof renderPlayerView === 'function') renderPlayerView(msg);
+  if (typeof playFX === 'function') playFX('crit');
+  if (typeof showToast === 'function') showToast(`📢 Turno de ${c.name} anunciado!`, 'info');
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+}
+
+if (typeof window !== 'undefined') {
+  window.enableInlineHpEdit = enableInlineHpEdit;
+  window.saveInlineHpEdit = saveInlineHpEdit;
+  window.updateCombatantNotes = updateCombatantNotes;
+  window.announceActiveTurn = announceActiveTurn;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    renderCombat,
+    nextTurn,
+    resetCombat,
+    clearCombat,
+    rollMonsterInit,
+    applyCombatAction,
+    removeCombatant,
+    editCombatantInit,
+    quickAdjustCombatantHp,
+    saveNewCombatant,
+    enableInlineHpEdit,
+    saveInlineHpEdit,
+    updateCombatantNotes,
+    announceActiveTurn
+  };
 }
 
 
@@ -36611,9 +36819,9 @@ function savePlayerSheet() {
 
   closePlayerModal();
   renderPlayers();
-  saveToLocalStorage();
   if (typeof touchPlayer === 'function') touchPlayer(data);
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
   if (typeof saveSafetySnapshot === 'function') {
     saveSafetySnapshot(`Salvou ficha de ${data.name}`);
   }

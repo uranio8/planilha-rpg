@@ -71,7 +71,9 @@ function renderCombat() {
         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted); margin-top: 2px;">
           <span>CA: <b style="color: #fff;">${c.ac}</b></span>
           <div style="display: flex; align-items: center; gap: 6px;">
-            <span>PV: <b style="color: ${hpColor};">${c.hp}</b> / ${c.maxHp}</span>
+            <span class="combatant-hp-inline" onclick="enableInlineHpEdit('${c.id}', event)" title="Clique para editar PV diretamente">
+              PV: <b style="color: ${hpColor};" id="hp-val-${c.id}">${c.hp}</b> / ${c.maxHp} <span style="font-size: 10px; opacity: 0.7;">✏️</span>
+            </span>
             <div style="display: flex; gap: 2px;">
               <button class="btn-hp-adj minus" style="width: 20px; height: 20px; font-size: 10px; padding: 0;" onclick="quickAdjustCombatantHp('${c.id}', -5)" title="Subtrair 5 PV">-5</button>
               <button class="btn-hp-adj minus" style="width: 20px; height: 20px; font-size: 10px; padding: 0;" onclick="quickAdjustCombatantHp('${c.id}', -1)" title="Subtrair 1 PV">-1</button>
@@ -86,6 +88,15 @@ function renderCombat() {
         </div>
 
         ${condsBadges ? `<div class="conditions-container">${condsBadges}</div>` : ''}
+
+        <div class="combatant-notes-section" style="margin-top: 6px;">
+          <details class="combatant-notes-details" ${c.notes ? 'open' : ''} onclick="event.stopPropagation()">
+            <summary class="combatant-notes-summary" style="font-size: 10px; color: var(--text-dim); cursor: pointer; user-select: none;">
+              📝 Anotações ${c.notes ? '•' : ''}
+            </summary>
+            <textarea class="combatant-notes-input" placeholder="Anotações táticas deste combatente..." onchange="updateCombatantNotes('${c.id}', this.value)" onkeydown="event.stopPropagation()">${typeof escapeAttr === 'function' ? escapeAttr(c.notes || '') : (c.notes || '').replace(/"/g, '&quot;')}</textarea>
+          </details>
+        </div>
       </div>
     `;
   }).join('');
@@ -100,12 +111,15 @@ function renderCombat() {
     const hpColor = hpPct > 50 ? 'var(--accent-green)' : (hpPct > 25 ? '#eab308' : 'var(--accent-red)');
 
     activeDetails.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
         <div>
           <div style="font-size: 18px; font-weight: 800; font-family: var(--font-title); color: #fff;">${active.name}</div>
           <div style="font-size: 12px; color: var(--text-muted);">Iniciativa: <b style="color: var(--primary);">${active.init}</b> • CA: <b style="color: #fff;">${active.ac}</b> • PV: <b style="color: ${hpColor};">${active.hp} / ${active.maxHp}</b></div>
         </div>
-        <button class="btn-action" style="padding: 6px 12px;" onclick="openCondModal('${active.id}')">🏷️ Status</button>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <button class="btn-secondary btn-announce-turn" onclick="announceActiveTurn('${active.id}')" title="Anunciar turno deste combatente no Telão e Log">📢 Turno!</button>
+          <button class="btn-action" style="padding: 6px 12px;" onclick="openCondModal('${active.id}')">🏷️ Status</button>
+        </div>
       </div>
 
       <div class="hp-bar-bg" style="height: 10px;">
@@ -218,6 +232,7 @@ function nextTurn() {
   renderCombat();
   if (typeof renderPlayerView === 'function') renderPlayerView(turnNarrative);
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
 
 // --- M6: TEMPORIZADOR DE TURNO DE COMBATE ---
@@ -585,6 +600,7 @@ function resetCombat() {
   addLog('🔄 Combate reiniciado na Rodada 1.');
   renderCombat();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
 
 function clearCombat() {
@@ -596,6 +612,7 @@ function clearCombat() {
     addLog('🗑️ Mesa de combate limpa.');
     renderCombat();
     saveToLocalStorage();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
   }
 }
 
@@ -609,6 +626,7 @@ function rollMonsterInit() {
   addLog('🎲 Iniciativa dos monstros rolada novamente.');
   renderCombat();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
 
 function applyCombatAction(type, customNarrative = null) {
@@ -705,6 +723,7 @@ function applyCombatAction(type, customNarrative = null) {
   renderCombat();
   if (typeof renderPlayerView === 'function') renderPlayerView(narrativeBanner);
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
 
 function applyHalfDamage() {
@@ -765,6 +784,7 @@ function removeCombatant(id) {
   if (state.turnIndex >= state.combatants.length) state.turnIndex = 0;
   renderCombat();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
 
 function editCombatantInit(id) {
@@ -779,6 +799,7 @@ function editCombatantInit(id) {
       addLog(`🎲 Iniciativa de <b>${c.name}</b> alterada para <b>${c.init}</b>`);
       renderCombat();
       saveToLocalStorage();
+      if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
     }
   }
 }
@@ -822,6 +843,7 @@ function quickAdjustCombatantHp(id, delta) {
   renderCombat();
   if (typeof renderPlayerView === 'function') renderPlayerView();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
 
 function openAddModal() { document.getElementById('modal-add').classList.add('open'); }
@@ -846,6 +868,7 @@ function saveNewCombatant() {
   document.getElementById('add-name').value = '';
   renderCombat();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
 
 // --- GERENCIADOR DE CONDIÇÕES ---
@@ -1071,4 +1094,97 @@ function rollMonsterAttackAction(atkName, toHitBonus, dmgFormula, monName = 'Mon
   if (typeof showLiveDiceRoll === 'function') {
     showLiveDiceRoll(`🐉 ${monName} - ${atkName}`, totalHit, `Ataque: ${hitStr} | Dano: ${dmgTotal}`, isCrit, isFumble);
   }
+}
+
+// --- FUNÇÕES DE MELHORIA UX DO COMBATE (ISSUE-80) ---
+
+function enableInlineHpEdit(combatantId, evt) {
+  if (evt) evt.stopPropagation();
+  const c = state.combatants.find(x => x.id === combatantId);
+  if (!c) return;
+  const hpValEl = document.getElementById(`hp-val-${combatantId}`);
+  const parentSpan = hpValEl ? hpValEl.parentElement : (evt?.currentTarget);
+  if (!parentSpan) return;
+  if (parentSpan.querySelector('input')) return;
+
+  const curHp = c.hp;
+  parentSpan.innerHTML = `PV: <input type="number" min="0" max="${c.maxHp}" value="${curHp}" class="inline-hp-input" id="inp-inline-hp-${combatantId}" onclick="event.stopPropagation()" onblur="saveInlineHpEdit('${combatantId}', this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"> / ${c.maxHp}`;
+  const inp = document.getElementById(`inp-inline-hp-${combatantId}`);
+  if (inp) {
+    inp.focus();
+    inp.select();
+  }
+}
+
+function saveInlineHpEdit(combatantId, newVal) {
+  const c = state.combatants.find(x => x.id === combatantId);
+  if (!c) return;
+  const parsed = parseInt(newVal, 10);
+  if (isNaN(parsed)) {
+    renderCombat();
+    return;
+  }
+  const oldHp = c.hp;
+  c.hp = Math.max(0, Math.min(c.maxHp, parsed));
+  if (c.hp !== oldHp) {
+    addLog(`✏️ PV de <b>${c.name}</b> ajustado para <b>${c.hp}/${c.maxHp}</b>.`);
+    if (c.type === 'player' && typeof PLAYERS !== 'undefined') {
+      const pl = typeof findPlayerForCombatant === 'function'
+        ? findPlayerForCombatant(c, PLAYERS)
+        : PLAYERS.find(p => (c.playerId && p.id === c.playerId) || c.name.includes(p.name));
+      if (pl) {
+        pl.hp = c.hp;
+        if (typeof renderPlayers === 'function') renderPlayers();
+      }
+    }
+  }
+  renderCombat();
+  if (typeof renderPlayerView === 'function') renderPlayerView();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+}
+
+function updateCombatantNotes(combatantId, text) {
+  const c = state.combatants.find(x => x.id === combatantId);
+  if (!c) return;
+  c.notes = (text || '').trim();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+}
+
+function announceActiveTurn(combatantId) {
+  const c = state.combatants.find(x => x.id === combatantId) || state.combatants[state.turnIndex];
+  if (!c) return;
+  const msg = `📢 É a vez de <b>${c.name}</b> agir!`;
+  addLog(msg);
+  if (typeof renderPlayerView === 'function') renderPlayerView(msg);
+  if (typeof playFX === 'function') playFX('crit');
+  if (typeof showToast === 'function') showToast(`📢 Turno de ${c.name} anunciado!`, 'info');
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+}
+
+if (typeof window !== 'undefined') {
+  window.enableInlineHpEdit = enableInlineHpEdit;
+  window.saveInlineHpEdit = saveInlineHpEdit;
+  window.updateCombatantNotes = updateCombatantNotes;
+  window.announceActiveTurn = announceActiveTurn;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    renderCombat,
+    nextTurn,
+    resetCombat,
+    clearCombat,
+    rollMonsterInit,
+    applyCombatAction,
+    removeCombatant,
+    editCombatantInit,
+    quickAdjustCombatantHp,
+    saveNewCombatant,
+    enableInlineHpEdit,
+    saveInlineHpEdit,
+    updateCombatantNotes,
+    announceActiveTurn
+  };
 }

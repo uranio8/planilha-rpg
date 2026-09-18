@@ -3364,9 +3364,9 @@ function savePlayerSheet() {
 
   closePlayerModal();
   renderPlayers();
-  saveToLocalStorage();
   if (typeof touchPlayer === 'function') touchPlayer(data);
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
   if (typeof saveSafetySnapshot === 'function') {
     saveSafetySnapshot(`Salvou ficha de ${data.name}`);
   }

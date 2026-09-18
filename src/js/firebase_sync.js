@@ -399,7 +399,7 @@ function applyCloudDataToLocal(cloudData) {
 
   isCloudRoomDataLoaded = true;
   lastReceivedCloudData = cloudData;
-  cloudSyncCooldownUntil = Date.now() + 1500;
+  cloudSyncCooldownUntil = Date.now() + 500;
 
   // Proteção: Se a nuvem estiver vazia/zerada e tivermos fichas locais válidas,
   // APENAS o Mestre pode publicar manualmente via publishMasterCampaignToCloud.
@@ -571,8 +571,8 @@ function applyCloudDataToLocal(cloudData) {
 
     }
 
-    // 2. Atualiza Estado de Combate
-    if (cloudData.state && Array.isArray(cloudData.state.combatants)) {
+    // 2. Atualiza Estado de Combate (apenas se publicado pelo Mestre ou origem legítima, nunca sobrescrito por snapshot de jogador)
+    if (cloudData.state && Array.isArray(cloudData.state.combatants) && cloudData.publishedBy !== 'player') {
       state = cloudData.state;
       if (typeof renderCombat === 'function') renderCombat();
     }
@@ -630,7 +630,15 @@ function applyCloudDataToLocal(cloudData) {
 
 function syncLocalChangesToFirebase(immediate = false) {
   if (isApplyingCloudUpdate) return;
-  if (Date.now() < cloudSyncCooldownUntil) return;
+  if (Date.now() < cloudSyncCooldownUntil) {
+    if (!firebaseCloudDebounceTimer) {
+      const waitTime = Math.max(50, cloudSyncCooldownUntil - Date.now() + 50);
+      firebaseCloudDebounceTimer = setTimeout(() => {
+        executeCloudSave();
+      }, waitTime);
+    }
+    return;
+  }
   if (!isFirebaseAutoSyncEnabled()) return;
 
   if (!isFirebaseConnected || (!firestoreDb && !realtimeDb)) {
@@ -767,7 +775,12 @@ function executePlayerCloudSave() {
     promises.push(fsPromise);
   }
 
-  Promise.all(promises)
+  // Timeout de resiliência: se a conexão com a nuvem oscilar, nunca trava a badge no amarelo
+  const safetyTimeout = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Timeout de sincronização com a nuvem')), 4000);
+  });
+
+  Promise.race([Promise.all(promises), safetyTimeout])
     .then(() => {
       if (syncBadge) {
         syncBadge.className = 'portal-sync-badge sync-online';

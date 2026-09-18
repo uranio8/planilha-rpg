@@ -3412,6 +3412,127 @@ assert(mobLoginContainer.innerHTML.includes('Valerius'), 'Container contém o he
 assert(mobLoginContainer.innerHTML.includes('Lyra'), 'Container contém a heroína Lyra');
 assert(mobLoginContainer.innerHTML.includes('Entrar com este Herói'), 'Cards contêm o botão de ação "Entrar com este Herói"');
 
+// ==========================================
+// 53. TESTES DE SINCRONIZAÇÃO EM NUVEM E MELHORIAS NO COMBATE (ISSUE-80)
+// ==========================================
+console.log('\n⚔️ 53. Testes de Sincronização em Nuvem e Melhorias no Combate (ISSUE-80):');
+const bundle80 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(bundle80.includes('combatant-hp-inline'), 'Bundle CSS contém classe .combatant-hp-inline para edição direta de PV');
+assert(bundle80.includes('inline-hp-input'), 'Bundle CSS contém classe .inline-hp-input para input dinâmico de PV');
+assert(bundle80.includes('combatant-notes-details'), 'Bundle CSS contém classe .combatant-notes-details para anotações do combatente');
+assert(bundle80.includes('btn-announce-turn'), 'Bundle CSS contém classe .btn-announce-turn para botão de anúncio de turno');
+
+// 1. Bloqueio de Sobrescrita de Estado de Combate por Snapshot de Jogador (Race Condition Bug 1)
+vm.runInContext(`
+  state = {
+    round: 3,
+    turnIndex: 2,
+    combatants: [
+      { id: 'c_master_1', name: 'Guerreiro Ativo', init: 18, hp: 20, maxHp: 20, type: 'player' },
+      { id: 'c_master_2', name: 'Goblin Chefe', init: 12, hp: 15, maxHp: 15, type: 'monster' }
+    ]
+  };
+
+  // Jogador publica ficha com snapshot que inclui estado defasado da nuvem (ex: rodada 1, turnIndex 0)
+  const playerStaleSnapshot = {
+    publishedBy: 'player',
+    state: {
+      round: 1,
+      turnIndex: 0,
+      combatants: [
+        { id: 'c_stale_1', name: 'Guerreiro Antigo', init: 10, hp: 10, maxHp: 20 }
+      ]
+    },
+    players: [
+      { id: 'c_master_1', name: 'Guerreiro Ativo', hp: 18, maxHp: 20, updatedAt: Date.now() }
+    ]
+  };
+
+  applyCloudDataToLocal(playerStaleSnapshot);
+`, sandbox);
+
+const protectedCombatState = vm.runInContext("state", sandbox);
+assert(protectedCombatState.round === 3, 'applyCloudDataToLocal PRESERVOU a Rodada 3 do mestre contra sobrescrita de jogador');
+assert(protectedCombatState.turnIndex === 2, 'applyCloudDataToLocal PRESERVOU o turnIndex 2 do mestre');
+assert(protectedCombatState.combatants.length === 2, 'applyCloudDataToLocal NÃO substituiu a lista de combatentes por snapshot de jogador');
+
+// 2. Atualização Legítima de Estado de Combate quando publicado pelo Mestre
+vm.runInContext(`
+  const masterLegitSnapshot = {
+    publishedBy: 'master',
+    players: [
+      { id: 'c_master_1', name: 'Guerreiro Ativo', student: 'Aluno 1', hp: 16, maxHp: 20 }
+    ],
+    state: {
+      round: 4,
+      turnIndex: 1,
+      combatants: [
+        { id: 'c_master_1', name: 'Guerreiro Ativo', init: 18, hp: 16, maxHp: 20, type: 'player' },
+        { id: 'c_master_2', name: 'Goblin Chefe', init: 12, hp: 8, maxHp: 15, type: 'monster' },
+        { id: 'c_master_3', name: 'Lobo', init: 10, hp: 11, maxHp: 11, type: 'monster' }
+      ]
+    }
+  };
+
+  applyCloudDataToLocal(masterLegitSnapshot);
+`, sandbox);
+
+const updatedCombatState = vm.runInContext("state", sandbox);
+assert(updatedCombatState.round === 4, 'applyCloudDataToLocal ATUALIZOU para a Rodada 4 enviada pelo mestre');
+assert(updatedCombatState.turnIndex === 1, 'applyCloudDataToLocal ATUALIZOU o turnIndex enviado pelo mestre');
+assert(updatedCombatState.combatants.length === 3, 'applyCloudDataToLocal atualizou a lista com os 3 combatentes do mestre');
+
+// 3. Edição Inline de PV do Combatente (saveInlineHpEdit)
+vm.runInContext(`
+  PLAYERS = [
+    { id: 'p_inline_hero', name: 'Arthur', student: 'Arthur', hp: 20, maxHp: 25 }
+  ];
+  state = {
+    round: 1,
+    turnIndex: 0,
+    combatants: [
+      { id: 'c_inline_1', playerId: 'p_inline_hero', name: 'Arthur (Arthur)', init: 15, hp: 20, maxHp: 25, type: 'player' }
+    ]
+  };
+
+  saveInlineHpEdit('c_inline_1', 14);
+`, sandbox);
+
+const heroCombatantAfterInline = vm.runInContext("state.combatants[0]", sandbox);
+const heroPlayerAfterInline = vm.runInContext("PLAYERS[0]", sandbox);
+assert(heroCombatantAfterInline.hp === 14, 'saveInlineHpEdit atualizou o PV do combatente para 14');
+assert(heroPlayerAfterInline.hp === 14, 'saveInlineHpEdit sincronizou bidirecionalmente com a ficha do herói');
+
+// 4. Anotações Táticas por Combatente (updateCombatantNotes)
+vm.runInContext(`
+  updateCombatantNotes('c_inline_1', 'Vulnerável a Fogo, Resistência a Frio');
+`, sandbox);
+const combatantNotesVal = vm.runInContext("state.combatants[0].notes", sandbox);
+assert(combatantNotesVal === 'Vulnerável a Fogo, Resistência a Frio', 'updateCombatantNotes gravou as anotações táticas no combatente');
+
+// 5. Anúncio do Turno Ativo (announceActiveTurn)
+vm.runInContext(`
+  let announcedNarrative = '';
+  renderPlayerView = function(msg) { announcedNarrative = msg; };
+  announceActiveTurn('c_inline_1');
+`, sandbox);
+const narrativeResult = vm.runInContext("announcedNarrative", sandbox);
+assert(narrativeResult.includes('Arthur (Arthur)'), 'announceActiveTurn despachou o anúncio para o Telão com o nome do combatente');
+
+// 6. Verificação de Disparo do Firebase Sync em Mutações de Combate
+vm.runInContext(`
+  let firebaseImmediateCalls = 0;
+  syncLocalChangesToFirebase = function(immediate) {
+    if (immediate === true) firebaseImmediateCalls++;
+  };
+
+  nextTurn();
+  quickAdjustCombatantHp('c_inline_1', -2);
+  resetCombat();
+`, sandbox);
+const totalImmediateSyncs = vm.runInContext("firebaseImmediateCalls", sandbox);
+assert(totalImmediateSyncs >= 3, 'nextTurn, quickAdjustCombatantHp e resetCombat disparam syncLocalChangesToFirebase(true)');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
