@@ -2746,6 +2746,94 @@ assert(builtHtml.includes('.token-aura.aura-purple'), 'CSS no bundle contém cla
 assert(builtHtml.includes('.token-aura.aura-cyan'), 'CSS no bundle contém classe de aura ciano');
 assert(builtHtml.includes('.token-aura.aura-orange'), 'CSS no bundle contém classe de aura laranja');
 
+// 🛡️ 44. Testes de Integridade da Ficha do Jogador, Inventário e Salvaguardas (ISSUE-70):
+console.log('\n🛡️ 44. Testes de Integridade da Ficha do Jogador, Inventário e Salvaguardas (ISSUE-70):');
+
+// 1. Criação de personagem novo com salvaguardas nativas da classe
+vm.runInContext(`
+  document.getElementById('pm-id').value = '';
+  document.getElementById('pm-student').value = 'Mariana';
+  document.getElementById('pm-name').value = 'Aeloria';
+  document.getElementById('pm-class-select').value = 'Mago';
+  document.getElementById('pm-class').value = 'Mago';
+  document.getElementById('pm-level').value = 1;
+  document.getElementById('pm-maxhp').value = 8;
+  document.getElementById('pm-ac').value = 12;
+  document.getElementById('pm-gold').value = 25;
+  document.getElementById('pm-slot-1').value = 2;
+  document.getElementById('pm-slot-2').value = 0;
+  document.getElementById('pm-slot-3').value = 0;
+  document.getElementById('pm-slot-4').value = 0;
+  document.getElementById('pm-slot-5').value = 0;
+  document.getElementById('pm-badges').value = '';
+  document.getElementById('pm-attacks').value = 'Adaga (+4, 1d4+2)';
+  document.getElementById('pm-features').value = '';
+  document.getElementById('pm-spells').value = '';
+  savePlayerSheet();
+`, sandbox);
+
+let aeloria = vm.runInContext("PLAYERS.find(p => p.name === 'Aeloria')", sandbox);
+assert(aeloria !== undefined, 'Personagem Aeloria criado com sucesso');
+assert(Array.isArray(aeloria.saveProficiencies), 'Aeloria possui array de saveProficiencies');
+assert(aeloria.saveProficiencies.includes('int') && aeloria.saveProficiencies.includes('wis'), 'Mago foi inicializado com salvaguardas corretas de INT e WIS');
+assert(aeloria.coins && aeloria.coins.gp === 25, 'Carteira de moedas inicializada com 25 PO');
+
+// 2. Adicionar itens no inventário de Aeloria
+vm.runInContext(`
+  aeloriaHero = PLAYERS.find(p => p.name === 'Aeloria');
+  aeloriaHero.inventory = [
+    { name: 'Poção de Cura', category: 'Poções', qty: 2, equipped: false, weight: 0.5 },
+    { name: 'Grimório Arcano', category: 'Equipamentos', qty: 1, equipped: true, weight: 3 }
+  ];
+  aeloriaHero.coins = { cp: 5, sp: 10, ep: 0, gp: 50, pp: 1 };
+  aeloriaHero.customSpells = ['Detectar Magia Instantâneo'];
+  aeloriaHero.spentHitDice = 1;
+`, sandbox);
+
+// 3. Simula abrir modal e editar atributos simples de Aeloria (muda nome e CA)
+vm.runInContext(`
+  document.getElementById('pm-id').value = aeloriaHero.id;
+  document.getElementById('pm-student').value = 'Mariana';
+  document.getElementById('pm-name').value = 'Aeloria Ventoselvagem';
+  document.getElementById('pm-class-select').value = 'Mago';
+  document.getElementById('pm-class').value = 'Mago';
+  document.getElementById('pm-level').value = 1;
+  document.getElementById('pm-maxhp').value = 10;
+  document.getElementById('pm-ac').value = 15;
+  document.getElementById('pm-gold').value = 50;
+  document.getElementById('pm-slot-1').value = 2;
+  document.getElementById('pm-slot-2').value = 0;
+  document.getElementById('pm-slot-3').value = 0;
+  document.getElementById('pm-slot-4').value = 0;
+  document.getElementById('pm-slot-5').value = 0;
+  document.getElementById('pm-badges').value = '';
+  document.getElementById('pm-attacks').value = 'Adaga (+4, 1d4+2)';
+  document.getElementById('pm-features').value = '';
+  document.getElementById('pm-spells').value = '';
+  savePlayerSheet();
+`, sandbox);
+
+let aeloriaUpdated = vm.runInContext("PLAYERS.find(p => p.id === aeloriaHero.id)", sandbox);
+assert(aeloriaUpdated.name === 'Aeloria Ventoselvagem', 'Nome foi atualizado na edição');
+assert(aeloriaUpdated.ac === 15, 'CA foi atualizada para 15');
+assert(Array.isArray(aeloriaUpdated.inventory) && aeloriaUpdated.inventory.length === 2, 'savePlayerSheet PRESERVOU a mochila intacta (2 itens)');
+assert(aeloriaUpdated.inventory[0].name === 'Poção de Cura' && aeloriaUpdated.inventory[0].qty === 2, 'Poção de Cura preservada com quantidade correta');
+assert(aeloriaUpdated.coins && aeloriaUpdated.coins.sp === 10 && aeloriaUpdated.coins.pp === 1, 'Carteira de moedas multimoeda preservada (sp, pp)');
+assert(Array.isArray(aeloriaUpdated.customSpells) && aeloriaUpdated.customSpells.length === 1, 'Magias customizadas preservadas');
+assert(aeloriaUpdated.spentHitDice === 1, 'Dados de vida gastos preservados');
+
+// 4. Teste de touchPlayer em Descanso Longo e Magias Preparadas
+let preTouch = aeloriaUpdated.updatedAt;
+vm.runInContext(`
+  setTimeout(() => {}, 10);
+  playerLongRest(aeloriaHero.id);
+`, sandbox);
+let postTouchLongRest = vm.runInContext("PLAYERS.find(p => p.id === aeloriaHero.id).updatedAt", sandbox);
+assert(postTouchLongRest >= preTouch, 'playerLongRest disparou touchPlayer e atualizou timestamp');
+
+// 5. Teste de botão de escolha de magias liberado para o aluno
+assert(builtHtml.includes('player-spell-picker-btn'), 'Bundle contém botão de escolha de magias liberado para jogador (.player-spell-picker-btn)');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

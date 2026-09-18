@@ -757,7 +757,7 @@ function renderPlayers() {
           return `<span>🔮 Magias (${(p.preparedSpells || []).length})</span>`;
         }
       })()}
-                <button class="btn-secondary dm-only-btn" style="font-size: 10px; padding: 2px 6px;" onclick="openSpellPickerModal('${p.id}')" title="Mestre: Selecionar e editar as magias deste herói">📖 Escolher</button>
+                <button class="btn-secondary player-spell-picker-btn" style="font-size: 10px; padding: 2px 6px;" onclick="openSpellPickerModal('${p.id}')" title="Selecionar e preparar magias deste herói">📖 Escolher</button>
               </div>
 
               ${(() => {
@@ -1504,9 +1504,11 @@ function togglePlayerSaveProf(id, attrName) {
   } else {
     p.saveProficiencies.push(attrName);
   }
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   renderSkillsModalContent();
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
 }
 
 function togglePlayerSkillProf(id, skillKey) {
@@ -1521,9 +1523,11 @@ function togglePlayerSkillProf(id, skillKey) {
   } else {
     p.skillProficiencies.push(skillKey);
   }
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   renderSkillsModalContent();
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
 }
 
 function togglePlayerSkillExpertise(id, skillKey, e) {
@@ -1542,9 +1546,11 @@ function togglePlayerSkillExpertise(id, skillKey, e) {
     p.skillExpertises.push(skillKey);
     if (typeof playFX === 'function') playFX('crit');
   }
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   renderSkillsModalContent();
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
 }
 
 function closePlayerSkillsModal() {
@@ -1598,6 +1604,14 @@ function rollPlayerAttack(id, rawAttackText) {
   addPlayerActionLog(p.id, '⚔️', `Ataque: ${rawAttackText} ➔ Acerto ${totalHit} | Dano ${totalDmg}`, 'attack');
   if (typeof playFX === 'function') playFX(isCrit ? 'crit' : (isFumble ? 'fumble' : 'sword'));
 
+  if (typeof showLiveDiceRoll === 'function') {
+    showLiveDiceRoll(`⚔️ Ataque - ${p.name}`, totalHit, `${hitBreakdown} | Dano: ${totalDmg}`);
+  }
+
+  if (typeof broadcastCombatState === 'function') {
+    broadcastCombatState(logMsg);
+  }
+
   const banner = document.getElementById('dice-banner');
   if (banner) {
     banner.style.display = 'block';
@@ -1623,8 +1637,11 @@ function togglePlayerSlot(id, lvlIdx, slotIdx) {
     addPlayerActionLog(p.id, '🔮', `Gastou 1 espaço de magia de ${lvlIdx + 1}º Círculo`, 'spell');
   }
 
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   renderPlayers();
+  if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
 }
 
 function playerShortRest(id) {
@@ -1649,13 +1666,21 @@ function playerShortRest(id) {
     }
   });
 
+  const comb = typeof findCombatantForPlayer === 'function'
+    ? findCombatantForPlayer(p, typeof state !== 'undefined' && state ? state.combatants : [])
+    : (typeof state !== 'undefined' && state.combatants ? state.combatants.find(c => (c.playerId && c.playerId === p.id) || c.name.includes(p.name)) : null);
+  if (comb) { comb.hp = p.hp; if (typeof renderCombat === 'function') renderCombat(); }
+
   if (typeof playFX === 'function') playFX('heal');
   const featMsg = restoredFeatures.length > 0 ? ` e restaurou cargas de: ${restoredFeatures.join(', ')}` : '';
   addLog(`☕ <b>${p.name}</b> fez um Descanso Curto: rolou 1d${sides}+${conMod} e recuperou <b>${healed} PV</b> (${p.hp}/${p.maxHp})${featMsg}.`);
   addPlayerActionLog(p.id, '☕', `Descanso Curto: recuperou ${healed} PV (${p.hp}/${p.maxHp})${featMsg}`, 'rest');
 
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   renderPlayers();
+  if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
 }
 
 // --- DADOS DE VIDA & DESCANSO CURTO (D&D 5E) ---
@@ -1796,9 +1821,11 @@ function rollShortRestHitDie(playerId) {
     showLiveDiceRoll(`🏕️ Descanso Curto - ${p.name}`, totalHealed, `Dado de Vida 1${hd.dieType} (${bd})`);
   }
 
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   renderShortRestModalContent(p);
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
 }
 
 function finishShortRestModal() {
@@ -1823,11 +1850,14 @@ function finishShortRestModal() {
     addLog(`🏕️ <b>${p.name}</b> finalizou o Descanso Curto: habilidades de classe e fôlego restaurados!`);
     addPlayerActionLog(p.id, '🏕️', `Concluiu Descanso Curto (habilidades restauradas)`, 'rest');
     if (typeof playFX === 'function') playFX('crit');
+    if (typeof touchPlayer === 'function') touchPlayer(p);
   }
 
   closeShortRestModal();
   renderPlayers();
+  if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
 }
 
 function playerLongRest(id) {
@@ -1849,12 +1879,20 @@ function playerLongRest(id) {
     f.used = 0;
   });
 
+  const comb = typeof findCombatantForPlayer === 'function'
+    ? findCombatantForPlayer(p, typeof state !== 'undefined' && state ? state.combatants : [])
+    : (typeof state !== 'undefined' && state.combatants ? state.combatants.find(c => (c.playerId && c.playerId === p.id) || c.name.includes(p.name)) : null);
+  if (comb) { comb.hp = p.hp; comb.conditions = []; if (typeof renderCombat === 'function') renderCombat(); }
+
   if (typeof playFX === 'function') playFX('heal');
   addLog(`🌙 <b>${p.name}</b> completou um Descanso Longo: PV restaurados ao máximo, magias, ${recoveredDice} dados de vida e todas as cargas de classe recuperadas!`);
   addPlayerActionLog(p.id, '🌙', `Descanso Longo: PV restaurados ao máximo, magias, dados de vida e cargas recuperadas`, 'rest');
 
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   renderPlayers();
+  if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
 }
 
 function partyLongRestAll() {
@@ -1870,12 +1908,19 @@ function partyLongRestAll() {
       p.featureCharges.forEach(f => {
         f.used = 0;
       });
+      const comb = typeof findCombatantForPlayer === 'function'
+        ? findCombatantForPlayer(p, typeof state !== 'undefined' && state ? state.combatants : [])
+        : (typeof state !== 'undefined' && state.combatants ? state.combatants.find(c => (c.playerId && c.playerId === p.id) || c.name.includes(p.name)) : null);
+      if (comb) { comb.hp = p.hp; comb.conditions = []; }
       addPlayerActionLog(p.id, '🌙', `Descanso Longo em Grupo: PV total, magias, dados de vida e cargas restauradas`, 'rest');
+      if (typeof touchPlayer === 'function') touchPlayer(p);
     });
     if (typeof playFX === 'function') playFX('crit');
     addLog('✨ <b>DESCANSO LONGO DO GRUPO:</b> Todos os aventureiros recuperaram vida, magias, dados de vida e habilidades ao máximo!');
     renderPlayers();
+    if (typeof renderCombat === 'function') renderCombat();
     saveToLocalStorage();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
   }
 }
 
@@ -2786,9 +2831,11 @@ function saveSpellPickerSelection() {
   if (summary) p.spells = summary.trim();
 
   closeSpellPickerModal();
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
   if (typeof playFX === 'function') playFX('heal');
   addLog(`📖 <b>${p.name}</b> atualizou suas magias preparadas (${p.preparedSpells.length} magias salvas com sucesso).`);
 }
@@ -3203,6 +3250,23 @@ function savePlayerSheet() {
   const fsSel = document.getElementById('pm-fighting-style');
   const fightingStyle = fsSel ? fsSel.value : (existing ? existing.fightingStyle || '' : '');
 
+  // Determina salvaguardas padrão se for criação de novo personagem
+  let defaultSaves = [];
+  if (!existing && typeof findClassData === 'function') {
+    const clsObj = findClassData(classNameVal);
+    if (clsObj && clsObj.savingThrows) {
+      const saveMap = {
+        'força': 'str', 'forca': 'str', 'strength': 'str',
+        'destreza': 'dex', 'dexterity': 'dex',
+        'constituição': 'con', 'constituicao': 'con', 'constitution': 'con',
+        'inteligência': 'int', 'inteligencia': 'int', 'intelligence': 'int',
+        'sabedoria': 'wis', 'wisdom': 'wis',
+        'carisma': 'cha', 'charisma': 'cha'
+      };
+      defaultSaves = clsObj.savingThrows.map(s => saveMap[s.toLowerCase()] || s.toLowerCase()).filter(s => ['str','dex','con','int','wis','cha'].includes(s));
+    }
+  }
+
   const data = {
     id: id || 'p_' + Date.now(),
     student, name,
@@ -3220,6 +3284,12 @@ function savePlayerSheet() {
     tempHp: existing ? existing.tempHp : 0,
     speed: document.getElementById('pm-speed').value || '9m',
     gold: parseInt(document.getElementById('pm-gold').value) || 15,
+    coins: existing && existing.coins ? existing.coins : { cp: 0, sp: 0, ep: 0, gp: parseInt(document.getElementById('pm-gold').value) || 15, pp: 0 },
+    inventory: existing && Array.isArray(existing.inventory) ? existing.inventory : [],
+    customSpells: existing && Array.isArray(existing.customSpells) ? existing.customSpells : [],
+    customAttacks: existing && Array.isArray(existing.customAttacks) ? existing.customAttacks : [],
+    attunedItems: existing && Array.isArray(existing.attunedItems) ? existing.attunedItems : [],
+    spentHitDice: existing && typeof existing.spentHitDice === 'number' ? existing.spentHitDice : 0,
     inspiration: existing ? existing.inspiration : false,
     conditions: existing ? (existing.conditions || []) : [],
     deathSaves: existing ? existing.deathSaves : { success: 0, fail: 0 },
@@ -3228,7 +3298,7 @@ function savePlayerSheet() {
     preparedSpells: existing && existing.preparedSpells ? existing.preparedSpells : [],
     skillProficiencies: existing && existing.skillProficiencies ? existing.skillProficiencies : [],
     skillExpertises: existing && existing.skillExpertises ? existing.skillExpertises : [],
-    saveProficiencies: existing && existing.saveProficiencies ? existing.saveProficiencies : [],
+    saveProficiencies: existing && existing.saveProficiencies ? existing.saveProficiencies : defaultSaves,
     featureCharges: existing && existing.featureCharges ? existing.featureCharges : [],
     actionLogs: existing && existing.actionLogs ? existing.actionLogs : [],
     playerNotes: existing && existing.playerNotes !== undefined ? existing.playerNotes : '',
@@ -3275,6 +3345,8 @@ function savePlayerSheet() {
   closePlayerModal();
   renderPlayers();
   saveToLocalStorage();
+  if (typeof touchPlayer === 'function') touchPlayer(data);
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
   if (typeof saveSafetySnapshot === 'function') {
     saveSafetySnapshot(`Salvou ficha de ${data.name}`);
   }
@@ -5273,9 +5345,11 @@ function applyLevelUpConfirm() {
   if (typeof playFX === 'function') playFX('crit');
 
   closeLevelUpModal();
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
 }
 
 // --- SISTEMA DE TROCA DIRETA DE ITENS ENTRE HERÓIS (TRADE DE MOCHILA) ---
