@@ -152,7 +152,7 @@ function renderCampaigns() {
     statusBadge.innerText = camp.status === 'active' ? '🟢 Em Andamento' : (camp.status === 'paused' ? '🟡 Pausada' : '🏁 Concluída');
   }
 
-  const campPlayers = (camp.playerIds || []).map(id => PLAYERS.find(p => p.id === id)).filter(p => p);
+  const campPlayers = (camp.playerIds || []).map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p);
   if (heroesCountBadge) heroesCountBadge.innerText = `${campPlayers.length} Heróis`;
   if (sessionsCountBadge) sessionsCountBadge.innerText = `${(camp.sessions || []).length} Sessões`;
 
@@ -564,7 +564,7 @@ function addAllCampaignHeroesToCombat() {
 
   let added = 0;
   camp.playerIds.forEach(pId => {
-    const p = PLAYERS.find(x => x.id === pId);
+    const p = PLAYERS.find(x => String(x.id) === String(pId));
     if (p) {
       const existing = state.combatants.find(c => c.playerId === p.id || c.name === `${p.name} (${p.student})`);
       if (!existing) {
@@ -819,7 +819,7 @@ function splitPartyGold() {
   camp.partyStash.items = camp.partyStash.items || [];
   camp.partyStash.history = camp.partyStash.history || [];
 
-  const campPlayers = (camp.playerIds && camp.playerIds.length > 0 ? camp.playerIds.map(id => PLAYERS.find(p => p.id === id)).filter(p => p) : PLAYERS) || [];
+  const campPlayers = (camp.playerIds && camp.playerIds.length > 0 ? camp.playerIds.map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p) : PLAYERS) || [];
 
   if (campPlayers.length === 0) {
     alert('Nenhum herói disponível para receber a divisão de ouro.');
@@ -839,6 +839,9 @@ function splitPartyGold() {
 
   campPlayers.forEach(p => {
     p.gold = (p.gold || 0) + each;
+    p.coins = p.coins || { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
+    p.coins.gp = (p.coins.gp || 0) + each;
+    if (typeof touchPlayer === 'function') touchPlayer(p);
   });
 
   camp.partyStash.gold = remainder;
@@ -850,6 +853,7 @@ function splitPartyGold() {
 
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
   renderCampaigns();
   renderPartyStashViewer();
   if (typeof renderPlayers === 'function') renderPlayers();
@@ -872,7 +876,7 @@ function openPartyItemModal(itemId = null) {
 
   const isEdit = !!itemId;
   const it = isEdit ? (camp.partyStash?.items || []).find(x => x.id === itemId) : null;
-  const campPlayers = (camp.playerIds && camp.playerIds.length > 0 ? camp.playerIds.map(id => PLAYERS.find(p => p.id === id)).filter(p => p) : PLAYERS) || [];
+  const campPlayers = (camp.playerIds && camp.playerIds.length > 0 ? camp.playerIds.map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p) : PLAYERS) || [];
 
   const titleEl = document.getElementById('party-item-modal-title');
   if (titleEl) titleEl.innerText = isEdit ? '✏️ Editar Item do Grupo' : '➕ Adicionar Item ao Baú do Grupo';
@@ -1207,7 +1211,7 @@ function takePartyItemToPlayer(itemId, targetPlayerId = null) {
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   renderPartyStashViewer();
   if (typeof renderCampaignPartyStash === 'function') {
-    renderCampaignPartyStash(camp, (camp.playerIds || []).map(id => PLAYERS.find(p => p.id === id)).filter(p => p));
+    renderCampaignPartyStash(camp, (camp.playerIds || []).map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p));
   }
   if (typeof renderPlayers === 'function') renderPlayers();
   if (typeof addLog === 'function') addLog(`🎒 <b>Baú do Grupo:</b> 1x "${it.name}" transferido para a mochila de <b>${targetPlayer.name}</b>.`);

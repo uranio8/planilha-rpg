@@ -1298,8 +1298,8 @@ function initFoWCanvases() {
     }
   });
 
-  if (canvasDm && !canvasDm.dataset.listenerAttached) {
-    canvasDm.dataset.listenerAttached = 'true';
+  if (canvasDm && (!canvasDm.dataset || !canvasDm.dataset.listenerAttached)) {
+    if (canvasDm.dataset) canvasDm.dataset.listenerAttached = 'true';
 
     canvasDm.addEventListener('mousedown', (e) => {
       if (!gridState.fowEnabled) return;

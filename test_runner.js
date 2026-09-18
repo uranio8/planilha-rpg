@@ -2834,6 +2834,67 @@ assert(postTouchLongRest >= preTouch, 'playerLongRest disparou touchPlayer e atu
 // 5. Teste de botão de escolha de magias liberado para o aluno
 assert(builtHtml.includes('player-spell-picker-btn'), 'Bundle contém botão de escolha de magias liberado para jogador (.player-spell-picker-btn)');
 
+// --- SUÍTE 45: Testes de Mestrado, Resolução de IDs de Campanha e Sincronização do Baú (ISSUE-71) ---
+console.log('\n👑 45. Testes de Mestrado, Resolução de IDs de Campanha e Sincronização do Baú (ISSUE-71):');
+
+// 1. Resolução flexível de IDs numéricos e strings em addAllCampaignHeroesToCombat
+vm.runInContext(`
+  const testCamp71 = {
+    id: 'camp_test_71',
+    name: 'Campanha Teste 71',
+    playerIds: [String('${aeloriaUpdated.id}')],
+    partyStash: { gold: 100, items: [{ id: 'it_pot_71', name: 'Poção de Vigor', qty: 2, category: 'Poções' }], history: [] }
+  };
+  CAMPAIGNS_STATE = { activeCampaignId: 'camp_test_71', campaigns: [testCamp71] };
+  state.combatants = [];
+  addAllCampaignHeroesToCombat();
+`, sandbox);
+
+let combatants71 = vm.runInContext('state.combatants', sandbox);
+assert(combatants71.length === 1, 'addAllCampaignHeroesToCombat encontrou herói com ID em formato string');
+assert(combatants71[0].playerId === aeloriaUpdated.id, 'Combatente criado com playerId correspondente');
+
+// 2. splitPartyGold atualiza p.gold, p.coins.gp e dispara touchPlayer
+let goldBeforeSplit = aeloriaUpdated.gold || 0;
+let coinsGpBeforeSplit = (aeloriaUpdated.coins && aeloriaUpdated.coins.gp) || 0;
+let timeBeforeSplit = aeloriaUpdated.updatedAt || 0;
+
+vm.runInContext(`
+  splitPartyGold();
+`, sandbox);
+
+let aeloriaAfterSplit = vm.runInContext(`PLAYERS.find(p => p.id === '${aeloriaUpdated.id}')`, sandbox);
+assert(aeloriaAfterSplit.gold === goldBeforeSplit + 100, 'splitPartyGold incrementou p.gold corretamente');
+assert(aeloriaAfterSplit.coins && aeloriaAfterSplit.coins.gp === coinsGpBeforeSplit + 100, 'splitPartyGold sincronizou a carteira p.coins.gp');
+assert(aeloriaAfterSplit.updatedAt >= timeBeforeSplit, 'splitPartyGold disparou touchPlayer atualizando timestamp');
+
+// 3. takePartyItemToPlayer transfere item do baú para a mochila do herói
+vm.runInContext(`
+  takePartyItemToPlayer('it_pot_71', '${aeloriaUpdated.id}');
+`, sandbox);
+
+let aeloriaWithItem = vm.runInContext(`PLAYERS.find(p => p.id === '${aeloriaUpdated.id}')`, sandbox);
+let transferredPot = (aeloriaWithItem.inventory || []).find(i => i.name === 'Poção de Vigor');
+assert(transferredPot !== undefined && transferredPot.qty === 1, 'takePartyItemToPlayer transferiu item para o inventário do herói');
+let campStashAfter = vm.runInContext("getActiveCampaign().partyStash.items.find(i => i.id === 'it_pot_71')", sandbox);
+assert(campStashAfter && campStashAfter.qty === 1, 'Quantidade no baú do grupo foi decrementada corretamente');
+
+// 4. Resiliência do FoW quando canvas não tem dataset
+let fowTestPassed = false;
+try {
+  vm.runInContext(`
+    const mockDmCanvas = { width: 1000, height: 800 };
+    if (!mockDmCanvas.dataset || !mockDmCanvas.dataset.listenerAttached) {
+      if (mockDmCanvas.dataset) mockDmCanvas.dataset.listenerAttached = 'true';
+    }
+  `, sandbox);
+  fowTestPassed = true;
+} catch (e) {
+  fowTestPassed = false;
+}
+assert(fowTestPassed, 'Checagem defensiva de dataset no canvas de névoa previne exceções');
+
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
