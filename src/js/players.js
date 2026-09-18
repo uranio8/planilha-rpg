@@ -4348,26 +4348,27 @@ function renderPlayerLoginList() {
     return `
       <div class="player-login-card ${isCurrent ? 'active' : ''}" onclick="selectLoginCharacter('${p.id}')">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <div style="width: 38px; height: 38px; border-radius: 8px; background: linear-gradient(135deg, rgba(235, 180, 56, 0.2), rgba(0,0,0,0.5)); border: 1px solid var(--accent-gold); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: var(--accent-gold); flex-shrink: 0;">
+          <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, rgba(235, 180, 56, 0.2), rgba(0,0,0,0.5)); border: 1px solid var(--accent-gold); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: var(--accent-gold); flex-shrink: 0; line-height: 1; overflow: hidden;">
             ${p.avatar ? `<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:7px;" onerror="this.outerHTML='${initial}'">` : initial}
           </div>
           <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
-            <div style="font-weight: 800; font-size: 13.5px; color: #fff; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${p.name || 'Sem Nome'}</div>
-            <div style="font-size: 11px; color: var(--primary-light); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">👤 ${p.student || 'Aluno'}</div>
+            <div style="font-weight: 800; font-size: 14px; color: #fff; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; font-family: var(--font-title);">${p.name || 'Sem Nome'}</div>
+            <div style="font-size: 11px; color: var(--primary-light); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">👤 ${p.student || 'Aventureiro'}</div>
           </div>
         </div>
 
-        <div style="margin-top: 8px; font-size: 11px; color: var(--text-muted);">
-          🛡️ ${p.race || 'Raça'} • ${p.className || 'Classe'} (Nv. ${p.level || 1})
+        <div style="margin-top: 6px; font-size: 11px; color: var(--text-muted); display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+          <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">🛡️ ${p.race || 'Raça'} • ${p.className || 'Classe'} (Nv. ${p.level || 1})</span>
+          <span style="color: var(--accent-gold); font-weight: 700; flex-shrink: 0;">CA ${p.ac || 10}</span>
         </div>
 
-        <div style="margin-top: 6px; display: flex; align-items: center; justify-content: space-between; font-size: 11px;">
+        <div style="margin-top: 4px; display: flex; align-items: center; justify-content: space-between; font-size: 11px;">
           <span style="color: ${hpColor}; font-weight: 700;">❤️ ${p.hp || 0}/${p.maxHp || 10} PV</span>
-          <span style="color: var(--accent-gold); font-weight: 700;">🛡️ CA ${p.ac || 10}</span>
+          <span style="color: var(--primary-light); font-size: 10px;">${hpPct}% Vitalidade</span>
         </div>
 
-        <div style="margin-top: 8px;">
-          <button class="btn-action" style="width: 100%; font-size: 11px; padding: 5px 0; border-radius: 4px; pointer-events: none;">
+        <div style="margin-top: 6px;">
+          <button class="btn-action" style="width: 100%; font-size: 11.5px; padding: 6px 0; border-radius: 5px; pointer-events: none; font-weight: 700;">
             ${isCurrent ? '✅ Personagem Ativo' : '🎮 Entrar com este Herói'}
           </button>
         </div>
@@ -5556,10 +5557,16 @@ function renderBatchRewardHeroList() {
 
   container.innerHTML = heroes.map(h => {
     const isSelected = batchRewardSelectedHeroIds.has(h.id);
+    const initial = (h.name || '?').charAt(0).toUpperCase();
     return `
       <div class="reward-hero-chip ${isSelected ? 'selected' : ''}" onclick="toggleBatchRewardHero('${h.id}')">
+        <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; flex: 1;">
+          <div style="width: 22px; height: 22px; border-radius: 4px; background: rgba(0,0,0,0.45); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: var(--accent-gold); flex-shrink: 0; line-height: 1;">
+            ${initial}
+          </div>
+          <span style="font-weight: 700; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${h.name}</span>
+        </div>
         <input type="checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleBatchRewardHero('${h.id}')">
-        <span style="font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${h.name}</span>
       </div>
     `;
   }).join('');

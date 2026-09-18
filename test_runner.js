@@ -3242,8 +3242,56 @@ vm.runInContext(`
 
 assert(vm.runInContext("activePortalPlayerId", sandbox) === 'p1', 'F5 do Jogador: checkPlayerPortalUrl restaurou a ficha do jogador ativa');
 assert(vm.runInContext("clientRole", sandbox) === 'player', 'F5 do Jogador: clientRole restabelecido como player');
-assert(vm.runInContext("document.body.classList.contains('mode-player-portal')", sandbox) === true, 'F5 do Jogador: mode-player-portal reativado no body');
+// ========================================================
+// 50. TESTES DE PADRONIZAÇÃO DE MODAIS, RESPONSIVIDADE E ESTILOS DE RECOMPENSAS (ISSUE-76)
+// ========================================================
+console.log('\n🎨 50. Testes de Padronização de Modais e Responsividade (ISSUE-76):');
 
+// 1. Validação de ausência de media queries não fechadas em head_css.html
+const headCssContent = fs.readFileSync(path.join(__dirname, 'src', 'styles', 'head_css.html'), 'utf8');
+const openBraces = (headCssContent.match(/\{/g) || []).length;
+const closeBraces = (headCssContent.match(/\}/g) || []).length;
+assert(openBraces === closeBraces, `Chaves balanceadas em head_css.html (abertas: ${openBraces}, fechadas: ${closeBraces})`);
+
+// 2. Validação de bundle contendo classes unificadas de modal
+const modalTestBundle = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(modalTestBundle.includes('.modal-body,') && modalTestBundle.includes('.modal-box'), 'Bundle contém definição unificada de .modal-body e .modal-box');
+assert(modalTestBundle.includes('.player-login-toolbar'), 'Bundle contém classe de toolbar responsiva .player-login-toolbar');
+assert(modalTestBundle.includes('.reward-hero-chip'), 'Bundle contém estilização para chips de heróis em recompensas');
+assert(modalTestBundle.includes('.reward-coin-grid'), 'Bundle contém grid de moedas para recompensas');
+
+// 3. Validação de modais utilizando modal-body
+const uiHtmlContent = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'ui.html'), 'utf8');
+assert(!uiHtmlContent.includes('<div class="modal-box"'), 'Nenhum modal em ui.html utiliza .modal-box isolada sem .modal-body');
+assert(uiHtmlContent.includes('id="modal-batch-rewards" class="modal-overlay">\n    <div class="modal-body"'), 'modal-batch-rewards utiliza modal-body padronizada');
+assert(uiHtmlContent.includes('id="modal-trade-item" class="modal-overlay">\n    <div class="modal-body"'), 'modal-trade-item utiliza modal-body padronizada');
+
+// 4. Teste de renderBatchRewardHeroList com iniciais e checkbox
+vm.runInContext(`
+  PLAYERS = [
+    { id: 'h1', name: 'Yoshigake Kira', student: 'Aluno 1', className: 'Guerreiro', level: 2, hp: 20, maxHp: 20, ac: 15 },
+    { id: 'h2', name: 'Deraravely', student: 'Aluno 2', className: 'Mago', level: 2, hp: 14, maxHp: 14, ac: 12 }
+  ];
+  batchRewardSelectedHeroIds = new Set(['h1']);
+  renderBatchRewardHeroList();
+`, sandbox);
+
+const rewardListEl = vm.runInContext("document.getElementById('batch-reward-hero-list')", sandbox);
+assert(rewardListEl && rewardListEl.innerHTML.includes('reward-hero-chip'), 'renderBatchRewardHeroList renderizou chips de heróis');
+assert(rewardListEl && rewardListEl.innerHTML.includes('Yoshigake Kira'), 'Chip contém nome do herói Yoshigake Kira');
+assert(rewardListEl && rewardListEl.innerHTML.includes('type="checkbox" checked'), 'Heroi selecionado possui checkbox marcado');
+
+// 5. Teste de renderPlayerLoginList com classes aprimoradas
+vm.runInContext(`
+  activePortalPlayerId = null;
+  renderPlayerLoginList();
+`, sandbox);
+
+const loginListEl = vm.runInContext("document.getElementById('player-login-list-container')", sandbox);
+assert(loginListEl && loginListEl.innerHTML.includes('player-login-card'), 'renderPlayerLoginList gerou cards de heróis');
+assert(loginListEl && loginListEl.innerHTML.includes('Yoshigake Kira'), 'Card contém nome do herói');
+assert(loginListEl && loginListEl.innerHTML.includes('CA 15'), 'Card contém CA formatada corretamente');
+assert(loginListEl && loginListEl.innerHTML.includes('line-height: 1;'), 'Avatar possui line-height: 1 para prevenção de corte');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

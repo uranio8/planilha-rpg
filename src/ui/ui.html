@@ -2094,19 +2094,19 @@
         <button class="btn-secondary" onclick="closePlayerLoginModal()">✕</button>
       </div>
 
-      <div style="display: flex; gap: 8px; align-items: center; margin: 12px 0 8px 0; background: rgba(0,0,0,0.25); padding: 8px; border-radius: 6px; border: 1px solid var(--border-color);">
-        <div style="flex: 1;">
+      <div class="player-login-toolbar">
+        <div class="player-login-toolbar-col-room">
           <label style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Sala Conectada:</label>
-          <div style="display: flex; gap: 6px; margin-top: 3px;">
-            <input type="text" id="inp-login-room" placeholder="Ex: turma_principal" style="font-size: 12px; padding: 5px 8px; background: #080c16; border: 1px solid var(--border-color); border-radius: 4px; color: #fff; font-family: var(--font-mono); width: 100%;">
-            <button class="btn-secondary" style="font-size: 11px; padding: 4px 10px; white-space: nowrap;" onclick="refreshLoginRoom()">🔄 Conectar Sala</button>
-            <button class="btn-action" style="font-size: 11px; padding: 4px 10px; white-space: nowrap; background: linear-gradient(135deg, #f59e0b, #d97706);" onclick="copyLobbyShareLink()" title="Copiar link do lobby desta sala para enviar aos alunos">📋 Copiar Link</button>
-            <button class="btn-action" style="font-size: 11px; padding: 4px 10px; white-space: nowrap; background: linear-gradient(135deg, #0284c7, #0369a1);" onclick="openRoomQrCodeModal()" title="Exibir QR Code para projeção em sala de aula">📲 QR Code</button>
+          <div class="player-login-room-btn-row">
+            <input type="text" id="inp-login-room" placeholder="Ex: turma_principal" style="font-size: 12px; padding: 6px 8px; background: #080c16; border: 1px solid var(--border-color); border-radius: 4px; color: #fff; font-family: var(--font-mono);">
+            <button class="btn-secondary" style="font-size: 11px; padding: 5px 10px; white-space: nowrap;" onclick="refreshLoginRoom()">🔄 Conectar</button>
+            <button class="btn-action" style="font-size: 11px; padding: 5px 10px; white-space: nowrap; background: linear-gradient(135deg, #f59e0b, #d97706);" onclick="copyLobbyShareLink()" title="Copiar link do lobby desta sala para enviar aos alunos">📋 Copiar Link</button>
+            <button class="btn-action" style="font-size: 11px; padding: 5px 10px; white-space: nowrap; background: linear-gradient(135deg, #0284c7, #0369a1);" onclick="openRoomQrCodeModal()" title="Exibir QR Code para projeção em sala de aula">📲 QR Code</button>
           </div>
         </div>
-        <div style="flex: 1.2;">
+        <div class="player-login-toolbar-col-search">
           <label style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Buscar Personagem / Aluno:</label>
-          <input type="text" id="inp-filter-login-players" placeholder="Filtrar por nome do herói ou aluno..." oninput="renderPlayerLoginList()" style="font-size: 12px; padding: 5px 8px; margin-top: 3px; background: #080c16; border: 1px solid var(--border-color); border-radius: 4px; color: #fff; width: 100%;">
+          <input type="text" id="inp-filter-login-players" placeholder="Filtrar por nome do herói ou aluno..." oninput="renderPlayerLoginList()" style="font-size: 12px; padding: 6px 8px; margin-top: 4px; background: #080c16; border: 1px solid var(--border-color); border-radius: 4px; color: #fff; width: 100%;">
         </div>
       </div>
 
@@ -3377,7 +3377,7 @@
        🎁 MODAL DE DISTRIBUIÇÃO DE SAQUE & XP EM LOTE (MESTRE)
        =================================================== -->
   <div id="modal-batch-rewards" class="modal-overlay">
-    <div class="modal-box" style="max-width: 540px;">
+    <div class="modal-body" style="max-width: 560px;">
       <div class="modal-header">
         <h3 style="display: flex; align-items: center; gap: 8px; font-family: var(--font-title); color: #fff;">
           <span>🎁</span>
@@ -3463,7 +3463,7 @@
        🤝 MODAL DE TROCA DE ITENS (TRADE DE MOCHILA)
        =================================================== -->
   <div id="modal-trade-item" class="modal-overlay">
-    <div class="modal-box" style="max-width: 440px;">
+    <div class="modal-body" style="max-width: 460px;">
       <div class="modal-header">
         <h3 style="display: flex; align-items: center; gap: 8px; font-family: var(--font-title); color: #fff;">
           <span>🤝</span>
