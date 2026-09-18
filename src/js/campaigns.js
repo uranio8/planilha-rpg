@@ -81,7 +81,35 @@ function saveCampaignsState() {
   try {
     const camp = getActiveCampaign();
     if (camp) touchCampaign(camp);
-    localStorage.setItem('dnd5e_prisco_campaigns_v1', JSON.stringify(CAMPAIGNS_STATE));
+    const serialized = JSON.stringify(CAMPAIGNS_STATE);
+    localStorage.setItem('dnd5e_prisco_campaigns_v1', serialized);
+    localStorage.setItem('dnd_tracker_campaigns_v1', serialized);
+
+    // Atualiza dentro do payload STORAGE_KEY do core se existir
+    try {
+      if (typeof STORAGE_KEY !== 'undefined') {
+        const fullRaw = localStorage.getItem(STORAGE_KEY);
+        if (fullRaw) {
+          const fullParsed = JSON.parse(fullRaw);
+          fullParsed.campaignsState = CAMPAIGNS_STATE;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(fullParsed));
+        }
+      }
+    } catch(e) {}
+
+    // Backup de segurança resiliente
+    try {
+      localStorage.setItem('dnd5e_campaigns_backup_safety', serialized);
+    } catch(e) {}
+
+    // Espelhamento no Cofre IndexedDB
+    try {
+      if (typeof idbSet === 'function') {
+        idbSet('dnd5e_prisco_campaigns_v1', CAMPAIGNS_STATE);
+        idbSet('dnd_tracker_campaigns_v1', CAMPAIGNS_STATE);
+      }
+    } catch(e) {}
+
     if (typeof showSaveStatus === 'function') showSaveStatus();
     if (typeof broadcastCampaignState === 'function') broadcastCampaignState();
     if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
@@ -92,7 +120,22 @@ function saveCampaignsState() {
 
 function loadCampaignsState() {
   try {
-    const raw = localStorage.getItem('dnd5e_prisco_campaigns_v1');
+    let raw = localStorage.getItem('dnd5e_prisco_campaigns_v1');
+    if (!raw) {
+      raw = localStorage.getItem('dnd_tracker_campaigns_v1');
+    }
+    if (!raw && typeof STORAGE_KEY !== 'undefined') {
+      try {
+        const full = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        if (full && full.campaignsState) {
+          raw = JSON.stringify(full.campaignsState);
+        }
+      } catch(e) {}
+    }
+    if (!raw) {
+      raw = localStorage.getItem('dnd5e_campaigns_backup_safety');
+    }
+
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.campaigns) && parsed.campaigns.length > 0) {
@@ -110,7 +153,9 @@ function loadCampaignsState() {
         }
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('Erro ao carregar campanhas:', e);
+  }
   return false;
 }
 
@@ -459,6 +504,7 @@ function saveCampaignForm() {
       camp.name = name;
       camp.desc = desc;
       camp.status = status;
+      touchCampaign(camp);
     }
   } else {
     // Criar nova
@@ -473,6 +519,7 @@ function saveCampaignForm() {
       partyStash: { gold: 0, items: [], history: [] },
       sessions: []
     };
+    touchCampaign(newCamp);
     CAMPAIGNS_STATE.campaigns.push(newCamp);
     CAMPAIGNS_STATE.activeCampaignId = newId;
   }
@@ -806,6 +853,7 @@ function promptAdjustPartyGold(type) {
     });
   }
 
+  touchCampaign(camp);
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   renderCampaigns();
@@ -852,6 +900,7 @@ function splitPartyGold() {
     type: 'gold_out'
   });
 
+  touchCampaign(camp);
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
@@ -969,6 +1018,7 @@ function savePartyItem() {
     });
   }
 
+  touchCampaign(camp);
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   closePartyItemModal();
@@ -1032,6 +1082,7 @@ function addItemToPartyStash(name, qty = 1, category = 'Equipamento de Aventura'
     type: 'item_in'
   });
 
+  touchCampaign(camp);
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   renderCampaigns();
@@ -1521,4 +1572,9 @@ if (typeof module !== 'undefined' && module.exports) {
     saveCampaignForm
   };
 }
+
+// Auto-carregamento imediato na avaliação do módulo
+try {
+  loadCampaignsState();
+} catch (e) {}
 

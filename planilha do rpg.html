@@ -9963,7 +9963,7 @@
   </div>
 
   <!-- MODAL: ADICIONAR / EDITAR ITEM DO BAÚ DO GRUPO -->
-  <div id="modal-party-item" class="modal-overlay" style="z-index: 150;">
+  <div id="modal-party-item" class="modal-overlay" style="z-index: 2100;">
     <div class="modal-body" style="max-width: 480px;">
       <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
         <span id="party-item-modal-title" style="font-weight: 800; font-size: 16px; color: #fff;">➕ Item do Grupo</span>
@@ -28870,6 +28870,12 @@ async function checkAndRestoreFromIndexedDB() {
           state = candidate.state;
         }
 
+        if (candidate.campaignsState && typeof CAMPAIGNS_STATE !== 'undefined') {
+          CAMPAIGNS_STATE = candidate.campaignsState;
+          if (typeof saveCampaignsState === 'function') saveCampaignsState();
+          if (typeof renderCampaigns === 'function') renderCampaigns();
+        }
+
         saveToLocalStorage();
         if (typeof renderPlayers === 'function') renderPlayers();
         if (typeof renderCombat === 'function') renderCombat();
@@ -28882,7 +28888,16 @@ async function checkAndRestoreFromIndexedDB() {
       // Espelha estado atual robusto no IDB
       if (typeof PLAYERS !== 'undefined') {
         idbSet('dnd_tracker_players_v3', PLAYERS);
-        idbSet(STORAGE_KEY, { state, players: PLAYERS, gridState: (typeof gridState !== 'undefined' ? gridState : null) });
+        idbSet(STORAGE_KEY, {
+          state,
+          players: PLAYERS,
+          gridState: (typeof gridState !== 'undefined' ? gridState : null),
+          campaignsState: (typeof CAMPAIGNS_STATE !== 'undefined' ? CAMPAIGNS_STATE : null)
+        });
+        if (typeof CAMPAIGNS_STATE !== 'undefined') {
+          idbSet('dnd5e_prisco_campaigns_v1', CAMPAIGNS_STATE);
+          idbSet('dnd_tracker_campaigns_v1', CAMPAIGNS_STATE);
+        }
       }
     }
 
@@ -28915,7 +28930,8 @@ function saveToLocalStorage() {
     const payload = {
       state,
       players: PLAYERS,
-      gridState: (typeof gridState !== 'undefined' ? gridState : null)
+      gridState: (typeof gridState !== 'undefined' ? gridState : null),
+      campaignsState: (typeof CAMPAIGNS_STATE !== 'undefined' ? CAMPAIGNS_STATE : null)
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 
@@ -28933,6 +28949,7 @@ function saveToLocalStorage() {
         idbSet('dnd_tracker_state_v3', state);
         if (typeof CAMPAIGNS_STATE !== 'undefined') {
           idbSet('dnd5e_prisco_campaigns_v1', CAMPAIGNS_STATE);
+          idbSet('dnd_tracker_campaigns_v1', CAMPAIGNS_STATE);
         }
       }
     } catch (e) {}
@@ -29127,6 +29144,12 @@ function switchTab(tabId) {
   // Trava de segurança: jogadores em modo portal só acessam suas fichas e compêndios
   if (isPortalMode && !PLAYER_ALLOWED_TABS.includes(tabId)) {
     tabId = 'players';
+  }
+
+  if (!isPortalMode && typeof localStorage !== 'undefined' && tabId) {
+    try {
+      localStorage.setItem('dnd5e_active_tab', tabId);
+    } catch(e) {}
   }
 
   document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
@@ -36674,6 +36697,7 @@ function initPlayerPortalMode(playerId) {
   if (!p) {
     // Herói ainda não está na memória local (ex: aguardando resposta do Firebase)
     pendingPortalPlayerId = playerId;
+    activePortalPlayerId = null;
     if (typeof clientRole !== 'undefined') clientRole = 'player';
     if (typeof document !== 'undefined' && document.body && document.body.classList) {
       document.body.classList.add('mode-player-portal');
@@ -36686,6 +36710,12 @@ function initPlayerPortalMode(playerId) {
   pendingPortalPlayerId = null;
   activePortalPlayerId = p.id;
   if (typeof clientRole !== 'undefined') clientRole = 'player';
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('dnd5e_last_portal_player_id', p.id);
+      localStorage.setItem('dnd5e_session_role', 'player');
+    }
+  } catch(e) {}
   if (typeof document !== 'undefined' && document.body && document.body.classList) {
     document.body.classList.add('mode-player-portal');
   }
@@ -36699,8 +36729,9 @@ function initPlayerPortalMode(playerId) {
 
 function exitPlayerPortalMode() {
   // Se o usuário tentar voltar para o painel do Mestre:
-  // Se já estiver com sessão do mestre autorizada:
-  if (typeof isMasterAuthorized === 'function' && isMasterAuthorized()) {
+  // Se já estiver com sessão do mestre autorizada OU nenhum PIN foi configurado pelo mestre:
+  const pinConfigured = (typeof isMasterPinConfigured === 'function') ? isMasterPinConfigured() : false;
+  if (!pinConfigured || (typeof isMasterAuthorized === 'function' && isMasterAuthorized())) {
     if (typeof confirm === 'function') {
       const ok = confirm('Deseja realmente sair da sua ficha de jogador e voltar para a visão do Mestre?');
       if (!ok) return;
@@ -36723,6 +36754,12 @@ function _executeExitPortalToMaster() {
   pendingPortalPlayerId = null;
   activePortalPlayerId = null;
   if (typeof clientRole !== 'undefined') clientRole = 'master';
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('dnd5e_last_portal_player_id');
+      localStorage.setItem('dnd5e_session_role', 'master');
+    }
+  } catch(e) {}
   if (typeof document !== 'undefined' && document.body && document.body.classList) {
     document.body.classList.remove('mode-player-portal');
   }
@@ -38559,6 +38596,8 @@ const SPELL_PHRASE_ALIASES = {
   'wish': 'desejo'
 };
 
+let activeBestiaryTypeChip = 'all';
+
 function setGrimoireSchoolFilter(schoolName) {
   const sel = document.getElementById('filter-spell-sch');
   if (sel) {
@@ -39062,7 +39101,7 @@ function renderBestiary(resetLimit = true) {
   const rawQ = document.getElementById('filter-mon-q')?.value || '';
   const src = document.getElementById('filter-mon-src')?.value || 'all';
   const cr = document.getElementById('filter-mon-cr')?.value || 'all';
-  const typeFilter = document.getElementById('filter-mon-type')?.value || activeBestiaryTypeChip || 'all';
+  const typeFilter = document.getElementById('filter-mon-type')?.value || (typeof activeBestiaryTypeChip !== 'undefined' ? activeBestiaryTypeChip : 'all');
   const sortOrder = document.getElementById('filter-mon-sort')?.value || 'relevance';
 
   if (btnClear) {
@@ -40686,7 +40725,35 @@ function saveCampaignsState() {
   try {
     const camp = getActiveCampaign();
     if (camp) touchCampaign(camp);
-    localStorage.setItem('dnd5e_prisco_campaigns_v1', JSON.stringify(CAMPAIGNS_STATE));
+    const serialized = JSON.stringify(CAMPAIGNS_STATE);
+    localStorage.setItem('dnd5e_prisco_campaigns_v1', serialized);
+    localStorage.setItem('dnd_tracker_campaigns_v1', serialized);
+
+    // Atualiza dentro do payload STORAGE_KEY do core se existir
+    try {
+      if (typeof STORAGE_KEY !== 'undefined') {
+        const fullRaw = localStorage.getItem(STORAGE_KEY);
+        if (fullRaw) {
+          const fullParsed = JSON.parse(fullRaw);
+          fullParsed.campaignsState = CAMPAIGNS_STATE;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(fullParsed));
+        }
+      }
+    } catch(e) {}
+
+    // Backup de segurança resiliente
+    try {
+      localStorage.setItem('dnd5e_campaigns_backup_safety', serialized);
+    } catch(e) {}
+
+    // Espelhamento no Cofre IndexedDB
+    try {
+      if (typeof idbSet === 'function') {
+        idbSet('dnd5e_prisco_campaigns_v1', CAMPAIGNS_STATE);
+        idbSet('dnd_tracker_campaigns_v1', CAMPAIGNS_STATE);
+      }
+    } catch(e) {}
+
     if (typeof showSaveStatus === 'function') showSaveStatus();
     if (typeof broadcastCampaignState === 'function') broadcastCampaignState();
     if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
@@ -40697,7 +40764,22 @@ function saveCampaignsState() {
 
 function loadCampaignsState() {
   try {
-    const raw = localStorage.getItem('dnd5e_prisco_campaigns_v1');
+    let raw = localStorage.getItem('dnd5e_prisco_campaigns_v1');
+    if (!raw) {
+      raw = localStorage.getItem('dnd_tracker_campaigns_v1');
+    }
+    if (!raw && typeof STORAGE_KEY !== 'undefined') {
+      try {
+        const full = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        if (full && full.campaignsState) {
+          raw = JSON.stringify(full.campaignsState);
+        }
+      } catch(e) {}
+    }
+    if (!raw) {
+      raw = localStorage.getItem('dnd5e_campaigns_backup_safety');
+    }
+
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.campaigns) && parsed.campaigns.length > 0) {
@@ -40715,7 +40797,9 @@ function loadCampaignsState() {
         }
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('Erro ao carregar campanhas:', e);
+  }
   return false;
 }
 
@@ -41064,6 +41148,7 @@ function saveCampaignForm() {
       camp.name = name;
       camp.desc = desc;
       camp.status = status;
+      touchCampaign(camp);
     }
   } else {
     // Criar nova
@@ -41078,6 +41163,7 @@ function saveCampaignForm() {
       partyStash: { gold: 0, items: [], history: [] },
       sessions: []
     };
+    touchCampaign(newCamp);
     CAMPAIGNS_STATE.campaigns.push(newCamp);
     CAMPAIGNS_STATE.activeCampaignId = newId;
   }
@@ -41411,6 +41497,7 @@ function promptAdjustPartyGold(type) {
     });
   }
 
+  touchCampaign(camp);
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   renderCampaigns();
@@ -41457,6 +41544,7 @@ function splitPartyGold() {
     type: 'gold_out'
   });
 
+  touchCampaign(camp);
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
@@ -41574,6 +41662,7 @@ function savePartyItem() {
     });
   }
 
+  touchCampaign(camp);
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   closePartyItemModal();
@@ -41637,6 +41726,7 @@ function addItemToPartyStash(name, qty = 1, category = 'Equipamento de Aventura'
     type: 'item_in'
   });
 
+  touchCampaign(camp);
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   renderCampaigns();
@@ -42126,6 +42216,11 @@ if (typeof module !== 'undefined' && module.exports) {
     saveCampaignForm
   };
 }
+
+// Auto-carregamento imediato na avaliação do módulo
+try {
+  loadCampaignsState();
+} catch (e) {}
 
 
 // src/js/dice_roller.js - Rolador de Dados Global Flutuante, Histórico e Sincronização Telão
@@ -45926,8 +46021,17 @@ window.onload = () => {
     }
   } catch (e) {}
   if (typeof initScenes === 'function') initScenes();
+  if (typeof loadCampaignsState === 'function') loadCampaignsState();
   renderAll();
-  if (typeof checkPlayerPortalUrl === 'function') checkPlayerPortalUrl();
+  const isPortal = (typeof checkPlayerPortalUrl === 'function') ? checkPlayerPortalUrl() : false;
+  if (!isPortal) {
+    try {
+      const savedTab = localStorage.getItem('dnd5e_active_tab');
+      if (savedTab && typeof switchTab === 'function') {
+        switchTab(savedTab);
+      }
+    } catch (e) {}
+  }
   if (typeof initFirebaseSync === 'function') {
     setTimeout(() => {
       initFirebaseSync();

@@ -1845,6 +1845,7 @@ const resolvedActiveId = vm.runInContext("activePortalPlayerId", sandbox);
 const clearedPendingId = vm.runInContext("pendingPortalPlayerId", sandbox);
 assert(resolvedActiveId === 'char_hero_cloud_only', 'applyCloudDataToLocal autenticou e ativou com sucesso o herói que estava pendente');
 assert(clearedPendingId === null, 'pendingPortalPlayerId foi limpo após resolução bem-sucedida');
+vm.runInContext("window.location.search = '';", sandbox);
 
 // 6. Teste de exclusão individual e reset de movimentações do baú
 assert(typeof vm.runInContext("deletePartyStashHistoryItem", sandbox) === 'function', 'Função deletePartyStashHistoryItem exportada');
@@ -3174,6 +3175,75 @@ assert(pickerHtml.includes('value="p_hero_coins" checked'), 'openCampaignHeroesM
 // 6. Verificações no bundle compilado
 const bundle74 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
 assert(bundle74.includes('#modal-room-qrcode') && bundle74.includes('z-index: 2100 !important;'), 'Bundle possui z-index: 2100 no modal de QR code da sala');
+
+// 🔄 49. Testes de Resiliência de Recarga F5 e Persistência do Mestre e Jogador (ISSUE-75):
+console.log('\n🔄 49. Testes de Resiliência de Recarga F5 e Persistência de Estado (ISSUE-75):');
+
+// 1. Verificação de declaração de activeBestiaryTypeChip no bundle
+assert(bundle74.includes('let activeBestiaryTypeChip'), 'activeBestiaryTypeChip declarado com let prevenindo ReferenceError no F5');
+assert(bundle74.includes('id="modal-party-item"') && bundle74.includes('style="z-index: 2100;"'), 'modal-party-item possui z-index: 2100 sobrepondo o visualizador do baú');
+
+// 2. Teste de F5 do Mestre: Persistência de Campanhas e Baú do Grupo
+vm.runInContext(`
+  // Mestre cria campanha personalizada e adiciona ouro
+  CAMPAIGNS_STATE = {
+    activeCampaignId: 'camp_f5_test',
+    campaigns: [{
+      id: 'camp_f5_test',
+      name: 'A Cidadela sem Sol',
+      desc: 'Campanha de teste F5',
+      status: 'active',
+      playerIds: ['p1'],
+      partyStash: { gold: 350, items: [{ id: 'it_espada_f5', name: 'Espada Longa +1', qty: 1 }], history: [] },
+      sessions: []
+    }]
+  };
+  saveCampaignsState();
+`, sandbox);
+
+// Simula novo ciclo de vida (F5): reinicializa estado de memória e executa loadCampaignsState
+vm.runInContext(`
+  CAMPAIGNS_STATE = { activeCampaignId: 'camp_1', campaigns: [] };
+  const campLoaded = loadCampaignsState();
+`, sandbox);
+
+const reloadedCamp = vm.runInContext("getActiveCampaign()", sandbox);
+assert(reloadedCamp && reloadedCamp.id === 'camp_f5_test', 'F5 do Mestre: Campanha personalizada restaurada com sucesso');
+assert(reloadedCamp && reloadedCamp.partyStash && reloadedCamp.partyStash.gold === 350, 'F5 do Mestre: Saldo do Baú do Grupo (350 PO) preservado após reload');
+assert(reloadedCamp && reloadedCamp.partyStash && reloadedCamp.partyStash.items.length === 1, 'F5 do Mestre: Itens do Baú do Grupo preservados após reload');
+
+// 3. Teste de F5 do Mestre: Persistência da Aba Ativa
+vm.runInContext(`
+  activePortalPlayerId = null;
+  document.body.classList.remove('mode-player-portal');
+  switchTab('campaigns');
+`, sandbox);
+assert(vm.runInContext("localStorage.getItem('dnd5e_active_tab')", sandbox) === 'campaigns', 'switchTab salvou a aba ativa no localStorage');
+
+// 4. Teste de F5 do Jogador: Persistência da Ficha e Modo Portal
+vm.runInContext(`
+  if (!Array.isArray(PLAYERS)) PLAYERS = [];
+  if (!PLAYERS.find(p => p.id === 'p1')) {
+    PLAYERS.push({ id: 'p1', name: 'Valeros', student: 'Jogador Teste', className: 'Guerreiro', level: 1, hp: 12, maxHp: 12, ac: 16 });
+  }
+  // Aluno entra no modo portal
+  initPlayerPortalMode('p1');
+`, sandbox);
+assert(vm.runInContext("localStorage.getItem('dnd5e_last_portal_player_id')", sandbox) === 'p1', 'initPlayerPortalMode persistiu dnd5e_last_portal_player_id no localStorage');
+assert(vm.runInContext("localStorage.getItem('dnd5e_session_role')", sandbox) === 'player', 'initPlayerPortalMode persistiu dnd5e_session_role como player');
+
+// Simula F5 do Aluno: limpa variáveis de sessão em memória e dispara checkPlayerPortalUrl
+vm.runInContext(`
+  activePortalPlayerId = null;
+  clientRole = 'unknown';
+  window.location.search = '';
+  const portalRestored = checkPlayerPortalUrl();
+`, sandbox);
+
+assert(vm.runInContext("activePortalPlayerId", sandbox) === 'p1', 'F5 do Jogador: checkPlayerPortalUrl restaurou a ficha do jogador ativa');
+assert(vm.runInContext("clientRole", sandbox) === 'player', 'F5 do Jogador: clientRole restabelecido como player');
+assert(vm.runInContext("document.body.classList.contains('mode-player-portal')", sandbox) === true, 'F5 do Jogador: mode-player-portal reativado no body');
+
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

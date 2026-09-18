@@ -52,6 +52,8 @@ const SPELL_PHRASE_ALIASES = {
   'wish': 'desejo'
 };
 
+let activeBestiaryTypeChip = 'all';
+
 function setGrimoireSchoolFilter(schoolName) {
   const sel = document.getElementById('filter-spell-sch');
   if (sel) {
@@ -555,7 +557,7 @@ function renderBestiary(resetLimit = true) {
   const rawQ = document.getElementById('filter-mon-q')?.value || '';
   const src = document.getElementById('filter-mon-src')?.value || 'all';
   const cr = document.getElementById('filter-mon-cr')?.value || 'all';
-  const typeFilter = document.getElementById('filter-mon-type')?.value || activeBestiaryTypeChip || 'all';
+  const typeFilter = document.getElementById('filter-mon-type')?.value || (typeof activeBestiaryTypeChip !== 'undefined' ? activeBestiaryTypeChip : 'all');
   const sortOrder = document.getElementById('filter-mon-sort')?.value || 'relevance';
 
   if (btnClear) {

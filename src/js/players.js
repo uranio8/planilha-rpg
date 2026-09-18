@@ -3924,6 +3924,7 @@ function initPlayerPortalMode(playerId) {
   if (!p) {
     // Herói ainda não está na memória local (ex: aguardando resposta do Firebase)
     pendingPortalPlayerId = playerId;
+    activePortalPlayerId = null;
     if (typeof clientRole !== 'undefined') clientRole = 'player';
     if (typeof document !== 'undefined' && document.body && document.body.classList) {
       document.body.classList.add('mode-player-portal');
@@ -3936,6 +3937,12 @@ function initPlayerPortalMode(playerId) {
   pendingPortalPlayerId = null;
   activePortalPlayerId = p.id;
   if (typeof clientRole !== 'undefined') clientRole = 'player';
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('dnd5e_last_portal_player_id', p.id);
+      localStorage.setItem('dnd5e_session_role', 'player');
+    }
+  } catch(e) {}
   if (typeof document !== 'undefined' && document.body && document.body.classList) {
     document.body.classList.add('mode-player-portal');
   }
@@ -3949,8 +3956,9 @@ function initPlayerPortalMode(playerId) {
 
 function exitPlayerPortalMode() {
   // Se o usuário tentar voltar para o painel do Mestre:
-  // Se já estiver com sessão do mestre autorizada:
-  if (typeof isMasterAuthorized === 'function' && isMasterAuthorized()) {
+  // Se já estiver com sessão do mestre autorizada OU nenhum PIN foi configurado pelo mestre:
+  const pinConfigured = (typeof isMasterPinConfigured === 'function') ? isMasterPinConfigured() : false;
+  if (!pinConfigured || (typeof isMasterAuthorized === 'function' && isMasterAuthorized())) {
     if (typeof confirm === 'function') {
       const ok = confirm('Deseja realmente sair da sua ficha de jogador e voltar para a visão do Mestre?');
       if (!ok) return;
@@ -3973,6 +3981,12 @@ function _executeExitPortalToMaster() {
   pendingPortalPlayerId = null;
   activePortalPlayerId = null;
   if (typeof clientRole !== 'undefined') clientRole = 'master';
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('dnd5e_last_portal_player_id');
+      localStorage.setItem('dnd5e_session_role', 'master');
+    }
+  } catch(e) {}
   if (typeof document !== 'undefined' && document.body && document.body.classList) {
     document.body.classList.remove('mode-player-portal');
   }

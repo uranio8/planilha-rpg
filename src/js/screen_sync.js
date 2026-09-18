@@ -650,8 +650,17 @@ window.onload = () => {
     }
   } catch (e) {}
   if (typeof initScenes === 'function') initScenes();
+  if (typeof loadCampaignsState === 'function') loadCampaignsState();
   renderAll();
-  if (typeof checkPlayerPortalUrl === 'function') checkPlayerPortalUrl();
+  const isPortal = (typeof checkPlayerPortalUrl === 'function') ? checkPlayerPortalUrl() : false;
+  if (!isPortal) {
+    try {
+      const savedTab = localStorage.getItem('dnd5e_active_tab');
+      if (savedTab && typeof switchTab === 'function') {
+        switchTab(savedTab);
+      }
+    } catch (e) {}
+  }
   if (typeof initFirebaseSync === 'function') {
     setTimeout(() => {
       initFirebaseSync();

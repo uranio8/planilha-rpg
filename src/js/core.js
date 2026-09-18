@@ -471,6 +471,12 @@ async function checkAndRestoreFromIndexedDB() {
           state = candidate.state;
         }
 
+        if (candidate.campaignsState && typeof CAMPAIGNS_STATE !== 'undefined') {
+          CAMPAIGNS_STATE = candidate.campaignsState;
+          if (typeof saveCampaignsState === 'function') saveCampaignsState();
+          if (typeof renderCampaigns === 'function') renderCampaigns();
+        }
+
         saveToLocalStorage();
         if (typeof renderPlayers === 'function') renderPlayers();
         if (typeof renderCombat === 'function') renderCombat();
@@ -483,7 +489,16 @@ async function checkAndRestoreFromIndexedDB() {
       // Espelha estado atual robusto no IDB
       if (typeof PLAYERS !== 'undefined') {
         idbSet('dnd_tracker_players_v3', PLAYERS);
-        idbSet(STORAGE_KEY, { state, players: PLAYERS, gridState: (typeof gridState !== 'undefined' ? gridState : null) });
+        idbSet(STORAGE_KEY, {
+          state,
+          players: PLAYERS,
+          gridState: (typeof gridState !== 'undefined' ? gridState : null),
+          campaignsState: (typeof CAMPAIGNS_STATE !== 'undefined' ? CAMPAIGNS_STATE : null)
+        });
+        if (typeof CAMPAIGNS_STATE !== 'undefined') {
+          idbSet('dnd5e_prisco_campaigns_v1', CAMPAIGNS_STATE);
+          idbSet('dnd_tracker_campaigns_v1', CAMPAIGNS_STATE);
+        }
       }
     }
 
@@ -516,7 +531,8 @@ function saveToLocalStorage() {
     const payload = {
       state,
       players: PLAYERS,
-      gridState: (typeof gridState !== 'undefined' ? gridState : null)
+      gridState: (typeof gridState !== 'undefined' ? gridState : null),
+      campaignsState: (typeof CAMPAIGNS_STATE !== 'undefined' ? CAMPAIGNS_STATE : null)
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 
@@ -534,6 +550,7 @@ function saveToLocalStorage() {
         idbSet('dnd_tracker_state_v3', state);
         if (typeof CAMPAIGNS_STATE !== 'undefined') {
           idbSet('dnd5e_prisco_campaigns_v1', CAMPAIGNS_STATE);
+          idbSet('dnd_tracker_campaigns_v1', CAMPAIGNS_STATE);
         }
       }
     } catch (e) {}
@@ -728,6 +745,12 @@ function switchTab(tabId) {
   // Trava de segurança: jogadores em modo portal só acessam suas fichas e compêndios
   if (isPortalMode && !PLAYER_ALLOWED_TABS.includes(tabId)) {
     tabId = 'players';
+  }
+
+  if (!isPortalMode && typeof localStorage !== 'undefined' && tabId) {
+    try {
+      localStorage.setItem('dnd5e_active_tab', tabId);
+    } catch(e) {}
   }
 
   document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
