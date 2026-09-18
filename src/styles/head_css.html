@@ -411,6 +411,20 @@
       min-width: 42px;
       text-align: center;
     }
+    .combat-timer-bar-wrap {
+      width: 44px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 3px;
+      overflow: hidden;
+      display: inline-block;
+    }
+    #combat-timer-bar {
+      height: 100%;
+      width: 100%;
+      background: var(--accent-green);
+      transition: width 0.3s ease, background-color 0.3s ease;
+    }
     .timer-auto-label {
       font-size: 10px;
       color: var(--text-muted);
@@ -7017,6 +7031,10 @@
       .print-document-sheet * {
         color: #000 !important;
       }
+      .chronicle-session-card, .session-timeline-card {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
     }
     /* ===================================================
        🌟 TELA DE BOAS-VINDAS (LANDING DE ACESSO DO ALUNO & MESTRE)
@@ -7219,6 +7237,12 @@
     /* ===================================================
        🔐 MODAL DE PIN DO MESTRE (TECLADO NUMÉRICO ESTILO COFRE D&D)
        =================================================== */
+    #modal-master-pin,
+    #modal-player-login,
+    #modal-room-qrcode {
+      z-index: 2000 !important;
+    }
+
     #modal-master-pin .modal-body {
       max-width: 360px;
       width: 92%;

@@ -414,6 +414,20 @@
       min-width: 42px;
       text-align: center;
     }
+    .combat-timer-bar-wrap {
+      width: 44px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 3px;
+      overflow: hidden;
+      display: inline-block;
+    }
+    #combat-timer-bar {
+      height: 100%;
+      width: 100%;
+      background: var(--accent-green);
+      transition: width 0.3s ease, background-color 0.3s ease;
+    }
     .timer-auto-label {
       font-size: 10px;
       color: var(--text-muted);
@@ -7020,6 +7034,10 @@
       .print-document-sheet * {
         color: #000 !important;
       }
+      .chronicle-session-card, .session-timeline-card {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
     }
     /* ===================================================
        🌟 TELA DE BOAS-VINDAS (LANDING DE ACESSO DO ALUNO & MESTRE)
@@ -7222,6 +7240,12 @@
     /* ===================================================
        🔐 MODAL DE PIN DO MESTRE (TECLADO NUMÉRICO ESTILO COFRE D&D)
        =================================================== */
+    #modal-master-pin,
+    #modal-player-login,
+    #modal-room-qrcode {
+      z-index: 2000 !important;
+    }
+
     #modal-master-pin .modal-body {
       max-width: 360px;
       width: 92%;
@@ -7592,7 +7616,7 @@
       <span id="save-status">💾 Salvo</span>
       
       <!-- CONEXÃO NUVEM -->
-      <button class="btn-top" onclick="openFirebaseModal()" title="Configurar Sincronização em Nuvem (Google Firebase)" style="display: flex; align-items: center; gap: 5px;">
+      <button class="btn-top" id="firebase-status-badge" onclick="openFirebaseModal()" title="Configurar Sincronização em Nuvem (Google Firebase)" style="display: flex; align-items: center; gap: 5px;">
         <span id="firebase-status-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
         <span id="firebase-status-text">☁️ Nuvem</span>
       </button>
@@ -7673,6 +7697,17 @@
         <div class="combat-bar-cluster cluster-turn">
           <div class="round-badge">RODADA <span id="lbl-round">1</span></div>
           <div id="combat-difficulty-badge" class="diff-meter diff-trivial">Encontro: Trivial</div>
+          <div class="turn-timer-box" title="Cronômetro do Turno (Auto-reset a cada rodada)">
+            <button id="btn-timer-toggle" class="btn-secondary" style="padding: 2px 6px; font-size: 10px; border-radius: 4px;" onclick="toggleTurnTimer()" title="Iniciar / Pausar Temporizador">▶️</button>
+            <span id="combat-timer-display">01:00s</span>
+            <div class="combat-timer-bar-wrap">
+              <div id="combat-timer-bar"></div>
+            </div>
+            <label class="timer-auto-label" title="Reiniciar tempo automaticamente ao trocar de turno">
+              <input type="checkbox" id="chk-timer-autoreset" checked onchange="toggleTurnTimerAutoReset()">
+              <span>Auto</span>
+            </label>
+          </div>
           <button class="btn-next-turn-hero" onclick="nextTurn()" title="Avançar para o próximo combatente na iniciativa (Atalho: Barra de Espaço)">Próximo Turno ➔ <kbd style="font-size:10px; background:rgba(0,0,0,0.3); color:#fff; padding:2px 5px; border-radius:4px;">Espaço</kbd></button>
         </div>
 
@@ -10842,7 +10877,7 @@
               Acesse sua ficha interativa, role dados, consulte suas magias preparadas, inventário e histórico de batalha.
             </div>
           </div>
-          <button class="welcome-role-btn welcome-btn-player">
+          <button type="button" class="welcome-role-btn welcome-btn-player" onclick="event.stopPropagation(); handleWelcomeSelect('player');">
             <span>🎮 Acessar Minha Ficha</span>
             <span>➔</span>
           </button>
@@ -10860,7 +10895,7 @@
               Gerencie a iniciativa do combate, monstros, regras secretas, mapa tático VTT, enigmas e notas da campanha.
             </div>
           </div>
-          <button class="welcome-role-btn welcome-btn-master">
+          <button type="button" class="welcome-role-btn welcome-btn-master" onclick="event.stopPropagation(); handleWelcomeSelect('master');">
             <span>⚔️ Painel do Mestre</span>
             <span>🔒</span>
           </button>
@@ -31794,6 +31829,7 @@ function renderCombat() {
   }
 
   if (typeof updateCombatDifficulty === 'function') updateCombatDifficulty();
+  if (typeof updateTurnTimerUI === 'function') updateTurnTimerUI();
   if (typeof renderPlayerView === 'function') renderPlayerView();
   if (typeof renderVttCombatHud === 'function') renderVttCombatHud();
 }
@@ -44942,8 +44978,11 @@ function applyVttCombatAction(type) {
   if (!tarId) { alert('Selecione um alvo válido!'); return; }
 
   // Sincroniza com os selects e inputs centrais de combate
+  const activeCombatant = (typeof state !== 'undefined' && state.combatants) ? state.combatants[state.turnIndex] : null;
+  const mainSelAtt = document.getElementById('sel-attacker');
   const mainSelTar = document.getElementById('sel-target');
   const mainInpDmg = document.getElementById('inp-damage');
+  if (mainSelAtt && activeCombatant) mainSelAtt.value = activeCombatant.id;
   if (mainSelTar) mainSelTar.value = tarId;
   if (mainInpDmg) mainInpDmg.value = dmg;
 

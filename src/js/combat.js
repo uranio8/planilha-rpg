@@ -196,6 +196,7 @@ function renderCombat() {
   }
 
   if (typeof updateCombatDifficulty === 'function') updateCombatDifficulty();
+  if (typeof updateTurnTimerUI === 'function') updateTurnTimerUI();
   if (typeof renderPlayerView === 'function') renderPlayerView();
   if (typeof renderVttCombatHud === 'function') renderVttCombatHud();
 }

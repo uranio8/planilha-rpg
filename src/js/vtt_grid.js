@@ -2652,8 +2652,11 @@ function applyVttCombatAction(type) {
   if (!tarId) { alert('Selecione um alvo válido!'); return; }
 
   // Sincroniza com os selects e inputs centrais de combate
+  const activeCombatant = (typeof state !== 'undefined' && state.combatants) ? state.combatants[state.turnIndex] : null;
+  const mainSelAtt = document.getElementById('sel-attacker');
   const mainSelTar = document.getElementById('sel-target');
   const mainInpDmg = document.getElementById('inp-damage');
+  if (mainSelAtt && activeCombatant) mainSelAtt.value = activeCombatant.id;
   if (mainSelTar) mainSelTar.value = tarId;
   if (mainInpDmg) mainInpDmg.value = dmg;
 

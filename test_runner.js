@@ -2894,6 +2894,54 @@ try {
 }
 assert(fowTestPassed, 'Checagem defensiva de dataset no canvas de névoa previne exceções');
 
+// =========================================================================
+// 👑 46. TESTES DE TELAS INICIAIS, CRONÔMETRO DE COMBATE E VTT (ISSUE-72)
+// =========================================================================
+console.log('\n👑 46. Testes de Telas Iniciais, Cronômetro de Combate e VTT (ISSUE-72):');
+
+const bundle72 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+
+// 1. Z-Index de modais da tela inicial sobreposto ao Welcome Screen
+assert(bundle72.includes('#modal-master-pin') && bundle72.includes('z-index: 2000 !important;'), 'Modais de PIN e Login possuem z-index superior à tela de boas-vindas');
+
+// 2. Elementos do Cronômetro de Turno presentes no Bundle Compilado
+assert(bundle72.includes('id="combat-timer-display"'), 'Bundle compilado contém o mostrador do cronômetro de combate (#combat-timer-display)');
+assert(bundle72.includes('id="combat-timer-bar"'), 'Bundle compilado contém a barra do cronômetro (#combat-timer-bar)');
+assert(bundle72.includes('id="btn-timer-toggle"'), 'Bundle compilado contém o botão play/pause do cronômetro (#btn-timer-toggle)');
+assert(bundle72.includes('id="chk-timer-autoreset"'), 'Bundle compilado contém o checkbox auto-reset do cronômetro (#chk-timer-autoreset)');
+
+// 3. Identificador de status da nuvem no botão do cabeçalho
+assert(bundle72.includes('id="firebase-status-badge"'), 'Bundle compilado contém id="firebase-status-badge" no botão de nuvem do cabeçalho');
+
+// 4. Handlers explícitos nos botões da tela de boas-vindas
+assert(bundle72.includes("handleWelcomeSelect('master')"), 'Botão do mestre na tela de boas-vindas possui handler explícito de clique');
+assert(bundle72.includes("handleWelcomeSelect('player')"), 'Botão do aluno na tela de boas-vindas possui handler explícito de clique');
+
+// 5. Teste dinâmico de cronômetro e renderização
+vm.runInContext(`
+  turnTimerDuration = 60;
+  turnTimerRemaining = 45;
+  turnTimerRunning = true;
+  updateTurnTimerUI();
+`, sandbox);
+const timerDisplayVal = vm.runInContext("document.getElementById('combat-timer-display').innerText", sandbox);
+assert(timerDisplayVal.includes('45s'), 'updateTurnTimerUI atualizou o mostrador para 45s');
+
+// 6. Teste de despacho de combate via VTT atribuindo atacante ativo
+vm.runInContext(`
+  state.combatants = [
+    { id: 'c_dragon_72', name: 'Dragão Vermelho', hp: 100, maxHp: 100, init: 18, type: 'monster' },
+    { id: 'c_hero_72', name: 'Valeros', hp: 30, maxHp: 30, init: 12, type: 'player' }
+  ];
+  state.turnIndex = 0;
+  document.getElementById('sel-vtt-target').value = 'c_hero_72';
+  document.getElementById('inp-vtt-damage').value = '15';
+  applyVttCombatAction('damage');
+`, sandbox);
+const lastLogText72 = vm.runInContext("state.logs && state.logs[0] ? state.logs[0].text : ''", sandbox);
+assert(lastLogText72.includes('Dragão Vermelho') && lastLogText72.includes('Valeros'), 'applyVttCombatAction atribuiu o combatente ativo (Dragão Vermelho) como atacante nos logs');
+
+
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
