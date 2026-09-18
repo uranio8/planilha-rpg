@@ -991,9 +991,11 @@ function manualPullFromCloud() {
 
 function getMasterSyncDeviceUrl() {
   const currentRoom = getStoredFirebaseRoom();
-  const href = (typeof window !== 'undefined' && window.location && window.location.href) ? window.location.href : 'https://uranio8.github.io/planilha-rpg/';
-  const base = href.split('?')[0].split('#')[0];
-  return `${base}?room=${encodeURIComponent(currentRoom)}`;
+  const queryStr = `room=${encodeURIComponent(currentRoom)}`;
+  if (typeof getCanonicalPublicUrl === 'function') {
+    return getCanonicalPublicUrl(queryStr);
+  }
+  return `https://uranio8.github.io/planilha-rpg/?${queryStr}`;
 }
 
 function openMasterSyncDeviceModal() {
@@ -1007,9 +1009,13 @@ function openMasterSyncDeviceModal() {
   const inpRoom = document.getElementById('inp-sync-device-room');
   if (inpRoom) inpRoom.value = currentRoom;
 
-  const imgQr = document.getElementById('img-master-sync-qrcode');
-  if (imgQr) {
-    imgQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(syncUrl)}`;
+  if (typeof renderQrCodeToContainer === 'function') {
+    renderQrCodeToContainer('img-master-sync-qrcode', syncUrl, 210);
+  } else {
+    const imgQr = document.getElementById('img-master-sync-qrcode');
+    if (imgQr && imgQr.tagName && imgQr.tagName.toLowerCase() === 'img') {
+      imgQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(syncUrl)}`;
+    }
   }
 
   modal.classList.add('open');
@@ -1048,12 +1054,16 @@ function handleUpdateSyncDeviceRoom() {
   const newRoom = setStoredFirebaseRoom(raw);
   inp.value = newRoom;
 
-  // Reconecta e atualiza QR Code
+  // Reconecta e atualiza QR Code (SVG vetorial 100% offline)
   initFirebaseSync();
   const syncUrl = getMasterSyncDeviceUrl();
-  const imgQr = document.getElementById('img-master-sync-qrcode');
-  if (imgQr) {
-    imgQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(syncUrl)}`;
+  if (typeof renderQrCodeToContainer === 'function') {
+    renderQrCodeToContainer('img-master-sync-qrcode', syncUrl, 210);
+  } else {
+    const imgQr = document.getElementById('img-master-sync-qrcode');
+    if (imgQr && imgQr.tagName && imgQr.tagName.toLowerCase() === 'img') {
+      imgQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(syncUrl)}`;
+    }
   }
 
   if (typeof showToast === 'function') {

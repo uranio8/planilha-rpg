@@ -1261,13 +1261,33 @@ function adjustPlayerHp(id, delta) {
       showToast(`⚔️ ${p.name}: ${delta} PV (${p.hp}/${p.maxHp})`, toastType);
     }
     if (p.hp === 0) {
-      p.deathSaves = { success: 0, fail: 0 };
-      addLog(`💀 <b>${p.name}</b> caiu inconsciente a 0 PV!`);
-      addPlayerActionLog(p.id, '💀', `Caiu inconsciente a 0 PV!`, 'damage');
-      if (typeof playFX === 'function') playFX('fumble');
+      if (prev === 0) {
+        // Já estava a 0 PV e sofreu dano adicional (Regra oficial D&D 5e: +1 falha no teste da morte)
+        p.deathSaves = p.deathSaves || { success: 0, fail: 0 };
+        p.deathSaves.fail = Math.min(3, (p.deathSaves.fail || 0) + 1);
+        addLog(`💀 <b>${p.name}</b> sofreu dano a 0 PV e recebeu 1 FALHA no teste contra a morte (${p.deathSaves.fail}/3)!`);
+        addPlayerActionLog(p.id, '💀', `Sofreu dano a 0 PV: +1 falha no teste contra a morte (${p.deathSaves.fail}/3)`, 'damage');
+        if (p.deathSaves.fail >= 3) {
+          addLog(`⚰️ <b>${p.name}</b> acumulou 3 falhas de morte e pereceu!`);
+          if (typeof playFX === 'function') playFX('fumble');
+          if (typeof showToast === 'function') showToast(`⚰️ ${p.name} faleceu!`, 'error');
+        }
+      } else {
+        // Caiu a 0 PV pela primeira vez
+        p.deathSaves = { success: 0, fail: 0 };
+        addLog(`💀 <b>${p.name}</b> caiu inconsciente a 0 PV!`);
+        addPlayerActionLog(p.id, '💀', `Caiu inconsciente a 0 PV!`, 'damage');
+        if (typeof playFX === 'function') playFX('fumble');
+      }
     }
   } else {
     p.hp = Math.min(p.maxHp, p.hp + delta);
+    // Se estava a 0 PV e recebeu cura, recobra a consciência e zera salvaguardas da morte (Regra oficial D&D 5e)
+    if (prev === 0 && p.hp > 0) {
+      p.deathSaves = { success: 0, fail: 0 };
+      addLog(`✨ <b>${p.name}</b> recobrou a consciência e os testes da morte foram zerados!`);
+      addPlayerActionLog(p.id, '✨', `Recobrou a consciência (testes da morte zerados)`, 'heal');
+    }
     addLog(`💚 <b>${p.name}</b> recuperou ${delta} PV (${prev} ➔ ${p.hp} PV)`);
     addPlayerActionLog(p.id, '💚', `Recuperou ${delta} PV (${prev} ➔ ${p.hp} PV)`, 'heal');
     if (typeof playFX === 'function') playFX('heal');
@@ -1844,7 +1864,7 @@ function finishShortRestModal() {
 
     const cls = (p.className || '').toLowerCase();
     if (cls.includes('bruxo') || cls.includes('warlock')) {
-      if (p.slotsUsed) p.slotsUsed = [0, 0, 0, 0, 0];
+      if (p.slotsUsed) p.slotsUsed = Array.isArray(p.slots) ? p.slots.map(() => 0) : [0, 0, 0, 0, 0, 0, 0, 0, 0];
     }
 
     addLog(`🏕️ <b>${p.name}</b> finalizou o Descanso Curto: habilidades de classe e fôlego restaurados!`);
@@ -1867,7 +1887,7 @@ function playerLongRest(id) {
   p.hp = p.maxHp;
   p.tempHp = 0;
   p.deathSaves = { success: 0, fail: 0 };
-  if (p.slotsUsed) p.slotsUsed = [0, 0, 0, 0, 0];
+  if (p.slotsUsed) p.slotsUsed = Array.isArray(p.slots) ? p.slots.map(() => 0) : [0, 0, 0, 0, 0, 0, 0, 0, 0];
 
   // Recupera metade dos dados de vida gastos (mínimo 1)
   const recoveredDice = Math.max(1, Math.floor((p.level || 1) / 2));
@@ -1901,7 +1921,7 @@ function partyLongRestAll() {
       p.hp = p.maxHp;
       p.tempHp = 0;
       p.deathSaves = { success: 0, fail: 0 };
-      p.slotsUsed = [0, 0, 0, 0, 0];
+      p.slotsUsed = Array.isArray(p.slots) ? p.slots.map(() => 0) : [0, 0, 0, 0, 0, 0, 0, 0, 0];
       const recoveredDice = Math.max(1, Math.floor((p.level || 1) / 2));
       p.spentHitDice = Math.max(0, (p.spentHitDice || 0) - recoveredDice);
       initPlayerFeatureCharges(p);
@@ -3720,10 +3740,12 @@ function generatePlayerShareUrl(playerId, embedData = true) {
 }
 
 function getShortPlayerShareUrl(playerId) {
-  const href = (typeof window !== 'undefined' && window.location && window.location.href) ? window.location.href : 'https://uranio8.github.io/planilha-rpg/';
-  let base = href.split('?')[0].split('#')[0];
   const room = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
-  return `${base}?room=${encodeURIComponent(room)}&player=${encodeURIComponent(playerId)}`;
+  const queryStr = `room=${encodeURIComponent(room)}&player=${encodeURIComponent(playerId)}`;
+  if (typeof getCanonicalPublicUrl === 'function') {
+    return getCanonicalPublicUrl(queryStr);
+  }
+  return `https://uranio8.github.io/planilha-rpg/?${queryStr}`;
 }
 
 function openSharePlayerModal(playerId) {
@@ -3765,15 +3787,19 @@ function openSharePlayerModal(playerId) {
     btnCopyShort.style.background = '';
   }
 
-  // Renderiza QR Code com URL curta otimizada (evita HTTP 414 de payload extenso e garante abertura instantânea em celulares)
+  // Renderiza QR Code com URL curta otimizada (SVG vetorial 100% offline)
   const qrTargetUrl = shortUrl || shareUrl;
   if (qrContainer) {
-    qrContainer.innerHTML = `
-      <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrTargetUrl)}" 
-           alt="QR Code da Ficha de ${p.name}" 
-           style="width: 220px; height: 220px; display: block; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"
-           onerror="this.onerror=null; this.src='https://quickchart.io/qr?size=220&text=${encodeURIComponent(qrTargetUrl)}';">
-    `;
+    if (typeof renderQrCodeToContainer === 'function') {
+      renderQrCodeToContainer(qrContainer, qrTargetUrl, 220);
+    } else {
+      qrContainer.innerHTML = `
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrTargetUrl)}" 
+             alt="QR Code da Ficha de ${p.name}" 
+             style="width: 220px; height: 220px; display: block; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"
+             onerror="this.onerror=null; this.src='https://quickchart.io/qr?size=220&text=${encodeURIComponent(qrTargetUrl)}';">
+      `;
+    }
   }
 
   modal.classList.add('open');
@@ -4061,20 +4087,25 @@ function openRoomQrCodeModal() {
   if (!modal) return;
 
   const currentRoom = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
-  const href = (typeof window !== 'undefined' && window.location && window.location.href) ? window.location.href : 'https://uranio8.github.io/planilha-rpg/';
-  const base = href.split('?')[0].split('#')[0];
-  const lobbyUrl = `${base}?room=${encodeURIComponent(currentRoom)}&lobby=true`;
+  const queryStr = `room=${encodeURIComponent(currentRoom)}&lobby=true`;
+  const lobbyUrl = (typeof getCanonicalPublicUrl === 'function')
+    ? getCanonicalPublicUrl(queryStr)
+    : `https://uranio8.github.io/planilha-rpg/?${queryStr}`;
 
   const txtRoom = document.getElementById('txt-qrcode-room-name');
   if (txtRoom) txtRoom.innerText = currentRoom;
 
-  const imgEl = document.getElementById('img-room-qrcode');
-  if (imgEl) {
-    imgEl.onerror = function() {
-      this.onerror = null;
-      this.src = `https://quickchart.io/qr?size=240&text=${encodeURIComponent(lobbyUrl)}`;
-    };
-    imgEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(lobbyUrl)}`;
+  if (typeof renderQrCodeToContainer === 'function') {
+    renderQrCodeToContainer('img-room-qrcode', lobbyUrl, 220);
+  } else {
+    const imgEl = document.getElementById('img-room-qrcode');
+    if (imgEl && imgEl.tagName && imgEl.tagName.toLowerCase() === 'img') {
+      imgEl.onerror = function() {
+        this.onerror = null;
+        this.src = `https://quickchart.io/qr?size=240&text=${encodeURIComponent(lobbyUrl)}`;
+      };
+      imgEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(lobbyUrl)}`;
+    }
   }
 
   modal.classList.add('open');

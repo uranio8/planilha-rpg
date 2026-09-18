@@ -356,6 +356,32 @@ let puzzleIdx = 0;
 let managingCondCombatantId = null;
 
 // ===================================================
+// 🌐 UTILITÁRIO CANÔNICO PARA LINKS E QR CODE
+// ===================================================
+const OFFICIAL_CANONICAL_HOST = 'https://uranio8.github.io/planilha-rpg/';
+
+function getCanonicalPublicUrl(pathOrParams = '') {
+  const query = pathOrParams ? (pathOrParams.startsWith('?') ? pathOrParams : `?${pathOrParams}`) : '';
+  if (typeof window !== 'undefined' && window.location) {
+    const proto = window.location.protocol;
+    const host = window.location.hostname;
+    // Se estiver rodando localmente (file:/// ou localhost), direciona para o GitHub Pages oficial da turma
+    if (proto === 'file:' || host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0') {
+      return `${OFFICIAL_CANONICAL_HOST}${query}`;
+    }
+    // Caso contrário (produção ou servidor remoto), usa a URL base atual
+    const base = window.location.href.split('?')[0].split('#')[0];
+    return `${base}${query}`;
+  }
+  return `${OFFICIAL_CANONICAL_HOST}${query}`;
+}
+
+if (typeof window !== 'undefined') {
+  window.OFFICIAL_CANONICAL_HOST = OFFICIAL_CANONICAL_HOST;
+  window.getCanonicalPublicUrl = getCanonicalPublicUrl;
+}
+
+// ===================================================
 // 🏛️ CAMADA DE BANCO DE DADOS ROBUSTA (INDEXEDDB - COFRE RESILIENTE)
 // ===================================================
 const IDB_DB_NAME = 'dnd5e_vtt_database';

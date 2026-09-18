@@ -41,6 +41,7 @@ const requiredFiles = [
   'src/js/species.js',
   'src/js/campaigns.js',
   'src/js/audio_synth.js',
+  'src/js/qrcode_lib.js',
   'src/js/dice_roller.js',
   'src/js/vtt_grid.js',
   'src/js/screen_sync.js',
@@ -205,6 +206,7 @@ const dataMonsters = fs.readFileSync(path.join(srcDir, 'data', 'monsters.js'), '
 const dataEquip = fs.readFileSync(path.join(srcDir, 'data', 'equipment.js'), 'utf8');
 const dataCampaigns = fs.readFileSync(path.join(srcDir, 'data', 'campaigns.js'), 'utf8');
 const jsAudioSynth = fs.readFileSync(path.join(srcDir, 'js', 'audio_synth.js'), 'utf8');
+const jsQrCode = fs.readFileSync(path.join(srcDir, 'js', 'qrcode_lib.js'), 'utf8');
 const jsCore = fs.readFileSync(path.join(srcDir, 'js', 'core.js'), 'utf8');
 const jsCombat = fs.readFileSync(path.join(srcDir, 'js', 'combat.js'), 'utf8');
 const jsPlayers = fs.readFileSync(path.join(srcDir, 'js', 'players.js'), 'utf8');
@@ -230,6 +232,7 @@ vm.runInContext(dataMonsters, sandbox);
 vm.runInContext(dataEquip, sandbox);
 vm.runInContext(dataCampaigns, sandbox);
 vm.runInContext(jsAudioSynth, sandbox);
+vm.runInContext(jsQrCode, sandbox);
 vm.runInContext(jsCore, sandbox);
 vm.runInContext(jsFirebase, sandbox);
 vm.runInContext(jsCombat, sandbox);
@@ -3029,10 +3032,10 @@ vm.runInContext(`
 `, sandbox);
 
 const qrHtml = vm.runInContext("renderedQrHtml", sandbox);
-assert(qrHtml.includes('create-qr-code/?size=220x220'), 'QR Code do personagem é gerado com sucesso');
-assert(qrHtml.includes('onerror=') && qrHtml.includes('quickchart.io/qr'), 'QR Code possui fallback de resiliência onerror para quickchart.io');
+assert(qrHtml.includes('<svg') || qrHtml.includes('create-qr-code/?size=220x220'), 'QR Code do personagem é gerado com sucesso (SVG offline ou API)');
+assert(qrHtml.includes('<svg') || (qrHtml.includes('onerror=') && qrHtml.includes('quickchart.io/qr')), 'QR Code possui renderização vetorial offline resiliente');
 const qrSrcMatch = qrHtml.match(/src="([^"]+)"/);
-assert(qrSrcMatch && !qrSrcMatch[1].includes('%23pdata%3D') && qrSrcMatch[1].length < 250, 'QR Code utiliza link curto otimizado (<250 chars) prevenindo HTTP 414');
+assert((qrHtml.includes('<svg') && qrHtml.includes('viewBox')) || (qrSrcMatch && !qrSrcMatch[1].includes('%23pdata%3D') && qrSrcMatch[1].length < 250), 'QR Code utiliza link otimizado prevenindo falha de payload');
 
 // 2. Sincronização bidirecional de ouro e moedas no modal de edição
 vm.runInContext(`
@@ -3292,6 +3295,98 @@ assert(loginListEl && loginListEl.innerHTML.includes('player-login-card'), 'rend
 assert(loginListEl && loginListEl.innerHTML.includes('Yoshigake Kira'), 'Card contém nome do herói');
 assert(loginListEl && loginListEl.innerHTML.includes('CA 15'), 'Card contém CA formatada corretamente');
 assert(loginListEl && loginListEl.innerHTML.includes('line-height: 1;'), 'Avatar possui line-height: 1 para prevenção de corte');
+
+// --- SUÍTE 51: Motor Nativo de QR Code SVG Offline & Regras D&D 5E de 0 PV e Slots ---
+console.log('\n📲 51. Testes de QR Code Offline, Normalização de URL e Regras D&D 5E (0 PV e Slots):');
+
+// 1. Validação de existência de qrcode_lib.js
+assert(fs.existsSync(path.join(__dirname, 'src', 'js', 'qrcode_lib.js')), 'Arquivo src/js/qrcode_lib.js existe no repositório');
+
+// 2. Geração de SVG vetorial nativo via generateQrCodeSvg
+const testSvg = vm.runInContext("generateQrCodeSvg('https://uranio8.github.io/planilha-rpg/?room=teste&lobby=true', 220, 2)", sandbox);
+assert(typeof testSvg === 'string' && testSvg.includes('<svg') && testSvg.includes('</svg>'), 'generateQrCodeSvg gerou SVG vetorial válido');
+assert(testSvg.includes('viewBox="0 0'), 'SVG possui atributo viewBox responsivo');
+
+// 3. renderQrCodeToContainer com elemento container
+vm.runInContext(`
+  var qrTestDiv = { id: 'qr-test-box', innerHTML: '', style: {} };
+  renderQrCodeToContainer(qrTestDiv, 'https://uranio8.github.io/planilha-rpg/?room=turma_a', 200);
+`, sandbox);
+const qrTestRender = vm.runInContext('qrTestDiv.innerHTML', sandbox);
+assert(qrTestRender.includes('<svg') && qrTestRender.includes('</svg>'), 'renderQrCodeToContainer injetou SVG nativo dentro do container');
+
+// 4. Normalização canônica de URLs locais (file: e localhost)
+vm.runInContext(`
+  window.location.protocol = 'file:';
+  window.location.hostname = '';
+`, sandbox);
+const fileCanonicalUrl = vm.runInContext("getCanonicalPublicUrl('room=turma_escola&lobby=true')", sandbox);
+assert(fileCanonicalUrl === 'https://uranio8.github.io/planilha-rpg/?room=turma_escola&lobby=true', 'getCanonicalPublicUrl normalizou URL file:/// para GitHub Pages canônico');
+
+vm.runInContext(`
+  window.location.protocol = 'http:';
+  window.location.hostname = 'localhost';
+`, sandbox);
+const localCanonicalUrl = vm.runInContext("getCanonicalPublicUrl('room=turma_escola')", sandbox);
+assert(localCanonicalUrl === 'https://uranio8.github.io/planilha-rpg/?room=turma_escola', 'getCanonicalPublicUrl normalizou URL localhost para GitHub Pages canônico');
+
+// 5. openRoomQrCodeModal gera URL canônica e injeta SVG
+vm.runInContext(`
+  setStoredFirebaseRoom('sala_dragao');
+  openRoomQrCodeModal();
+`, sandbox);
+const roomQrContainer = vm.runInContext("document.getElementById('img-room-qrcode')", sandbox);
+assert(roomQrContainer && roomQrContainer.innerHTML.includes('<svg'), 'openRoomQrCodeModal renderizou SVG offline em #img-room-qrcode');
+
+// 6. openMasterSyncDeviceModal gera URL canônica e injeta SVG
+vm.runInContext(`
+  openMasterSyncDeviceModal();
+`, sandbox);
+const syncQrContainer = vm.runInContext("document.getElementById('img-master-sync-qrcode')", sandbox);
+assert(syncQrContainer && syncQrContainer.innerHTML.includes('<svg'), 'openMasterSyncDeviceModal renderizou SVG offline em #img-master-sync-qrcode');
+
+// 7. openSharePlayerModal gera URL canônica e injeta SVG
+vm.runInContext(`
+  PLAYERS = [
+    { id: 'p_qr_test', name: 'Gimli', student: 'Aluno G', className: 'Guerreiro', level: 3, hp: 25, maxHp: 25, ac: 16 }
+  ];
+  openSharePlayerModal('p_qr_test');
+`, sandbox);
+const shareQrContainer = vm.runInContext("document.getElementById('share-qrcode-render')", sandbox);
+assert(shareQrContainer && shareQrContainer.innerHTML.includes('<svg'), 'openSharePlayerModal renderizou SVG offline em #share-qrcode-render');
+
+// 8. Regra D&D 5E: Dano adicional a 0 PV incrementa falha no teste da morte
+vm.runInContext(`
+  var hero0hp = PLAYERS.find(p => p.id === 'p_qr_test');
+  adjustPlayerHp('p_qr_test', -25); // leva a 0 PV
+`, sandbox);
+const heroAt0 = vm.runInContext("PLAYERS.find(p => p.id === 'p_qr_test')", sandbox);
+assert(heroAt0.hp === 0, 'Herói foi a 0 PV');
+assert(heroAt0.deathSaves.fail === 0, 'Death saves falhas inicializadas em 0');
+
+vm.runInContext(`
+  adjustPlayerHp('p_qr_test', -5); // Dano adicional a 0 PV
+`, sandbox);
+const heroAfterDmgAt0 = vm.runInContext("PLAYERS.find(p => p.id === 'p_qr_test')", sandbox);
+assert(heroAfterDmgAt0.deathSaves.fail === 1, 'Dano adicional a 0 PV incrementou 1 falha de morte (Regra oficial D&D 5e)');
+
+// 9. Regra D&D 5E: Cura a 0 PV restaura a consciência e zera testes da morte
+vm.runInContext(`
+  adjustPlayerHp('p_qr_test', 4); // Cura vindo de 0 PV
+`, sandbox);
+const heroAfterHealAt0 = vm.runInContext("PLAYERS.find(p => p.id === 'p_qr_test')", sandbox);
+assert(heroAfterHealAt0.hp === 4, 'Herói recuperou 4 PV');
+assert(heroAfterHealAt0.deathSaves.success === 0 && heroAfterHealAt0.deathSaves.fail === 0, 'Cura a 0 PV zerou os testes da morte (Regra oficial D&D 5e)');
+
+// 10. Descanso Longo restaura todos os círculos de slots (sem truncar em 5)
+vm.runInContext(`
+  hero0hp.slots = [4, 3, 3, 3, 2, 1, 1, 1, 1]; // Conjurador de alto nível (9 círculos)
+  hero0hp.slotsUsed = [1, 1, 1, 1, 1, 1, 1, 1, 1];
+  playerLongRest('p_qr_test');
+`, sandbox);
+const heroAfterLongRest = vm.runInContext("PLAYERS.find(p => p.id === 'p_qr_test')", sandbox);
+assert(heroAfterLongRest.slotsUsed.length === 9, 'slotsUsed possui os 9 círculos de magias');
+assert(heroAfterLongRest.slotsUsed.every(u => u === 0), 'Todos os 9 círculos de magia foram completamente restaurados no Descanso Longo');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
