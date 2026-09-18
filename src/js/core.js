@@ -782,6 +782,7 @@ function switchTab(tabId) {
   document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.portal-nav-btn').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.portal-chip').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.drawer-item').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.dropdown-item').forEach(el => el.classList.remove('active'));
 

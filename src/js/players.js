@@ -3911,13 +3911,15 @@ function updatePlayerPortalBanner() {
   const titleEl = document.getElementById('portal-char-title');
   const subEl = document.getElementById('portal-char-sub');
   const badgeEl = document.getElementById('portal-sync-status-badge');
+  const avatarEl = document.getElementById('portal-hero-avatar');
 
   if (typeof pendingPortalPlayerId !== 'undefined' && pendingPortalPlayerId && !activePortalPlayerId) {
     if (banner) banner.style.display = 'flex';
-    if (titleEl) titleEl.innerText = `⏳ Sincronizando com a Nuvem...`;
+    if (titleEl) titleEl.innerText = `Sincronizando...`;
     if (subEl) subEl.innerText = `Carregando ficha do seu herói na mesa...`;
+    if (avatarEl) avatarEl.innerText = '⏳';
     if (badgeEl) {
-      badgeEl.className = 'portal-sync-badge sync-waiting';
+      badgeEl.className = 'portal-sync-badge sync-syncing';
       badgeEl.innerText = '🟡 Sincronizando...';
     }
     return;
@@ -3927,14 +3929,21 @@ function updatePlayerPortalBanner() {
   const p = PLAYERS.find(x => x.id === activePortalPlayerId);
   if (!p) return;
 
+  // Avatar baseado na classe do personagem
+  const classAvatars = { barbaro: '🪓', bardo: '🎵', clerigo: '⛪', druida: '🌿', guerreiro: '⚔️', monge: '🥊', paladino: '🛡️', patrulheiro: '🏹', ladino: '🗡️', feiticeiro: '🌀', bruxo: '👁️', mago: '🧙', artilheiro: '💣', inventor: '⚙️' };
+  const classKey = String(p.className || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z]/g, '');
+  const avatar = classAvatars[classKey] || '🧙';
+
   if (banner) banner.style.display = 'flex';
-  if (titleEl) titleEl.innerText = `👤 ${p.name} (${p.student || 'Personagem'})`;
-  if (subEl) subEl.innerText = `${p.race} • ${p.className} (Nível ${p.level}) • CA ${p.ac} • ${p.hp}/${p.maxHp} PV`;
+  if (avatarEl) avatarEl.innerText = avatar;
+  if (titleEl) titleEl.innerText = `${p.name}`;
+  if (subEl) subEl.innerText = `${p.student ? p.student + ' • ' : ''}${p.race} ${p.className} Nv.${p.level} • ${p.hp}/${p.maxHp} PV`;
   if (badgeEl) {
     badgeEl.className = 'portal-sync-badge sync-online';
-    badgeEl.innerText = '🟢 Conectado';
+    badgeEl.innerText = '🟢 Sincronizado';
   }
 }
+
 
 function initPlayerPortalMode(playerId) {
   if (!playerId) return;
@@ -3966,6 +3975,7 @@ function initPlayerPortalMode(playerId) {
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('dnd5e_last_portal_player_id', p.id);
+      localStorage.setItem('dnd5e_auth_player_id', p.id);
       localStorage.setItem('dnd5e_session_role', 'player');
     }
   } catch(e) {}
@@ -4010,6 +4020,7 @@ function _executeExitPortalToMaster() {
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('dnd5e_last_portal_player_id');
+      localStorage.removeItem('dnd5e_auth_player_id');
       localStorage.setItem('dnd5e_session_role', 'master');
     }
   } catch(e) {}

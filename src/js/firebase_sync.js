@@ -549,11 +549,26 @@ function applyCloudDataToLocal(cloudData) {
           if (p.playerNotes === undefined) p.playerNotes = '';
           return p;
         });
+
+        // Sincroniza HP dos combatentes com as fichas atualizadas (jogador pode ter alterado HP)
+        if (typeof state !== 'undefined' && state && Array.isArray(state.combatants)) {
+          state.combatants.forEach(comb => {
+            if (comb.type === 'player') {
+              const matchedPlayer = PLAYERS.find(p => p.id === comb.id || p.name === comb.name);
+              if (matchedPlayer && matchedPlayer.hp !== undefined) {
+                comb.hp = matchedPlayer.hp;
+                comb.maxHp = matchedPlayer.maxHp;
+              }
+            }
+          });
+        }
       }
 
       if (typeof renderPlayers === 'function') renderPlayers();
+      if (typeof renderCombat === 'function' && clientRole !== 'player') renderCombat();
       if (typeof updatePlayerPortalBanner === 'function') updatePlayerPortalBanner();
       if (typeof renderPlayerLoginList === 'function') renderPlayerLoginList();
+
     }
 
     // 2. Atualiza Estado de Combate
@@ -691,18 +706,83 @@ function executePlayerCloudSave() {
   const myPlayer = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(p => p.id === activePortalPlayerId) : null;
   if (!myPlayer) return;
 
+  // Carimba o timestamp de atualização no próprio herói
+  myPlayer.updatedAt = Date.now();
+  myPlayer.updatedBy = localClientId;
+
   const roomId = getStoredFirebaseRoom();
+  const nowIso = new Date().toISOString();
+
+  // Badge de sincronização: amarelo durante o envio
+  const syncBadge = (typeof document !== 'undefined') ? document.getElementById('portal-sync-status-badge') : null;
+  if (syncBadge) {
+    syncBadge.className = 'portal-sync-badge sync-syncing';
+    syncBadge.innerText = '🟡 Sincronizando...';
+  }
+
+  const promises = [];
+
+  // Realtime Database: transação atômica preservando outros jogadores
   if (realtimeDb) {
-    realtimeDb.ref(`dnd_rooms/${roomId}/players`).transaction(playersList => {
+    const roomRef = realtimeDb.ref(`dnd_rooms/${roomId}`);
+    const pTransact = roomRef.child('players').transaction(playersList => {
       if (!Array.isArray(playersList)) return playersList;
       const idx = playersList.findIndex(p => p.id === activePortalPlayerId);
       if (idx >= 0) {
         playersList[idx] = Object.assign({}, playersList[idx], myPlayer);
       }
       return playersList;
-    }).catch(err => console.warn('Erro ao sincronizar ficha do jogador:', err));
+    });
+
+    // Atualiza metadados raiz separadamente para o Mestre detectar origem
+    const metaUpdate = roomRef.update({
+      lastUpdatedBy: localClientId,
+      lastUpdateIso: nowIso,
+      publishedBy: 'player'
+    });
+
+    promises.push(pTransact, metaUpdate);
   }
+
+  // Firestore: merge parcial preservando outros campos do documento
+  if (firestoreDb) {
+    const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
+    // Busca o documento atual para atualizar só o jogador ativo
+    const fsPromise = roomDocRef.get().then(snap => {
+      const current = snap.exists ? snap.data() : {};
+      const playersList = Array.isArray(current.players) ? current.players : [];
+      const idx = playersList.findIndex(p => p.id === activePortalPlayerId);
+      if (idx >= 0) {
+        playersList[idx] = Object.assign({}, playersList[idx], myPlayer);
+      } else {
+        playersList.push(myPlayer);
+      }
+      return roomDocRef.set({
+        players: playersList,
+        lastUpdatedBy: localClientId,
+        lastUpdateIso: nowIso,
+        publishedBy: 'player'
+      }, { merge: true });
+    });
+    promises.push(fsPromise);
+  }
+
+  Promise.all(promises)
+    .then(() => {
+      if (syncBadge) {
+        syncBadge.className = 'portal-sync-badge sync-online';
+        syncBadge.innerText = '🟢 Sincronizado';
+      }
+    })
+    .catch(err => {
+      console.warn('Erro ao sincronizar ficha do jogador:', err);
+      if (syncBadge) {
+        syncBadge.className = 'portal-sync-badge sync-offline';
+        syncBadge.innerText = '🔴 Erro de Sync';
+      }
+    });
 }
+
 
 function publishMasterCampaignToCloud(silent = false) {
   if (!isFirebaseConnected) {

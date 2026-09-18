@@ -128,29 +128,28 @@
 
   <!-- BANNER: MODO PORTAL DO JOGADOR -->
   <div id="player-portal-banner" class="player-portal-banner" style="display: none;">
-    <div class="portal-banner-main">
-      <div class="portal-char-info">
-        <span style="font-size: 22px;">📱</span>
-        <div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <div style="font-weight: 800; font-size: 13.5px; color: #fff;" id="portal-char-title">Portal do Jogador</div>
-            <span id="portal-sync-status-badge" class="portal-sync-badge sync-online" style="font-size: 10px; padding: 2px 7px; border-radius: 12px; background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); font-weight: 700;">🟢 Conectado</span>
-          </div>
-          <div style="font-size: 11px; color: var(--primary-light);" id="portal-char-sub">Ficha Interativa • Grimório • Itens • Classes • Raças</div>
+    <!-- LINHA 1: Hero Info Row -->
+    <div class="portal-hero-row">
+      <div class="portal-hero-info">
+        <span class="portal-hero-avatar" id="portal-hero-avatar">🧙</span>
+        <div class="portal-hero-details">
+          <div class="portal-hero-name" id="portal-char-title">Portal do Jogador</div>
+          <div class="portal-hero-sub" id="portal-char-sub">Selecione seu herói</div>
         </div>
+        <span id="portal-sync-status-badge" class="portal-sync-badge sync-online">🟢 Sincronizado</span>
       </div>
-      <div class="portal-nav-group">
-        <button class="portal-nav-btn active" id="pnav-players" onclick="switchTab('players')">👤 Minha Ficha</button>
-        <button class="portal-nav-btn" id="pnav-stash" onclick="openPartyStashModal()">🎒 Baú do Grupo</button>
-        <button class="portal-nav-btn" id="pnav-chronicles" onclick="openChroniclesViewerModal()">📖 Crônicas da Mesa</button>
-        <button class="portal-nav-btn" id="pnav-spells" onclick="switchTab('spells')">✨ Grimório</button>
-        <button class="portal-nav-btn" id="pnav-equipment" onclick="switchTab('equipment')">🛡️ Itens</button>
-        <button class="portal-nav-btn" id="pnav-classes" onclick="switchTab('classes')">🌳 Classes</button>
-        <button class="portal-nav-btn" id="pnav-species" onclick="switchTab('species')">🧬 Raças</button>
-        <button class="portal-nav-btn" id="pnav-dice" onclick="openDiceModal()">🎲 Dados</button>
-        <button class="portal-nav-btn portal-btn-switch" onclick="openPlayerLoginModal()" title="Escolher outro herói ou trocar de personagem" style="color: #fef08a; border-color: rgba(254, 240, 138, 0.4);">🔄 Trocar Herói</button>
-        <button class="portal-nav-btn portal-btn-exit" onclick="exitPlayerPortalMode()" title="Sair do modo jogador e voltar ao Painel do Mestre" style="color: #f87171; border-color: rgba(239, 68, 68, 0.4);">👑 Modo Mestre</button>
-      </div>
+      <button class="portal-switch-btn" onclick="openPlayerLoginModal()" title="Trocar de personagem">🔄 Trocar</button>
+    </div>
+    <!-- LINHA 2: Nav Chips com scroll horizontal -->
+    <div class="portal-nav-scroll-row" id="portal-nav-chips">
+      <button class="portal-chip active" id="pnav-players" onclick="switchTab('players')">👤 Ficha</button>
+      <button class="portal-chip" id="pnav-stash" onclick="openPartyStashModal()">🎒 Baú</button>
+      <button class="portal-chip" id="pnav-chronicles" onclick="openChroniclesViewerModal()">📖 Crônicas</button>
+      <button class="portal-chip" id="pnav-spells" onclick="switchTab('spells')">✨ Grimório</button>
+      <button class="portal-chip" id="pnav-equipment" onclick="switchTab('equipment')">🛡️ Itens</button>
+      <button class="portal-chip" id="pnav-classes" onclick="switchTab('classes')">🌳 Classes</button>
+      <button class="portal-chip" id="pnav-species" onclick="switchTab('species')">🧬 Raças</button>
+      <button class="portal-chip" id="pnav-dice" onclick="openDiceModal()">🎲 Dados</button>
     </div>
   </div>
 
