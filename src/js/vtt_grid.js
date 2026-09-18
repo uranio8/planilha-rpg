@@ -957,7 +957,7 @@ function renderRulerSvg(startX, startY, endX, endY, isScreen = false) {
 function setDrawingColor(color, el) {
   activeDrawingColor = color;
   document.querySelectorAll('.drawing-color-dot').forEach(d => d.classList.remove('active'));
-  if (el) el.classList.add('active');
+  if (el && el.classList) el.classList.add('active');
 }
 
 function clearDrawings() {
@@ -1034,7 +1034,7 @@ function undoLastDrawing() {
 function setDrawingSize(size, el) {
   activeDrawingSize = parseInt(size, 10) || 3;
   document.querySelectorAll('.drawing-size-btn').forEach(b => b.classList.remove('active'));
-  if (el) el.classList.add('active');
+  if (el && el.classList) el.classList.add('active');
 }
 
 function drawCurrentStroke(canvas, points, color, size = 3) {
@@ -2624,6 +2624,23 @@ function renderVttCombatHud() {
   }
 }
 
+function rollDiceFormula(formulaStr, customLabel = '') {
+  if (typeof rollGlobalFormula === 'function') {
+    return rollGlobalFormula(formulaStr, customLabel);
+  }
+  if (typeof rollFormula === 'function') {
+    const res = rollFormula(formulaStr);
+    if (typeof addLog === 'function') {
+      addLog(`🎲 <b>${customLabel || 'Rolagem'}</b>: ${formulaStr} ➔ <b>${res.total}</b>`);
+    }
+    return res;
+  }
+  return null;
+}
+if (typeof window !== 'undefined') {
+  window.rollDiceFormula = rollDiceFormula;
+}
+
 function rollVttPlayerAttack(playerId, atkName, bonus, damageFormula) {
   const bonusNum = parseInt(bonus, 10) || 0;
   const d20 = Math.floor(Math.random() * 20) + 1;
@@ -2866,6 +2883,7 @@ if (typeof window !== 'undefined') {
   window.handleBoardTouchMove = handleBoardTouchMove;
   window.handleBoardTouchEnd = handleBoardTouchEnd;
   window.setTokenAura = setTokenAura;
+  window.rollDiceFormula = rollDiceFormula;
 }
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -2873,7 +2891,8 @@ if (typeof module !== 'undefined' && module.exports) {
     handleBoardTouchStart,
     handleBoardTouchMove,
     handleBoardTouchEnd,
-    setTokenAura
+    setTokenAura,
+    rollDiceFormula
   };
 }
 

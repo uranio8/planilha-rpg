@@ -768,6 +768,9 @@ function switchTab(tabId) {
   // Fecha o drawer automaticamente se estiver aberto
   closeNavDrawer();
 
+  // Fecha qualquer dropdown de navegação aberto
+  document.querySelectorAll('.nav-dropdown.open').forEach(d => d.classList.remove('open'));
+
   if (tabId === 'combat' && typeof renderCombat === 'function') renderCombat();
   else if (tabId === 'players' && typeof renderPlayers === 'function') renderPlayers();
   else if (tabId === 'grid') {
@@ -814,6 +817,39 @@ function switchTab(tabId) {
   else if (tabId === 'campaigns' && typeof renderCampaigns === 'function') renderCampaigns();
 }
 
+// --- TOGGLE DE DROPDOWNS DO CABEÇALHO (COMPÊNDIO, MESTRE, MAIS) ---
+function toggleNavDropdown(btn, event) {
+  if (event && event.stopPropagation) event.stopPropagation();
+  const parent = (btn && typeof btn.closest === 'function')
+    ? btn.closest('.nav-dropdown')
+    : (btn && btn.parentElement ? btn.parentElement : null);
+  if (!parent || !parent.classList) return;
+  const isOpen = parent.classList.contains('open');
+  document.querySelectorAll('.nav-dropdown').forEach(d => {
+    if (d !== parent) d.classList.remove('open');
+  });
+  if (isOpen) {
+    parent.classList.remove('open');
+  } else {
+    parent.classList.add('open');
+  }
+}
+
+// Fechamento automático de dropdowns de navegação ao clicar fora
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+  document.addEventListener('click', (e) => {
+    if (!e.target || typeof e.target.closest !== 'function') return;
+    if (!e.target.closest('.nav-dropdown')) {
+      document.querySelectorAll('.nav-dropdown.open').forEach(d => d.classList.remove('open'));
+    }
+  });
+}
+
+// Expor globalmente para chamadas inline no HTML
+if (typeof window !== 'undefined') {
+  window.toggleNavDropdown = toggleNavDropdown;
+}
+
 // --- SISTEMA DE NOTIFICAÇÕES TOAST ---
 function showToast(message, type = 'info', duration = 3000) {
   if (typeof document === 'undefined' || typeof document.createElement !== 'function') return null;
@@ -822,9 +858,11 @@ function showToast(message, type = 'info', duration = 3000) {
     container = document.createElement('div');
     container.id = 'toast-container';
     container.setAttribute('aria-live', 'polite');
-    document.body.appendChild(container);
+    if (document.body && typeof document.body.appendChild === 'function') {
+      document.body.appendChild(container);
+    }
   }
-  if (!container) return null;
+  if (!container || typeof container.appendChild !== 'function') return null;
 
   const toast = document.createElement('div');
   toast.className = `toast-notification toast-${type}`;
@@ -2104,7 +2142,8 @@ if (typeof module !== 'undefined' && module.exports) {
     idbGet,
     checkAndRestoreFromIndexedDB,
     computeSimplePinHash,
-    getMasterPinHash
+    getMasterPinHash,
+    toggleNavDropdown
   };
 } else {
   // Execução síncrona imediata no navegador para garantir que PLAYERS e state sejam carregados antes de qualquer render

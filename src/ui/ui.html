@@ -39,7 +39,7 @@
 
       <!-- DROPDOWN 1: COMPÊNDIO D&D 5E -->
       <div class="nav-dropdown">
-        <button class="tab-btn nav-dropdown-btn" type="button">
+        <button class="tab-btn nav-dropdown-btn" type="button" onclick="toggleNavDropdown(this, event)">
           <span>📚 Compêndio</span>
           <span style="font-size: 9px; opacity: 0.7;">▾</span>
         </button>
@@ -64,7 +64,7 @@
 
       <!-- DROPDOWN 2: FERRAMENTAS DO MESTRE -->
       <div class="nav-dropdown">
-        <button class="tab-btn nav-dropdown-btn" type="button">
+        <button class="tab-btn nav-dropdown-btn" type="button" onclick="toggleNavDropdown(this, event)">
           <span>🛡️ Mestre</span>
           <span style="font-size: 9px; opacity: 0.7;">▾</span>
         </button>
@@ -92,7 +92,7 @@
 
       <!-- MENU SUSPENSO: MAIS AÇÕES E FERRAMENTAS DO SISTEMA -->
       <div class="nav-dropdown">
-        <button class="btn-top nav-dropdown-btn" type="button" title="Mais Ferramentas da Mesa">
+        <button class="btn-top nav-dropdown-btn" type="button" onclick="toggleNavDropdown(this, event)" title="Mais Ferramentas da Mesa">
           <span>⚡ Mais</span>
           <span style="font-size: 9px; opacity: 0.7;">▾</span>
         </button>
@@ -3278,31 +3278,31 @@
     <div class="fab-actions-menu" id="fab-actions-menu">
       <div class="fab-action-btn-row" onclick="handleFabQuickAction('login')">
         <span class="fab-action-label">Login do Aluno</span>
-        <button class="fab-action-circle" title="Acessar Ficha do Aluno">🎮</button>
+        <button type="button" class="fab-action-circle" onclick="handleFabQuickAction('login')" title="Acessar Ficha do Aluno">🎮</button>
       </div>
       <div class="fab-action-btn-row" onclick="handleFabQuickAction('notes')">
         <span class="fab-action-label">Notas do Mestre</span>
-        <button class="fab-action-circle" title="Notas do Mestre (Ctrl+N)">📝</button>
+        <button type="button" class="fab-action-circle" onclick="handleFabQuickAction('notes')" title="Notas do Mestre (Ctrl+N)">📝</button>
       </div>
       <div class="fab-action-btn-row" onclick="handleFabQuickAction('dice')">
         <span class="fab-action-label">Rolar Dados</span>
-        <button class="fab-action-circle" title="Rolar Dados">🎲</button>
+        <button type="button" class="fab-action-circle" onclick="handleFabQuickAction('dice')" title="Rolar Dados">🎲</button>
       </div>
       <div class="fab-action-btn-row" onclick="handleFabQuickAction('turn')">
         <span class="fab-action-label" id="fab-turn-label">Próximo Turno</span>
-        <button class="fab-action-circle" title="Próximo Turno / Combate">⚔️</button>
+        <button type="button" class="fab-action-circle" onclick="handleFabQuickAction('turn')" title="Próximo Turno / Combate">⚔️</button>
       </div>
       <div class="fab-action-btn-row" onclick="handleFabQuickAction('players')">
         <span class="fab-action-label">Fichas / Heróis</span>
-        <button class="fab-action-circle" title="Ver Fichas">👤</button>
+        <button type="button" class="fab-action-circle" onclick="handleFabQuickAction('players')" title="Ver Fichas">👤</button>
       </div>
       <div class="fab-action-btn-row" onclick="handleFabQuickAction('dmscreen')">
         <span class="fab-action-label">Escudo & Regras</span>
-        <button class="fab-action-circle" title="Escudo do Mestre">🛡️</button>
+        <button type="button" class="fab-action-circle" onclick="handleFabQuickAction('dmscreen')" title="Escudo do Mestre">🛡️</button>
       </div>
       <div class="fab-action-btn-row" onclick="handleFabQuickAction('cloud')">
         <span class="fab-action-label">Sincronizar Nuvem</span>
-        <button class="fab-action-circle" title="Nuvem Firebase">☁️</button>
+        <button type="button" class="fab-action-circle" onclick="handleFabQuickAction('cloud')" title="Nuvem Firebase">☁️</button>
       </div>
     </div>
   </div>

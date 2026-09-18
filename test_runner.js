@@ -2941,7 +2941,62 @@ vm.runInContext(`
 const lastLogText72 = vm.runInContext("state.logs && state.logs[0] ? state.logs[0].text : ''", sandbox);
 assert(lastLogText72.includes('Dragão Vermelho') && lastLogText72.includes('Valeros'), 'applyVttCombatAction atribuiu o combatente ativo (Dragão Vermelho) como atacante nos logs');
 
+// =========================================================================
+// 🎯 47. TESTES DE BLINDAGEM DE BOTÕES, DROPDOWNS E VTT (ISSUE-73)
+// =========================================================================
+console.log('\n🎯 47. Testes de Blindagem de Botões, Dropdowns e VTT (ISSUE-73):');
 
+const bundle73 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+
+// 1. Dropdowns do cabeçalho possuem onclick="toggleNavDropdown(this, event)"
+assert(bundle73.includes('toggleNavDropdown(this, event)'), 'Bundle contém toggleNavDropdown nos botões de dropdown do cabeçalho');
+
+// 2. Modais com z-index 2000
+assert(bundle73.includes('.modal-overlay') && bundle73.includes('z-index: 2000;'), 'Bundle possui z-index: 2000 na classe base .modal-overlay');
+
+// 3. Botões circulares do menu FAB possuem type="button" e onclick explícito
+assert(bundle73.includes('class="fab-action-circle" onclick="handleFabQuickAction(\'login\')"'), 'Botão circular FAB Login possui onclick direto');
+assert(bundle73.includes('class="fab-action-circle" onclick="handleFabQuickAction(\'turn\')"'), 'Botão circular FAB Turno possui onclick direto');
+
+// 4. Execução de rollDiceFormula no VTT
+vm.runInContext(`
+  var testRollResult = rollDiceFormula('1d20+5', 'Teste de Ataque');
+`, sandbox);
+const rollRes = vm.runInContext("testRollResult", sandbox);
+assert(rollRes && (typeof rollRes.total === 'number' || typeof rollRes === 'object'), 'rollDiceFormula executou com sucesso sem ReferenceError');
+
+// 5. Execução defensiva de setDrawingColor e setDrawingSize
+let drawingColorSafe = false;
+try {
+  vm.runInContext("setDrawingColor('#f59e0b', null)", sandbox);
+  vm.runInContext("setDrawingSize(5, null)", sandbox);
+  drawingColorSafe = true;
+} catch (e) {
+  drawingColorSafe = false;
+}
+assert(drawingColorSafe, 'setDrawingColor e setDrawingSize executam defensivamente mesmo quando el é nulo');
+
+// 6. Teste dinâmico de toggleNavDropdown
+vm.runInContext(`
+  var mockDropdownParent = {
+    classList: {
+      _set: new Set(),
+      add(c) { this._set.add(c); },
+      remove(c) { this._set.delete(c); },
+      contains(c) { return this._set.has(c); }
+    }
+  };
+  var mockBtn = {
+    closest: function(sel) { return mockDropdownParent; }
+  };
+  toggleNavDropdown(mockBtn, { stopPropagation: () => {} });
+  var isOpenedAfterToggle = mockDropdownParent.classList.contains('open');
+  toggleNavDropdown(mockBtn, { stopPropagation: () => {} });
+  var isClosedAfterSecondToggle = !mockDropdownParent.classList.contains('open');
+`, sandbox);
+const isOpened = vm.runInContext("isOpenedAfterToggle", sandbox);
+const isClosed = vm.runInContext("isClosedAfterSecondToggle", sandbox);
+assert(isOpened && isClosed, 'toggleNavDropdown abre e fecha o menu dropdown dinamicamente');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
