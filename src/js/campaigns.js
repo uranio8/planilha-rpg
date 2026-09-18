@@ -262,7 +262,7 @@ function renderCampaignHeroes(camp, campPlayers) {
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:11px;">
           <span>CA: <b>${p.ac}</b></span>
           <span>PV: <b style="color:${hpColor};">${p.hp}/${p.maxHp}</b></span>
-          <span>PO: <b>${p.gold || 0}</b></span>
+          <span>PO: <b>${(p.coins && p.coins.gp !== undefined) ? p.coins.gp : (p.gold || 0)}</b></span>
         </div>
       </div>
     `;
@@ -513,10 +513,10 @@ function openCampaignHeroesModal() {
   const container = document.getElementById('campaign-heroes-picker-list');
   if (!modal || !container) return;
 
-  const currentIds = new Set(camp.playerIds || []);
+  const currentIds = new Set((camp.playerIds || []).map(String));
 
   container.innerHTML = PLAYERS.map(p => {
-    const isChecked = currentIds.has(p.id);
+    const isChecked = currentIds.has(String(p.id));
     return `
       <label class="hero-picker-item ${isChecked ? 'selected' : ''}">
         <input type="checkbox" value="${p.id}" ${isChecked ? 'checked' : ''} onchange="this.parentElement.classList.toggle('selected', this.checked)">
@@ -549,6 +549,7 @@ function saveCampaignHeroesSelection() {
   });
 
   camp.playerIds = selectedIds;
+  if (typeof touchCampaign === 'function') touchCampaign(camp);
   saveCampaignsState();
   closeCampaignHeroesModal();
   renderCampaigns();

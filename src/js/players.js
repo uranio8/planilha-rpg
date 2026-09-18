@@ -3080,7 +3080,7 @@ function openPlayerModal(id) {
     document.getElementById('pm-ac').value = p.ac;
     document.getElementById('pm-maxhp').value = p.maxHp;
     document.getElementById('pm-speed').value = p.speed;
-    document.getElementById('pm-gold').value = p.gold || 15;
+    document.getElementById('pm-gold').value = (p.coins && p.coins.gp !== undefined) ? p.coins.gp : (p.gold || 15);
     document.getElementById('pm-str').value = p.str;
     document.getElementById('pm-dex').value = p.dex;
     document.getElementById('pm-con').value = p.con;
@@ -3283,8 +3283,8 @@ function savePlayerSheet() {
     maxHp,
     tempHp: existing ? existing.tempHp : 0,
     speed: document.getElementById('pm-speed').value || '9m',
-    gold: parseInt(document.getElementById('pm-gold').value) || 15,
-    coins: existing && existing.coins ? existing.coins : { cp: 0, sp: 0, ep: 0, gp: parseInt(document.getElementById('pm-gold').value) || 15, pp: 0 },
+    gold: parseInt(document.getElementById('pm-gold').value) || 0,
+    coins: existing && existing.coins ? { ...existing.coins, gp: parseInt(document.getElementById('pm-gold').value) || 0 } : { cp: 0, sp: 0, ep: 0, gp: parseInt(document.getElementById('pm-gold').value) || 0, pp: 0 },
     inventory: existing && Array.isArray(existing.inventory) ? existing.inventory : [],
     customSpells: existing && Array.isArray(existing.customSpells) ? existing.customSpells : [],
     customAttacks: existing && Array.isArray(existing.customAttacks) ? existing.customAttacks : [],
@@ -3675,7 +3675,7 @@ function serializePlayerForShare(p) {
     const jsonStr = JSON.stringify(clean);
     const base64 = (typeof btoa === 'function')
       ? btoa(encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1)))
-      : Buffer.from(jsonStr, 'utf8').toString('base64');
+      : (typeof Buffer !== 'undefined' ? Buffer.from(jsonStr, 'utf8').toString('base64') : '');
     return base64;
   } catch (e) {
     console.error('Erro ao serializar ficha:', e);
@@ -3765,13 +3765,14 @@ function openSharePlayerModal(playerId) {
     btnCopyShort.style.background = '';
   }
 
-  // Renderiza QR Code com payload embutido
+  // Renderiza QR Code com URL curta otimizada (evita HTTP 414 de payload extenso e garante abertura instantânea em celulares)
+  const qrTargetUrl = shortUrl || shareUrl;
   if (qrContainer) {
     qrContainer.innerHTML = `
-      <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(shareUrl)}" 
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrTargetUrl)}" 
            alt="QR Code da Ficha de ${p.name}" 
            style="width: 220px; height: 220px; display: block; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"
-           onerror="this.onerror=null; this.src='https://quickchart.io/qr?size=220&text=${encodeURIComponent(shareUrl)}';">
+           onerror="this.onerror=null; this.src='https://quickchart.io/qr?size=220&text=${encodeURIComponent(qrTargetUrl)}';">
     `;
   }
 
@@ -4055,6 +4056,10 @@ function openRoomQrCodeModal() {
 
   const imgEl = document.getElementById('img-room-qrcode');
   if (imgEl) {
+    imgEl.onerror = function() {
+      this.onerror = null;
+      this.src = `https://quickchart.io/qr?size=240&text=${encodeURIComponent(lobbyUrl)}`;
+    };
     imgEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(lobbyUrl)}`;
   }
 
@@ -4590,12 +4595,12 @@ function openPlayerCoinsModal(id) {
   document.getElementById('inp-coin-pp').value = p.coins.pp || 0;
 
   updateCoinsModalTotal();
-  modal.style.display = 'flex';
+  modal.classList.add('open');
 }
 
 function closePlayerCoinsModal() {
   const modal = document.getElementById('modal-player-coins');
-  if (modal) modal.style.display = 'none';
+  if (modal) modal.classList.remove('open');
   activeCoinsPlayerId = null;
 }
 
@@ -4623,7 +4628,9 @@ function savePlayerCoinsFromModal() {
   const pp = Math.max(0, parseInt(document.getElementById('inp-coin-pp')?.value) || 0);
 
   p.coins = { cp, sp, ep, gp, pp };
+  p.gold = gp;
   const purse = getPlayerCoinPurse(p);
+  touchPlayer(p);
 
   addPlayerActionLog(p.id, '🪙', `Atualizou carteira: ${purse.totalGp} PO total (${cp}pc, ${sp}pp, ${ep}pe, ${gp}po, ${pp}pl)`, 'general');
   if (typeof playFX === 'function') playFX('crit');
@@ -4643,12 +4650,12 @@ function openAddPlayerItemModal(id) {
   document.getElementById('add-item-player-name').innerText = `${p.name} • FOR ${p.str || 10}`;
   switchAddItemMode('catalog');
   renderCatalogItemsForModal();
-  modal.style.display = 'flex';
+  modal.classList.add('open');
 }
 
 function closeAddPlayerItemModal() {
   const modal = document.getElementById('modal-add-player-item');
-  if (modal) modal.style.display = 'none';
+  if (modal) modal.classList.remove('open');
   activeAddItemPlayerId = null;
 }
 

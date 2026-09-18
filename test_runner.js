@@ -2998,6 +2998,183 @@ const isOpened = vm.runInContext("isOpenedAfterToggle", sandbox);
 const isClosed = vm.runInContext("isClosedAfterSecondToggle", sandbox);
 assert(isOpened && isClosed, 'toggleNavDropdown abre e fecha o menu dropdown dinamicamente');
 
+// ========================================================
+// 48. TESTES DE QR CODE, MOEDAS E HERÓIS DA CAMPANHA (ISSUE-74)
+// ========================================================
+console.log('\n📲 48. Testes de QR Code, Moedas e Heróis da Campanha (ISSUE-74):');
+
+// 1. Validação de QR Code usando URL curta (evita HTTP 414 e URLs gigantescas)
+vm.runInContext(`
+  var pTestQr = { id: 'p_qr_test', name: 'Testador QR', student: 'Aluno 1', className: 'Mago', race: 'Elfo', level: 3, ac: 13, hp: 18, maxHp: 18, gold: 50 };
+  PLAYERS.push(pTestQr);
+
+  var mockQrContainer = { innerHTML: '' };
+  var mockModalShare = { classList: { add: () => {}, remove: () => {} } };
+  var mockInpShort = { value: '', select: () => {} };
+  var mockInpFull = { value: '', select: () => {} };
+
+  var originalGetElementById = document.getElementById;
+  document.getElementById = function(id) {
+    if (id === 'modal-share-sheet') return mockModalShare;
+    if (id === 'share-qrcode-render') return mockQrContainer;
+    if (id === 'inp-share-url-short') return mockInpShort;
+    if (id === 'inp-share-url') return mockInpFull;
+    return { innerText: '', value: '', style: {}, classList: { add: () => {}, remove: () => {} } };
+  };
+
+  openSharePlayerModal('p_qr_test');
+  var renderedQrHtml = mockQrContainer.innerHTML;
+  document.getElementById = originalGetElementById;
+`, sandbox);
+
+const qrHtml = vm.runInContext("renderedQrHtml", sandbox);
+assert(qrHtml.includes('create-qr-code/?size=220x220'), 'QR Code do personagem é gerado com sucesso');
+assert(qrHtml.includes('onerror=') && qrHtml.includes('quickchart.io/qr'), 'QR Code possui fallback de resiliência onerror para quickchart.io');
+const qrSrcMatch = qrHtml.match(/src="([^"]+)"/);
+assert(qrSrcMatch && !qrSrcMatch[1].includes('%23pdata%3D') && qrSrcMatch[1].length < 250, 'QR Code utiliza link curto otimizado (<250 chars) prevenindo HTTP 414');
+
+// 2. Sincronização bidirecional de ouro e moedas no modal de edição
+vm.runInContext(`
+  var pHeroCoins = {
+    id: 'p_hero_coins',
+    name: 'Gromm Rico',
+    student: 'João',
+    className: 'Bárbaro',
+    level: 2,
+    gold: 20,
+    coins: { cp: 0, sp: 0, ep: 0, gp: 20, pp: 0 }
+  };
+  PLAYERS.push(pHeroCoins);
+
+  var mockModalElements = {
+    'pm-id': { value: 'p_hero_coins' },
+    'pm-gold': { value: '85' },
+    'pm-student': { value: 'João' },
+    'pm-name': { value: 'Gromm Rico' },
+    'pm-class': { value: 'Bárbaro' },
+    'pm-level': { value: '2' },
+    'pm-xp': { value: '300' },
+    'pm-hitdice': { value: '1d12' },
+    'pm-ac': { value: '14' },
+    'pm-maxhp': { value: '25' },
+    'pm-speed': { value: '9m' },
+    'pm-str': { value: '16' },
+    'pm-dex': { value: '14' },
+    'pm-con': { value: '16' },
+    'pm-int': { value: '8' },
+    'pm-wis': { value: '10' },
+    'pm-cha': { value: '10' },
+    'pm-attacks': { value: '' },
+    'pm-features': { value: '' },
+    'pm-spells': { value: '' },
+    'pm-badges': { value: '' },
+    'pm-slot-1': { value: '0' },
+    'pm-slot-2': { value: '0' },
+    'pm-slot-3': { value: '0' },
+    'pm-slot-4': { value: '0' },
+    'pm-slot-5': { value: '0' },
+    'pm-subclass-select': { value: '0' },
+    'pm-class-select': { value: 'Bárbaro' },
+    'pm-race-select': { value: 'Humano' },
+    'pm-avatar': { value: '👤' },
+    'pm-background': { value: 'Soldado' },
+    'pm-ideal': { value: '' },
+    'pm-bond': { value: '' },
+    'pm-flaw': { value: '' },
+    'pm-story': { value: '' }
+  };
+
+  var origGet = document.getElementById;
+  document.getElementById = function(id) {
+    if (mockModalElements[id]) return mockModalElements[id];
+    return { value: '', checked: false, style: {}, classList: { add: () => {}, remove: () => {} } };
+  };
+
+  savePlayerSheet();
+  document.getElementById = origGet;
+`, sandbox);
+
+const updatedGromm = vm.runInContext("PLAYERS.find(p => p.id === 'p_hero_coins')", sandbox);
+assert(updatedGromm.gold === 85, 'savePlayerSheet atualizou p.gold para 85');
+assert(updatedGromm.coins && updatedGromm.coins.gp === 85, 'savePlayerSheet sincronizou p.coins.gp para 85');
+
+// 3. savePlayerCoinsFromModal atualiza p.gold e chama touchPlayer
+vm.runInContext(`
+  activeCoinsPlayerId = 'p_hero_coins';
+  var origTouchCalled = false;
+  var origTouch = touchPlayer;
+  touchPlayer = function(p) { origTouchCalled = true; if (origTouch) origTouch(p); };
+
+  var origGet2 = document.getElementById;
+  document.getElementById = function(id) {
+    if (id === 'inp-coin-gp') return { value: '120' };
+    if (id === 'inp-coin-cp') return { value: '10' };
+    if (id === 'inp-coin-sp') return { value: '5' };
+    if (id === 'inp-coin-ep') return { value: '0' };
+    if (id === 'inp-coin-pp') return { value: '1' };
+    if (id === 'modal-player-coins') return { classList: { remove: () => {} } };
+    if (id === 'grid-players' || id === 'players-grid') return { innerHTML: '', querySelectorAll: () => [] };
+    return { innerText: '', value: '', style: {}, querySelectorAll: () => [], classList: { add: () => {}, remove: () => {} } };
+  };
+
+  savePlayerCoinsFromModal();
+  document.getElementById = origGet2;
+  touchPlayer = origTouch;
+`, sandbox);
+
+const coinsTouchCalled = vm.runInContext("origTouchCalled", sandbox);
+const grommCoinsFinal = vm.runInContext("PLAYERS.find(p => p.id === 'p_hero_coins')", sandbox);
+assert(coinsTouchCalled, 'savePlayerCoinsFromModal executou touchPlayer para propagação na nuvem');
+assert(grommCoinsFinal.gold === 130, 'savePlayerCoinsFromModal calculou p.gold total equivalente (120 gp + 1 pp = 130 PO)');
+assert(grommCoinsFinal.coins.gp === 120, 'savePlayerCoinsFromModal salvou moedas gp corretamente');
+
+// 4. Exibição de ouro no grid de heróis da campanha
+vm.runInContext(`
+  var mockCampGrid = { innerHTML: '' };
+  var origGet3 = document.getElementById;
+  document.getElementById = function(id) {
+    if (id === 'camp-heroes-grid') return mockCampGrid;
+    return { innerText: '', value: '' };
+  };
+
+  var heroForCamp = PLAYERS.find(p => p.id === 'p_hero_coins');
+  renderCampaignHeroes({ id: 'camp_test_gold' }, [heroForCamp]);
+  document.getElementById = origGet3;
+`, sandbox);
+
+const campGridHtml = vm.runInContext("mockCampGrid.innerHTML", sandbox);
+assert(campGridHtml.includes('PO: <b>120</b>'), 'renderCampaignHeroes exibe ouro real (120 PO) sincronizado de coins.gp');
+
+// 5. Coerção de IDs numéricos e strings na seleção de heróis da campanha
+vm.runInContext(`
+  var testCampWithIds = { id: 'c_mixed_ids', name: 'Mesa IDs Mistos', playerIds: [101, 'p_hero_coins'] };
+  var pHeroNum = { id: 101, name: 'Numérico', student: 'Aluno Num', className: 'Guerreiro', level: 1 };
+  PLAYERS.push(pHeroNum);
+
+  var mockHeroesContainer = { innerHTML: '' };
+  var origGet4 = document.getElementById;
+  document.getElementById = function(id) {
+    if (id === 'modal-campaign-heroes') return { classList: { add: () => {}, remove: () => {} } };
+    if (id === 'campaign-heroes-picker-list') return mockHeroesContainer;
+    return { innerText: '', value: '' };
+  };
+
+  var origGetActive = getActiveCampaign;
+  getActiveCampaign = () => testCampWithIds;
+
+  openCampaignHeroesModal();
+  document.getElementById = origGet4;
+  getActiveCampaign = origGetActive;
+`, sandbox);
+
+const pickerHtml = vm.runInContext("mockHeroesContainer.innerHTML", sandbox);
+assert(pickerHtml.includes('value="101" checked'), 'openCampaignHeroesModal selecionou herói com ID numérico com sucesso via coerção');
+assert(pickerHtml.includes('value="p_hero_coins" checked'), 'openCampaignHeroesModal selecionou herói com ID string com sucesso');
+
+// 6. Verificações no bundle compilado
+const bundle74 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(bundle74.includes('#modal-room-qrcode') && bundle74.includes('z-index: 2100 !important;'), 'Bundle possui z-index: 2100 no modal de QR code da sala');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
