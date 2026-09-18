@@ -3388,6 +3388,30 @@ const heroAfterLongRest = vm.runInContext("PLAYERS.find(p => p.id === 'p_qr_test
 assert(heroAfterLongRest.slotsUsed.length === 9, 'slotsUsed possui os 9 círculos de magias');
 assert(heroAfterLongRest.slotsUsed.every(u => u === 0), 'Todos os 9 círculos de magia foram completamente restaurados no Descanso Longo');
 
+// ==========================================
+// 52. TESTES DE LAYOUT MOBILE DO LOGIN DO JOGADOR (ISSUE-78)
+// ==========================================
+console.log('\n📱 52. Testes de Layout Mobile dos Cards de Heróis no Login (ISSUE-78):');
+const bundle78 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(bundle78.includes('grid-auto-rows: max-content'), 'Bundle CSS contém grid-auto-rows: max-content em .player-login-grid');
+assert(bundle78.includes('align-content: start'), 'Bundle CSS contém align-content: start em .player-login-grid');
+assert(bundle78.includes('min-height: max-content'), 'Bundle CSS contém min-height: max-content em .player-login-card');
+assert(bundle78.includes('box-sizing: border-box'), 'Bundle CSS contém box-sizing: border-box em .player-login-card');
+assert(bundle78.includes('no seu dispositivo'), 'Subtítulo do modal de login atualizado para dispositivos móveis');
+
+vm.runInContext(`
+  PLAYERS = [
+    { id: 'p_mob1', name: 'Valerius', student: 'Arthur', className: 'Guerreiro', race: 'Anão', level: 2, hp: 24, maxHp: 24, ac: 16 },
+    { id: 'p_mob2', name: 'Lyra', student: 'Beatriz', className: 'Maga', race: 'Elfa', level: 2, hp: 14, maxHp: 14, ac: 13 }
+  ];
+  renderPlayerLoginList();
+`, sandbox);
+const mobLoginContainer = vm.runInContext("document.getElementById('player-login-list-container')", sandbox);
+assert(mobLoginContainer && mobLoginContainer.innerHTML.includes('player-login-card'), 'renderPlayerLoginList gerou os cards no container');
+assert(mobLoginContainer.innerHTML.includes('Valerius'), 'Container contém o herói Valerius');
+assert(mobLoginContainer.innerHTML.includes('Lyra'), 'Container contém a heroína Lyra');
+assert(mobLoginContainer.innerHTML.includes('Entrar com este Herói'), 'Cards contêm o botão de ação "Entrar com este Herói"');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
