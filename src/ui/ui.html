@@ -3585,3 +3585,60 @@
       </div>
     </div>
   </div>
+
+  <!-- ===================================================
+       🎲 MODAL: ENTRADA DE DADO FÍSICO DA MESA
+       =================================================== -->
+  <div id="modal-physical-dice-input" class="modal-overlay">
+    <div class="modal-body" style="max-width: 440px; display: flex; flex-direction: column; text-align: center;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 22px;">🎲✏️</span>
+          <div style="text-align: left;">
+            <div id="physical-dice-title" style="font-weight: 800; font-size: 15px; color: #fff;">Dado Físico da Mesa</div>
+            <div id="physical-dice-subtitle" style="font-size: 11px; color: var(--accent-gold);">Selecione ou digite o valor rolado no d20 real</div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closePhysicalDiceModal()">✕</button>
+      </div>
+
+      <div style="padding: 12px 0;">
+        <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 10px;">
+          <span style="font-size: 12px; color: var(--text-muted);">Resultado no d20:</span>
+          <input type="number" id="inp-physical-d20-direct" min="1" max="20" placeholder="1 a 20" 
+                 onkeydown="if(event.key==='Enter') submitPhysicalD20DirectInput()"
+                 style="width: 75px; text-align: center; font-size: 18px; font-weight: 800; padding: 6px; border: 2px solid var(--accent-gold); background: #0f172a; color: #fff; border-radius: 6px;">
+          <button class="btn-action" style="padding: 6px 12px; font-size: 12px;" onclick="submitPhysicalD20DirectInput()">OK</button>
+        </div>
+
+        <div style="font-size: 10.5px; color: var(--text-dim); margin-bottom: 6px;">Ou toque direto no número rolado:</div>
+        <div class="physical-d20-grid">
+          <button class="physical-d20-key key-fumble" onclick="submitPhysicalD20Roll(1)">1💀</button>
+          <button class="physical-d20-key" onclick="submitPhysicalD20Roll(2)">2</button>
+          <button class="physical-d20-key" onclick="submitPhysicalD20Roll(3)">3</button>
+          <button class="physical-d20-key" onclick="submitPhysicalD20Roll(4)">4</button>
+          <button class="physical-d20-key" onclick="submitPhysicalD20Roll(5)">5</button>
+          <button class="physical-d20-key" onclick="submitPhysicalD20Roll(6)">6</button>
+          <button class="physical-d20-key" onclick="submitPhysicalD20Roll(7)">7</button>
+          <button class="physical-d20-key" onclick="submitPhysicalD20Roll(8)">8</button>
+          <button class="physical-d20-key" onclick="submitPhysicalD20Roll(9)">9</button>
+          <button class="physical-d20-key" onclick="submitPhysicalD20Roll(10)">10</button>
+          <button class="physical-d20-key" onclick="submitPhysicalD20Roll(11)">11</button>
+          <button class="physical-d20-key" onclick="submitPhysicalD20Roll(12)">12</button>
+          <button class="physical-d20-key" onclick="submitPhysicalD20Roll(13)">13</button>
+          <button class="physical-d20-key" onclick="submitPhysicalD20Roll(14)">14</button>
+          <button class="physical-d20-key" onclick="submitPhysicalD20Roll(15)">15</button>
+          <button class="physical-d20-key" onclick="submitPhysicalD20Roll(16)">16</button>
+          <button class="physical-d20-key" onclick="submitPhysicalD20Roll(17)">17</button>
+          <button class="physical-d20-key" onclick="submitPhysicalD20Roll(18)">18</button>
+          <button class="physical-d20-key" onclick="submitPhysicalD20Roll(19)">19</button>
+          <button class="physical-d20-key key-crit" onclick="submitPhysicalD20Roll(20)">20🔥</button>
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid var(--border-color); padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+        <button class="btn-secondary" style="font-size: 11px;" onclick="switchActiveRollToVirtual()">🎲 Rolar no App em vez disso</button>
+        <button class="btn-secondary" onclick="closePhysicalDiceModal()">Fechar</button>
+      </div>
+    </div>
+  </div>

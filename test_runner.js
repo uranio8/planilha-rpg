@@ -4213,6 +4213,281 @@ const pRested = vm.runInContext("PLAYERS.find(p => p.id === 'p_phys_test')", san
 assert(pRested.hp === 18, `applyShortRestPhysicalDie curou 8 PV (10 ➔ ${pRested.hp} PV) usando dado físico`);
 assert(pRested.spentHitDice === 1, 'Dado de vida físico gasto foi computado na reserva (spentHitDice = 1)');
 
+// ========================================================
+// 60. TESTES DE ARMADURA, SINTONIZAÇÃO, MODO FÍSICO E ECONOMIA DE AÇÕES (ISSUE-87)
+// ========================================================
+console.log('\n🛡️ 60. Testes de Armadura, Sintonização, Modo Físico e Economia de Ações (ISSUE-87):');
+
+// 1. Verificação de elementos no bundle HTML
+assert(distHtml.includes('id="modal-physical-dice-input"'), 'Bundle contém modal de entrada de dado físico (#modal-physical-dice-input)');
+assert(distHtml.includes('physical-d20-grid'), 'Bundle contém grade rápida de 1 a 20 para dado físico (.physical-d20-grid)');
+assert(distHtml.includes('action-economy-nav'), 'Bundle contém estilos e navegação por economia de turno (.action-economy-nav)');
+assert(distHtml.includes('concentration-banner'), 'Bundle contém banner de concentração ativa (.concentration-banner)');
+assert(distHtml.includes('resource-quick-dock'), 'Bundle contém dock de recursos táteis (.resource-quick-dock)');
+
+// 2. Exportação de funções
+assert(typeof vm.runInContext('calculatePlayerAcFromEquipment', sandbox) === 'function', 'Função calculatePlayerAcFromEquipment exportada');
+assert(typeof vm.runInContext('togglePlayerItemAttunement', sandbox) === 'function', 'Função togglePlayerItemAttunement exportada');
+assert(typeof vm.runInContext('togglePlayerDiceMode', sandbox) === 'function', 'Função togglePlayerDiceMode exportada');
+assert(typeof vm.runInContext('getAttackActionType', sandbox) === 'function', 'Função getAttackActionType exportada');
+assert(typeof vm.runInContext('getSpellActionType', sandbox) === 'function', 'Função getSpellActionType exportada');
+assert(typeof vm.runInContext('usePlayerLayOnHandsQuick', sandbox) === 'function', 'Função usePlayerLayOnHandsQuick exportada');
+assert(typeof vm.runInContext('usePlayerSecondWindQuick', sandbox) === 'function', 'Função usePlayerSecondWindQuick exportada');
+assert(typeof vm.runInContext('usePlayerActionSurgeQuick', sandbox) === 'function', 'Função usePlayerActionSurgeQuick exportada');
+
+// 3. Mecânica D&D 5E de Armaduras e Escudos
+// Bárbaro sem armadura: 10 + DES(14->+2) + CON(16->+3) = 15
+vm.runInContext(`
+  const pBarb = {
+    id: 'p_barb_ac',
+    name: 'Bárbaro Teste',
+    className: 'Bárbaro',
+    dex: 14,
+    con: 16,
+    inventory: []
+  };
+  const acBarb = calculatePlayerAcFromEquipment(pBarb);
+`, sandbox);
+assert(vm.runInContext('acBarb', sandbox) === 15, 'Defesa sem Armadura do Bárbaro calcula 10 + DES + CON = 15');
+
+// Monge sem armadura: 10 + DES(16->+3) + SAB(14->+2) = 15
+vm.runInContext(`
+  const pMonk = {
+    id: 'p_monk_ac',
+    name: 'Monge Teste',
+    className: 'Monge',
+    dex: 16,
+    wis: 14,
+    inventory: []
+  };
+  const acMonk = calculatePlayerAcFromEquipment(pMonk);
+`, sandbox);
+assert(vm.runInContext('acMonk', sandbox) === 15, 'Defesa sem Armadura do Monge calcula 10 + DES + SAB = 15');
+
+// Armadura Leve: Couro Batido (12 + DES(16->+3) = 15)
+vm.runInContext(`
+  const pRogue = {
+    id: 'p_rogue_ac',
+    name: 'Ladino Teste',
+    className: 'Ladino',
+    dex: 16,
+    inventory: [
+      { name: 'Armadura de Couro Batido', equipped: true }
+    ]
+  };
+  const acRogue = calculatePlayerAcFromEquipment(pRogue);
+`, sandbox);
+assert(vm.runInContext('acRogue', sandbox) === 15, 'Armadura de Couro Batido soma 12 + DES integral (+3) = 15');
+
+// Armadura Média: Brunea (14 + min(DES, 2)) com DES 16 (+3) -> 14 + 2 = 16
+vm.runInContext(`
+  const pCleric = {
+    id: 'p_cleric_ac',
+    name: 'Clérigo Teste',
+    className: 'Clérigo',
+    dex: 16,
+    inventory: [
+      { name: 'Brunea', equipped: true }
+    ]
+  };
+  const acCleric = calculatePlayerAcFromEquipment(pCleric);
+`, sandbox);
+assert(vm.runInContext('acCleric', sandbox) === 16, 'Armadura Média (Brunea) limita bônus de DES ao máximo +2 = 16');
+
+// Armadura Pesada: Armadura de Placas (18 flat)
+vm.runInContext(`
+  const pFighterPlate = {
+    id: 'p_fighter_ac',
+    name: 'Guerreiro Teste',
+    className: 'Guerreiro',
+    dex: 14,
+    inventory: [
+      { name: 'Armadura de Placas', equipped: true }
+    ]
+  };
+  const acFighter = calculatePlayerAcFromEquipment(pFighterPlate);
+`, sandbox);
+assert(vm.runInContext('acFighter', sandbox) === 18, 'Armadura Pesada (Placas) concede CA fixa 18 sem somar DES');
+
+// Adição de Escudo (+2 na CA): Placas (18) + Escudo (2) = 20
+vm.runInContext(`
+  pFighterPlate.inventory.push({ name: 'Escudo', equipped: true });
+  const acFighterShield = calculatePlayerAcFromEquipment(pFighterPlate);
+`, sandbox);
+assert(vm.runInContext('acFighterShield', sandbox) === 20, 'Equipar Escudo adiciona +2 na CA (18 + 2 = 20)');
+
+// Teste de desequipar e equipar via togglePlayerItemEquipped
+vm.runInContext(`
+  const pHeroAc = {
+    id: 'p_hero_equip_test',
+    name: 'Arthur Equip Test',
+    className: 'Paladino',
+    dex: 10,
+    ac: 10,
+    inventory: [
+      { name: 'Cota de Malha', equipped: false },
+      { name: 'Escudo', equipped: false }
+    ]
+  };
+  PLAYERS.push(pHeroAc);
+  togglePlayerItemEquipped('p_hero_equip_test', 0); // Equipa Cota de Malha (16)
+`, sandbox);
+const pTestedEquip1 = vm.runInContext("PLAYERS.find(p => p.id === 'p_hero_equip_test')", sandbox);
+assert(pTestedEquip1.ac === 16, 'togglePlayerItemEquipped atualizou CA do Paladino para 16 com Cota de Malha');
+assert(pTestedEquip1.inventory[0].equipped === true, 'Cota de Malha marcada como equipada');
+
+vm.runInContext(`
+  togglePlayerItemEquipped('p_hero_equip_test', 1); // Equipa Escudo (+2)
+`, sandbox);
+const pTestedEquip2 = vm.runInContext("PLAYERS.find(p => p.id === 'p_hero_equip_test')", sandbox);
+assert(pTestedEquip2.ac === 18, 'togglePlayerItemEquipped somou Escudo (+2) elevando CA para 18');
+
+// 4. Sintonização de Itens Mágicos (Attunement) com Limite de 3 Itens
+vm.runInContext(`
+  const pAttune = {
+    id: 'p_attune_test',
+    name: 'Mago Sintonizador',
+    className: 'Mago',
+    inventory: [
+      { name: 'Anel de Proteção', attuned: false },
+      { name: 'Manto de Invisibilidade', attuned: false },
+      { name: 'Varinha dos Mísseis Mágicos', attuned: false },
+      { name: 'Botas Aladas', attuned: false }
+    ]
+  };
+  PLAYERS.push(pAttune);
+  togglePlayerItemAttunement('p_attune_test', 0); // 1
+  togglePlayerItemAttunement('p_attune_test', 1); // 2
+  togglePlayerItemAttunement('p_attune_test', 2); // 3
+`, sandbox);
+const pAttunedState = vm.runInContext("PLAYERS.find(p => p.id === 'p_attune_test')", sandbox);
+assert(pAttunedState.inventory.filter(it => it.attuned).length === 3, 'Três itens mágicos sintonizados com sucesso');
+
+// Tentar 4º item deve ser bloqueado
+vm.runInContext(`
+  togglePlayerItemAttunement('p_attune_test', 3); // 4º (deve falhar)
+`, sandbox);
+const pAttunedStateAfter4 = vm.runInContext("PLAYERS.find(p => p.id === 'p_attune_test')", sandbox);
+assert(pAttunedStateAfter4.inventory.filter(it => it.attuned).length === 3, 'Limite estrito de 3 itens sintonizados impediu o 4º item');
+assert(pAttunedStateAfter4.inventory[3].attuned === false, '4º item mágico permaneceu não-sintonizado');
+
+// 5. Modo "Dados Físicos da Mesa" Expandido para Toda a Ficha
+vm.runInContext(`
+  const pDiceTest = {
+    id: 'p_dice_test',
+    name: 'Kaelen Rolador',
+    className: 'Guerreiro',
+    level: 3,
+    str: 16, // +3
+    dex: 14, // +2
+    int: 10,
+    wis: 12,
+    cha: 8,
+    diceMode: 'virtual'
+  };
+  PLAYERS.push(pDiceTest);
+  togglePlayerDiceMode('p_dice_test');
+`, sandbox);
+const pDiceModeHero = vm.runInContext("PLAYERS.find(p => p.id === 'p_dice_test')", sandbox);
+assert(pDiceModeHero.diceMode === 'physical', 'togglePlayerDiceMode alternou modo para physical (Dados Físicos da Mesa)');
+
+// Ataque com d20 físico informado (ex: 20 nat -> crítico)
+const atkCritRes = vm.runInContext(`
+  rollPlayerAttack('p_dice_test', 'Espada Longa (+5 / 1d8+3 cortante)', 20);
+`, sandbox);
+assert(atkCritRes.d20 === 20, 'rollPlayerAttack aceitou d20 físico informado 20');
+assert(atkCritRes.isCrit === true, 'd20 = 20 acionou acerto crítico na rolagem física');
+assert(atkCritRes.totalHit === 25, 'totalHit com d20 20 + bônus 5 = 25');
+
+// Ataque com d20 físico falha crítica (1)
+const atkFumbleRes = vm.runInContext(`
+  rollPlayerAttack('p_dice_test', 'Espada Longa (+5 / 1d8+3 cortante)', 1);
+`, sandbox);
+assert(atkFumbleRes.d20 === 1, 'rollPlayerAttack aceitou Nat 1 físico');
+assert(atkFumbleRes.isFumble === true, 'Nat 1 acionou falha crítica');
+
+// Teste de Atributo físico
+const attrRes = vm.runInContext(`
+  rollPlayerAttr('p_dice_test', 'str', 14);
+`, sandbox);
+assert(attrRes.d20 === 14, 'rollPlayerAttr aceitou d20 físico 14');
+assert(attrRes.total === 17, 'Teste de Força com d20 14 + Mod FOR 3 = 17');
+
+// Teste de Perícia físico
+const skillRes = vm.runInContext(`
+  rollPlayerSkill('p_dice_test', 'atletismo', 'normal', 12);
+`, sandbox);
+assert(skillRes.total >= 15, 'rollPlayerSkill utilizou d20 físico 12 com bônus de perícia');
+
+// 6. Economia de Turno e Concentração Ativa
+assert(vm.runInContext(`getAttackActionType('Espada Longa (+5 / 1d8+3)')`, sandbox) === 'action', 'Espada primária categorizada como Ação');
+assert(vm.runInContext(`getAttackActionType('Adaga Secundária (Ação Bônus)')`, sandbox) === 'bonus', 'Ataque secundário categorizado como Bônus');
+assert(vm.runInContext(`getAttackActionType('Ataque de Oportunidade (Reação)')`, sandbox) === 'reaction', 'Oportunidade categorizada como Reação');
+
+assert(vm.runInContext(`getSpellActionType({ castTime: '1 ação' })`, sandbox) === 'action', 'Magia de 1 ação categorizada como Ação');
+assert(vm.runInContext(`getSpellActionType({ castTime: '1 ação bônus' })`, sandbox) === 'bonus', 'Passo Nebuloso categorizado como Bônus');
+assert(vm.runInContext(`getSpellActionType({ castTime: '1 reação' })`, sandbox) === 'reaction', 'Escudo Arcano categorizado como Reação');
+
+// Concentração
+vm.runInContext(`
+  setPlayerConcentration('p_dice_test', 'Abençoar (Bless)');
+`, sandbox);
+const pConcHero = vm.runInContext("PLAYERS.find(p => p.id === 'p_dice_test')", sandbox);
+assert(pConcHero.concentrationSpell === 'Abençoar (Bless)', 'setPlayerConcentration registrou a magia de concentração ativa');
+
+vm.runInContext(`
+  clearPlayerConcentration('p_dice_test');
+`, sandbox);
+assert(pConcHero.concentrationSpell === null, 'clearPlayerConcentration encerrou a concentração');
+
+// 7. Contadores Táteis & Recursos Rápidos (1-Toque)
+// Paladino: Cura pelas Mãos
+vm.runInContext(`
+  const pPaladinRes = {
+    id: 'p_paladin_res',
+    name: 'Sir Gareth',
+    className: 'Paladino',
+    level: 3,
+    hp: 15,
+    maxHp: 28,
+    featureCharges: [
+      { id: 'lay_on_hands', name: 'Cura pelas Mãos (PV)', icon: '🤲', max: 15, used: 0, restType: 'long' }
+    ]
+  };
+  PLAYERS.push(pPaladinRes);
+  usePlayerLayOnHandsQuick('p_paladin_res', 5);
+`, sandbox);
+const pPaladinChecked = vm.runInContext("PLAYERS.find(p => p.id === 'p_paladin_res')", sandbox);
+assert(pPaladinChecked.hp === 20, 'usePlayerLayOnHandsQuick curou +5 PV no Paladino (15 -> 20)');
+assert(pPaladinChecked.featureCharges[0].used === 5, 'Reserva de Cura pelas Mãos gastou 5 pontos (10 restantes)');
+
+// Guerreiro: Retomar o Fôlego
+vm.runInContext(`
+  const pFighterRes = {
+    id: 'p_fighter_res',
+    name: 'Ragnar',
+    className: 'Guerreiro',
+    level: 4,
+    hp: 10,
+    maxHp: 36,
+    featureCharges: [
+      { id: 'second_wind', name: 'Retomar o Fôlego', icon: '💨', max: 1, used: 0, restType: 'short' },
+      { id: 'action_surge', name: 'Surto de Ação', icon: '⚡', max: 1, used: 0, restType: 'short' }
+    ]
+  };
+  PLAYERS.push(pFighterRes);
+  usePlayerSecondWindQuick('p_fighter_res');
+`, sandbox);
+const pFighterChecked = vm.runInContext("PLAYERS.find(p => p.id === 'p_fighter_res')", sandbox);
+assert(pFighterChecked.hp > 10, 'usePlayerSecondWindQuick curou PV do Guerreiro (1d10 + Nível)');
+assert(pFighterChecked.featureCharges[0].used === 1, 'Carga de Retomar o Fôlego foi consumida (1/1 gasta)');
+
+// Guerreiro: Surto de Ação
+vm.runInContext(`
+  usePlayerActionSurgeQuick('p_fighter_res');
+`, sandbox);
+assert(pFighterChecked.featureCharges[1].used === 1, 'Carga de Surto de Ação foi consumida (1/1 gasta)');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

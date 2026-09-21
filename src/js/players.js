@@ -82,15 +82,438 @@ function applyQuickHeal(id) {
   }
 }
 
+// ========================================================
+// 🛡️ REGRAS D&D 5E DE ARMADURAS, ESCUDOS & CLASSE DE ARMADURA (CA)
+// ========================================================
+const DND5E_ARMOR_DATA = {
+  'acolchoada': { ac: 11, type: 'light', name: 'Armadura Acolchoada' },
+  'armadura acolchoada': { ac: 11, type: 'light', name: 'Armadura Acolchoada' },
+  'couro': { ac: 11, type: 'light', name: 'Armadura de Couro' },
+  'armadura de couro': { ac: 11, type: 'light', name: 'Armadura de Couro' },
+  'couro batido': { ac: 12, type: 'light', name: 'Armadura de Couro Batido' },
+  'armadura de couro batido': { ac: 12, type: 'light', name: 'Armadura de Couro Batido' },
+  'gibão de peles': { ac: 12, type: 'medium', name: 'Gibão de Peles' },
+  'gibao de peles': { ac: 12, type: 'medium', name: 'Gibão de Peles' },
+  'camisa de cota de malha': { ac: 13, type: 'medium', name: 'Camisa de Cota de Malha' },
+  'cota de malha leve': { ac: 13, type: 'medium', name: 'Camisa de Cota de Malha' },
+  'brunea': { ac: 14, type: 'medium', name: 'Brunea' },
+  'cota de escamas': { ac: 14, type: 'medium', name: 'Cota de Escamas' },
+  'peitoral': { ac: 14, type: 'medium', name: 'Peitoral' },
+  'peitoral de aco': { ac: 14, type: 'medium', name: 'Peitoral de Aço' },
+  'peitoral de aço': { ac: 14, type: 'medium', name: 'Peitoral de Aço' },
+  'meia-armadura': { ac: 15, type: 'medium', name: 'Meia-Armadura' },
+  'meia armadura': { ac: 15, type: 'medium', name: 'Meia-Armadura' },
+  'cota de anéis': { ac: 14, type: 'heavy', name: 'Cota de Anéis' },
+  'cota de aneis': { ac: 14, type: 'heavy', name: 'Cota de Anéis' },
+  'cota de malha': { ac: 16, type: 'heavy', name: 'Cota de Malha' },
+  'armadura de cota de malha': { ac: 16, type: 'heavy', name: 'Cota de Malha' },
+  'cota de talas': { ac: 17, type: 'heavy', name: 'Cota de Talas' },
+  'placas': { ac: 18, type: 'heavy', name: 'Armadura de Placas' },
+  'armadura de placas': { ac: 18, type: 'heavy', name: 'Armadura de Placas' },
+  'armadura completa': { ac: 18, type: 'heavy', name: 'Armadura de Placas' }
+};
+
+function isArmorItem(name) {
+  if (!name) return false;
+  const n = String(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  if (isShieldItem(name)) return false;
+  return !!DND5E_ARMOR_DATA[n] || n.includes('armadura') || n.includes('cota de') || n.includes('peitoral') || n.includes('brunea') || n.includes('placas') || n.includes('gibao');
+}
+
+function isShieldItem(name) {
+  if (!name) return false;
+  const n = String(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  return n.includes('escudo') || n.includes('shield');
+}
+
+function getArmorItemStats(name) {
+  if (!name) return { ac: 10, type: 'none' };
+  const n = String(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  if (DND5E_ARMOR_DATA[n]) return DND5E_ARMOR_DATA[n];
+  for (const k in DND5E_ARMOR_DATA) {
+    if (n.includes(k)) return DND5E_ARMOR_DATA[k];
+  }
+  if (n.includes('placas') || n.includes('talas')) return { ac: 17, type: 'heavy' };
+  if (n.includes('malha')) return { ac: 16, type: 'heavy' };
+  if (n.includes('couro batido')) return { ac: 12, type: 'light' };
+  if (n.includes('couro')) return { ac: 11, type: 'light' };
+  return { ac: 11, type: 'light' };
+}
+
+function calculatePlayerAcFromEquipment(player) {
+  if (!player) return 10;
+  const dexMod = Math.floor(((player.dex || 10) - 10) / 2);
+  const conMod = Math.floor(((player.con || 10) - 10) / 2);
+  const wisMod = Math.floor(((player.wis || 10) - 10) / 2);
+  const cls = String(player.className || '').toLowerCase();
+  const sub = String(player.subclass || player.subclassName || '').toLowerCase();
+
+  const inventory = Array.isArray(player.inventory) ? player.inventory : [];
+  const equippedArmors = inventory.filter(it => it.equipped && isArmorItem(it.name));
+  const equippedShields = inventory.filter(it => it.equipped && isShieldItem(it.name));
+
+  let baseAc = 10 + dexMod;
+
+  if (equippedArmors.length === 0) {
+    if (cls.includes('barbaro') || cls.includes('bárbaro')) {
+      baseAc = 10 + dexMod + conMod;
+    } else if (cls.includes('monge')) {
+      if (equippedShields.length === 0) {
+        baseAc = 10 + dexMod + wisMod;
+      }
+    } else if (sub.includes('drac') || (cls.includes('feiticeiro') && player.subclassIdx === 0)) {
+      baseAc = 13 + dexMod;
+    }
+  } else {
+    const armor = equippedArmors[0];
+    const armStats = getArmorItemStats(armor.name);
+    if (armStats.type === 'light') {
+      baseAc = armStats.ac + dexMod;
+    } else if (armStats.type === 'medium') {
+      baseAc = armStats.ac + Math.min(dexMod, 2);
+    } else if (armStats.type === 'heavy') {
+      baseAc = armStats.ac;
+    } else {
+      baseAc = armStats.ac + dexMod;
+    }
+  }
+
+  if (equippedShields.length > 0) {
+    baseAc += 2;
+  }
+
+  return Math.max(1, baseAc);
+}
+
 function togglePlayerItemEquipped(playerId, itemIdx) {
   const p = PLAYERS.find(x => x.id === playerId);
   if (!p || !p.inventory || !p.inventory[itemIdx]) return;
-  p.inventory[itemIdx].equipped = !p.inventory[itemIdx].equipped;
+  const item = p.inventory[itemIdx];
+  item.equipped = !item.equipped;
+
+  if (item.equipped && isArmorItem(item.name)) {
+    p.inventory.forEach((it, idx) => {
+      if (idx !== itemIdx && isArmorItem(it.name)) {
+        it.equipped = false;
+      }
+    });
+  }
+
+  let statusMsg = '';
+  if (isArmorItem(item.name) || isShieldItem(item.name)) {
+    const newAc = calculatePlayerAcFromEquipment(p);
+    p.ac = newAc;
+    statusMsg = `${item.equipped ? 'Equipou' : 'Guardou'} ${item.name} ➔ CA atualizada para ${newAc}`;
+    if (typeof showToast === 'function') showToast(`🛡️ CA de ${p.name} atualizada para ${newAc}!`);
+  } else {
+    statusMsg = item.equipped ? `Equipou ${item.name}` : `Guardou ${item.name} na mochila`;
+  }
+
   touchPlayer(p);
-  const statusStr = p.inventory[itemIdx].equipped ? 'equipou' : 'guardou na mochila';
-  addPlayerActionLog(p.id, '🛡️', `${statusStr} ${p.inventory[itemIdx].name}`, 'general');
+  addPlayerActionLog(p.id, '🛡️', statusMsg, 'general');
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+}
+
+function togglePlayerItemAttunement(playerId, itemIdx) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p || !p.inventory || !p.inventory[itemIdx]) return;
+  const item = p.inventory[itemIdx];
+
+  const currentAttuned = p.inventory.filter(it => it.attuned).length;
+  if (!item.attuned && currentAttuned >= 3) {
+    if (typeof showToast === 'function') {
+      showToast('⚠️ Limite de Sintonização atingido! Um personagem pode ter no máximo 3 itens mágicos sintonizados (D&D 5E).');
+    } else if (typeof alert === 'function') {
+      alert('⚠️ Limite de Sintonização atingido! Um personagem pode ter no máximo 3 itens mágicos sintonizados (D&D 5E).');
+    }
+    return;
+  }
+
+  item.attuned = !item.attuned;
+  touchPlayer(p);
+  const msg = item.attuned ? `Sintonizou com "${item.name}" 💎` : `Encerrou sintonização com "${item.name}"`;
+  addPlayerActionLog(p.id, '💎', msg, 'general');
+  if (typeof showToast === 'function') showToast(`💎 ${msg}`);
+  renderPlayers();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+}
+
+// ========================================================
+// 🎲 CONTROLE DE DADOS FÍSICOS DA MESA (EXPANDIDO PARA TODA A FICHA)
+// ========================================================
+let activePhysicalRollContext = null;
+
+function togglePlayerDiceMode(playerId) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+  p.diceMode = (p.diceMode === 'physical') ? 'virtual' : 'physical';
+  touchPlayer(p);
+  const modeLabel = p.diceMode === 'physical' ? '🎲 Dados Físicos da Mesa' : '💻 Dados Virtuais do App';
+  if (typeof showToast === 'function') showToast(`Modo de rolagem de ${p.name}: ${modeLabel}`);
+  renderPlayers();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+}
+
+function openPhysicalD20Modal(context) {
+  activePhysicalRollContext = context;
+  const modal = document.getElementById('modal-physical-dice-input');
+  const titleEl = document.getElementById('physical-dice-title');
+  const subEl = document.getElementById('physical-dice-subtitle');
+  const inpEl = document.getElementById('inp-physical-d20-direct');
+  if (titleEl) titleEl.innerText = context.title || 'Dado Físico da Mesa';
+  if (subEl) subEl.innerText = context.subtitle || 'Selecione ou digite o valor tirado no d20 real (1 a 20)';
+  if (inpEl) {
+    inpEl.value = '';
+    setTimeout(() => {
+      if (inpEl) inpEl.focus();
+    }, 50);
+  }
+  if (modal) modal.classList.add('active');
+}
+
+function closePhysicalDiceModal() {
+  const modal = document.getElementById('modal-physical-dice-input');
+  if (modal) modal.classList.remove('active');
+  activePhysicalRollContext = null;
+}
+
+function submitPhysicalD20Roll(val) {
+  const d20 = parseInt(val, 10);
+  if (isNaN(d20) || d20 < 1 || d20 > 20) {
+    if (typeof showToast === 'function') showToast('⚠️ Por favor, informe um valor de d20 válido entre 1 e 20.');
+    else alert('Por favor, informe um valor de d20 válido entre 1 e 20.');
+    return;
+  }
+  const ctx = activePhysicalRollContext;
+  closePhysicalDiceModal();
+  if (!ctx) return;
+  executePhysicalRollWithD20(ctx, d20);
+}
+
+function submitPhysicalD20DirectInput() {
+  const inpEl = document.getElementById('inp-physical-d20-direct');
+  const val = inpEl ? inpEl.value : '';
+  submitPhysicalD20Roll(val);
+}
+
+function switchActiveRollToVirtual() {
+  const ctx = activePhysicalRollContext;
+  closePhysicalDiceModal();
+  if (!ctx) return;
+  executePhysicalRollWithD20(ctx, null);
+}
+
+function executePhysicalRollWithD20(ctx, d20Val) {
+  if (!ctx) return;
+  if (ctx.type === 'attack') {
+    rollPlayerAttack(ctx.playerId, ctx.rawAttackText, d20Val);
+  } else if (ctx.type === 'skill') {
+    rollPlayerSkill(ctx.playerId, ctx.skillKey, ctx.mode, d20Val);
+  } else if (ctx.type === 'save') {
+    rollPlayerSavingThrow(ctx.playerId, ctx.attrName, ctx.mode, d20Val);
+  } else if (ctx.type === 'attr') {
+    rollPlayerAttr(ctx.playerId, ctx.attrName, d20Val);
+  } else if (ctx.type === 'spellAttack') {
+    rollPlayerSpellAttack(ctx.playerId, d20Val);
+  }
+}
+
+// ========================================================
+// ⏱️ ECONOMIA DE TURNO & CONCENTRAÇÃO ATIVA (D&D BEYOND STYLE)
+// ========================================================
+function getAttackActionType(rawAttackText) {
+  if (!rawAttackText) return 'action';
+  const txt = String(rawAttackText).toLowerCase();
+  if (txt.includes('bônus') || txt.includes('bonus') || txt.includes('secundária') || txt.includes('secundaria') || txt.includes('offhand')) {
+    return 'bonus';
+  }
+  if (txt.includes('reação') || txt.includes('reacao') || txt.includes('oportunidade')) {
+    return 'reaction';
+  }
+  return 'action';
+}
+
+function getSpellActionType(sp) {
+  if (!sp || !sp.castTime) return 'action';
+  const ct = String(sp.castTime).toLowerCase();
+  if (ct.includes('bônus') || ct.includes('bonus')) return 'bonus';
+  if (ct.includes('reação') || ct.includes('reacao') || ct.includes('reaction')) return 'reaction';
+  return 'action';
+}
+
+function setPlayerActionFilter(playerId, filter) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+  p.actionEconomyFilter = filter || 'all';
+  renderPlayers();
+}
+
+function setPlayerConcentration(playerId, spellName) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+  p.concentrationSpell = spellName;
+  touchPlayer(p);
+  addLog(`🧘 <b>${p.name}</b> agora está concentrando em <b>${spellName}</b>.`);
+  addPlayerActionLog(p.id, '🧘', `Iniciou concentração em ${spellName}`, 'spell');
+  if (typeof showToast === 'function') showToast(`🧘 Concentração: ${spellName}`);
+  renderPlayers();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+}
+
+function clearPlayerConcentration(playerId) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+  const prev = p.concentrationSpell;
+  p.concentrationSpell = null;
+  touchPlayer(p);
+  if (prev) {
+    addLog(`🧘 <b>${p.name}</b> encerrou a concentração em <b>${prev}</b>.`);
+    addPlayerActionLog(p.id, '🧘', `Encerrou concentração em ${prev}`, 'spell');
+    if (typeof showToast === 'function') showToast(`Concentração encerrada: ${prev}`);
+  }
+  renderPlayers();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+}
+
+// ========================================================
+// ⚡ CONTADORES TÁTEIS & RECURSOS RÁPIDOS (DOCK DE 1-TOQUE)
+// ========================================================
+function renderPlayerResourceQuickDock(p) {
+  initPlayerFeatureCharges(p);
+  if (!p.featureCharges || p.featureCharges.length === 0) return '';
+
+  const pills = p.featureCharges.map(f => {
+    const remaining = f.max - f.used;
+    const isAvail = remaining > 0;
+
+    if (f.id === 'lay_on_hands') {
+      return `
+        <div class="resource-quick-chip lay-on-hands" title="Cura pelas Mãos (Paladino D&D 5E): Toque para gastar e curar">
+          <span>🤲 Mãos: <b>${remaining}</b>/${f.max} PV</span>
+          <div style="display:inline-flex; gap:3px; margin-left:4px;">
+            <button class="btn-micro" onclick="usePlayerLayOnHandsQuick('${p.id}', 1)" title="Curar 1 PV">-1</button>
+            <button class="btn-micro" onclick="usePlayerLayOnHandsQuick('${p.id}', 5)" title="Curar 5 PV">-5</button>
+          </div>
+        </div>
+      `;
+    }
+
+    if (f.id === 'second_wind') {
+      return `
+        <button class="resource-quick-chip ${!isAvail ? 'exhausted' : ''}" 
+                onclick="usePlayerSecondWindQuick('${p.id}')" 
+                title="Retomar o Fôlego (Guerreiro): Cura 1d10 + Nível de Guerreiro (${p.level}) em Ação Bônus">
+          💨 Fôlego (${remaining}/${f.max})
+        </button>
+      `;
+    }
+
+    if (f.id === 'action_surge') {
+      return `
+        <button class="resource-quick-chip ${!isAvail ? 'exhausted' : ''}" 
+                onclick="usePlayerActionSurgeQuick('${p.id}')" 
+                title="Surto de Ação (Guerreiro): 1 Ação adicional no turno">
+          ⚡ Surto (${remaining}/${f.max})
+        </button>
+      `;
+    }
+
+    return `
+      <button class="resource-quick-chip ${!isAvail ? 'exhausted' : ''}" 
+              onclick="${isAvail ? `usePlayerFeatureCharge('${p.id}', '${f.id}', 1)` : `restorePlayerFeatureCharge('${p.id}', '${f.id}', 1)`}" 
+              title="${f.name} (${f.restType === 'short' ? 'Recupera em Descanso Curto' : 'Recupera em Descanso Longo'}) • ${isAvail ? 'Clique para usar 1' : 'Esgotado (clique para restaurar 1)'}">
+        ${f.icon || '⚡'} ${f.name} (<b>${remaining}</b>/${f.max})
+      </button>
+    `;
+  }).join('');
+
+  return `<div class="resource-quick-dock">${pills}</div>`;
+}
+
+function usePlayerLayOnHandsQuick(playerId, amount = 1) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+  initPlayerFeatureCharges(p);
+  const charge = p.featureCharges.find(f => f.id === 'lay_on_hands');
+  if (!charge) return;
+  if (charge.used + amount > charge.max) {
+    if (typeof showToast === 'function') showToast('⚠️ Reserva de Cura pelas Mãos insuficiente!');
+    return;
+  }
+  charge.used += amount;
+  const oldHp = p.hp;
+  p.hp = Math.min(p.maxHp, p.hp + amount);
+  const actualHeal = p.hp - oldHp;
+  touchPlayer(p);
+  if (typeof playFX === 'function') playFX('heal');
+  const msg = `🤲 <b>${p.name}</b> usou Cura pelas Mãos (-${amount} da reserva) e recuperou +${actualHeal} PV (HP: ${p.hp}/${p.maxHp}, Reserva restante: ${charge.max - charge.used}/${charge.max}).`;
+  addLog(msg);
+  addPlayerActionLog(p.id, '🤲', `Cura pelas Mãos: +${actualHeal} PV (Reserva: ${charge.max - charge.used}/${charge.max})`, 'heal');
+  if (typeof showToast === 'function') showToast(`🤲 +${actualHeal} PV recuperados!`);
+  renderPlayers();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+}
+
+function usePlayerSecondWindQuick(playerId) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+  initPlayerFeatureCharges(p);
+  const charge = p.featureCharges.find(f => f.id === 'second_wind');
+  if (!charge || charge.used >= charge.max) {
+    if (typeof showToast === 'function') showToast('⚠️ Retomar o Fôlego já foi utilizado! Faça um Descanso Curto.');
+    return;
+  }
+  charge.used += 1;
+  const roll = Math.floor(Math.random() * 10) + 1;
+  const healAmount = roll + (p.level || 1);
+  const oldHp = p.hp;
+  p.hp = Math.min(p.maxHp, p.hp + healAmount);
+  const actualHeal = p.hp - oldHp;
+  touchPlayer(p);
+  if (typeof playFX === 'function') playFX('heal');
+  const msg = `💨 <b>${p.name}</b> usou Retomar o Fôlego (1d10[${roll}] + ${p.level}) e curou +${actualHeal} PV (HP: ${p.hp}/${p.maxHp})!`;
+  addLog(msg);
+  addPlayerActionLog(p.id, '💨', `Retomar o Fôlego: +${actualHeal} PV (1d10[${roll}]+${p.level})`, 'heal');
+  if (typeof showToast === 'function') showToast(`💨 Retomar o Fôlego: +${actualHeal} PV!`);
+  renderPlayers();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+}
+
+function usePlayerActionSurgeQuick(playerId) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+  initPlayerFeatureCharges(p);
+  const charge = p.featureCharges.find(f => f.id === 'action_surge');
+  if (!charge || charge.used >= charge.max) {
+    if (typeof showToast === 'function') showToast('⚠️ Surto de Ação já foi utilizado! Faça um Descanso Curto.');
+    return;
+  }
+  charge.used += 1;
+  touchPlayer(p);
+  if (typeof playFX === 'function') playFX('sword');
+  const msg = `⚡ <b>${p.name}</b> ativou <b>Surto de Ação (Action Surge)</b>! Ganhou 1 Ação adicional neste turno!`;
+  addLog(msg);
+  addPlayerActionLog(p.id, '⚡', 'Ativou Surto de Ação (Ação adicional)', 'feature');
+  if (typeof showToast === 'function') showToast('⚡ Surto de Ação Ativado!');
+  renderPlayers();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function getItemActionInfo(itemName) {
@@ -516,18 +939,28 @@ function renderPlayers() {
       `;
     }
 
-    // Ataques formatados
+    // Ataques formatados com Economia de Ação (D&D Beyond)
     const rawAttacks = p.attacks || '';
     const attacksArray = (rawAttacks.includes('|') ? rawAttacks.split('|') : rawAttacks.split(/(?<=\)),/g))
       .map(a => a.trim())
       .filter(a => a);
 
-    const attacksHtml = attacksArray.map(att => `
-      <div class="attack-item-row">
-        <span class="attack-info">⚔️ ${att}</span>
-        <button class="btn-action" style="padding: 4px 10px; font-size: 11px; white-space: nowrap;" onclick="rollPlayerAttack('${p.id}', '${att.replace(/'/g, "\\'")}')">🎲 Rolar</button>
-      </div>
-    `).join('');
+    const actionFilter = p.actionEconomyFilter || 'all';
+    const filteredAttacks = attacksArray.filter(att => {
+      if (actionFilter === 'all') return true;
+      return getAttackActionType(att) === actionFilter;
+    });
+
+    const attacksHtml = filteredAttacks.map(att => {
+      const atkAct = getAttackActionType(att);
+      const atkBadge = atkAct === 'bonus' ? '<span class="action-economy-tag bonus">Bônus</span>' : (atkAct === 'reaction' ? '<span class="action-economy-tag reaction">Reação</span>' : '<span class="action-economy-tag action">Ação</span>');
+      return `
+        <div class="attack-item-row">
+          <span class="attack-info">⚔️ ${att} ${atkBadge}</span>
+          <button class="btn-action" style="padding: 4px 10px; font-size: 11px; white-space: nowrap;" onclick="rollPlayerAttack('${p.id}', '${att.replace(/'/g, "\\'")}')">🎲 Rolar</button>
+        </div>
+      `;
+    }).join('');
 
     const isCritical = p.hp > 0 && p.maxHp > 0 && (p.hp / p.maxHp) <= 0.25;
 
@@ -548,6 +981,9 @@ function renderPlayers() {
               </div>
             </div>
             <div style="display: flex; gap: 4px; align-items: center;">
+              <button class="btn-micro dice-mode-toggle-btn ${p.diceMode === 'physical' ? 'is-physical' : ''}" onclick="togglePlayerDiceMode('${p.id}')" title="Alternar modo de rolagem: Virtual (App) ou Físico (Mesa Real)">
+                ${p.diceMode === 'physical' ? '🎲 Físico' : '💻 Virtual'}
+              </button>
               <button class="btn-micro" onclick="togglePlayerCardCompact('${p.id}')" title="${p.compact ? 'Expandir Ficha Completa' : 'Compactar Ficha'}">
                 ${p.compact ? '🔍 Expandir' : '🗜️'}
               </button>
@@ -664,6 +1100,9 @@ function renderPlayers() {
               </div>
             </div>
 
+            <!-- ⚡ CONTADORES TÁTEIS & RECURSOS RÁPIDOS (1-TOQUE) -->
+            ${renderPlayerResourceQuickDock(p)}
+
             <div class="stat-chips-grid">
               <div class="stat-chip"><span class="stat-chip-label">CA</span><span class="stat-chip-val">${p.ac}</span></div>
               <div class="stat-chip"><span class="stat-chip-label">Profic.</span><span class="stat-chip-val" style="color: var(--primary);">+${prof}</span></div>
@@ -733,13 +1172,32 @@ function renderPlayers() {
           <div class="player-col-powers">
             ${slotsHtml}
 
+            <!-- 🧘 BANNER DE CONCENTRAÇÃO ATIVA -->
+            ${p.concentrationSpell ? `
+              <div class="concentration-banner">
+                <div class="concentration-text">
+                  <span class="concentration-pulse"></span>
+                  <span>Concentrando em: <b>${p.concentrationSpell}</b></span>
+                </div>
+                <button class="concentration-stop-btn" onclick="clearPlayerConcentration('${p.id}')" title="Encerrar Concentração">✕ Parar</button>
+              </div>
+            ` : ''}
+
+            <!-- ⏱️ SELETOR DE ECONOMIA DE TURNO (D&D BEYOND) -->
+            <div class="action-economy-nav">
+              <button class="action-economy-chip ${actionFilter === 'all' ? 'active' : ''}" onclick="setPlayerActionFilter('${p.id}', 'all')">Todas</button>
+              <button class="action-economy-chip ${actionFilter === 'action' ? 'active' : ''}" onclick="setPlayerActionFilter('${p.id}', 'action')">⚔️ Ação</button>
+              <button class="action-economy-chip ${actionFilter === 'bonus' ? 'active' : ''}" onclick="setPlayerActionFilter('${p.id}', 'bonus')">⚡ Bônus</button>
+              <button class="action-economy-chip ${actionFilter === 'reaction' ? 'active' : ''}" onclick="setPlayerActionFilter('${p.id}', 'reaction')">🛡️ Reação</button>
+            </div>
+
             <div class="powers-section-box">
               <div class="powers-section-header">
                 <span>⚔️ Ataques & Arsenal</span>
                 <button class="btn-secondary" style="font-size: 10px; padding: 2px 7px;" onclick="openWeaponPickerModal('${p.id}')" title="Adicionar arma calculada do catálogo D&D Beyond">⚔️ + Arma</button>
               </div>
               <div style="display: flex; flex-direction: column; gap: 4px;">
-                ${attacksHtml || '<div style="color: var(--text-dim); font-size: 11px; padding: 6px;">Nenhum ataque configurado.</div>'}
+                ${attacksHtml || '<div style="color: var(--text-dim); font-size: 11px; padding: 6px;">Nenhum ataque com este filtro.</div>'}
               </div>
             </div>
 
@@ -787,44 +1245,58 @@ function renderPlayers() {
                   </div>
                 `;
       })()}
-              ${(p.preparedSpells && p.preparedSpells.length > 0) ? `
-                <div class="player-spells-chips-grid">
-                  ${p.preparedSpells.map(sName => {
-        const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
-        const isCantrip = sp && sp.level === 0;
-        const lvlBadge = sp ? (isCantrip ? 'Truque' : `${sp.level}º Círc.`) : 'Magia';
-        const school = sp ? sp.school : '';
-        const range = sp ? sp.range : '';
-        const castTime = sp ? sp.castTime : '';
-        return `
-                      <div class="spell-action-chip">
-                        <div class="spell-chip-top">
-                          <div class="spell-chip-name" title="${escapeAttr(sName)}">${sName}</div>
-                          <span class="spell-chip-lvl ${isCantrip ? 'cantrip' : 'leveled'}">${lvlBadge}</span>
-                        </div>
-                        <div class="spell-chip-subinfo">
-                          ${school ? `<span>${school}</span>` : ''}
-                          ${range ? `<span>• ${range}</span>` : ''}
-                          ${castTime ? `<span>• ${castTime}</span>` : ''}
-                        </div>
-                        <div class="spell-chip-actions-bar">
-                          <button class="btn-spell-cast" onclick="castPlayerSpellPrompt('${p.id}', '${escapeAttr(sName)}')" title="Lançar ${escapeAttr(sName)} (desconta slot se for magia de nível)">
-                            ⚡ Lançar
-                          </button>
-                          <button class="btn-spell-prep-toggle" onclick="togglePlayerSpellPrepared('${p.id}', '${escapeAttr(sName)}')" title="Alternar status desta magia">
-                            ⭐ ${isCantrip ? 'Ativa' : 'Preparada'}
-                          </button>
-                        </div>
-                      </div>
-                    `;
-      }).join('')}
-                </div>
-              ` : `
-                <div style="background: rgba(0,0,0,0.25); border: 1px dashed var(--border-color); padding: 8px; border-radius: 6px; text-align: center; color: var(--text-muted); font-size: 11px;">
-                  Nenhuma magia preparada.<br>
-                  <button class="btn-action" style="font-size: 10px; margin-top: 4px; padding: 3px 8px;" onclick="openSpellPickerModal('${p.id}')">✨ Escolher Magias</button>
-                </div>
-              `}
+              ${(() => {
+        const filteredSpells = (p.preparedSpells || []).filter(sName => {
+          if (actionFilter === 'all') return true;
+          const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+          return getSpellActionType(sp) === actionFilter;
+        });
+
+        if (filteredSpells.length > 0) {
+          return `
+            <div class="player-spells-chips-grid">
+              ${filteredSpells.map(sName => {
+            const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+            const isCantrip = sp && sp.level === 0;
+            const lvlBadge = sp ? (isCantrip ? 'Truque' : `${sp.level}º Círc.`) : 'Magia';
+            const school = sp ? sp.school : '';
+            const range = sp ? sp.range : '';
+            const castTime = sp ? sp.castTime : '';
+            const spAct = getSpellActionType(sp);
+            const spActBadge = spAct === 'bonus' ? '<span class="action-economy-tag bonus">Bônus</span>' : (spAct === 'reaction' ? '<span class="action-economy-tag reaction">Reação</span>' : '<span class="action-economy-tag action">Ação</span>');
+            return `
+                  <div class="spell-action-chip">
+                    <div class="spell-chip-top">
+                      <div class="spell-chip-name" title="${escapeAttr(sName)}">${sName} ${spActBadge}</div>
+                      <span class="spell-chip-lvl ${isCantrip ? 'cantrip' : 'leveled'}">${lvlBadge}</span>
+                    </div>
+                    <div class="spell-chip-subinfo">
+                      ${school ? `<span>${school}</span>` : ''}
+                      ${range ? `<span>• ${range}</span>` : ''}
+                      ${castTime ? `<span>• ${castTime}</span>` : ''}
+                    </div>
+                    <div class="spell-chip-actions-bar">
+                      <button class="btn-spell-cast" onclick="castPlayerSpellPrompt('${p.id}', '${escapeAttr(sName)}')" title="Lançar ${escapeAttr(sName)} (desconta slot se for magia de nível)">
+                        ⚡ Lançar
+                      </button>
+                      <button class="btn-spell-prep-toggle" onclick="togglePlayerSpellPrepared('${p.id}', '${escapeAttr(sName)}')" title="Alternar status desta magia">
+                        ⭐ ${isCantrip ? 'Ativa' : 'Preparada'}
+                      </button>
+                    </div>
+                  </div>
+                `;
+          }).join('')}
+            </div>
+          `;
+        } else {
+          return `
+            <div style="background: rgba(0,0,0,0.25); border: 1px dashed var(--border-color); padding: 8px; border-radius: 6px; text-align: center; color: var(--text-muted); font-size: 11px;">
+              ${actionFilter !== 'all' ? `Nenhuma magia encontrada com economia de "${actionFilter}".` : 'Nenhuma magia preparada.'}<br>
+              <button class="btn-action" style="font-size: 10px; margin-top: 4px; padding: 3px 8px;" onclick="openSpellPickerModal('${p.id}')">✨ Escolher Magias</button>
+            </div>
+          `;
+        }
+      })()}
               ${p.spells ? `<div style="font-size: 10px; color: var(--text-dim); margin-top: 4px; line-height: 1.4; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 3px;"><b>Anotações:</b> ${p.spells}</div>` : ''}
             </div>
 
@@ -948,7 +1420,7 @@ function renderPlayers() {
               </div>
 
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <span style="font-size: 10px; font-weight: 800; color: var(--primary-light);">🎒 Itens (${(p.inventory || []).length})</span>
+                <span style="font-size: 10px; font-weight: 800; color: var(--primary-light);">🎒 Itens (${(p.inventory || []).length}) • <span class="attunement-indicator">💎 ${(p.inventory || []).filter(it => it.attuned).length}/3 Sintonizados</span></span>
                 <button class="btn-action" style="font-size: 9px; padding: 2px 6px;" onclick="openAddPlayerItemModal('${p.id}')">➕ Item</button>
               </div>
 
@@ -959,7 +1431,7 @@ function renderPlayers() {
         return `
                     <div class="inventory-item-row ${it.equipped ? 'equipped' : ''}">
                       <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 4px;">
-                        <span style="font-weight: 700; color: #fff;">${it.equipped ? '⚔️ ' : ''}${it.name}</span>
+                        <span style="font-weight: 700; color: #fff;">${it.equipped ? '⚔️ ' : ''}${it.name}${it.attuned ? ' <span title="Item Mágico Sintonizado" style="color:#38bdf8; font-size:10px;">💎</span>' : ''}</span>
                         <span style="font-size: 9px; color: var(--text-dim);">${it.weight ? ' • ' + it.weight + 'kg' : ''}</span>
                       </div>
                       <div style="display: flex; align-items: center; gap: 2px;">
@@ -968,6 +1440,9 @@ function renderPlayers() {
                         </button>
                         <button class="btn-item-equip ${it.equipped ? 'active' : ''}" onclick="togglePlayerItemEquipped('${p.id}', ${idx})" title="${it.equipped ? 'Item Equipado (clique para guardar)' : 'Item na Mochila (clique para equipar)'}">
                           ${it.equipped ? '⚔️' : '🎒'}
+                        </button>
+                        <button class="btn-item-attune ${it.attuned ? 'active' : ''}" onclick="togglePlayerItemAttunement('${p.id}', ${idx})" title="${it.attuned ? 'Item Mágico Sintonizado (clique para cancelar sintonização)' : 'Sintonizar Item Mágico (Máximo 3)'}">
+                          💎
                         </button>
                         <button class="btn-item-trade" onclick="openTradeItemModal('${p.id}', ${idx})" title="Passar este item para outro herói (Troca Direta)">
                           🤝
@@ -1345,18 +1820,31 @@ function adjustPlayerGold(id, amount) {
   saveToLocalStorage();
 }
 
-function rollPlayerAttr(id, attrName) {
+function rollPlayerAttr(id, attrName, customD20) {
   const p = PLAYERS.find(x => x.id === id);
   if (!p) return;
 
-  const raw = p[attrName] || 10;
-  const mod = Math.floor((raw - 10) / 2);
-  const r = Math.floor(Math.random() * 20) + 1;
-  const total = r + mod;
   const attrLabels = { str: 'Força', dex: 'Destreza', con: 'Constituição', int: 'Inteligência', wis: 'Sabedoria', cha: 'Carisma' };
   const label = attrLabels[attrName] || attrName.toUpperCase();
 
-  const breakdown = `d20 [${r}] ${mod >= 0 ? '+' : ''}${mod}`;
+  if (customD20 === undefined && p.diceMode === 'physical') {
+    openPhysicalD20Modal({
+      playerId: id,
+      type: 'attr',
+      title: `🎲 Teste de Atributo Físico: ${p.name}`,
+      subtitle: `Rolagem de ${label} (d20 real)`,
+      attrName: attrName
+    });
+    return;
+  }
+
+  const raw = p[attrName] || 10;
+  const mod = Math.floor((raw - 10) / 2);
+  const r = (customD20 !== null && customD20 !== undefined) ? parseInt(customD20, 10) : (Math.floor(Math.random() * 20) + 1);
+  const total = r + mod;
+
+  const physicalTag = (customD20 !== null && customD20 !== undefined) ? ' 🎲(Mesa)' : '';
+  const breakdown = `d20 [${r}${physicalTag}] ${mod >= 0 ? '+' : ''}${mod}`;
   const banner = document.getElementById('dice-banner');
   if (banner) {
     banner.style.display = 'block';
@@ -1369,15 +1857,29 @@ function rollPlayerAttr(id, attrName) {
   else if (r === 1) { if (typeof playFX === 'function') playFX('fumble'); }
   else { if (typeof playFX === 'function') playFX('sword'); }
 
-  addLog(`🎲 <b>${p.name}</b> rolou Teste de <b>${label}</b>: <b>${total}</b> (${breakdown})`);
-  addPlayerActionLog(p.id, '🎲', `Teste de ${label}: Total ${total} (${breakdown})`, 'check');
+  addLog(`🎲 <b>${p.name}</b> rolou Teste de <b>${label}</b>${physicalTag}: <b>${total}</b> (${breakdown})`);
+  addPlayerActionLog(p.id, '🎲', `Teste de ${label}${physicalTag}: Total ${total} (${breakdown})`, 'check');
   renderPlayers();
+  return { d20: r, total, mod };
 }
 
-function rollPlayerSkill(id, skillKey, mode = 'normal') {
+function rollPlayerSkill(id, skillKey, mode = 'normal', customD20) {
   const p = PLAYERS.find(x => x.id === id);
   if (!p) return null;
   const skill = (typeof DND5E_SKILLS !== 'undefined' ? DND5E_SKILLS.find(s => s.key === skillKey) : null) || { key: skillKey, name: skillKey, attr: 'str', label: 'FOR' };
+
+  if (customD20 === undefined && p.diceMode === 'physical') {
+    openPhysicalD20Modal({
+      playerId: id,
+      type: 'skill',
+      title: `🎯 Perícia Física: ${p.name}`,
+      subtitle: `Teste de ${skill.name} (${skill.label || ''})`,
+      skillKey: skillKey,
+      mode: mode
+    });
+    return null;
+  }
+
   const attrVal = p[skill.attr] || 10;
   const attrMod = Math.floor((attrVal - 10) / 2);
   const isProf = (p.skillProficiencies || []).includes(skillKey);
@@ -1389,7 +1891,13 @@ function rollPlayerSkill(id, skillKey, mode = 'normal') {
   const rollLabel = `${p.name} - ${skill.name}${expertTag}`;
 
   let result;
-  if (typeof rollGlobalDice === 'function') {
+  if (customD20 !== null && customD20 !== undefined) {
+    const d20 = parseInt(customD20, 10);
+    const tot = d20 + totalMod;
+    const bd = `d20 [${d20} 🎲(Mesa)] ${totalMod >= 0 ? '+' + totalMod : totalMod}`;
+    result = { total: tot, breakdown: bd, isCrit: d20 === 20, isFumble: d20 === 1 };
+    addLog(`🎯 <b>${p.name}</b> rolou Perícia <b>${skill.name}</b>${expertTag}: <b>${tot}</b> (${bd})`);
+  } else if (typeof rollGlobalDice === 'function') {
     result = rollGlobalDice(20, 1, totalMod, mode, rollLabel);
   } else {
     const d20 = Math.floor(Math.random() * 20) + 1;
@@ -1404,11 +1912,24 @@ function rollPlayerSkill(id, skillKey, mode = 'normal') {
   return result;
 }
 
-function rollPlayerSavingThrow(id, attrName, mode = 'normal') {
+function rollPlayerSavingThrow(id, attrName, mode = 'normal', customD20) {
   const p = PLAYERS.find(x => x.id === id);
   if (!p) return null;
   const attrLabels = { str: 'Força', dex: 'Destreza', con: 'Constituição', int: 'Inteligência', wis: 'Sabedoria', cha: 'Carisma' };
   const label = attrLabels[attrName] || attrName.toUpperCase();
+
+  if (customD20 === undefined && p.diceMode === 'physical') {
+    openPhysicalD20Modal({
+      playerId: id,
+      type: 'save',
+      title: `🛡️ Salvaguarda Física: ${p.name}`,
+      subtitle: `Teste de Resistência de ${label}`,
+      attrName: attrName,
+      mode: mode
+    });
+    return null;
+  }
+
   const attrVal = p[attrName] || 10;
   const attrMod = Math.floor((attrVal - 10) / 2);
   const isProf = (p.saveProficiencies || []).includes(attrName);
@@ -1417,7 +1938,13 @@ function rollPlayerSavingThrow(id, attrName, mode = 'normal') {
   const rollLabel = `${p.name} - Salvaguarda de ${label}`;
 
   let result;
-  if (typeof rollGlobalDice === 'function') {
+  if (customD20 !== null && customD20 !== undefined) {
+    const d20 = parseInt(customD20, 10);
+    const tot = d20 + totalMod;
+    const bd = `d20 [${d20} 🎲(Mesa)] ${totalMod >= 0 ? '+' + totalMod : totalMod}`;
+    result = { total: tot, breakdown: bd, isCrit: d20 === 20, isFumble: d20 === 1 };
+    addLog(`🛡️ <b>${p.name}</b> rolou Salvaguarda de <b>${label}</b>: <b>${tot}</b> (${bd})`);
+  } else if (typeof rollGlobalDice === 'function') {
     result = rollGlobalDice(20, 1, totalMod, mode, rollLabel);
   } else {
     const d20 = Math.floor(Math.random() * 20) + 1;
@@ -2040,15 +2567,26 @@ function equipBackpackItemAsAttack(playerId, itemIdx) {
 }
 
 
-function rollPlayerAttack(id, rawAttackText) {
+function rollPlayerAttack(id, rawAttackText, customD20) {
   const p = PLAYERS.find(x => x.id === id);
   if (!p) return;
+
+  if (customD20 === undefined && p.diceMode === 'physical') {
+    openPhysicalD20Modal({
+      playerId: id,
+      type: 'attack',
+      title: `⚔️ Ataque Físico: ${p.name}`,
+      subtitle: `Rolagem de ataque: ${rawAttackText}`,
+      rawAttackText: rawAttackText
+    });
+    return;
+  }
 
   const hitMatch = rawAttackText.match(/([+-]\d+)/);
   const dmgMatch = rawAttackText.match(/(\d+d\d+(?:\s*[+-]\s*\d+)?)/i);
 
   const hitBonus = hitMatch ? parseInt(hitMatch[1]) : Math.floor((p.str - 10) / 2) + getProfBonus(p.level);
-  const d20 = Math.floor(Math.random() * 20) + 1;
+  const d20 = (customD20 !== null && customD20 !== undefined) ? parseInt(customD20, 10) : (Math.floor(Math.random() * 20) + 1);
   const totalHit = d20 + hitBonus;
 
   let isCrit = d20 === 20;
@@ -2074,7 +2612,8 @@ function rollPlayerAttack(id, rawAttackText) {
   }
   totalDmg += dmgMod;
 
-  const hitBreakdown = `d20 [${d20}] ${hitBonus >= 0 ? '+' : ''}${hitBonus} ➔ <b>${totalHit}</b> para acertar`;
+  const physicalTag = (customD20 !== null && customD20 !== undefined) ? ' 🎲(Mesa)' : '';
+  const hitBreakdown = `d20 [${d20}${physicalTag}] ${hitBonus >= 0 ? '+' : ''}${hitBonus} ➔ <b>${totalHit}</b> para acertar`;
   const dmgBreakdown = `${diceCount}d${diceSides} [${dmgRolls.join(', ')}] ${dmgMod !== 0 ? (dmgMod > 0 ? '+ ' + dmgMod : '- ' + Math.abs(dmgMod)) : ''} ➔ <b>${totalDmg}</b> de dano`;
 
   let logMsg = `⚔️ <b>${p.name}</b> atacou: ${hitBreakdown} | ${dmgBreakdown}`;
@@ -2082,7 +2621,7 @@ function rollPlayerAttack(id, rawAttackText) {
   if (isFumble) logMsg = '💀 <b>FALHA CRÍTICA (Nat 1)!</b> ' + logMsg;
 
   addLog(logMsg);
-  addPlayerActionLog(p.id, '⚔️', `Ataque: ${rawAttackText} ➔ Acerto ${totalHit} | Dano ${totalDmg}`, 'attack');
+  addPlayerActionLog(p.id, '⚔️', `Ataque${physicalTag}: ${rawAttackText} ➔ Acerto ${totalHit} | Dano ${totalDmg}`, 'attack');
   if (typeof playFX === 'function') playFX(isCrit ? 'crit' : (isFumble ? 'fumble' : 'sword'));
 
   if (typeof showLiveDiceRoll === 'function') {
@@ -2101,6 +2640,7 @@ function rollPlayerAttack(id, rawAttackText) {
     openDiceModal();
   }
   renderPlayers();
+  return { d20, totalHit, totalDmg, isCrit, isFumble };
 }
 
 function togglePlayerSlot(id, lvlIdx, slotIdx) {
@@ -2936,17 +3476,29 @@ function getPlayerSpellcastingStats(p) {
   };
 }
 
-function rollPlayerSpellAttack(playerId) {
+function rollPlayerSpellAttack(playerId, customD20) {
   const p = PLAYERS.find(x => x.id === playerId);
   if (!p) return;
+
+  if (customD20 === undefined && p.diceMode === 'physical') {
+    openPhysicalD20Modal({
+      playerId: playerId,
+      type: 'spellAttack',
+      title: `🔮 Ataque Mágico Físico: ${p.name}`,
+      subtitle: `Rolagem de ataque mágico (d20 real)`
+    });
+    return;
+  }
+
   const stats = getPlayerSpellcastingStats(p);
-  const d20 = Math.floor(Math.random() * 20) + 1;
+  const d20 = (customD20 !== null && customD20 !== undefined) ? parseInt(customD20, 10) : (Math.floor(Math.random() * 20) + 1);
   const isCrit = d20 === 20;
   const isFumble = d20 === 1;
   const total = d20 + stats.attackModNum;
 
-  const title = `Ataque Mágico (${stats.ability})`;
-  const detail = `d20 (${d20}) ${stats.attackBonus} = ${total}`;
+  const physicalTag = (customD20 !== null && customD20 !== undefined) ? ' 🎲(Mesa)' : '';
+  const title = `Ataque Mágico (${stats.ability})${physicalTag}`;
+  const detail = `d20 (${d20}${physicalTag}) ${stats.attackBonus} = ${total}`;
 
   if (typeof playFX === 'function') {
     playFX(isCrit ? 'crit' : (isFumble ? 'fumble' : 'dice'));
@@ -2956,13 +3508,14 @@ function rollPlayerSpellAttack(playerId) {
     showLiveDiceRoll(title, `${total}`, `${p.name} • ${detail}${isCrit ? ' 🔥 CRÍTICO!' : ''}`);
   }
 
-  const logMsg = `🎲 <b>${p.name}</b> rolou <b>Ataque Mágico</b>: [d20 (${d20}) ${stats.attackBonus}] = <b>${total}</b>${isCrit ? ' <span style="color:#fbbf24; font-weight:bold;">🔥 CRÍTICO!</span>' : ''}${isFumble ? ' <span style="color:#f87171; font-weight:bold;">💀 FALHA CRÍTICA!</span>' : ''}`;
+  const logMsg = `🎲 <b>${p.name}</b> rolou <b>Ataque Mágico</b>${physicalTag}: [d20 (${d20}) ${stats.attackBonus}] = <b>${total}</b>${isCrit ? ' <span style="color:#fbbf24; font-weight:bold;">🔥 CRÍTICO!</span>' : ''}${isFumble ? ' <span style="color:#f87171; font-weight:bold;">💀 FALHA CRÍTICA!</span>' : ''}`;
   if (typeof addLog === 'function') addLog(logMsg);
-  if (typeof addPlayerActionLog === 'function') addPlayerActionLog(p.id, '🔮', `Ataque Mágico: ${total} (d20:${d20} ${stats.attackBonus})`, 'dice');
+  if (typeof addPlayerActionLog === 'function') addPlayerActionLog(p.id, '🔮', `Ataque Mágico${physicalTag}: ${total} (d20:${d20} ${stats.attackBonus})`, 'dice');
 
   if (typeof broadcastCombatState === 'function') {
     broadcastCombatState(logMsg);
   }
+  return { d20, total, isCrit, isFumble };
 }
 
 function togglePlayerSpellPrepared(playerId, spellName) {
@@ -3547,6 +4100,12 @@ function executeCastSpell(playerId, spellName, slotLevel) {
   const logMsg = `✨ <b>${p.name}</b> conjurou <b>${spellName}</b> (${slotText})!`;
   addLog(logMsg);
   addPlayerActionLog(p.id, '✨', `Conjurou ${spellName} (${slotText})`, 'spell');
+
+  if (sp && (sp.duration || '').toLowerCase().includes('concentr')) {
+    p.concentrationSpell = spellName;
+    addLog(`🧘 <b>${p.name}</b> iniciou concentração em <b>${spellName}</b>.`);
+    addPlayerActionLog(p.id, '🧘', `Iniciou concentração em ${spellName}`, 'spell');
+  }
 
   if (typeof showLiveDiceRoll === 'function') {
     showLiveDiceRoll(`✨ ${spellName}`, slotLevel === 0 ? 'Truque' : `${slotLevel}º Círculo`, `${p.name} conjurou`);
@@ -6689,6 +7248,35 @@ if (typeof window !== 'undefined') {
   window.getPlayerSpellcastingStats = getPlayerSpellcastingStats;
   window.getCompatibleClassKey = getCompatibleClassKey;
   window.togglePlayerLoginRoomConfig = togglePlayerLoginRoomConfig;
+
+  // ISSUE-87: Armaduras, Sintonização, Modo Físico & Economia de Ações
+  window.DND5E_ARMOR_DATA = DND5E_ARMOR_DATA;
+  window.isArmorItem = isArmorItem;
+  window.isShieldItem = isShieldItem;
+  window.getArmorItemStats = getArmorItemStats;
+  window.calculatePlayerAcFromEquipment = calculatePlayerAcFromEquipment;
+  window.togglePlayerItemAttunement = togglePlayerItemAttunement;
+  window.togglePlayerDiceMode = togglePlayerDiceMode;
+  window.openPhysicalD20Modal = openPhysicalD20Modal;
+  window.closePhysicalDiceModal = closePhysicalDiceModal;
+  window.submitPhysicalD20Roll = submitPhysicalD20Roll;
+  window.submitPhysicalD20DirectInput = submitPhysicalD20DirectInput;
+  window.switchActiveRollToVirtual = switchActiveRollToVirtual;
+  window.executePhysicalRollWithD20 = executePhysicalRollWithD20;
+  window.getAttackActionType = getAttackActionType;
+  window.getSpellActionType = getSpellActionType;
+  window.setPlayerActionFilter = setPlayerActionFilter;
+  window.setPlayerConcentration = setPlayerConcentration;
+  window.clearPlayerConcentration = clearPlayerConcentration;
+  window.renderPlayerResourceQuickDock = renderPlayerResourceQuickDock;
+  window.usePlayerLayOnHandsQuick = usePlayerLayOnHandsQuick;
+  window.usePlayerSecondWindQuick = usePlayerSecondWindQuick;
+  window.usePlayerActionSurgeQuick = usePlayerActionSurgeQuick;
+  window.rollPlayerAttack = rollPlayerAttack;
+  window.rollPlayerSkill = rollPlayerSkill;
+  window.rollPlayerSavingThrow = rollPlayerSavingThrow;
+  window.rollPlayerAttr = rollPlayerAttr;
+  window.rollPlayerSpellAttack = rollPlayerSpellAttack;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -6730,7 +7318,36 @@ if (typeof module !== 'undefined' && module.exports) {
     getMaxPreparedSpells,
     getPlayerSpellcastingStats,
     getCompatibleClassKey,
-    togglePlayerLoginRoomConfig
+    togglePlayerLoginRoomConfig,
+
+    // ISSUE-87: Armaduras, Sintonização, Modo Físico & Economia de Ações
+    DND5E_ARMOR_DATA,
+    isArmorItem,
+    isShieldItem,
+    getArmorItemStats,
+    calculatePlayerAcFromEquipment,
+    togglePlayerItemAttunement,
+    togglePlayerDiceMode,
+    openPhysicalD20Modal,
+    closePhysicalDiceModal,
+    submitPhysicalD20Roll,
+    submitPhysicalD20DirectInput,
+    switchActiveRollToVirtual,
+    executePhysicalRollWithD20,
+    getAttackActionType,
+    getSpellActionType,
+    setPlayerActionFilter,
+    setPlayerConcentration,
+    clearPlayerConcentration,
+    renderPlayerResourceQuickDock,
+    usePlayerLayOnHandsQuick,
+    usePlayerSecondWindQuick,
+    usePlayerActionSurgeQuick,
+    rollPlayerAttack,
+    rollPlayerSkill,
+    rollPlayerSavingThrow,
+    rollPlayerAttr,
+    rollPlayerSpellAttack
   };
 }
 

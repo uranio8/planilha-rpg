@@ -8115,4 +8115,186 @@
       margin-left: 4px;
     }
 
+    /* ======================================================== */
+    /* ⚔️ MELHORIAS DE FICHA DO JOGADOR (ISSUE-87)             */
+    /* ======================================================== */
+    /* 1. ECONOMIA DE TURNO (D&D BEYOND) */
+    .action-economy-nav {
+      display: flex;
+      gap: 4px;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 8px;
+      overflow-x: auto;
+    }
+    .action-economy-chip {
+      flex: 1;
+      min-width: 70px;
+      text-align: center;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .action-economy-chip:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .action-economy-chip.active {
+      background: var(--bg-surface-elevated);
+      color: var(--accent-gold);
+      border-color: var(--accent-gold);
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+    }
+
+    /* CONCENTRAÇÃO ATIVA */
+    .concentration-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(135deg, rgba(147, 51, 234, 0.25), rgba(79, 70, 229, 0.25));
+      border: 1px solid #a855f7;
+      padding: 6px 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      animation: pulseGlow 2s infinite alternate;
+    }
+    .concentration-banner b {
+      color: #e9d5ff;
+      font-size: 11.5px;
+    }
+
+    /* 2. DADO FÍSICO DA MESA - MODAL TECLADO TÁTIL */
+    .physical-d20-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin: 14px 0;
+    }
+    .physical-d20-key {
+      background: #1e293b;
+      border: 2px solid var(--border-color);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 800;
+      padding: 12px 0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+      user-select: none;
+    }
+    .physical-d20-key:hover {
+      background: #334155;
+      border-color: var(--accent-gold);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+    }
+    .physical-d20-key.key-crit {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.4), rgba(5, 150, 105, 0.6));
+      border-color: #34d399;
+      color: #6ee7b7;
+    }
+    .physical-d20-key.key-fumble {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.4), rgba(185, 28, 28, 0.6));
+      border-color: #f87171;
+      color: #fca5a5;
+    }
+    .dice-mode-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .dice-mode-toggle-btn.mode-physical {
+      background: rgba(245, 158, 11, 0.2);
+      border: 1px solid var(--accent-gold);
+      color: var(--accent-gold);
+    }
+    .dice-mode-toggle-btn.mode-virtual {
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid #3b82f6;
+      color: #93c5fd;
+    }
+
+    /* 3. ARMADURA E SINTONIZAÇÃO */
+    .btn-item-attune {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      border-radius: 4px;
+      padding: 2px 5px;
+      font-size: 9px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-item-attune.attuned {
+      background: rgba(168, 85, 247, 0.25);
+      border-color: #c084fc;
+      color: #e9d5ff;
+      font-weight: 700;
+      box-shadow: 0 0 6px rgba(192, 132, 252, 0.4);
+    }
+    .attunement-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: #c084fc;
+      background: rgba(168, 85, 247, 0.15);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 4px;
+    }
+
+    /* 4. CONTADORES TÁTEIS RÁPIDOS */
+    .resource-quick-dock {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px 10px;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .resource-quick-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+    }
+    .resource-quick-btn {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      color: #fff;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .resource-quick-btn:hover {
+      background: #334155;
+      border-color: var(--accent-gold);
+    }
+
   </style>
