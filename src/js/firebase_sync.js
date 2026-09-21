@@ -193,6 +193,14 @@ function startFirebaseRoomListener(roomId) {
       if (!cloudData) {
         isCloudRoomDataLoaded = true;
         if (typeof renderPlayerLoginList === 'function') renderPlayerLoginList();
+        // SITUAÇÃO 1: Se a sala na nuvem estiver vazia e o usuário for o Mestre com dados locais, auto-publica silenciosamente
+        if (clientRole !== 'player' && typeof publishMasterCampaignToCloud === 'function') {
+          const localHasPlayers = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS) && PLAYERS.length > 0);
+          if (localHasPlayers) {
+            console.log('🚀 Sala vazia no Realtime Database detectada. Auto-publicando estado inicial do mestre...');
+            publishMasterCampaignToCloud(true);
+          }
+        }
         return;
       }
       if (cloudData.lastUpdatedBy === localClientId) return;
@@ -212,12 +220,27 @@ function startFirebaseRoomListener(roomId) {
         if (!docSnapshot.exists) {
           isCloudRoomDataLoaded = true;
           if (typeof renderPlayerLoginList === 'function') renderPlayerLoginList();
+          // SITUAÇÃO 1: Se o documento da sala no Firestore não existir e o usuário for Mestre com dados locais, auto-publica
+          if (clientRole !== 'player' && typeof publishMasterCampaignToCloud === 'function') {
+            const localHasPlayers = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS) && PLAYERS.length > 0);
+            if (localHasPlayers) {
+              console.log('🚀 Sala vazia no Firestore detectada. Auto-publicando estado inicial do mestre...');
+              publishMasterCampaignToCloud(true);
+            }
+          }
           return;
         }
         const cloudData = docSnapshot.data();
         if (!cloudData) {
           isCloudRoomDataLoaded = true;
           if (typeof renderPlayerLoginList === 'function') renderPlayerLoginList();
+          if (clientRole !== 'player' && typeof publishMasterCampaignToCloud === 'function') {
+            const localHasPlayers = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS) && PLAYERS.length > 0);
+            if (localHasPlayers) {
+              console.log('🚀 Dados vazios no Firestore. Auto-publicando estado inicial do mestre...');
+              publishMasterCampaignToCloud(true);
+            }
+          }
           return;
         }
         if (cloudData.lastUpdatedBy === localClientId) return;
@@ -412,6 +435,10 @@ function applyCloudDataToLocal(cloudData) {
   if (localHasPlayers && !cloudHasPlayers) {
     console.warn('🛡️ Nuvem vazia detectada! Preservando fichas locais.');
     if (typeof renderPlayerLoginList === 'function') renderPlayerLoginList();
+    if (clientRole !== 'player' && typeof publishMasterCampaignToCloud === 'function') {
+      console.log('🚀 Auto-publicando fichas locais do mestre para a nuvem recém-criada...');
+      publishMasterCampaignToCloud(true);
+    }
     return;
   }
 
@@ -1080,13 +1107,13 @@ function manualPushToCloud() {
   alert('⬆️ Todas as fichas e dados locais foram enviados para a nuvem com sucesso!');
 }
 
-function manualPullFromCloud() {
+function manualPullFromCloud(silent = false) {
   if (!isFirebaseConnected || (!firestoreDb && !realtimeDb)) {
-    alert('Conecte o Firebase primeiro.');
+    if (!silent) alert('Conecte o Firebase primeiro.');
     return;
   }
   const roomId = getStoredFirebaseRoom();
-  updateFirebaseUiStatus('syncing', 'Buscando dados...');
+  if (!silent) updateFirebaseUiStatus('syncing', 'Buscando dados...');
 
   // 1. Busca no Realtime Database
   if (realtimeDb) {
@@ -1095,13 +1122,13 @@ function manualPullFromCloud() {
         const cloudData = snapshot.val();
         if (cloudData) {
           applyCloudDataToLocal(cloudData);
-          alert('⬇️ Fichas e estado de combate atualizados a partir do Realtime Database!');
+          if (!silent) alert('⬇️ Fichas e estado de combate atualizados a partir do Realtime Database!');
         } else {
-          alert(`A sala '${roomId}' ainda não possui dados salvos na nuvem.`);
+          if (!silent) alert(`A sala '${roomId}' ainda não possui dados salvos na nuvem.`);
         }
       })
       .catch(err => {
-        alert('Erro ao buscar dados do Realtime Database: ' + err.message);
+        if (!silent) alert('Erro ao buscar dados do Realtime Database: ' + err.message);
       });
     return;
   }
@@ -1112,15 +1139,48 @@ function manualPullFromCloud() {
       .then(doc => {
         if (doc.exists) {
           applyCloudDataToLocal(doc.data());
-          alert('⬇️ Fichas e estado de combate atualizados a partir do Firestore!');
+          if (!silent) alert('⬇️ Fichas e estado de combate atualizados a partir do Firestore!');
         } else {
-          alert(`A sala '${roomId}' ainda não possui dados na nuvem.`);
+          if (!silent) alert(`A sala '${roomId}' ainda não possui dados na nuvem.`);
         }
       })
       .catch(err => {
-        alert('Erro ao buscar dados do Firestore: ' + err.message);
+        if (!silent) alert('Erro ao buscar dados do Firestore: ' + err.message);
       });
   }
+}
+
+// --- RESSINCRONIZAÇÃO REATIVA EM MUDANÇAS DE VISIBILIDADE / FOCO (MOBILE & DESKTOP) ---
+let lastWakeupSyncTimestamp = 0;
+function handleDeviceWakeupOrTabFocus() {
+  const now = Date.now();
+  if (now - lastWakeupSyncTimestamp < 1500) return; // Throttle de 1.5s contra tempestade de eventos
+  lastWakeupSyncTimestamp = now;
+
+  if (isFirebaseConnected && (realtimeDb || firestoreDb)) {
+    console.log('📱 Dispositivo reativado / aba em foco: disparando ressincronização reativa com a nuvem...');
+    manualPullFromCloud(true);
+  }
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      handleDeviceWakeupOrTabFocus();
+    }
+  });
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('focus', handleDeviceWakeupOrTabFocus);
+  window.addEventListener('pageshow', handleDeviceWakeupOrTabFocus);
+  window.addEventListener('online', () => {
+    if (!isFirebaseConnected) {
+      initFirebaseSync();
+    } else {
+      handleDeviceWakeupOrTabFocus();
+    }
+  });
 }
 
 // --- PAREAMENTO MULTI-DISPOSITIVO (PC ➔ CELULAR / NAVEGADORES) ---
@@ -1214,6 +1274,7 @@ if (typeof window !== 'undefined') {
   window.closeMasterSyncDeviceModal = closeMasterSyncDeviceModal;
   window.copyMasterSyncDeviceUrl = copyMasterSyncDeviceUrl;
   window.handleUpdateSyncDeviceRoom = handleUpdateSyncDeviceRoom;
+  window.handleDeviceWakeupOrTabFocus = handleDeviceWakeupOrTabFocus;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -1239,6 +1300,7 @@ if (typeof module !== 'undefined' && module.exports) {
     openMasterSyncDeviceModal,
     closeMasterSyncDeviceModal,
     copyMasterSyncDeviceUrl,
-    handleUpdateSyncDeviceRoom
+    handleUpdateSyncDeviceRoom,
+    handleDeviceWakeupOrTabFocus
   };
 }

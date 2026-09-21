@@ -330,7 +330,10 @@ function handlePlayerNotesInput(id, text) {
 
   if (playerNotesDebounceTimer) clearTimeout(playerNotesDebounceTimer);
   playerNotesDebounceTimer = setTimeout(() => {
+    if (typeof touchPlayer === 'function') touchPlayer(p);
     saveToLocalStorage();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+    if (typeof broadcastStateSync === 'function') broadcastStateSync();
     if (statusEl) {
       statusEl.innerText = '✅ Salvo';
       statusEl.style.color = 'var(--accent-green)';

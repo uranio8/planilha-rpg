@@ -94,7 +94,7 @@ function renderCombat() {
             <summary class="combatant-notes-summary" style="font-size: 10px; color: var(--text-dim); cursor: pointer; user-select: none;">
               📝 Anotações ${c.notes ? '•' : ''}
             </summary>
-            <textarea class="combatant-notes-input" placeholder="Anotações táticas deste combatente..." onchange="updateCombatantNotes('${c.id}', this.value)" onkeydown="event.stopPropagation()">${typeof escapeAttr === 'function' ? escapeAttr(c.notes || '') : (c.notes || '').replace(/"/g, '&quot;')}</textarea>
+            <textarea class="combatant-notes-input" placeholder="Anotações táticas deste combatente..." oninput="updateCombatantNotes('${c.id}', this.value)" onkeydown="event.stopPropagation()">${typeof escapeAttr === 'function' ? escapeAttr(c.notes || '') : (c.notes || '').replace(/"/g, '&quot;')}</textarea>
           </details>
         </div>
       </div>
@@ -1144,12 +1144,16 @@ function saveInlineHpEdit(combatantId, newVal) {
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
 
+let combatantNotesDebounceTimer = null;
 function updateCombatantNotes(combatantId, text) {
   const c = state.combatants.find(x => x.id === combatantId);
   if (!c) return;
-  c.notes = (text || '').trim();
-  saveToLocalStorage();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  c.notes = text || '';
+  if (combatantNotesDebounceTimer) clearTimeout(combatantNotesDebounceTimer);
+  combatantNotesDebounceTimer = setTimeout(() => {
+    saveToLocalStorage();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  }, 400);
 }
 
 function announceActiveTurn(combatantId) {

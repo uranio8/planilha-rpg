@@ -3637,6 +3637,95 @@ vm.runInContext(`
 const wasImmediateExecuted = vm.runInContext("executedCloudDbSetCalled", sandbox);
 assert(wasImmediateExecuted === true, 'syncLocalChangesToFirebase(true) ignora cooldown e despacha na hora para o Firebase');
 
+// ========================================================
+// 55. TESTES DE AUTOMAÇÃO EM TEMPO REAL: SITUAÇÕES 1, 3 E 4 (ISSUE-82)
+// ========================================================
+console.log('\n⚡ 55. Testes de Automação em Tempo Real: Situações 1, 3 e 4 (ISSUE-82):');
+
+// 1. SITUAÇÃO 1: Auto-Publicação para o Mestre ao Conectar em Sala Vazia na Nuvem
+vm.runInContext(`
+  var publishedRoomsTracked = [];
+  var originalPublishMasterCampaignToCloud = publishMasterCampaignToCloud;
+  publishMasterCampaignToCloud = function(silent) {
+    publishedRoomsTracked.push({ silent: silent, role: clientRole, playersCount: (PLAYERS || []).length });
+  };
+
+  // Cenário A: Mestre com personagens locais recebe sala vazia do Realtime DB
+  clientRole = 'master';
+  PLAYERS = [{ id: 'p_hero_master_init', name: 'Geralt de Rivia', hp: 25, maxHp: 25 }];
+  applyCloudDataToLocal({ players: [] }); // Nuvem vazia
+`, sandbox);
+const masterPublishedEvents = vm.runInContext("publishedRoomsTracked", sandbox);
+assert(masterPublishedEvents.length === 1, 'Mestre auto-publicou silenciosamente ao detectar sala vazia na nuvem');
+assert(masterPublishedEvents[0].silent === true, 'Auto-publicação do mestre ocorreu com silent=true');
+assert(masterPublishedEvents[0].playersCount === 1, 'Auto-publicação enviou os personagens do mestre');
+
+// Cenário B: Jogador se conecta em sala vazia (NUNCA deve auto-publicar)
+vm.runInContext(`
+  publishedRoomsTracked = [];
+  clientRole = 'player';
+  PLAYERS = [{ id: 'p_player_local_mock', name: 'Mock Player', hp: 10, maxHp: 10 }];
+  applyCloudDataToLocal({ players: [] });
+`, sandbox);
+const playerPublishedEvents = vm.runInContext("publishedRoomsTracked", sandbox);
+assert(playerPublishedEvents.length === 0, 'Jogador NÃO auto-publica em sala vazia, protegendo integridade da sala');
+
+// 2. SITUAÇÃO 3: Ressincronização Reativa ao Despertar Dispositivo / Retornar à Aba
+vm.runInContext(`
+  var manualPullCallsCount = 0;
+  var lastPullSilentArg = null;
+  var originalManualPullFromCloud = manualPullFromCloud;
+  manualPullFromCloud = function(silent) {
+    manualPullCallsCount++;
+    lastPullSilentArg = silent;
+  };
+
+  isFirebaseConnected = true;
+  realtimeDb = { ref: () => ({ once: () => Promise.resolve({ val: () => ({}) }) }) };
+
+  // Primeiro disparo ao acordar dispositivo
+  handleDeviceWakeupOrTabFocus();
+`, sandbox);
+const wakeupPullCalls1 = vm.runInContext("manualPullCallsCount", sandbox);
+const wakeupPullSilentArg = vm.runInContext("lastPullSilentArg", sandbox);
+assert(wakeupPullCalls1 === 1, 'handleDeviceWakeupOrTabFocus disparou ressincronização com a nuvem');
+assert(wakeupPullSilentArg === true, 'manualPullFromCloud chamado com silent=true para não emitir popups/alerts');
+
+// Teste de Throttle (disparo repetido em menos de 1.5s deve ser bloqueado)
+vm.runInContext(`
+  handleDeviceWakeupOrTabFocus();
+  handleDeviceWakeupOrTabFocus();
+`, sandbox);
+const wakeupPullCallsAfterBurst = vm.runInContext("manualPullCallsCount", sandbox);
+assert(wakeupPullCallsAfterBurst === 1, 'Throttle de 1.5s protegeu contra tempestades de eventos visibilitychange/focus/pageshow');
+
+// 3. SITUAÇÃO 4: Auto-Save e Sincronização Contínua em Anotações com Debounce
+vm.runInContext(`
+  var combatSyncDispatched = false;
+  syncLocalChangesToFirebase = function(immediate) {
+    combatSyncDispatched = true;
+  };
+
+  state = {
+    round: 1,
+    turnIndex: 0,
+    combatants: [
+      { id: 'c_test_notes', name: 'Goblin Observador', notes: '' }
+    ]
+  };
+
+  // Digitação em anotação do combatente (sem trim imediato para permitir espaços)
+  updateCombatantNotes('c_test_notes', 'Vulnerável a fogo ');
+`, sandbox);
+const combatantNotesImmediate = vm.runInContext("state.combatants[0].notes", sandbox);
+assert(combatantNotesImmediate === 'Vulnerável a fogo ', 'updateCombatantNotes atualizou o texto imediatamente preservando espaços');
+
+// Restaura funções originais
+vm.runInContext(`
+  publishMasterCampaignToCloud = originalPublishMasterCampaignToCloud;
+  manualPullFromCloud = originalManualPullFromCloud;
+`, sandbox);
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
