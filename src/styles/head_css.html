@@ -4002,6 +4002,75 @@
       border-color: rgba(254,240,138,0.6);
     }
 
+    .portal-levelup-btn {
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border: 1px solid #34d399;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .portal-levelup-btn:hover {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.5);
+    }
+
+    .portal-turn-alert-chip {
+      background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+      color: #fff;
+      border: 1px solid #fca5a5;
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 20px;
+      animation: pulse-turn-glow 1.5s infinite alternate;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    @keyframes pulse-turn-glow {
+      0% { box-shadow: 0 0 4px rgba(239, 68, 68, 0.4); transform: scale(1); }
+      100% { box-shadow: 0 0 14px rgba(239, 68, 68, 0.9); transform: scale(1.03); }
+    }
+
+    .player-combat-wrap {
+      padding: 12px 16px;
+      max-height: 65vh;
+      overflow-y: auto;
+    }
+    .player-combat-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s ease;
+    }
+    .player-combat-card.active-turn {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: var(--accent-gold);
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+    }
+    .player-combat-card.my-hero {
+      border-left: 4px solid var(--accent-green);
+    }
+
     /* Linha 2: Nav Chips Row com scroll horizontal */
     .portal-nav-scroll-row {
       display: flex;
@@ -6753,7 +6822,6 @@
 
     /* --- 7. MODO PORTAL DO ALUNO / JOGADOR (VISÃO LIMITADA DO ALUNO) --- */
     body.mode-player-portal .dm-only-btn,
-    body.mode-player-portal .btn-levelup-trigger,
     body.mode-player-portal .btn-header-backup,
     body.mode-player-portal .player-actions-group .btn-secondary[onclick*="deletePlayerDirect"],
     body.mode-player-portal .player-actions-group .btn-secondary[onclick*="openPlayerModal"],

@@ -477,9 +477,15 @@ function applyCloudDataToLocal(cloudData) {
         const localChar = PLAYERS.find(p => p.id === activePortalPlayerId);
         PLAYERS = cloudData.players.map(remoteP => {
           if (localChar && remoteP.id === activePortalPlayerId) {
-            // Notificação para o jogador quando PV for alterado pelo mestre
+            const localPlayerUpdated = localChar.updatedAt || 0;
+            const remotePlayerUpdated = remoteP.updatedAt || 0;
+            const isLocalNewer = localPlayerUpdated >= remotePlayerUpdated;
+            const isLocalLevelHigher = (localChar.level || 1) > (remoteP.level || 1);
+            const isStaleRemoteSnapshot = isLocalLevelHigher && (remotePlayerUpdated <= localPlayerUpdated);
+
+            // Notificação para o jogador quando PV for alterado pelo mestre (apenas se snapshot não for anterior ao level up)
             const hpDiff = (remoteP.hp !== undefined ? remoteP.hp : localChar.hp) - (localChar.hp !== undefined ? localChar.hp : localChar.maxHp);
-            if (hpDiff !== 0 && typeof addLog === 'function') {
+            if (hpDiff !== 0 && !isStaleRemoteSnapshot && typeof addLog === 'function') {
               if (hpDiff < 0) {
                 addLog(`⚔️ <b>Atenção:</b> Você sofreu ${Math.abs(hpDiff)} de dano! (${localChar.hp} ➔ ${remoteP.hp} PV)`);
                 if (typeof playFX === 'function') playFX('sword');
@@ -489,26 +495,41 @@ function applyCloudDataToLocal(cloudData) {
               }
             }
 
-            // Preserva inventário, moedas, slots gastos e cargas locais se o jogador mexeu, mas aceita PV, condições e XP do mestre
-            const localPlayerUpdated = localChar.updatedAt || 0;
-            const remotePlayerUpdated = remoteP.updatedAt || 0;
-            const keepLocalSlots = (localPlayerUpdated >= remotePlayerUpdated) && Array.isArray(localChar.slotsUsed);
-            const keepLocalFeatures = (localPlayerUpdated >= remotePlayerUpdated) && Array.isArray(localChar.featureCharges);
+            const keepLocalSlots = isLocalNewer && Array.isArray(localChar.slotsUsed);
+            const keepLocalFeatures = isLocalNewer && Array.isArray(localChar.featureCharges);
+
+            const resolvedLevel = Math.max(localChar.level || 1, remoteP.level || 1);
+            const resolvedMaxHp = isLocalLevelHigher
+              ? Math.max(localChar.maxHp || 10, remoteP.maxHp || 10)
+              : (remoteP.maxHp !== undefined ? remoteP.maxHp : localChar.maxHp);
+
+            // Se for snapshot defasado pré-level-up, preserva PV local atual; senão aceita dano/cura do mestre
+            const resolvedHp = isStaleRemoteSnapshot
+              ? (localChar.hp !== undefined ? localChar.hp : resolvedMaxHp)
+              : (remoteP.hp !== undefined ? Math.min(resolvedMaxHp, remoteP.hp) : localChar.hp);
 
             return Object.assign({}, remoteP, {
-              hp: remoteP.hp !== undefined ? remoteP.hp : localChar.hp,
-              maxHp: remoteP.maxHp !== undefined ? remoteP.maxHp : localChar.maxHp,
+              hp: resolvedHp,
+              maxHp: resolvedMaxHp,
               tempHp: remoteP.tempHp !== undefined ? remoteP.tempHp : localChar.tempHp,
               conditions: remoteP.conditions || localChar.conditions || [],
               xp: remoteP.xp !== undefined ? remoteP.xp : localChar.xp,
-              level: remoteP.level || localChar.level,
-              slots: remoteP.slots || localChar.slots,
+              level: resolvedLevel,
+              className: isLocalLevelHigher ? (localChar.className || remoteP.className) : (remoteP.className || localChar.className),
+              race: isLocalLevelHigher ? (localChar.race || remoteP.race) : (remoteP.race || localChar.race),
+              multiclass: isLocalLevelHigher ? (localChar.multiclass || remoteP.multiclass) : (remoteP.multiclass || localChar.multiclass),
+              hitDice: isLocalLevelHigher ? (localChar.hitDice || remoteP.hitDice) : (remoteP.hitDice || localChar.hitDice),
+              hitDiceCurrent: isLocalLevelHigher ? (localChar.hitDiceCurrent !== undefined ? localChar.hitDiceCurrent : remoteP.hitDiceCurrent) : (remoteP.hitDiceCurrent !== undefined ? remoteP.hitDiceCurrent : localChar.hitDiceCurrent),
+              slots: isLocalLevelHigher ? (localChar.slots || remoteP.slots) : (remoteP.slots || localChar.slots),
               slotsUsed: keepLocalSlots ? localChar.slotsUsed : (remoteP.slotsUsed || localChar.slotsUsed || [0, 0, 0, 0, 0]),
+              preparedSpells: (localChar.preparedSpells && localChar.preparedSpells.length > 0) ? localChar.preparedSpells : (remoteP.preparedSpells || []),
+              spells: (localChar.spells && localChar.spells.length > 0) ? localChar.spells : (remoteP.spells || localChar.spells),
               featureCharges: keepLocalFeatures ? localChar.featureCharges : (remoteP.featureCharges || localChar.featureCharges || []),
               // Mantém inventário mais recente entre ambos
               inventory: (localChar.inventory && localChar.inventory.length > 0) ? localChar.inventory : (remoteP.inventory || []),
               // Preserva moedas do jogador local
-              coins: localChar.coins !== undefined ? localChar.coins : (remoteP.coins || { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 })
+              coins: localChar.coins !== undefined ? localChar.coins : (remoteP.coins || { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }),
+              updatedAt: Math.max(localPlayerUpdated, remotePlayerUpdated)
             });
           }
           return remoteP;
@@ -618,6 +639,13 @@ function applyCloudDataToLocal(cloudData) {
     if (cloudData.state && Array.isArray(cloudData.state.combatants) && cloudData.publishedBy !== 'player') {
       state = cloudData.state;
       if (typeof renderCombat === 'function') renderCombat();
+      if (typeof updatePlayerPortalBanner === 'function') updatePlayerPortalBanner();
+      if (typeof renderPlayerCombatModalContent === 'function') {
+        const modal = document.getElementById('modal-player-combat');
+        if (modal && modal.classList.contains('active')) {
+          renderPlayerCombatModalContent();
+        }
+      }
     }
 
     // 3. Atualiza Grid de Batalha (Opcional se sincronizado)

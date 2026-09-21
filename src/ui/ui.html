@@ -138,11 +138,16 @@
         </div>
         <span id="portal-sync-status-badge" class="portal-sync-badge sync-online">🟢 Sincronizado</span>
       </div>
-      <button class="portal-switch-btn" onclick="openPlayerLoginModal()" title="Trocar de personagem">🔄 Trocar</button>
+      <div style="display: flex; gap: 6px; align-items: center;">
+        <span id="portal-turn-active-indicator" class="portal-turn-alert-chip" style="display: none;">⚔️ SUA VEZ DE AGIR!</span>
+        <button id="portal-btn-levelup" class="portal-levelup-btn" onclick="if(typeof openLevelUpWizardForActivePlayer === 'function') { openLevelUpWizardForActivePlayer(); } else if(activePortalPlayerId) { openLevelUpWizard(activePortalPlayerId); }" title="Subir de Nível (Evolução D&D 5E)">🔼 Upar</button>
+        <button class="portal-switch-btn" onclick="openPlayerLoginModal()" title="Trocar de personagem">🔄 Trocar</button>
+      </div>
     </div>
     <!-- LINHA 2: Nav Chips com scroll horizontal -->
     <div class="portal-nav-scroll-row" id="portal-nav-chips">
       <button class="portal-chip active" id="pnav-players" onclick="switchTab('players')">👤 Ficha</button>
+      <button class="portal-chip" id="pnav-combat" onclick="openPlayerCombatModal()">⚔️ Combate</button>
       <button class="portal-chip" id="pnav-stash" onclick="openPartyStashModal()">🎒 Baú</button>
       <button class="portal-chip" id="pnav-chronicles" onclick="openChroniclesViewerModal()">📖 Crônicas</button>
       <button class="portal-chip" id="pnav-spells" onclick="switchTab('spells')">✨ Grimório</button>
@@ -3102,6 +3107,25 @@
         <div style="display: flex; gap: 6px;">
           <button class="btn-secondary" onclick="closeSnapshotsModal()">Fechar</button>
         </div>
+      </div>
+  <!-- MODAL: VISUALIZADOR DE COMBATE DO JOGADOR -->
+  <div id="modal-player-combat" class="modal-overlay">
+    <div class="modal-body" style="max-width: 540px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">⚔️</span>
+          <div>
+            <h3 style="margin: 0; font-size: 16px;">Ordem de Combate & Iniciativa</h3>
+            <div id="player-combat-meta" style="font-size: 11px; color: var(--text-muted);">Rodada 1 • Acompanhamento em tempo real</div>
+          </div>
+        </div>
+        <button class="modal-close" onclick="closePlayerCombatModal()">✕</button>
+      </div>
+      <div id="player-combat-list" class="player-combat-wrap">
+        <!-- Renderizado dinamicamente por renderPlayerCombatModalContent() -->
+      </div>
+      <div style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 10px;">
+        <button class="btn-secondary" onclick="closePlayerCombatModal()">Fechar</button>
       </div>
     </div>
   </div>

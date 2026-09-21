@@ -3726,6 +3726,134 @@ vm.runInContext(`
   manualPullFromCloud = originalManualPullFromCloud;
 `, sandbox);
 
+// =========================================================================
+// 56. TESTES DO MODO JOGADOR: LEVEL UP, COMBATE READ-ONLY E RESILIÊNCIA (ISSUE-83)
+// =========================================================================
+console.log('\n🌟 56. Testes do Modo Jogador: Level Up, Combate Read-Only e Resiliência (ISSUE-83):');
+
+// 1. Verificação de integridade CSS: botão de subir nível visível para o jogador
+const headCssSuite56 = fs.readFileSync(path.join(__dirname, 'src', 'styles', 'head_css.html'), 'utf8');
+assert(!headCssSuite56.includes('body.mode-player-portal .btn-levelup-trigger { display: none !important; }'), 'CSS do Modo Jogador não esconde .btn-levelup-trigger');
+assert(headCssSuite56.includes('.portal-levelup-btn'), 'CSS contém estilização de .portal-levelup-btn');
+assert(headCssSuite56.includes('.portal-turn-alert-chip'), 'CSS contém estilização de .portal-turn-alert-chip');
+assert(headCssSuite56.includes('.player-combat-card'), 'CSS contém estilização de .player-combat-card');
+
+// 2. Elementos no HTML standalone
+const builtHtmlSuite56 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(builtHtmlSuite56.includes('id="portal-btn-levelup"'), 'HTML contém botão de atalho #portal-btn-levelup');
+assert(builtHtmlSuite56.includes('id="portal-turn-active-indicator"'), 'HTML contém indicador de turno #portal-turn-active-indicator');
+assert(builtHtmlSuite56.includes('id="modal-player-combat"'), 'HTML contém modal #modal-player-combat');
+assert(builtHtmlSuite56.includes('id="pnav-combat"'), 'HTML contém chip de navegação #pnav-combat');
+
+// 3. Execução do Assistente de Subir de Nível (Level Up) para o Jogador
+vm.runInContext(`
+  // Cria personagem de teste no nível 1
+  const testHeroId = 'p_hero_levelup_test';
+  const heroForLvl = {
+    id: testHeroId,
+    name: 'Arthur Pendragon',
+    student: 'Arthur',
+    race: 'Humano',
+    className: 'Paladino',
+    level: 1,
+    hp: 12,
+    maxHp: 12,
+    con: 14,
+    multiclass: [{ className: 'Paladino', level: 1, subclassIdx: 0 }],
+    slots: [2, 0, 0, 0, 0],
+    slotsUsed: [0, 0, 0, 0, 0],
+    inventory: [],
+    coins: { gp: 25 },
+    updatedAt: Date.now()
+  };
+  PLAYERS = [heroForLvl];
+  activePortalPlayerId = testHeroId;
+  clientRole = 'player';
+
+  // Configura estado do wizard para subir para nível 2 de Paladino com ganho médio de PV
+  levelUpWizardState = {
+    playerId: testHeroId,
+    step: 3,
+    selectedClassKey: 'Paladino',
+    selectedClass: 'Paladino',
+    targetClassLevel: 2,
+    selectedSubclassIdx: 0,
+    hpMethod: 'average',
+    rolledHp: null
+  };
+
+  var levelUpSyncTriggered = false;
+  var levelUpImmediateArg = false;
+  syncLocalChangesToFirebase = function(immediate) {
+    levelUpSyncTriggered = true;
+    levelUpImmediateArg = immediate;
+  };
+
+  applyLevelUpConfirm();
+`, sandbox);
+
+const leveledHero = vm.runInContext("PLAYERS.find(p => p.id === 'p_hero_levelup_test')", sandbox);
+assert(leveledHero.level === 2, 'applyLevelUpConfirm elevou o herói para o Nível 2');
+assert(leveledHero.maxHp > 12, 'applyLevelUpConfirm incrementou o PV Máximo do herói');
+assert(leveledHero.hp === leveledHero.maxHp, 'applyLevelUpConfirm curou o ganho de PV na evolução');
+assert(vm.runInContext("levelUpSyncTriggered === true && levelUpImmediateArg === true", sandbox), 'applyLevelUpConfirm disparou syncLocalChangesToFirebase(true)');
+
+// 4. Proteção contra sobrescrita por snapshot remoto atrasado (Stale Snapshot)
+vm.runInContext(`
+  // Snapshot antigo vindo da nuvem (gerado antes do herói upar)
+  const staleCloud = {
+    publishedBy: 'master',
+    players: [
+      {
+        id: 'p_hero_levelup_test',
+        name: 'Arthur Pendragon',
+        level: 1, // Desatualizado na nuvem
+        maxHp: 12, // Desatualizado na nuvem
+        hp: 12,
+        slots: [2, 0, 0, 0, 0],
+        updatedAt: 1000 // Timestamp antigo
+      }
+    ]
+  };
+
+  applyCloudDataToLocal(staleCloud);
+`, sandbox);
+
+const heroAfterStaleCloud = vm.runInContext("PLAYERS.find(p => p.id === 'p_hero_levelup_test')", sandbox);
+assert(heroAfterStaleCloud.level === 2, 'applyCloudDataToLocal PRESERVOU o Nível 2 contra snapshot defasado da nuvem');
+assert(heroAfterStaleCloud.maxHp === leveledHero.maxHp, 'applyCloudDataToLocal PRESERVOU o PV Máximo aumentado contra snapshot defasado');
+
+// 5. Modal de Combate Read-Only e Alerta de Turno Ativo
+vm.runInContext(`
+  // Configura combate ativo com 2 combatentes: Inimigo e o Herói
+  state = {
+    round: 2,
+    turn: 1, // Turno do herói Arthur
+    combatants: [
+      { id: 'm_goblin', name: 'Goblin Líder', type: 'monster', hp: 15, maxHp: 30, ac: 13, init: 15 },
+      { id: 'p_hero_levelup_test', playerId: 'p_hero_levelup_test', name: 'Arthur Pendragon', type: 'player', hp: PLAYERS[0].hp, maxHp: PLAYERS[0].maxHp, ac: 16, init: 12 }
+    ]
+  };
+
+  updatePlayerPortalBanner();
+  openPlayerCombatModal();
+`, sandbox);
+
+const combatModalActive = vm.runInContext("document.getElementById('modal-player-combat').classList.contains('active')", sandbox);
+assert(combatModalActive === true, 'openPlayerCombatModal abriu o modal de combate');
+
+const combatListHtml = vm.runInContext("document.getElementById('player-combat-list').innerHTML", sandbox);
+assert(combatListHtml.includes('Goblin Líder'), 'Lista de combate exibe o inimigo Goblin Líder');
+assert(combatListHtml.includes('Arthur Pendragon'), 'Lista de combate exibe o herói Arthur');
+assert(combatListHtml.includes('VOCÊ'), 'Herói ativo identificado com badge "VOCÊ"');
+assert(combatListHtml.includes('TURNO ATUAL'), 'Turno atual identificado na listagem');
+// Confirma que não expõe botões destrutivos de mestre
+assert(!combatListHtml.includes('removeCombatant'), 'Modal do jogador não expõe botão de remover combatente');
+assert(!combatListHtml.includes('nextTurn'), 'Modal do jogador não expõe controle de passar turno');
+
+const turnAlertDisplay = vm.runInContext("document.getElementById('portal-turn-active-indicator').style.display", sandbox);
+assert(turnAlertDisplay === 'inline-flex', 'Indicador "SUA VEZ DE AGIR!" exibido no banner quando é o turno do jogador');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

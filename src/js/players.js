@@ -3406,6 +3406,7 @@ function savePlayerSheet() {
   closePlayerModal();
   renderPlayers();
   if (typeof touchPlayer === 'function') touchPlayer(data);
+  if (typeof updatePlayerPortalBanner === 'function') updatePlayerPortalBanner();
   saveToLocalStorage();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
   if (typeof broadcastStateSync === 'function') broadcastStateSync();
@@ -3948,12 +3949,21 @@ function openPlayerPortalDirect() {
   window.open(shareUrl, '_blank');
 }
 
+function openLevelUpWizardForActivePlayer() {
+  const targetId = activePortalPlayerId || (typeof PLAYERS !== 'undefined' && PLAYERS[0] ? PLAYERS[0].id : null);
+  if (targetId && typeof openLevelUpWizard === 'function') {
+    openLevelUpWizard(targetId);
+  }
+}
+
 function updatePlayerPortalBanner() {
   const banner = document.getElementById('player-portal-banner');
   const titleEl = document.getElementById('portal-char-title');
   const subEl = document.getElementById('portal-char-sub');
   const badgeEl = document.getElementById('portal-sync-status-badge');
   const avatarEl = document.getElementById('portal-hero-avatar');
+  const turnAlertEl = document.getElementById('portal-turn-active-indicator');
+  const btnLevelUpEl = document.getElementById('portal-btn-levelup');
 
   if (typeof pendingPortalPlayerId !== 'undefined' && pendingPortalPlayerId && !activePortalPlayerId) {
     if (banner) banner.style.display = 'flex';
@@ -3964,6 +3974,8 @@ function updatePlayerPortalBanner() {
       badgeEl.className = 'portal-sync-badge sync-syncing';
       badgeEl.innerText = '🟡 Sincronizando...';
     }
+    if (turnAlertEl) turnAlertEl.style.display = 'none';
+    if (btnLevelUpEl) btnLevelUpEl.style.display = 'none';
     return;
   }
 
@@ -3979,10 +3991,40 @@ function updatePlayerPortalBanner() {
   if (banner) banner.style.display = 'flex';
   if (avatarEl) avatarEl.innerText = avatar;
   if (titleEl) titleEl.innerText = `${p.name}`;
-  if (subEl) subEl.innerText = `${p.student ? p.student + ' • ' : ''}${p.race} ${p.className} Nv.${p.level} • ${p.hp}/${p.maxHp} PV`;
+  if (subEl) subEl.innerText = `${p.student ? p.student + ' • ' : ''}${p.race || ''} ${p.className || ''} Nv.${p.level || 1} • ${p.hp || 0}/${p.maxHp || 10} PV`;
   if (badgeEl) {
     badgeEl.className = 'portal-sync-badge sync-online';
     badgeEl.innerText = '🟢 Sincronizado';
+  }
+
+  if (btnLevelUpEl) {
+    btnLevelUpEl.style.display = 'inline-flex';
+  }
+
+  // Verifica se combate está ativo e se é a vez do jogador atual
+  let isPlayerTurn = false;
+  if (typeof state !== 'undefined' && state && Array.isArray(state.combatants) && state.combatants.length > 0) {
+    const curIdx = state.turn || 0;
+    const activeCombatant = state.combatants[curIdx];
+    if (activeCombatant) {
+      const matchId = (activeCombatant.playerId && activeCombatant.playerId === p.id) || activeCombatant.id === p.id;
+      const matchName = String(activeCombatant.name || '').toLowerCase().includes(String(p.name || '').toLowerCase());
+      if (matchId || matchName) {
+        isPlayerTurn = true;
+      }
+    }
+  }
+
+  if (turnAlertEl) {
+    if (isPlayerTurn) {
+      if (turnAlertEl.style.display !== 'inline-flex') {
+        turnAlertEl.style.display = 'inline-flex';
+        if (typeof playFX === 'function') playFX('crit');
+        if (typeof addLog === 'function') addLog(`⚔️ <b>SUA VEZ!</b> É o seu turno de agir no combate!`);
+      }
+    } else {
+      turnAlertEl.style.display = 'none';
+    }
   }
 }
 
@@ -5467,8 +5509,10 @@ function applyLevelUpConfirm() {
   if (typeof touchPlayer === 'function') touchPlayer(p);
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
+  if (typeof updatePlayerPortalBanner === 'function') updatePlayerPortalBanner();
   saveToLocalStorage();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 // --- SISTEMA DE TROCA DIRETA DE ITENS ENTRE HERÓIS (TRADE DE MOCHILA) ---
@@ -5821,6 +5865,114 @@ function distributeBatchRewards(opts = null) {
   return { success: true, count: n, xpShare, gpShare };
 }
 
+// --- MODAL DE COMBATE E INICIATIVA PARA O PORTAL DO JOGADOR ---
+function openPlayerCombatModal() {
+  const modal = document.getElementById('modal-player-combat');
+  if (!modal) return;
+  modal.classList.add('active');
+  renderPlayerCombatModalContent();
+}
+
+function closePlayerCombatModal() {
+  const modal = document.getElementById('modal-player-combat');
+  if (modal) modal.classList.remove('active');
+}
+
+function renderPlayerCombatModalContent() {
+  const listEl = document.getElementById('player-combat-list');
+  const roundEl = document.getElementById('player-combat-round-badge');
+  if (!listEl) return;
+
+  if (typeof state === 'undefined' || !state || !Array.isArray(state.combatants) || state.combatants.length === 0) {
+    if (roundEl) roundEl.innerText = 'Nenhum combate em andamento';
+    listEl.innerHTML = `
+      <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+        <div style="font-size: 38px; margin-bottom: 12px; opacity: 0.6;">⚔️</div>
+        <div style="font-size: 15px; font-weight: 700; margin-bottom: 6px; color: var(--text-primary);">Nenhum Combate Ativo</div>
+        <div style="font-size: 13px;">O Mestre ainda não iniciou uma cena de combate ou iniciativa. Quando a batalha começar, você verá a ordem dos turnos aqui em tempo real!</div>
+      </div>
+    `;
+    return;
+  }
+
+  if (roundEl) {
+    roundEl.innerText = `Rodada ${state.round || 1} • Turno ${(state.turn || 0) + 1}/${state.combatants.length}`;
+  }
+
+  const curTurnIdx = state.turn || 0;
+  const activeChar = (typeof activePortalPlayerId !== 'undefined') ? PLAYERS.find(p => p.id === activePortalPlayerId) : null;
+
+  let html = `<div style="display: flex; flex-direction: column; gap: 8px;">`;
+
+  state.combatants.forEach((c, idx) => {
+    const isActive = idx === curTurnIdx;
+    const isMe = (activeChar && ((c.playerId && c.playerId === activeChar.id) || c.id === activeChar.id || String(c.name || '').includes(activeChar.name)));
+    const isAlly = c.type === 'player';
+
+    // Determina exibição de PV
+    let hpDisplay = '';
+    let hpPercent = 100;
+    if (c.maxHp > 0) {
+      hpPercent = Math.max(0, Math.min(100, Math.round(((c.hp || 0) / c.maxHp) * 100)));
+    }
+
+    if (isAlly || isMe) {
+      hpDisplay = `<span style="font-weight: 700; color: ${hpPercent < 25 ? 'var(--danger)' : (hpPercent < 50 ? 'var(--accent-gold)' : 'var(--success)')};">${c.hp || 0}/${c.maxHp || 10} PV</span>`;
+    } else {
+      // Para monstros / inimigos: exibe status narrativo em vez de número exato
+      let statusText = '🟢 Saudável';
+      let statusColor = 'var(--success)';
+      if (hpPercent <= 0) {
+        statusText = '💀 Derrotado';
+        statusColor = 'var(--text-muted)';
+      } else if (hpPercent < 25) {
+        statusText = '🔴 Quase Derrotado';
+        statusColor = 'var(--danger)';
+      } else if (hpPercent < 50) {
+        statusText = '🟡 Ferido';
+        statusColor = 'var(--accent-gold)';
+      }
+      hpDisplay = `<span style="font-size: 11px; font-weight: 700; color: ${statusColor};">${statusText}</span>`;
+    }
+
+    const conditionsBadges = (c.conditions && c.conditions.length > 0)
+      ? `<div style="display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px;">${c.conditions.map(cond => `<span class="condition-badge" style="font-size: 10px; padding: 1px 6px;">${cond}</span>`).join('')}</div>`
+      : '';
+
+    html += `
+      <div class="player-combat-card ${isActive ? 'active-turn' : ''} ${isMe ? 'is-me' : ''}">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+            <div style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: ${isActive ? 'var(--accent-gold)' : 'rgba(255,255,255,0.06)'}; color: ${isActive ? '#000' : 'var(--text-muted)'}; font-weight: 800; font-size: 12px; flex-shrink: 0;">
+              ${idx + 1}
+            </div>
+            <div style="min-width: 0;">
+              <div style="font-weight: 700; font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px;">
+                <span>${c.name}</span>
+                ${isMe ? `<span style="background: var(--accent-gold); color: #000; font-size: 9px; font-weight: 800; padding: 1px 5px; border-radius: 4px;">VOCÊ</span>` : ''}
+                ${isActive ? `<span style="background: var(--danger); color: #fff; font-size: 9px; font-weight: 800; padding: 1px 5px; border-radius: 4px; animation: pulseGlow 1.5s infinite;">TURNO ATUAL</span>` : ''}
+              </div>
+              <div style="font-size: 11px; color: var(--text-muted);">
+                Iniciativa: <b>${c.init !== undefined ? c.init : '-'}</b> ${c.ac ? `• CA: <b>${c.ac}</b>` : ''}
+              </div>
+            </div>
+          </div>
+          <div style="text-align: right; flex-shrink: 0;">
+            ${hpDisplay}
+            <div style="width: 70px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 4px; overflow: hidden;">
+              <div style="width: ${hpPercent}%; height: 100%; background: ${hpPercent < 25 ? 'var(--danger)' : (hpPercent < 50 ? 'var(--accent-gold)' : 'var(--success)')}; transition: width 0.3s ease;"></div>
+            </div>
+          </div>
+        </div>
+        ${conditionsBadges}
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+  listEl.innerHTML = html;
+}
+
 // Vincula no window para navegadores
 if (typeof window !== 'undefined') {
   window.openTradeItemModal = openTradeItemModal;
@@ -5838,6 +5990,11 @@ if (typeof window !== 'undefined') {
   window.setBatchXpQuick = setBatchXpQuick;
   window.updateBatchRewardCalculations = updateBatchRewardCalculations;
   window.distributeBatchRewards = distributeBatchRewards;
+
+  window.openPlayerCombatModal = openPlayerCombatModal;
+  window.closePlayerCombatModal = closePlayerCombatModal;
+  window.renderPlayerCombatModalContent = renderPlayerCombatModalContent;
+  window.openLevelUpWizardForActivePlayer = openLevelUpWizardForActivePlayer;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -5867,7 +6024,11 @@ if (typeof module !== 'undefined' && module.exports) {
     toggleAllBatchRewardHeroes,
     setBatchXpQuick,
     updateBatchRewardCalculations,
-    distributeBatchRewards
+    distributeBatchRewards,
+    openPlayerCombatModal,
+    closePlayerCombatModal,
+    renderPlayerCombatModalContent,
+    openLevelUpWizardForActivePlayer
   };
 }
 
