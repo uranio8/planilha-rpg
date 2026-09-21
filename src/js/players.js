@@ -283,8 +283,11 @@ function addPlayerXpPrompt(id) {
         addLog(`🎉 <b>${p.name} acumulou XP suficiente para o Nível ${p.level + 1}!</b>`);
       }
 
+      if (typeof touchPlayer === 'function') touchPlayer(p);
       renderPlayers();
       saveToLocalStorage();
+      if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+      if (typeof broadcastStateSync === 'function') broadcastStateSync();
     }
   }
 }
@@ -1208,11 +1211,14 @@ function usePlayerFeatureCharge(playerId, chargeId, amount = 1) {
 
   if (charge.used + amount <= charge.max) {
     charge.used += amount;
+    touchPlayer(p);
     if (typeof playFX === 'function') playFX('spell');
     addLog(`${charge.icon || '⚡'} <b>${p.name}</b> usou <b>${charge.name}</b> (${charge.max - charge.used}/${charge.max} restantes).`);
     addPlayerActionLog(p.id, charge.icon || '⚡', `Usou ${charge.name} (${charge.max - charge.used}/${charge.max})`, 'feature');
     renderPlayers();
     saveToLocalStorage();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+    if (typeof broadcastStateSync === 'function') broadcastStateSync();
   } else {
     alert(`Sem cargas restantes de ${charge.name}! Faça um Descanso ${charge.restType === 'short' ? 'Curto ou Longo' : 'Longo'} para recuperar.`);
   }
@@ -1232,6 +1238,8 @@ function restorePlayerFeatureCharge(playerId, chargeId, amount = 1) {
     addPlayerActionLog(p.id, charge.icon || '✨', `Recuperou ${charge.name} (${charge.max - charge.used}/${charge.max})`, 'feature');
     renderPlayers();
     saveToLocalStorage();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+    if (typeof broadcastStateSync === 'function') broadcastStateSync();
   }
 }
 
@@ -1303,6 +1311,8 @@ function adjustPlayerHp(id, delta) {
 
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function setPlayerTempHp(id) {
@@ -1311,10 +1321,13 @@ function setPlayerTempHp(id) {
   const val = prompt(`Definir PV Temporários para ${p.name}:`, p.tempHp || 5);
   if (val !== null) {
     p.tempHp = parseInt(val) || 0;
+    touchPlayer(p);
     addLog(`🛡️ <b>${p.name}</b> ganhou ${p.tempHp} PV Temporários.`);
     addPlayerActionLog(p.id, '🛡️', `Recebeu ${p.tempHp} PV Temporários`, 'heal');
     renderPlayers();
     saveToLocalStorage();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+    if (typeof broadcastStateSync === 'function') broadcastStateSync();
   }
 }
 
@@ -1661,7 +1674,8 @@ function togglePlayerSlot(id, lvlIdx, slotIdx) {
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function playerShortRest(id) {
@@ -1700,7 +1714,8 @@ function playerShortRest(id) {
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 // --- DADOS DE VIDA & DESCANSO CURTO (D&D 5E) ---
@@ -1877,7 +1892,8 @@ function finishShortRestModal() {
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function playerLongRest(id) {
@@ -1912,7 +1928,8 @@ function playerLongRest(id) {
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function partyLongRestAll() {
@@ -1940,7 +1957,8 @@ function partyLongRestAll() {
     renderPlayers();
     if (typeof renderCombat === 'function') renderCombat();
     saveToLocalStorage();
-    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+    if (typeof broadcastStateSync === 'function') broadcastStateSync();
   }
 }
 
@@ -1954,8 +1972,11 @@ function toggleDeathSave(id, type, index) {
   } else {
     p.deathSaves[type] = index;
   }
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function rollPlayerDeathSave(id) {
@@ -1999,9 +2020,19 @@ function rollPlayerDeathSave(id) {
     addPlayerActionLog(p.id, '⚰️', `Faleceu heroicamente.`, 'damage');
   }
 
+  if (typeof touchPlayer === 'function') touchPlayer(p);
+  const comb = (typeof findCombatantForPlayer === 'function')
+    ? findCombatantForPlayer(p, typeof state !== 'undefined' && state ? state.combatants : [])
+    : null;
+  if (comb) {
+    comb.hp = p.hp;
+    if (typeof renderCombat === 'function') renderCombat();
+  }
   addLog(msg);
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function rollDeathSave(id) {
@@ -2410,9 +2441,12 @@ function togglePlayerSpellPrepared(playerId, spellName) {
     addLog(`🔮 <b>${p.name}</b> preparou a magia <b>${spellName}</b> para o dia.`);
   }
 
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function findClassData(query) {
@@ -2855,7 +2889,8 @@ function saveSpellPickerSelection() {
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
   if (typeof playFX === 'function') playFX('heal');
   addLog(`📖 <b>${p.name}</b> atualizou suas magias preparadas (${p.preparedSpells.length} magias salvas com sucesso).`);
 }
@@ -2976,9 +3011,12 @@ function executeCastSpell(playerId, spellName, slotLevel) {
     broadcastCombatState(logMsg);
   }
 
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function closeCastSpellModal() {
@@ -3367,6 +3405,7 @@ function savePlayerSheet() {
   if (typeof touchPlayer === 'function') touchPlayer(data);
   saveToLocalStorage();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
   if (typeof saveSafetySnapshot === 'function') {
     saveSafetySnapshot(`Salvou ficha de ${data.name}`);
   }
@@ -4489,8 +4528,11 @@ function togglePlayerCondition(id, condId) {
     }
   }
 
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function openPlayerCondModal(playerId) {
@@ -4694,6 +4736,8 @@ function savePlayerCoinsFromModal() {
   closePlayerCoinsModal();
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function openAddPlayerItemModal(id) {
@@ -4797,6 +4841,8 @@ function addItemToPlayerFromCatalog(itemIdx) {
   closeAddPlayerItemModal();
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function submitCustomItemToPlayer() {
@@ -4824,6 +4870,8 @@ function submitCustomItemToPlayer() {
   closeAddPlayerItemModal();
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function adjustPlayerItemQty(playerId, itemIndex, delta) {
@@ -4839,6 +4887,8 @@ function adjustPlayerItemQty(playerId, itemIndex, delta) {
   touchPlayer(p);
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function removePlayerItem(playerId, itemIndex) {
@@ -4852,6 +4902,8 @@ function removePlayerItem(playerId, itemIndex) {
     addPlayerActionLog(p.id, '🗑️', `Removeu do inventário: ${removedName}`, 'general');
     renderPlayers();
     saveToLocalStorage();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+    if (typeof broadcastStateSync === 'function') broadcastStateSync();
   }
 }
 
@@ -5545,7 +5597,8 @@ function transferPlayerItem(donorId, itemIdx, receiverId, qty) {
   if (typeof playFX === 'function') playFX('sword');
 
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
   if (typeof renderPlayers === 'function') renderPlayers();
   if (typeof showToast === 'function') {
     showToast(`🤝 ${transferQty}x ${itemName} entregue para ${receiver.name}!`, 'success');

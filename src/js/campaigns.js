@@ -112,7 +112,7 @@ function saveCampaignsState() {
 
     if (typeof showSaveStatus === 'function') showSaveStatus();
     if (typeof broadcastCampaignState === 'function') broadcastCampaignState();
-    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
   } catch (e) {
     console.warn('Erro ao salvar campanhas:', e);
   }

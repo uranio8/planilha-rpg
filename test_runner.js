@@ -3521,6 +3521,7 @@ assert(narrativeResult.includes('Arthur (Arthur)'), 'announceActiveTurn despacho
 
 // 6. Verificação de Disparo do Firebase Sync em Mutações de Combate
 vm.runInContext(`
+  const originalSyncLocalChanges = syncLocalChangesToFirebase;
   let firebaseImmediateCalls = 0;
   syncLocalChangesToFirebase = function(immediate) {
     if (immediate === true) firebaseImmediateCalls++;
@@ -3529,9 +3530,112 @@ vm.runInContext(`
   nextTurn();
   quickAdjustCombatantHp('c_inline_1', -2);
   resetCombat();
+  syncLocalChangesToFirebase = originalSyncLocalChanges;
 `, sandbox);
 const totalImmediateSyncs = vm.runInContext("firebaseImmediateCalls", sandbox);
 assert(totalImmediateSyncs >= 3, 'nextTurn, quickAdjustCombatantHp e resetCombat disparam syncLocalChangesToFirebase(true)');
+
+console.log('\n🎒 54. Testes de Sincronização em Tempo Real (Bolsa do Grupo, HP e Espaços de Magia - ISSUE-81):');
+
+// 1. Sincronização da Bolsa do Grupo no Jogador
+vm.runInContext(`
+  clientRole = 'player';
+  activePortalPlayerId = 'p_sync_hero';
+  CAMPAIGNS_STATE = {
+    activeCampaignId: 'camp_sync_1',
+    campaigns: [{
+      id: 'camp_sync_1',
+      name: 'Mesa de Teste',
+      partyStash: { gold: 50, items: [], updatedAt: 100 }
+    }]
+  };
+
+  const masterCloudCampaigns = {
+    activeCampaignId: 'camp_sync_1',
+    campaigns: [{
+      id: 'camp_sync_1',
+      name: 'Mesa de Teste',
+      partyStash: {
+        gold: 150,
+        items: [{ id: 'item_reliquia_1', name: 'Amuleto Solar +1', qty: 1, category: 'Acessório' }],
+        updatedAt: 200
+      }
+    }]
+  };
+
+  mergeCloudCampaignsState(masterCloudCampaigns);
+`, sandbox);
+const playerCampAfterMerge = vm.runInContext("CAMPAIGNS_STATE.campaigns[0]", sandbox);
+assert(playerCampAfterMerge.partyStash.gold === 150, 'Jogador adota ouro do baú do mestre');
+assert(playerCampAfterMerge.partyStash.items.some(it => it.id === 'item_reliquia_1'), 'Jogador adota item do baú do mestre em tempo real');
+
+// 2. Sincronização de HP do Jogador com Tabela de Combate do Mestre
+vm.runInContext(`
+  clientRole = 'master';
+  activePortalPlayerId = null;
+  PLAYERS = [
+    { id: 'p_hero_sync', name: 'Arthur Pendragon', student: 'Arthur', hp: 20, maxHp: 20, updatedAt: 100, slots: [4, 2, 0], slotsUsed: [0, 0, 0] }
+  ];
+  state = {
+    round: 1,
+    current: 0,
+    combatants: [
+      { id: 'c_comb_hero', type: 'player', playerId: 'p_hero_sync', name: 'Arthur Pendragon (Arthur)', hp: 20, maxHp: 20 }
+    ]
+  };
+
+  // Simula jogador enviando atualização de HP (-6) e slot de magia gasto
+  const playerCloudPayload = {
+    publishedBy: 'player',
+    players: [
+      { id: 'p_hero_sync', name: 'Arthur Pendragon', student: 'Arthur', hp: 14, maxHp: 20, updatedAt: 250, slots: [4, 2, 0], slotsUsed: [1, 0, 0] }
+    ],
+    state: { round: 99, combatants: [] } // snapshot espúrio do jogador
+  };
+
+  applyCloudDataToLocal(playerCloudPayload);
+`, sandbox);
+const masterCombatantAfterPlayerSync = vm.runInContext("state.combatants[0]", sandbox);
+const masterPlayerAfterPlayerSync = vm.runInContext("PLAYERS[0]", sandbox);
+const masterCombatRound = vm.runInContext("state.round", sandbox);
+
+assert(masterPlayerAfterPlayerSync.hp === 14, 'Ficha do mestre atualizada com o novo PV do jogador (14)');
+assert(masterPlayerAfterPlayerSync.slotsUsed[0] === 1, 'Ficha do mestre atualizada com o slot de magia gasto pelo jogador');
+assert(masterCombatantAfterPlayerSync.hp === 14, 'Combatente do mestre sincronizado com o novo PV do jogador (14)');
+assert(masterCombatRound === 1, 'Mestre preservou a Rodada do combate intacta contra snapshot do jogador');
+
+// 3. Salvamento de Jogador no LocalStorage Preserva Combate do Mestre
+vm.runInContext(`
+  clientRole = 'player';
+  activePortalPlayerId = 'p_hero_sync';
+  const preSaveState = { round: 5, combatants: [{ id: 'boss_1', name: 'Dragão Vermelho', hp: 200 }] };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: preSaveState, players: PLAYERS }));
+
+  saveToLocalStorage();
+  const loadedFromStorage = JSON.parse(localStorage.getItem(STORAGE_KEY));
+`, sandbox);
+const preservedStorageState = vm.runInContext("loadedFromStorage.state", sandbox);
+assert(preservedStorageState.round === 5, 'saveToLocalStorage de jogador preserva rodada do mestre');
+assert(preservedStorageState.combatants.some(c => c.id === 'boss_1'), 'saveToLocalStorage de jogador preserva boss no combate do mestre');
+
+// 4. Imediatismo de Disparo do Firebase Sync (Bypass de Cooldown em Interações do Usuário)
+vm.runInContext(`
+  var executedCloudDbSetCalled = false;
+  clientRole = 'master';
+  isFirebaseConnected = true;
+  realtimeDb = {
+    ref: (path) => ({
+      set: (payload) => {
+        executedCloudDbSetCalled = true;
+        return Promise.resolve();
+      }
+    })
+  };
+  cloudSyncCooldownUntil = Date.now() + 5000; // Cooldown longo ativo
+  syncLocalChangesToFirebase(true); // Ação imediata do usuário
+`, sandbox);
+const wasImmediateExecuted = vm.runInContext("executedCloudDbSetCalled", sandbox);
+assert(wasImmediateExecuted === true, 'syncLocalChangesToFirebase(true) ignora cooldown e despacha na hora para o Firebase');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

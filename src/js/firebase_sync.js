@@ -363,16 +363,18 @@ function mergeCloudCampaignsState(cloudCampaignsState) {
           const localStashUpdated = (localCamp.partyStash && localCamp.partyStash.updatedAt) || 0;
           const remoteStashUpdated = (remoteCamp.partyStash && remoteCamp.partyStash.updatedAt) || 0;
 
-          if (remoteStashUpdated > localStashUpdated) {
-            // Nuvem tem baú mais recente
+          // Mescla Baú do Grupo e Tesouro com controle de timestamps, tombstones e autoridade do Mestre
+          const isPlayerClient = (typeof clientRole !== 'undefined' && clientRole === 'player');
+          if (isPlayerClient || remoteStashUpdated >= localStashUpdated) {
+            // Nuvem do Mestre é autoridade máxima ou é mais recente
             if (remoteCamp.partyStash.gold !== undefined) {
               localCamp.partyStash.gold = remoteCamp.partyStash.gold;
             }
             const remoteItems = (remoteCamp.partyStash.items || []).filter(ri => !deletedPartyItemIds.includes(ri.id));
             localCamp.partyStash.items = remoteItems;
-            localCamp.partyStash.updatedAt = remoteStashUpdated;
+            localCamp.partyStash.updatedAt = Math.max(remoteStashUpdated, localStashUpdated);
           } else {
-            // Local tem baú mais recente ou igual: preserva ouro e itens locais, filtrando excluídos
+            // Local tem baú mais recente e é Mestre: preserva ouro e itens locais, filtrando excluídos
             if (localCamp.partyStash.items) {
               localCamp.partyStash.items = localCamp.partyStash.items.filter(li => !deletedPartyItemIds.includes(li.id));
             }
@@ -460,14 +462,22 @@ function applyCloudDataToLocal(cloudData) {
               }
             }
 
-            // Preserva inventário, moedas e notas locais se o jogador mexeu, mas aceita PV, condições e XP do mestre
+            // Preserva inventário, moedas, slots gastos e cargas locais se o jogador mexeu, mas aceita PV, condições e XP do mestre
+            const localPlayerUpdated = localChar.updatedAt || 0;
+            const remotePlayerUpdated = remoteP.updatedAt || 0;
+            const keepLocalSlots = (localPlayerUpdated >= remotePlayerUpdated) && Array.isArray(localChar.slotsUsed);
+            const keepLocalFeatures = (localPlayerUpdated >= remotePlayerUpdated) && Array.isArray(localChar.featureCharges);
+
             return Object.assign({}, remoteP, {
-              hp: remoteP.hp,
-              maxHp: remoteP.maxHp,
-              tempHp: remoteP.tempHp,
+              hp: remoteP.hp !== undefined ? remoteP.hp : localChar.hp,
+              maxHp: remoteP.maxHp !== undefined ? remoteP.maxHp : localChar.maxHp,
+              tempHp: remoteP.tempHp !== undefined ? remoteP.tempHp : localChar.tempHp,
               conditions: remoteP.conditions || localChar.conditions || [],
               xp: remoteP.xp !== undefined ? remoteP.xp : localChar.xp,
               level: remoteP.level || localChar.level,
+              slots: remoteP.slots || localChar.slots,
+              slotsUsed: keepLocalSlots ? localChar.slotsUsed : (remoteP.slotsUsed || localChar.slotsUsed || [0, 0, 0, 0, 0]),
+              featureCharges: keepLocalFeatures ? localChar.featureCharges : (remoteP.featureCharges || localChar.featureCharges || []),
               // Mantém inventário mais recente entre ambos
               inventory: (localChar.inventory && localChar.inventory.length > 0) ? localChar.inventory : (remoteP.inventory || []),
               // Preserva moedas do jogador local
@@ -552,12 +562,18 @@ function applyCloudDataToLocal(cloudData) {
 
         // Sincroniza HP dos combatentes com as fichas atualizadas (jogador pode ter alterado HP)
         if (typeof state !== 'undefined' && state && Array.isArray(state.combatants)) {
+          let hasCombatChanges = false;
           state.combatants.forEach(comb => {
             if (comb.type === 'player') {
-              const matchedPlayer = PLAYERS.find(p => p.id === comb.id || p.name === comb.name);
+              const matchedPlayer = (typeof findPlayerForCombatant === 'function')
+                ? findPlayerForCombatant(comb, PLAYERS)
+                : PLAYERS.find(p => (comb.playerId && comb.playerId === p.id) || p.id === comb.id || comb.name.includes(p.name));
               if (matchedPlayer && matchedPlayer.hp !== undefined) {
-                comb.hp = matchedPlayer.hp;
-                comb.maxHp = matchedPlayer.maxHp;
+                if (comb.hp !== matchedPlayer.hp || comb.maxHp !== matchedPlayer.maxHp) {
+                  comb.hp = matchedPlayer.hp;
+                  comb.maxHp = matchedPlayer.maxHp;
+                  hasCombatChanges = true;
+                }
               }
             }
           });
@@ -630,10 +646,30 @@ function applyCloudDataToLocal(cloudData) {
 
 function syncLocalChangesToFirebase(immediate = false) {
   if (isApplyingCloudUpdate) return;
+
+  if (immediate) {
+    if (firebaseCloudDebounceTimer) {
+      clearTimeout(firebaseCloudDebounceTimer);
+      firebaseCloudDebounceTimer = null;
+    }
+    cloudSyncCooldownUntil = 0;
+    if (!isFirebaseAutoSyncEnabled()) return;
+    if (!isFirebaseConnected || (!firestoreDb && !realtimeDb)) {
+      hasPendingCloudSync = true;
+      if (typeof initFirebaseSync === 'function' && !isFirebaseConnected) {
+        setTimeout(() => initFirebaseSync(), 50);
+      }
+      return;
+    }
+    executeCloudSave();
+    return;
+  }
+
   if (Date.now() < cloudSyncCooldownUntil) {
     if (!firebaseCloudDebounceTimer) {
       const waitTime = Math.max(50, cloudSyncCooldownUntil - Date.now() + 50);
       firebaseCloudDebounceTimer = setTimeout(() => {
+        firebaseCloudDebounceTimer = null;
         executeCloudSave();
       }, waitTime);
     }
@@ -654,14 +690,17 @@ function syncLocalChangesToFirebase(immediate = false) {
     firebaseCloudDebounceTimer = null;
   }
 
-  const delay = immediate ? 0 : 500;
-
   firebaseCloudDebounceTimer = setTimeout(() => {
+    firebaseCloudDebounceTimer = null;
     executeCloudSave();
-  }, delay);
+  }, 500);
 }
 
 function executeCloudSave() {
+  if (firebaseCloudDebounceTimer) {
+    clearTimeout(firebaseCloudDebounceTimer);
+    firebaseCloudDebounceTimer = null;
+  }
   if (!isFirebaseConnected || (!firestoreDb && !realtimeDb)) return;
 
   // Segurança: se for cliente jogador, apenas envia atualizações do seu próprio herói
@@ -710,6 +749,10 @@ function executeCloudSave() {
 }
 
 function executePlayerCloudSave() {
+  if (firebaseCloudDebounceTimer) {
+    clearTimeout(firebaseCloudDebounceTimer);
+    firebaseCloudDebounceTimer = null;
+  }
   if (!isFirebaseConnected || !activePortalPlayerId) return;
   const myPlayer = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(p => p.id === activePortalPlayerId) : null;
   if (!myPlayer) return;

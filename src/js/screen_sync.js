@@ -123,17 +123,21 @@ function broadcastCombatState(actionNarrative = null) {
 
 let isApplyingRemoteSync = false;
 let lastReceivedBroadcastTimestamp = 0;
+let lastReceivedCampaignsTimestamp = 0;
 
 function broadcastStateSync() {
   if (isApplyingRemoteSync) return;
   if (syncChannel) {
     try {
+      const currentRole = (typeof clientRole !== 'undefined') ? clientRole : (typeof document !== 'undefined' && document.body && document.body.classList.contains('mode-player-portal') ? 'player' : 'master');
       syncChannel.postMessage({
         type: 'STATE_SYNC',
         timestamp: Date.now(),
+        publishedBy: currentRole,
+        activePortalPlayerId: (typeof activePortalPlayerId !== 'undefined') ? activePortalPlayerId : null,
         players: (typeof PLAYERS !== 'undefined') ? PLAYERS : [],
-        state: (typeof state !== 'undefined') ? state : null,
-        gridState: (typeof gridState !== 'undefined') ? gridState : null
+        state: currentRole === 'master' ? ((typeof state !== 'undefined') ? state : null) : null,
+        gridState: currentRole === 'master' ? ((typeof gridState !== 'undefined') ? gridState : null) : null
       });
     } catch (e) {}
   }
@@ -147,17 +151,54 @@ if (syncChannel) {
       if (event.data.type === 'STATE_SYNC') {
         if (event.data.timestamp && event.data.timestamp < lastReceivedBroadcastTimestamp) return;
         if (event.data.timestamp) lastReceivedBroadcastTimestamp = Math.max(lastReceivedBroadcastTimestamp, event.data.timestamp);
+
+        const isFromPlayer = (event.data.publishedBy === 'player');
+
         if (event.data.players && Array.isArray(event.data.players)) {
-          PLAYERS = event.data.players;
+          if (isFromPlayer && event.data.activePortalPlayerId) {
+            const updatedHero = event.data.players.find(p => p.id === event.data.activePortalPlayerId);
+            if (updatedHero) {
+              const idx = PLAYERS.findIndex(p => p.id === updatedHero.id);
+              if (idx >= 0) {
+                PLAYERS[idx] = Object.assign({}, PLAYERS[idx], updatedHero);
+              } else {
+                PLAYERS.push(updatedHero);
+              }
+            }
+          } else {
+            PLAYERS = event.data.players;
+          }
           if (typeof renderPlayers === 'function') renderPlayers();
+
+          // Sincroniza imediatamente o combate ativo do Mestre com a vida e dados atualizados dos heróis
+          if (typeof state !== 'undefined' && state && Array.isArray(state.combatants)) {
+            let hasChanges = false;
+            state.combatants.forEach(comb => {
+              if (comb.type === 'player') {
+                const pl = typeof findPlayerForCombatant === 'function' ? findPlayerForCombatant(comb, PLAYERS) : null;
+                if (pl && pl.hp !== undefined) {
+                  if (comb.hp !== pl.hp || comb.maxHp !== pl.maxHp) {
+                    comb.hp = pl.hp;
+                    comb.maxHp = pl.maxHp;
+                    hasChanges = true;
+                  }
+                }
+              }
+            });
+            if (hasChanges && typeof renderCombat === 'function') renderCombat();
+          }
         }
-        if (event.data.state && Array.isArray(event.data.state.combatants)) {
-          state = event.data.state;
-          if (typeof renderCombat === 'function') renderCombat();
-        }
-        if (event.data.gridState && typeof gridState !== 'undefined') {
-          gridState = event.data.gridState;
-          if (typeof renderBattleGrid === 'function') renderBattleGrid();
+
+        // Apenas aceita alteração de combate e grid se a mensagem NÃO vier de um jogador
+        if (!isFromPlayer) {
+          if (event.data.state && Array.isArray(event.data.state.combatants)) {
+            state = event.data.state;
+            if (typeof renderCombat === 'function') renderCombat();
+          }
+          if (event.data.gridState && typeof gridState !== 'undefined') {
+            gridState = event.data.gridState;
+            if (typeof renderBattleGrid === 'function') renderBattleGrid();
+          }
         }
       } else if (event.data.type === 'COMBAT_UPDATE') {
         if (document.body.classList.contains('mode-screen-only')) {
@@ -255,8 +296,8 @@ if (syncChannel) {
         switchPlayerViewMode(event.data.mode, false);
       } else if (event.data.type === 'CAMPAIGNS_UPDATE') {
         if (event.data.campaignsState) {
-          if (event.data.timestamp && event.data.timestamp < lastReceivedBroadcastTimestamp) return;
-          if (event.data.timestamp) lastReceivedBroadcastTimestamp = Math.max(lastReceivedBroadcastTimestamp, event.data.timestamp);
+          if (event.data.timestamp && event.data.timestamp < lastReceivedCampaignsTimestamp) return;
+          if (event.data.timestamp) lastReceivedCampaignsTimestamp = Math.max(lastReceivedCampaignsTimestamp, event.data.timestamp);
           if (typeof mergeCloudCampaignsState === 'function') {
             mergeCloudCampaignsState(event.data.campaignsState);
           } else {
@@ -295,6 +336,7 @@ window.addEventListener('storage', (e) => {
           if (typeof renderPlayers === 'function') renderPlayers();
           if (typeof renderCombat === 'function') renderCombat();
           if (typeof renderCampaigns === 'function') renderCampaigns();
+          if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
         } finally {
           isApplyingRemoteSync = false;
         }

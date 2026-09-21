@@ -29389,18 +29389,46 @@ function saveToLocalStorage() {
       loadFromLocalStorage();
     }
 
-    const payload = {
-      state,
-      players: PLAYERS,
-      gridState: (typeof gridState !== 'undefined' ? gridState : null),
-      campaignsState: (typeof CAMPAIGNS_STATE !== 'undefined' ? CAMPAIGNS_STATE : null)
-    };
+    const isPlayer = (typeof clientRole !== 'undefined' && clientRole === 'player') || 
+      (typeof document !== 'undefined' && document.body && document.body.classList.contains('mode-player-portal')) ||
+      (typeof activePortalPlayerId !== 'undefined' && !!activePortalPlayerId);
+
+    let payload;
+    if (isPlayer) {
+      // Cliente jogador: preserva o combate e grid existentes para não corromper a mesa do Mestre
+      try {
+        const existingRaw = localStorage.getItem(STORAGE_KEY);
+        const existingParsed = existingRaw ? JSON.parse(existingRaw) : {};
+        payload = {
+          state: (existingParsed.state && Array.isArray(existingParsed.state.combatants) && existingParsed.state.combatants.length > 0) ? existingParsed.state : state,
+          players: PLAYERS,
+          gridState: existingParsed.gridState || (typeof gridState !== 'undefined' ? gridState : null),
+          campaignsState: existingParsed.campaignsState || (typeof CAMPAIGNS_STATE !== 'undefined' ? CAMPAIGNS_STATE : null)
+        };
+      } catch(e) {
+        payload = {
+          state,
+          players: PLAYERS,
+          gridState: (typeof gridState !== 'undefined' ? gridState : null),
+          campaignsState: (typeof CAMPAIGNS_STATE !== 'undefined' ? CAMPAIGNS_STATE : null)
+        };
+      }
+    } else {
+      payload = {
+        state,
+        players: PLAYERS,
+        gridState: (typeof gridState !== 'undefined' ? gridState : null),
+        campaignsState: (typeof CAMPAIGNS_STATE !== 'undefined' ? CAMPAIGNS_STATE : null)
+      };
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 
     // Sincroniza chaves de compatibilidade v3
     try {
       localStorage.setItem('dnd_tracker_players_v3', JSON.stringify(PLAYERS));
-      localStorage.setItem('dnd_tracker_state_v3', JSON.stringify(state));
+      if (!isPlayer) {
+        localStorage.setItem('dnd_tracker_state_v3', JSON.stringify(state));
+      }
     } catch (e) {}
 
     // Espelhamento assíncrono redundante no Cofre IndexedDB
@@ -29408,7 +29436,9 @@ function saveToLocalStorage() {
       if (typeof idbSet === 'function') {
         idbSet(STORAGE_KEY, payload);
         idbSet('dnd_tracker_players_v3', PLAYERS);
-        idbSet('dnd_tracker_state_v3', state);
+        if (!isPlayer) {
+          idbSet('dnd_tracker_state_v3', state);
+        }
         if (typeof CAMPAIGNS_STATE !== 'undefined') {
           idbSet('dnd5e_prisco_campaigns_v1', CAMPAIGNS_STATE);
           idbSet('dnd_tracker_campaigns_v1', CAMPAIGNS_STATE);
@@ -31425,16 +31455,18 @@ function mergeCloudCampaignsState(cloudCampaignsState) {
           const localStashUpdated = (localCamp.partyStash && localCamp.partyStash.updatedAt) || 0;
           const remoteStashUpdated = (remoteCamp.partyStash && remoteCamp.partyStash.updatedAt) || 0;
 
-          if (remoteStashUpdated > localStashUpdated) {
-            // Nuvem tem baú mais recente
+          // Mescla Baú do Grupo e Tesouro com controle de timestamps, tombstones e autoridade do Mestre
+          const isPlayerClient = (typeof clientRole !== 'undefined' && clientRole === 'player');
+          if (isPlayerClient || remoteStashUpdated >= localStashUpdated) {
+            // Nuvem do Mestre é autoridade máxima ou é mais recente
             if (remoteCamp.partyStash.gold !== undefined) {
               localCamp.partyStash.gold = remoteCamp.partyStash.gold;
             }
             const remoteItems = (remoteCamp.partyStash.items || []).filter(ri => !deletedPartyItemIds.includes(ri.id));
             localCamp.partyStash.items = remoteItems;
-            localCamp.partyStash.updatedAt = remoteStashUpdated;
+            localCamp.partyStash.updatedAt = Math.max(remoteStashUpdated, localStashUpdated);
           } else {
-            // Local tem baú mais recente ou igual: preserva ouro e itens locais, filtrando excluídos
+            // Local tem baú mais recente e é Mestre: preserva ouro e itens locais, filtrando excluídos
             if (localCamp.partyStash.items) {
               localCamp.partyStash.items = localCamp.partyStash.items.filter(li => !deletedPartyItemIds.includes(li.id));
             }
@@ -31522,14 +31554,22 @@ function applyCloudDataToLocal(cloudData) {
               }
             }
 
-            // Preserva inventário, moedas e notas locais se o jogador mexeu, mas aceita PV, condições e XP do mestre
+            // Preserva inventário, moedas, slots gastos e cargas locais se o jogador mexeu, mas aceita PV, condições e XP do mestre
+            const localPlayerUpdated = localChar.updatedAt || 0;
+            const remotePlayerUpdated = remoteP.updatedAt || 0;
+            const keepLocalSlots = (localPlayerUpdated >= remotePlayerUpdated) && Array.isArray(localChar.slotsUsed);
+            const keepLocalFeatures = (localPlayerUpdated >= remotePlayerUpdated) && Array.isArray(localChar.featureCharges);
+
             return Object.assign({}, remoteP, {
-              hp: remoteP.hp,
-              maxHp: remoteP.maxHp,
-              tempHp: remoteP.tempHp,
+              hp: remoteP.hp !== undefined ? remoteP.hp : localChar.hp,
+              maxHp: remoteP.maxHp !== undefined ? remoteP.maxHp : localChar.maxHp,
+              tempHp: remoteP.tempHp !== undefined ? remoteP.tempHp : localChar.tempHp,
               conditions: remoteP.conditions || localChar.conditions || [],
               xp: remoteP.xp !== undefined ? remoteP.xp : localChar.xp,
               level: remoteP.level || localChar.level,
+              slots: remoteP.slots || localChar.slots,
+              slotsUsed: keepLocalSlots ? localChar.slotsUsed : (remoteP.slotsUsed || localChar.slotsUsed || [0, 0, 0, 0, 0]),
+              featureCharges: keepLocalFeatures ? localChar.featureCharges : (remoteP.featureCharges || localChar.featureCharges || []),
               // Mantém inventário mais recente entre ambos
               inventory: (localChar.inventory && localChar.inventory.length > 0) ? localChar.inventory : (remoteP.inventory || []),
               // Preserva moedas do jogador local
@@ -31614,12 +31654,18 @@ function applyCloudDataToLocal(cloudData) {
 
         // Sincroniza HP dos combatentes com as fichas atualizadas (jogador pode ter alterado HP)
         if (typeof state !== 'undefined' && state && Array.isArray(state.combatants)) {
+          let hasCombatChanges = false;
           state.combatants.forEach(comb => {
             if (comb.type === 'player') {
-              const matchedPlayer = PLAYERS.find(p => p.id === comb.id || p.name === comb.name);
+              const matchedPlayer = (typeof findPlayerForCombatant === 'function')
+                ? findPlayerForCombatant(comb, PLAYERS)
+                : PLAYERS.find(p => (comb.playerId && comb.playerId === p.id) || p.id === comb.id || comb.name.includes(p.name));
               if (matchedPlayer && matchedPlayer.hp !== undefined) {
-                comb.hp = matchedPlayer.hp;
-                comb.maxHp = matchedPlayer.maxHp;
+                if (comb.hp !== matchedPlayer.hp || comb.maxHp !== matchedPlayer.maxHp) {
+                  comb.hp = matchedPlayer.hp;
+                  comb.maxHp = matchedPlayer.maxHp;
+                  hasCombatChanges = true;
+                }
               }
             }
           });
@@ -31692,10 +31738,30 @@ function applyCloudDataToLocal(cloudData) {
 
 function syncLocalChangesToFirebase(immediate = false) {
   if (isApplyingCloudUpdate) return;
+
+  if (immediate) {
+    if (firebaseCloudDebounceTimer) {
+      clearTimeout(firebaseCloudDebounceTimer);
+      firebaseCloudDebounceTimer = null;
+    }
+    cloudSyncCooldownUntil = 0;
+    if (!isFirebaseAutoSyncEnabled()) return;
+    if (!isFirebaseConnected || (!firestoreDb && !realtimeDb)) {
+      hasPendingCloudSync = true;
+      if (typeof initFirebaseSync === 'function' && !isFirebaseConnected) {
+        setTimeout(() => initFirebaseSync(), 50);
+      }
+      return;
+    }
+    executeCloudSave();
+    return;
+  }
+
   if (Date.now() < cloudSyncCooldownUntil) {
     if (!firebaseCloudDebounceTimer) {
       const waitTime = Math.max(50, cloudSyncCooldownUntil - Date.now() + 50);
       firebaseCloudDebounceTimer = setTimeout(() => {
+        firebaseCloudDebounceTimer = null;
         executeCloudSave();
       }, waitTime);
     }
@@ -31716,14 +31782,17 @@ function syncLocalChangesToFirebase(immediate = false) {
     firebaseCloudDebounceTimer = null;
   }
 
-  const delay = immediate ? 0 : 500;
-
   firebaseCloudDebounceTimer = setTimeout(() => {
+    firebaseCloudDebounceTimer = null;
     executeCloudSave();
-  }, delay);
+  }, 500);
 }
 
 function executeCloudSave() {
+  if (firebaseCloudDebounceTimer) {
+    clearTimeout(firebaseCloudDebounceTimer);
+    firebaseCloudDebounceTimer = null;
+  }
   if (!isFirebaseConnected || (!firestoreDb && !realtimeDb)) return;
 
   // Segurança: se for cliente jogador, apenas envia atualizações do seu próprio herói
@@ -31772,6 +31841,10 @@ function executeCloudSave() {
 }
 
 function executePlayerCloudSave() {
+  if (firebaseCloudDebounceTimer) {
+    clearTimeout(firebaseCloudDebounceTimer);
+    firebaseCloudDebounceTimer = null;
+  }
   if (!isFirebaseConnected || !activePortalPlayerId) return;
   const myPlayer = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(p => p.id === activePortalPlayerId) : null;
   if (!myPlayer) return;
@@ -33738,8 +33811,11 @@ function addPlayerXpPrompt(id) {
         addLog(`🎉 <b>${p.name} acumulou XP suficiente para o Nível ${p.level + 1}!</b>`);
       }
 
+      if (typeof touchPlayer === 'function') touchPlayer(p);
       renderPlayers();
       saveToLocalStorage();
+      if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+      if (typeof broadcastStateSync === 'function') broadcastStateSync();
     }
   }
 }
@@ -34663,11 +34739,14 @@ function usePlayerFeatureCharge(playerId, chargeId, amount = 1) {
 
   if (charge.used + amount <= charge.max) {
     charge.used += amount;
+    touchPlayer(p);
     if (typeof playFX === 'function') playFX('spell');
     addLog(`${charge.icon || '⚡'} <b>${p.name}</b> usou <b>${charge.name}</b> (${charge.max - charge.used}/${charge.max} restantes).`);
     addPlayerActionLog(p.id, charge.icon || '⚡', `Usou ${charge.name} (${charge.max - charge.used}/${charge.max})`, 'feature');
     renderPlayers();
     saveToLocalStorage();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+    if (typeof broadcastStateSync === 'function') broadcastStateSync();
   } else {
     alert(`Sem cargas restantes de ${charge.name}! Faça um Descanso ${charge.restType === 'short' ? 'Curto ou Longo' : 'Longo'} para recuperar.`);
   }
@@ -34687,6 +34766,8 @@ function restorePlayerFeatureCharge(playerId, chargeId, amount = 1) {
     addPlayerActionLog(p.id, charge.icon || '✨', `Recuperou ${charge.name} (${charge.max - charge.used}/${charge.max})`, 'feature');
     renderPlayers();
     saveToLocalStorage();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+    if (typeof broadcastStateSync === 'function') broadcastStateSync();
   }
 }
 
@@ -34758,6 +34839,8 @@ function adjustPlayerHp(id, delta) {
 
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function setPlayerTempHp(id) {
@@ -34766,10 +34849,13 @@ function setPlayerTempHp(id) {
   const val = prompt(`Definir PV Temporários para ${p.name}:`, p.tempHp || 5);
   if (val !== null) {
     p.tempHp = parseInt(val) || 0;
+    touchPlayer(p);
     addLog(`🛡️ <b>${p.name}</b> ganhou ${p.tempHp} PV Temporários.`);
     addPlayerActionLog(p.id, '🛡️', `Recebeu ${p.tempHp} PV Temporários`, 'heal');
     renderPlayers();
     saveToLocalStorage();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+    if (typeof broadcastStateSync === 'function') broadcastStateSync();
   }
 }
 
@@ -35116,7 +35202,8 @@ function togglePlayerSlot(id, lvlIdx, slotIdx) {
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function playerShortRest(id) {
@@ -35155,7 +35242,8 @@ function playerShortRest(id) {
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 // --- DADOS DE VIDA & DESCANSO CURTO (D&D 5E) ---
@@ -35332,7 +35420,8 @@ function finishShortRestModal() {
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function playerLongRest(id) {
@@ -35367,7 +35456,8 @@ function playerLongRest(id) {
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function partyLongRestAll() {
@@ -35395,7 +35485,8 @@ function partyLongRestAll() {
     renderPlayers();
     if (typeof renderCombat === 'function') renderCombat();
     saveToLocalStorage();
-    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+    if (typeof broadcastStateSync === 'function') broadcastStateSync();
   }
 }
 
@@ -35409,8 +35500,11 @@ function toggleDeathSave(id, type, index) {
   } else {
     p.deathSaves[type] = index;
   }
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function rollPlayerDeathSave(id) {
@@ -35454,9 +35548,19 @@ function rollPlayerDeathSave(id) {
     addPlayerActionLog(p.id, '⚰️', `Faleceu heroicamente.`, 'damage');
   }
 
+  if (typeof touchPlayer === 'function') touchPlayer(p);
+  const comb = (typeof findCombatantForPlayer === 'function')
+    ? findCombatantForPlayer(p, typeof state !== 'undefined' && state ? state.combatants : [])
+    : null;
+  if (comb) {
+    comb.hp = p.hp;
+    if (typeof renderCombat === 'function') renderCombat();
+  }
   addLog(msg);
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function rollDeathSave(id) {
@@ -35865,9 +35969,12 @@ function togglePlayerSpellPrepared(playerId, spellName) {
     addLog(`🔮 <b>${p.name}</b> preparou a magia <b>${spellName}</b> para o dia.`);
   }
 
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function findClassData(query) {
@@ -36310,7 +36417,8 @@ function saveSpellPickerSelection() {
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
   if (typeof playFX === 'function') playFX('heal');
   addLog(`📖 <b>${p.name}</b> atualizou suas magias preparadas (${p.preparedSpells.length} magias salvas com sucesso).`);
 }
@@ -36431,9 +36539,12 @@ function executeCastSpell(playerId, spellName, slotLevel) {
     broadcastCombatState(logMsg);
   }
 
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function closeCastSpellModal() {
@@ -36822,6 +36933,7 @@ function savePlayerSheet() {
   if (typeof touchPlayer === 'function') touchPlayer(data);
   saveToLocalStorage();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
   if (typeof saveSafetySnapshot === 'function') {
     saveSafetySnapshot(`Salvou ficha de ${data.name}`);
   }
@@ -37944,8 +38056,11 @@ function togglePlayerCondition(id, condId) {
     }
   }
 
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function openPlayerCondModal(playerId) {
@@ -38149,6 +38264,8 @@ function savePlayerCoinsFromModal() {
   closePlayerCoinsModal();
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function openAddPlayerItemModal(id) {
@@ -38252,6 +38369,8 @@ function addItemToPlayerFromCatalog(itemIdx) {
   closeAddPlayerItemModal();
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function submitCustomItemToPlayer() {
@@ -38279,6 +38398,8 @@ function submitCustomItemToPlayer() {
   closeAddPlayerItemModal();
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function adjustPlayerItemQty(playerId, itemIndex, delta) {
@@ -38294,6 +38415,8 @@ function adjustPlayerItemQty(playerId, itemIndex, delta) {
   touchPlayer(p);
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function removePlayerItem(playerId, itemIndex) {
@@ -38307,6 +38430,8 @@ function removePlayerItem(playerId, itemIndex) {
     addPlayerActionLog(p.id, '🗑️', `Removeu do inventário: ${removedName}`, 'general');
     renderPlayers();
     saveToLocalStorage();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+    if (typeof broadcastStateSync === 'function') broadcastStateSync();
   }
 }
 
@@ -39000,7 +39125,8 @@ function transferPlayerItem(donorId, itemIdx, receiverId, qty) {
   if (typeof playFX === 'function') playFX('sword');
 
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
   if (typeof renderPlayers === 'function') renderPlayers();
   if (typeof showToast === 'function') {
     showToast(`🤝 ${transferQty}x ${itemName} entregue para ${receiver.name}!`, 'success');
@@ -41487,7 +41613,7 @@ function saveCampaignsState() {
 
     if (typeof showSaveStatus === 'function') showSaveStatus();
     if (typeof broadcastCampaignState === 'function') broadcastCampaignState();
-    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
   } catch (e) {
     console.warn('Erro ao salvar campanhas:', e);
   }
@@ -46225,17 +46351,21 @@ function broadcastCombatState(actionNarrative = null) {
 
 let isApplyingRemoteSync = false;
 let lastReceivedBroadcastTimestamp = 0;
+let lastReceivedCampaignsTimestamp = 0;
 
 function broadcastStateSync() {
   if (isApplyingRemoteSync) return;
   if (syncChannel) {
     try {
+      const currentRole = (typeof clientRole !== 'undefined') ? clientRole : (typeof document !== 'undefined' && document.body && document.body.classList.contains('mode-player-portal') ? 'player' : 'master');
       syncChannel.postMessage({
         type: 'STATE_SYNC',
         timestamp: Date.now(),
+        publishedBy: currentRole,
+        activePortalPlayerId: (typeof activePortalPlayerId !== 'undefined') ? activePortalPlayerId : null,
         players: (typeof PLAYERS !== 'undefined') ? PLAYERS : [],
-        state: (typeof state !== 'undefined') ? state : null,
-        gridState: (typeof gridState !== 'undefined') ? gridState : null
+        state: currentRole === 'master' ? ((typeof state !== 'undefined') ? state : null) : null,
+        gridState: currentRole === 'master' ? ((typeof gridState !== 'undefined') ? gridState : null) : null
       });
     } catch (e) {}
   }
@@ -46249,17 +46379,54 @@ if (syncChannel) {
       if (event.data.type === 'STATE_SYNC') {
         if (event.data.timestamp && event.data.timestamp < lastReceivedBroadcastTimestamp) return;
         if (event.data.timestamp) lastReceivedBroadcastTimestamp = Math.max(lastReceivedBroadcastTimestamp, event.data.timestamp);
+
+        const isFromPlayer = (event.data.publishedBy === 'player');
+
         if (event.data.players && Array.isArray(event.data.players)) {
-          PLAYERS = event.data.players;
+          if (isFromPlayer && event.data.activePortalPlayerId) {
+            const updatedHero = event.data.players.find(p => p.id === event.data.activePortalPlayerId);
+            if (updatedHero) {
+              const idx = PLAYERS.findIndex(p => p.id === updatedHero.id);
+              if (idx >= 0) {
+                PLAYERS[idx] = Object.assign({}, PLAYERS[idx], updatedHero);
+              } else {
+                PLAYERS.push(updatedHero);
+              }
+            }
+          } else {
+            PLAYERS = event.data.players;
+          }
           if (typeof renderPlayers === 'function') renderPlayers();
+
+          // Sincroniza imediatamente o combate ativo do Mestre com a vida e dados atualizados dos heróis
+          if (typeof state !== 'undefined' && state && Array.isArray(state.combatants)) {
+            let hasChanges = false;
+            state.combatants.forEach(comb => {
+              if (comb.type === 'player') {
+                const pl = typeof findPlayerForCombatant === 'function' ? findPlayerForCombatant(comb, PLAYERS) : null;
+                if (pl && pl.hp !== undefined) {
+                  if (comb.hp !== pl.hp || comb.maxHp !== pl.maxHp) {
+                    comb.hp = pl.hp;
+                    comb.maxHp = pl.maxHp;
+                    hasChanges = true;
+                  }
+                }
+              }
+            });
+            if (hasChanges && typeof renderCombat === 'function') renderCombat();
+          }
         }
-        if (event.data.state && Array.isArray(event.data.state.combatants)) {
-          state = event.data.state;
-          if (typeof renderCombat === 'function') renderCombat();
-        }
-        if (event.data.gridState && typeof gridState !== 'undefined') {
-          gridState = event.data.gridState;
-          if (typeof renderBattleGrid === 'function') renderBattleGrid();
+
+        // Apenas aceita alteração de combate e grid se a mensagem NÃO vier de um jogador
+        if (!isFromPlayer) {
+          if (event.data.state && Array.isArray(event.data.state.combatants)) {
+            state = event.data.state;
+            if (typeof renderCombat === 'function') renderCombat();
+          }
+          if (event.data.gridState && typeof gridState !== 'undefined') {
+            gridState = event.data.gridState;
+            if (typeof renderBattleGrid === 'function') renderBattleGrid();
+          }
         }
       } else if (event.data.type === 'COMBAT_UPDATE') {
         if (document.body.classList.contains('mode-screen-only')) {
@@ -46357,8 +46524,8 @@ if (syncChannel) {
         switchPlayerViewMode(event.data.mode, false);
       } else if (event.data.type === 'CAMPAIGNS_UPDATE') {
         if (event.data.campaignsState) {
-          if (event.data.timestamp && event.data.timestamp < lastReceivedBroadcastTimestamp) return;
-          if (event.data.timestamp) lastReceivedBroadcastTimestamp = Math.max(lastReceivedBroadcastTimestamp, event.data.timestamp);
+          if (event.data.timestamp && event.data.timestamp < lastReceivedCampaignsTimestamp) return;
+          if (event.data.timestamp) lastReceivedCampaignsTimestamp = Math.max(lastReceivedCampaignsTimestamp, event.data.timestamp);
           if (typeof mergeCloudCampaignsState === 'function') {
             mergeCloudCampaignsState(event.data.campaignsState);
           } else {
@@ -46397,6 +46564,7 @@ window.addEventListener('storage', (e) => {
           if (typeof renderPlayers === 'function') renderPlayers();
           if (typeof renderCombat === 'function') renderCombat();
           if (typeof renderCampaigns === 'function') renderCampaigns();
+          if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
         } finally {
           isApplyingRemoteSync = false;
         }

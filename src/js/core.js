@@ -554,18 +554,46 @@ function saveToLocalStorage() {
       loadFromLocalStorage();
     }
 
-    const payload = {
-      state,
-      players: PLAYERS,
-      gridState: (typeof gridState !== 'undefined' ? gridState : null),
-      campaignsState: (typeof CAMPAIGNS_STATE !== 'undefined' ? CAMPAIGNS_STATE : null)
-    };
+    const isPlayer = (typeof clientRole !== 'undefined' && clientRole === 'player') || 
+      (typeof document !== 'undefined' && document.body && document.body.classList.contains('mode-player-portal')) ||
+      (typeof activePortalPlayerId !== 'undefined' && !!activePortalPlayerId);
+
+    let payload;
+    if (isPlayer) {
+      // Cliente jogador: preserva o combate e grid existentes para não corromper a mesa do Mestre
+      try {
+        const existingRaw = localStorage.getItem(STORAGE_KEY);
+        const existingParsed = existingRaw ? JSON.parse(existingRaw) : {};
+        payload = {
+          state: (existingParsed.state && Array.isArray(existingParsed.state.combatants) && existingParsed.state.combatants.length > 0) ? existingParsed.state : state,
+          players: PLAYERS,
+          gridState: existingParsed.gridState || (typeof gridState !== 'undefined' ? gridState : null),
+          campaignsState: existingParsed.campaignsState || (typeof CAMPAIGNS_STATE !== 'undefined' ? CAMPAIGNS_STATE : null)
+        };
+      } catch(e) {
+        payload = {
+          state,
+          players: PLAYERS,
+          gridState: (typeof gridState !== 'undefined' ? gridState : null),
+          campaignsState: (typeof CAMPAIGNS_STATE !== 'undefined' ? CAMPAIGNS_STATE : null)
+        };
+      }
+    } else {
+      payload = {
+        state,
+        players: PLAYERS,
+        gridState: (typeof gridState !== 'undefined' ? gridState : null),
+        campaignsState: (typeof CAMPAIGNS_STATE !== 'undefined' ? CAMPAIGNS_STATE : null)
+      };
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 
     // Sincroniza chaves de compatibilidade v3
     try {
       localStorage.setItem('dnd_tracker_players_v3', JSON.stringify(PLAYERS));
-      localStorage.setItem('dnd_tracker_state_v3', JSON.stringify(state));
+      if (!isPlayer) {
+        localStorage.setItem('dnd_tracker_state_v3', JSON.stringify(state));
+      }
     } catch (e) {}
 
     // Espelhamento assíncrono redundante no Cofre IndexedDB
@@ -573,7 +601,9 @@ function saveToLocalStorage() {
       if (typeof idbSet === 'function') {
         idbSet(STORAGE_KEY, payload);
         idbSet('dnd_tracker_players_v3', PLAYERS);
-        idbSet('dnd_tracker_state_v3', state);
+        if (!isPlayer) {
+          idbSet('dnd_tracker_state_v3', state);
+        }
         if (typeof CAMPAIGNS_STATE !== 'undefined') {
           idbSet('dnd5e_prisco_campaigns_v1', CAMPAIGNS_STATE);
           idbSet('dnd_tracker_campaigns_v1', CAMPAIGNS_STATE);
