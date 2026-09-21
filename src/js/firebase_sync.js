@@ -24,6 +24,7 @@ let isFirebaseSyncing = false;
 let isApplyingCloudUpdate = false;
 let firebaseCloudDebounceTimer = null;
 let hasPendingCloudSync = false;
+let cloudSaveStatusTimeout = null;
 let localClientId = 'client_' + Math.random().toString(36).substring(2, 9);
 var clientRole = (typeof window !== 'undefined' && window.location && (window.location.search.includes('view=player') || window.location.search.includes('player=') || window.location.search.includes('lobby=true') || window.location.search.includes('login=player'))) ? 'player' : 'master';
 
@@ -75,7 +76,18 @@ function getStoredFirebaseRoom() {
 
 function setStoredFirebaseRoom(roomId) {
   const clean = (roomId || 'turma_principal').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-  localStorage.setItem(FIREBASE_ROOM_KEY, clean);
+  try {
+    if (typeof localStorage !== 'undefined') localStorage.setItem(FIREBASE_ROOM_KEY, clean);
+  } catch (e) {}
+  try {
+    if (typeof window !== 'undefined' && window.history && window.history.replaceState && window.location && window.location.href) {
+      const url = new URL(window.location.href);
+      if (clean !== 'turma_principal') {
+        url.searchParams.set('room', clean);
+      }
+      window.history.replaceState(null, '', url.toString());
+    }
+  } catch (e) {}
   return clean;
 }
 
@@ -431,8 +443,9 @@ function applyCloudDataToLocal(cloudData) {
   // Um cliente/jogador (role === 'player') NUNCA deve subir seus dados locais (ou mocks) para a nuvem!
   const localHasPlayers = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS) && PLAYERS.length > 0);
   const cloudHasPlayers = (cloudData.players && Array.isArray(cloudData.players) && cloudData.players.length > 0);
+  const cloudHasOtherData = (cloudData.campaigns || cloudData.state || cloudData.gridState || cloudData.dmNotes !== undefined);
 
-  if (localHasPlayers && !cloudHasPlayers) {
+  if (localHasPlayers && !cloudHasPlayers && !cloudHasOtherData) {
     console.warn('🛡️ Nuvem vazia detectada! Preservando fichas locais.');
     if (typeof renderPlayerLoginList === 'function') renderPlayerLoginList();
     if (clientRole !== 'player' && typeof publishMasterCampaignToCloud === 'function') {
@@ -663,6 +676,7 @@ function applyCloudDataToLocal(cloudData) {
       } catch(e) {}
       if (typeof renderCampaigns === 'function') renderCampaigns();
       if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
+      if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
     }
 
     // 5. Atualiza Notas Rápidas do Mestre (respeitando foco de digitação local)
@@ -779,26 +793,34 @@ function executeCloudSave() {
 
   updateFirebaseUiStatus('syncing', 'Salvando...');
 
+  if (cloudSaveStatusTimeout) clearTimeout(cloudSaveStatusTimeout);
+  cloudSaveStatusTimeout = setTimeout(() => {
+    updateFirebaseUiStatus(isFirebaseConnected ? 'connected' : 'offline', isFirebaseConnected ? `Nuvem: ${roomId}` : 'Modo Local');
+  }, 2500);
+
+  const savePromises = [];
+
   // Salva no Realtime Database
   if (realtimeDb) {
-    realtimeDb.ref('dnd_rooms/' + roomId).set(payload)
-      .then(() => {
-        updateFirebaseUiStatus('connected', `Nuvem: ${roomId}`);
-      })
-      .catch(err => {
-        console.warn('Erro ao salvar no Realtime DB:', err);
-      });
+    savePromises.push(realtimeDb.ref('dnd_rooms/' + roomId).set(payload));
   }
 
   // Salva no Firestore
   if (firestoreDb) {
     const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
-    roomDocRef.set(payload, { merge: true })
+    savePromises.push(roomDocRef.set(payload, { merge: true }));
+  }
+
+  if (savePromises.length > 0) {
+    Promise.all(savePromises)
       .then(() => {
+        if (cloudSaveStatusTimeout) clearTimeout(cloudSaveStatusTimeout);
         updateFirebaseUiStatus('connected', `Nuvem: ${roomId}`);
       })
       .catch(err => {
-        console.warn('Erro ao salvar no Firestore:', err);
+        if (cloudSaveStatusTimeout) clearTimeout(cloudSaveStatusTimeout);
+        console.warn('Erro ao salvar no Firebase:', err);
+        updateFirebaseUiStatus('connected', `Nuvem: ${roomId}`);
       });
   }
 }
@@ -873,6 +895,19 @@ function executePlayerCloudSave() {
     promises.push(fsPromise);
   }
 
+  // Sincroniza também Baú do Grupo / Campanhas para que saques/depósitos do jogador reflitam na nuvem
+  if (typeof CAMPAIGNS_STATE !== 'undefined' && CAMPAIGNS_STATE) {
+    if (realtimeDb) {
+      promises.push(realtimeDb.ref(`dnd_rooms/${roomId}/campaigns`).set(CAMPAIGNS_STATE));
+    }
+    if (firestoreDb) {
+      const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
+      promises.push(roomDocRef.set({
+        campaigns: CAMPAIGNS_STATE
+      }, { merge: true }));
+    }
+  }
+
   // Timeout de resiliência: se a conexão com a nuvem oscilar, nunca trava a badge no amarelo
   const safetyTimeout = new Promise((_, reject) => {
     setTimeout(() => reject(new Error('Timeout de sincronização com a nuvem')), 4000);
@@ -905,14 +940,7 @@ function publishMasterCampaignToCloud(silent = false) {
   }
 
   const activeCamp = (typeof getActiveCampaign === 'function') ? getActiveCampaign() : null;
-  let roomId = getStoredFirebaseRoom();
-  if ((!roomId || roomId === 'turma_principal') && activeCamp && activeCamp.name) {
-    const derived = activeCamp.name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9_-]/g, '_');
-    if (derived) {
-      setStoredFirebaseRoom(derived);
-      roomId = derived;
-    }
-  }
+  const roomId = getStoredFirebaseRoom();
 
   const payload = {
     room: roomId,
@@ -969,13 +997,21 @@ function updateFirebaseUiStatus(status, text) {
   const dotEl = document.getElementById('firebase-status-dot');
 
   if (badge) {
-    badge.className = `firebase-status-pill ${status}`;
+    badge.className = `btn-top firebase-status-pill ${status}`;
   }
   if (textEl) {
     textEl.innerText = text || (status === 'connected' ? 'Nuvem Conectada' : 'Modo Local');
   }
   if (dotEl) {
     dotEl.style.backgroundColor = status === 'connected' ? '#10b981' : (status === 'syncing' ? '#fbbf24' : (status === 'error' ? '#f87171' : '#64748b'));
+  }
+
+  const playerLoginText = document.getElementById('player-login-status-text');
+  if (playerLoginText) {
+    const currentRoom = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
+    playerLoginText.innerText = (status === 'connected')
+      ? `🟢 Sincronizado à Mesa (${currentRoom})`
+      : (status === 'syncing' ? '🟡 Sincronizando...' : '⚪ Modo Local');
   }
 }
 

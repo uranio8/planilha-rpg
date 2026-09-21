@@ -2100,12 +2100,20 @@
 
       <div class="player-login-toolbar">
         <div class="player-login-toolbar-col-room">
-          <label style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Sala Conectada:</label>
-          <div class="player-login-room-btn-row">
-            <input type="text" id="inp-login-room" placeholder="Ex: turma_principal" style="font-size: 12px; padding: 6px 8px; background: #080c16; border: 1px solid var(--border-color); border-radius: 4px; color: #fff; font-family: var(--font-mono);">
-            <button class="btn-secondary" style="font-size: 11px; padding: 5px 10px; white-space: nowrap;" onclick="refreshLoginRoom()">🔄 Conectar</button>
-            <button class="btn-action" style="font-size: 11px; padding: 5px 10px; white-space: nowrap; background: linear-gradient(135deg, #f59e0b, #d97706);" onclick="copyLobbyShareLink()" title="Copiar link do lobby desta sala para enviar aos alunos">📋 Copiar Link</button>
-            <button class="btn-action" style="font-size: 11px; padding: 5px 10px; white-space: nowrap; background: linear-gradient(135deg, #0284c7, #0369a1);" onclick="openRoomQrCodeModal()" title="Exibir QR Code para projeção em sala de aula">📲 QR Code</button>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+            <div id="player-login-status-pill" class="player-login-status-pill">
+              <span class="status-dot"></span>
+              <span id="player-login-status-text">🟢 Sincronizado em Tempo Real</span>
+            </div>
+            <div style="display: flex; gap: 5px;">
+              <button class="btn-secondary dm-only-btn" style="font-size: 11px; padding: 4px 8px; white-space: nowrap;" onclick="togglePlayerLoginRoomConfig()" title="Configurar sala de sincronização">⚙️ Sala</button>
+              <button class="btn-action" style="font-size: 11px; padding: 4px 10px; white-space: nowrap; background: linear-gradient(135deg, #f59e0b, #d97706);" onclick="copyLobbyShareLink()" title="Copiar link do lobby desta sala para enviar aos alunos">📋 Copiar Link</button>
+              <button class="btn-action" style="font-size: 11px; padding: 4px 10px; white-space: nowrap; background: linear-gradient(135deg, #0284c7, #0369a1);" onclick="openRoomQrCodeModal()" title="Exibir QR Code para projeção em sala de aula">📲 QR Code</button>
+            </div>
+          </div>
+          <div id="player-login-custom-room-box" style="display: none; margin-top: 6px; gap: 6px; align-items: center;">
+            <input type="text" id="inp-login-room" placeholder="Ex: turma_principal" style="font-size: 12px; padding: 5px 8px; background: #080c16; border: 1px solid var(--border-color); border-radius: 4px; color: #fff; font-family: var(--font-mono); flex: 1;">
+            <button class="btn-secondary" style="font-size: 11px; padding: 5px 10px; white-space: nowrap;" onclick="refreshLoginRoom()">Salvar Sala</button>
           </div>
         </div>
         <div class="player-login-toolbar-col-search">

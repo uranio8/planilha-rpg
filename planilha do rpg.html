@@ -4377,6 +4377,113 @@
       margin-bottom: 8px;
     }
 
+    /* Botão da Nuvem Firebase na Barra Superior */
+    .btn-top.firebase-status-pill {
+      transition: all 0.2s ease;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .btn-top.firebase-status-pill.connected {
+      border-color: rgba(16, 185, 129, 0.4) !important;
+      background: rgba(16, 185, 129, 0.12) !important;
+      color: #6ee7b7 !important;
+    }
+    .btn-top.firebase-status-pill.syncing {
+      border-color: rgba(245, 158, 11, 0.45) !important;
+      background: rgba(245, 158, 11, 0.14) !important;
+      color: #fde047 !important;
+    }
+    .btn-top.firebase-status-pill.offline {
+      border-color: rgba(100, 116, 139, 0.3) !important;
+      background: rgba(15, 23, 42, 0.6) !important;
+      color: #94a3b8 !important;
+    }
+    .btn-top.firebase-status-pill.error {
+      border-color: rgba(239, 68, 68, 0.4) !important;
+      background: rgba(239, 68, 68, 0.14) !important;
+      color: #fca5a5 !important;
+    }
+
+    /* Cards de Seleção de Recompensas da Turma (Saque & XP) */
+    .reward-hero-pick-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+      padding: 4px;
+    }
+    .reward-hero-chip {
+      display: flex;
+      align-items: center;
+      padding: 6px 10px;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+    }
+    .reward-hero-chip:hover {
+      background: rgba(30, 41, 59, 0.9);
+      border-color: rgba(245, 158, 11, 0.45);
+    }
+    .reward-hero-chip.selected {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(180, 83, 9, 0.28) 100%);
+      border-color: rgba(245, 158, 11, 0.65);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+    }
+    .reward-coin-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      gap: 6px;
+    }
+    .reward-coin-input-box {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .reward-coin-input-box input {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      width: 100%;
+      outline: none;
+    }
+
+    /* Status de Conexão Transparente no Portal do Jogador */
+    .player-login-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #6ee7b7;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .player-login-status-pill .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 6px #10b981;
+      display: inline-block;
+      animation: pulse-dot 2s infinite ease-in-out;
+    }
+
     /* Layout Amplo do Portal do Jogador */
     body.mode-player-portal main {
       max-width: 1520px;
@@ -10066,12 +10173,20 @@
 
       <div class="player-login-toolbar">
         <div class="player-login-toolbar-col-room">
-          <label style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Sala Conectada:</label>
-          <div class="player-login-room-btn-row">
-            <input type="text" id="inp-login-room" placeholder="Ex: turma_principal" style="font-size: 12px; padding: 6px 8px; background: #080c16; border: 1px solid var(--border-color); border-radius: 4px; color: #fff; font-family: var(--font-mono);">
-            <button class="btn-secondary" style="font-size: 11px; padding: 5px 10px; white-space: nowrap;" onclick="refreshLoginRoom()">🔄 Conectar</button>
-            <button class="btn-action" style="font-size: 11px; padding: 5px 10px; white-space: nowrap; background: linear-gradient(135deg, #f59e0b, #d97706);" onclick="copyLobbyShareLink()" title="Copiar link do lobby desta sala para enviar aos alunos">📋 Copiar Link</button>
-            <button class="btn-action" style="font-size: 11px; padding: 5px 10px; white-space: nowrap; background: linear-gradient(135deg, #0284c7, #0369a1);" onclick="openRoomQrCodeModal()" title="Exibir QR Code para projeção em sala de aula">📲 QR Code</button>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+            <div id="player-login-status-pill" class="player-login-status-pill">
+              <span class="status-dot"></span>
+              <span id="player-login-status-text">🟢 Sincronizado em Tempo Real</span>
+            </div>
+            <div style="display: flex; gap: 5px;">
+              <button class="btn-secondary dm-only-btn" style="font-size: 11px; padding: 4px 8px; white-space: nowrap;" onclick="togglePlayerLoginRoomConfig()" title="Configurar sala de sincronização">⚙️ Sala</button>
+              <button class="btn-action" style="font-size: 11px; padding: 4px 10px; white-space: nowrap; background: linear-gradient(135deg, #f59e0b, #d97706);" onclick="copyLobbyShareLink()" title="Copiar link do lobby desta sala para enviar aos alunos">📋 Copiar Link</button>
+              <button class="btn-action" style="font-size: 11px; padding: 4px 10px; white-space: nowrap; background: linear-gradient(135deg, #0284c7, #0369a1);" onclick="openRoomQrCodeModal()" title="Exibir QR Code para projeção em sala de aula">📲 QR Code</button>
+            </div>
+          </div>
+          <div id="player-login-custom-room-box" style="display: none; margin-top: 6px; gap: 6px; align-items: center;">
+            <input type="text" id="inp-login-room" placeholder="Ex: turma_principal" style="font-size: 12px; padding: 5px 8px; background: #080c16; border: 1px solid var(--border-color); border-radius: 4px; color: #fff; font-family: var(--font-mono); flex: 1;">
+            <button class="btn-secondary" style="font-size: 11px; padding: 5px 10px; white-space: nowrap;" onclick="refreshLoginRoom()">Salvar Sala</button>
           </div>
         </div>
         <div class="player-login-toolbar-col-search">
@@ -31208,6 +31323,7 @@ let isFirebaseSyncing = false;
 let isApplyingCloudUpdate = false;
 let firebaseCloudDebounceTimer = null;
 let hasPendingCloudSync = false;
+let cloudSaveStatusTimeout = null;
 let localClientId = 'client_' + Math.random().toString(36).substring(2, 9);
 var clientRole = (typeof window !== 'undefined' && window.location && (window.location.search.includes('view=player') || window.location.search.includes('player=') || window.location.search.includes('lobby=true') || window.location.search.includes('login=player'))) ? 'player' : 'master';
 
@@ -31259,7 +31375,18 @@ function getStoredFirebaseRoom() {
 
 function setStoredFirebaseRoom(roomId) {
   const clean = (roomId || 'turma_principal').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-  localStorage.setItem(FIREBASE_ROOM_KEY, clean);
+  try {
+    if (typeof localStorage !== 'undefined') localStorage.setItem(FIREBASE_ROOM_KEY, clean);
+  } catch (e) {}
+  try {
+    if (typeof window !== 'undefined' && window.history && window.history.replaceState && window.location && window.location.href) {
+      const url = new URL(window.location.href);
+      if (clean !== 'turma_principal') {
+        url.searchParams.set('room', clean);
+      }
+      window.history.replaceState(null, '', url.toString());
+    }
+  } catch (e) {}
   return clean;
 }
 
@@ -31615,8 +31742,9 @@ function applyCloudDataToLocal(cloudData) {
   // Um cliente/jogador (role === 'player') NUNCA deve subir seus dados locais (ou mocks) para a nuvem!
   const localHasPlayers = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS) && PLAYERS.length > 0);
   const cloudHasPlayers = (cloudData.players && Array.isArray(cloudData.players) && cloudData.players.length > 0);
+  const cloudHasOtherData = (cloudData.campaigns || cloudData.state || cloudData.gridState || cloudData.dmNotes !== undefined);
 
-  if (localHasPlayers && !cloudHasPlayers) {
+  if (localHasPlayers && !cloudHasPlayers && !cloudHasOtherData) {
     console.warn('🛡️ Nuvem vazia detectada! Preservando fichas locais.');
     if (typeof renderPlayerLoginList === 'function') renderPlayerLoginList();
     if (clientRole !== 'player' && typeof publishMasterCampaignToCloud === 'function') {
@@ -31847,6 +31975,7 @@ function applyCloudDataToLocal(cloudData) {
       } catch(e) {}
       if (typeof renderCampaigns === 'function') renderCampaigns();
       if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
+      if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
     }
 
     // 5. Atualiza Notas Rápidas do Mestre (respeitando foco de digitação local)
@@ -31963,26 +32092,34 @@ function executeCloudSave() {
 
   updateFirebaseUiStatus('syncing', 'Salvando...');
 
+  if (cloudSaveStatusTimeout) clearTimeout(cloudSaveStatusTimeout);
+  cloudSaveStatusTimeout = setTimeout(() => {
+    updateFirebaseUiStatus(isFirebaseConnected ? 'connected' : 'offline', isFirebaseConnected ? `Nuvem: ${roomId}` : 'Modo Local');
+  }, 2500);
+
+  const savePromises = [];
+
   // Salva no Realtime Database
   if (realtimeDb) {
-    realtimeDb.ref('dnd_rooms/' + roomId).set(payload)
-      .then(() => {
-        updateFirebaseUiStatus('connected', `Nuvem: ${roomId}`);
-      })
-      .catch(err => {
-        console.warn('Erro ao salvar no Realtime DB:', err);
-      });
+    savePromises.push(realtimeDb.ref('dnd_rooms/' + roomId).set(payload));
   }
 
   // Salva no Firestore
   if (firestoreDb) {
     const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
-    roomDocRef.set(payload, { merge: true })
+    savePromises.push(roomDocRef.set(payload, { merge: true }));
+  }
+
+  if (savePromises.length > 0) {
+    Promise.all(savePromises)
       .then(() => {
+        if (cloudSaveStatusTimeout) clearTimeout(cloudSaveStatusTimeout);
         updateFirebaseUiStatus('connected', `Nuvem: ${roomId}`);
       })
       .catch(err => {
-        console.warn('Erro ao salvar no Firestore:', err);
+        if (cloudSaveStatusTimeout) clearTimeout(cloudSaveStatusTimeout);
+        console.warn('Erro ao salvar no Firebase:', err);
+        updateFirebaseUiStatus('connected', `Nuvem: ${roomId}`);
       });
   }
 }
@@ -32057,6 +32194,19 @@ function executePlayerCloudSave() {
     promises.push(fsPromise);
   }
 
+  // Sincroniza também Baú do Grupo / Campanhas para que saques/depósitos do jogador reflitam na nuvem
+  if (typeof CAMPAIGNS_STATE !== 'undefined' && CAMPAIGNS_STATE) {
+    if (realtimeDb) {
+      promises.push(realtimeDb.ref(`dnd_rooms/${roomId}/campaigns`).set(CAMPAIGNS_STATE));
+    }
+    if (firestoreDb) {
+      const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
+      promises.push(roomDocRef.set({
+        campaigns: CAMPAIGNS_STATE
+      }, { merge: true }));
+    }
+  }
+
   // Timeout de resiliência: se a conexão com a nuvem oscilar, nunca trava a badge no amarelo
   const safetyTimeout = new Promise((_, reject) => {
     setTimeout(() => reject(new Error('Timeout de sincronização com a nuvem')), 4000);
@@ -32089,14 +32239,7 @@ function publishMasterCampaignToCloud(silent = false) {
   }
 
   const activeCamp = (typeof getActiveCampaign === 'function') ? getActiveCampaign() : null;
-  let roomId = getStoredFirebaseRoom();
-  if ((!roomId || roomId === 'turma_principal') && activeCamp && activeCamp.name) {
-    const derived = activeCamp.name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9_-]/g, '_');
-    if (derived) {
-      setStoredFirebaseRoom(derived);
-      roomId = derived;
-    }
-  }
+  const roomId = getStoredFirebaseRoom();
 
   const payload = {
     room: roomId,
@@ -32153,13 +32296,21 @@ function updateFirebaseUiStatus(status, text) {
   const dotEl = document.getElementById('firebase-status-dot');
 
   if (badge) {
-    badge.className = `firebase-status-pill ${status}`;
+    badge.className = `btn-top firebase-status-pill ${status}`;
   }
   if (textEl) {
     textEl.innerText = text || (status === 'connected' ? 'Nuvem Conectada' : 'Modo Local');
   }
   if (dotEl) {
     dotEl.style.backgroundColor = status === 'connected' ? '#10b981' : (status === 'syncing' ? '#fbbf24' : (status === 'error' ? '#f87171' : '#64748b'));
+  }
+
+  const playerLoginText = document.getElementById('player-login-status-text');
+  if (playerLoginText) {
+    const currentRoom = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
+    playerLoginText.innerText = (status === 'connected')
+      ? `🟢 Sincronizado à Mesa (${currentRoom})`
+      : (status === 'syncing' ? '🟡 Sincronizando...' : '⚪ Modo Local');
   }
 }
 
@@ -38174,15 +38325,37 @@ function checkPlayerPortalUrl() {
 
 let loginCloudTimeoutHandle = null;
 
+function togglePlayerLoginRoomConfig() {
+  const box = document.getElementById('player-login-custom-room-box');
+  if (!box) return;
+  box.style.display = (box.style.display === 'none' || !box.style.display) ? 'flex' : 'none';
+  if (box.style.display === 'flex') {
+    const inp = document.getElementById('inp-login-room');
+    if (inp) {
+      inp.value = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
+      if (typeof inp.focus === 'function') inp.focus();
+    }
+  }
+}
+
 function openPlayerLoginModal() {
   const modal = document.getElementById('modal-player-login');
   if (!modal) return;
 
+  const currentRoom = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
   const inpRoom = document.getElementById('inp-login-room');
   if (inpRoom) {
-    const currentRoom = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
     inpRoom.value = currentRoom;
   }
+
+  const statusText = document.getElementById('player-login-status-text');
+  if (statusText) {
+    const isConn = (typeof isFirebaseConnected !== 'undefined' && isFirebaseConnected);
+    statusText.innerText = isConn ? `🟢 Sincronizado à Mesa (${currentRoom})` : `🟢 Conectando à Mesa (${currentRoom})...`;
+  }
+
+  const box = document.getElementById('player-login-custom-room-box');
+  if (box) box.style.display = 'none';
 
   const inpFilter = document.getElementById('inp-filter-login-players');
   if (inpFilter) inpFilter.value = '';
@@ -38209,8 +38382,14 @@ function refreshLoginRoom() {
   if (typeof initFirebaseSync === 'function') {
     initFirebaseSync();
   }
+  const statusText = document.getElementById('player-login-status-text');
+  if (statusText) {
+    statusText.innerText = `🟢 Sincronizado à Mesa (${newRoom})`;
+  }
+  const box = document.getElementById('player-login-custom-room-box');
+  if (box) box.style.display = 'none';
   if (typeof addLog === 'function') {
-    addLog(`🌐 Conectando à sala <b>${newRoom}</b>... Aguarde sincronização.`);
+    addLog(`🌐 Conectando à sala <b>${newRoom}</b>...`);
   }
   setTimeout(() => {
     renderPlayerLoginList();
@@ -39529,16 +39708,27 @@ function renderBatchRewardHeroList() {
 
   container.innerHTML = heroes.map(h => {
     const isSelected = batchRewardSelectedHeroIds.has(h.id);
-    const initial = (h.name || '?').charAt(0).toUpperCase();
+    const avatar = h.avatar || '👤';
+    const isImg = typeof avatar === 'string' && (avatar.startsWith('http') || avatar.startsWith('data:image'));
+    const avatarHtml = isImg
+      ? `<img src="${avatar}" style="width: 30px; height: 30px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border-color); flex-shrink: 0;">`
+      : `<div style="width: 30px; height: 30px; border-radius: 6px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;">${avatar}</div>`;
+
     return `
-      <div class="reward-hero-chip ${isSelected ? 'selected' : ''}" onclick="toggleBatchRewardHero('${h.id}')">
-        <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; flex: 1;">
-          <div style="width: 22px; height: 22px; border-radius: 4px; background: rgba(0,0,0,0.45); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: var(--accent-gold); flex-shrink: 0; line-height: 1;">
-            ${initial}
+      <div class="reward-hero-chip ${isSelected ? 'selected' : ''}" onclick="toggleBatchRewardHero('${h.id}')" style="cursor: pointer; user-select: none;">
+        <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
+          <input type="checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleBatchRewardHero('${h.id}')" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--accent-gold); flex-shrink: 0;">
+          ${avatarHtml}
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px;">
+            <div style="display: flex; align-items: center; gap: 5px;">
+              <b style="color: #fff; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${h.name}</b>
+              <span class="badge badge-lvl" style="font-size: 9px; padding: 1px 4px; flex-shrink: 0;">Nv ${h.level || 1}</span>
+            </div>
+            <div style="font-size: 10.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              👤 <span style="color: var(--primary-light); font-weight: 600;">${h.student || 'Aluno'}</span> • ${h.className || 'Aventureiro'}
+            </div>
           </div>
-          <span style="font-weight: 700; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${h.name}</span>
         </div>
-        <input type="checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleBatchRewardHero('${h.id}')">
       </div>
     `;
   }).join('');
@@ -39833,6 +40023,7 @@ if (typeof window !== 'undefined') {
   window.getMaxPreparedSpells = getMaxPreparedSpells;
   window.getPlayerSpellcastingStats = getPlayerSpellcastingStats;
   window.getCompatibleClassKey = getCompatibleClassKey;
+  window.togglePlayerLoginRoomConfig = togglePlayerLoginRoomConfig;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -39873,7 +40064,8 @@ if (typeof module !== 'undefined' && module.exports) {
     calculateMulticlassSpellSlots,
     getMaxPreparedSpells,
     getPlayerSpellcastingStats,
-    getCompatibleClassKey
+    getCompatibleClassKey,
+    togglePlayerLoginRoomConfig
   };
 }
 
@@ -43073,10 +43265,38 @@ function addItemToPartyStash(name, qty = 1, category = 'Equipamento de Aventura'
   return true;
 }
 
+function updateAllPartyStashElements() {
+  const camp = (typeof getActiveCampaign === 'function') ? getActiveCampaign() : null;
+  const stash = (camp && camp.partyStash) ? camp.partyStash : { gold: 0, items: [], history: [] };
+  const gold = stash.gold || 0;
+
+  // 1. Ouro no modal do Baú
+  const modalGold = document.getElementById('party-stash-modal-gold');
+  if (modalGold) modalGold.innerText = `${gold} PO`;
+
+  // 2. Ouro na aba de Campanhas do Mestre
+  const masterGold = document.getElementById('stash-gold-amount');
+  if (masterGold) masterGold.innerText = `${gold} PO`;
+
+  // 3. Barra rápida do baú em todas as fichas dos jogadores
+  if (typeof document !== 'undefined') {
+    document.querySelectorAll('.party-stash-quickbar b').forEach(el => {
+      el.innerText = `${gold} PO`;
+    });
+  }
+
+  // 4. Se o modal do baú estiver visível, atualiza a lista de itens e histórico
+  const modal = (typeof document !== 'undefined') ? document.getElementById('modal-party-stash-view') : null;
+  if (modal && modal.classList.contains('open') && typeof renderPartyStashViewer === 'function') {
+    renderPartyStashViewer();
+  }
+}
+
 // --- VISUALIZADOR MODAL DO BAÚ DO GRUPO (PARA JOGADORES E MESTRE) ---
 function openPartyStashModal() {
   const modal = document.getElementById('modal-party-stash-view');
   if (modal) modal.classList.add('open');
+  updateAllPartyStashElements();
   renderPartyStashViewer();
 }
 
@@ -43523,6 +43743,7 @@ if (typeof window !== 'undefined') {
   window.getDeletedCampaignIds = getDeletedCampaignIds;
   window.trackDeletedPartyItemId = trackDeletedPartyItemId;
   window.getDeletedPartyItemIds = getDeletedPartyItemIds;
+  window.updateAllPartyStashElements = updateAllPartyStashElements;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -43533,6 +43754,7 @@ if (typeof module !== 'undefined' && module.exports) {
     renderCampaigns,
     renderCampaignPartyStash,
     renderPartyStashViewer,
+    updateAllPartyStashElements,
     openPartyStashModal,
     closePartyStashModal,
     openPartyItemModal,

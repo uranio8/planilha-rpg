@@ -4460,15 +4460,37 @@ function checkPlayerPortalUrl() {
 
 let loginCloudTimeoutHandle = null;
 
+function togglePlayerLoginRoomConfig() {
+  const box = document.getElementById('player-login-custom-room-box');
+  if (!box) return;
+  box.style.display = (box.style.display === 'none' || !box.style.display) ? 'flex' : 'none';
+  if (box.style.display === 'flex') {
+    const inp = document.getElementById('inp-login-room');
+    if (inp) {
+      inp.value = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
+      if (typeof inp.focus === 'function') inp.focus();
+    }
+  }
+}
+
 function openPlayerLoginModal() {
   const modal = document.getElementById('modal-player-login');
   if (!modal) return;
 
+  const currentRoom = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
   const inpRoom = document.getElementById('inp-login-room');
   if (inpRoom) {
-    const currentRoom = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
     inpRoom.value = currentRoom;
   }
+
+  const statusText = document.getElementById('player-login-status-text');
+  if (statusText) {
+    const isConn = (typeof isFirebaseConnected !== 'undefined' && isFirebaseConnected);
+    statusText.innerText = isConn ? `🟢 Sincronizado à Mesa (${currentRoom})` : `🟢 Conectando à Mesa (${currentRoom})...`;
+  }
+
+  const box = document.getElementById('player-login-custom-room-box');
+  if (box) box.style.display = 'none';
 
   const inpFilter = document.getElementById('inp-filter-login-players');
   if (inpFilter) inpFilter.value = '';
@@ -4495,8 +4517,14 @@ function refreshLoginRoom() {
   if (typeof initFirebaseSync === 'function') {
     initFirebaseSync();
   }
+  const statusText = document.getElementById('player-login-status-text');
+  if (statusText) {
+    statusText.innerText = `🟢 Sincronizado à Mesa (${newRoom})`;
+  }
+  const box = document.getElementById('player-login-custom-room-box');
+  if (box) box.style.display = 'none';
   if (typeof addLog === 'function') {
-    addLog(`🌐 Conectando à sala <b>${newRoom}</b>... Aguarde sincronização.`);
+    addLog(`🌐 Conectando à sala <b>${newRoom}</b>...`);
   }
   setTimeout(() => {
     renderPlayerLoginList();
@@ -5815,16 +5843,27 @@ function renderBatchRewardHeroList() {
 
   container.innerHTML = heroes.map(h => {
     const isSelected = batchRewardSelectedHeroIds.has(h.id);
-    const initial = (h.name || '?').charAt(0).toUpperCase();
+    const avatar = h.avatar || '👤';
+    const isImg = typeof avatar === 'string' && (avatar.startsWith('http') || avatar.startsWith('data:image'));
+    const avatarHtml = isImg
+      ? `<img src="${avatar}" style="width: 30px; height: 30px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border-color); flex-shrink: 0;">`
+      : `<div style="width: 30px; height: 30px; border-radius: 6px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;">${avatar}</div>`;
+
     return `
-      <div class="reward-hero-chip ${isSelected ? 'selected' : ''}" onclick="toggleBatchRewardHero('${h.id}')">
-        <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; flex: 1;">
-          <div style="width: 22px; height: 22px; border-radius: 4px; background: rgba(0,0,0,0.45); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: var(--accent-gold); flex-shrink: 0; line-height: 1;">
-            ${initial}
+      <div class="reward-hero-chip ${isSelected ? 'selected' : ''}" onclick="toggleBatchRewardHero('${h.id}')" style="cursor: pointer; user-select: none;">
+        <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
+          <input type="checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleBatchRewardHero('${h.id}')" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--accent-gold); flex-shrink: 0;">
+          ${avatarHtml}
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px;">
+            <div style="display: flex; align-items: center; gap: 5px;">
+              <b style="color: #fff; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${h.name}</b>
+              <span class="badge badge-lvl" style="font-size: 9px; padding: 1px 4px; flex-shrink: 0;">Nv ${h.level || 1}</span>
+            </div>
+            <div style="font-size: 10.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              👤 <span style="color: var(--primary-light); font-weight: 600;">${h.student || 'Aluno'}</span> • ${h.className || 'Aventureiro'}
+            </div>
           </div>
-          <span style="font-weight: 700; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${h.name}</span>
         </div>
-        <input type="checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleBatchRewardHero('${h.id}')">
       </div>
     `;
   }).join('');
@@ -6119,6 +6158,7 @@ if (typeof window !== 'undefined') {
   window.getMaxPreparedSpells = getMaxPreparedSpells;
   window.getPlayerSpellcastingStats = getPlayerSpellcastingStats;
   window.getCompatibleClassKey = getCompatibleClassKey;
+  window.togglePlayerLoginRoomConfig = togglePlayerLoginRoomConfig;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -6159,7 +6199,8 @@ if (typeof module !== 'undefined' && module.exports) {
     calculateMulticlassSpellSlots,
     getMaxPreparedSpells,
     getPlayerSpellcastingStats,
-    getCompatibleClassKey
+    getCompatibleClassKey,
+    togglePlayerLoginRoomConfig
   };
 }
 

@@ -1091,10 +1091,38 @@ function addItemToPartyStash(name, qty = 1, category = 'Equipamento de Aventura'
   return true;
 }
 
+function updateAllPartyStashElements() {
+  const camp = (typeof getActiveCampaign === 'function') ? getActiveCampaign() : null;
+  const stash = (camp && camp.partyStash) ? camp.partyStash : { gold: 0, items: [], history: [] };
+  const gold = stash.gold || 0;
+
+  // 1. Ouro no modal do Baú
+  const modalGold = document.getElementById('party-stash-modal-gold');
+  if (modalGold) modalGold.innerText = `${gold} PO`;
+
+  // 2. Ouro na aba de Campanhas do Mestre
+  const masterGold = document.getElementById('stash-gold-amount');
+  if (masterGold) masterGold.innerText = `${gold} PO`;
+
+  // 3. Barra rápida do baú em todas as fichas dos jogadores
+  if (typeof document !== 'undefined') {
+    document.querySelectorAll('.party-stash-quickbar b').forEach(el => {
+      el.innerText = `${gold} PO`;
+    });
+  }
+
+  // 4. Se o modal do baú estiver visível, atualiza a lista de itens e histórico
+  const modal = (typeof document !== 'undefined') ? document.getElementById('modal-party-stash-view') : null;
+  if (modal && modal.classList.contains('open') && typeof renderPartyStashViewer === 'function') {
+    renderPartyStashViewer();
+  }
+}
+
 // --- VISUALIZADOR MODAL DO BAÚ DO GRUPO (PARA JOGADORES E MESTRE) ---
 function openPartyStashModal() {
   const modal = document.getElementById('modal-party-stash-view');
   if (modal) modal.classList.add('open');
+  updateAllPartyStashElements();
   renderPartyStashViewer();
 }
 
@@ -1541,6 +1569,7 @@ if (typeof window !== 'undefined') {
   window.getDeletedCampaignIds = getDeletedCampaignIds;
   window.trackDeletedPartyItemId = trackDeletedPartyItemId;
   window.getDeletedPartyItemIds = getDeletedPartyItemIds;
+  window.updateAllPartyStashElements = updateAllPartyStashElements;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -1551,6 +1580,7 @@ if (typeof module !== 'undefined' && module.exports) {
     renderCampaigns,
     renderCampaignPartyStash,
     renderPartyStashViewer,
+    updateAllPartyStashElements,
     openPartyStashModal,
     closePartyStashModal,
     openPartyItemModal,

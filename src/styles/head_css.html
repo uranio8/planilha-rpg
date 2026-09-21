@@ -4374,6 +4374,113 @@
       margin-bottom: 8px;
     }
 
+    /* Botão da Nuvem Firebase na Barra Superior */
+    .btn-top.firebase-status-pill {
+      transition: all 0.2s ease;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .btn-top.firebase-status-pill.connected {
+      border-color: rgba(16, 185, 129, 0.4) !important;
+      background: rgba(16, 185, 129, 0.12) !important;
+      color: #6ee7b7 !important;
+    }
+    .btn-top.firebase-status-pill.syncing {
+      border-color: rgba(245, 158, 11, 0.45) !important;
+      background: rgba(245, 158, 11, 0.14) !important;
+      color: #fde047 !important;
+    }
+    .btn-top.firebase-status-pill.offline {
+      border-color: rgba(100, 116, 139, 0.3) !important;
+      background: rgba(15, 23, 42, 0.6) !important;
+      color: #94a3b8 !important;
+    }
+    .btn-top.firebase-status-pill.error {
+      border-color: rgba(239, 68, 68, 0.4) !important;
+      background: rgba(239, 68, 68, 0.14) !important;
+      color: #fca5a5 !important;
+    }
+
+    /* Cards de Seleção de Recompensas da Turma (Saque & XP) */
+    .reward-hero-pick-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+      padding: 4px;
+    }
+    .reward-hero-chip {
+      display: flex;
+      align-items: center;
+      padding: 6px 10px;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+    }
+    .reward-hero-chip:hover {
+      background: rgba(30, 41, 59, 0.9);
+      border-color: rgba(245, 158, 11, 0.45);
+    }
+    .reward-hero-chip.selected {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(180, 83, 9, 0.28) 100%);
+      border-color: rgba(245, 158, 11, 0.65);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+    }
+    .reward-coin-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      gap: 6px;
+    }
+    .reward-coin-input-box {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .reward-coin-input-box input {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      width: 100%;
+      outline: none;
+    }
+
+    /* Status de Conexão Transparente no Portal do Jogador */
+    .player-login-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #6ee7b7;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .player-login-status-pill .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 6px #10b981;
+      display: inline-block;
+      animation: pulse-dot 2s infinite ease-in-out;
+    }
+
     /* Layout Amplo do Portal do Jogador */
     body.mode-player-portal main {
       max-width: 1520px;

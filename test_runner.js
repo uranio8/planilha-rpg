@@ -3992,6 +3992,101 @@ assert(evolvedHero.subclassIdx === 2, 'subclassIdx atualizado para 2 (Trapaceiro
 assert(evolvedHero.subclass && evolvedHero.subclass.includes('Trapaceiro Arcano'), 'subclass nome atualizado para conter "Trapaceiro Arcano"');
 assert(JSON.stringify(evolvedHero.slots) === JSON.stringify([2, 0, 0, 0, 0]), 'Herói recebeu automaticamente [2, 0, 0, 0, 0] espaços de magia');
 
+// ========================================================
+// 58. TESTES DE SINCRONIZAÇÃO AUTOMÁTICA EM TEMPO REAL,
+//     CARDS DE RECOMPENSA E BOTÃO DA NUVEM (ISSUE-85)
+// ========================================================
+console.log('\n💎 58. Testes de Sincronização Automática, Recompensas e Botão da Nuvem (ISSUE-85):');
+
+// 1. Verificação de estilos no bundle
+assert(bundleHtml.includes('.btn-top.firebase-status-pill'), 'Bundle contém estilos para .btn-top.firebase-status-pill');
+assert(bundleHtml.includes('.reward-hero-pick-grid'), 'Bundle contém estilos para .reward-hero-pick-grid');
+assert(bundleHtml.includes('.reward-hero-chip'), 'Bundle contém estilos para .reward-hero-chip');
+assert(bundleHtml.includes('.player-login-status-pill'), 'Bundle contém estilos para .player-login-status-pill');
+
+// 2. Preservação da classe btn-top no status da nuvem
+vm.runInContext(`
+  const testBadge = document.getElementById('firebase-status-badge') || { className: '', innerText: '' };
+  updateFirebaseUiStatus('connected', 'Nuvem Conectada');
+`, sandbox);
+const badgeClassConnected = vm.runInContext("document.getElementById('firebase-status-badge').className", sandbox);
+assert(badgeClassConnected.includes('btn-top') && badgeClassConnected.includes('connected'), 'updateFirebaseUiStatus preserva btn-top ao conectar');
+
+vm.runInContext(`
+  updateFirebaseUiStatus('syncing', 'Salvando...');
+`, sandbox);
+const badgeClassSyncing = vm.runInContext("document.getElementById('firebase-status-badge').className", sandbox);
+assert(badgeClassSyncing.includes('btn-top') && badgeClassSyncing.includes('syncing'), 'updateFirebaseUiStatus preserva btn-top ao salvar');
+
+// 3. Renderização completa dos cards no modal de recompensas com aluno, herói, nível e classe
+vm.runInContext(`
+  PLAYERS = [
+    { id: 'p_test_reward_1', name: 'Valerius', student: 'Wesley', level: 4, className: 'Guerreiro', avatar: '⚔️' },
+    { id: 'p_test_reward_2', name: 'Lyra', student: 'Mariana', level: 3, className: 'Maga', avatar: '🧙' }
+  ];
+  batchRewardSelectedHeroIds = new Set(['p_test_reward_1']);
+  renderBatchRewardHeroList();
+`, sandbox);
+
+const rewardHtml = vm.runInContext("document.getElementById('batch-reward-hero-list').innerHTML", sandbox);
+assert(rewardHtml.includes('Valerius'), 'Card de recompensa exibe nome do herói Valerius');
+assert(rewardHtml.includes('Wesley'), 'Card de recompensa exibe nome do aluno Wesley');
+assert(rewardHtml.includes('Nv 4'), 'Card de recompensa exibe nível Nv 4');
+assert(rewardHtml.includes('Guerreiro'), 'Card de recompensa exibe classe Guerreiro');
+assert(rewardHtml.includes('Lyra'), 'Card de recompensa exibe nome da heroína Lyra');
+assert(rewardHtml.includes('Mariana'), 'Card de recompensa exibe nome da aluna Mariana');
+assert(rewardHtml.includes('Nv 3'), 'Card de recompensa exibe nível Nv 3');
+assert(rewardHtml.includes('Maga'), 'Card de recompensa exibe classe Maga');
+
+// 4. Testes de atualização síncrona do Baú do Grupo (updateAllPartyStashElements)
+assert(typeof vm.runInContext("updateAllPartyStashElements", sandbox) === 'function', 'Função updateAllPartyStashElements exportada');
+vm.runInContext(`
+  {
+    const camp58 = getActiveCampaign();
+    camp58.partyStash = { gold: 580, items: [], history: [] };
+    updateAllPartyStashElements();
+  }
+`, sandbox);
+
+const modalGoldText = vm.runInContext("document.getElementById('party-stash-modal-gold').innerText", sandbox);
+const masterGoldText = vm.runInContext("document.getElementById('stash-gold-amount').innerText", sandbox);
+assert(modalGoldText === '580 PO', 'updateAllPartyStashElements atualizou o ouro no modal para 580 PO');
+assert(masterGoldText === '580 PO', 'updateAllPartyStashElements atualizou o ouro na aba de campanhas para 580 PO');
+
+// 5. Sincronização do Baú do Grupo via nuvem dispara updateAllPartyStashElements
+vm.runInContext(`
+  clientRole = 'player';
+  const remotePayload = {
+    campaigns: {
+      activeCampaignId: 'camp_1',
+      campaigns: [
+        {
+          id: 'camp_1',
+          name: 'Campanha em Tempo Real',
+          partyStash: {
+            gold: 750,
+            items: [{ id: 'it_remote_1', name: 'Gema Estelar', qty: 1, category: 'Tesouro' }],
+            updatedAt: Date.now() + 5000
+          }
+        }
+      ]
+    },
+    lastUpdatedBy: 'remote_master'
+  };
+  applyCloudDataToLocal(remotePayload);
+`, sandbox);
+
+const syncedModalGold = vm.runInContext("document.getElementById('party-stash-modal-gold').innerText", sandbox);
+assert(syncedModalGold === '750 PO', 'applyCloudDataToLocal sincronizou o ouro do Baú em tempo real para 750 PO');
+
+// 6. Teste de toggle da configuração de sala do modal de login
+assert(typeof vm.runInContext("togglePlayerLoginRoomConfig", sandbox) === 'function', 'Função togglePlayerLoginRoomConfig exportada');
+vm.runInContext(`
+  togglePlayerLoginRoomConfig();
+`, sandbox);
+const boxDisplay = vm.runInContext("document.getElementById('player-login-custom-room-box').style.display", sandbox);
+assert(boxDisplay === 'flex', 'togglePlayerLoginRoomConfig exibiu a caixa de configuração de sala');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
