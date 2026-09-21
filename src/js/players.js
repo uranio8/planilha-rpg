@@ -736,6 +736,7 @@ function renderPlayers() {
             <div class="powers-section-box">
               <div class="powers-section-header">
                 <span>⚔️ Ataques & Arsenal</span>
+                <button class="btn-secondary" style="font-size: 10px; padding: 2px 7px;" onclick="openWeaponPickerModal('${p.id}')" title="Adicionar arma calculada do catálogo D&D Beyond">⚔️ + Arma</button>
               </div>
               <div style="display: flex; flex-direction: column; gap: 4px;">
                 ${attacksHtml || '<div style="color: var(--text-dim); font-size: 11px; padding: 6px;">Nenhum ataque configurado.</div>'}
@@ -853,7 +854,7 @@ function renderPlayers() {
             <div class="p-tab-content ${activeTab === 'skills' ? 'active' : ''}">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <span style="font-size: 11px; font-weight: 800; color: var(--primary-light);">🎯 Perícias D&D 5E (Profic: +${prof})</span>
-                <button class="btn-secondary" style="font-size: 9px; padding: 2px 6px;" onclick="openPlayerSkillsModal('${p.id}')">⚙️ Proficiências</button>
+                <button class="btn-secondary" style="font-size: 10px; padding: 4px 10px;" onclick="openPlayerSkillsModal('${p.id}')">⚙️ Proficiências</button>
               </div>
 
               <div class="skill-filter-box">
@@ -1595,6 +1596,450 @@ function closePlayerSkillsModal() {
   activeSkillsModalPlayerId = null;
 }
 
+
+// ===================================================
+// ⚔️ MOTOR DE ARMAS E ATAQUES AUTOMÁTICOS (D&D BEYOND)
+// ===================================================
+
+function isWeaponProficient(player, weapon) {
+  if (!player || !weapon) return true;
+  const cls = (player.className || '').toLowerCase();
+  const cat = (weapon.category || '').toLowerCase();
+  const wName = (weapon.name || '').toLowerCase();
+
+  // Bárbaro, Guerreiro, Paladino, Patrulheiro: proficiência com todas as armas simples e marciais
+  if (cls.includes('guerreiro') || cls.includes('fighter') || 
+      cls.includes('barbaro') || cls.includes('bárbaro') || cls.includes('barbarian') || 
+      cls.includes('paladino') || cls.includes('paladin') || 
+      cls.includes('patrulheiro') || cls.includes('ranger')) {
+    return true;
+  }
+
+  const isSimple = cat.includes('simples') || cat.includes('simple');
+  const isMartial = cat.includes('marciais') || cat.includes('martial');
+
+  // Ladino e Bardo: Armas simples + Espada Curta, Espada Longa, Rapieira, Besta de Mão
+  if (cls.includes('ladino') || cls.includes('rogue') || cls.includes('bardo') || cls.includes('bard')) {
+    if (isSimple) return true;
+    if (wName.includes('espada curta') || wName.includes('espada longa') || wName.includes('rapieira') || wName.includes('besta de mão') || wName.includes('besta de mao')) {
+      return true;
+    }
+    return false;
+  }
+
+  // Clérigo: Armas simples (e marciais se subclasse Guerra/Tempestade)
+  if (cls.includes('clerigo') || cls.includes('clérigo') || cls.includes('cleric')) {
+    const sub = (player.subclass || '').toLowerCase();
+    if (sub.includes('guerra') || sub.includes('tempestade') || sub.includes('war') || sub.includes('tempest')) return true;
+    return isSimple;
+  }
+
+  // Monge: Armas simples e Espada Curta
+  if (cls.includes('monge') || cls.includes('monk')) {
+    if (isSimple) return true;
+    if (wName.includes('espada curta')) return true;
+    return false;
+  }
+
+  // Druida: Clava, Adaga, Dardo, Azagaia, Maça, Bordão, Cimitarra, Foice, Funda, Lança
+  if (cls.includes('druida') || cls.includes('druid')) {
+    const druidWeapons = ['clava', 'adaga', 'dardo', 'azagaia', 'maca', 'maça', 'bordao', 'bordão', 'cimitarra', 'foice', 'funda', 'lanca', 'lança'];
+    return druidWeapons.some(dw => wName.includes(dw));
+  }
+
+  // Mago e Feiticeiro: Adaga, Dardo, Funda, Bordão, Besta Leve
+  if (cls.includes('mago') || cls.includes('wizard') || cls.includes('feiticeiro') || cls.includes('sorcerer')) {
+    const wizWeapons = ['adaga', 'dardo', 'funda', 'bordao', 'bordão', 'besta leve'];
+    return wizWeapons.some(ww => wName.includes(ww));
+  }
+
+  // Bruxo: Armas simples (e marciais se Pacto da Lâmina / Hexblade)
+  if (cls.includes('bruxo') || cls.includes('warlock')) {
+    const sub = (player.subclass || '').toLowerCase();
+    const feats = (player.features || '').toLowerCase();
+    if (sub.includes('lâmina') || sub.includes('lamina') || sub.includes('hexblade') || feats.includes('pacto da lâmina') || feats.includes('pacto da lamina')) return true;
+    return isSimple;
+  }
+
+  return isSimple;
+}
+
+function calculateWeaponAttackStats(player, weaponOrName) {
+  if (!player) return null;
+  let weapon = null;
+
+  if (typeof weaponOrName === 'string') {
+    const term = weaponOrName.toLowerCase().trim();
+    if (typeof EQUIPMENT_DATA !== 'undefined' && Array.isArray(EQUIPMENT_DATA)) {
+      weapon = EQUIPMENT_DATA.find(w => w.name.toLowerCase().includes(term) || term.includes(w.name.split('(')[0].toLowerCase().trim()));
+    }
+    if (!weapon) {
+      weapon = {
+        name: weaponOrName,
+        category: 'Armas Simples',
+        damage: '1d6 cortante',
+        prop: ''
+      };
+    }
+  } else if (typeof weaponOrName === 'object') {
+    weapon = weaponOrName;
+  }
+
+  if (!weapon) return null;
+
+  const prop = (weapon.prop || '').toLowerCase();
+  const cat = (weapon.category || '').toLowerCase();
+  const wName = (weapon.name || '').toLowerCase();
+
+  const isFinesse = prop.includes('acuidade') || prop.includes('finesse');
+  const isRanged = prop.includes('distância') || prop.includes('distancia') || prop.includes('munição') || prop.includes('municao') || cat.includes('distância') || cat.includes('distancia');
+  const isThrown = prop.includes('arremesso');
+
+  const str = typeof getPlayerAttr === 'function' ? getPlayerAttr(player, 'str') : (player.str || 10);
+  const dex = typeof getPlayerAttr === 'function' ? getPlayerAttr(player, 'dex') : (player.dex || 10);
+  const strMod = Math.floor((str - 10) / 2);
+  const dexMod = Math.floor((dex - 10) / 2);
+
+  let keyAttr = 'str';
+  let attrMod = strMod;
+
+  if (isRanged && !isThrown) {
+    keyAttr = 'dex';
+    attrMod = dexMod;
+  } else if (isFinesse) {
+    if (dexMod > strMod) {
+      keyAttr = 'dex';
+      attrMod = dexMod;
+    } else {
+      keyAttr = 'str';
+      attrMod = strMod;
+    }
+  } else if (isThrown) {
+    if (isFinesse && dexMod > strMod) {
+      keyAttr = 'dex';
+      attrMod = dexMod;
+    } else {
+      keyAttr = 'str';
+      attrMod = strMod;
+    }
+  }
+
+  // Monge: artes marciais permitem usar Destreza em armas de monge
+  const cls = (player.className || '').toLowerCase();
+  if (cls.includes('monge') && dexMod > strMod) {
+    const isHeavyOrTwoHanded = prop.includes('pesada') || (prop.includes('duas mãos') && !prop.includes('versátil'));
+    if (!isHeavyOrTwoHanded) {
+      keyAttr = 'dex';
+      attrMod = dexMod;
+    }
+  }
+
+  // Bônus de estilo de luta (ex: Arquearia dá +2 no ataque à distância)
+  let extraHitBonus = 0;
+  let extraDmgBonus = 0;
+  const fStyle = (player.fightingStyle || '').toLowerCase();
+  if (fStyle.includes('archery') || fStyle.includes('arquearia')) {
+    if (isRanged) extraHitBonus += 2;
+  }
+  if (fStyle.includes('dueling') || fStyle.includes('duelo')) {
+    if (!isRanged && !prop.includes('duas mãos')) extraDmgBonus += 2;
+  }
+  if (fStyle.includes('thrown') || fStyle.includes('arremessador')) {
+    if (isThrown) extraDmgBonus += 2;
+  }
+
+  const prof = isWeaponProficient(player, weapon);
+  const pb = typeof getProfBonus === 'function' ? getProfBonus(player.level || 1) : 2;
+  const hitBonus = attrMod + (prof ? pb : 0) + extraHitBonus;
+
+  // Extrai dado e tipo de dano
+  const rawDmg = weapon.damage || '1d6 cortante';
+  const dmgMatch = rawDmg.match(/(\d+d\d+)/i);
+  const die = dmgMatch ? dmgMatch[1] : '1d6';
+
+  let dmgType = '';
+  if (rawDmg.toLowerCase().includes('cortante')) dmgType = 'cortante';
+  else if (rawDmg.toLowerCase().includes('perfurante')) dmgType = 'perfurante';
+  else if (rawDmg.toLowerCase().includes('contundente') || rawDmg.toLowerCase().includes('concussão') || rawDmg.toLowerCase().includes('concussao')) dmgType = 'contundente';
+
+  const totalDmgMod = attrMod + extraDmgBonus;
+  const dmgFormula = `${die}${totalDmgMod !== 0 ? (totalDmgMod > 0 ? '+' + totalDmgMod : totalDmgMod) : ''}`;
+  const hitStr = hitBonus >= 0 ? `+${hitBonus}` : `${hitBonus}`;
+
+  const simpleName = weapon.name.split('(')[0].trim();
+  const fullAttackStr = `${simpleName} (${hitStr}, ${dmgFormula}${dmgType ? ' ' + dmgType : ''})`;
+
+  return {
+    name: simpleName,
+    fullName: weapon.name,
+    keyAttr,
+    attrMod,
+    isProficient: prof,
+    pb,
+    hitBonus,
+    hitStr,
+    damageDie: die,
+    damageMod: totalDmgMod,
+    damageType: dmgType,
+    damageFormula: dmgFormula,
+    damageText: `${dmgFormula}${dmgType ? ' ' + dmgType : ''}`,
+    attackBonus: hitBonus,
+    chosenAttr: keyAttr,
+    formattedText: fullAttackStr,
+    properties: weapon.prop || ''
+  };
+}
+
+// ===================================================
+// 🛡️ BÔNUS DE PV POR SUBCLASSE, RAÇA E ORIGEM
+// ===================================================
+
+function getPlayerBonusHpPerLevel(player, className) {
+  if (!player) return { bonus: 0, reason: '', valueOf() { return 0; } };
+  let bonus = 0;
+  const reasons = [];
+
+  const race = (player.race || '').toLowerCase();
+  const sub = (player.subclass || player.subclassName || '').toLowerCase();
+  const cls = (className || player.className || '').toLowerCase();
+  const features = (player.features || '').toLowerCase();
+
+  // 1. Anão da Colina (Hill Dwarf) - Tenacidade Anã: +1 PV por nível do personagem
+  if (race.includes('colina') || race.includes('hill') || features.includes('tenacidade anã') || features.includes('tenacidade ana')) {
+    bonus += 1;
+    reasons.push('Anão da Colina');
+  }
+
+  // 2. Feiticeiro da Linhagem Dracônica - Resiliência Dracônica: +1 PV por nível de Feiticeiro
+  const isDraconicSorcerer = (cls.includes('feiticeiro') || cls.includes('sorcerer')) && 
+    (sub.includes('drac') || (player.subclassIdx === 0 && (cls.includes('feiticeiro') || cls.includes('sorcerer'))) || features.includes('resiliência dracônica') || features.includes('resiliencia draconica') || features.includes('linhagem dracônica') || features.includes('linhagem draconica'));
+  if (isDraconicSorcerer) {
+    bonus += 1;
+    reasons.push('Linhagem Dracônica');
+  }
+
+  // 3. Talento Robustez (Tough Feat): +2 PV por nível
+  if (features.includes('robustez') || features.includes('tough') || (player.feats && player.feats.some(f => f.toLowerCase().includes('tough') || f.toLowerCase().includes('robustez')))) {
+    bonus += 2;
+    reasons.push('Robustez');
+  }
+
+  return {
+    bonus: bonus,
+    reason: reasons.join(', '),
+    valueOf() { return this.bonus; },
+    toString() { return String(this.bonus); }
+  };
+}
+
+function calculateRecommendedMaxHp(player) {
+  if (!player) return 10;
+  const cls = (player.className || 'Guerreiro').split('/')[0].trim();
+  const hitDieStr = typeof getHitDieForClass === 'function' ? getHitDieForClass(cls) : '1d10';
+  const dieSides = typeof getHitDieSides === 'function' ? getHitDieSides(hitDieStr) : (parseInt(hitDieStr.replace('d', '')) || 10);
+  const conMod = Math.floor(((player.con || 10) - 10) / 2);
+  const lvl = Math.max(1, parseInt(player.level, 10) || 1);
+  const hpBonusObj = getPlayerBonusHpPerLevel(player, cls);
+  const bonusHpPerLevel = typeof hpBonusObj === 'object' ? (hpBonusObj.bonus || 0) : (Number(hpBonusObj) || 0);
+
+  // Nível 1: Dado cheio + CON + Bônus
+  let total = dieSides + conMod + bonusHpPerLevel;
+
+  // Níveis 2 a N: Média fixa (dieSides / 2 + 1) + CON + Bônus
+  if (lvl > 1) {
+    const avgPerLvl = Math.max(1, Math.floor(dieSides / 2) + 1 + conMod + bonusHpPerLevel);
+    total += avgPerLvl * (lvl - 1);
+  }
+
+  return Math.max(1, total);
+}
+
+// ===================================================
+// 🗡️ MODAL E CONTROLES DO SELETOR DE ARMAS D&D BEYOND
+// ===================================================
+
+let activeWeaponPickerPlayerId = null;
+let activeWeaponPickerTarget = 'player'; // 'player' (adiciona direto na ficha) ou 'modal' (adiciona no input #pm-attacks)
+
+function openWeaponPickerModal(playerId = null, target = 'player') {
+  activeWeaponPickerTarget = target;
+  if (playerId) {
+    activeWeaponPickerPlayerId = playerId;
+  } else if (!activeWeaponPickerPlayerId && typeof PLAYERS !== 'undefined' && PLAYERS.length > 0) {
+    activeWeaponPickerPlayerId = PLAYERS[0].id;
+  }
+
+  const modal = document.getElementById('modal-weapon-picker');
+  if (!modal) return;
+
+  const p = PLAYERS ? PLAYERS.find(x => x.id === activeWeaponPickerPlayerId) : null;
+  const heroInfo = document.getElementById('weapon-picker-hero-info');
+  const subTitle = document.getElementById('weapon-picker-subtitle');
+
+  if (p) {
+    const pb = typeof getProfBonus === 'function' ? getProfBonus(p.level || 1) : 2;
+    const strMod = Math.floor(((p.str || 10) - 10) / 2);
+    const dexMod = Math.floor(((p.dex || 10) - 10) / 2);
+    if (subTitle) subTitle.innerText = `Calculando estatísticas para ${p.name} (${p.className} Nv ${p.level || 1})`;
+    if (heroInfo) {
+      heroInfo.innerHTML = `
+        👤 <b>${p.name}</b> • FOR: ${p.str || 10} (${strMod >= 0 ? '+' : ''}${strMod}) | DES: ${p.dex || 10} (${dexMod >= 0 ? '+' : ''}${dexMod}) | Bônus de Proficiência: <b>+${pb}</b>
+      `;
+    }
+  }
+
+  renderWeaponPickerList('', '');
+  modal.classList.add('open');
+}
+
+function closeWeaponPickerModal() {
+  const modal = document.getElementById('modal-weapon-picker');
+  if (modal) modal.classList.remove('open');
+}
+
+function handleWeaponSearchInput(val) {
+  const catSel = document.getElementById('sel-weapon-cat');
+  const cat = catSel ? catSel.value : '';
+  renderWeaponPickerList(val, cat);
+}
+
+function handleWeaponCategoryChange(cat) {
+  const inp = document.getElementById('inp-weapon-search');
+  const term = inp ? inp.value : '';
+  renderWeaponPickerList(term, cat);
+}
+
+function renderWeaponPickerList(filterText = '', categoryFilter = '') {
+  const listEl = document.getElementById('weapon-picker-list');
+  if (!listEl) return;
+
+  if (typeof EQUIPMENT_DATA === 'undefined' || !Array.isArray(EQUIPMENT_DATA)) {
+    listEl.innerHTML = '<div style="color:var(--text-muted); padding:10px;">Catálogo de equipamentos não carregado.</div>';
+    return;
+  }
+
+  const p = PLAYERS ? PLAYERS.find(x => x.id === activeWeaponPickerPlayerId) : null;
+  const normFilter = (filterText || '').toLowerCase().trim();
+  const normCat = (categoryFilter || '').toLowerCase().trim();
+
+  const weapons = EQUIPMENT_DATA.filter(item => {
+    const cat = (item.category || '').toLowerCase();
+    if (!cat.includes('armas')) return false;
+    if (normCat && !cat.includes(normCat)) return false;
+    if (normFilter) {
+      const matchName = item.name.toLowerCase().includes(normFilter);
+      const matchProp = (item.prop || '').toLowerCase().includes(normFilter);
+      if (!matchName && !matchProp) return false;
+    }
+    return true;
+  });
+
+  if (weapons.length === 0) {
+    listEl.innerHTML = '<div style="color:var(--text-muted); padding:20px; text-align:center; grid-column:1/-1;">Nenhuma arma encontrada com os filtros informados.</div>';
+    return;
+  }
+
+  listEl.innerHTML = weapons.map(w => {
+    const stats = p ? calculateWeaponAttackStats(p, w) : null;
+    const isProf = stats ? stats.isProficient : false;
+    const hitLabel = stats ? stats.hitStr : '+0';
+    const dmgLabel = stats ? `${stats.damageFormula} ${stats.damageType}` : w.damage;
+    const attrLabel = stats ? (stats.keyAttr === 'dex' ? 'DES' : 'FOR') : 'FOR';
+
+    return `
+      <div class="weapon-card-item ${isProf ? 'proficient' : 'non-proficient'}" onclick="selectWeaponForPlayer('${w.name.replace(/'/g, "\\'")}')">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+          <div>
+            <div style="font-weight: 800; font-size: 13px; color: #fff;">${w.name}</div>
+            <div style="font-size: 10px; color: var(--text-dim);">${w.category} • ${w.cost}</div>
+          </div>
+          <span style="font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700; background: ${isProf ? 'rgba(16,185,129,0.2); color:#34d399;' : 'rgba(148,163,184,0.15); color:#94a3b8;'}">
+            ${isProf ? '✓ Proficiente' : 'Sem Profic.'}
+          </span>
+        </div>
+
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px;">
+          <span class="weapon-calc-badge" title="Bônus de Acerto (${attrLabel} ${stats ? (stats.attrMod >= 0 ? '+' + stats.attrMod : stats.attrMod) : ''} ${isProf ? '+ PB ' + (stats ? stats.pb : 2) : ''})">
+            🎯 Acerto: <b>${hitLabel}</b>
+          </span>
+          <span class="weapon-calc-badge" style="background: rgba(245,158,11,0.15); color: var(--accent-gold); border-color: rgba(245,158,11,0.3);">
+            💥 Dano: <b>${dmgLabel}</b>
+          </span>
+        </div>
+
+        ${w.prop ? `<div style="font-size: 10px; color: var(--text-muted); line-height: 1.3;">${w.prop}</div>` : ''}
+
+        <button class="btn-action" style="padding: 4px 8px; font-size: 11px; margin-top: 4px; width: 100%;" onclick="event.stopPropagation(); selectWeaponForPlayer('${w.name.replace(/'/g, "\\'")}')">
+          ➕ Adicionar ao Arsenal
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectWeaponForPlayer(weaponName) {
+  const p = PLAYERS ? PLAYERS.find(x => x.id === activeWeaponPickerPlayerId) : null;
+  if (!p && activeWeaponPickerTarget !== 'modal') return;
+
+  const weaponObj = typeof EQUIPMENT_DATA !== 'undefined'
+    ? EQUIPMENT_DATA.find(w => w.name.toLowerCase() === weaponName.toLowerCase() || w.name.toLowerCase().includes(weaponName.toLowerCase()))
+    : { name: weaponName, damage: '1d6 cortante', category: 'Armas Simples', prop: '' };
+
+  const stats = p ? calculateWeaponAttackStats(p, weaponObj || weaponName) : null;
+  const attackText = stats ? stats.formattedText : `${weaponName} (+0, 1d6)`;
+
+  if (activeWeaponPickerTarget === 'modal') {
+    const input = document.getElementById('pm-attacks');
+    if (input) {
+      const current = input.value.trim();
+      input.value = current ? `${current} | ${attackText}` : attackText;
+      if (typeof showToast === 'function') {
+        showToast(`⚔️ ${stats ? stats.name : weaponName} adicionada com cálculo automático!`, 'success');
+      }
+    }
+  } else if (p) {
+    const current = (p.attacks || '').trim();
+    p.attacks = current ? `${current} | ${attackText}` : attackText;
+
+    if (typeof touchPlayer === 'function') touchPlayer(p);
+    renderPlayers();
+    saveToLocalStorage();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+    if (typeof broadcastStateSync === 'function') broadcastStateSync();
+
+    if (typeof showToast === 'function') {
+      showToast(`⚔️ ${stats ? stats.name : weaponName} adicionada ao arsenal de ${p.name}! Acerto: ${stats.hitStr} | Dano: ${stats.damageFormula}`, 'success');
+    }
+    if (typeof playFX === 'function') playFX('sword');
+  }
+
+  closeWeaponPickerModal();
+}
+
+function equipBackpackItemAsAttack(playerId, itemIdx) {
+  const p = PLAYERS ? PLAYERS.find(x => x.id === playerId) : null;
+  if (!p || !p.inventory || !p.inventory[itemIdx]) return;
+
+  const item = p.inventory[itemIdx];
+  const stats = calculateWeaponAttackStats(p, item);
+  if (!stats) return;
+
+  const current = (p.attacks || '').trim();
+  p.attacks = current ? `${current} | ${stats.formattedText}` : stats.formattedText;
+
+  if (typeof touchPlayer === 'function') touchPlayer(p);
+  renderPlayers();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+
+  if (typeof showToast === 'function') {
+    showToast(`🗡️ ${stats.name} equipada como ataque ativo de ${p.name}! (${stats.hitStr}, ${stats.damageFormula})`, 'success');
+  }
+  if (typeof playFX === 'function') playFX('sword');
+}
+
+
 function rollPlayerAttack(id, rawAttackText) {
   const p = PLAYERS.find(x => x.id === id);
   if (!p) return;
@@ -1809,6 +2254,16 @@ function renderShortRestModalContent(p) {
       </button>
     </div>
 
+    ${hd.available > 0 && p.hp < p.maxHp ? `
+      <div style="background: rgba(245, 158, 11, 0.08); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 8px 12px; margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+        <span style="font-size: 11px; color: var(--accent-gold); font-weight: 700;">🎲✏️ Dado Físico da Mesa:</span>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <input type="number" id="inp-shortrest-physical-val" min="1" max="${hd.dieSides}" placeholder="1 a ${hd.dieSides}" style="width: 75px; text-align: center; padding: 4px 6px; font-weight: 800; font-size: 14px; border: 1px solid var(--accent-gold); background: #0f172a; color: #fff; border-radius: 4px;">
+          <button class="btn-action" style="font-size: 11px; padding: 5px 10px; background: linear-gradient(135deg, #d97706, #b45309);" onclick="applyShortRestPhysicalDie('${p.id}')">Curar Dado Físico</button>
+        </div>
+      </div>
+    ` : ''}
+
     ${p.hp >= p.maxHp ? `
       <div style="color: var(--accent-green); font-size: 11px; text-align: center; font-weight: bold; margin-top: 4px;">
         ✨ Vida totalmente cheia!
@@ -1821,7 +2276,29 @@ function renderShortRestModalContent(p) {
   `;
 }
 
-function rollShortRestHitDie(playerId) {
+function applyShortRestPhysicalDie(playerIdOrVal, directVal = null) {
+  let targetId = typeof playerIdOrVal === 'string' ? playerIdOrVal : (typeof activeShortRestPlayerId !== 'undefined' ? activeShortRestPlayerId : null);
+  let val = typeof playerIdOrVal === 'number' ? playerIdOrVal : directVal;
+
+  if (val === null || val === undefined) {
+    const inp = document.getElementById('inp-shortrest-physical-val');
+    if (inp) val = parseInt(inp.value, 10);
+  }
+
+  if (!targetId && typeof PLAYERS !== 'undefined' && PLAYERS.length > 0) {
+    targetId = PLAYERS[0].id;
+  }
+  const p = PLAYERS.find(x => x.id === targetId);
+  if (!p) return;
+  const hd = getPlayerHitDicePool(p);
+  if (typeof val !== 'number' || isNaN(val) || val < 1 || val > hd.dieSides) {
+    if (typeof alert === 'function') alert(`Por favor digite um número válido entre 1 e ${hd.dieSides} (o que caiu no seu dado físico)!`);
+    return;
+  }
+  rollShortRestHitDie(targetId, val);
+}
+
+function rollShortRestHitDie(playerId, customRoll = null) {
   const p = PLAYERS.find(x => x.id === playerId);
   if (!p) return;
 
@@ -1836,7 +2313,9 @@ function rollShortRestHitDie(playerId) {
   }
 
   const conMod = Math.floor(((p.con || 10) - 10) / 2);
-  const dieRoll = Math.floor(Math.random() * hd.dieSides) + 1;
+  const dieRoll = (typeof customRoll === 'number' && customRoll >= 1 && customRoll <= hd.dieSides)
+    ? customRoll
+    : Math.floor(Math.random() * hd.dieSides) + 1;
   const totalHealed = Math.max(1, dieRoll + conMod);
 
   p.spentHitDice = (p.spentHitDice || 0) + 1;
@@ -5451,12 +5930,15 @@ function renderLevelUpWizardStep() {
     const hitDieStr = getHitDieForClass(clsName); // ex: '1d10'
     const dieSides = getHitDieSides(hitDieStr);
     const conMod = Math.floor((getPlayerAttr(p, 'con') - 10) / 2);
-    const avgGain = Math.max(1, Math.floor(dieSides / 2) + 1 + conMod);
+    const hpBonusObj = typeof getPlayerBonusHpPerLevel === 'function' ? getPlayerBonusHpPerLevel(p, clsName) : { bonus: 0, reason: '' };
+    const bonusHp = hpBonusObj.bonus || 0;
+    const bonusReason = hpBonusObj.reason || '';
+    const avgGain = Math.max(1, Math.floor(dieSides / 2) + 1 + conMod + bonusHp);
     const rolledGain = levelUpWizardState.rolledHp !== null
-      ? Math.max(1, levelUpWizardState.rolledHp + conMod)
+      ? Math.max(1, levelUpWizardState.rolledHp + conMod + bonusHp)
       : null;
 
-    const chosenGain = levelUpWizardState.hpMethod === 'roll' && rolledGain !== null ? rolledGain : avgGain;
+    const chosenGain = (levelUpWizardState.hpMethod === 'roll' || levelUpWizardState.hpMethod === 'physical') && rolledGain !== null ? rolledGain : avgGain;
     levelUpWizardState.calculatedHpGain = chosenGain;
     const newMaxHp = (p.maxHp || 10) + chosenGain;
     const newTotalLevel = (p.level || 1) + 1;
@@ -5482,21 +5964,50 @@ function renderLevelUpWizardStep() {
               🛡️ Média Fixa (+${avgGain} PV)
             </button>
             <button class="btn-secondary ${levelUpWizardState.hpMethod === 'roll' ? 'active' : ''}" onclick="setLevelUpHpMethod('roll')" style="font-size: 11px;">
-              🎲 Rolar ${hitDieStr} (+${conMod >= 0 ? '+' : ''}${conMod})
+              🎲 Rolar no App
+            </button>
+            <button class="btn-secondary ${levelUpWizardState.hpMethod === 'physical' ? 'active' : ''}" onclick="setLevelUpHpMethod('physical')" style="font-size: 11px;">
+              🎲✏️ Dado Físico da Mesa
             </button>
           </div>
         </div>
 
+        ${bonusHp > 0 ? `
+          <div style="margin-top: 4px;">
+            <span class="hp-bonus-badge">✨ +${bonusHp} PV ativo (${bonusReason})</span>
+          </div>
+        ` : ''}
+
         ${levelUpWizardState.hpMethod === 'roll' ? `
-          <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
             <button class="btn-action" style="padding: 6px 12px; font-size: 11px;" onclick="rollLevelUpHpDice(${dieSides})">
-              🎲 Rolar Dado
+              🎲 Rolar ${hitDieStr}
             </button>
             ${levelUpWizardState.rolledHp !== null ? `
               <span style="font-size: 13px; font-weight: 800; color: var(--accent-gold);">
-                [${levelUpWizardState.rolledHp}] + ${conMod} = <b>+${rolledGain} PV</b>
+                [${levelUpWizardState.rolledHp}] + ${conMod >= 0 ? '+' + conMod : conMod} (CON)${bonusHp > 0 ? ` + ${bonusHp} (${bonusReason})` : ''} ➔ <b>+${rolledGain} PV</b>
               </span>
-            ` : `<span style="font-size: 11px; color: var(--text-muted);">Clique para rolar</span>`}
+            ` : `<span style="font-size: 11px; color: var(--text-muted);">Clique para rolar o dado virtual</span>`}
+          </div>
+        ` : ''}
+
+        ${levelUpWizardState.hpMethod === 'physical' ? `
+          <div style="display: flex; flex-direction: column; gap: 8px; padding: 10px; background: rgba(245, 158, 11, 0.08); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 8px; margin-top: 6px;">
+            <div style="font-size: 11.5px; color: var(--accent-gold); font-weight: 700;">
+              🎲 Resultado Rolado no Dado Físico da Mesa (1 a ${dieSides}):
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <input type="number" id="inp-levelup-physical-val" min="1" max="${dieSides}" 
+                     value="${levelUpWizardState.rolledHp !== null ? levelUpWizardState.rolledHp : ''}" 
+                     placeholder="Ex: 7" 
+                     oninput="setLevelUpPhysicalRolledHp(this.value, ${dieSides})" 
+                     style="width: 80px; text-align: center; font-size: 16px; font-weight: 800; padding: 6px; border: 2px solid var(--accent-gold); background: #0f172a; color: #fff; border-radius: 6px;">
+              <div style="font-size: 12px; color: #e2e8f0;">
+                ${levelUpWizardState.rolledHp !== null ? `
+                  <b>[${levelUpWizardState.rolledHp} no dado físico]</b> + ${conMod >= 0 ? '+' + conMod : conMod} CON ${bonusHp > 0 ? `+ ${bonusHp} (${bonusReason})` : ''} ➔ <b style="color: #34d399; font-size: 14px;">+${rolledGain} PV Máximo</b>
+                ` : '<span style="color: var(--text-muted);">Digite o número tirado no dado físico da mesa</span>'}
+              </div>
+            </div>
           </div>
         ` : ''}
       </div>
@@ -5541,6 +6052,24 @@ function selectLevelUpClass(classKey, isNewClass) {
 
 function selectLevelUpSubclass(subIdx) {
   levelUpWizardState.selectedSubclassIdx = subIdx;
+  renderLevelUpWizardStep();
+}
+
+function setLevelUpPhysicalRolledHp(val, dieSides) {
+  const p = PLAYERS.find(x => x.id === levelUpWizardState.playerId);
+  if (!p) return;
+  const num = parseInt(val, 10);
+  if (!isNaN(num) && num >= 1 && num <= dieSides) {
+    levelUpWizardState.rolledHp = num;
+  } else {
+    levelUpWizardState.rolledHp = null;
+  }
+  const clsName = levelUpWizardState.selectedClassKey || levelUpWizardState.selectedClass;
+  const conMod = Math.floor((getPlayerAttr(p, 'con') - 10) / 2);
+  const bonusHp = (typeof getPlayerBonusHpPerLevel === 'function') ? getPlayerBonusHpPerLevel(p, clsName) : 0;
+  levelUpWizardState.calculatedHpGain = levelUpWizardState.rolledHp !== null
+    ? Math.max(1, levelUpWizardState.rolledHp + conMod + bonusHp)
+    : Math.max(1, Math.floor(dieSides / 2) + 1 + conMod + bonusHp);
   renderLevelUpWizardStep();
 }
 
@@ -5632,9 +6161,10 @@ function applyLevelUpConfirm() {
   const hitDieStr = getHitDieForClass(clsName);
   const dieSides = getHitDieSides(hitDieStr);
   const conMod = Math.floor((getPlayerAttr(p, 'con') - 10) / 2);
-  const avgGain = Math.max(1, Math.floor(dieSides / 2) + 1 + conMod);
-  const chosenGain = (levelUpWizardState.hpMethod === 'roll' && levelUpWizardState.rolledHp !== null)
-    ? Math.max(1, levelUpWizardState.rolledHp + conMod)
+  const bonusHp = (typeof getPlayerBonusHpPerLevel === 'function') ? getPlayerBonusHpPerLevel(p, clsName) : 0;
+  const avgGain = Math.max(1, Math.floor(dieSides / 2) + 1 + conMod + bonusHp);
+  const chosenGain = ((levelUpWizardState.hpMethod === 'roll' || levelUpWizardState.hpMethod === 'physical') && levelUpWizardState.rolledHp !== null)
+    ? Math.max(1, levelUpWizardState.rolledHp + conMod + bonusHp)
     : avgGain;
 
   p.maxHp = (p.maxHp || 10) + chosenGain;

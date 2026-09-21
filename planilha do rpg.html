@@ -1550,8 +1550,9 @@
       display: flex;
       gap: 4px;
       border-bottom: 1px solid var(--border-color);
-      padding-bottom: 6px;
+      padding-bottom: 4px;
       margin-top: 4px;
+      margin-bottom: 6px;
       flex-wrap: wrap;
     }
     .p-tab-btn {
@@ -1567,6 +1568,8 @@
       text-align: center;
       white-space: nowrap;
       flex: 1 1 auto;
+      position: relative;
+      z-index: 1;
     }
     .p-tab-btn:hover { color: #fff; background: var(--bg-surface-elevated); border-color: #384869; }
     .p-tab-btn.active {
@@ -1576,7 +1579,7 @@
       font-weight: 700;
       box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
-    .p-tab-content { display: none; flex-direction: column; gap: 6px; font-size: 12px; }
+    .p-tab-content { display: none; flex-direction: column; gap: 6px; font-size: 12px; position: relative; z-index: 0; }
     .p-tab-content.active { display: flex; }
 
     /* LINHA DE ATAQUE INDIVIDUAL */
@@ -8063,6 +8066,58 @@
       justify-content: center;
       font-size: 22px;
     }
+
+    /* SELETOR DE ARMAS D&D BEYOND */
+    .weapon-card-item {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .weapon-card-item:hover {
+      border-color: var(--accent-gold);
+      background: var(--bg-surface-elevated);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .weapon-card-item.proficient {
+      border-left: 3px solid #10b981;
+    }
+    .weapon-card-item.non-proficient {
+      border-left: 3px solid #64748b;
+      opacity: 0.85;
+    }
+    .weapon-calc-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .hp-bonus-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 10.5px;
+      font-weight: 800;
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent-gold);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      margin-left: 4px;
+    }
+
   </style>
 
   <!-- Google Firebase SDK Compat (Nuvem em Tempo Real) -->
@@ -9725,7 +9780,10 @@
       </div>
 
       <div>
-        <label>Ataques & Armas Principais (Ex: Espada Longa (+5, 1d8+3 cortante) | Arco Curto (+4, 1d6+2))</label>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <label style="margin: 0;">Ataques & Armas Principais</label>
+          <button type="button" class="btn-action" style="padding: 3px 8px; font-size: 11px; background: linear-gradient(135deg, #0284c7, #0369a1);" onclick="openWeaponPickerModal(null, 'modal')" title="Adicionar arma calculada do catálogo D&D Beyond">⚔️ + Arma (D&D Beyond)</button>
+        </div>
         <input type="text" id="pm-attacks" placeholder="Ex: Machado de Guerra (+5, 1d8+3 cortante), Azagaia (+5, 1d6+3)">
       </div>
 
@@ -11614,6 +11672,47 @@
        🔔 CONTAINER DE NOTIFICAÇÕES TOAST
        =================================================== -->
   <div id="toast-container" aria-live="polite"></div>
+
+
+  <!-- ===================================================
+       ⚔️ MODAL: SELETOR DE ARMAS D&D BEYOND
+       =================================================== -->
+  <div id="modal-weapon-picker" class="modal-overlay">
+    <div class="modal-body" style="max-width: 680px; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 22px;">⚔️</span>
+          <div>
+            <div style="font-weight: 800; font-size: 16px; color: #fff;">Catálogo de Armas (D&D Beyond)</div>
+            <div id="weapon-picker-subtitle" style="font-size: 11px; color: var(--accent-gold);">Cálculo automático de acerto e dano para o herói</div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeWeaponPickerModal()">✕</button>
+      </div>
+
+      <div style="padding: 10px 0; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="inp-weapon-search" placeholder="🔍 Buscar arma (Ex: Rapieira, Espada Longa, Arco, Adaga)..." oninput="handleWeaponSearchInput(this.value)" style="flex: 1; padding: 8px 12px; font-size: 13px;">
+          <select id="sel-weapon-cat" onchange="handleWeaponCategoryChange(this.value)" style="padding: 8px; font-size: 12px; background: var(--bg-surface); color: #fff; border: 1px solid var(--border-color); border-radius: 6px;">
+            <option value="">Todas as Categorias</option>
+            <option value="simples">Armas Simples</option>
+            <option value="marciais">Armas Marciais</option>
+          </select>
+        </div>
+        <div id="weapon-picker-hero-info" style="font-size: 11px; color: #cbd5e1; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); padding: 6px 10px; border-radius: 6px;">
+          <!-- Informações de atributos e proficiências do herói -->
+        </div>
+      </div>
+
+      <div id="weapon-picker-list" style="flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; padding-right: 4px;">
+        <!-- Lista de armas renderizada dinamicamente -->
+      </div>
+
+      <div style="border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 10px; display: flex; justify-content: flex-end;">
+        <button class="btn-secondary" onclick="closeWeaponPickerModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
 
 <script>
 // ==========================================
@@ -28243,7 +28342,7 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = { SPECIES_DATA };
 }
 
-// src/data/campaigns.js - Dados iniciais e estrutura de Campanhas, Diários e Inventário Compartilhado
+// src/data/campaigns.js - Dados oficiais de Campanhas, Diários e Inventário Compartilhado
 
 const INITIAL_CAMPAIGNS = [
   {
@@ -28252,15 +28351,22 @@ const INITIAL_CAMPAIGNS = [
     desc: "Aventuras nas fronteiras selvagens de Faerûn, explorando as ruínas da antiga Mina do Pacto de Phandelver e enfrentando a conspiração do Aranha Negra.",
     createdDate: "2026-03-01",
     status: "active", // active, paused, finished
-    playerIds: ["p1", "p2", "p3", "p4"],
+    playerIds: [
+      "p_1788965925056",
+      "p_1788966076171",
+      "p_1788966196301",
+      "p_1789144892638",
+      "p_1789395282873",
+      "p_1789398594305"
+    ],
     partyStash: {
       gold: 320,
       items: [
         { id: "it_1", name: "Poção de Cura Maior (4d4+4)", qty: 2, category: "Poções", carrier: "Baú do Grupo", desc: "Recupera 4d4+4 PV ao ser ingerida." },
         { id: "it_2", name: "Corda de Cânhamo (15m)", qty: 3, category: "Equipamento de Aventura", carrier: "Mochila Coletiva", desc: "Corda resistente com 15 metros." },
-        { id: "it_3", name: "Tochas", qty: 8, category: "Equipamento de Aventura", carrier: "Valerius", desc: "Ilumina raio de 6m por 1 hora." },
-        { id: "it_4", name: "Varinha de Mísseis Mágicos", qty: 1, category: "Itens Mágicos", carrier: "Lyra", desc: "Possui 7 cargas. Permite lançar Mísseis Mágicos sem gastar espaço." },
-        { id: "it_5", name: "Mapa Antigo de Wave Echo Cave", qty: 1, category: "Documentos & Pistas", carrier: "Irmão Theron", desc: "Pergaminho em élfico arcaico mostrando as passagens subterrâneas." }
+        { id: "it_3", name: "Tochas", qty: 8, category: "Equipamento de Aventura", carrier: "Baú do Grupo", desc: "Ilumina raio de 6m por 1 hora." },
+        { id: "it_4", name: "Varinha de Mísseis Mágicos", qty: 1, category: "Itens Mágicos", carrier: "Baú do Grupo", desc: "Possui 7 cargas. Permite lançar Mísseis Mágicos sem gastar espaço." },
+        { id: "it_5", name: "Mapa Antigo de Wave Echo Cave", qty: 1, category: "Documentos & Pistas", carrier: "Baú do Grupo", desc: "Pergaminho em élfico arcaico mostrando as passagens subterrâneas." }
       ],
       history: [
         { date: "2026-03-05", text: "+200 PO recompensa resgate de Gundren Rockseeker", type: "gold_in" },
@@ -28290,6 +28396,24 @@ const INITIAL_CAMPAIGNS = [
         location: "Vila de Phandalin & Mansão Tresendar"
       }
     ]
+  },
+  {
+    id: "camp_1789657775554",
+    name: "Mesa Qui-Sex",
+    desc: "Campanha Quinta e Sexta com o grupo secundário.",
+    createdDate: "2026-09-17",
+    status: "active",
+    playerIds: [
+      "p_1789139150496",
+      "p_1789139310556",
+      "p_1789143431458"
+    ],
+    partyStash: {
+      gold: 0,
+      items: [],
+      history: []
+    },
+    sessions: []
   }
 ];
 
@@ -29232,166 +29356,1130 @@ const DND5E_XP_TABLE = [
 
 let PLAYERS = [
   {
-    id: "p1",
-    student: "Arthur Lima",
-    name: "Valerius Martelo Negro",
-    avatar: "🛡️",
-    race: "Anão da Colina",
-    className: "Guerreiro (Campeão)",
-    level: 2,
-    xp: 350,
-    ac: 16,
-    hp: 24,
-    maxHp: 24,
-    tempHp: 0,
-    speed: "7,5m",
-    hitDice: "2d10",
-    gold: 18,
-    inspiration: true,
-    conditions: [],
-    deathSaves: { success: 0, fail: 0 },
-    slots: [0, 0, 0, 0, 0],
-    slotsUsed: [0, 0, 0, 0, 0],
-    str: 16, dex: 12, con: 16, int: 10, wis: 12, cha: 8,
-    skillProficiencies: ['atletismo', 'intimidacao'],
-    saveProficiencies: ['str', 'con'],
-    actionLogs: [],
-    playerNotes: "Lembrar de comprar óleo para as tochas na próxima vila.",
-    background: "Soldado",
-    ideal: "Proteção: Protegerei meus aliados mesmo que custe minha própria vida.",
-    bond: "Minha família de ferreiros de clã depende das minhas conquistas de batalha.",
-    flaw: "Tenho dificuldade em recuar, mesmo diante de um perigo desmedido.",
-    backstory: "Veterano da guarda da fortaleza de pedra de Felbarr, agora busca glória e honra para seu clã nas terras livres.",
-    attacks: "Machado de Guerra (+5, 1d8+3 cortante) | Azagaia (+5, 1d6+3 perfurante)",
-    features: "Retomar o Fôlego (1d10+2 PV), Surto de Ação, Estilo Defensivo (+1 CA)",
-    spells: "Cota de Malha, Escudo de Aço, 2 Poções de Cura, Mochila de Aventureiro",
-    activeCardTab: 'attacks',
-    present: true
+    "ac": 16,
+    "activeCardTab": "attacks",
+    "attacks": "Espada Longa (+4, 1d8+2 cortante)",
+    "avatar": "👤",
+    "badges": [
+      "⭐ Presença 100%"
+    ],
+    "cha": 17,
+    "className": "Paladino",
+    "coins": {
+      "cp": 0,
+      "ep": 0,
+      "gp": 15,
+      "pp": 0,
+      "sp": 0
+    },
+    "con": 14,
+    "deathSaves": {
+      "fail": 0,
+      "success": 0
+    },
+    "dex": 10,
+    "featureCharges": [
+      {
+        "icon": "🤲",
+        "id": "lay_on_hands",
+        "max": 5,
+        "name": "Cura pelas Mãos (PV)",
+        "restType": "long",
+        "used": 0
+      }
+    ],
+    "features": "Retomar o Fôlego (1d10+1 PV)",
+    "gold": 15,
+    "hitDice": "1d10",
+    "hp": 0,
+    "id": "p_1788965925056",
+    "inspiration": false,
+    "int": 13,
+    "level": 1,
+    "maxHp": 8,
+    "name": "Yoshigake Kira",
+    "playerNotes": "",
+    "present": true,
+    "race": "Humano",
+    "slots": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "speed": "9m",
+    "spells": "Armadura de Couro, Escudo, Mochila",
+    "str": 13,
+    "student": "Gustavo",
+    "tempHp": 0,
+    "wis": 15,
+    "xp": 0,
+    "skillProficiencies": [],
+    "saveProficiencies": [],
+    "actionLogs": [],
+    "inventory": [],
+    "conditions": [],
+    "skillExpertises": [],
+    "background": "Aventureiro",
+    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "bond": "Minha lealdade inabalável aos companheiros de mesa",
+    "flaw": "Às vezes ajo antes de planejar cautelosamente"
   },
   {
-    id: "p2",
-    student: "Beatriz Souza",
-    name: "Lyra Brisa Suave",
-    avatar: "✨",
-    race: "Elfa da Floresta",
-    className: "Maga (Evocação)",
-    level: 2,
-    xp: 350,
-    ac: 13,
-    hp: 14,
-    maxHp: 14,
-    tempHp: 0,
-    speed: "10,5m",
-    hitDice: "2d6",
-    gold: 25,
-    inspiration: false,
-    conditions: [],
-    deathSaves: { success: 0, fail: 0 },
-    slots: [3, 0, 0, 0, 0],
-    slotsUsed: [1, 0, 0, 0, 0],
-    str: 8, dex: 16, con: 12, int: 16, wis: 13, cha: 10,
-    skillProficiencies: ['arcanismo', 'historia', 'investigacao', 'percepcao'],
-    saveProficiencies: ['int', 'wis'],
-    actionLogs: [],
-    playerNotes: "Encontrei runas misteriosas na masmorra antiga.",
-    background: "Sábio",
-    ideal: "Conhecimento: O poder arcano deve ser compreendido e dominado para o bem de todos.",
-    bond: "Possuo um tomo antigo deixado por minha mestra com segredos ainda indecifrados.",
-    flaw: "Fico tão absorta em fórmulas arcanas que às vezes ignoro perigos óbvios ao redor.",
-    backstory: "Estudiosa da Grande Academia de Silverymoon, viaja decifrando glifos esquecidos em ruínas antigas.",
-    attacks: "Raio de Gelo (+5, 1d8 frio) | Lança de Fogo (+5, 1d10 fogo) | Adaga (+5, 1d4+3)",
-    features: "Recuperação Arcana (recupera 1 slot no descanso curto), Esculpir Magias",
-    spells: "Grimório: Mísseis Mágicos, Escudo Arcano, Mãos Flamejantes, Sono, Orbe Cromático",
-    preparedSpells: ["Mísseis Mágicos", "Escudo Arcano", "Mãos Flamejantes", "Raio de Gelo"],
-    activeCardTab: 'spells',
-    present: true
+    "ac": 19,
+    "activeCardTab": "features",
+    "attacks": "Espada Longa (+6, 1d10+24cortante)",
+    "avatar": "👤",
+    "badges": [
+      "⭐ Presença 100%"
+    ],
+    "cha": 11,
+    "className": "Guerreiro",
+    "coins": {
+      "cp": 0,
+      "ep": 0,
+      "gp": 15,
+      "pp": 0,
+      "sp": 0
+    },
+    "con": 16,
+    "deathSaves": {
+      "fail": 0,
+      "success": 0
+    },
+    "dex": 15,
+    "featureCharges": [
+      {
+        "icon": "💨",
+        "id": "second_wind",
+        "max": 1,
+        "name": "Retomar o Fôlego",
+        "restType": "short",
+        "used": 0
+      }
+    ],
+    "features": "Retomar o Fôlego (1d10+1 PV)",
+    "gold": 15,
+    "hitDice": "1d10",
+    "hp": 0,
+    "id": "p_1788966076171",
+    "inspiration": false,
+    "int": 15,
+    "level": 1,
+    "maxHp": 6,
+    "name": "Deraravely",
+    "playerNotes": "",
+    "present": true,
+    "race": "Meio Orc",
+    "slots": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "speed": "9m",
+    "spells": "Armadura de Couro, Escudo, Mochila",
+    "str": 18,
+    "student": "Samuel",
+    "tempHp": 0,
+    "wis": 9,
+    "xp": 0,
+    "skillProficiencies": [],
+    "saveProficiencies": [],
+    "actionLogs": [],
+    "inventory": [],
+    "conditions": [],
+    "skillExpertises": [],
+    "background": "Aventureiro",
+    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "bond": "Minha lealdade inabalável aos companheiros de mesa",
+    "flaw": "Às vezes ajo antes de planejar cautelosamente"
   },
   {
-    id: "p3",
-    student: "Caio Mendes",
-    name: "Irmão Theron",
-    avatar: "☀️",
-    race: "Humano Variante",
-    className: "Clérigo (Domínio da Vida)",
-    level: 2,
-    xp: 350,
-    ac: 18,
-    hp: 18,
-    maxHp: 18,
-    tempHp: 0,
-    speed: "9m",
-    hitDice: "2d8",
-    gold: 14,
-    inspiration: false,
-    conditions: [],
-    deathSaves: { success: 0, fail: 0 },
-    slots: [3, 0, 0, 0, 0],
-    slotsUsed: [0, 0, 0, 0, 0],
-    str: 14, dex: 10, con: 14, int: 10, wis: 16, cha: 12,
-    skillProficiencies: ['medicina', 'religiao', 'intuicao', 'persuasao'],
-    saveProficiencies: ['wis', 'cha'],
-    actionLogs: [],
-    playerNotes: "Oração matinal antes de descer às catacumbas.",
-    background: "Acólito",
-    ideal: "Compaixão: Toda criatura ferida merece a chance de redenção e cura.",
-    bond: "Jurei lealdade ao Templo da Luz do Alvorecer e devo proteger os necessitados.",
-    flaw: "Confio com facilidade demais em quem pede ajuda, sem questionar suas intenções.",
-    backstory: "Curandeiro devoto que deixou o santuário para levar a bênção solar e socorro aos viajantes em perigo.",
-    attacks: "Maça (+4, 1d6+2 concussão) | Chama Sagrada (CD 13, 1d8 radiante)",
-    features: "Discípulo da Vida (+2+nível de cura extra), Canalizar Divindade: Preservar a Vida (10 PV)",
-    spells: "Preparadas: Bênção, Curar Ferimentos, Palavra Curativa, Raio Guia, Santuário",
-    preparedSpells: ["Bênção", "Curar Ferimentos", "Palavra Curativa", "Chama Sagrada"],
-    activeCardTab: 'spells',
-    present: true
+    "ac": 11,
+    "activeCardTab": "inventory",
+    "attacks": "Espada Longa (+4, 1d8+2 cortante)",
+    "avatar": "🧙‍♀️",
+    "background": "Aventureiro",
+    "backstory": "",
+    "badges": [
+      "⭐ Presença 100%"
+    ],
+    "bond": "Minha lealdade inabalável aos companheiros de mesa",
+    "cha": 11,
+    "className": "Mago",
+    "coins": {
+      "cp": 0,
+      "ep": 0,
+      "gp": 0,
+      "pp": 0,
+      "sp": 0
+    },
+    "con": 13,
+    "deathSaves": {
+      "fail": 0,
+      "success": 0
+    },
+    "dex": 13,
+    "features": "Retomar o Fôlego (1d10+1 PV)",
+    "flaw": "Às vezes ajo antes de planejar cautelosamente",
+    "gold": 0,
+    "hitDice": "1d6",
+    "hp": 4,
+    "id": "p_1788966196301",
+    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "inspiration": false,
+    "int": 16,
+    "level": 1,
+    "maxHp": 5,
+    "name": "Arkhalis",
+    "playerNotes": "",
+    "preparedSpells": [
+      "Amizade",
+      "Ataque Certeiro"
+    ],
+    "present": true,
+    "race": "Elfo (Elf)",
+    "slots": [
+      2,
+      0,
+      0,
+      0,
+      0
+    ],
+    "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "speed": "9m",
+    "spells": "Truques: Amizade, Ataque Certeiro",
+    "str": 7,
+    "student": "Ademar",
+    "subclassIdx": 0,
+    "tempHp": 0,
+    "wis": 11,
+    "xp": 0,
+    "skillProficiencies": [],
+    "saveProficiencies": [],
+    "actionLogs": [],
+    "inventory": [],
+    "conditions": [],
+    "skillExpertises": [],
+    "featureCharges": [],
+    "multiclass": []
   },
   {
-    id: "p4",
-    student: "Danilo Rocha",
-    name: "Shadow / Kaelen",
-    avatar: "🗡️",
-    race: "Meio-Elfo",
-    className: "Ladino (Assassino)",
-    level: 2,
-    xp: 350,
-    ac: 15,
-    hp: 16,
-    maxHp: 16,
-    tempHp: 0,
-    speed: "9m",
-    hitDice: "2d8",
-    gold: 32,
-    inspiration: true,
-    conditions: [],
-    deathSaves: { success: 0, fail: 0 },
-    slots: [0, 0, 0, 0, 0],
-    slotsUsed: [0, 0, 0, 0, 0],
-    str: 10, dex: 16, con: 12, int: 12, wis: 10, cha: 14,
-    skillProficiencies: ['acrobacia', 'furtividade', 'prestidigitacao', 'enganacao'],
-    saveProficiencies: ['dex', 'int'],
-    actionLogs: [],
-    playerNotes: "Guardar 10 PO para ferramentas novas de ladinagem.",
-    background: "Criminoso",
-    ideal: "Liberdade: Nenhuma corrente ou governante injusto deve ditar os passos de um homem livre.",
-    bond: "Devo uma grande dívida a um antigo contato dos becos que salvou minha vida.",
-    flaw: "Tenho o hábito involuntário de 'guardar' pequenos objetos valiosos esquecidos.",
-    backstory: "Criado nas vielas portuárias, aprendeu a sobreviver nas sombras e hoje usa seus talentos com os aventureiros.",
-    attacks: "Rapieira (+5, 1d8+3 perfurante) | Arco Curto (+5, 1d6+3 perfurante)",
-    features: "Ataque Furtivo (+1d6), Ação Astuta (Correr, Desengajar ou Esconder como ação bônus)",
-    spells: "Equipamento: Armadura de Couro Batido, Ferramentas de Ladrão, 20 Flechas, Pé de Cabra",
-    activeCardTab: 'attacks',
-    present: true
+    "ac": 15,
+    "activeCardTab": "features",
+    "attacks": "Espada Longa (+6, 1d6+4 cortante), Adaga (+6, 1d4+4 perfurante), arco curto (+6, 1d6+4)",
+    "avatar": "👤",
+    "background": "Aventureiro",
+    "backstory": "",
+    "badges": [
+      "⭐ Presença 100%"
+    ],
+    "bond": "Minha lealdade inabalável aos companheiros de mesa",
+    "cha": 14,
+    "className": "Ladino",
+    "coins": {
+      "cp": 0,
+      "ep": 0,
+      "gp": 15,
+      "pp": 0,
+      "sp": 0
+    },
+    "con": 12,
+    "deathSaves": {
+      "fail": 0,
+      "success": 0
+    },
+    "dex": 19,
+    "features": "",
+    "flaw": "Às vezes ajo antes de planejar cautelosamente",
+    "gold": 15,
+    "hitDice": "1d8",
+    "hp": 8,
+    "id": "p_1789139150496",
+    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "inspiration": false,
+    "int": 13,
+    "level": 1,
+    "maxHp": 8,
+    "name": "Marc Hiroshi",
+    "playerNotes": "",
+    "present": true,
+    "race": "Elfo (Elf)",
+    "slots": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "speed": "9m",
+    "spells": "",
+    "str": 14,
+    "student": "Andressa",
+    "subclassIdx": 0,
+    "tempHp": 0,
+    "wis": 11,
+    "xp": 0,
+    "skillProficiencies": [],
+    "saveProficiencies": [],
+    "actionLogs": [],
+    "inventory": [],
+    "conditions": [],
+    "skillExpertises": [],
+    "featureCharges": []
+  },
+  {
+    "ac": 15,
+    "activeCardTab": "spells",
+    "attacks": "Espada Curta (+6, 1d6+4 cortante), Adaga (+6, 1d4+4), Arco curto (+6, 1d6+4)",
+    "avatar": "👤",
+    "background": "Aventureiro",
+    "backstory": "",
+    "badges": [
+      "⭐ Presença 100%"
+    ],
+    "bond": "Minha lealdade inabalável aos companheiros de mesa",
+    "cha": 7,
+    "className": "Ladino",
+    "coins": {
+      "cp": 0,
+      "ep": 0,
+      "gp": 15,
+      "pp": 0,
+      "sp": 0
+    },
+    "con": 12,
+    "deathSaves": {
+      "fail": 0,
+      "success": 0
+    },
+    "dex": 19,
+    "features": "",
+    "flaw": "Às vezes ajo antes de planejar cautelosamente",
+    "gold": 15,
+    "hitDice": "1d8",
+    "hp": 4,
+    "id": "p_1789139310556",
+    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "inspiration": false,
+    "int": 14,
+    "level": 1,
+    "maxHp": 4,
+    "name": "Lalw",
+    "playerNotes": "",
+    "present": true,
+    "race": "Elfo (Elf)",
+    "slots": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "speed": "9m",
+    "spells": "",
+    "str": 14,
+    "student": "Luis Guilherme",
+    "subclassIdx": 0,
+    "tempHp": 0,
+    "wis": 12,
+    "xp": 0,
+    "skillProficiencies": [],
+    "saveProficiencies": [],
+    "actionLogs": [],
+    "inventory": [],
+    "conditions": [],
+    "skillExpertises": [],
+    "featureCharges": []
+  },
+  {
+    "ac": 14,
+    "actionLogs": [
+      {
+        "icon": "✨",
+        "text": "Conjurou Rajada Mística (como Truque)",
+        "timestamp": "14:27",
+        "type": "spell"
+      }
+    ],
+    "activeCardTab": "spells",
+    "attacks": "Espada curta (+5, 1d6+3 perfurante), Adaga curta (+5, 1d4+3 perfurante)",
+    "avatar": "👤",
+    "background": "Aventureiro",
+    "backstory": "",
+    "badges": [
+      "⭐ Presença 100%"
+    ],
+    "bond": "Minha lealdade inabalável aos companheiros de mesa",
+    "cha": 18,
+    "className": "Bruxo",
+    "coins": {
+      "cp": 0,
+      "ep": 0,
+      "gp": 15,
+      "pp": 0,
+      "sp": 0
+    },
+    "con": 13,
+    "deathSaves": {
+      "fail": 0,
+      "success": 0
+    },
+    "dex": 16,
+    "features": "",
+    "flaw": "Às vezes ajo antes de planejar cautelosamente",
+    "gold": 15,
+    "hitDice": "1d8",
+    "hp": 9,
+    "id": "p_1789143431458",
+    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "inspiration": false,
+    "int": 15,
+    "level": 1,
+    "maxHp": 9,
+    "name": "Caim Vonsilford",
+    "playerNotes": "",
+    "preparedSpells": [
+      "Rajada Mística",
+      "Toque Arrepiante",
+      "Bruxaria",
+      "Mãos Flamejantes"
+    ],
+    "present": true,
+    "race": "Draconato (Dragonborn)",
+    "slots": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ],
+    "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "speed": "9m",
+    "spells": "Truques: Rajada Mística, Toque Arrepiante\nPreparadas: Bruxaria, Mãos Flamejantes",
+    "str": 17,
+    "student": "Pedro Arthur",
+    "subclassIdx": 0,
+    "tempHp": 0,
+    "wis": 13,
+    "xp": 0,
+    "skillProficiencies": [],
+    "saveProficiencies": [],
+    "inventory": [],
+    "conditions": [],
+    "skillExpertises": [],
+    "featureCharges": []
+  },
+  {
+    "ac": 12,
+    "actionLogs": [
+      {
+        "icon": "⚔️",
+        "text": "Sofreu 1 de dano (3 ➔ 2 PV)",
+        "timestamp": "12:25",
+        "type": "damage"
+      },
+      {
+        "icon": "⚔️",
+        "text": "Sofreu 1 de dano (4 ➔ 3 PV)",
+        "timestamp": "12:25",
+        "type": "damage"
+      },
+      {
+        "icon": "⚔️",
+        "text": "Sofreu 1 de dano (5 ➔ 4 PV)",
+        "timestamp": "12:25",
+        "type": "damage"
+      },
+      {
+        "icon": "⚔️",
+        "text": "Sofreu 1 de dano (6 ➔ 5 PV)",
+        "timestamp": "12:25",
+        "type": "damage"
+      }
+    ],
+    "activeCardTab": "spells",
+    "attacks": "Adaga Curta (+3, 1d4+1), Cajado (+3, 1d4+1), Besta (+3, 1d8+1)",
+    "avatar": "👤",
+    "background": "Aventureiro",
+    "backstory": "",
+    "badges": [
+      "⭐ Presença 100%"
+    ],
+    "bond": "Minha lealdade inabalável aos companheiros de mesa",
+    "cha": 19,
+    "className": "Bruxo",
+    "coins": {
+      "cp": 0,
+      "ep": 0,
+      "gp": 15,
+      "pp": 0,
+      "sp": 0
+    },
+    "con": 14,
+    "deathSaves": {
+      "fail": 0,
+      "success": 0
+    },
+    "dex": 13,
+    "features": "",
+    "flaw": "Às vezes ajo antes de planejar cautelosamente",
+    "gold": 15,
+    "hitDice": "1d8",
+    "hp": 0,
+    "id": "p_1789144892638",
+    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "inspiration": false,
+    "int": 14,
+    "level": 1,
+    "maxHp": 6,
+    "name": "Claker",
+    "playerNotes": "",
+    "preparedSpells": [
+      "Proteção contra Lâminas",
+      "Rajada Mística",
+      "Raio de Bruxa",
+      "Proteção contra o Bem e Mal",
+      "Mãos Flamejantes"
+    ],
+    "present": true,
+    "race": "Tiefling",
+    "slots": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ],
+    "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "speed": "9m",
+    "spells": "Truques: Proteção contra Lâminas, Rajada Mística\nPreparadas: Raio de Bruxa, Proteção contra o Bem e Mal, Mãos Flamejantes",
+    "str": 6,
+    "student": "Anna Julia",
+    "subclassIdx": 0,
+    "tempHp": 0,
+    "wis": 10,
+    "xp": 0,
+    "skillProficiencies": [],
+    "saveProficiencies": [],
+    "inventory": [],
+    "conditions": [],
+    "skillExpertises": [],
+    "featureCharges": []
+  },
+  {
+    "ac": 12,
+    "actionLogs": [
+      {
+        "icon": "💚",
+        "text": "Recuperou 1 PV (0 ➔ 1 PV)",
+        "timestamp": "19:08",
+        "type": "heal"
+      },
+      {
+        "icon": "⚔️",
+        "text": "Sofreu 1 de dano (2 ➔ 1 PV)",
+        "timestamp": "12:59",
+        "type": "damage"
+      },
+      {
+        "icon": "⚔️",
+        "text": "Sofreu 5 de dano (7 ➔ 2 PV)",
+        "timestamp": "12:59",
+        "type": "damage"
+      }
+    ],
+    "activeCardTab": "skills",
+    "attacks": "Espada curta (+4, 1d6+2 cortante), Adaga (+4, 1d6+2)",
+    "avatar": "👤",
+    "background": "Aventureiro",
+    "backstory": "",
+    "badges": [
+      "⭐ Presença 100%"
+    ],
+    "bond": "Minha lealdade inabalável aos companheiros de mesa",
+    "cha": 13,
+    "className": "Ladino",
+    "coins": {
+      "cp": 0,
+      "ep": 0,
+      "gp": 15,
+      "pp": 0,
+      "sp": 0
+    },
+    "con": 11,
+    "deathSaves": {
+      "fail": 0,
+      "success": 0
+    },
+    "dex": 14,
+    "features": "",
+    "fightingStyle": "",
+    "flaw": "Às vezes ajo antes de planejar cautelosamente",
+    "gold": 15,
+    "hitDice": "1d8",
+    "hp": 1,
+    "id": "p_1789395282873",
+    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "inspiration": false,
+    "int": 12,
+    "level": 1,
+    "maxHp": 7,
+    "name": "Koichi",
+    "playerNotes": "",
+    "present": true,
+    "race": "Humano (Human)",
+    "saveProficiencies": [
+      "dex",
+      "int"
+    ],
+    "skillExpertises": [
+      "furtividade",
+      "prestidigitacao"
+    ],
+    "skillProficiencies": [
+      "acrobacia",
+      "enganacao",
+      "furtividade",
+      "prestidigitacao"
+    ],
+    "slots": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "speed": "9m",
+    "spells": "",
+    "str": 10,
+    "student": "Arthur Guilherme",
+    "subclassIdx": 0,
+    "tempHp": 0,
+    "wis": 11,
+    "xp": 0,
+    "inventory": [],
+    "conditions": [],
+    "featureCharges": []
+  },
+  {
+    "ac": 10,
+    "actionLogs": [
+      {
+        "icon": "⚔️",
+        "text": "Sofreu 1 de dano (4 ➔ 3 PV)",
+        "timestamp": "12:25",
+        "type": "damage"
+      },
+      {
+        "icon": "⚔️",
+        "text": "Sofreu 1 de dano (5 ➔ 4 PV)",
+        "timestamp": "12:25",
+        "type": "damage"
+      },
+      {
+        "icon": "⚔️",
+        "text": "Sofreu 1 de dano (6 ➔ 5 PV)",
+        "timestamp": "12:25",
+        "type": "damage"
+      }
+    ],
+    "activeCardTab": "skills",
+    "attacks": "Besta Leve (+2, 1d8+2)",
+    "avatar": "👤",
+    "background": "Aventureiro",
+    "backstory": "",
+    "badges": [
+      "⭐ Presença 100%"
+    ],
+    "bond": "Minha lealdade inabalável aos companheiros de mesa",
+    "cha": 19,
+    "className": "Feiticeiro",
+    "coins": {
+      "cp": 0,
+      "ep": 0,
+      "gp": 15,
+      "pp": 0,
+      "sp": 0
+    },
+    "con": 16,
+    "deathSaves": {
+      "fail": 0,
+      "success": 0
+    },
+    "dex": 11,
+    "features": "",
+    "fightingStyle": "",
+    "flaw": "Às vezes ajo antes de planejar cautelosamente",
+    "gold": 15,
+    "hitDice": "1d6",
+    "hp": 3,
+    "id": "p_1789398594305",
+    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "inspiration": false,
+    "int": 9,
+    "level": 1,
+    "maxHp": 6,
+    "name": "Zenit",
+    "playerNotes": "",
+    "preparedSpells": [
+      "Mãos Flamejantes",
+      "Mísseis Mágicos",
+      "Toque Chocante",
+      "Proteção contra Lâminas",
+      "Ilusão Menor",
+      "Mensagem"
+    ],
+    "present": true,
+    "race": "Draconato (Dragonborn)",
+    "saveProficiencies": [
+      "cha",
+      "con"
+    ],
+    "skillProficiencies": [
+      "arcanismo",
+      "adestramento",
+      "persuasao",
+      "sobrevivencia"
+    ],
+    "slots": [
+      2,
+      0,
+      0,
+      0,
+      0
+    ],
+    "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "speed": "9m",
+    "spells": "Truques: Toque Chocante, Proteção contra Lâminas, Ilusão Menor, Mensagem\nPreparadas: Mãos Flamejantes, Mísseis Mágicos",
+    "str": 16,
+    "student": "Diogo",
+    "subclassIdx": 1,
+    "tempHp": 0,
+    "wis": 12,
+    "xp": 0,
+    "inventory": [],
+    "conditions": [],
+    "skillExpertises": [],
+    "featureCharges": []
   }
 ];
 
 let state = {
-  round: 1,
-  turnIndex: 0,
-  combatants: [
-    { id: 'c1', name: 'Valerius (Arthur)', init: 16, ac: 16, hp: 24, maxHp: 24, type: 'player', conditions: [], actions: 'Machado (+5, 1d8+3)' },
-    { id: 'c2', name: 'Goblin Líder', init: 14, ac: 15, hp: 12, maxHp: 12, type: 'monster', conditions: [], actions: 'Cimitarra (+4, 1d6+2)' },
-    { id: 'c3', name: 'Goblin Arqueiro A', init: 11, ac: 13, hp: 7, maxHp: 7, type: 'monster', conditions: [], actions: 'Arco Curto (+4, 1d6+2)' }
+  "combatants": [
+    {
+      "ac": 19,
+      "actions": "Espada Longa (+6, 1d10+24cortante)",
+      "hp": 0,
+      "id": "c_1789399293810_mle9",
+      "init": 19,
+      "maxHp": 6,
+      "name": "Deraravely (Samuel)",
+      "playerId": "p_1788966076171",
+      "type": "player"
+    },
+    {
+      "ac": 12,
+      "actions": "Adaga . Ataque Corpo a Corpo com Arma: +4 para acertar , alcance 1,5 m (5 ft), um alvo. Acerto: 4 (1d4 + 2) de dano perfurante. Funda . Ataque à Distância com Arma: +4 para acertar , alcance 9/36 m (30/120 ft), um alvo. Acerto: 4 (1d4 + 2) de dano de concussão.",
+      "hp": 5,
+      "id": "c_1789401151692_pkeh_3",
+      "init": 19,
+      "maxHp": 5,
+      "name": "Kobold #3",
+      "type": "monster"
+    },
+    {
+      "ac": 10,
+      "actions": "Besta Leve (+2, 1d8+2)",
+      "hp": 3,
+      "id": "c_1789399332339_r327",
+      "init": 16,
+      "maxHp": 6,
+      "name": "Zenit (Diogo)",
+      "playerId": "p_1789398594305",
+      "type": "player"
+    },
+    {
+      "ac": 11,
+      "actions": "Espada Longa (+4, 1d8+2 cortante)",
+      "hp": 4,
+      "id": "c_1789399354643_odnr",
+      "init": 15,
+      "maxHp": 5,
+      "name": "Arkhalis (Ademar)",
+      "playerId": "p_1788966196301",
+      "type": "player"
+    },
+    {
+      "ac": 12,
+      "actions": "Adaga Curta (+3, 1d4+1), Cajado (+3, 1d4+1), Besta (+3, 1d8+1)",
+      "hp": 0,
+      "id": "c_1789399237312_u1h3",
+      "init": 12,
+      "maxHp": 6,
+      "name": "Claker (Anna Julia)",
+      "playerId": "p_1789144892638",
+      "type": "player"
+    },
+    {
+      "ac": 15,
+      "actions": "Ataque padrão (+4, 1d6+2 físico)",
+      "hp": 17,
+      "id": "c_1789401314732",
+      "init": 12,
+      "maxHp": 27,
+      "name": "Kobold Mago",
+      "type": "monster"
+    },
+    {
+      "ac": 12,
+      "actions": "Espada curta (+4, 1d6+2 cortante), Adaga (+4, 1d6+2)",
+      "hp": 1,
+      "id": "c_1789399271052_hke3",
+      "init": 10,
+      "maxHp": 7,
+      "name": "Koichi (Arthur Guilherme)",
+      "playerId": "p_1789395282873",
+      "type": "player"
+    },
+    {
+      "ac": 16,
+      "actions": "Espada Longa (+4, 1d8+2 cortante)",
+      "hp": 0,
+      "id": "c_1789399377590_wwib",
+      "init": 10,
+      "maxHp": 8,
+      "name": "Yoshigake Kira (Gustavo)",
+      "playerId": "p_1788965925056",
+      "type": "player"
+    },
+    {
+      "ac": 12,
+      "actions": "Adaga . Ataque Corpo a Corpo com Arma: +4 para acertar , alcance 1,5 m (5 ft), um alvo. Acerto: 4 (1d4 + 2) de dano perfurante. Funda . Ataque à Distância com Arma: +4 para acertar , alcance 9/36 m (30/120 ft), um alvo. Acerto: 4 (1d4 + 2) de dano de concussão.",
+      "hp": 5,
+      "id": "c_1789401151692_15o6_1",
+      "init": 5,
+      "maxHp": 5,
+      "name": "Kobold #1",
+      "type": "monster"
+    },
+    {
+      "ac": 12,
+      "actions": "Adaga . Ataque Corpo a Corpo com Arma: +4 para acertar , alcance 1,5 m (5 ft), um alvo. Acerto: 4 (1d4 + 2) de dano perfurante. Funda . Ataque à Distância com Arma: +4 para acertar , alcance 9/36 m (30/120 ft), um alvo. Acerto: 4 (1d4 + 2) de dano de concussão.",
+      "hp": 5,
+      "id": "c_1789401151692_d6fq_2",
+      "init": 3,
+      "maxHp": 5,
+      "name": "Kobold #2",
+      "type": "monster"
+    }
   ],
-  logs: []
+  "logs": [
+    {
+      "time": "12:09:52",
+      "text": "👥 <b>Heróis Atualizados:</b> 3 heróis vinculados à campanha \"Mesa Qui-Sex\"."
+    },
+    {
+      "time": "12:09:35",
+      "text": "📜 <b>Campanha:</b> \"Mesa Qui-Sex\" salva com sucesso."
+    },
+    {
+      "text": "🗑️ <b>Sessão Excluída:</b> Sessão 1.",
+      "time": "08:20:20"
+    },
+    {
+      "text": "🧹 <b>Baú do Grupo:</b> Histórico de movimentações resetado pelo mestre.",
+      "time": "21:02:33"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:56"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:54"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:52"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:50"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:49"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:46"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:43"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:41"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:38"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:36"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:33"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:31"
+    },
+    {
+      "text": "📱 <b>Link Copiado:</b> Link de acesso com dados do personagem copiado para a área de transferência.",
+      "time": "19:20:03"
+    },
+    {
+      "text": "💻 <b>Link Curto Copiado:</b> Link simplificado para computador copiado com sucesso.",
+      "time": "19:19:47"
+    },
+    {
+      "text": "💻 <b>Link Curto Copiado:</b> Link simplificado para computador copiado com sucesso.",
+      "time": "19:19:42"
+    },
+    {
+      "text": "💚 <b>Koichi</b> recuperou 1 PV (0 ➔ 1 PV)",
+      "time": "19:08:30"
+    },
+    {
+      "text": "💻 <b>Link Curto Copiado:</b> Link simplificado para computador copiado com sucesso.",
+      "time": "19:06:01"
+    },
+    {
+      "text": "💻 <b>Link Curto Copiado:</b> Link simplificado para computador copiado com sucesso.",
+      "time": "19:05:44"
+    },
+    {
+      "text": "💻 <b>Link Curto Copiado:</b> Link simplificado para computador copiado com sucesso.",
+      "time": "19:03:37"
+    },
+    {
+      "text": "💚 [R3] <b>Yoshigake Kira (Gustavo)</b> curou <b>1</b> PV em <b>Kobold #1</b> (5 ➔ 5 PV)",
+      "time": "15:44:57"
+    },
+    {
+      "text": "💀 <b>Koichi (Arthur Guilherme)</b> caiu a 0 PV!",
+      "time": "15:44:20"
+    },
+    {
+      "text": "⚔️ <b>Koichi (Arthur Guilherme)</b> sofreu 1 de dano rápido (1 ➔ 0 PV)",
+      "time": "15:44:20"
+    },
+    {
+      "text": "📖 <b>Zenit</b> atualizou suas magias preparadas (6 magias salvas com sucesso).",
+      "time": "15:43:16"
+    },
+    {
+      "text": "📱 <b>Link Copiado:</b> Link de acesso com dados do personagem copiado para a área de transferência.",
+      "time": "15:37:50"
+    },
+    {
+      "text": "⚔️ <b>Koichi</b> sofreu 1 de dano (2 ➔ 1 PV)",
+      "time": "12:59:26"
+    },
+    {
+      "text": "⚔️ <b>Koichi</b> sofreu 5 de dano (7 ➔ 2 PV)",
+      "time": "12:59:25"
+    },
+    {
+      "text": "[R3] ⚔️ <b>Kobold Mago</b> causou <b>2</b> de dano em <b>Deraravely (Samuel)</b> (2 ➔ 0 PV)<br><span style=\"color: var(--accent-red); font-weight: bold;\">💀 Deraravely (Samuel) caiu a 0 PV!</span>",
+      "time": "12:59:06"
+    },
+    {
+      "text": "[R3] ⚔️ <b>Kobold Mago</b> causou <b>4</b> de dano em <b>Yoshigake Kira (Gustavo)</b> (4 ➔ 0 PV)<br><span style=\"color: var(--accent-red); font-weight: bold;\">💀 Yoshigake Kira (Gustavo) caiu a 0 PV!</span>",
+      "time": "12:57:47"
+    },
+    {
+      "text": "[R3] ⚔️ <b>Kobold Mago</b> causou <b>2</b> de dano em <b>Claker (Anna Julia)</b> (2 ➔ 0 PV)<br><span style=\"color: var(--accent-red); font-weight: bold;\">💀 Claker (Anna Julia) caiu a 0 PV!</span>",
+      "time": "12:57:38"
+    },
+    {
+      "text": "[R3] ⚔️ <b>Claker (Anna Julia)</b> causou <b>10</b> de dano em <b>Kobold Mago</b> (27 ➔ 17 PV)",
+      "time": "12:55:32"
+    },
+    {
+      "text": "🐉 <b>3x Kobold</b> foram adicionados ao combate (Iniciativas roladas individualmente).",
+      "time": "12:52:31"
+    },
+    {
+      "text": "🚩 <b>Início da Rodada 3</b>",
+      "time": "12:42:59"
+    },
+    {
+      "text": "🐉 <b>Mímico</b> foi adicionado ao combate (Iniciativas roladas individualmente).",
+      "time": "12:35:40"
+    },
+    {
+      "text": "🚩 <b>Início da Rodada 2</b>",
+      "time": "12:30:58"
+    },
+    {
+      "text": "⚔️ <b>Claker</b> sofreu 1 de dano (3 ➔ 2 PV)",
+      "time": "12:25:39"
+    },
+    {
+      "text": "⚔️ <b>Claker</b> sofreu 1 de dano (4 ➔ 3 PV)",
+      "time": "12:25:39"
+    },
+    {
+      "text": "⚔️ <b>Claker</b> sofreu 1 de dano (5 ➔ 4 PV)",
+      "time": "12:25:39"
+    },
+    {
+      "text": "⚔️ <b>Claker</b> sofreu 1 de dano (6 ➔ 5 PV)",
+      "time": "12:25:38"
+    },
+    {
+      "text": "⚔️ <b>Zenit</b> sofreu 1 de dano (4 ➔ 3 PV)",
+      "time": "12:25:22"
+    },
+    {
+      "text": "⚔️ <b>Zenit</b> sofreu 1 de dano (5 ➔ 4 PV)",
+      "time": "12:25:22"
+    },
+    {
+      "text": "⚔️ <b>Zenit</b> sofreu 1 de dano (6 ➔ 5 PV)",
+      "time": "12:25:21"
+    },
+    {
+      "text": "⚔️ <b>Yoshigake Kira</b> entrou no combate (Iniciativa: 10, PV: 4/8)",
+      "time": "12:22:57"
+    },
+    {
+      "text": "⚔️ <b>Arkhalis</b> entrou no combate (Iniciativa: 15, PV: 4/5)",
+      "time": "12:22:34"
+    },
+    {
+      "text": "⚔️ <b>Zenit</b> entrou no combate (Iniciativa: 16, PV: 6/6)",
+      "time": "12:22:12"
+    },
+    {
+      "text": "⚔️ <b>Deraravely</b> entrou no combate (Iniciativa: 19, PV: 2/6)",
+      "time": "12:21:33"
+    },
+    {
+      "text": "⚔️ <b>Koichi</b> entrou no combate (Iniciativa: 10, PV: 7/7)",
+      "time": "12:21:11"
+    },
+    {
+      "text": "⚔️ <b>Claker</b> entrou no combate (Iniciativa: 12, PV: 6/6)",
+      "time": "12:20:37"
+    },
+    {
+      "text": "👥 <b>Heróis Atualizados:</b> 5 heróis vinculados à campanha \"Mesa Seg-Qua\".",
+      "time": "11:14:59"
+    },
+    {
+      "text": "📜 <b>Gancho de Missão Gerado:</b> Missão: Roubar um tomo proibido de necromancia do cof...",
+      "time": "23:16:11"
+    },
+    {
+      "text": "📜 <b>Gancho de Missão Gerado:</b> Missão: Escoltar com segurança uma caravana de refugi...",
+      "time": "23:16:10"
+    },
+    {
+      "text": "🎨 <b>Arkhalis</b> atualizou seu avatar para 🧙‍♀️.",
+      "time": "22:35:40"
+    },
+    {
+      "text": "🎨 <b>Arkhalis</b> atualizou seu avatar para 👑.",
+      "time": "22:35:37"
+    },
+    {
+      "text": "✨ <b>Ficha Sincronizada:</b> Ficha de <b>Arkhalis</b> (Ademar) carregada e salva com sucesso neste dispositivo!",
+      "time": "22:34:26"
+    },
+    {
+      "text": "✨ <b>Ficha Sincronizada:</b> Ficha de <b>Arkhalis</b> (Ademar) carregada e salva com sucesso neste dispositivo!",
+      "time": "22:21:02"
+    },
+    {
+      "text": "💚 <b>Valerius Martelo Negro</b> recuperou 1 PV (23 ➔ 24 PV)",
+      "time": "18:55:53"
+    },
+    {
+      "text": "⚔️ <b>Valerius Martelo Negro</b> sofreu 1 de dano (24 ➔ 23 PV)",
+      "time": "18:55:52"
+    }
+  ],
+  "round": 3,
+  "turnIndex": 8
 };
 
 let puzzleIdx = 0;
@@ -29702,10 +30790,12 @@ function loadFromLocalStorage() {
       try {
         const data = JSON.parse(raw);
         if (data && data.players && Array.isArray(data.players) && data.players.length > 0) {
-          loadedPlayers = data.players;
+          const onlyOldMocks = data.players.every(p => ['p1','p2','p3','p4','p5'].includes(p.id));
+          if (!onlyOldMocks) loadedPlayers = data.players;
         }
         if (data && data.state && Array.isArray(data.state.combatants)) {
-          loadedState = data.state;
+          const onlyOldCombat = data.state.combatants.every(c => ['c1','c2','c3'].includes(c.id));
+          if (!onlyOldCombat) loadedState = data.state;
         }
         if (data && data.gridState) {
           loadedGrid = data.gridState;
@@ -29719,7 +30809,7 @@ function loadFromLocalStorage() {
         const rawPlayersV3 = localStorage.getItem('dnd_tracker_players_v3');
         if (rawPlayersV3) {
           const list = JSON.parse(rawPlayersV3);
-          if (Array.isArray(list) && list.length > 0) {
+          if (Array.isArray(list) && list.length > 0 && !list.every(p => ['p1','p2','p3','p4','p5'].includes(p.id))) {
             loadedPlayers = list;
             loadedFromFallback = true;
           }
@@ -34601,6 +35691,7 @@ function renderPlayers() {
             <div class="powers-section-box">
               <div class="powers-section-header">
                 <span>⚔️ Ataques & Arsenal</span>
+                <button class="btn-secondary" style="font-size: 10px; padding: 2px 7px;" onclick="openWeaponPickerModal('${p.id}')" title="Adicionar arma calculada do catálogo D&D Beyond">⚔️ + Arma</button>
               </div>
               <div style="display: flex; flex-direction: column; gap: 4px;">
                 ${attacksHtml || '<div style="color: var(--text-dim); font-size: 11px; padding: 6px;">Nenhum ataque configurado.</div>'}
@@ -34718,7 +35809,7 @@ function renderPlayers() {
             <div class="p-tab-content ${activeTab === 'skills' ? 'active' : ''}">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <span style="font-size: 11px; font-weight: 800; color: var(--primary-light);">🎯 Perícias D&D 5E (Profic: +${prof})</span>
-                <button class="btn-secondary" style="font-size: 9px; padding: 2px 6px;" onclick="openPlayerSkillsModal('${p.id}')">⚙️ Proficiências</button>
+                <button class="btn-secondary" style="font-size: 10px; padding: 4px 10px;" onclick="openPlayerSkillsModal('${p.id}')">⚙️ Proficiências</button>
               </div>
 
               <div class="skill-filter-box">
@@ -35460,6 +36551,450 @@ function closePlayerSkillsModal() {
   activeSkillsModalPlayerId = null;
 }
 
+
+// ===================================================
+// ⚔️ MOTOR DE ARMAS E ATAQUES AUTOMÁTICOS (D&D BEYOND)
+// ===================================================
+
+function isWeaponProficient(player, weapon) {
+  if (!player || !weapon) return true;
+  const cls = (player.className || '').toLowerCase();
+  const cat = (weapon.category || '').toLowerCase();
+  const wName = (weapon.name || '').toLowerCase();
+
+  // Bárbaro, Guerreiro, Paladino, Patrulheiro: proficiência com todas as armas simples e marciais
+  if (cls.includes('guerreiro') || cls.includes('fighter') || 
+      cls.includes('barbaro') || cls.includes('bárbaro') || cls.includes('barbarian') || 
+      cls.includes('paladino') || cls.includes('paladin') || 
+      cls.includes('patrulheiro') || cls.includes('ranger')) {
+    return true;
+  }
+
+  const isSimple = cat.includes('simples') || cat.includes('simple');
+  const isMartial = cat.includes('marciais') || cat.includes('martial');
+
+  // Ladino e Bardo: Armas simples + Espada Curta, Espada Longa, Rapieira, Besta de Mão
+  if (cls.includes('ladino') || cls.includes('rogue') || cls.includes('bardo') || cls.includes('bard')) {
+    if (isSimple) return true;
+    if (wName.includes('espada curta') || wName.includes('espada longa') || wName.includes('rapieira') || wName.includes('besta de mão') || wName.includes('besta de mao')) {
+      return true;
+    }
+    return false;
+  }
+
+  // Clérigo: Armas simples (e marciais se subclasse Guerra/Tempestade)
+  if (cls.includes('clerigo') || cls.includes('clérigo') || cls.includes('cleric')) {
+    const sub = (player.subclass || '').toLowerCase();
+    if (sub.includes('guerra') || sub.includes('tempestade') || sub.includes('war') || sub.includes('tempest')) return true;
+    return isSimple;
+  }
+
+  // Monge: Armas simples e Espada Curta
+  if (cls.includes('monge') || cls.includes('monk')) {
+    if (isSimple) return true;
+    if (wName.includes('espada curta')) return true;
+    return false;
+  }
+
+  // Druida: Clava, Adaga, Dardo, Azagaia, Maça, Bordão, Cimitarra, Foice, Funda, Lança
+  if (cls.includes('druida') || cls.includes('druid')) {
+    const druidWeapons = ['clava', 'adaga', 'dardo', 'azagaia', 'maca', 'maça', 'bordao', 'bordão', 'cimitarra', 'foice', 'funda', 'lanca', 'lança'];
+    return druidWeapons.some(dw => wName.includes(dw));
+  }
+
+  // Mago e Feiticeiro: Adaga, Dardo, Funda, Bordão, Besta Leve
+  if (cls.includes('mago') || cls.includes('wizard') || cls.includes('feiticeiro') || cls.includes('sorcerer')) {
+    const wizWeapons = ['adaga', 'dardo', 'funda', 'bordao', 'bordão', 'besta leve'];
+    return wizWeapons.some(ww => wName.includes(ww));
+  }
+
+  // Bruxo: Armas simples (e marciais se Pacto da Lâmina / Hexblade)
+  if (cls.includes('bruxo') || cls.includes('warlock')) {
+    const sub = (player.subclass || '').toLowerCase();
+    const feats = (player.features || '').toLowerCase();
+    if (sub.includes('lâmina') || sub.includes('lamina') || sub.includes('hexblade') || feats.includes('pacto da lâmina') || feats.includes('pacto da lamina')) return true;
+    return isSimple;
+  }
+
+  return isSimple;
+}
+
+function calculateWeaponAttackStats(player, weaponOrName) {
+  if (!player) return null;
+  let weapon = null;
+
+  if (typeof weaponOrName === 'string') {
+    const term = weaponOrName.toLowerCase().trim();
+    if (typeof EQUIPMENT_DATA !== 'undefined' && Array.isArray(EQUIPMENT_DATA)) {
+      weapon = EQUIPMENT_DATA.find(w => w.name.toLowerCase().includes(term) || term.includes(w.name.split('(')[0].toLowerCase().trim()));
+    }
+    if (!weapon) {
+      weapon = {
+        name: weaponOrName,
+        category: 'Armas Simples',
+        damage: '1d6 cortante',
+        prop: ''
+      };
+    }
+  } else if (typeof weaponOrName === 'object') {
+    weapon = weaponOrName;
+  }
+
+  if (!weapon) return null;
+
+  const prop = (weapon.prop || '').toLowerCase();
+  const cat = (weapon.category || '').toLowerCase();
+  const wName = (weapon.name || '').toLowerCase();
+
+  const isFinesse = prop.includes('acuidade') || prop.includes('finesse');
+  const isRanged = prop.includes('distância') || prop.includes('distancia') || prop.includes('munição') || prop.includes('municao') || cat.includes('distância') || cat.includes('distancia');
+  const isThrown = prop.includes('arremesso');
+
+  const str = typeof getPlayerAttr === 'function' ? getPlayerAttr(player, 'str') : (player.str || 10);
+  const dex = typeof getPlayerAttr === 'function' ? getPlayerAttr(player, 'dex') : (player.dex || 10);
+  const strMod = Math.floor((str - 10) / 2);
+  const dexMod = Math.floor((dex - 10) / 2);
+
+  let keyAttr = 'str';
+  let attrMod = strMod;
+
+  if (isRanged && !isThrown) {
+    keyAttr = 'dex';
+    attrMod = dexMod;
+  } else if (isFinesse) {
+    if (dexMod > strMod) {
+      keyAttr = 'dex';
+      attrMod = dexMod;
+    } else {
+      keyAttr = 'str';
+      attrMod = strMod;
+    }
+  } else if (isThrown) {
+    if (isFinesse && dexMod > strMod) {
+      keyAttr = 'dex';
+      attrMod = dexMod;
+    } else {
+      keyAttr = 'str';
+      attrMod = strMod;
+    }
+  }
+
+  // Monge: artes marciais permitem usar Destreza em armas de monge
+  const cls = (player.className || '').toLowerCase();
+  if (cls.includes('monge') && dexMod > strMod) {
+    const isHeavyOrTwoHanded = prop.includes('pesada') || (prop.includes('duas mãos') && !prop.includes('versátil'));
+    if (!isHeavyOrTwoHanded) {
+      keyAttr = 'dex';
+      attrMod = dexMod;
+    }
+  }
+
+  // Bônus de estilo de luta (ex: Arquearia dá +2 no ataque à distância)
+  let extraHitBonus = 0;
+  let extraDmgBonus = 0;
+  const fStyle = (player.fightingStyle || '').toLowerCase();
+  if (fStyle.includes('archery') || fStyle.includes('arquearia')) {
+    if (isRanged) extraHitBonus += 2;
+  }
+  if (fStyle.includes('dueling') || fStyle.includes('duelo')) {
+    if (!isRanged && !prop.includes('duas mãos')) extraDmgBonus += 2;
+  }
+  if (fStyle.includes('thrown') || fStyle.includes('arremessador')) {
+    if (isThrown) extraDmgBonus += 2;
+  }
+
+  const prof = isWeaponProficient(player, weapon);
+  const pb = typeof getProfBonus === 'function' ? getProfBonus(player.level || 1) : 2;
+  const hitBonus = attrMod + (prof ? pb : 0) + extraHitBonus;
+
+  // Extrai dado e tipo de dano
+  const rawDmg = weapon.damage || '1d6 cortante';
+  const dmgMatch = rawDmg.match(/(\d+d\d+)/i);
+  const die = dmgMatch ? dmgMatch[1] : '1d6';
+
+  let dmgType = '';
+  if (rawDmg.toLowerCase().includes('cortante')) dmgType = 'cortante';
+  else if (rawDmg.toLowerCase().includes('perfurante')) dmgType = 'perfurante';
+  else if (rawDmg.toLowerCase().includes('contundente') || rawDmg.toLowerCase().includes('concussão') || rawDmg.toLowerCase().includes('concussao')) dmgType = 'contundente';
+
+  const totalDmgMod = attrMod + extraDmgBonus;
+  const dmgFormula = `${die}${totalDmgMod !== 0 ? (totalDmgMod > 0 ? '+' + totalDmgMod : totalDmgMod) : ''}`;
+  const hitStr = hitBonus >= 0 ? `+${hitBonus}` : `${hitBonus}`;
+
+  const simpleName = weapon.name.split('(')[0].trim();
+  const fullAttackStr = `${simpleName} (${hitStr}, ${dmgFormula}${dmgType ? ' ' + dmgType : ''})`;
+
+  return {
+    name: simpleName,
+    fullName: weapon.name,
+    keyAttr,
+    attrMod,
+    isProficient: prof,
+    pb,
+    hitBonus,
+    hitStr,
+    damageDie: die,
+    damageMod: totalDmgMod,
+    damageType: dmgType,
+    damageFormula: dmgFormula,
+    damageText: `${dmgFormula}${dmgType ? ' ' + dmgType : ''}`,
+    attackBonus: hitBonus,
+    chosenAttr: keyAttr,
+    formattedText: fullAttackStr,
+    properties: weapon.prop || ''
+  };
+}
+
+// ===================================================
+// 🛡️ BÔNUS DE PV POR SUBCLASSE, RAÇA E ORIGEM
+// ===================================================
+
+function getPlayerBonusHpPerLevel(player, className) {
+  if (!player) return { bonus: 0, reason: '', valueOf() { return 0; } };
+  let bonus = 0;
+  const reasons = [];
+
+  const race = (player.race || '').toLowerCase();
+  const sub = (player.subclass || player.subclassName || '').toLowerCase();
+  const cls = (className || player.className || '').toLowerCase();
+  const features = (player.features || '').toLowerCase();
+
+  // 1. Anão da Colina (Hill Dwarf) - Tenacidade Anã: +1 PV por nível do personagem
+  if (race.includes('colina') || race.includes('hill') || features.includes('tenacidade anã') || features.includes('tenacidade ana')) {
+    bonus += 1;
+    reasons.push('Anão da Colina');
+  }
+
+  // 2. Feiticeiro da Linhagem Dracônica - Resiliência Dracônica: +1 PV por nível de Feiticeiro
+  const isDraconicSorcerer = (cls.includes('feiticeiro') || cls.includes('sorcerer')) && 
+    (sub.includes('drac') || (player.subclassIdx === 0 && (cls.includes('feiticeiro') || cls.includes('sorcerer'))) || features.includes('resiliência dracônica') || features.includes('resiliencia draconica') || features.includes('linhagem dracônica') || features.includes('linhagem draconica'));
+  if (isDraconicSorcerer) {
+    bonus += 1;
+    reasons.push('Linhagem Dracônica');
+  }
+
+  // 3. Talento Robustez (Tough Feat): +2 PV por nível
+  if (features.includes('robustez') || features.includes('tough') || (player.feats && player.feats.some(f => f.toLowerCase().includes('tough') || f.toLowerCase().includes('robustez')))) {
+    bonus += 2;
+    reasons.push('Robustez');
+  }
+
+  return {
+    bonus: bonus,
+    reason: reasons.join(', '),
+    valueOf() { return this.bonus; },
+    toString() { return String(this.bonus); }
+  };
+}
+
+function calculateRecommendedMaxHp(player) {
+  if (!player) return 10;
+  const cls = (player.className || 'Guerreiro').split('/')[0].trim();
+  const hitDieStr = typeof getHitDieForClass === 'function' ? getHitDieForClass(cls) : '1d10';
+  const dieSides = typeof getHitDieSides === 'function' ? getHitDieSides(hitDieStr) : (parseInt(hitDieStr.replace('d', '')) || 10);
+  const conMod = Math.floor(((player.con || 10) - 10) / 2);
+  const lvl = Math.max(1, parseInt(player.level, 10) || 1);
+  const hpBonusObj = getPlayerBonusHpPerLevel(player, cls);
+  const bonusHpPerLevel = typeof hpBonusObj === 'object' ? (hpBonusObj.bonus || 0) : (Number(hpBonusObj) || 0);
+
+  // Nível 1: Dado cheio + CON + Bônus
+  let total = dieSides + conMod + bonusHpPerLevel;
+
+  // Níveis 2 a N: Média fixa (dieSides / 2 + 1) + CON + Bônus
+  if (lvl > 1) {
+    const avgPerLvl = Math.max(1, Math.floor(dieSides / 2) + 1 + conMod + bonusHpPerLevel);
+    total += avgPerLvl * (lvl - 1);
+  }
+
+  return Math.max(1, total);
+}
+
+// ===================================================
+// 🗡️ MODAL E CONTROLES DO SELETOR DE ARMAS D&D BEYOND
+// ===================================================
+
+let activeWeaponPickerPlayerId = null;
+let activeWeaponPickerTarget = 'player'; // 'player' (adiciona direto na ficha) ou 'modal' (adiciona no input #pm-attacks)
+
+function openWeaponPickerModal(playerId = null, target = 'player') {
+  activeWeaponPickerTarget = target;
+  if (playerId) {
+    activeWeaponPickerPlayerId = playerId;
+  } else if (!activeWeaponPickerPlayerId && typeof PLAYERS !== 'undefined' && PLAYERS.length > 0) {
+    activeWeaponPickerPlayerId = PLAYERS[0].id;
+  }
+
+  const modal = document.getElementById('modal-weapon-picker');
+  if (!modal) return;
+
+  const p = PLAYERS ? PLAYERS.find(x => x.id === activeWeaponPickerPlayerId) : null;
+  const heroInfo = document.getElementById('weapon-picker-hero-info');
+  const subTitle = document.getElementById('weapon-picker-subtitle');
+
+  if (p) {
+    const pb = typeof getProfBonus === 'function' ? getProfBonus(p.level || 1) : 2;
+    const strMod = Math.floor(((p.str || 10) - 10) / 2);
+    const dexMod = Math.floor(((p.dex || 10) - 10) / 2);
+    if (subTitle) subTitle.innerText = `Calculando estatísticas para ${p.name} (${p.className} Nv ${p.level || 1})`;
+    if (heroInfo) {
+      heroInfo.innerHTML = `
+        👤 <b>${p.name}</b> • FOR: ${p.str || 10} (${strMod >= 0 ? '+' : ''}${strMod}) | DES: ${p.dex || 10} (${dexMod >= 0 ? '+' : ''}${dexMod}) | Bônus de Proficiência: <b>+${pb}</b>
+      `;
+    }
+  }
+
+  renderWeaponPickerList('', '');
+  modal.classList.add('open');
+}
+
+function closeWeaponPickerModal() {
+  const modal = document.getElementById('modal-weapon-picker');
+  if (modal) modal.classList.remove('open');
+}
+
+function handleWeaponSearchInput(val) {
+  const catSel = document.getElementById('sel-weapon-cat');
+  const cat = catSel ? catSel.value : '';
+  renderWeaponPickerList(val, cat);
+}
+
+function handleWeaponCategoryChange(cat) {
+  const inp = document.getElementById('inp-weapon-search');
+  const term = inp ? inp.value : '';
+  renderWeaponPickerList(term, cat);
+}
+
+function renderWeaponPickerList(filterText = '', categoryFilter = '') {
+  const listEl = document.getElementById('weapon-picker-list');
+  if (!listEl) return;
+
+  if (typeof EQUIPMENT_DATA === 'undefined' || !Array.isArray(EQUIPMENT_DATA)) {
+    listEl.innerHTML = '<div style="color:var(--text-muted); padding:10px;">Catálogo de equipamentos não carregado.</div>';
+    return;
+  }
+
+  const p = PLAYERS ? PLAYERS.find(x => x.id === activeWeaponPickerPlayerId) : null;
+  const normFilter = (filterText || '').toLowerCase().trim();
+  const normCat = (categoryFilter || '').toLowerCase().trim();
+
+  const weapons = EQUIPMENT_DATA.filter(item => {
+    const cat = (item.category || '').toLowerCase();
+    if (!cat.includes('armas')) return false;
+    if (normCat && !cat.includes(normCat)) return false;
+    if (normFilter) {
+      const matchName = item.name.toLowerCase().includes(normFilter);
+      const matchProp = (item.prop || '').toLowerCase().includes(normFilter);
+      if (!matchName && !matchProp) return false;
+    }
+    return true;
+  });
+
+  if (weapons.length === 0) {
+    listEl.innerHTML = '<div style="color:var(--text-muted); padding:20px; text-align:center; grid-column:1/-1;">Nenhuma arma encontrada com os filtros informados.</div>';
+    return;
+  }
+
+  listEl.innerHTML = weapons.map(w => {
+    const stats = p ? calculateWeaponAttackStats(p, w) : null;
+    const isProf = stats ? stats.isProficient : false;
+    const hitLabel = stats ? stats.hitStr : '+0';
+    const dmgLabel = stats ? `${stats.damageFormula} ${stats.damageType}` : w.damage;
+    const attrLabel = stats ? (stats.keyAttr === 'dex' ? 'DES' : 'FOR') : 'FOR';
+
+    return `
+      <div class="weapon-card-item ${isProf ? 'proficient' : 'non-proficient'}" onclick="selectWeaponForPlayer('${w.name.replace(/'/g, "\\'")}')">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+          <div>
+            <div style="font-weight: 800; font-size: 13px; color: #fff;">${w.name}</div>
+            <div style="font-size: 10px; color: var(--text-dim);">${w.category} • ${w.cost}</div>
+          </div>
+          <span style="font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700; background: ${isProf ? 'rgba(16,185,129,0.2); color:#34d399;' : 'rgba(148,163,184,0.15); color:#94a3b8;'}">
+            ${isProf ? '✓ Proficiente' : 'Sem Profic.'}
+          </span>
+        </div>
+
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px;">
+          <span class="weapon-calc-badge" title="Bônus de Acerto (${attrLabel} ${stats ? (stats.attrMod >= 0 ? '+' + stats.attrMod : stats.attrMod) : ''} ${isProf ? '+ PB ' + (stats ? stats.pb : 2) : ''})">
+            🎯 Acerto: <b>${hitLabel}</b>
+          </span>
+          <span class="weapon-calc-badge" style="background: rgba(245,158,11,0.15); color: var(--accent-gold); border-color: rgba(245,158,11,0.3);">
+            💥 Dano: <b>${dmgLabel}</b>
+          </span>
+        </div>
+
+        ${w.prop ? `<div style="font-size: 10px; color: var(--text-muted); line-height: 1.3;">${w.prop}</div>` : ''}
+
+        <button class="btn-action" style="padding: 4px 8px; font-size: 11px; margin-top: 4px; width: 100%;" onclick="event.stopPropagation(); selectWeaponForPlayer('${w.name.replace(/'/g, "\\'")}')">
+          ➕ Adicionar ao Arsenal
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectWeaponForPlayer(weaponName) {
+  const p = PLAYERS ? PLAYERS.find(x => x.id === activeWeaponPickerPlayerId) : null;
+  if (!p && activeWeaponPickerTarget !== 'modal') return;
+
+  const weaponObj = typeof EQUIPMENT_DATA !== 'undefined'
+    ? EQUIPMENT_DATA.find(w => w.name.toLowerCase() === weaponName.toLowerCase() || w.name.toLowerCase().includes(weaponName.toLowerCase()))
+    : { name: weaponName, damage: '1d6 cortante', category: 'Armas Simples', prop: '' };
+
+  const stats = p ? calculateWeaponAttackStats(p, weaponObj || weaponName) : null;
+  const attackText = stats ? stats.formattedText : `${weaponName} (+0, 1d6)`;
+
+  if (activeWeaponPickerTarget === 'modal') {
+    const input = document.getElementById('pm-attacks');
+    if (input) {
+      const current = input.value.trim();
+      input.value = current ? `${current} | ${attackText}` : attackText;
+      if (typeof showToast === 'function') {
+        showToast(`⚔️ ${stats ? stats.name : weaponName} adicionada com cálculo automático!`, 'success');
+      }
+    }
+  } else if (p) {
+    const current = (p.attacks || '').trim();
+    p.attacks = current ? `${current} | ${attackText}` : attackText;
+
+    if (typeof touchPlayer === 'function') touchPlayer(p);
+    renderPlayers();
+    saveToLocalStorage();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+    if (typeof broadcastStateSync === 'function') broadcastStateSync();
+
+    if (typeof showToast === 'function') {
+      showToast(`⚔️ ${stats ? stats.name : weaponName} adicionada ao arsenal de ${p.name}! Acerto: ${stats.hitStr} | Dano: ${stats.damageFormula}`, 'success');
+    }
+    if (typeof playFX === 'function') playFX('sword');
+  }
+
+  closeWeaponPickerModal();
+}
+
+function equipBackpackItemAsAttack(playerId, itemIdx) {
+  const p = PLAYERS ? PLAYERS.find(x => x.id === playerId) : null;
+  if (!p || !p.inventory || !p.inventory[itemIdx]) return;
+
+  const item = p.inventory[itemIdx];
+  const stats = calculateWeaponAttackStats(p, item);
+  if (!stats) return;
+
+  const current = (p.attacks || '').trim();
+  p.attacks = current ? `${current} | ${stats.formattedText}` : stats.formattedText;
+
+  if (typeof touchPlayer === 'function') touchPlayer(p);
+  renderPlayers();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+
+  if (typeof showToast === 'function') {
+    showToast(`🗡️ ${stats.name} equipada como ataque ativo de ${p.name}! (${stats.hitStr}, ${stats.damageFormula})`, 'success');
+  }
+  if (typeof playFX === 'function') playFX('sword');
+}
+
+
 function rollPlayerAttack(id, rawAttackText) {
   const p = PLAYERS.find(x => x.id === id);
   if (!p) return;
@@ -35674,6 +37209,16 @@ function renderShortRestModalContent(p) {
       </button>
     </div>
 
+    ${hd.available > 0 && p.hp < p.maxHp ? `
+      <div style="background: rgba(245, 158, 11, 0.08); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 8px 12px; margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+        <span style="font-size: 11px; color: var(--accent-gold); font-weight: 700;">🎲✏️ Dado Físico da Mesa:</span>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <input type="number" id="inp-shortrest-physical-val" min="1" max="${hd.dieSides}" placeholder="1 a ${hd.dieSides}" style="width: 75px; text-align: center; padding: 4px 6px; font-weight: 800; font-size: 14px; border: 1px solid var(--accent-gold); background: #0f172a; color: #fff; border-radius: 4px;">
+          <button class="btn-action" style="font-size: 11px; padding: 5px 10px; background: linear-gradient(135deg, #d97706, #b45309);" onclick="applyShortRestPhysicalDie('${p.id}')">Curar Dado Físico</button>
+        </div>
+      </div>
+    ` : ''}
+
     ${p.hp >= p.maxHp ? `
       <div style="color: var(--accent-green); font-size: 11px; text-align: center; font-weight: bold; margin-top: 4px;">
         ✨ Vida totalmente cheia!
@@ -35686,7 +37231,29 @@ function renderShortRestModalContent(p) {
   `;
 }
 
-function rollShortRestHitDie(playerId) {
+function applyShortRestPhysicalDie(playerIdOrVal, directVal = null) {
+  let targetId = typeof playerIdOrVal === 'string' ? playerIdOrVal : (typeof activeShortRestPlayerId !== 'undefined' ? activeShortRestPlayerId : null);
+  let val = typeof playerIdOrVal === 'number' ? playerIdOrVal : directVal;
+
+  if (val === null || val === undefined) {
+    const inp = document.getElementById('inp-shortrest-physical-val');
+    if (inp) val = parseInt(inp.value, 10);
+  }
+
+  if (!targetId && typeof PLAYERS !== 'undefined' && PLAYERS.length > 0) {
+    targetId = PLAYERS[0].id;
+  }
+  const p = PLAYERS.find(x => x.id === targetId);
+  if (!p) return;
+  const hd = getPlayerHitDicePool(p);
+  if (typeof val !== 'number' || isNaN(val) || val < 1 || val > hd.dieSides) {
+    if (typeof alert === 'function') alert(`Por favor digite um número válido entre 1 e ${hd.dieSides} (o que caiu no seu dado físico)!`);
+    return;
+  }
+  rollShortRestHitDie(targetId, val);
+}
+
+function rollShortRestHitDie(playerId, customRoll = null) {
   const p = PLAYERS.find(x => x.id === playerId);
   if (!p) return;
 
@@ -35701,7 +37268,9 @@ function rollShortRestHitDie(playerId) {
   }
 
   const conMod = Math.floor(((p.con || 10) - 10) / 2);
-  const dieRoll = Math.floor(Math.random() * hd.dieSides) + 1;
+  const dieRoll = (typeof customRoll === 'number' && customRoll >= 1 && customRoll <= hd.dieSides)
+    ? customRoll
+    : Math.floor(Math.random() * hd.dieSides) + 1;
   const totalHealed = Math.max(1, dieRoll + conMod);
 
   p.spentHitDice = (p.spentHitDice || 0) + 1;
@@ -39316,12 +40885,15 @@ function renderLevelUpWizardStep() {
     const hitDieStr = getHitDieForClass(clsName); // ex: '1d10'
     const dieSides = getHitDieSides(hitDieStr);
     const conMod = Math.floor((getPlayerAttr(p, 'con') - 10) / 2);
-    const avgGain = Math.max(1, Math.floor(dieSides / 2) + 1 + conMod);
+    const hpBonusObj = typeof getPlayerBonusHpPerLevel === 'function' ? getPlayerBonusHpPerLevel(p, clsName) : { bonus: 0, reason: '' };
+    const bonusHp = hpBonusObj.bonus || 0;
+    const bonusReason = hpBonusObj.reason || '';
+    const avgGain = Math.max(1, Math.floor(dieSides / 2) + 1 + conMod + bonusHp);
     const rolledGain = levelUpWizardState.rolledHp !== null
-      ? Math.max(1, levelUpWizardState.rolledHp + conMod)
+      ? Math.max(1, levelUpWizardState.rolledHp + conMod + bonusHp)
       : null;
 
-    const chosenGain = levelUpWizardState.hpMethod === 'roll' && rolledGain !== null ? rolledGain : avgGain;
+    const chosenGain = (levelUpWizardState.hpMethod === 'roll' || levelUpWizardState.hpMethod === 'physical') && rolledGain !== null ? rolledGain : avgGain;
     levelUpWizardState.calculatedHpGain = chosenGain;
     const newMaxHp = (p.maxHp || 10) + chosenGain;
     const newTotalLevel = (p.level || 1) + 1;
@@ -39347,21 +40919,50 @@ function renderLevelUpWizardStep() {
               🛡️ Média Fixa (+${avgGain} PV)
             </button>
             <button class="btn-secondary ${levelUpWizardState.hpMethod === 'roll' ? 'active' : ''}" onclick="setLevelUpHpMethod('roll')" style="font-size: 11px;">
-              🎲 Rolar ${hitDieStr} (+${conMod >= 0 ? '+' : ''}${conMod})
+              🎲 Rolar no App
+            </button>
+            <button class="btn-secondary ${levelUpWizardState.hpMethod === 'physical' ? 'active' : ''}" onclick="setLevelUpHpMethod('physical')" style="font-size: 11px;">
+              🎲✏️ Dado Físico da Mesa
             </button>
           </div>
         </div>
 
+        ${bonusHp > 0 ? `
+          <div style="margin-top: 4px;">
+            <span class="hp-bonus-badge">✨ +${bonusHp} PV ativo (${bonusReason})</span>
+          </div>
+        ` : ''}
+
         ${levelUpWizardState.hpMethod === 'roll' ? `
-          <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
             <button class="btn-action" style="padding: 6px 12px; font-size: 11px;" onclick="rollLevelUpHpDice(${dieSides})">
-              🎲 Rolar Dado
+              🎲 Rolar ${hitDieStr}
             </button>
             ${levelUpWizardState.rolledHp !== null ? `
               <span style="font-size: 13px; font-weight: 800; color: var(--accent-gold);">
-                [${levelUpWizardState.rolledHp}] + ${conMod} = <b>+${rolledGain} PV</b>
+                [${levelUpWizardState.rolledHp}] + ${conMod >= 0 ? '+' + conMod : conMod} (CON)${bonusHp > 0 ? ` + ${bonusHp} (${bonusReason})` : ''} ➔ <b>+${rolledGain} PV</b>
               </span>
-            ` : `<span style="font-size: 11px; color: var(--text-muted);">Clique para rolar</span>`}
+            ` : `<span style="font-size: 11px; color: var(--text-muted);">Clique para rolar o dado virtual</span>`}
+          </div>
+        ` : ''}
+
+        ${levelUpWizardState.hpMethod === 'physical' ? `
+          <div style="display: flex; flex-direction: column; gap: 8px; padding: 10px; background: rgba(245, 158, 11, 0.08); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 8px; margin-top: 6px;">
+            <div style="font-size: 11.5px; color: var(--accent-gold); font-weight: 700;">
+              🎲 Resultado Rolado no Dado Físico da Mesa (1 a ${dieSides}):
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <input type="number" id="inp-levelup-physical-val" min="1" max="${dieSides}" 
+                     value="${levelUpWizardState.rolledHp !== null ? levelUpWizardState.rolledHp : ''}" 
+                     placeholder="Ex: 7" 
+                     oninput="setLevelUpPhysicalRolledHp(this.value, ${dieSides})" 
+                     style="width: 80px; text-align: center; font-size: 16px; font-weight: 800; padding: 6px; border: 2px solid var(--accent-gold); background: #0f172a; color: #fff; border-radius: 6px;">
+              <div style="font-size: 12px; color: #e2e8f0;">
+                ${levelUpWizardState.rolledHp !== null ? `
+                  <b>[${levelUpWizardState.rolledHp} no dado físico]</b> + ${conMod >= 0 ? '+' + conMod : conMod} CON ${bonusHp > 0 ? `+ ${bonusHp} (${bonusReason})` : ''} ➔ <b style="color: #34d399; font-size: 14px;">+${rolledGain} PV Máximo</b>
+                ` : '<span style="color: var(--text-muted);">Digite o número tirado no dado físico da mesa</span>'}
+              </div>
+            </div>
           </div>
         ` : ''}
       </div>
@@ -39406,6 +41007,24 @@ function selectLevelUpClass(classKey, isNewClass) {
 
 function selectLevelUpSubclass(subIdx) {
   levelUpWizardState.selectedSubclassIdx = subIdx;
+  renderLevelUpWizardStep();
+}
+
+function setLevelUpPhysicalRolledHp(val, dieSides) {
+  const p = PLAYERS.find(x => x.id === levelUpWizardState.playerId);
+  if (!p) return;
+  const num = parseInt(val, 10);
+  if (!isNaN(num) && num >= 1 && num <= dieSides) {
+    levelUpWizardState.rolledHp = num;
+  } else {
+    levelUpWizardState.rolledHp = null;
+  }
+  const clsName = levelUpWizardState.selectedClassKey || levelUpWizardState.selectedClass;
+  const conMod = Math.floor((getPlayerAttr(p, 'con') - 10) / 2);
+  const bonusHp = (typeof getPlayerBonusHpPerLevel === 'function') ? getPlayerBonusHpPerLevel(p, clsName) : 0;
+  levelUpWizardState.calculatedHpGain = levelUpWizardState.rolledHp !== null
+    ? Math.max(1, levelUpWizardState.rolledHp + conMod + bonusHp)
+    : Math.max(1, Math.floor(dieSides / 2) + 1 + conMod + bonusHp);
   renderLevelUpWizardStep();
 }
 
@@ -39497,9 +41116,10 @@ function applyLevelUpConfirm() {
   const hitDieStr = getHitDieForClass(clsName);
   const dieSides = getHitDieSides(hitDieStr);
   const conMod = Math.floor((getPlayerAttr(p, 'con') - 10) / 2);
-  const avgGain = Math.max(1, Math.floor(dieSides / 2) + 1 + conMod);
-  const chosenGain = (levelUpWizardState.hpMethod === 'roll' && levelUpWizardState.rolledHp !== null)
-    ? Math.max(1, levelUpWizardState.rolledHp + conMod)
+  const bonusHp = (typeof getPlayerBonusHpPerLevel === 'function') ? getPlayerBonusHpPerLevel(p, clsName) : 0;
+  const avgGain = Math.max(1, Math.floor(dieSides / 2) + 1 + conMod + bonusHp);
+  const chosenGain = ((levelUpWizardState.hpMethod === 'roll' || levelUpWizardState.hpMethod === 'physical') && levelUpWizardState.rolledHp !== null)
+    ? Math.max(1, levelUpWizardState.rolledHp + conMod + bonusHp)
     : avgGain;
 
   p.maxHp = (p.maxHp || 10) + chosenGain;

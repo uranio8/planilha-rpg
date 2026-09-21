@@ -1652,7 +1652,10 @@
       </div>
 
       <div>
-        <label>Ataques & Armas Principais (Ex: Espada Longa (+5, 1d8+3 cortante) | Arco Curto (+4, 1d6+2))</label>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <label style="margin: 0;">Ataques & Armas Principais</label>
+          <button type="button" class="btn-action" style="padding: 3px 8px; font-size: 11px; background: linear-gradient(135deg, #0284c7, #0369a1);" onclick="openWeaponPickerModal(null, 'modal')" title="Adicionar arma calculada do catálogo D&D Beyond">⚔️ + Arma (D&D Beyond)</button>
+        </div>
         <input type="text" id="pm-attacks" placeholder="Ex: Machado de Guerra (+5, 1d8+3 cortante), Azagaia (+5, 1d6+3)">
       </div>
 
@@ -3541,3 +3544,44 @@
        🔔 CONTAINER DE NOTIFICAÇÕES TOAST
        =================================================== -->
   <div id="toast-container" aria-live="polite"></div>
+
+
+  <!-- ===================================================
+       ⚔️ MODAL: SELETOR DE ARMAS D&D BEYOND
+       =================================================== -->
+  <div id="modal-weapon-picker" class="modal-overlay">
+    <div class="modal-body" style="max-width: 680px; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 22px;">⚔️</span>
+          <div>
+            <div style="font-weight: 800; font-size: 16px; color: #fff;">Catálogo de Armas (D&D Beyond)</div>
+            <div id="weapon-picker-subtitle" style="font-size: 11px; color: var(--accent-gold);">Cálculo automático de acerto e dano para o herói</div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeWeaponPickerModal()">✕</button>
+      </div>
+
+      <div style="padding: 10px 0; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="inp-weapon-search" placeholder="🔍 Buscar arma (Ex: Rapieira, Espada Longa, Arco, Adaga)..." oninput="handleWeaponSearchInput(this.value)" style="flex: 1; padding: 8px 12px; font-size: 13px;">
+          <select id="sel-weapon-cat" onchange="handleWeaponCategoryChange(this.value)" style="padding: 8px; font-size: 12px; background: var(--bg-surface); color: #fff; border: 1px solid var(--border-color); border-radius: 6px;">
+            <option value="">Todas as Categorias</option>
+            <option value="simples">Armas Simples</option>
+            <option value="marciais">Armas Marciais</option>
+          </select>
+        </div>
+        <div id="weapon-picker-hero-info" style="font-size: 11px; color: #cbd5e1; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); padding: 6px 10px; border-radius: 6px;">
+          <!-- Informações de atributos e proficiências do herói -->
+        </div>
+      </div>
+
+      <div id="weapon-picker-list" style="flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; padding-right: 4px;">
+        <!-- Lista de armas renderizada dinamicamente -->
+      </div>
+
+      <div style="border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 10px; display: flex; justify-content: flex-end;">
+        <button class="btn-secondary" onclick="closeWeaponPickerModal()">Fechar</button>
+      </div>
+    </div>
+  </div>

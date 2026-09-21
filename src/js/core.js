@@ -190,166 +190,1130 @@ const DND5E_XP_TABLE = [
 
 let PLAYERS = [
   {
-    id: "p1",
-    student: "Arthur Lima",
-    name: "Valerius Martelo Negro",
-    avatar: "🛡️",
-    race: "Anão da Colina",
-    className: "Guerreiro (Campeão)",
-    level: 2,
-    xp: 350,
-    ac: 16,
-    hp: 24,
-    maxHp: 24,
-    tempHp: 0,
-    speed: "7,5m",
-    hitDice: "2d10",
-    gold: 18,
-    inspiration: true,
-    conditions: [],
-    deathSaves: { success: 0, fail: 0 },
-    slots: [0, 0, 0, 0, 0],
-    slotsUsed: [0, 0, 0, 0, 0],
-    str: 16, dex: 12, con: 16, int: 10, wis: 12, cha: 8,
-    skillProficiencies: ['atletismo', 'intimidacao'],
-    saveProficiencies: ['str', 'con'],
-    actionLogs: [],
-    playerNotes: "Lembrar de comprar óleo para as tochas na próxima vila.",
-    background: "Soldado",
-    ideal: "Proteção: Protegerei meus aliados mesmo que custe minha própria vida.",
-    bond: "Minha família de ferreiros de clã depende das minhas conquistas de batalha.",
-    flaw: "Tenho dificuldade em recuar, mesmo diante de um perigo desmedido.",
-    backstory: "Veterano da guarda da fortaleza de pedra de Felbarr, agora busca glória e honra para seu clã nas terras livres.",
-    attacks: "Machado de Guerra (+5, 1d8+3 cortante) | Azagaia (+5, 1d6+3 perfurante)",
-    features: "Retomar o Fôlego (1d10+2 PV), Surto de Ação, Estilo Defensivo (+1 CA)",
-    spells: "Cota de Malha, Escudo de Aço, 2 Poções de Cura, Mochila de Aventureiro",
-    activeCardTab: 'attacks',
-    present: true
+    "ac": 16,
+    "activeCardTab": "attacks",
+    "attacks": "Espada Longa (+4, 1d8+2 cortante)",
+    "avatar": "👤",
+    "badges": [
+      "⭐ Presença 100%"
+    ],
+    "cha": 17,
+    "className": "Paladino",
+    "coins": {
+      "cp": 0,
+      "ep": 0,
+      "gp": 15,
+      "pp": 0,
+      "sp": 0
+    },
+    "con": 14,
+    "deathSaves": {
+      "fail": 0,
+      "success": 0
+    },
+    "dex": 10,
+    "featureCharges": [
+      {
+        "icon": "🤲",
+        "id": "lay_on_hands",
+        "max": 5,
+        "name": "Cura pelas Mãos (PV)",
+        "restType": "long",
+        "used": 0
+      }
+    ],
+    "features": "Retomar o Fôlego (1d10+1 PV)",
+    "gold": 15,
+    "hitDice": "1d10",
+    "hp": 0,
+    "id": "p_1788965925056",
+    "inspiration": false,
+    "int": 13,
+    "level": 1,
+    "maxHp": 8,
+    "name": "Yoshigake Kira",
+    "playerNotes": "",
+    "present": true,
+    "race": "Humano",
+    "slots": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "speed": "9m",
+    "spells": "Armadura de Couro, Escudo, Mochila",
+    "str": 13,
+    "student": "Gustavo",
+    "tempHp": 0,
+    "wis": 15,
+    "xp": 0,
+    "skillProficiencies": [],
+    "saveProficiencies": [],
+    "actionLogs": [],
+    "inventory": [],
+    "conditions": [],
+    "skillExpertises": [],
+    "background": "Aventureiro",
+    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "bond": "Minha lealdade inabalável aos companheiros de mesa",
+    "flaw": "Às vezes ajo antes de planejar cautelosamente"
   },
   {
-    id: "p2",
-    student: "Beatriz Souza",
-    name: "Lyra Brisa Suave",
-    avatar: "✨",
-    race: "Elfa da Floresta",
-    className: "Maga (Evocação)",
-    level: 2,
-    xp: 350,
-    ac: 13,
-    hp: 14,
-    maxHp: 14,
-    tempHp: 0,
-    speed: "10,5m",
-    hitDice: "2d6",
-    gold: 25,
-    inspiration: false,
-    conditions: [],
-    deathSaves: { success: 0, fail: 0 },
-    slots: [3, 0, 0, 0, 0],
-    slotsUsed: [1, 0, 0, 0, 0],
-    str: 8, dex: 16, con: 12, int: 16, wis: 13, cha: 10,
-    skillProficiencies: ['arcanismo', 'historia', 'investigacao', 'percepcao'],
-    saveProficiencies: ['int', 'wis'],
-    actionLogs: [],
-    playerNotes: "Encontrei runas misteriosas na masmorra antiga.",
-    background: "Sábio",
-    ideal: "Conhecimento: O poder arcano deve ser compreendido e dominado para o bem de todos.",
-    bond: "Possuo um tomo antigo deixado por minha mestra com segredos ainda indecifrados.",
-    flaw: "Fico tão absorta em fórmulas arcanas que às vezes ignoro perigos óbvios ao redor.",
-    backstory: "Estudiosa da Grande Academia de Silverymoon, viaja decifrando glifos esquecidos em ruínas antigas.",
-    attacks: "Raio de Gelo (+5, 1d8 frio) | Lança de Fogo (+5, 1d10 fogo) | Adaga (+5, 1d4+3)",
-    features: "Recuperação Arcana (recupera 1 slot no descanso curto), Esculpir Magias",
-    spells: "Grimório: Mísseis Mágicos, Escudo Arcano, Mãos Flamejantes, Sono, Orbe Cromático",
-    preparedSpells: ["Mísseis Mágicos", "Escudo Arcano", "Mãos Flamejantes", "Raio de Gelo"],
-    activeCardTab: 'spells',
-    present: true
+    "ac": 19,
+    "activeCardTab": "features",
+    "attacks": "Espada Longa (+6, 1d10+24cortante)",
+    "avatar": "👤",
+    "badges": [
+      "⭐ Presença 100%"
+    ],
+    "cha": 11,
+    "className": "Guerreiro",
+    "coins": {
+      "cp": 0,
+      "ep": 0,
+      "gp": 15,
+      "pp": 0,
+      "sp": 0
+    },
+    "con": 16,
+    "deathSaves": {
+      "fail": 0,
+      "success": 0
+    },
+    "dex": 15,
+    "featureCharges": [
+      {
+        "icon": "💨",
+        "id": "second_wind",
+        "max": 1,
+        "name": "Retomar o Fôlego",
+        "restType": "short",
+        "used": 0
+      }
+    ],
+    "features": "Retomar o Fôlego (1d10+1 PV)",
+    "gold": 15,
+    "hitDice": "1d10",
+    "hp": 0,
+    "id": "p_1788966076171",
+    "inspiration": false,
+    "int": 15,
+    "level": 1,
+    "maxHp": 6,
+    "name": "Deraravely",
+    "playerNotes": "",
+    "present": true,
+    "race": "Meio Orc",
+    "slots": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "speed": "9m",
+    "spells": "Armadura de Couro, Escudo, Mochila",
+    "str": 18,
+    "student": "Samuel",
+    "tempHp": 0,
+    "wis": 9,
+    "xp": 0,
+    "skillProficiencies": [],
+    "saveProficiencies": [],
+    "actionLogs": [],
+    "inventory": [],
+    "conditions": [],
+    "skillExpertises": [],
+    "background": "Aventureiro",
+    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "bond": "Minha lealdade inabalável aos companheiros de mesa",
+    "flaw": "Às vezes ajo antes de planejar cautelosamente"
   },
   {
-    id: "p3",
-    student: "Caio Mendes",
-    name: "Irmão Theron",
-    avatar: "☀️",
-    race: "Humano Variante",
-    className: "Clérigo (Domínio da Vida)",
-    level: 2,
-    xp: 350,
-    ac: 18,
-    hp: 18,
-    maxHp: 18,
-    tempHp: 0,
-    speed: "9m",
-    hitDice: "2d8",
-    gold: 14,
-    inspiration: false,
-    conditions: [],
-    deathSaves: { success: 0, fail: 0 },
-    slots: [3, 0, 0, 0, 0],
-    slotsUsed: [0, 0, 0, 0, 0],
-    str: 14, dex: 10, con: 14, int: 10, wis: 16, cha: 12,
-    skillProficiencies: ['medicina', 'religiao', 'intuicao', 'persuasao'],
-    saveProficiencies: ['wis', 'cha'],
-    actionLogs: [],
-    playerNotes: "Oração matinal antes de descer às catacumbas.",
-    background: "Acólito",
-    ideal: "Compaixão: Toda criatura ferida merece a chance de redenção e cura.",
-    bond: "Jurei lealdade ao Templo da Luz do Alvorecer e devo proteger os necessitados.",
-    flaw: "Confio com facilidade demais em quem pede ajuda, sem questionar suas intenções.",
-    backstory: "Curandeiro devoto que deixou o santuário para levar a bênção solar e socorro aos viajantes em perigo.",
-    attacks: "Maça (+4, 1d6+2 concussão) | Chama Sagrada (CD 13, 1d8 radiante)",
-    features: "Discípulo da Vida (+2+nível de cura extra), Canalizar Divindade: Preservar a Vida (10 PV)",
-    spells: "Preparadas: Bênção, Curar Ferimentos, Palavra Curativa, Raio Guia, Santuário",
-    preparedSpells: ["Bênção", "Curar Ferimentos", "Palavra Curativa", "Chama Sagrada"],
-    activeCardTab: 'spells',
-    present: true
+    "ac": 11,
+    "activeCardTab": "inventory",
+    "attacks": "Espada Longa (+4, 1d8+2 cortante)",
+    "avatar": "🧙‍♀️",
+    "background": "Aventureiro",
+    "backstory": "",
+    "badges": [
+      "⭐ Presença 100%"
+    ],
+    "bond": "Minha lealdade inabalável aos companheiros de mesa",
+    "cha": 11,
+    "className": "Mago",
+    "coins": {
+      "cp": 0,
+      "ep": 0,
+      "gp": 0,
+      "pp": 0,
+      "sp": 0
+    },
+    "con": 13,
+    "deathSaves": {
+      "fail": 0,
+      "success": 0
+    },
+    "dex": 13,
+    "features": "Retomar o Fôlego (1d10+1 PV)",
+    "flaw": "Às vezes ajo antes de planejar cautelosamente",
+    "gold": 0,
+    "hitDice": "1d6",
+    "hp": 4,
+    "id": "p_1788966196301",
+    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "inspiration": false,
+    "int": 16,
+    "level": 1,
+    "maxHp": 5,
+    "name": "Arkhalis",
+    "playerNotes": "",
+    "preparedSpells": [
+      "Amizade",
+      "Ataque Certeiro"
+    ],
+    "present": true,
+    "race": "Elfo (Elf)",
+    "slots": [
+      2,
+      0,
+      0,
+      0,
+      0
+    ],
+    "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "speed": "9m",
+    "spells": "Truques: Amizade, Ataque Certeiro",
+    "str": 7,
+    "student": "Ademar",
+    "subclassIdx": 0,
+    "tempHp": 0,
+    "wis": 11,
+    "xp": 0,
+    "skillProficiencies": [],
+    "saveProficiencies": [],
+    "actionLogs": [],
+    "inventory": [],
+    "conditions": [],
+    "skillExpertises": [],
+    "featureCharges": [],
+    "multiclass": []
   },
   {
-    id: "p4",
-    student: "Danilo Rocha",
-    name: "Shadow / Kaelen",
-    avatar: "🗡️",
-    race: "Meio-Elfo",
-    className: "Ladino (Assassino)",
-    level: 2,
-    xp: 350,
-    ac: 15,
-    hp: 16,
-    maxHp: 16,
-    tempHp: 0,
-    speed: "9m",
-    hitDice: "2d8",
-    gold: 32,
-    inspiration: true,
-    conditions: [],
-    deathSaves: { success: 0, fail: 0 },
-    slots: [0, 0, 0, 0, 0],
-    slotsUsed: [0, 0, 0, 0, 0],
-    str: 10, dex: 16, con: 12, int: 12, wis: 10, cha: 14,
-    skillProficiencies: ['acrobacia', 'furtividade', 'prestidigitacao', 'enganacao'],
-    saveProficiencies: ['dex', 'int'],
-    actionLogs: [],
-    playerNotes: "Guardar 10 PO para ferramentas novas de ladinagem.",
-    background: "Criminoso",
-    ideal: "Liberdade: Nenhuma corrente ou governante injusto deve ditar os passos de um homem livre.",
-    bond: "Devo uma grande dívida a um antigo contato dos becos que salvou minha vida.",
-    flaw: "Tenho o hábito involuntário de 'guardar' pequenos objetos valiosos esquecidos.",
-    backstory: "Criado nas vielas portuárias, aprendeu a sobreviver nas sombras e hoje usa seus talentos com os aventureiros.",
-    attacks: "Rapieira (+5, 1d8+3 perfurante) | Arco Curto (+5, 1d6+3 perfurante)",
-    features: "Ataque Furtivo (+1d6), Ação Astuta (Correr, Desengajar ou Esconder como ação bônus)",
-    spells: "Equipamento: Armadura de Couro Batido, Ferramentas de Ladrão, 20 Flechas, Pé de Cabra",
-    activeCardTab: 'attacks',
-    present: true
+    "ac": 15,
+    "activeCardTab": "features",
+    "attacks": "Espada Longa (+6, 1d6+4 cortante), Adaga (+6, 1d4+4 perfurante), arco curto (+6, 1d6+4)",
+    "avatar": "👤",
+    "background": "Aventureiro",
+    "backstory": "",
+    "badges": [
+      "⭐ Presença 100%"
+    ],
+    "bond": "Minha lealdade inabalável aos companheiros de mesa",
+    "cha": 14,
+    "className": "Ladino",
+    "coins": {
+      "cp": 0,
+      "ep": 0,
+      "gp": 15,
+      "pp": 0,
+      "sp": 0
+    },
+    "con": 12,
+    "deathSaves": {
+      "fail": 0,
+      "success": 0
+    },
+    "dex": 19,
+    "features": "",
+    "flaw": "Às vezes ajo antes de planejar cautelosamente",
+    "gold": 15,
+    "hitDice": "1d8",
+    "hp": 8,
+    "id": "p_1789139150496",
+    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "inspiration": false,
+    "int": 13,
+    "level": 1,
+    "maxHp": 8,
+    "name": "Marc Hiroshi",
+    "playerNotes": "",
+    "present": true,
+    "race": "Elfo (Elf)",
+    "slots": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "speed": "9m",
+    "spells": "",
+    "str": 14,
+    "student": "Andressa",
+    "subclassIdx": 0,
+    "tempHp": 0,
+    "wis": 11,
+    "xp": 0,
+    "skillProficiencies": [],
+    "saveProficiencies": [],
+    "actionLogs": [],
+    "inventory": [],
+    "conditions": [],
+    "skillExpertises": [],
+    "featureCharges": []
+  },
+  {
+    "ac": 15,
+    "activeCardTab": "spells",
+    "attacks": "Espada Curta (+6, 1d6+4 cortante), Adaga (+6, 1d4+4), Arco curto (+6, 1d6+4)",
+    "avatar": "👤",
+    "background": "Aventureiro",
+    "backstory": "",
+    "badges": [
+      "⭐ Presença 100%"
+    ],
+    "bond": "Minha lealdade inabalável aos companheiros de mesa",
+    "cha": 7,
+    "className": "Ladino",
+    "coins": {
+      "cp": 0,
+      "ep": 0,
+      "gp": 15,
+      "pp": 0,
+      "sp": 0
+    },
+    "con": 12,
+    "deathSaves": {
+      "fail": 0,
+      "success": 0
+    },
+    "dex": 19,
+    "features": "",
+    "flaw": "Às vezes ajo antes de planejar cautelosamente",
+    "gold": 15,
+    "hitDice": "1d8",
+    "hp": 4,
+    "id": "p_1789139310556",
+    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "inspiration": false,
+    "int": 14,
+    "level": 1,
+    "maxHp": 4,
+    "name": "Lalw",
+    "playerNotes": "",
+    "present": true,
+    "race": "Elfo (Elf)",
+    "slots": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "speed": "9m",
+    "spells": "",
+    "str": 14,
+    "student": "Luis Guilherme",
+    "subclassIdx": 0,
+    "tempHp": 0,
+    "wis": 12,
+    "xp": 0,
+    "skillProficiencies": [],
+    "saveProficiencies": [],
+    "actionLogs": [],
+    "inventory": [],
+    "conditions": [],
+    "skillExpertises": [],
+    "featureCharges": []
+  },
+  {
+    "ac": 14,
+    "actionLogs": [
+      {
+        "icon": "✨",
+        "text": "Conjurou Rajada Mística (como Truque)",
+        "timestamp": "14:27",
+        "type": "spell"
+      }
+    ],
+    "activeCardTab": "spells",
+    "attacks": "Espada curta (+5, 1d6+3 perfurante), Adaga curta (+5, 1d4+3 perfurante)",
+    "avatar": "👤",
+    "background": "Aventureiro",
+    "backstory": "",
+    "badges": [
+      "⭐ Presença 100%"
+    ],
+    "bond": "Minha lealdade inabalável aos companheiros de mesa",
+    "cha": 18,
+    "className": "Bruxo",
+    "coins": {
+      "cp": 0,
+      "ep": 0,
+      "gp": 15,
+      "pp": 0,
+      "sp": 0
+    },
+    "con": 13,
+    "deathSaves": {
+      "fail": 0,
+      "success": 0
+    },
+    "dex": 16,
+    "features": "",
+    "flaw": "Às vezes ajo antes de planejar cautelosamente",
+    "gold": 15,
+    "hitDice": "1d8",
+    "hp": 9,
+    "id": "p_1789143431458",
+    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "inspiration": false,
+    "int": 15,
+    "level": 1,
+    "maxHp": 9,
+    "name": "Caim Vonsilford",
+    "playerNotes": "",
+    "preparedSpells": [
+      "Rajada Mística",
+      "Toque Arrepiante",
+      "Bruxaria",
+      "Mãos Flamejantes"
+    ],
+    "present": true,
+    "race": "Draconato (Dragonborn)",
+    "slots": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ],
+    "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "speed": "9m",
+    "spells": "Truques: Rajada Mística, Toque Arrepiante\nPreparadas: Bruxaria, Mãos Flamejantes",
+    "str": 17,
+    "student": "Pedro Arthur",
+    "subclassIdx": 0,
+    "tempHp": 0,
+    "wis": 13,
+    "xp": 0,
+    "skillProficiencies": [],
+    "saveProficiencies": [],
+    "inventory": [],
+    "conditions": [],
+    "skillExpertises": [],
+    "featureCharges": []
+  },
+  {
+    "ac": 12,
+    "actionLogs": [
+      {
+        "icon": "⚔️",
+        "text": "Sofreu 1 de dano (3 ➔ 2 PV)",
+        "timestamp": "12:25",
+        "type": "damage"
+      },
+      {
+        "icon": "⚔️",
+        "text": "Sofreu 1 de dano (4 ➔ 3 PV)",
+        "timestamp": "12:25",
+        "type": "damage"
+      },
+      {
+        "icon": "⚔️",
+        "text": "Sofreu 1 de dano (5 ➔ 4 PV)",
+        "timestamp": "12:25",
+        "type": "damage"
+      },
+      {
+        "icon": "⚔️",
+        "text": "Sofreu 1 de dano (6 ➔ 5 PV)",
+        "timestamp": "12:25",
+        "type": "damage"
+      }
+    ],
+    "activeCardTab": "spells",
+    "attacks": "Adaga Curta (+3, 1d4+1), Cajado (+3, 1d4+1), Besta (+3, 1d8+1)",
+    "avatar": "👤",
+    "background": "Aventureiro",
+    "backstory": "",
+    "badges": [
+      "⭐ Presença 100%"
+    ],
+    "bond": "Minha lealdade inabalável aos companheiros de mesa",
+    "cha": 19,
+    "className": "Bruxo",
+    "coins": {
+      "cp": 0,
+      "ep": 0,
+      "gp": 15,
+      "pp": 0,
+      "sp": 0
+    },
+    "con": 14,
+    "deathSaves": {
+      "fail": 0,
+      "success": 0
+    },
+    "dex": 13,
+    "features": "",
+    "flaw": "Às vezes ajo antes de planejar cautelosamente",
+    "gold": 15,
+    "hitDice": "1d8",
+    "hp": 0,
+    "id": "p_1789144892638",
+    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "inspiration": false,
+    "int": 14,
+    "level": 1,
+    "maxHp": 6,
+    "name": "Claker",
+    "playerNotes": "",
+    "preparedSpells": [
+      "Proteção contra Lâminas",
+      "Rajada Mística",
+      "Raio de Bruxa",
+      "Proteção contra o Bem e Mal",
+      "Mãos Flamejantes"
+    ],
+    "present": true,
+    "race": "Tiefling",
+    "slots": [
+      1,
+      0,
+      0,
+      0,
+      0
+    ],
+    "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "speed": "9m",
+    "spells": "Truques: Proteção contra Lâminas, Rajada Mística\nPreparadas: Raio de Bruxa, Proteção contra o Bem e Mal, Mãos Flamejantes",
+    "str": 6,
+    "student": "Anna Julia",
+    "subclassIdx": 0,
+    "tempHp": 0,
+    "wis": 10,
+    "xp": 0,
+    "skillProficiencies": [],
+    "saveProficiencies": [],
+    "inventory": [],
+    "conditions": [],
+    "skillExpertises": [],
+    "featureCharges": []
+  },
+  {
+    "ac": 12,
+    "actionLogs": [
+      {
+        "icon": "💚",
+        "text": "Recuperou 1 PV (0 ➔ 1 PV)",
+        "timestamp": "19:08",
+        "type": "heal"
+      },
+      {
+        "icon": "⚔️",
+        "text": "Sofreu 1 de dano (2 ➔ 1 PV)",
+        "timestamp": "12:59",
+        "type": "damage"
+      },
+      {
+        "icon": "⚔️",
+        "text": "Sofreu 5 de dano (7 ➔ 2 PV)",
+        "timestamp": "12:59",
+        "type": "damage"
+      }
+    ],
+    "activeCardTab": "skills",
+    "attacks": "Espada curta (+4, 1d6+2 cortante), Adaga (+4, 1d6+2)",
+    "avatar": "👤",
+    "background": "Aventureiro",
+    "backstory": "",
+    "badges": [
+      "⭐ Presença 100%"
+    ],
+    "bond": "Minha lealdade inabalável aos companheiros de mesa",
+    "cha": 13,
+    "className": "Ladino",
+    "coins": {
+      "cp": 0,
+      "ep": 0,
+      "gp": 15,
+      "pp": 0,
+      "sp": 0
+    },
+    "con": 11,
+    "deathSaves": {
+      "fail": 0,
+      "success": 0
+    },
+    "dex": 14,
+    "features": "",
+    "fightingStyle": "",
+    "flaw": "Às vezes ajo antes de planejar cautelosamente",
+    "gold": 15,
+    "hitDice": "1d8",
+    "hp": 1,
+    "id": "p_1789395282873",
+    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "inspiration": false,
+    "int": 12,
+    "level": 1,
+    "maxHp": 7,
+    "name": "Koichi",
+    "playerNotes": "",
+    "present": true,
+    "race": "Humano (Human)",
+    "saveProficiencies": [
+      "dex",
+      "int"
+    ],
+    "skillExpertises": [
+      "furtividade",
+      "prestidigitacao"
+    ],
+    "skillProficiencies": [
+      "acrobacia",
+      "enganacao",
+      "furtividade",
+      "prestidigitacao"
+    ],
+    "slots": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "speed": "9m",
+    "spells": "",
+    "str": 10,
+    "student": "Arthur Guilherme",
+    "subclassIdx": 0,
+    "tempHp": 0,
+    "wis": 11,
+    "xp": 0,
+    "inventory": [],
+    "conditions": [],
+    "featureCharges": []
+  },
+  {
+    "ac": 10,
+    "actionLogs": [
+      {
+        "icon": "⚔️",
+        "text": "Sofreu 1 de dano (4 ➔ 3 PV)",
+        "timestamp": "12:25",
+        "type": "damage"
+      },
+      {
+        "icon": "⚔️",
+        "text": "Sofreu 1 de dano (5 ➔ 4 PV)",
+        "timestamp": "12:25",
+        "type": "damage"
+      },
+      {
+        "icon": "⚔️",
+        "text": "Sofreu 1 de dano (6 ➔ 5 PV)",
+        "timestamp": "12:25",
+        "type": "damage"
+      }
+    ],
+    "activeCardTab": "skills",
+    "attacks": "Besta Leve (+2, 1d8+2)",
+    "avatar": "👤",
+    "background": "Aventureiro",
+    "backstory": "",
+    "badges": [
+      "⭐ Presença 100%"
+    ],
+    "bond": "Minha lealdade inabalável aos companheiros de mesa",
+    "cha": 19,
+    "className": "Feiticeiro",
+    "coins": {
+      "cp": 0,
+      "ep": 0,
+      "gp": 15,
+      "pp": 0,
+      "sp": 0
+    },
+    "con": 16,
+    "deathSaves": {
+      "fail": 0,
+      "success": 0
+    },
+    "dex": 11,
+    "features": "",
+    "fightingStyle": "",
+    "flaw": "Às vezes ajo antes de planejar cautelosamente",
+    "gold": 15,
+    "hitDice": "1d6",
+    "hp": 3,
+    "id": "p_1789398594305",
+    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "inspiration": false,
+    "int": 9,
+    "level": 1,
+    "maxHp": 6,
+    "name": "Zenit",
+    "playerNotes": "",
+    "preparedSpells": [
+      "Mãos Flamejantes",
+      "Mísseis Mágicos",
+      "Toque Chocante",
+      "Proteção contra Lâminas",
+      "Ilusão Menor",
+      "Mensagem"
+    ],
+    "present": true,
+    "race": "Draconato (Dragonborn)",
+    "saveProficiencies": [
+      "cha",
+      "con"
+    ],
+    "skillProficiencies": [
+      "arcanismo",
+      "adestramento",
+      "persuasao",
+      "sobrevivencia"
+    ],
+    "slots": [
+      2,
+      0,
+      0,
+      0,
+      0
+    ],
+    "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "speed": "9m",
+    "spells": "Truques: Toque Chocante, Proteção contra Lâminas, Ilusão Menor, Mensagem\nPreparadas: Mãos Flamejantes, Mísseis Mágicos",
+    "str": 16,
+    "student": "Diogo",
+    "subclassIdx": 1,
+    "tempHp": 0,
+    "wis": 12,
+    "xp": 0,
+    "inventory": [],
+    "conditions": [],
+    "skillExpertises": [],
+    "featureCharges": []
   }
 ];
 
 let state = {
-  round: 1,
-  turnIndex: 0,
-  combatants: [
-    { id: 'c1', name: 'Valerius (Arthur)', init: 16, ac: 16, hp: 24, maxHp: 24, type: 'player', conditions: [], actions: 'Machado (+5, 1d8+3)' },
-    { id: 'c2', name: 'Goblin Líder', init: 14, ac: 15, hp: 12, maxHp: 12, type: 'monster', conditions: [], actions: 'Cimitarra (+4, 1d6+2)' },
-    { id: 'c3', name: 'Goblin Arqueiro A', init: 11, ac: 13, hp: 7, maxHp: 7, type: 'monster', conditions: [], actions: 'Arco Curto (+4, 1d6+2)' }
+  "combatants": [
+    {
+      "ac": 19,
+      "actions": "Espada Longa (+6, 1d10+24cortante)",
+      "hp": 0,
+      "id": "c_1789399293810_mle9",
+      "init": 19,
+      "maxHp": 6,
+      "name": "Deraravely (Samuel)",
+      "playerId": "p_1788966076171",
+      "type": "player"
+    },
+    {
+      "ac": 12,
+      "actions": "Adaga . Ataque Corpo a Corpo com Arma: +4 para acertar , alcance 1,5 m (5 ft), um alvo. Acerto: 4 (1d4 + 2) de dano perfurante. Funda . Ataque à Distância com Arma: +4 para acertar , alcance 9/36 m (30/120 ft), um alvo. Acerto: 4 (1d4 + 2) de dano de concussão.",
+      "hp": 5,
+      "id": "c_1789401151692_pkeh_3",
+      "init": 19,
+      "maxHp": 5,
+      "name": "Kobold #3",
+      "type": "monster"
+    },
+    {
+      "ac": 10,
+      "actions": "Besta Leve (+2, 1d8+2)",
+      "hp": 3,
+      "id": "c_1789399332339_r327",
+      "init": 16,
+      "maxHp": 6,
+      "name": "Zenit (Diogo)",
+      "playerId": "p_1789398594305",
+      "type": "player"
+    },
+    {
+      "ac": 11,
+      "actions": "Espada Longa (+4, 1d8+2 cortante)",
+      "hp": 4,
+      "id": "c_1789399354643_odnr",
+      "init": 15,
+      "maxHp": 5,
+      "name": "Arkhalis (Ademar)",
+      "playerId": "p_1788966196301",
+      "type": "player"
+    },
+    {
+      "ac": 12,
+      "actions": "Adaga Curta (+3, 1d4+1), Cajado (+3, 1d4+1), Besta (+3, 1d8+1)",
+      "hp": 0,
+      "id": "c_1789399237312_u1h3",
+      "init": 12,
+      "maxHp": 6,
+      "name": "Claker (Anna Julia)",
+      "playerId": "p_1789144892638",
+      "type": "player"
+    },
+    {
+      "ac": 15,
+      "actions": "Ataque padrão (+4, 1d6+2 físico)",
+      "hp": 17,
+      "id": "c_1789401314732",
+      "init": 12,
+      "maxHp": 27,
+      "name": "Kobold Mago",
+      "type": "monster"
+    },
+    {
+      "ac": 12,
+      "actions": "Espada curta (+4, 1d6+2 cortante), Adaga (+4, 1d6+2)",
+      "hp": 1,
+      "id": "c_1789399271052_hke3",
+      "init": 10,
+      "maxHp": 7,
+      "name": "Koichi (Arthur Guilherme)",
+      "playerId": "p_1789395282873",
+      "type": "player"
+    },
+    {
+      "ac": 16,
+      "actions": "Espada Longa (+4, 1d8+2 cortante)",
+      "hp": 0,
+      "id": "c_1789399377590_wwib",
+      "init": 10,
+      "maxHp": 8,
+      "name": "Yoshigake Kira (Gustavo)",
+      "playerId": "p_1788965925056",
+      "type": "player"
+    },
+    {
+      "ac": 12,
+      "actions": "Adaga . Ataque Corpo a Corpo com Arma: +4 para acertar , alcance 1,5 m (5 ft), um alvo. Acerto: 4 (1d4 + 2) de dano perfurante. Funda . Ataque à Distância com Arma: +4 para acertar , alcance 9/36 m (30/120 ft), um alvo. Acerto: 4 (1d4 + 2) de dano de concussão.",
+      "hp": 5,
+      "id": "c_1789401151692_15o6_1",
+      "init": 5,
+      "maxHp": 5,
+      "name": "Kobold #1",
+      "type": "monster"
+    },
+    {
+      "ac": 12,
+      "actions": "Adaga . Ataque Corpo a Corpo com Arma: +4 para acertar , alcance 1,5 m (5 ft), um alvo. Acerto: 4 (1d4 + 2) de dano perfurante. Funda . Ataque à Distância com Arma: +4 para acertar , alcance 9/36 m (30/120 ft), um alvo. Acerto: 4 (1d4 + 2) de dano de concussão.",
+      "hp": 5,
+      "id": "c_1789401151692_d6fq_2",
+      "init": 3,
+      "maxHp": 5,
+      "name": "Kobold #2",
+      "type": "monster"
+    }
   ],
-  logs: []
+  "logs": [
+    {
+      "time": "12:09:52",
+      "text": "👥 <b>Heróis Atualizados:</b> 3 heróis vinculados à campanha \"Mesa Qui-Sex\"."
+    },
+    {
+      "time": "12:09:35",
+      "text": "📜 <b>Campanha:</b> \"Mesa Qui-Sex\" salva com sucesso."
+    },
+    {
+      "text": "🗑️ <b>Sessão Excluída:</b> Sessão 1.",
+      "time": "08:20:20"
+    },
+    {
+      "text": "🧹 <b>Baú do Grupo:</b> Histórico de movimentações resetado pelo mestre.",
+      "time": "21:02:33"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:56"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:54"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:52"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:50"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:49"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:46"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:43"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:41"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:38"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:36"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:33"
+    },
+    {
+      "text": "🗑️ <b>Baú do Grupo:</b> \"Poção de Cura Pequena\" removido.",
+      "time": "20:12:31"
+    },
+    {
+      "text": "📱 <b>Link Copiado:</b> Link de acesso com dados do personagem copiado para a área de transferência.",
+      "time": "19:20:03"
+    },
+    {
+      "text": "💻 <b>Link Curto Copiado:</b> Link simplificado para computador copiado com sucesso.",
+      "time": "19:19:47"
+    },
+    {
+      "text": "💻 <b>Link Curto Copiado:</b> Link simplificado para computador copiado com sucesso.",
+      "time": "19:19:42"
+    },
+    {
+      "text": "💚 <b>Koichi</b> recuperou 1 PV (0 ➔ 1 PV)",
+      "time": "19:08:30"
+    },
+    {
+      "text": "💻 <b>Link Curto Copiado:</b> Link simplificado para computador copiado com sucesso.",
+      "time": "19:06:01"
+    },
+    {
+      "text": "💻 <b>Link Curto Copiado:</b> Link simplificado para computador copiado com sucesso.",
+      "time": "19:05:44"
+    },
+    {
+      "text": "💻 <b>Link Curto Copiado:</b> Link simplificado para computador copiado com sucesso.",
+      "time": "19:03:37"
+    },
+    {
+      "text": "💚 [R3] <b>Yoshigake Kira (Gustavo)</b> curou <b>1</b> PV em <b>Kobold #1</b> (5 ➔ 5 PV)",
+      "time": "15:44:57"
+    },
+    {
+      "text": "💀 <b>Koichi (Arthur Guilherme)</b> caiu a 0 PV!",
+      "time": "15:44:20"
+    },
+    {
+      "text": "⚔️ <b>Koichi (Arthur Guilherme)</b> sofreu 1 de dano rápido (1 ➔ 0 PV)",
+      "time": "15:44:20"
+    },
+    {
+      "text": "📖 <b>Zenit</b> atualizou suas magias preparadas (6 magias salvas com sucesso).",
+      "time": "15:43:16"
+    },
+    {
+      "text": "📱 <b>Link Copiado:</b> Link de acesso com dados do personagem copiado para a área de transferência.",
+      "time": "15:37:50"
+    },
+    {
+      "text": "⚔️ <b>Koichi</b> sofreu 1 de dano (2 ➔ 1 PV)",
+      "time": "12:59:26"
+    },
+    {
+      "text": "⚔️ <b>Koichi</b> sofreu 5 de dano (7 ➔ 2 PV)",
+      "time": "12:59:25"
+    },
+    {
+      "text": "[R3] ⚔️ <b>Kobold Mago</b> causou <b>2</b> de dano em <b>Deraravely (Samuel)</b> (2 ➔ 0 PV)<br><span style=\"color: var(--accent-red); font-weight: bold;\">💀 Deraravely (Samuel) caiu a 0 PV!</span>",
+      "time": "12:59:06"
+    },
+    {
+      "text": "[R3] ⚔️ <b>Kobold Mago</b> causou <b>4</b> de dano em <b>Yoshigake Kira (Gustavo)</b> (4 ➔ 0 PV)<br><span style=\"color: var(--accent-red); font-weight: bold;\">💀 Yoshigake Kira (Gustavo) caiu a 0 PV!</span>",
+      "time": "12:57:47"
+    },
+    {
+      "text": "[R3] ⚔️ <b>Kobold Mago</b> causou <b>2</b> de dano em <b>Claker (Anna Julia)</b> (2 ➔ 0 PV)<br><span style=\"color: var(--accent-red); font-weight: bold;\">💀 Claker (Anna Julia) caiu a 0 PV!</span>",
+      "time": "12:57:38"
+    },
+    {
+      "text": "[R3] ⚔️ <b>Claker (Anna Julia)</b> causou <b>10</b> de dano em <b>Kobold Mago</b> (27 ➔ 17 PV)",
+      "time": "12:55:32"
+    },
+    {
+      "text": "🐉 <b>3x Kobold</b> foram adicionados ao combate (Iniciativas roladas individualmente).",
+      "time": "12:52:31"
+    },
+    {
+      "text": "🚩 <b>Início da Rodada 3</b>",
+      "time": "12:42:59"
+    },
+    {
+      "text": "🐉 <b>Mímico</b> foi adicionado ao combate (Iniciativas roladas individualmente).",
+      "time": "12:35:40"
+    },
+    {
+      "text": "🚩 <b>Início da Rodada 2</b>",
+      "time": "12:30:58"
+    },
+    {
+      "text": "⚔️ <b>Claker</b> sofreu 1 de dano (3 ➔ 2 PV)",
+      "time": "12:25:39"
+    },
+    {
+      "text": "⚔️ <b>Claker</b> sofreu 1 de dano (4 ➔ 3 PV)",
+      "time": "12:25:39"
+    },
+    {
+      "text": "⚔️ <b>Claker</b> sofreu 1 de dano (5 ➔ 4 PV)",
+      "time": "12:25:39"
+    },
+    {
+      "text": "⚔️ <b>Claker</b> sofreu 1 de dano (6 ➔ 5 PV)",
+      "time": "12:25:38"
+    },
+    {
+      "text": "⚔️ <b>Zenit</b> sofreu 1 de dano (4 ➔ 3 PV)",
+      "time": "12:25:22"
+    },
+    {
+      "text": "⚔️ <b>Zenit</b> sofreu 1 de dano (5 ➔ 4 PV)",
+      "time": "12:25:22"
+    },
+    {
+      "text": "⚔️ <b>Zenit</b> sofreu 1 de dano (6 ➔ 5 PV)",
+      "time": "12:25:21"
+    },
+    {
+      "text": "⚔️ <b>Yoshigake Kira</b> entrou no combate (Iniciativa: 10, PV: 4/8)",
+      "time": "12:22:57"
+    },
+    {
+      "text": "⚔️ <b>Arkhalis</b> entrou no combate (Iniciativa: 15, PV: 4/5)",
+      "time": "12:22:34"
+    },
+    {
+      "text": "⚔️ <b>Zenit</b> entrou no combate (Iniciativa: 16, PV: 6/6)",
+      "time": "12:22:12"
+    },
+    {
+      "text": "⚔️ <b>Deraravely</b> entrou no combate (Iniciativa: 19, PV: 2/6)",
+      "time": "12:21:33"
+    },
+    {
+      "text": "⚔️ <b>Koichi</b> entrou no combate (Iniciativa: 10, PV: 7/7)",
+      "time": "12:21:11"
+    },
+    {
+      "text": "⚔️ <b>Claker</b> entrou no combate (Iniciativa: 12, PV: 6/6)",
+      "time": "12:20:37"
+    },
+    {
+      "text": "👥 <b>Heróis Atualizados:</b> 5 heróis vinculados à campanha \"Mesa Seg-Qua\".",
+      "time": "11:14:59"
+    },
+    {
+      "text": "📜 <b>Gancho de Missão Gerado:</b> Missão: Roubar um tomo proibido de necromancia do cof...",
+      "time": "23:16:11"
+    },
+    {
+      "text": "📜 <b>Gancho de Missão Gerado:</b> Missão: Escoltar com segurança uma caravana de refugi...",
+      "time": "23:16:10"
+    },
+    {
+      "text": "🎨 <b>Arkhalis</b> atualizou seu avatar para 🧙‍♀️.",
+      "time": "22:35:40"
+    },
+    {
+      "text": "🎨 <b>Arkhalis</b> atualizou seu avatar para 👑.",
+      "time": "22:35:37"
+    },
+    {
+      "text": "✨ <b>Ficha Sincronizada:</b> Ficha de <b>Arkhalis</b> (Ademar) carregada e salva com sucesso neste dispositivo!",
+      "time": "22:34:26"
+    },
+    {
+      "text": "✨ <b>Ficha Sincronizada:</b> Ficha de <b>Arkhalis</b> (Ademar) carregada e salva com sucesso neste dispositivo!",
+      "time": "22:21:02"
+    },
+    {
+      "text": "💚 <b>Valerius Martelo Negro</b> recuperou 1 PV (23 ➔ 24 PV)",
+      "time": "18:55:53"
+    },
+    {
+      "text": "⚔️ <b>Valerius Martelo Negro</b> sofreu 1 de dano (24 ➔ 23 PV)",
+      "time": "18:55:52"
+    }
+  ],
+  "round": 3,
+  "turnIndex": 8
 };
 
 let puzzleIdx = 0;
@@ -660,10 +1624,12 @@ function loadFromLocalStorage() {
       try {
         const data = JSON.parse(raw);
         if (data && data.players && Array.isArray(data.players) && data.players.length > 0) {
-          loadedPlayers = data.players;
+          const onlyOldMocks = data.players.every(p => ['p1','p2','p3','p4','p5'].includes(p.id));
+          if (!onlyOldMocks) loadedPlayers = data.players;
         }
         if (data && data.state && Array.isArray(data.state.combatants)) {
-          loadedState = data.state;
+          const onlyOldCombat = data.state.combatants.every(c => ['c1','c2','c3'].includes(c.id));
+          if (!onlyOldCombat) loadedState = data.state;
         }
         if (data && data.gridState) {
           loadedGrid = data.gridState;
@@ -677,7 +1643,7 @@ function loadFromLocalStorage() {
         const rawPlayersV3 = localStorage.getItem('dnd_tracker_players_v3');
         if (rawPlayersV3) {
           const list = JSON.parse(rawPlayersV3);
-          if (Array.isArray(list) && list.length > 0) {
+          if (Array.isArray(list) && list.length > 0 && !list.every(p => ['p1','p2','p3','p4','p5'].includes(p.id))) {
             loadedPlayers = list;
             loadedFromFallback = true;
           }

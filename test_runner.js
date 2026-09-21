@@ -544,13 +544,14 @@ const updatedCaster = vm.runInContext("PLAYERS.find(p => p.id === 'p_caster_test
 assert(updatedCaster && updatedCaster.slotsUsed[0] === 1, 'Lançamento de magia consumiu 1 espaço de 1º Círculo');
 
 // Teste 3.26: Compartilhamento de Ficha via Link, QR Code e Modo Portal do Jogador
-const shareUrl = vm.runInContext("generatePlayerShareUrl('p1')", sandbox);
-assert(shareUrl && shareUrl.includes('view=player') && shareUrl.includes('id=p1'), 'Geração de URL de compartilhamento com parâmetros de jogador');
+const testFirstPId = vm.runInContext("PLAYERS[0].id", sandbox);
+const shareUrl = vm.runInContext(`generatePlayerShareUrl('${testFirstPId}')`, sandbox);
+assert(shareUrl && shareUrl.includes('view=player') && shareUrl.includes(`id=${testFirstPId}`), 'Geração de URL de compartilhamento com parâmetros de jogador');
 
 vm.runInContext(`
-  initPlayerPortalMode('p1');
+  initPlayerPortalMode('${testFirstPId}');
 `, sandbox);
-assert(vm.runInContext("activePortalPlayerId", sandbox) === 'p1', 'Modo Portal do Jogador definiu activePortalPlayerId');
+assert(vm.runInContext("activePortalPlayerId", sandbox) === testFirstPId, 'Modo Portal do Jogador definiu activePortalPlayerId');
 assert(vm.runInContext("document.body.classList.contains('mode-player-portal')", sandbox) === true, 'Classe mode-player-portal adicionada ao body');
 
 // Validação de saída do modo portal
@@ -595,7 +596,7 @@ assert(campWithSession.sessions.some(s => s.title === 'As Brumas de Barovia' && 
 // Teste de ajuste e divisão de tesouro coletivo (PO)
 vm.runInContext(`
   const camp = getActiveCampaign();
-  camp.playerIds = ['p1', 'p2', 'p3', 'p4'];
+  camp.playerIds = PLAYERS.slice(0, 4).map(p => p.id);
   camp.partyStash = { gold: 100, items: [], history: [] };
   splitPartyGold();
 `, sandbox);
@@ -626,21 +627,22 @@ const diceHistLen = vm.runInContext("GLOBAL_DICE_HISTORY.length", sandbox);
 assert(diceHistLen >= 3, `Histórico de rolagens registrado: ${diceHistLen} rolagens salvas`);
 
 // Teste 3.29: Condições de Status nas Fichas dos Personagens (M2)
-vm.runInContext("togglePlayerCondition('p1', 'envenenado')", sandbox);
-let p1Conds = vm.runInContext("PLAYERS.find(x => x.id === 'p1').conditions", sandbox);
+const testTargetPId = vm.runInContext("PLAYERS[0].id", sandbox);
+vm.runInContext(`togglePlayerCondition('${testTargetPId}', 'envenenado')`, sandbox);
+let p1Conds = vm.runInContext(`PLAYERS.find(x => x.id === '${testTargetPId}').conditions`, sandbox);
 assert(p1Conds.includes('envenenado'), 'Condição "envenenado" adicionada com sucesso à ficha do jogador');
 
-vm.runInContext("togglePlayerCondition('p1', 'envenenado')", sandbox);
-p1Conds = vm.runInContext("PLAYERS.find(x => x.id === 'p1').conditions", sandbox);
+vm.runInContext(`togglePlayerCondition('${testTargetPId}', 'envenenado')`, sandbox);
+p1Conds = vm.runInContext(`PLAYERS.find(x => x.id === '${testTargetPId}').conditions`, sandbox);
 assert(!p1Conds.includes('envenenado'), 'Condição "envenenado" removida após toggle subsequente');
 
 // Teste 3.30: Origem, Antecedente e Background D&D 2024 (P3)
-const p1Data = vm.runInContext("PLAYERS.find(x => x.id === 'p1')", sandbox);
+const p1Data = vm.runInContext(`PLAYERS.find(x => x.id === '${testTargetPId}')`, sandbox);
 assert(p1Data.background && p1Data.ideal && p1Data.bond && p1Data.flaw, 'Ficha possui campos de Antecedente, Ideal, Vínculo e Defeito estruturados');
 
 // Teste 3.31: Avatares de Personagem (P4)
-vm.runInContext("openAvatarModal('p1'); setPlayerAvatarPreset('🐉');", sandbox);
-const pCurrentAvatar = vm.runInContext("PLAYERS.find(x => x.id === 'p1').avatar", sandbox);
+vm.runInContext(`openAvatarModal('${testTargetPId}'); setPlayerAvatarPreset('🐉');`, sandbox);
+const pCurrentAvatar = vm.runInContext(`PLAYERS.find(x => x.id === '${testTargetPId}').avatar`, sandbox);
 assert(pCurrentAvatar === '🐉', 'Avatar atualizado com sucesso para emoji pré-definido');
 
 // Teste 3.32: Notas Rápidas do Mestre por Campanha (DM2)
@@ -666,58 +668,58 @@ assert(skillsCount === 18, `Catálogo oficial de 18 perícias D&D 5E carregado (
 const allSkillsValid = vm.runInContext("DND5E_SKILLS.every(s => s.key && s.name && s.attr && s.label)", sandbox);
 assert(allSkillsValid, 'Todas as perícias possuem chave, nome, atributo e rótulo válidos');
 
-const skillRollResult = vm.runInContext("rollPlayerSkill('p1', 'atletismo', 'normal')", sandbox);
+const skillRollResult = vm.runInContext(`rollPlayerSkill('${testTargetPId}', 'atletismo', 'normal')`, sandbox);
 assert(skillRollResult && skillRollResult.total >= 1 && skillRollResult.total <= 30, `Rolagem de perícia (Atletismo) executada com sucesso: Total ${skillRollResult?.total}`);
 
-const saveRollResult = vm.runInContext("rollPlayerSavingThrow('p1', 'str', 'normal')", sandbox);
+const saveRollResult = vm.runInContext(`rollPlayerSavingThrow('${testTargetPId}', 'str', 'normal')`, sandbox);
 assert(saveRollResult && saveRollResult.total >= 1 && saveRollResult.total <= 30, `Rolagem de salvaguarda (FOR) executada com sucesso: Total ${saveRollResult?.total}`);
 
 // Toggle de Proficiência em Perícia e Salvaguarda
-vm.runInContext("togglePlayerSkillProf('p1', 'arcanismo')", sandbox);
-let p1Skills = vm.runInContext("PLAYERS.find(x => x.id === 'p1').skillProficiencies", sandbox);
+vm.runInContext(`togglePlayerSkillProf('${testTargetPId}', 'arcanismo')`, sandbox);
+let p1Skills = vm.runInContext(`PLAYERS.find(x => x.id === '${testTargetPId}').skillProficiencies`, sandbox);
 assert(p1Skills.includes('arcanismo'), 'Proficiência em Arcanismo adicionada à ficha de p1');
 
-vm.runInContext("togglePlayerSkillProf('p1', 'arcanismo')", sandbox);
-p1Skills = vm.runInContext("PLAYERS.find(x => x.id === 'p1').skillProficiencies", sandbox);
+vm.runInContext(`togglePlayerSkillProf('${testTargetPId}', 'arcanismo')`, sandbox);
+p1Skills = vm.runInContext(`PLAYERS.find(x => x.id === '${testTargetPId}').skillProficiencies`, sandbox);
 assert(!p1Skills.includes('arcanismo'), 'Proficiência em Arcanismo removida de p1 após novo toggle');
 
-vm.runInContext("togglePlayerSaveProf('p1', 'dex')", sandbox);
-let p1Saves = vm.runInContext("PLAYERS.find(x => x.id === 'p1').saveProficiencies", sandbox);
+vm.runInContext(`togglePlayerSaveProf('${testTargetPId}', 'dex')`, sandbox);
+let p1Saves = vm.runInContext(`PLAYERS.find(x => x.id === '${testTargetPId}').saveProficiencies`, sandbox);
 assert(p1Saves.includes('dex'), 'Proficiência na salvaguarda de DES adicionada a p1');
 
 // Teste 3.35: Histórico Cronológico de Ações do Personagem (P2)
-vm.runInContext("addPlayerActionLog('p1', '⚔️', 'Ataque teste com Machado', 'attack')", sandbox);
-let p1Logs = vm.runInContext("PLAYERS.find(x => x.id === 'p1').actionLogs", sandbox);
+vm.runInContext(`addPlayerActionLog('${testTargetPId}', '⚔️', 'Ataque teste com Machado', 'attack')`, sandbox);
+let p1Logs = vm.runInContext(`PLAYERS.find(x => x.id === '${testTargetPId}').actionLogs`, sandbox);
 assert(p1Logs.length > 0 && p1Logs[0].text.includes('Machado'), 'Ação registrada no histórico cronológico do personagem');
 
 // Verificação de hook automático de dano no log
-vm.runInContext("adjustPlayerHp('p1', -3)", sandbox);
-p1Logs = vm.runInContext("PLAYERS.find(x => x.id === 'p1').actionLogs", sandbox);
+vm.runInContext(`adjustPlayerHp('${testTargetPId}', -3)`, sandbox);
+p1Logs = vm.runInContext(`PLAYERS.find(x => x.id === '${testTargetPId}').actionLogs`, sandbox);
 assert(p1Logs.some(l => l.text.includes('3 de dano')), 'Dano sofrido registrado automaticamente no histórico do personagem');
 
-vm.runInContext("clearPlayerActionLogs('p1')", sandbox);
-p1Logs = vm.runInContext("PLAYERS.find(x => x.id === 'p1').actionLogs", sandbox);
+vm.runInContext(`clearPlayerActionLogs('${testTargetPId}')`, sandbox);
+p1Logs = vm.runInContext(`PLAYERS.find(x => x.id === '${testTargetPId}').actionLogs`, sandbox);
 assert(p1Logs.length === 0, 'Histórico de ações do personagem limpo com sucesso');
 
 // Teste 3.36: Bloco de Notas Privado do Jogador (M5)
-vm.runInContext("handlePlayerNotesInput('p1', 'Descobri uma chave dourada no sarcófago.')", sandbox);
-const p1Notes = vm.runInContext("PLAYERS.find(x => x.id === 'p1').playerNotes", sandbox);
+vm.runInContext(`handlePlayerNotesInput('${testTargetPId}', 'Descobri uma chave dourada no sarcófago.')`, sandbox);
+const p1Notes = vm.runInContext(`PLAYERS.find(x => x.id === '${testTargetPId}').playerNotes`, sandbox);
 assert(p1Notes && p1Notes.includes('chave dourada'), 'Bloco de notas privado atualizado e persistido com sucesso');
 
 // Teste 3.37: Barra de XP Animada e Marcos 5E (V4)
 const xpTableLen = vm.runInContext("typeof DND5E_XP_TABLE !== 'undefined' ? DND5E_XP_TABLE.length : 0", sandbox);
 assert(xpTableLen === 20, `Tabela de marcos de XP 5E carregada com 20 níveis (${xpTableLen} marcos)`);
 
-const p1XpProgress = vm.runInContext("getPlayerXpProgress(PLAYERS.find(x => x.id === 'p1'))", sandbox);
+const p1XpProgress = vm.runInContext(`getPlayerXpProgress(PLAYERS.find(x => x.id === '${testTargetPId}'))`, sandbox);
 assert(p1XpProgress && typeof p1XpProgress.pct === 'number' && p1XpProgress.pct >= 0 && p1XpProgress.pct <= 100, `Progresso de XP calculado com sucesso: ${p1XpProgress?.text} (${p1XpProgress?.pct}%)`);
 
-const p1InitialXp = vm.runInContext("PLAYERS.find(x => x.id === 'p1').xp", sandbox);
+const p1InitialXp = vm.runInContext(`PLAYERS.find(x => x.id === '${testTargetPId}').xp`, sandbox);
 vm.runInContext(`
-  const p = PLAYERS.find(x => x.id === 'p1');
+  const p = PLAYERS.find(x => x.id === '${testTargetPId}');
   p.xp += 200;
   addPlayerActionLog(p.id, '✨', 'Ganhou +200 XP', 'xp');
 `, sandbox);
-const p1NewXp = vm.runInContext("PLAYERS.find(x => x.id === 'p1').xp", sandbox);
+const p1NewXp = vm.runInContext(`PLAYERS.find(x => x.id === '${testTargetPId}').xp`, sandbox);
 assert(p1NewXp === p1InitialXp + 200, `XP do jogador incrementado com sucesso (${p1InitialXp} -> ${p1NewXp})`);
 
 // Teste 3.38: Gerador & Balanceador de Encontros por Orçamento de XP / ND (DM1)
@@ -799,42 +801,42 @@ assert(typeof vm.runInContext("printCampaignChronicles", sandbox) === 'function'
 
 // Teste 3.43: Inspiração Heroica (D&D 2024) e Rolagem com Vantagem (M4)
 vm.runInContext(`
-  const pInsp = PLAYERS.find(p => p.id === 'p1');
+  const pInsp = PLAYERS.find(p => p.id === '${testTargetPId}');
   pInsp.inspiration = true;
-  const inspRoll = usePlayerInspirationRoll('p1');
+  const inspRoll = usePlayerInspirationRoll('${testTargetPId}');
 `, sandbox);
-const pInspAfter = vm.runInContext("PLAYERS.find(p => p.id === 'p1')", sandbox);
+const pInspAfter = vm.runInContext(`PLAYERS.find(p => p.id === '${testTargetPId}')`, sandbox);
 assert(pInspAfter.inspiration === false, 'Uso da Inspiração Heroica consumiu o estado de inspiração do jogador');
 
 // Teste 3.44: Salvaguardas contra a Morte Interativas (Death Saves - M7 / P5)
 vm.runInContext(`
-  const pDeath = PLAYERS.find(p => p.id === 'p1');
+  const pDeath = PLAYERS.find(p => p.id === '${testTargetPId}');
   pDeath.hp = 0;
   pDeath.deathSaves = { success: 0, fail: 0 };
-  toggleDeathSave('p1', 'success', 1);
-  toggleDeathSave('p1', 'fail', 2);
+  toggleDeathSave('${testTargetPId}', 'success', 1);
+  toggleDeathSave('${testTargetPId}', 'fail', 2);
 `, sandbox);
-const pDeathState = vm.runInContext("PLAYERS.find(p => p.id === 'p1').deathSaves", sandbox);
+const pDeathState = vm.runInContext(`PLAYERS.find(p => p.id === '${testTargetPId}').deathSaves`, sandbox);
 assert(pDeathState.success === 1 && pDeathState.fail === 2, 'Toggle manual de sucessos e falhas de salvaguarda de morte verificado');
 
 // Rolagem de teste contra a morte
 vm.runInContext(`
-  const dsRoll = rollDeathSave('p1');
+  const dsRoll = rollDeathSave('${testTargetPId}');
 `, sandbox);
-const pDeathStateAfterRoll = vm.runInContext("PLAYERS.find(p => p.id === 'p1').deathSaves", sandbox);
-assert(pDeathStateAfterRoll.success >= 1 || pDeathStateAfterRoll.fail >= 2 || vm.runInContext("PLAYERS.find(p => p.id === 'p1').hp", sandbox) === 1, 'Rolagem automática de salvaguarda de morte executada com sucesso');
+const pDeathStateAfterRoll = vm.runInContext(`PLAYERS.find(p => p.id === '${testTargetPId}').deathSaves`, sandbox);
+assert(pDeathStateAfterRoll.success >= 1 || pDeathStateAfterRoll.fail >= 2 || vm.runInContext(`PLAYERS.find(p => p.id === '${testTargetPId}').hp`, sandbox) === 1, 'Rolagem automática de salvaguarda de morte executada com sucesso');
 
 // Teste de cura resetando death saves
 vm.runInContext(`
-  const pHeal = PLAYERS.find(p => p.id === 'p1');
+  const pHeal = PLAYERS.find(p => p.id === '${testTargetPId}');
   pHeal.hp = 10;
   pHeal.deathSaves = { success: 0, fail: 0 };
 `, sandbox);
-assert(vm.runInContext("PLAYERS.find(p => p.id === 'p1').deathSaves.fail", sandbox) === 0, 'Cura restaurou estado seguro e zerou contadores de morte');
+assert(vm.runInContext(`PLAYERS.find(p => p.id === '${testTargetPId}').deathSaves.fail`, sandbox) === 0, 'Cura restaurou estado seguro e zerou contadores de morte');
 
 // Teste 3.45: Inventário Pessoal, Carga e Carteira de Moedas (M8 / P6)
 vm.runInContext(`
-  const pInv = PLAYERS.find(p => p.id === 'p1');
+  const pInv = PLAYERS.find(p => p.id === '${testTargetPId}');
   pInv.str = 16;
   pInv.coins = { cp: 50, sp: 20, ep: 0, gp: 15, pp: 1 };
   pInv.inventory = [
@@ -843,12 +845,12 @@ vm.runInContext(`
     { name: 'Tocha', weight: 0.5, qty: 5, cost: '5 PC' }
   ];
 `, sandbox);
-const carryRes = vm.runInContext("getPlayerCarryCapacity(PLAYERS.find(p => p.id === 'p1'))", sandbox);
+const carryRes = vm.runInContext(`getPlayerCarryCapacity(PLAYERS.find(p => p.id === '${testTargetPId}'))`, sandbox);
 assert(carryRes.maxKg === 120, 'Capacidade máxima de carga para FOR 16 calculada corretamente (120 kg)');
 assert(carryRes.itemsWeight === 30.5, `Peso de itens somado corretamente: ${carryRes.itemsWeight} kg`);
 assert(carryRes.isOverloaded === false, 'Personagem não está com sobrecarga');
 
-const purseRes = vm.runInContext("getPlayerCoinPurse(PLAYERS.find(p => p.id === 'p1'))", sandbox);
+const purseRes = vm.runInContext(`getPlayerCoinPurse(PLAYERS.find(p => p.id === '${testTargetPId}'))`, sandbox);
 assert(purseRes.totalGp === 27.5, `Patrimônio da carteira convertido corretamente: ${purseRes.totalGp} PO (50pc + 20pp + 15po + 1pl)`);
 
 // Teste 3.46: Motor de Áudio Procedural Web Audio API (V6)
@@ -1207,7 +1209,7 @@ assert(typeof vm.runInContext("setTokenAura", sandbox) === 'function', 'Função
 assert(typeof vm.runInContext("setGridMapBackground", sandbox) === 'function', 'Função setGridMapBackground exportada');
 
 // Adiciona token de teste
-vm.runInContext("gridState.tokens = [{ id: 'tok-t1', combatantId: 'p1', name: 'Valerius', type: 'player', x: 100, y: 100, size: 'medium' }]", sandbox);
+vm.runInContext("gridState.tokens = [{ id: 'tok-t1', combatantId: 'c1', name: 'Valerius', type: 'player', x: 100, y: 100, size: 'medium' }]", sandbox);
 vm.runInContext("setTokenAura('tok-t1', '6m', 'gold')", sandbox);
 const tokT1 = vm.runInContext("gridState.tokens[0]", sandbox);
 assert(tokT1.aura && tokT1.aura.range === '6m' && tokT1.aura.color === 'gold', 'setTokenAura aplicou aura 6m dourada no token');
@@ -4085,7 +4087,131 @@ vm.runInContext(`
   togglePlayerLoginRoomConfig();
 `, sandbox);
 const boxDisplay = vm.runInContext("document.getElementById('player-login-custom-room-box').style.display", sandbox);
-assert(boxDisplay === 'flex', 'togglePlayerLoginRoomConfig exibiu a caixa de configuração de sala');
+// --- SUÍTE 59: Mesa Oficial D&D 5E, Motor de Armas D&D Beyond, Bônus de PV e Dado Físico (ISSUE-86) ---
+console.log('\n⚔️ 59. Testes da Mesa Oficial, Motor de Armas D&D Beyond, Bônus de PV e Dado Físico (ISSUE-86):');
+
+// 1. Validação da Mesa Oficial (9 heróis de alunos reais, sem modo teste / p1..p5)
+const coreMatch = jsCore.match(/let PLAYERS = (\[[\s\S]*?\]);\s*let state =/);
+const parsedCorePlayers = coreMatch ? JSON.parse(coreMatch[1]) : [];
+assert(parsedCorePlayers.length === 9, `Mesa oficial inicializada com 9 personagens reais (${parsedCorePlayers.length} heróis)`);
+
+const hasOldMocks = parsedCorePlayers.some(p => ['p1','p2','p3','p4','p5'].includes(p.id));
+assert(!hasOldMocks, 'Nenhum dos IDs de teste legados (p1..p5) está presente no elenco oficial');
+
+const studentsList = parsedCorePlayers.map(p => p.student);
+assert(studentsList.includes('Gustavo') && studentsList.includes('Samuel') && studentsList.includes('Ademar') && studentsList.includes('Diogo'), 'Alunos reais (Gustavo, Samuel, Ademar, Diogo, etc.) presentes no elenco oficial');
+
+const officialCamps = vm.runInContext("typeof INITIAL_CAMPAIGNS !== 'undefined' ? INITIAL_CAMPAIGNS : (typeof CAMPAIGNS !== 'undefined' ? CAMPAIGNS : [])", sandbox);
+assert(officialCamps && officialCamps.length >= 2, 'Campanhas oficiais carregadas com no mínimo 2 campanhas');
+const phandelverCamp = officialCamps.find(c => c.name.includes('Phandelver'));
+assert(phandelverCamp && phandelverCamp.playerIds.length > 0, 'Campanha oficial A Mina Perdida de Phandelver possui vínculos com heróis reais');
+
+// 2. Validação do Motor de Armas D&D Beyond
+assert(typeof vm.runInContext("calculateWeaponAttackStats", sandbox) === 'function', 'Função calculateWeaponAttackStats exportada');
+assert(typeof vm.runInContext("isWeaponProficient", sandbox) === 'function', 'Função isWeaponProficient exportada');
+assert(typeof vm.runInContext("equipBackpackItemAsAttack", sandbox) === 'function', 'Função equipBackpackItemAsAttack exportada');
+
+// Paladino (FOR 13 (+1), DES 10 (+0), Prof +2) com Espada Longa (1d8 cortante, versátil 1d10)
+const paladinHero = parsedCorePlayers.find(p => p.className === 'Paladino');
+const longswordStats = vm.runInContext(`calculateWeaponAttackStats(${JSON.stringify(paladinHero)}, 'Espada Longa')`, sandbox);
+assert(longswordStats.isProficient === true, 'Paladino é proficiente com Espada Longa');
+assert(longswordStats.attackBonus === 3, `Paladino calcula Bônus de Ataque +3 com Espada Longa (FOR +1 + Prof +2 = ${longswordStats.attackBonus})`);
+assert(longswordStats.chosenAttr === 'str', 'Espada Longa usou atributo FOR para o Paladino');
+assert(longswordStats.damageText.includes('1d8+1 cortante'), `Dano de Espada Longa formatado corretamente: ${longswordStats.damageText}`);
+
+// Ladino (DES 16 (+3), FOR 10 (+0), Prof +2) com Adaga (Acuidade / Finesse) ➔ deve escolher DES
+const rogueHero = vm.runInContext(`({ className: 'Ladino', level: 1, str: 10, dex: 16, con: 12, int: 10, wis: 10, cha: 10 })`, sandbox);
+const daggerStats = vm.runInContext(`calculateWeaponAttackStats(${JSON.stringify(rogueHero)}, 'Adaga')`, sandbox);
+assert(daggerStats.chosenAttr === 'dex', 'Adaga (Acuidade) escolheu DES automaticamente para o Ladino');
+assert(daggerStats.attackBonus === 5, `Bônus de Ataque com Adaga = +5 (DES +3 + Prof +2 = ${daggerStats.attackBonus})`);
+assert(daggerStats.damageText.includes('1d4+3'), `Dano com Adaga = 1d4+3 (${daggerStats.damageText})`);
+
+// Ladino com Arco Curto (Distância)
+const bowStats = vm.runInContext(`calculateWeaponAttackStats(${JSON.stringify(rogueHero)}, 'Arco Curto')`, sandbox);
+assert(bowStats.chosenAttr === 'dex', 'Arco Curto (Distância) escolheu DES');
+assert(bowStats.attackBonus === 5, 'Bônus de Ataque com Arco Curto = +5');
+assert(bowStats.damageText.includes('1d6+3'), 'Dano com Arco Curto = 1d6+3 perfurante');
+
+// Mago (sem proficiência com Espada Grande)
+const wizardHero = vm.runInContext(`({ className: 'Mago', level: 1, str: 10, dex: 14, con: 12, int: 16, wis: 12, cha: 10 })`, sandbox);
+const greatswordStats = vm.runInContext(`calculateWeaponAttackStats(${JSON.stringify(wizardHero)}, 'Espada Grande')`, sandbox);
+assert(greatswordStats.isProficient === false, 'Mago NÃO é proficiente com Espada Grande');
+assert(greatswordStats.attackBonus === 0, 'Mago sem proficiência não soma bônus de proficiência no ataque');
+
+// 3. Validação de Bônus de PV por Subclasse e Raça
+assert(typeof vm.runInContext("getPlayerBonusHpPerLevel", sandbox) === 'function', 'Função getPlayerBonusHpPerLevel exportada');
+assert(typeof vm.runInContext("calculateRecommendedMaxHp", sandbox) === 'function', 'Função calculateRecommendedMaxHp exportada');
+
+// Feiticeiro Dracônico (+1 PV por nível de Feiticeiro)
+const draconicSorcerer = {
+  className: 'Feiticeiro',
+  level: 3,
+  subclassName: 'Linhagem Dracônica',
+  con: 14,
+  race: 'Humano'
+};
+const draconicBonus = vm.runInContext(`getPlayerBonusHpPerLevel(${JSON.stringify(draconicSorcerer)}, 'Feiticeiro')`, sandbox);
+assert(draconicBonus.bonus === 1, 'Feiticeiro da Linhagem Dracônica recebe +1 PV por nível');
+assert(draconicBonus.reason.includes('Dracônica'), 'Razão do bônus menciona Linhagem Dracônica');
+
+// Anão da Colina (+1 PV por nível)
+const hillDwarfFighter = {
+  className: 'Guerreiro',
+  level: 2,
+  race: 'Anão da Colina',
+  con: 16
+};
+const hillDwarfBonus = vm.runInContext(`getPlayerBonusHpPerLevel(${JSON.stringify(hillDwarfFighter)}, 'Guerreiro')`, sandbox);
+assert(hillDwarfBonus.bonus === 1, 'Anão da Colina recebe +1 PV por nível');
+
+// Cálculo de PV recomendado considerando bônus
+const recHp = vm.runInContext(`calculateRecommendedMaxHp(${JSON.stringify(draconicSorcerer)})`, sandbox);
+assert(recHp === 23, `calculateRecommendedMaxHp calculou 23 PV para Feiticeiro Dracônico Nv 3 (calculado: ${recHp})`);
+
+// 4. Validação de Entrada de Dado Físico da Mesa no Level Up e Descanso Curto
+assert(typeof vm.runInContext("setLevelUpPhysicalRolledHp", sandbox) === 'function', 'Função setLevelUpPhysicalRolledHp exportada');
+assert(typeof vm.runInContext("applyShortRestPhysicalDie", sandbox) === 'function', 'Função applyShortRestPhysicalDie exportada');
+
+// Level Up com dado físico
+vm.runInContext(`
+  const pTestLvl = {
+    id: 'p_phys_test',
+    name: 'Herói Teste Dado',
+    className: 'Guerreiro',
+    level: 1,
+    con: 14,
+    maxHp: 12,
+    hp: 12
+  };
+  PLAYERS.push(pTestLvl);
+  openLevelUpWizard('p_phys_test');
+  selectLevelUpClass('Guerreiro', false);
+  handleLevelUpNext();
+  handleLevelUpNext();
+  setLevelUpHpMethod('physical');
+  setLevelUpPhysicalRolledHp(7, 10);
+`, sandbox);
+
+const physGain = vm.runInContext("levelUpWizardState.calculatedHpGain", sandbox);
+assert(physGain === 9, `Entrada de dado físico 7 na mesa presencial somou Mod CON +2 ➔ +9 PV (obtido: ${physGain})`);
+
+vm.runInContext("applyLevelUpConfirm()", sandbox);
+const pLeveled = vm.runInContext("PLAYERS.find(p => p.id === 'p_phys_test')", sandbox);
+assert(pLeveled.level === 2, 'Herói subiu para o Nível 2 com confirmação de dado físico');
+assert(pLeveled.maxHp === 21, `PV Máximo do herói evoluiu de 12 para 21 (12 + 9 = ${pLeveled.maxHp})`);
+
+// Descanso Curto com dado físico presencial
+vm.runInContext(`
+  const pPhys = PLAYERS.find(p => p.id === 'p_phys_test');
+  pPhys.hp = 10;
+  pPhys.hitDicePool = 2;
+  pPhys.spentHitDice = 0;
+  activeShortRestPlayerId = 'p_phys_test';
+  applyShortRestPhysicalDie(6);
+`, sandbox);
+const pRested = vm.runInContext("PLAYERS.find(p => p.id === 'p_phys_test')", sandbox);
+assert(pRested.hp === 18, `applyShortRestPhysicalDie curou 8 PV (10 ➔ ${pRested.hp} PV) usando dado físico`);
+assert(pRested.spentHitDice === 1, 'Dado de vida físico gasto foi computado na reserva (spentHitDice = 1)');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
