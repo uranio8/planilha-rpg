@@ -2047,9 +2047,50 @@ function escapeAttr(str) {
   return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
 
-function calculateSpellSlots(className, level) {
+function isMagicalSubclass(className, subclassIdx, subclassName = '') {
+  const normClass = String(className || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const normSub = String(subclassName || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  if (normSub.includes('trapaceiro') || normSub.includes('trickster') || normSub.includes('cavaleiro mistico') || normSub.includes('cavaleiro arcano') || normSub.includes('eldritch knight')) {
+    return true;
+  }
+
+  // Ladino: subclasse de índice 2 é Trapaceiro Arcano (Arcane Trickster)
+  if (normClass.includes('ladino') || normClass.includes('rogue')) {
+    if (subclassIdx === 2 || normSub.includes('arcano') || normSub.includes('trickster') || normSub.includes('trapaceiro')) return true;
+  }
+
+  // Guerreiro: subclasse de índice 2 é Cavaleiro Místico (Eldritch Knight)
+  if (normClass.includes('guerreiro') || normClass.includes('fighter')) {
+    if (subclassIdx === 2 || normSub.includes('mistico') || normSub.includes('arcano') || normSub.includes('eldritch')) return true;
+  }
+
+  // Suporte caso a subclasse esteja escrita diretamente no campo de classe (ex: "Ladino (Trapaceiro Arcano)")
+  if (normClass.includes('trapaceiro') || normClass.includes('trickster') || normClass.includes('cavaleiro mistico') || normClass.includes('eldritch knight')) {
+    return true;
+  }
+
+  return false;
+}
+
+function getPlayerSubclassName(p, classItem = null) {
+  if (!p) return '';
+  const targetClass = classItem ? classItem.className : p.className;
+  const subIdx = classItem ? (classItem.subclassIdx !== undefined ? classItem.subclassIdx : 0) : (p.subclassIdx !== undefined ? p.subclassIdx : 0);
+  if (p.subclass && !classItem && typeof p.subclass === 'string') return p.subclass;
+  if (typeof findClassData === 'function') {
+    const clsData = findClassData(targetClass);
+    if (clsData && clsData.subclasses && clsData.subclasses[subIdx]) {
+      return clsData.subclasses[subIdx].name;
+    }
+  }
+  return '';
+}
+
+function calculateSpellSlots(className, level, subclassIdx = null) {
   const norm = (className || '').toLowerCase();
   level = parseInt(level) || 1;
+  const isThird = isMagicalSubclass(className, subclassIdx);
 
   // Full Casters: Bardo, Clérigo, Druida, Feiticeiro, Mago
   if (norm.includes('bardo') || norm.includes('clérigo') || norm.includes('clerigo') || norm.includes('druida') || norm.includes('feiticeiro') || norm.includes('mago')) {
@@ -2105,8 +2146,8 @@ function calculateSpellSlots(className, level) {
     return [0, 0, 0, 0, 4];
   }
 
-  // Third Casters
-  if (norm.includes('arcano') || norm.includes('eldritch') || norm.includes('trickster')) {
+  // Third Casters: Ladino Trapaceiro Arcano (subclasse 2) / Guerreiro Cavaleiro Místico (subclasse 2)
+  if (isThird || norm.includes('arcano') || norm.includes('eldritch') || norm.includes('trickster')) {
     if (level < 3) return [0, 0, 0, 0, 0];
     if (level <= 3) return [2, 0, 0, 0, 0];
     if (level <= 6) return [3, 0, 0, 0, 0];
@@ -2302,33 +2343,44 @@ function getMaxPreparedSpells(p) {
     };
   }
 
-  if (norm.includes('cavaleiro') || norm.includes('eldritch')) {
-    const max = DND5E_KNOWN_SPELLS_TABLE.cavaleiro_arcano[lvl] || 0;
-    const cantrips = DND5E_CANTRIPS_KNOWN_TABLE.cavaleiro_arcano[lvl] || 0;
+  const subName = getPlayerSubclassName(p);
+  const subIdx = (p.subclassIdx !== undefined) ? p.subclassIdx : 0;
+  const isArcaneTrickster = isMagicalSubclass(p.className, subIdx, subName) && (norm.includes('ladino') || norm.includes('rogue') || subName.toLowerCase().includes('trapaceiro') || subName.toLowerCase().includes('trickster') || norm.includes('trapaceiro'));
+  const isEldritchKnight = isMagicalSubclass(p.className, subIdx, subName) && (norm.includes('guerreiro') || norm.includes('fighter') || subName.toLowerCase().includes('cavaleiro') || subName.toLowerCase().includes('eldritch') || norm.includes('cavaleiro'));
+
+  if (isEldritchKnight || norm.includes('cavaleiro') || norm.includes('eldritch')) {
+    const isUnlocked = lvl >= 3;
+    const max = isUnlocked ? (DND5E_KNOWN_SPELLS_TABLE.cavaleiro_arcano[lvl] || 0) : 0;
+    const cantrips = isUnlocked ? (DND5E_CANTRIPS_KNOWN_TABLE.cavaleiro_arcano[lvl] || 0) : 0;
     return {
-      type: 'known',
+      type: isUnlocked ? 'known' : 'none',
       max,
       maxLeveled: max,
       maxCantrips: cantrips,
-      formula: `Tabela D&D 5E de Cavaleiro Arcano Nv ${lvl} = ${max} magias conhecidas`,
+      formula: isUnlocked 
+        ? `Tabela D&D 5E de Cavaleiro Místico Nv ${lvl} = ${max} magias conhecidas`
+        : `Ganha conjuração de magias no Nível 3`,
       isPreparedCaster: false,
-      isKnownCaster: true,
+      isKnownCaster: isUnlocked,
       attrLabel: 'INT',
-      className: 'Cavaleiro Arcano'
+      className: 'Cavaleiro Místico'
     };
   }
 
-  if (norm.includes('trapaceiro') || norm.includes('trickster')) {
-    const max = DND5E_KNOWN_SPELLS_TABLE.trapaceiro_arcano[lvl] || 0;
-    const cantrips = DND5E_CANTRIPS_KNOWN_TABLE.trapaceiro_arcano[lvl] || 0;
+  if (isArcaneTrickster || norm.includes('trapaceiro') || norm.includes('trickster')) {
+    const isUnlocked = lvl >= 3;
+    const max = isUnlocked ? (DND5E_KNOWN_SPELLS_TABLE.trapaceiro_arcano[lvl] || 0) : 0;
+    const cantrips = isUnlocked ? (DND5E_CANTRIPS_KNOWN_TABLE.trapaceiro_arcano[lvl] || 0) : 0;
     return {
-      type: 'known',
+      type: isUnlocked ? 'known' : 'none',
       max,
       maxLeveled: max,
       maxCantrips: cantrips,
-      formula: `Tabela D&D 5E de Trapaceiro Arcano Nv ${lvl} = ${max} magias conhecidas`,
+      formula: isUnlocked 
+        ? `Tabela D&D 5E de Trapaceiro Arcano Nv ${lvl} = ${max} magias conhecidas`
+        : `Ganha conjuração de magias no Nível 3`,
       isPreparedCaster: false,
-      isKnownCaster: true,
+      isKnownCaster: isUnlocked,
       attrLabel: 'INT',
       className: 'Trapaceiro Arcano'
     };
@@ -2352,12 +2404,15 @@ function getPlayerSpellcastingStats(p) {
   const lvl = parseInt(p.level, 10) || 1;
   const prof = getProfBonus(lvl);
   const norm = (p.className || '').toLowerCase();
+  const subName = getPlayerSubclassName(p);
+  const subIdx = (p.subclassIdx !== undefined) ? p.subclassIdx : 0;
+  const isMagicalSub = isMagicalSubclass(p.className, subIdx, subName);
 
   let abilityKey = 'int';
   let abilityLabel = 'INT';
   let isCaster = true;
 
-  if (norm.includes('mago') || norm.includes('wizard') || norm.includes('cavaleiro') || norm.includes('eldritch') || norm.includes('trapaceiro') || norm.includes('trickster')) {
+  if (norm.includes('mago') || norm.includes('wizard') || norm.includes('cavaleiro') || norm.includes('eldritch') || norm.includes('trapaceiro') || norm.includes('trickster') || isMagicalSub) {
     abilityKey = 'int';
     abilityLabel = 'INT';
   } else if (norm.includes('clérigo') || norm.includes('clerigo') || norm.includes('druida') || norm.includes('patrulheiro') || norm.includes('ranger')) {
@@ -2390,6 +2445,7 @@ function getPlayerSpellcastingStats(p) {
   return {
     isCaster,
     ability: abilityLabel,
+    abilityLabel,
     abilityKey,
     abilityMod: mod,
     modStr,
@@ -2619,7 +2675,7 @@ function openPlayerFeatureModal(name, desc, type, source) {
   modal.classList.add('open');
 }
 
-function getCompatibleClassKey(className) {
+function getCompatibleClassKey(className, subclassIdx = null, subclassName = '') {
   const norm = (className || '').toLowerCase();
   if (norm.includes('bardo')) return 'Bardo';
   if (norm.includes('bruxo') || norm.includes('warlock')) return 'Bruxo';
@@ -2629,6 +2685,12 @@ function getCompatibleClassKey(className) {
   if (norm.includes('mago') || norm.includes('wizard')) return 'Mago';
   if (norm.includes('paladino')) return 'Paladino';
   if (norm.includes('patrulheiro') || norm.includes('ranger')) return 'Patrulheiro';
+
+  // Subclasses mágicas do Ladino (Trapaceiro Arcano) e Guerreiro (Cavaleiro Místico) usam a lista de Mago
+  if (isMagicalSubclass(className, subclassIdx, subclassName)) {
+    return 'Mago';
+  }
+
   return null;
 }
 
@@ -2678,6 +2740,7 @@ function openSpellPickerModal(playerId) {
   if (modal) {
     document.getElementById('picker-player-name').innerText = p.name;
     document.getElementById('picker-player-class').innerText = `${p.className} (Nível ${p.level})`;
+    document.getElementById('picker-player-class').innerText = `${p.className} (Nível ${p.level})`;
     renderSpellPickerList();
     modal.classList.add('open');
   }
@@ -2703,7 +2766,7 @@ function renderSpellPickerList() {
   if (!container) return;
 
   const p = PLAYERS.find(x => x.id === currentPickerPlayerId);
-  const heroClassKey = p ? getCompatibleClassKey(p.className) : null;
+  const heroClassKey = p ? getCompatibleClassKey(p.className, p.subclassIdx, p.subclass) : null;
 
   if (countBadge) countBadge.innerText = pickerSelectedSpells.size;
   if (countBtnBadge) countBtnBadge.innerText = pickerSelectedSpells.size;
@@ -3027,7 +3090,7 @@ function closeCastSpellModal() {
   if (modal) modal.classList.remove('open');
 }
 
-function onPlayerModalClassOrLevelChange() {
+function onPlayerModalClassOrLevelChange(preserveSlotsIfSet = false) {
   const classSel = document.getElementById('pm-class-select');
   const classInput = document.getElementById('pm-class');
   const subclassSel = document.getElementById('pm-subclass-select');
@@ -3046,29 +3109,44 @@ function onPlayerModalClassOrLevelChange() {
     hitDiceInput.value = `${level}${hd.replace(/^[0-9]+/, '')}`;
   }
 
-  const slots = calculateSpellSlots(selectedClassName, level);
-  for (let i = 1; i <= 5; i++) {
-    const slotInput = document.getElementById(`pm-slot-${i}`);
-    if (slotInput) slotInput.value = slots[i - 1] || 0;
-  }
-
   if (subclassSel && typeof CLASSES_DATA !== 'undefined') {
     const cls = findClassData(selectedClassName);
     if (cls && cls.subclasses) {
-      const currentSubVal = parseInt(subclassSel.value) || 0;
+      const pending = subclassSel.dataset.pendingSubIdx;
+      const currentSubVal = pending !== undefined ? parseInt(pending) : (parseInt(subclassSel.value) || 0);
+      delete subclassSel.dataset.pendingSubIdx;
       subclassSel.innerHTML = cls.subclasses.map((s, idx) => `
         <option value="${idx}" ${idx === currentSubVal ? 'selected' : ''}>${s.name}</option>
       `).join('');
       subclassSel.disabled = false;
     } else {
+      delete subclassSel.dataset.pendingSubIdx;
       subclassSel.innerHTML = `<option value="0">Padrão / Sem Subclasse</option>`;
       subclassSel.disabled = true;
     }
   }
 
+  const subIdx = subclassSel ? parseInt(subclassSel.value) || 0 : 0;
+
+  // Verifica se deve preservar slots existentes (se não estiverem zerados)
+  const currentSlots = [
+    parseInt(document.getElementById('pm-slot-1')?.value) || 0,
+    parseInt(document.getElementById('pm-slot-2')?.value) || 0,
+    parseInt(document.getElementById('pm-slot-3')?.value) || 0,
+    parseInt(document.getElementById('pm-slot-4')?.value) || 0,
+    parseInt(document.getElementById('pm-slot-5')?.value) || 0
+  ];
+
+  const hasCustomSlots = preserveSlotsIfSet && currentSlots.some(s => s > 0);
+  const slots = hasCustomSlots ? currentSlots : calculateSpellSlots(selectedClassName, level, subIdx);
+
+  for (let i = 1; i <= 5; i++) {
+    const slotInput = document.getElementById(`pm-slot-${i}`);
+    if (slotInput) slotInput.value = slots[i - 1] || 0;
+  }
+
   const previewBox = document.getElementById('pm-features-preview');
   if (previewBox) {
-    const subIdx = subclassSel ? parseInt(subclassSel.value) || 0 : 0;
     const unlocked = getUnlockedClassFeatures(selectedClassName, level, subIdx);
     if (unlocked.length > 0) {
       previewBox.innerHTML = unlocked.map(f => `
@@ -3180,8 +3258,17 @@ function openPlayerModal(id) {
 
     document.getElementById('pm-badges').value = (p.badges || []).join(', ');
 
+    const subclassSel = document.getElementById('pm-subclass-select');
+    if (subclassSel) {
+      subclassSel.dataset.pendingSubIdx = (p && p.subclassIdx !== undefined) ? p.subclassIdx : 0;
+    }
+
     if (delBtn) delBtn.style.display = 'block';
   } else {
+    const subclassSel = document.getElementById('pm-subclass-select');
+    if (subclassSel) {
+      subclassSel.dataset.pendingSubIdx = 0;
+    }
     document.getElementById('player-modal-heading').innerText = 'Criar Nova Ficha de Personagem';
     document.getElementById('pm-id').value = '';
     document.getElementById('pm-student').value = '';
@@ -3233,7 +3320,7 @@ function openPlayerModal(id) {
     if (delBtn) delBtn.style.display = 'none';
   }
 
-  onPlayerModalClassOrLevelChange();
+  onPlayerModalClassOrLevelChange(true);
   if (modal) modal.classList.add('open');
 }
 
@@ -3281,7 +3368,7 @@ function savePlayerSheet() {
   const existing = id ? PLAYERS.find(x => x.id === id) : null;
   const maxHp = parseInt(document.getElementById('pm-maxhp').value) || 12;
 
-  const slots = [
+  let slots = [
     parseInt(document.getElementById('pm-slot-1').value) || 0,
     parseInt(document.getElementById('pm-slot-2').value) || 0,
     parseInt(document.getElementById('pm-slot-3').value) || 0,
@@ -3297,6 +3384,16 @@ function savePlayerSheet() {
 
   const classSel = document.getElementById('pm-class-select');
   const classNameVal = classSel && classSel.value !== 'custom' ? classSel.value : (document.getElementById('pm-class').value || 'Guerreiro');
+
+  const clsObj = typeof findClassData === 'function' ? findClassData(classNameVal) : null;
+  const subclassName = (clsObj && clsObj.subclasses && clsObj.subclasses[subclassIdx])
+    ? clsObj.subclasses[subclassIdx].name
+    : (existing ? existing.subclass || '' : '');
+
+  const charLevel = parseInt(document.getElementById('pm-level').value) || 1;
+  if (isMagicalSubclass(classNameVal, subclassIdx, subclassName) && slots.every(s => s === 0)) {
+    slots = calculateSpellSlots(classNameVal, charLevel, subclassIdx);
+  }
 
   const raceSel = document.getElementById('pm-race-select');
   const raceVal = raceSel && raceSel.value !== 'custom' ? raceSel.value : (document.getElementById('pm-race').value || 'Humano');
@@ -3314,7 +3411,6 @@ function savePlayerSheet() {
   // Determina salvaguardas padrão se for criação de novo personagem
   let defaultSaves = [];
   if (!existing && typeof findClassData === 'function') {
-    const clsObj = findClassData(classNameVal);
     if (clsObj && clsObj.savingThrows) {
       const saveMap = {
         'força': 'str', 'forca': 'str', 'strength': 'str',
@@ -3335,6 +3431,7 @@ function savePlayerSheet() {
     race: raceVal,
     className: classNameVal,
     subclassIdx,
+    subclass: subclassName,
     fightingStyle,
     level: parseInt(document.getElementById('pm-level').value) || 1,
     xp: parseInt(document.getElementById('pm-xp').value) || 0,
@@ -5029,12 +5126,22 @@ function checkMulticlassPrerequisites(p, targetClassName) {
 
 function calculateMulticlassSpellSlots(player) {
   const classesList = getPlayerClassesList(player);
+  if (classesList.length === 1) {
+    const single = classesList[0];
+    const subIdx = single.subclassIdx !== undefined ? single.subclassIdx : (player.subclassIdx !== undefined ? player.subclassIdx : 0);
+    return calculateSpellSlots(single.className, single.level, subIdx);
+  }
+
   let casterLevel = 0;
   let warlockLevel = 0;
 
   classesList.forEach(c => {
     const norm = c.className.toLowerCase();
     const lvl = c.level;
+    const subIdx = c.subclassIdx !== undefined ? c.subclassIdx : (player.subclassIdx !== undefined ? player.subclassIdx : 0);
+    const subName = c.subclass || (player.subclass && classesList.length === 1 ? player.subclass : '');
+    const isThird = isMagicalSubclass(c.className, subIdx, subName);
+
     // Conjuradores Totais (100%)
     if (norm.includes('mago') || norm.includes('clérigo') || norm.includes('clerigo') || norm.includes('druida') || norm.includes('bardo') || norm.includes('feiticeiro')) {
       casterLevel += lvl;
@@ -5043,8 +5150,8 @@ function calculateMulticlassSpellSlots(player) {
     else if (norm.includes('paladino') || norm.includes('patrulheiro') || norm.includes('ranger')) {
       casterLevel += Math.floor(lvl / 2);
     }
-    // Terço Conjuradores (33%)
-    else if (norm.includes('arcano') || norm.includes('eldritch') || norm.includes('trickster')) {
+    // Terço Conjuradores (33%) - Ladino Trapaceiro Arcano / Guerreiro Cavaleiro Místico
+    else if (isThird || norm.includes('arcano') || norm.includes('eldritch') || norm.includes('trickster')) {
       casterLevel += Math.floor(lvl / 3);
     }
     // Bruxo (Pact Magic)
@@ -5477,6 +5584,15 @@ function applyLevelUpConfirm() {
 
   p.multiclass = classesList;
   p.level = classesList.reduce((sum, c) => sum + c.level, 0);
+
+  // Se a classe evoluída for a principal (ou única), atualiza também no nível raiz do jogador
+  if (classesList.length === 1 || classesList[0].className.toLowerCase() === clsName.toLowerCase()) {
+    p.subclassIdx = subIdx;
+    const clsData = typeof findClassData === 'function' ? findClassData(clsName) : null;
+    if (clsData && clsData.subclasses && clsData.subclasses[subIdx]) {
+      p.subclass = clsData.subclasses[subIdx].name;
+    }
+  }
 
   // Atualiza string amigável de classes
   p.className = classesList.map(c => `${c.className} ${c.level}`).join(' / ');
@@ -5995,6 +6111,14 @@ if (typeof window !== 'undefined') {
   window.closePlayerCombatModal = closePlayerCombatModal;
   window.renderPlayerCombatModalContent = renderPlayerCombatModalContent;
   window.openLevelUpWizardForActivePlayer = openLevelUpWizardForActivePlayer;
+
+  window.isMagicalSubclass = isMagicalSubclass;
+  window.getPlayerSubclassName = getPlayerSubclassName;
+  window.calculateSpellSlots = calculateSpellSlots;
+  window.calculateMulticlassSpellSlots = calculateMulticlassSpellSlots;
+  window.getMaxPreparedSpells = getMaxPreparedSpells;
+  window.getPlayerSpellcastingStats = getPlayerSpellcastingStats;
+  window.getCompatibleClassKey = getCompatibleClassKey;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -6028,7 +6152,14 @@ if (typeof module !== 'undefined' && module.exports) {
     openPlayerCombatModal,
     closePlayerCombatModal,
     renderPlayerCombatModalContent,
-    openLevelUpWizardForActivePlayer
+    openLevelUpWizardForActivePlayer,
+    isMagicalSubclass,
+    getPlayerSubclassName,
+    calculateSpellSlots,
+    calculateMulticlassSpellSlots,
+    getMaxPreparedSpells,
+    getPlayerSpellcastingStats,
+    getCompatibleClassKey
   };
 }
 

@@ -3854,6 +3854,144 @@ assert(!combatListHtml.includes('nextTurn'), 'Modal do jogador não expõe contr
 const turnAlertDisplay = vm.runInContext("document.getElementById('portal-turn-active-indicator').style.display", sandbox);
 assert(turnAlertDisplay === 'inline-flex', 'Indicador "SUA VEZ DE AGIR!" exibido no banner quando é o turno do jogador');
 
+// --- SUÍTE 57: Subclasses Mágicas - Trapaceiro Arcano e Cavaleiro Místico (ISSUE-84) ---
+console.log('\n🔮 57. Testes de Subclasses Mágicas: Trapaceiro Arcano e Cavaleiro Místico (ISSUE-84):');
+
+// 1. Identificação de Subclasses Mágicas (isMagicalSubclass)
+const isThirdRogue = vm.runInContext("isMagicalSubclass('Ladino', 2)", sandbox);
+const isNotThirdRogue0 = vm.runInContext("isMagicalSubclass('Ladino', 0)", sandbox);
+const isNotThirdRogue1 = vm.runInContext("isMagicalSubclass('Ladino', 1)", sandbox);
+const isThirdRogueByName = vm.runInContext("isMagicalSubclass('Ladino', 0, 'Trapaceiro Arcano')", sandbox);
+const isThirdFighter = vm.runInContext("isMagicalSubclass('Guerreiro', 2)", sandbox);
+const isNotThirdFighter0 = vm.runInContext("isMagicalSubclass('Guerreiro', 0)", sandbox);
+const isThirdFighterByName = vm.runInContext("isMagicalSubclass('Guerreiro', 0, 'Cavaleiro Místico')", sandbox);
+
+assert(isThirdRogue === true, 'isMagicalSubclass identifica Ladino de subclasse índice 2 como subclasse mágica');
+assert(isNotThirdRogue0 === false, 'isMagicalSubclass não marca Ladino Assassino (idx 0) como mágico');
+assert(isNotThirdRogue1 === false, 'isMagicalSubclass não marca Ladino Ladrão (idx 1) como mágico');
+assert(isThirdRogueByName === true, 'isMagicalSubclass identifica pelo nome "Trapaceiro Arcano"');
+assert(isThirdFighter === true, 'isMagicalSubclass identifica Guerreiro de subclasse índice 2 (Cavaleiro Místico) como subclasse mágica');
+assert(isNotThirdFighter0 === false, 'isMagicalSubclass não marca Guerreiro Campeão (idx 0) como mágico');
+assert(isThirdFighterByName === true, 'isMagicalSubclass identifica pelo nome "Cavaleiro Místico"');
+
+// 2. Cálculo de Espaços de Magia (calculateSpellSlots)
+const slotsRogueLvl1 = vm.runInContext("calculateSpellSlots('Ladino', 1, 2)", sandbox);
+const slotsRogueLvl2 = vm.runInContext("calculateSpellSlots('Ladino', 2, 2)", sandbox);
+const slotsRogueLvl3 = vm.runInContext("calculateSpellSlots('Ladino', 3, 2)", sandbox);
+const slotsRogueLvl4 = vm.runInContext("calculateSpellSlots('Ladino', 4, 2)", sandbox);
+const slotsRogueLvl7 = vm.runInContext("calculateSpellSlots('Ladino', 7, 2)", sandbox);
+const slotsRogueLvl10 = vm.runInContext("calculateSpellSlots('Ladino', 10, 2)", sandbox);
+const slotsRogueLvl13 = vm.runInContext("calculateSpellSlots('Ladino', 13, 2)", sandbox);
+const slotsRogueLvl19 = vm.runInContext("calculateSpellSlots('Ladino', 19, 2)", sandbox);
+
+assert(JSON.stringify(slotsRogueLvl1) === JSON.stringify([0, 0, 0, 0, 0]), 'Trapaceiro Arcano Nv 1 não tem espaços de magia');
+assert(JSON.stringify(slotsRogueLvl2) === JSON.stringify([0, 0, 0, 0, 0]), 'Trapaceiro Arcano Nv 2 não tem espaços de magia');
+assert(JSON.stringify(slotsRogueLvl3) === JSON.stringify([2, 0, 0, 0, 0]), 'Trapaceiro Arcano Nv 3 recebe [2, 0, 0, 0, 0] espaços de 1º círculo');
+assert(JSON.stringify(slotsRogueLvl4) === JSON.stringify([3, 0, 0, 0, 0]), 'Trapaceiro Arcano Nv 4 recebe [3, 0, 0, 0, 0] espaços de 1º círculo');
+assert(JSON.stringify(slotsRogueLvl7) === JSON.stringify([4, 2, 0, 0, 0]), 'Trapaceiro Arcano Nv 7 recebe [4, 2, 0, 0, 0] (espaços de 2º círculo)');
+assert(JSON.stringify(slotsRogueLvl10) === JSON.stringify([4, 3, 0, 0, 0]), 'Trapaceiro Arcano Nv 10 recebe [4, 3, 0, 0, 0]');
+assert(JSON.stringify(slotsRogueLvl13) === JSON.stringify([4, 3, 2, 0, 0]), 'Trapaceiro Arcano Nv 13 recebe [4, 3, 2, 0, 0] (espaços de 3º círculo)');
+assert(JSON.stringify(slotsRogueLvl19) === JSON.stringify([4, 3, 3, 1, 0]), 'Trapaceiro Arcano Nv 19 recebe [4, 3, 3, 1, 0] (espaços de 4º círculo)');
+
+const slotsFighterLvl3 = vm.runInContext("calculateSpellSlots('Guerreiro', 3, 2)", sandbox);
+const slotsFighterLvl7 = vm.runInContext("calculateSpellSlots('Guerreiro', 7, 2)", sandbox);
+assert(JSON.stringify(slotsFighterLvl3) === JSON.stringify([2, 0, 0, 0, 0]), 'Cavaleiro Místico Nv 3 recebe [2, 0, 0, 0, 0] espaços de magia');
+assert(JSON.stringify(slotsFighterLvl7) === JSON.stringify([4, 2, 0, 0, 0]), 'Cavaleiro Místico Nv 7 recebe [4, 2, 0, 0, 0] espaços de magia');
+
+// 3. Limite de Magias Conhecidas e Truques (getMaxPreparedSpells)
+vm.runInContext(`
+  const rogueLvl1 = { name: 'Garrick', className: 'Ladino', level: 1, subclassIdx: 2, int: 16 };
+  const rogueLvl3 = { name: 'Garrick', className: 'Ladino', level: 3, subclassIdx: 2, int: 16 };
+  const rogueLvl7 = { name: 'Garrick', className: 'Ladino', level: 7, subclassIdx: 2, int: 16 };
+  const fighterLvl3 = { name: 'Eldrin', className: 'Guerreiro', level: 3, subclassIdx: 2, int: 14 };
+
+  resRogueLvl1 = getMaxPreparedSpells(rogueLvl1);
+  resRogueLvl3 = getMaxPreparedSpells(rogueLvl3);
+  resRogueLvl7 = getMaxPreparedSpells(rogueLvl7);
+  resFighterLvl3 = getMaxPreparedSpells(fighterLvl3);
+`, sandbox);
+
+const resRogue1 = vm.runInContext("resRogueLvl1", sandbox);
+const resRogue3 = vm.runInContext("resRogueLvl3", sandbox);
+const resRogue7 = vm.runInContext("resRogueLvl7", sandbox);
+const resFighter3 = vm.runInContext("resFighterLvl3", sandbox);
+
+assert(resRogue1.type === 'none' && resRogue1.isKnownCaster === false, 'Ladino Nv 1 não possui conjuração de magias');
+assert(resRogue3.type === 'known' && resRogue3.isKnownCaster === true, 'Trapaceiro Arcano Nv 3 é conjurador por magias conhecidas');
+assert(resRogue3.max === 3, 'Trapaceiro Arcano Nv 3 conhece exatamente 3 magias');
+assert(resRogue3.maxCantrips === 3, 'Trapaceiro Arcano Nv 3 conhece 3 truques (incluindo Mãos Mágicas)');
+assert(resRogue3.attrLabel === 'INT', 'Trapaceiro Arcano utiliza atributo Inteligência (INT)');
+assert(resRogue3.className === 'Trapaceiro Arcano', 'Rótulo de classe formatado como Trapaceiro Arcano');
+
+assert(resRogue7.max === 5, 'Trapaceiro Arcano Nv 7 conhece 5 magias');
+assert(resFighter3.type === 'known' && resFighter3.isKnownCaster === true, 'Cavaleiro Místico Nv 3 é conjurador por magias conhecidas');
+assert(resFighter3.max === 3, 'Cavaleiro Místico Nv 3 conhece 3 magias');
+assert(resFighter3.maxCantrips === 2, 'Cavaleiro Místico Nv 3 conhece 2 truques');
+assert(resFighter3.attrLabel === 'INT', 'Cavaleiro Místico utiliza INT');
+
+// 4. Estatísticas de Conjuração (CD de Resistência e Ataque Mágico)
+vm.runInContext(`
+  statsRogue3 = getPlayerSpellcastingStats(rogueLvl3);
+`, sandbox);
+const statsRogue3 = vm.runInContext("statsRogue3", sandbox);
+assert(statsRogue3.isCaster === true, 'Trapaceiro Arcano Nv 3 identificado como conjurador ativo');
+assert(statsRogue3.abilityKey === 'int', 'Chave de atributo de conjuração é "int"');
+assert(statsRogue3.abilityLabel === 'INT', 'Label de atributo de conjuração é "INT"');
+assert(statsRogue3.saveDc === 13, 'CD de magia calculada corretamente: 8 + 2 (Prof) + 3 (Mod INT) = 13');
+assert(statsRogue3.attackBonus === '+5', 'Bônus de ataque mágico calculado corretamente: +2 (Prof) + 3 (Mod INT) = +5');
+
+// 5. Compatibilidade no Seletor de Magias (getCompatibleClassKey)
+const compRogue = vm.runInContext("getCompatibleClassKey('Ladino', 2)", sandbox);
+const compFighter = vm.runInContext("getCompatibleClassKey('Guerreiro', 2)", sandbox);
+assert(compRogue === 'Mago', 'getCompatibleClassKey para Trapaceiro Arcano direciona para lista de "Mago"');
+assert(compFighter === 'Mago', 'getCompatibleClassKey para Cavaleiro Místico direciona para lista de "Mago"');
+
+// 6. Evolução de Nível (Level Up) com Trapaceiro Arcano
+vm.runInContext(`
+  const testArcaneRogueId = 'p_arcane_rogue_lvlup';
+  const arcaneRogueHero = {
+    id: testArcaneRogueId,
+    name: 'Vaxildan Arcano',
+    student: 'Vax',
+    race: 'Meio-Elfo',
+    className: 'Ladino',
+    level: 2,
+    hp: 15,
+    maxHp: 15,
+    con: 12,
+    subclassIdx: 0,
+    multiclass: [{ className: 'Ladino', level: 2, subclassIdx: 0 }],
+    slots: [0, 0, 0, 0, 0],
+    slotsUsed: [0, 0, 0, 0, 0],
+    inventory: [],
+    coins: { gp: 50 },
+    updatedAt: Date.now()
+  };
+  PLAYERS = [arcaneRogueHero];
+  activePortalPlayerId = testArcaneRogueId;
+  clientRole = 'player';
+
+  levelUpWizardState = {
+    playerId: testArcaneRogueId,
+    step: 3,
+    selectedClassKey: 'Ladino',
+    selectedClass: 'Ladino',
+    targetClassLevel: 3,
+    selectedSubclassIdx: 2, // Escolhe Trapaceiro Arcano
+    hpMethod: 'fixed',
+    calculatedHpGain: 6,
+    rolledHp: null
+  };
+
+  applyLevelUpConfirm();
+`, sandbox);
+
+const evolvedHero = vm.runInContext("PLAYERS.find(p => p.id === 'p_arcane_rogue_lvlup')", sandbox);
+assert(evolvedHero.level === 3, 'Herói subiu para o Nível 3');
+assert(evolvedHero.subclassIdx === 2, 'subclassIdx atualizado para 2 (Trapaceiro Arcano)');
+assert(evolvedHero.subclass && evolvedHero.subclass.includes('Trapaceiro Arcano'), 'subclass nome atualizado para conter "Trapaceiro Arcano"');
+assert(JSON.stringify(evolvedHero.slots) === JSON.stringify([2, 0, 0, 0, 0]), 'Herói recebeu automaticamente [2, 0, 0, 0, 0] espaços de magia');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
