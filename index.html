@@ -7485,6 +7485,8 @@
     body.mode-welcome-screen .main-navbar,
     body.mode-welcome-screen .top-actions,
     body.mode-welcome-screen .tab-content,
+    body.mode-welcome-screen .tab-pane,
+    body.mode-welcome-screen main,
     body.mode-welcome-screen .btn-floating-dice,
     body.mode-welcome-screen .fab-menu-container {
       display: none !important;
@@ -11439,6 +11441,9 @@
           <button class="btn-secondary" onclick="closeSnapshotsModal()">Fechar</button>
         </div>
       </div>
+    </div>
+  </div>
+
   <!-- MODAL: VISUALIZADOR DE COMBATE DO JOGADOR -->
   <div id="modal-player-combat" class="modal-overlay">
     <div class="modal-body" style="max-width: 540px;">
@@ -32347,7 +32352,7 @@ function openMasterPinModal(onSuccessCallback = null, onCancelCallback = null, f
   activePinCancelCb = onCancelCallback;
   currentPinDigits = '';
   tempPinConfirmation = '';
-  isPinChangeMode = forceChange || !isMasterPinConfigured();
+  isPinChangeMode = forceChange;
 
   const titleEl = document.getElementById('master-pin-modal-title');
   const subEl = document.getElementById('master-pin-modal-sub');

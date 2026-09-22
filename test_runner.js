@@ -4550,6 +4550,43 @@ assert(vm.runInContext("isMasterAuthorized()", sandbox) === false, 'lockMasterSe
 assert(vm.runInContext("clientRole", sandbox) === 'player', "lockMasterSession reseta clientRole para 'player'");
 assert(vm.runInContext("document.body.classList.contains('mode-welcome-screen')", sandbox) === true, 'lockMasterSession reabre tela de boas-vindas protegendo o painel');
 
+console.log('\n🛡️ 62. Testes de Integridade Estrutural das Modais e Balanceamento HTML (ISSUE-89):');
+
+// 1. Verificação de balanceamento estrito de tags em src/ui/ui.html
+const rawUiHtml = fs.readFileSync(path.join(__dirname, 'src', 'ui', 'ui.html'), 'utf8');
+const tagPattern = /<\/?([a-z0-9-]+)(?:\s+[^>]*?)?(\/?)>/gi;
+let tagMatch;
+const uiTagStack = [];
+while ((tagMatch = tagPattern.exec(rawUiHtml)) !== null) {
+  const full = tagMatch[0];
+  const tag = tagMatch[1].toLowerCase();
+  const isSelf = tagMatch[2] === '/' || full.endsWith('/>') || ['img', 'input', 'br', 'hr', 'meta', 'link'].includes(tag);
+  const isClose = full.startsWith('</');
+  if (isSelf) continue;
+  if (isClose) {
+    if (uiTagStack.length > 0 && uiTagStack[uiTagStack.length - 1].tag === tag) {
+      uiTagStack.pop();
+    }
+  } else {
+    uiTagStack.push({ tag });
+  }
+}
+assert(uiTagStack.length === 0, 'Todas as tags HTML em src/ui/ui.html estão perfeitamente balanceadas (pilha zerada)');
+
+// 2. Verificação de fechamento do modal-safety-snapshots
+const snapshotIdx = rawUiHtml.indexOf('id="modal-safety-snapshots"');
+const playerCombatIdx = rawUiHtml.indexOf('id="modal-player-combat"');
+assert(snapshotIdx !== -1, 'Modal #modal-safety-snapshots existe no HTML');
+assert(playerCombatIdx !== -1, 'Modal #modal-player-combat existe no HTML');
+const betweenModals = rawUiHtml.substring(snapshotIdx, playerCombatIdx);
+const betweenCloses = (betweenModals.match(/<\/div>/gi) || []).length;
+const betweenOpens = (betweenModals.match(/<div\b/gi) || []).length;
+assert(betweenCloses >= betweenOpens, '#modal-safety-snapshots fecha perfeitamente todos os seus containers antes do próximo elemento');
+
+// 3. Verificação de que CSS oculta .tab-pane e main durante welcome screen
+assert(distHtml.includes('body.mode-welcome-screen .tab-pane'), 'Bundle CSS oculta .tab-pane no modo tela de boas-vindas');
+assert(distHtml.includes('body.mode-welcome-screen main'), 'Bundle CSS oculta main no modo tela de boas-vindas');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

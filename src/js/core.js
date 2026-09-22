@@ -2926,7 +2926,7 @@ function openMasterPinModal(onSuccessCallback = null, onCancelCallback = null, f
   activePinCancelCb = onCancelCallback;
   currentPinDigits = '';
   tempPinConfirmation = '';
-  isPinChangeMode = forceChange || !isMasterPinConfigured();
+  isPinChangeMode = forceChange;
 
   const titleEl = document.getElementById('master-pin-modal-title');
   const subEl = document.getElementById('master-pin-modal-sub');
