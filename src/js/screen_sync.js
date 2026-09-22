@@ -695,7 +695,7 @@ window.onload = () => {
   if (typeof loadCampaignsState === 'function') loadCampaignsState();
   renderAll();
   const isPortal = (typeof checkPlayerPortalUrl === 'function') ? checkPlayerPortalUrl() : false;
-  if (!isPortal) {
+  if (!isPortal && (typeof isMasterAuthorized === 'function' && isMasterAuthorized())) {
     try {
       const savedTab = localStorage.getItem('dnd5e_active_tab');
       if (savedTab && typeof switchTab === 'function') {

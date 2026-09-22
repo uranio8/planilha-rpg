@@ -4488,6 +4488,68 @@ vm.runInContext(`
 `, sandbox);
 assert(pFighterChecked.featureCharges[1].used === 1, 'Carga de Surto de Ação foi consumida (1/1 gasta)');
 
+// ========================================================
+console.log('\n🔒 61. Testes de Acesso Seguro para Novos Dispositivos e PIN Oficial 3276 (ISSUE-88):');
+
+// 1. Verificação de estilos e elementos no Bundle HTML
+assert(distHtml.includes('body.mode-welcome-screen'), 'Bundle CSS contém regras protetoras para body.mode-welcome-screen');
+assert(distHtml.includes('OFFICIAL_MASTER_PIN = \'3276\''), 'Bundle JS contém constante do PIN oficial 3276');
+assert(distHtml.includes('lockMasterSession()') && distHtml.includes('Bloquear Painel do Mestre'), 'Bundle contém botão de bloqueio de sessão do mestre no menu');
+
+// 2. Teste de dispositivo novo (localStorage limpo)
+vm.runInContext(`
+  localStorage.removeItem('dnd5e_master_session_exp');
+  localStorage.removeItem('dnd5e_session_role');
+  localStorage.removeItem('dnd5e_last_portal_player_id');
+  document.body.classList.remove('mode-welcome-screen');
+  document.body.classList.remove('mode-player-portal');
+`, sandbox);
+
+assert(vm.runInContext("isMasterAuthorized()", sandbox) === false, 'Dispositivo novo sem sessão ativa é considerado NÃO autorizado para o mestre');
+
+// 3. Execução de checkPlayerPortalUrl em dispositivo novo
+vm.runInContext("checkPlayerPortalUrl()", sandbox);
+assert(vm.runInContext("document.body.classList.contains('mode-welcome-screen')", sandbox) === true, 'checkPlayerPortalUrl ativa mode-welcome-screen obrigatoriamente para novo visitante');
+assert(vm.runInContext("document.getElementById('welcome-screen').classList.contains('open')", sandbox) === true, 'Tela de boas-vindas (#welcome-screen) é aberta automaticamente para novo visitante');
+
+// 4. Teste de fluxo de Aluno
+vm.runInContext("handleWelcomeSelect('player')", sandbox);
+assert(vm.runInContext("clientRole", sandbox) === 'player', "handleWelcomeSelect('player') define clientRole como 'player'");
+assert(vm.runInContext("localStorage.getItem('dnd5e_session_role')", sandbox) === 'player', "dnd5e_session_role salvo como 'player'");
+assert(vm.runInContext("document.body.classList.contains('mode-welcome-screen')", sandbox) === false, 'mode-welcome-screen removido ao entrar no fluxo de aluno');
+
+// 5. Teste de autenticação com PIN oficial 3276 do Mestre
+vm.runInContext(`
+  localStorage.removeItem('dnd5e_master_session_exp');
+  localStorage.removeItem('dnd5e_master_pin');
+  localStorage.setItem('dnd5e_session_role', 'player');
+  handlePinClear();
+  handlePinDigit('1');
+  handlePinDigit('1');
+  handlePinDigit('1');
+  handlePinDigit('1');
+  submitMasterPin();
+`, sandbox);
+assert(vm.runInContext("isMasterAuthorized()", sandbox) === false, 'PIN incorreto 1111 não autoriza acesso ao mestre');
+
+vm.runInContext(`
+  handlePinClear();
+  handlePinDigit('3');
+  handlePinDigit('2');
+  handlePinDigit('7');
+  handlePinDigit('6');
+  submitMasterPin();
+`, sandbox);
+assert(vm.runInContext("isMasterAuthorized()", sandbox) === true, 'PIN oficial 3276 concede acesso com sucesso ao mestre');
+assert(vm.runInContext("clientRole", sandbox) === 'master', "clientRole atualizado para 'master' após PIN 3276 correto");
+assert(vm.runInContext("localStorage.getItem('dnd5e_session_role')", sandbox) === 'master', "dnd5e_session_role atualizado para 'master'");
+
+// 6. Teste de Bloqueio Seguro do Painel do Mestre
+vm.runInContext("lockMasterSession()", sandbox);
+assert(vm.runInContext("isMasterAuthorized()", sandbox) === false, 'lockMasterSession revoga sessão ativa do mestre');
+assert(vm.runInContext("clientRole", sandbox) === 'player', "lockMasterSession reseta clientRole para 'player'");
+assert(vm.runInContext("document.body.classList.contains('mode-welcome-screen')", sandbox) === true, 'lockMasterSession reabre tela de boas-vindas protegendo o painel');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

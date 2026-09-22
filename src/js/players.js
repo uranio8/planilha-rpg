@@ -5259,37 +5259,44 @@ function openWelcomeScreen() {
   if (typeof document === 'undefined') return;
   const overlay = document.getElementById('welcome-screen');
   if (overlay) overlay.classList.add('open');
+  if (document.body && document.body.classList) {
+    document.body.classList.add('mode-welcome-screen');
+  }
 }
 
 function closeWelcomeScreen() {
   if (typeof document === 'undefined') return;
   const overlay = document.getElementById('welcome-screen');
   if (overlay) overlay.classList.remove('open');
+  if (document.body && document.body.classList) {
+    document.body.classList.remove('mode-welcome-screen');
+  }
 }
 
 function handleWelcomeSelect(role) {
   if (role === 'player') {
     if (typeof clientRole !== 'undefined') clientRole = 'player';
+    if (typeof setClientRole === 'function') setClientRole('player');
     try {
       if (typeof localStorage !== 'undefined') localStorage.setItem('dnd5e_session_role', 'player');
     } catch (e) {}
     closeWelcomeScreen();
     openPlayerLoginModal();
   } else if (role === 'master') {
-    if (typeof requestMasterAccess === 'function') {
-      requestMasterAccess(() => {
-        try {
-          if (typeof localStorage !== 'undefined') localStorage.setItem('dnd5e_session_role', 'master');
-        } catch (e) {}
-        closeWelcomeScreen();
-        if (typeof switchTab === 'function') switchTab('combat');
-      });
-    } else {
+    const onMasterSuccess = () => {
       try {
         if (typeof localStorage !== 'undefined') localStorage.setItem('dnd5e_session_role', 'master');
       } catch (e) {}
+      if (typeof clientRole !== 'undefined') clientRole = 'master';
+      if (typeof setClientRole === 'function') setClientRole('master');
       closeWelcomeScreen();
       if (typeof switchTab === 'function') switchTab('combat');
+    };
+
+    if (typeof requestMasterAccess === 'function') {
+      requestMasterAccess(onMasterSuccess);
+    } else if (typeof openMasterPinModal === 'function') {
+      openMasterPinModal(onMasterSuccess);
     }
   }
 }
@@ -5462,14 +5469,14 @@ function checkPlayerPortalUrl() {
     }
 
     // 3. VERIFICAÇÃO DE SESSÃO DO MESTRE AUTORIZADA NESTE NAVEGADOR
-    const isMasterAuth = (typeof isMasterAuthorized === 'function') ? isMasterAuthorized() : true;
-    const hasChosenMaster = (savedRole === 'master' || (typeof isMasterPinConfigured === 'function' && isMasterPinConfigured()));
+    const isMasterAuth = (typeof isMasterAuthorized === 'function') ? isMasterAuthorized() : false;
 
-    if (isMasterAuth && hasChosenMaster) {
-      // Mestre autorizado: desativa portal se não houver pedido de jogador
+    if (isMasterAuth && savedRole === 'master') {
+      // Mestre autorizado com sessão ativa: desativa portal se não houver pedido de jogador
       activePortalPlayerId = null;
       if (typeof document !== 'undefined' && document.body && document.body.classList) {
         document.body.classList.remove('mode-player-portal');
+        document.body.classList.remove('mode-welcome-screen');
       }
       const banner = document.getElementById('player-portal-banner');
       if (banner) banner.style.display = 'none';
@@ -5484,9 +5491,7 @@ function checkPlayerPortalUrl() {
     const banner = document.getElementById('player-portal-banner');
     if (banner) banner.style.display = 'none';
 
-    setTimeout(() => {
-      openWelcomeScreen();
-    }, 150);
+    openWelcomeScreen();
 
   } catch (e) {
     console.warn('Erro ao processar URL do portal do jogador:', e);

@@ -26,7 +26,9 @@ let firebaseCloudDebounceTimer = null;
 let hasPendingCloudSync = false;
 let cloudSaveStatusTimeout = null;
 let localClientId = 'client_' + Math.random().toString(36).substring(2, 9);
-var clientRole = (typeof window !== 'undefined' && window.location && (window.location.search.includes('view=player') || window.location.search.includes('player=') || window.location.search.includes('lobby=true') || window.location.search.includes('login=player'))) ? 'player' : 'master';
+var clientRole = (typeof window !== 'undefined' && window.location && (window.location.search.includes('view=player') || window.location.search.includes('player=') || window.location.search.includes('lobby=true') || window.location.search.includes('login=player'))) 
+  ? 'player' 
+  : ((typeof isMasterAuthorized === 'function' && isMasterAuthorized()) ? 'master' : 'player');
 
 function setClientRole(role) {
   clientRole = role;

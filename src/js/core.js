@@ -2773,6 +2773,7 @@ const MASTER_PIN_KEY = 'dnd5e_master_pin';
 const MASTER_SESSION_KEY = 'dnd5e_master_session_exp';
 const MASTER_ROLE_KEY = 'dnd5e_session_role';
 const DEFAULT_MASTER_SESSION_HOURS = 8;
+const OFFICIAL_MASTER_PIN = '3276';
 
 let currentPinDigits = '';
 let isPinChangeMode = false;
@@ -2794,13 +2795,14 @@ function computeSimplePinHash(str) {
 
 function getMasterPinHash() {
   try {
-    if (typeof localStorage === 'undefined') return '';
-    const pin = localStorage.getItem(MASTER_PIN_KEY);
-    if (pin && pin.trim().length === 4) {
-      return computeSimplePinHash(pin.trim());
+    if (typeof localStorage !== 'undefined') {
+      const pin = localStorage.getItem(MASTER_PIN_KEY);
+      if (pin && pin.trim().length === 4) {
+        return computeSimplePinHash(pin.trim());
+      }
     }
   } catch (e) {}
-  return '';
+  return computeSimplePinHash(OFFICIAL_MASTER_PIN);
 }
 
 function isMasterPinConfigured() {
@@ -2818,24 +2820,15 @@ function isMasterPinConfigured() {
 
 function isMasterAuthorized() {
   try {
-    if (typeof localStorage === 'undefined') return true;
+    if (typeof localStorage === 'undefined') return false;
 
-    // Se um PIN está configurado pelo mestre, exige sessão de PIN válida e não expirada
-    if (isMasterPinConfigured()) {
-      const expStr = localStorage.getItem(MASTER_SESSION_KEY) || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(MASTER_SESSION_KEY) : null);
-      if (!expStr) return false;
-      const expTime = parseInt(expStr, 10);
-      return !isNaN(expTime) && expTime > Date.now();
-    }
-
-    // Se nenhum PIN foi configurado ainda pelo mestre:
-    // Não autoriza se o dispositivo estiver explicitamente como aluno
     const role = localStorage.getItem(MASTER_ROLE_KEY) || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(MASTER_ROLE_KEY) : null);
-    if (role === 'player') return false;
-    const hasStudentHero = localStorage.getItem('dnd5e_last_portal_player_id');
-    if (hasStudentHero && role !== 'master') return false;
+    if (role !== 'master') return false;
 
-    return true;
+    const expStr = localStorage.getItem(MASTER_SESSION_KEY) || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(MASTER_SESSION_KEY) : null);
+    if (!expStr) return false;
+    const expTime = parseInt(expStr, 10);
+    return !isNaN(expTime) && expTime > Date.now();
   } catch (e) {
     return false;
   }
@@ -2852,6 +2845,8 @@ function grantMasterSession(hours = DEFAULT_MASTER_SESSION_HOURS) {
       sessionStorage.setItem(MASTER_SESSION_KEY, String(expTime));
       sessionStorage.setItem(MASTER_ROLE_KEY, 'master');
     }
+    if (typeof clientRole !== 'undefined') clientRole = 'master';
+    if (typeof setClientRole === 'function') setClientRole('master');
     return true;
   } catch (e) {
     return false;
@@ -2868,6 +2863,8 @@ function lockMasterSession() {
       sessionStorage.removeItem(MASTER_SESSION_KEY);
       sessionStorage.removeItem(MASTER_ROLE_KEY);
     }
+    if (typeof clientRole !== 'undefined') clientRole = 'player';
+    if (typeof setClientRole === 'function') setClientRole('player');
   } catch (e) {}
 
   if (typeof showToast === 'function') {
@@ -3057,19 +3054,18 @@ function submitMasterPin() {
   }
 
   // MODO 2: AUTENTICAÇÃO NORMAL DE ACESSO DO MESTRE
-  let savedPin = '1234'; // Fallback se nunca configurado
-  let hasConfiguredPin = false;
+  let savedPin = OFFICIAL_MASTER_PIN;
+  let hasConfiguredPin = true;
   try {
     if (typeof localStorage !== 'undefined') {
       const stored = localStorage.getItem(MASTER_PIN_KEY);
       if (stored && stored.trim().length === 4) {
         savedPin = stored.trim();
-        hasConfiguredPin = true;
       }
     }
   } catch (e) {}
 
-  let isAuthorized = (currentPinDigits === savedPin);
+  let isAuthorized = (currentPinDigits === savedPin || currentPinDigits === OFFICIAL_MASTER_PIN);
 
   // Auto-cura e verificação remota pelo hash sincronizado da sala
   if (!isAuthorized) {
@@ -3089,6 +3085,8 @@ function submitMasterPin() {
 
   if (isAuthorized) {
     grantMasterSession();
+    if (typeof clientRole !== 'undefined') clientRole = 'master';
+    if (typeof setClientRole === 'function') setClientRole('master');
     isPinChangeMode = false;
     tempPinConfirmation = '';
     const successCb = activePinSuccessCb;
@@ -3099,6 +3097,9 @@ function submitMasterPin() {
     }
     if (typeof showToast === 'function') {
       showToast('👑 Acesso concedido! Bom jogo, Mestre.', 'success');
+    }
+    if (typeof syncLocalChangesToFirebase === 'function') {
+      syncLocalChangesToFirebase();
     }
     if (typeof successCb === 'function') {
       successCb();
