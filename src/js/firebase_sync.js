@@ -602,8 +602,10 @@ function applyCloudDataToLocal(cloudData) {
             const localUpdated = currentLocal.updatedAt || 0;
 
             const isRemoteLevelHigher = (remoteP.level || 1) > (currentLocal.level || 1);
-            // Origem do jogador: se o payload foi publicado por um jogador ou possui updatedBy remoto
-            const isPlayerOrigin = (cloudData.publishedBy === 'player') || (remoteP.updatedBy && remoteP.updatedBy !== localClientId);
+            // Origem do jogador: isola estritamente para o herói específico enviado pelo aluno
+            const isThisSpecificPlayerAuthor = (cloudData.authorPlayerId && cloudData.authorPlayerId === remoteP.id) ||
+              (remoteP.updatedBy && remoteP.updatedBy !== localClientId && (remoteUpdated > localUpdated || localUpdated === 0 || !remoteUpdated)) ||
+              (cloudData.publishedBy === 'player' && cloudData.lastUpdatedBy && cloudData.lastUpdatedBy !== localClientId && (cloudData.authorPlayerId ? cloudData.authorPlayerId === remoteP.id : (remoteList.length === 1 || (remoteP.updatedBy && remoteP.updatedBy !== localClientId))));
 
             let mergedPlayer;
             if (isRemoteLevelHigher) {
@@ -617,16 +619,25 @@ function applyCloudDataToLocal(cloudData) {
                 spells: remoteP.spells || currentLocal.spells,
                 hitDice: remoteP.hitDice || currentLocal.hitDice
               });
-            } else if (isPlayerOrigin) {
-              // Atualização vinda diretamente do portal do jogador: adota PV, condições, cargas, moedas e inventário do herói
+            } else if (isThisSpecificPlayerAuthor) {
+              // Notificação no Mestre caso o herói remoto tenha consumido espaços de magia
+              if (Array.isArray(remoteP.slotsUsed) && Array.isArray(currentLocal.slotsUsed)) {
+                const prevSpent = currentLocal.slotsUsed.reduce((a, b) => a + (b || 0), 0);
+                const newSpent = remoteP.slotsUsed.reduce((a, b) => a + (b || 0), 0);
+                if (newSpent > prevSpent && typeof addLog === 'function') {
+                  addLog(`🔮 <b>${remoteP.name}</b> utilizou ${newSpent - prevSpent} espaço(s) de magia via portal do aluno.`);
+                  if (typeof playFX === 'function') playFX('spell');
+                }
+              }
+              // Atualização vinda diretamente do portal do jogador para SEU próprio herói
               mergedPlayer = Object.assign({}, currentLocal, remoteP);
-            } else if (remoteUpdated >= localUpdated) {
+            } else if (remoteUpdated > localUpdated) {
               mergedPlayer = Object.assign({}, currentLocal, remoteP);
             } else if (localUpdated === 0 && remoteUpdated === 0) {
               // Ambos sem carimbo específico: adota dados remotos
               mergedPlayer = Object.assign({}, currentLocal, remoteP);
             } else {
-              // Local é mais recente: preserva campos locais
+              // Local é mais recente ou o mestre acabou de alterar: preserva campos locais do mestre
               mergedPlayer = Object.assign({}, remoteP, currentLocal);
             }
 
@@ -907,7 +918,9 @@ function executePlayerCloudSave() {
         players: list,
         lastUpdatedBy: localClientId,
         lastUpdateIso: nowIso,
-        publishedBy: 'player'
+        publishedBy: 'player',
+        authorPlayerId: activePortalPlayerId,
+        authorPlayerName: myPlayer.name || ''
       };
 
       if (typeof CAMPAIGNS_STATE !== 'undefined' && CAMPAIGNS_STATE) {
@@ -935,7 +948,9 @@ function executePlayerCloudSave() {
           players: list,
           lastUpdatedBy: localClientId,
           lastUpdateIso: nowIso,
-          publishedBy: 'player'
+          publishedBy: 'player',
+          authorPlayerId: activePortalPlayerId,
+          authorPlayerName: myPlayer.name || ''
         };
         if (typeof CAMPAIGNS_STATE !== 'undefined' && CAMPAIGNS_STATE) {
           fsData.campaigns = CAMPAIGNS_STATE;

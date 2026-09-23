@@ -717,6 +717,7 @@ function applyCombatAction(type, customNarrative = null) {
       if (type === 'heal' && tar.hp > 0) {
         pl.deathSaves = { success: 0, fail: 0 };
       }
+      if (typeof touchPlayer === 'function') touchPlayer(pl);
       if (typeof renderPlayers === 'function') renderPlayers();
     }
   }
@@ -839,6 +840,7 @@ function quickAdjustCombatantHp(id, delta) {
       : PLAYERS.find(p => (c.playerId && p.id === c.playerId) || c.name.includes(p.name));
     if (pl) {
       pl.hp = c.hp;
+      if (typeof touchPlayer === 'function') touchPlayer(pl);
       if (typeof renderPlayers === 'function') renderPlayers();
     }
   }
@@ -1137,6 +1139,7 @@ function saveInlineHpEdit(combatantId, newVal) {
         : PLAYERS.find(p => (c.playerId && p.id === c.playerId) || c.name.includes(p.name));
       if (pl) {
         pl.hp = c.hp;
+        if (typeof touchPlayer === 'function') touchPlayer(pl);
         if (typeof renderPlayers === 'function') renderPlayers();
       }
     }

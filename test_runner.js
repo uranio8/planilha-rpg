@@ -4732,6 +4732,130 @@ const clakerMerged = vm.runInContext("PLAYERS.find(p => p.id === 'p_178914489263
 assert(clakerMerged && clakerMerged.level === 5, 'Smart Merge do Mestre adotou Nível 5 remoto e impediu downgrade');
 assert(clakerMerged && clakerMerged.maxHp === 37, 'Smart Merge do Mestre adotou PV Máximo 37');
 
+// ========================================================
+// 66. TESTES DE SINCRONIZAÇÃO BIDIRECIONAL DE DANO E MAGIAS (ISSUE-94)
+// ========================================================
+console.log('\n⚔️ 66. Testes de Sincronização Bidirecional de Dano e Magias (ISSUE-94):');
+
+// 1. Mestre reduz PV no combate e dispara touchPlayer com novo updatedAt
+vm.runInContext(`
+  clientRole = 'master';
+  PLAYERS = [
+    { id: 'p_dera', name: 'Deraravely', className: 'Guerreiro', level: 5, maxHp: 43, hp: 43, updatedAt: 1000 },
+    { id: 'p_kira', name: 'Yoshigake Kira', className: 'Paladino', level: 5, maxHp: 43, hp: 43, slots: [4,2,0,0,0], slotsUsed: [0,0,0,0,0], updatedAt: 1000 },
+    { id: 'p_zenit', name: 'Zenit', className: 'Ladino', level: 5, maxHp: 36, hp: 36, updatedAt: 1000 }
+  ];
+  state = {
+    combatants: [
+      { id: 'c_dera', playerId: 'p_dera', name: 'Deraravely (Samuel)', type: 'player', hp: 43, maxHp: 43, init: 15 },
+      { id: 'c_kira', playerId: 'p_kira', name: 'Yoshigake Kira (Gustavo)', type: 'player', hp: 43, maxHp: 43, init: 10 },
+      { id: 'c_zenit', playerId: 'p_zenit', name: 'Zenit (Diogo)', type: 'player', hp: 36, maxHp: 36, init: 12 },
+      { id: 'c_mob', name: 'Monstro #1', type: 'monster', hp: 20, maxHp: 20, init: 5 }
+    ],
+    round: 1,
+    turnIndex: 0,
+    logs: []
+  };
+  const prevDeraTime = PLAYERS.find(p => p.id === 'p_dera').updatedAt;
+  quickAdjustCombatantHp('c_dera', -1);
+`, sandbox);
+
+const deraAfterDmg = vm.runInContext("PLAYERS.find(p => p.id === 'p_dera')", sandbox);
+const deraCombAfterDmg = vm.runInContext("state.combatants.find(c => c.id === 'c_dera')", sandbox);
+assert(deraCombAfterDmg.hp === 42, 'quickAdjustCombatantHp reduziu combatente para 42 PV');
+assert(deraAfterDmg.hp === 42, 'quickAdjustCombatantHp sincronizou 42 PV para a ficha PLAYERS');
+assert(deraAfterDmg.updatedAt > 1000, 'quickAdjustCombatantHp acionou touchPlayer atualizando updatedAt');
+
+// 2. Mestre aplica dano via despachante applyCombatAction
+vm.runInContext(`
+  // Configura despachante para dano no Kira
+  const selTar = document.getElementById('sel-target');
+  const selAtt = document.getElementById('sel-attacker');
+  const inpDmg = document.getElementById('inp-damage');
+  if (selTar) selTar.value = 'c_kira';
+  if (selAtt) selAtt.value = 'c_mob';
+  if (inpDmg) inpDmg.value = '2';
+  applyCombatAction('damage', 'Ataque de Garra');
+`, sandbox);
+const kiraAfterDmg = vm.runInContext("PLAYERS.find(p => p.id === 'p_kira')", sandbox);
+assert(kiraAfterDmg.hp === 41, 'applyCombatAction reduziu Kira para 41 PV');
+assert(kiraAfterDmg.updatedAt > 1000, 'applyCombatAction acionou touchPlayer atualizando updatedAt do Kira');
+
+// 3. Mestre edita PV diretamente via inline edit
+vm.runInContext(`
+  saveInlineHpEdit('c_zenit', '31');
+`, sandbox);
+const zenitAfterEdit = vm.runInContext("PLAYERS.find(p => p.id === 'p_zenit')", sandbox);
+assert(zenitAfterEdit.hp === 31, 'saveInlineHpEdit ajustou Zenit para 31 PV');
+assert(zenitAfterEdit.updatedAt > 1000, 'saveInlineHpEdit acionou touchPlayer atualizando updatedAt do Zenit');
+
+// 4. Portal do Aluno recebe atualização de PV do Mestre
+vm.runInContext(`
+  // Muda para ambiente de Aluno (Deraravely)
+  clientRole = 'player';
+  activePortalPlayerId = 'p_dera';
+  PLAYERS = [
+    { id: 'p_dera', name: 'Deraravely', className: 'Guerreiro', level: 5, maxHp: 43, hp: 43, updatedAt: 1000 }
+  ];
+  const masterSyncPayload = {
+    players: [
+      { id: 'p_dera', name: 'Deraravely', className: 'Guerreiro', level: 5, maxHp: 43, hp: 42, updatedAt: 2000, updatedBy: 'master_desktop' },
+      { id: 'p_kira', name: 'Yoshigake Kira', className: 'Paladino', level: 5, maxHp: 43, hp: 41, updatedAt: 2000, updatedBy: 'master_desktop' },
+      { id: 'p_zenit', name: 'Zenit', className: 'Ladino', level: 5, maxHp: 36, hp: 31, updatedAt: 2000, updatedBy: 'master_desktop' }
+    ],
+    publishedBy: 'master',
+    lastUpdatedBy: 'master_desktop'
+  };
+  applyCloudDataToLocal(masterSyncPayload);
+`, sandbox);
+const deraPortalHero = vm.runInContext("PLAYERS.find(p => p.id === 'p_dera')", sandbox);
+assert(deraPortalHero && deraPortalHero.hp === 42, 'Portal do Aluno adotou 42 PV enviado pelo Mestre');
+
+// 5. Aluno conjura magia consumindo espaço e incluindo authorPlayerId
+vm.runInContext(`
+  clientRole = 'player';
+  activePortalPlayerId = 'p_kira';
+  PLAYERS = [
+    { id: 'p_kira', name: 'Yoshigake Kira', className: 'Paladino', level: 5, maxHp: 43, hp: 41, slots: [4,2,0,0,0], slotsUsed: [0,0,0,0,0], updatedAt: 1000 }
+  ];
+  executeCastSpell('p_kira', 'Bênção', 1);
+`, sandbox);
+const kiraCastSpell = vm.runInContext("PLAYERS.find(p => p.id === 'p_kira')", sandbox);
+assert(kiraCastSpell.slotsUsed[0] === 1, 'executeCastSpell consumiu 1 espaço de 1º Círculo no Aluno');
+assert(kiraCastSpell.concentrationSpell === 'Bênção', 'executeCastSpell ativou concentração em Bênção');
+
+// 6. Mestre recebe payload do Aluno: atualiza slots do Aluno e NÃO sobrescreve outros heróis
+vm.runInContext(`
+  clientRole = 'master';
+  activePortalPlayerId = null;
+  // Estado local do Mestre com danos recentes
+  PLAYERS = [
+    { id: 'p_dera', name: 'Deraravely', className: 'Guerreiro', level: 5, maxHp: 43, hp: 42, updatedAt: 2000 },
+    { id: 'p_kira', name: 'Yoshigake Kira', className: 'Paladino', level: 5, maxHp: 43, hp: 41, slots: [4,2,0,0,0], slotsUsed: [0,0,0,0,0], updatedAt: 2000 },
+    { id: 'p_zenit', name: 'Zenit', className: 'Ladino', level: 5, maxHp: 36, hp: 31, updatedAt: 2000 }
+  ];
+  // Aluno Kira envia atualização de sua conjuração (com lista que no aluno ainda tinha Deraravely com 43 PV)
+  const studentCloudPayload = {
+    players: [
+      { id: 'p_dera', name: 'Deraravely', className: 'Guerreiro', level: 5, maxHp: 43, hp: 43, updatedAt: 1000 }, // snapshot antigo do aluno
+      { id: 'p_kira', name: 'Yoshigake Kira', className: 'Paladino', level: 5, maxHp: 43, hp: 41, slots: [4,2,0,0,0], slotsUsed: [1,0,0,0,0], updatedAt: 3000, updatedBy: 'client_student_kira' },
+      { id: 'p_zenit', name: 'Zenit', className: 'Ladino', level: 5, maxHp: 36, hp: 36, updatedAt: 1000 }
+    ],
+    publishedBy: 'player',
+    authorPlayerId: 'p_kira',
+    authorPlayerName: 'Yoshigake Kira',
+    lastUpdatedBy: 'client_student_kira'
+  };
+  applyCloudDataToLocal(studentCloudPayload);
+`, sandbox);
+
+const mKira = vm.runInContext("PLAYERS.find(p => p.id === 'p_kira')", sandbox);
+const mDera = vm.runInContext("PLAYERS.find(p => p.id === 'p_dera')", sandbox);
+const mZenit = vm.runInContext("PLAYERS.find(p => p.id === 'p_zenit')", sandbox);
+assert(mKira.slotsUsed[0] === 1, 'Mestre adotou consumo de magia do Aluno (slotsUsed[0] = 1)');
+assert(mDera.hp === 42, 'Smart Merge do Mestre NÃO reverteu o PV de Deraravely (permaneceu 42)');
+assert(mZenit.hp === 31, 'Smart Merge do Mestre NÃO reverteu o PV de Zenit (permaneceu 31)');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
