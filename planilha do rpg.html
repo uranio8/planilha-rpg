@@ -9444,6 +9444,9 @@
             <option value="all">🏷️ Todas Tags</option>
             <option value="conc">🧠 Concentração</option>
             <option value="ritual">📜 Ritual</option>
+            <option value="bonus">⚡ Ação Bônus</option>
+            <option value="reaction">🛡️ Reação</option>
+            <option value="action">⚔️ Ação</option>
           </select>
 
           <!-- ORDENAÇÃO -->
@@ -10253,6 +10256,12 @@
           <option value="Conjuração">Conjuração</option>
           <option value="Adivinhação">Adivinhação</option>
         </select>
+        <select id="picker-action-filter" onchange="handlePickerActionFilter(this.value)" style="max-width: 125px;" title="Filtrar por Economia de Ação">
+          <option value="all">Todas Ações</option>
+          <option value="action">⚔️ Ação</option>
+          <option value="bonus">⚡ Ação Bônus</option>
+          <option value="reaction">🛡️ Reação</option>
+        </select>
         <button id="btn-picker-only-selected" class="btn-secondary" style="font-size:11px; padding:4px 10px; border-color:var(--accent-gold);" onclick="togglePickerShowOnlySelected()" title="Ver apenas as magias já marcadas no herói">
           ⭐ Selecionadas (<b id="picker-btn-selected-count">0</b>)
         </button>
@@ -10431,14 +10440,22 @@
               <span id="player-login-status-text">🟢 Sincronizado em Tempo Real</span>
             </div>
             <div style="display: flex; gap: 5px;">
-              <button class="btn-secondary dm-only-btn" style="font-size: 11px; padding: 4px 8px; white-space: nowrap;" onclick="togglePlayerLoginRoomConfig()" title="Configurar sala de sincronização">⚙️ Sala</button>
+              <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px; white-space: nowrap;" onclick="togglePlayerLoginRoomConfig()" title="Configurar ou trocar de mesa/sala">⚙️ Sala / Mesa</button>
               <button class="btn-action" style="font-size: 11px; padding: 4px 10px; white-space: nowrap; background: linear-gradient(135deg, #f59e0b, #d97706);" onclick="copyLobbyShareLink()" title="Copiar link do lobby desta sala para enviar aos alunos">📋 Copiar Link</button>
               <button class="btn-action" style="font-size: 11px; padding: 4px 10px; white-space: nowrap; background: linear-gradient(135deg, #0284c7, #0369a1);" onclick="openRoomQrCodeModal()" title="Exibir QR Code para projeção em sala de aula">📲 QR Code</button>
             </div>
           </div>
-          <div id="player-login-custom-room-box" style="display: none; margin-top: 6px; gap: 6px; align-items: center;">
-            <input type="text" id="inp-login-room" placeholder="Ex: turma_principal" style="font-size: 12px; padding: 5px 8px; background: #080c16; border: 1px solid var(--border-color); border-radius: 4px; color: #fff; font-family: var(--font-mono); flex: 1;">
-            <button class="btn-secondary" style="font-size: 11px; padding: 5px 10px; white-space: nowrap;" onclick="refreshLoginRoom()">Salvar Sala</button>
+          <div id="player-login-custom-room-box" style="display: none; margin-top: 6px; flex-direction: column; gap: 6px;">
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <input type="text" id="inp-login-room" placeholder="Ex: mesa_seg-qua" style="font-size: 12px; padding: 5px 8px; background: #080c16; border: 1px solid var(--border-color); border-radius: 4px; color: #fff; font-family: var(--font-mono); flex: 1;">
+              <button class="btn-secondary" style="font-size: 11px; padding: 5px 10px; white-space: nowrap;" onclick="refreshLoginRoom()">Salvar Sala</button>
+            </div>
+            <div style="display: flex; gap: 4px; flex-wrap: wrap; font-size: 11px; align-items: center;">
+              <span style="color: var(--text-dim); font-size: 10px;">Mesas:</span>
+              <button type="button" class="btn-micro" onclick="setQuickLoginRoom('mesa_seg-qua')">Mesa Seg-Qua</button>
+              <button type="button" class="btn-micro" onclick="setQuickLoginRoom('mesa_qui-sex')">Mesa Qui-Sex</button>
+              <button type="button" class="btn-micro" onclick="setQuickLoginRoom('turma_principal')">Turma Principal</button>
+            </div>
           </div>
         </div>
         <div class="player-login-toolbar-col-search">
@@ -34250,9 +34267,12 @@ function renderCombat() {
                 ${playerObj.preparedSpells.map(sName => {
                   const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
                   const lvlBadge = sp ? (sp.level === 0 ? 'Truque' : `${sp.level}º`) : '';
+                  const spAct = typeof getSpellActionType === 'function' ? getSpellActionType(sp || sName) : 'action';
+                  const actIcon = spAct === 'bonus' ? '⚡' : (spAct === 'reaction' ? '🛡️' : '⚔️');
+                  const actTitle = spAct === 'bonus' ? 'Ação Bônus' : (spAct === 'reaction' ? 'Reação' : 'Ação');
                   return `
-                    <button class="btn-secondary" style="font-size:10px; padding:3px 7px; display:inline-flex; align-items:center; gap:4px; border-color:rgba(59,130,246,0.4);" onclick="castPlayerSpellPrompt('${playerObj.id}', '${(sName||'').replace(/'/g, "\\'")}')">
-                      <span>${sName}</span> <span style="font-size:8px; opacity:0.8; color:var(--primary-light); font-weight:bold;">${lvlBadge}</span>
+                    <button class="btn-secondary" style="font-size:10px; padding:3px 7px; display:inline-flex; align-items:center; gap:4px; border-color:rgba(59,130,246,0.4);" onclick="castPlayerSpellPrompt('${playerObj.id}', '${(sName||'').replace(/'/g, "\\'")}')" title="${actTitle}: Lançar ${sName}">
+                      <span>${actIcon} ${sName}</span> <span style="font-size:8px; opacity:0.8; color:var(--primary-light); font-weight:bold;">${lvlBadge}</span>
                     </button>
                   `;
                 }).join('')}
@@ -35592,8 +35612,18 @@ function getAttackActionType(rawAttackText) {
 }
 
 function getSpellActionType(sp) {
-  if (!sp || !sp.castTime) return 'action';
-  const ct = String(sp.castTime).toLowerCase();
+  if (!sp) return 'action';
+  let spellObj = sp;
+  if (typeof sp === 'string') {
+    spellObj = (typeof SPELLS_DATA !== 'undefined')
+      ? SPELLS_DATA.find(s => s.name.toLowerCase() === sp.toLowerCase())
+      : null;
+  } else if (typeof sp === 'object' && !sp.time && !sp.castTime && sp.name) {
+    spellObj = (typeof SPELLS_DATA !== 'undefined')
+      ? SPELLS_DATA.find(s => s.name.toLowerCase() === sp.name.toLowerCase())
+      : sp;
+  }
+  const ct = String((spellObj && (spellObj.time || spellObj.castTime)) || (typeof sp === 'string' ? '' : (sp.time || sp.castTime || ''))).toLowerCase();
   if (ct.includes('bônus') || ct.includes('bonus')) return 'bonus';
   if (ct.includes('reação') || ct.includes('reacao') || ct.includes('reaction')) return 'reaction';
   return 'action';
@@ -36500,7 +36530,7 @@ function renderPlayers() {
         const filteredSpells = (p.preparedSpells || []).filter(sName => {
           if (actionFilter === 'all') return true;
           const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
-          return getSpellActionType(sp) === actionFilter;
+          return getSpellActionType(sp || sName) === actionFilter;
         });
 
         if (filteredSpells.length > 0) {
@@ -36512,8 +36542,8 @@ function renderPlayers() {
             const lvlBadge = sp ? (isCantrip ? 'Truque' : `${sp.level}º Círc.`) : 'Magia';
             const school = sp ? sp.school : '';
             const range = sp ? sp.range : '';
-            const castTime = sp ? sp.castTime : '';
-            const spAct = getSpellActionType(sp);
+            const castTime = sp ? (sp.time || sp.castTime || '') : '';
+            const spAct = getSpellActionType(sp || sName);
             const spActBadge = spAct === 'bonus' ? '<span class="action-economy-tag bonus">Bônus</span>' : (spAct === 'reaction' ? '<span class="action-economy-tag reaction">Reação</span>' : '<span class="action-economy-tag action">Ação</span>');
             return `
                   <div class="spell-action-chip">
@@ -39008,15 +39038,18 @@ function openSpellPickerModal(playerId) {
   pickerClassFilter = 'auto';
   pickerCircleFilter = 'all';
   pickerSchoolFilter = 'all';
+  pickerActionFilter = 'all';
   pickerShowOnlySelected = false;
   pickerExpandedSpell = null;
 
   const modal = document.getElementById('modal-spell-picker');
   const classFilterSelect = document.getElementById('picker-class-filter');
+  const actionFilterSelect = document.getElementById('picker-action-filter');
   const searchInput = document.getElementById('picker-search-input');
   const btnOnlySelected = document.getElementById('btn-picker-only-selected');
 
   if (classFilterSelect) classFilterSelect.value = 'auto';
+  if (actionFilterSelect) actionFilterSelect.value = 'all';
   if (searchInput) searchInput.value = '';
   if (btnOnlySelected) btnOnlySelected.classList.remove('active');
 
@@ -39137,6 +39170,9 @@ function renderSpellPickerList() {
     if (q && !s.name.toLowerCase().includes(q) && !(s.desc || '').toLowerCase().includes(q)) return false;
     if (pickerCircleFilter !== 'all' && String(s.level) !== pickerCircleFilter) return false;
     if (pickerSchoolFilter !== 'all' && s.school !== pickerSchoolFilter) return false;
+    if (typeof pickerActionFilter !== 'undefined' && pickerActionFilter !== 'all') {
+      if (getSpellActionType(s) !== pickerActionFilter) return false;
+    }
     return true;
   });
 
@@ -39151,6 +39187,12 @@ function renderSpellPickerList() {
     const classPills = Array.isArray(s.classes) ? s.classes.slice(0, 3).join(', ') : '';
     const castTimeText = s.time || s.castTime || '1 ação';
     const isExpanded = pickerExpandedSpell === s.name;
+    const spAct = getSpellActionType(s);
+    const spActBadge = spAct === 'bonus'
+      ? '<span class="action-economy-tag bonus" style="font-size:9px; margin-left:6px; padding:1px 5px;">Bônus</span>'
+      : (spAct === 'reaction'
+        ? '<span class="action-economy-tag reaction" style="font-size:9px; margin-left:6px; padding:1px 5px;">Reação</span>'
+        : '');
 
     return `
       <div class="picker-spell-item ${isSelected ? 'selected' : ''}" onclick="toggleSpellInPicker('${escapeAttr(s.name)}')">
@@ -39158,7 +39200,7 @@ function renderSpellPickerList() {
           <input type="checkbox" ${isSelected ? 'checked' : ''} style="margin-top:4px; cursor:pointer;" onclick="event.stopPropagation(); toggleSpellInPicker('${escapeAttr(s.name)}')">
           <div style="flex:1;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-weight:700; color:${isSelected ? 'var(--primary-light)' : '#fff'}; font-size:13px;">${s.name}</span>
+              <span style="font-weight:700; color:${isSelected ? 'var(--primary-light)' : '#fff'}; font-size:13px;">${s.name}${spActBadge}</span>
               <div style="display:flex; align-items:center; gap:6px;">
                 <span class="badge ${s.level === 0 ? 'badge-cls' : 'badge-lvl'}" style="font-size:10px;">${circleLabel}</span>
                 <button class="btn-secondary" style="padding:1px 6px; font-size:10px;" onclick="toggleSpellDetailInPicker('${escapeAttr(s.name)}', event)" title="Ver descrição da magia">
@@ -39182,6 +39224,13 @@ function renderSpellPickerList() {
       </div>
     `;
   }).join('');
+}
+
+let pickerActionFilter = 'all';
+
+function handlePickerActionFilter(action) {
+  pickerActionFilter = action || 'all';
+  renderSpellPickerList();
 }
 
 function handlePickerClassFilter(classFilter) {
@@ -39273,8 +39322,9 @@ function castPlayerSpellPrompt(playerId, spellName) {
     return;
   }
 
-  document.getElementById('cast-spell-title').innerText = spellName;
-  document.getElementById('cast-spell-meta').innerText = sp ? `${sp.level}º Círculo (${sp.school}) • Tempo: ${sp.castTime} • Alcance: ${sp.range} • Duração: ${sp.duration}` : 'Magia D&D 5E';
+  const spAct = getSpellActionType(sp || spellName);
+  const actBadgeText = spAct === 'bonus' ? ' • ⚡ Ação Bônus' : (spAct === 'reaction' ? ' • 🛡️ Reação' : ' • ⚔️ Ação');
+  document.getElementById('cast-spell-meta').innerText = sp ? `${sp.level === 0 ? 'Truque' : sp.level + 'º Círculo'} (${sp.school || 'Magia'}) • Tempo: ${sp.time || sp.castTime || '1 ação'}${actBadgeText} • Alcance: ${sp.range || 'Pessoal'} • Duração: ${sp.duration || 'Instantânea'}` : 'Magia D&D 5E';
   document.getElementById('cast-spell-desc').innerHTML = sp ? sp.desc.replace(/\n/g, '<br>') : 'Sem descrição detalhada.';
 
   const slotsOptionsContainer = document.getElementById('cast-slot-options');
@@ -40823,6 +40873,12 @@ function refreshLoginRoom() {
   setTimeout(() => {
     renderPlayerLoginList();
   }, 400);
+}
+
+function setQuickLoginRoom(roomId) {
+  const inp = document.getElementById('inp-login-room');
+  if (inp) inp.value = roomId;
+  refreshLoginRoom();
 }
 
 function renderPlayerLoginList() {
@@ -42528,6 +42584,8 @@ if (typeof window !== 'undefined') {
   window.usePlayerLayOnHandsQuick = usePlayerLayOnHandsQuick;
   window.usePlayerSecondWindQuick = usePlayerSecondWindQuick;
   window.usePlayerActionSurgeQuick = usePlayerActionSurgeQuick;
+  window.handlePickerActionFilter = handlePickerActionFilter;
+  window.setQuickLoginRoom = setQuickLoginRoom;
   window.rollPlayerAttack = rollPlayerAttack;
   window.rollPlayerSkill = rollPlayerSkill;
   window.rollPlayerSavingThrow = rollPlayerSavingThrow;
@@ -42599,6 +42657,8 @@ if (typeof module !== 'undefined' && module.exports) {
     usePlayerLayOnHandsQuick,
     usePlayerSecondWindQuick,
     usePlayerActionSurgeQuick,
+    handlePickerActionFilter,
+    setQuickLoginRoom,
     rollPlayerAttack,
     rollPlayerSkill,
     rollPlayerSavingThrow,
@@ -42759,13 +42819,22 @@ function renderSpells(resetLimit = true) {
     if (lvl !== 'all' && s.level !== parseInt(lvl, 10)) return false;
     if (sch !== 'all' && s.school !== sch) return false;
 
-    // Filtros por Tag (Concentração / Ritual)
+    // Filtros por Tag (Concentração / Ritual / Ação / Bônus / Reação)
     if (tag === 'concentration' || tag === 'conc') {
       const isConc = (s.duration || '').toLowerCase().includes('concentra') || (s.desc || '').toLowerCase().includes('concentra');
       if (!isConc) return false;
     } else if (tag === 'ritual') {
       const isRitual = (s.components || '').toLowerCase().includes('r') || (s.time || '').toLowerCase().includes('ritual') || (s.desc || '').toLowerCase().includes('ritual');
       if (!isRitual) return false;
+    } else if (tag === 'bonus') {
+      const spAct = typeof getSpellActionType === 'function' ? getSpellActionType(s) : (String(s.time || '').toLowerCase().includes('bônus') ? 'bonus' : 'action');
+      if (spAct !== 'bonus') return false;
+    } else if (tag === 'reaction') {
+      const spAct = typeof getSpellActionType === 'function' ? getSpellActionType(s) : (String(s.time || '').toLowerCase().includes('reação') ? 'reaction' : 'action');
+      if (spAct !== 'reaction') return false;
+    } else if (tag === 'action') {
+      const spAct = typeof getSpellActionType === 'function' ? getSpellActionType(s) : (String(s.time || '').toLowerCase().includes('bônus') ? 'bonus' : (String(s.time || '').toLowerCase().includes('reação') ? 'reaction' : 'action'));
+      if (spAct !== 'action') return false;
     }
 
     return true;
@@ -42825,6 +42894,12 @@ function renderSpells(resetLimit = true) {
               <span class="badge badge-sch">${s.level === 0 ? 'Truque' : 'Círculo ' + s.level}</span>
               ${isConcentration ? '<span class="badge badge-cr" style="font-size: 9px; padding: 1px 5px;">🧠 Concentração</span>' : ''}
               ${isRitual ? '<span class="badge badge-src" style="font-size: 9px; padding: 1px 5px;">📜 Ritual</span>' : ''}
+              ${(() => {
+                const spAct = typeof getSpellActionType === 'function' ? getSpellActionType(s) : (String(s.time || '').toLowerCase().includes('bônus') ? 'bonus' : (String(s.time || '').toLowerCase().includes('reação') ? 'reaction' : 'action'));
+                if (spAct === 'bonus') return '<span class="badge" style="font-size: 9px; padding: 1px 5px; background: rgba(234,179,8,0.2); color: #facc15; border: 1px solid rgba(234,179,8,0.4);">⚡ Bônus</span>';
+                if (spAct === 'reaction') return '<span class="badge" style="font-size: 9px; padding: 1px 5px; background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid rgba(168,85,247,0.4);">🛡️ Reação</span>';
+                return '';
+              })()}
             </div>
           </div>
 

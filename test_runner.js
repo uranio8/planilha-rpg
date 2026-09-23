@@ -4646,6 +4646,49 @@ const firebaseSyncCode = fs.readFileSync(path.join(__dirname, 'src', 'js', 'fire
 assert(firebaseSyncCode.includes("roomRef.child('players').once('value')"), 'executePlayerCloudSave usa leitura e update consolidados no Realtime Database');
 assert(!firebaseSyncCode.includes('promises.push(fsPromise)'), 'executePlayerCloudSave não acopla fsPromise ao Promise.all principal');
 
+// ========================================================
+// 64. TESTES DE ECONOMIA DE AÇÃO DE MAGIAS (AÇÃO VS BÔNUS VS REAÇÃO) E SALAS (ISSUE-91)
+// ========================================================
+console.log('\n⚡ 64. Testes de Economia de Ação de Magias e Seletor de Salas (ISSUE-91):');
+
+// 1. Objeto com time
+assert(vm.runInContext("getSpellActionType({ time: '1 ação bônus' })", sandbox) === 'bonus', 'getSpellActionType identifica objeto com time "1 ação bônus" como bonus');
+assert(vm.runInContext("getSpellActionType({ time: '1 reação' })", sandbox) === 'reaction', 'getSpellActionType identifica objeto com time "1 reação" como reaction');
+assert(vm.runInContext("getSpellActionType({ time: '1 ação' })", sandbox) === 'action', 'getSpellActionType identifica objeto com time "1 ação" como action');
+
+// 2. Busca por nome no catálogo SPELLS_DATA
+assert(vm.runInContext("getSpellActionType('Passo Nebuloso')", sandbox) === 'bonus', 'Passo Nebuloso identificado por nome como bonus');
+assert(vm.runInContext("getSpellActionType('Palavra Curativa')", sandbox) === 'bonus', 'Palavra Curativa identificada por nome como bonus');
+assert(vm.runInContext("getSpellActionType('Bordão Místico')", sandbox) === 'bonus', 'Bordão Místico identificado por nome como bonus');
+assert(vm.runInContext("getSpellActionType('Auxílio Divino')", sandbox) === 'bonus', 'Auxílio Divino identificado por nome como bonus');
+assert(vm.runInContext("getSpellActionType('Escudo Arcano')", sandbox) === 'reaction', 'Escudo Arcano identificado por nome como reaction');
+assert(vm.runInContext("getSpellActionType('Contramágica')", sandbox) === 'reaction', 'Contramágica identificada por nome como reaction');
+assert(vm.runInContext("getSpellActionType('Mísseis Mágicos')", sandbox) === 'action', 'Mísseis Mágicos identificado por nome como action');
+assert(vm.runInContext("getSpellActionType('Bola de Fogo')", sandbox) === 'action', 'Bola de Fogo identificada por nome como action');
+
+// 3. Funções exportadas
+assert(typeof vm.runInContext("handlePickerActionFilter", sandbox) === 'function', 'Função handlePickerActionFilter exportada');
+assert(typeof vm.runInContext("setQuickLoginRoom", sandbox) === 'function', 'Função setQuickLoginRoom exportada');
+
+// 4. Teste de setQuickLoginRoom
+vm.runInContext(`
+  const mockInpRoom = { value: '', style: {} };
+  document.getElementById = (id) => {
+    if (id === 'inp-login-room') return mockInpRoom;
+    if (id === 'player-login-status-text') return { innerText: '' };
+    if (id === 'player-login-custom-room-box') return { style: {} };
+    return { value: '', innerText: '', style: {}, classList: { add(){}, remove(){}, contains(){ return false; } } };
+  };
+  setQuickLoginRoom('mesa_seg-qua');
+`, sandbox);
+assert(vm.runInContext("getStoredFirebaseRoom()", sandbox) === 'mesa_seg-qua', 'setQuickLoginRoom definiu a sala para mesa_seg-qua');
+
+// 5. Presença no HTML compilado
+const compiledHtml91 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(compiledHtml91.includes('id="picker-action-filter"'), 'HTML contém filtro de ação no modal spell picker');
+assert(compiledHtml91.includes('value="bonus">⚡ Ação Bônus</option>'), 'HTML contém opção de Ação Bônus no filtro de tags do grimório');
+assert(compiledHtml91.includes("setQuickLoginRoom('mesa_seg-qua')"), 'HTML contém atalho para Mesa Seg-Qua no login de alunos');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

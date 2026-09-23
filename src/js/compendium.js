@@ -147,13 +147,22 @@ function renderSpells(resetLimit = true) {
     if (lvl !== 'all' && s.level !== parseInt(lvl, 10)) return false;
     if (sch !== 'all' && s.school !== sch) return false;
 
-    // Filtros por Tag (Concentração / Ritual)
+    // Filtros por Tag (Concentração / Ritual / Ação / Bônus / Reação)
     if (tag === 'concentration' || tag === 'conc') {
       const isConc = (s.duration || '').toLowerCase().includes('concentra') || (s.desc || '').toLowerCase().includes('concentra');
       if (!isConc) return false;
     } else if (tag === 'ritual') {
       const isRitual = (s.components || '').toLowerCase().includes('r') || (s.time || '').toLowerCase().includes('ritual') || (s.desc || '').toLowerCase().includes('ritual');
       if (!isRitual) return false;
+    } else if (tag === 'bonus') {
+      const spAct = typeof getSpellActionType === 'function' ? getSpellActionType(s) : (String(s.time || '').toLowerCase().includes('bônus') ? 'bonus' : 'action');
+      if (spAct !== 'bonus') return false;
+    } else if (tag === 'reaction') {
+      const spAct = typeof getSpellActionType === 'function' ? getSpellActionType(s) : (String(s.time || '').toLowerCase().includes('reação') ? 'reaction' : 'action');
+      if (spAct !== 'reaction') return false;
+    } else if (tag === 'action') {
+      const spAct = typeof getSpellActionType === 'function' ? getSpellActionType(s) : (String(s.time || '').toLowerCase().includes('bônus') ? 'bonus' : (String(s.time || '').toLowerCase().includes('reação') ? 'reaction' : 'action'));
+      if (spAct !== 'action') return false;
     }
 
     return true;
@@ -213,6 +222,12 @@ function renderSpells(resetLimit = true) {
               <span class="badge badge-sch">${s.level === 0 ? 'Truque' : 'Círculo ' + s.level}</span>
               ${isConcentration ? '<span class="badge badge-cr" style="font-size: 9px; padding: 1px 5px;">🧠 Concentração</span>' : ''}
               ${isRitual ? '<span class="badge badge-src" style="font-size: 9px; padding: 1px 5px;">📜 Ritual</span>' : ''}
+              ${(() => {
+                const spAct = typeof getSpellActionType === 'function' ? getSpellActionType(s) : (String(s.time || '').toLowerCase().includes('bônus') ? 'bonus' : (String(s.time || '').toLowerCase().includes('reação') ? 'reaction' : 'action'));
+                if (spAct === 'bonus') return '<span class="badge" style="font-size: 9px; padding: 1px 5px; background: rgba(234,179,8,0.2); color: #facc15; border: 1px solid rgba(234,179,8,0.4);">⚡ Bônus</span>';
+                if (spAct === 'reaction') return '<span class="badge" style="font-size: 9px; padding: 1px 5px; background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid rgba(168,85,247,0.4);">🛡️ Reação</span>';
+                return '';
+              })()}
             </div>
           </div>
 

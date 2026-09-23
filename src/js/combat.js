@@ -194,9 +194,12 @@ function renderCombat() {
                 ${playerObj.preparedSpells.map(sName => {
                   const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
                   const lvlBadge = sp ? (sp.level === 0 ? 'Truque' : `${sp.level}º`) : '';
+                  const spAct = typeof getSpellActionType === 'function' ? getSpellActionType(sp || sName) : 'action';
+                  const actIcon = spAct === 'bonus' ? '⚡' : (spAct === 'reaction' ? '🛡️' : '⚔️');
+                  const actTitle = spAct === 'bonus' ? 'Ação Bônus' : (spAct === 'reaction' ? 'Reação' : 'Ação');
                   return `
-                    <button class="btn-secondary" style="font-size:10px; padding:3px 7px; display:inline-flex; align-items:center; gap:4px; border-color:rgba(59,130,246,0.4);" onclick="castPlayerSpellPrompt('${playerObj.id}', '${(sName||'').replace(/'/g, "\\'")}')">
-                      <span>${sName}</span> <span style="font-size:8px; opacity:0.8; color:var(--primary-light); font-weight:bold;">${lvlBadge}</span>
+                    <button class="btn-secondary" style="font-size:10px; padding:3px 7px; display:inline-flex; align-items:center; gap:4px; border-color:rgba(59,130,246,0.4);" onclick="castPlayerSpellPrompt('${playerObj.id}', '${(sName||'').replace(/'/g, "\\'")}')" title="${actTitle}: Lançar ${sName}">
+                      <span>${actIcon} ${sName}</span> <span style="font-size:8px; opacity:0.8; color:var(--primary-light); font-weight:bold;">${lvlBadge}</span>
                     </button>
                   `;
                 }).join('')}
