@@ -1284,10 +1284,10 @@ assert(typeof vm.runInContext("closeFirebaseModal", sandbox) === 'function', 'Fu
 assert(typeof vm.runInContext("manualPushToCloud", sandbox) === 'function', 'Função manualPushToCloud exportada');
 assert(typeof vm.runInContext("manualPullFromCloud", sandbox) === 'function', 'Função manualPullFromCloud exportada');
 
-// Testa sala padrão e sanitização de sala
+// Testa sala padrão e permanência no servidor principal único (ISSUE-92)
 assert(vm.runInContext("getStoredFirebaseRoom()", sandbox) === 'turma_principal', 'Código de sala padrão inicializado como turma_principal');
 vm.runInContext("setStoredFirebaseRoom('Turma Sábado - Mesa #1')", sandbox);
-assert(vm.runInContext("getStoredFirebaseRoom()", sandbox) === 'turma_s_bado_-_mesa__1', 'Código de sala sanitizado corretamente');
+assert(vm.runInContext("getStoredFirebaseRoom()", sandbox) === 'turma_principal', 'Código de sala mantido no servidor único turma_principal');
 
 // Testa salvamento e leitura de configuração
 const sampleFirebaseConfig = {
@@ -1781,14 +1781,14 @@ assert(typeof vm.runInContext("publishMasterCampaignToCloud", sandbox) === 'func
 assert(typeof vm.runInContext("executePlayerCloudSave", sandbox) === 'function', 'Função executePlayerCloudSave exportada');
 assert(typeof vm.runInContext("copyLobbyShareLink", sandbox) === 'function', 'Função copyLobbyShareLink exportada');
 
-// 3. Teste de derivação de sala a partir do nome da campanha ativa
+// 3. Teste de preservação de sala única ao selecionar campanha (ISSUE-92)
 vm.runInContext(`
   localStorage.removeItem('dnd5e_firebase_room');
   CAMPAIGNS_STATE.campaigns[0].name = 'Campanhas Prisco';
   handleCampaignSelect(CAMPAIGNS_STATE.campaigns[0].id);
 `, sandbox);
 const derivedRoom = vm.runInContext("getStoredFirebaseRoom()", sandbox);
-assert(derivedRoom === 'campanhas_prisco', 'Seleção de campanha derivou automaticamente a sala campanhas_prisco');
+assert(derivedRoom === 'turma_principal', 'Seleção de campanha mantém o servidor principal único turma_principal');
 
 // 4. Teste de isolamento de papéis (Role isolation)
 vm.runInContext("clientRole = 'player'", sandbox);
@@ -2428,12 +2428,12 @@ assert(typeof firebaseSyncModule.closeMasterSyncDeviceModal === 'function', 'Fun
 assert(typeof firebaseSyncModule.copyMasterSyncDeviceUrl === 'function', 'Função copyMasterSyncDeviceUrl exportada');
 assert(typeof firebaseSyncModule.handleUpdateSyncDeviceRoom === 'function', 'Função handleUpdateSyncDeviceRoom exportada');
 
-// Validação de URL de pareamento do Mestre
+// Validação de URL de pareamento do Mestre (ISSUE-92)
 vm.runInContext(`
   setStoredFirebaseRoom('mesa_valerius');
 `, sandbox);
 const masterSyncUrl = vm.runInContext("getMasterSyncDeviceUrl()", sandbox);
-assert(masterSyncUrl.includes('?room=mesa_valerius'), 'getMasterSyncDeviceUrl gera link com parâmetro ?room= correto para o celular');
+assert(masterSyncUrl.includes('?room=turma_principal'), 'getMasterSyncDeviceUrl gera link apontando para o servidor turma_principal');
 
 // Teste de Hidratação Limpa em Dispositivo Novo: Descarte de Mocks Iniciais em favor das Fichas da Nuvem
 vm.runInContext(`
@@ -4670,24 +4670,16 @@ assert(vm.runInContext("getSpellActionType('Bola de Fogo')", sandbox) === 'actio
 assert(typeof vm.runInContext("handlePickerActionFilter", sandbox) === 'function', 'Função handlePickerActionFilter exportada');
 assert(typeof vm.runInContext("setQuickLoginRoom", sandbox) === 'function', 'Função setQuickLoginRoom exportada');
 
-// 4. Teste de setQuickLoginRoom
-vm.runInContext(`
-  const mockInpRoom = { value: '', style: {} };
-  document.getElementById = (id) => {
-    if (id === 'inp-login-room') return mockInpRoom;
-    if (id === 'player-login-status-text') return { innerText: '' };
-    if (id === 'player-login-custom-room-box') return { style: {} };
-    return { value: '', innerText: '', style: {}, classList: { add(){}, remove(){}, contains(){ return false; } } };
-  };
-  setQuickLoginRoom('mesa_seg-qua');
-`, sandbox);
-assert(vm.runInContext("getStoredFirebaseRoom()", sandbox) === 'mesa_seg-qua', 'setQuickLoginRoom definiu a sala para mesa_seg-qua');
+// 4. Teste de Servidor Principal Único (turma_principal)
+assert(vm.runInContext("getStoredFirebaseRoom()", sandbox) === 'turma_principal', 'getStoredFirebaseRoom sempre retorna turma_principal como Servidor Principal único');
+vm.runInContext("setStoredFirebaseRoom('qualquer_outra_coisa')", sandbox);
+assert(vm.runInContext("getStoredFirebaseRoom()", sandbox) === 'turma_principal', 'setStoredFirebaseRoom mantém turma_principal');
 
 // 5. Presença no HTML compilado
 const compiledHtml91 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
 assert(compiledHtml91.includes('id="picker-action-filter"'), 'HTML contém filtro de ação no modal spell picker');
 assert(compiledHtml91.includes('value="bonus">⚡ Ação Bônus</option>'), 'HTML contém opção de Ação Bônus no filtro de tags do grimório');
-assert(compiledHtml91.includes("setQuickLoginRoom('mesa_seg-qua')"), 'HTML contém atalho para Mesa Seg-Qua no login de alunos');
+assert(compiledHtml91.includes('Servidor Principal Conectado'), 'HTML contém status do Servidor Principal no login de alunos');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

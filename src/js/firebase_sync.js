@@ -72,25 +72,14 @@ function saveFirebaseConfigToStorage(configObj) {
 }
 
 function getStoredFirebaseRoom() {
-  const room = localStorage.getItem(FIREBASE_ROOM_KEY) || 'turma_principal';
-  return room.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+  return 'turma_principal';
 }
 
 function setStoredFirebaseRoom(roomId) {
-  const clean = (roomId || 'turma_principal').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
   try {
-    if (typeof localStorage !== 'undefined') localStorage.setItem(FIREBASE_ROOM_KEY, clean);
+    if (typeof localStorage !== 'undefined') localStorage.setItem(FIREBASE_ROOM_KEY, 'turma_principal');
   } catch (e) {}
-  try {
-    if (typeof window !== 'undefined' && window.history && window.history.replaceState && window.location && window.location.href) {
-      const url = new URL(window.location.href);
-      if (clean !== 'turma_principal') {
-        url.searchParams.set('room', clean);
-      }
-      window.history.replaceState(null, '', url.toString());
-    }
-  } catch (e) {}
-  return clean;
+  return 'turma_principal';
 }
 
 function isFirebaseAutoSyncEnabled() {

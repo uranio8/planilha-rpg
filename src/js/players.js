@@ -5559,11 +5559,8 @@ function openPlayerLoginModal() {
   const statusText = document.getElementById('player-login-status-text');
   if (statusText) {
     const isConn = (typeof isFirebaseConnected !== 'undefined' && isFirebaseConnected);
-    statusText.innerText = isConn ? `🟢 Sincronizado à Mesa (${currentRoom})` : `🟢 Conectando à Mesa (${currentRoom})...`;
+    statusText.innerText = isConn ? '🟢 Servidor Principal Conectado' : '🟢 Conectando ao Servidor Principal...';
   }
-
-  const box = document.getElementById('player-login-custom-room-box');
-  if (box) box.style.display = 'none';
 
   const inpFilter = document.getElementById('inp-filter-login-players');
   if (inpFilter) inpFilter.value = '';

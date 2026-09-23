@@ -439,18 +439,12 @@ function handleCampaignSelect(campaignId) {
   CAMPAIGNS_STATE.activeCampaignId = campaignId;
   saveCampaignsState();
   renderCampaigns();
-  const camp = getActiveCampaign();
-  if (camp && camp.name && typeof setStoredFirebaseRoom === 'function') {
-    const roomCode = camp.name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9_-]/g, '_');
-    if (roomCode) setStoredFirebaseRoom(roomCode);
-  }
 }
 
 function copyLobbyShareLink() {
   const href = (typeof window !== 'undefined' && window.location && window.location.href) ? window.location.href : 'https://uranio8.github.io/planilha-rpg/';
   const base = href.split('?')[0].split('#')[0];
-  const room = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
-  const lobbyUrl = `${base}?room=${encodeURIComponent(room)}&lobby=true`;
+  const lobbyUrl = `${base}?lobby=true`;
 
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
