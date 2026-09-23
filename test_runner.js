@@ -4111,13 +4111,16 @@ assert(typeof vm.runInContext("calculateWeaponAttackStats", sandbox) === 'functi
 assert(typeof vm.runInContext("isWeaponProficient", sandbox) === 'function', 'Função isWeaponProficient exportada');
 assert(typeof vm.runInContext("equipBackpackItemAsAttack", sandbox) === 'function', 'Função equipBackpackItemAsAttack exportada');
 
-// Paladino (FOR 13 (+1), DES 10 (+0), Prof +2) com Espada Longa (1d8 cortante, versátil 1d10)
+// Paladino com Espada Longa (1d8 cortante, versátil 1d10)
 const paladinHero = parsedCorePlayers.find(p => p.className === 'Paladino');
 const longswordStats = vm.runInContext(`calculateWeaponAttackStats(${JSON.stringify(paladinHero)}, 'Espada Longa')`, sandbox);
+const paladinStrMod = Math.floor(((paladinHero.str || 10) - 10) / 2);
+const paladinPb = Math.floor(((paladinHero.level || 1) - 1) / 4) + 2;
+const expectedPaladinAttack = paladinStrMod + paladinPb;
 assert(longswordStats.isProficient === true, 'Paladino é proficiente com Espada Longa');
-assert(longswordStats.attackBonus === 3, `Paladino calcula Bônus de Ataque +3 com Espada Longa (FOR +1 + Prof +2 = ${longswordStats.attackBonus})`);
+assert(longswordStats.attackBonus === expectedPaladinAttack, `Paladino calcula Bônus de Ataque +${expectedPaladinAttack} com Espada Longa (FOR +${paladinStrMod} + Prof +${paladinPb} = ${longswordStats.attackBonus})`);
 assert(longswordStats.chosenAttr === 'str', 'Espada Longa usou atributo FOR para o Paladino');
-assert(longswordStats.damageText.includes('1d8+1 cortante'), `Dano de Espada Longa formatado corretamente: ${longswordStats.damageText}`);
+assert(longswordStats.damageText.includes(`1d8+${paladinStrMod} cortante`), `Dano de Espada Longa formatado corretamente: ${longswordStats.damageText}`);
 
 // Ladino (DES 16 (+3), FOR 10 (+0), Prof +2) com Adaga (Acuidade / Finesse) ➔ deve escolher DES
 const rogueHero = vm.runInContext(`({ className: 'Ladino', level: 1, str: 10, dex: 16, con: 12, int: 10, wis: 10, cha: 10 })`, sandbox);
@@ -4680,6 +4683,54 @@ const compiledHtml91 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.htm
 assert(compiledHtml91.includes('id="picker-action-filter"'), 'HTML contém filtro de ação no modal spell picker');
 assert(compiledHtml91.includes('value="bonus">⚡ Ação Bônus</option>'), 'HTML contém opção de Ação Bônus no filtro de tags do grimório');
 assert(compiledHtml91.includes('Servidor Principal Conectado'), 'HTML contém status do Servidor Principal no login de alunos');
+
+// ========================================================
+// 65. TESTES DE ELIMINAÇÃO DE DIVERGÊNCIAS DE NÍVEL E PVs (ISSUE-93)
+// ========================================================
+console.log('\n🌟 65. Testes de Eliminação de Divergências de Nível e PVs (ISSUE-93):');
+
+// 1. Validação do Elenco Canônico em core.js
+const coreMatch93 = jsCore.match(/let PLAYERS = (\[[\s\S]*?\]);\s*let state =/);
+const parsedCorePlayers93 = coreMatch93 ? JSON.parse(coreMatch93[1]) : [];
+const clakerCore = parsedCorePlayers93.find(p => p.name === 'Claker');
+const deraravelyCore = parsedCorePlayers93.find(p => p.name === 'Deraravely');
+const kiraCore = parsedCorePlayers93.find(p => p.name === 'Yoshigake Kira');
+const zenitCore = parsedCorePlayers93.find(p => p.name.includes('Zenit'));
+
+assert(clakerCore && clakerCore.level === 5 && clakerCore.maxHp === 37, 'Claker inicializado canonicamente como Nv 5 com 37 PV');
+assert(deraravelyCore && deraravelyCore.level === 5 && deraravelyCore.maxHp === 43, 'Deraravely inicializado canonicamente como Nv 5 com 43 PV');
+assert(kiraCore && kiraCore.level === 5 && kiraCore.maxHp === 43, 'Yoshigake Kira inicializado canonicamente como Nv 5 com 43 PV');
+assert(zenitCore && zenitCore.level === 5 && zenitCore.maxHp === 36, 'Zenit inicializado canonicamente como Nv 5 com 36 PV');
+
+// 2. Teste de auto-migração de cache local defasado em loadFromLocalStorage
+vm.runInContext(`
+  const staleMockPlayers = [
+    { id: 'p_1789144892638', name: 'Claker', className: 'Bruxo', level: 1, maxHp: 6, hp: 0 }
+  ];
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ players: staleMockPlayers }));
+  loadFromLocalStorage();
+`, sandbox);
+const clakerUpgraded = vm.runInContext("PLAYERS.find(p => p.id === 'p_1789144892638')", sandbox);
+assert(clakerUpgraded && clakerUpgraded.level === 5, 'loadFromLocalStorage auto-migrou cache defasado de Claker para Nível 5');
+assert(clakerUpgraded && clakerUpgraded.maxHp === 37, 'loadFromLocalStorage restaurou PV Máximo canônico de 37 PV');
+
+// 3. Teste do Smart Merge no Mestre impedindo regressão de nível
+vm.runInContext(`
+  clientRole = 'master';
+  PLAYERS = [
+    { id: 'p_1789144892638', name: 'Claker', className: 'Bruxo', level: 1, maxHp: 6, hp: 6, updatedAt: Date.now() + 1000 }
+  ];
+  const cloudPayloadWithHighLevel = {
+    players: [
+      { id: 'p_1789144892638', name: 'Claker', className: 'Bruxo', level: 5, maxHp: 37, hp: 37, updatedAt: Date.now() }
+    ],
+    publishedBy: 'master'
+  };
+  applyCloudDataToLocal(cloudPayloadWithHighLevel);
+`, sandbox);
+const clakerMerged = vm.runInContext("PLAYERS.find(p => p.id === 'p_1789144892638')", sandbox);
+assert(clakerMerged && clakerMerged.level === 5, 'Smart Merge do Mestre adotou Nível 5 remoto e impediu downgrade');
+assert(clakerMerged && clakerMerged.maxHp === 37, 'Smart Merge do Mestre adotou PV Máximo 37');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

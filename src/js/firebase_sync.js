@@ -567,7 +567,10 @@ function applyCloudDataToLocal(cloudData) {
 
         // Detecta se o LOCAL possui apenas mocks padrão (ex: celular ou navegador aberto pela 1ª vez)
         // e a NUVEM já possui personagens reais criados pelo mestre
-        const isLocalOnlyDefaultMocks = localList.length > 0 && localList.every(p => ['p1','p2','p3','p4','p5'].includes(p.id));
+        const isLocalOnlyDefaultMocks = localList.length > 0 && localList.every(p => 
+          ['p1','p2','p3','p4','p5'].includes(p.id) || 
+          (p.level === 1 && (p.maxHp || 0) <= 9 && ['p_1788965925056', 'p_1788966076171', 'p_1789144892638'].includes(p.id))
+        );
         const remoteHasCustomPlayers = remoteList.some(p => !['p1','p2','p3','p4','p5'].includes(p.id));
 
         // Se local só tem mocks iniciais e a nuvem tem heróis reais, descarta os mocks para adotar as fichas da nuvem
@@ -598,21 +601,39 @@ function applyCloudDataToLocal(cloudData) {
             const remoteUpdated = remoteP.updatedAt || 0;
             const localUpdated = currentLocal.updatedAt || 0;
 
+            const isRemoteLevelHigher = (remoteP.level || 1) > (currentLocal.level || 1);
             // Origem do jogador: se o payload foi publicado por um jogador ou possui updatedBy remoto
             const isPlayerOrigin = (cloudData.publishedBy === 'player') || (remoteP.updatedBy && remoteP.updatedBy !== localClientId);
 
-            if (isPlayerOrigin) {
+            let mergedPlayer;
+            if (isRemoteLevelHigher) {
+              // Nuvem tem nível superior: adota a evolução da nuvem obrigatoriamente
+              mergedPlayer = Object.assign({}, currentLocal, remoteP, {
+                level: remoteP.level,
+                maxHp: Math.max(remoteP.maxHp || 0, currentLocal.maxHp || 0),
+                hp: Math.max(remoteP.hp || remoteP.currentHp || remoteP.maxHp || 0, currentLocal.hp || currentLocal.maxHp || 0),
+                className: remoteP.className,
+                slots: remoteP.slots || currentLocal.slots,
+                spells: remoteP.spells || currentLocal.spells,
+                hitDice: remoteP.hitDice || currentLocal.hitDice
+              });
+            } else if (isPlayerOrigin) {
               // Atualização vinda diretamente do portal do jogador: adota PV, condições, cargas, moedas e inventário do herói
-              mergedMap.set(remoteP.id, Object.assign({}, currentLocal, remoteP));
+              mergedPlayer = Object.assign({}, currentLocal, remoteP);
             } else if (remoteUpdated >= localUpdated) {
-              mergedMap.set(remoteP.id, Object.assign({}, currentLocal, remoteP));
+              mergedPlayer = Object.assign({}, currentLocal, remoteP);
             } else if (localUpdated === 0 && remoteUpdated === 0) {
               // Ambos sem carimbo específico: adota dados remotos
-              mergedMap.set(remoteP.id, Object.assign({}, currentLocal, remoteP));
+              mergedPlayer = Object.assign({}, currentLocal, remoteP);
             } else {
               // Local é mais recente: preserva campos locais
-              mergedMap.set(remoteP.id, Object.assign({}, remoteP, currentLocal));
+              mergedPlayer = Object.assign({}, remoteP, currentLocal);
             }
+
+            // Blindagem: resolvedLevel e resolvedMaxHp nunca regridem acidentalmente
+            mergedPlayer.level = Math.max(currentLocal.level || 1, remoteP.level || 1);
+            mergedPlayer.maxHp = Math.max(currentLocal.maxHp || 1, remoteP.maxHp || 1);
+            mergedMap.set(remoteP.id, mergedPlayer);
           } else {
             // Personagem novo vindo da nuvem
             mergedMap.set(remoteP.id, Object.assign({}, remoteP));

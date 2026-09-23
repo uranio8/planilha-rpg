@@ -5669,7 +5669,9 @@ function renderPlayerLoginList() {
   container.innerHTML = filtered.map(p => {
     const isCurrent = activePortalPlayerId === p.id;
     const initial = (p.name || '?').charAt(0).toUpperCase();
-    const hpPct = Math.max(0, Math.min(100, Math.round(((p.hp || 0) / (p.maxHp || 1)) * 100)));
+    const maxHp = p.maxHp || 10;
+    const currentHp = (p.hp !== undefined && p.hp !== null) ? p.hp : ((p.currentHp !== undefined && p.currentHp !== null) ? p.currentHp : maxHp);
+    const hpPct = Math.max(0, Math.min(100, Math.round((currentHp / maxHp) * 100)));
     const hpColor = hpPct > 50 ? '#10b981' : (hpPct > 25 ? '#f59e0b' : '#ef4444');
 
     return `
@@ -5690,7 +5692,7 @@ function renderPlayerLoginList() {
         </div>
 
         <div style="margin-top: 4px; display: flex; align-items: center; justify-content: space-between; font-size: 11px;">
-          <span style="color: ${hpColor}; font-weight: 700;">❤️ ${p.hp || 0}/${p.maxHp || 10} PV</span>
+          <span style="color: ${hpColor}; font-weight: 700;">❤️ ${currentHp}/${maxHp} PV</span>
           <span style="color: var(--primary-light); font-size: 10px;">${hpPct}% Vitalidade</span>
         </div>
 

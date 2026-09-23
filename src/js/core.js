@@ -191,13 +191,43 @@ const DND5E_XP_TABLE = [
 let PLAYERS = [
   {
     "ac": 16,
-    "activeCardTab": "attacks",
+    "actionEconomyFilter": "all",
+    "actionLogs": [
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Paladino 5 | +12 PV (Max: 43)",
+        "timestamp": "12:18",
+        "type": "general"
+      },
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Paladino 4 | +8 PV (Max: 31)",
+        "timestamp": "12:17",
+        "type": "general"
+      },
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Paladino 3 | +4 PV (Max: 23)",
+        "timestamp": "12:15",
+        "type": "general"
+      },
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Paladino 2 | +11 PV (Max: 19)",
+        "timestamp": "12:13",
+        "type": "general"
+      }
+    ],
+    "activeCardTab": "skills",
     "attacks": "Espada Longa (+4, 1d8+2 cortante)",
     "avatar": "👤",
+    "background": "Aventureiro",
+    "backstory": "",
     "badges": [
       "⭐ Presença 100%"
     ],
-    "cha": 17,
+    "bond": "Minha lealdade inabalável aos companheiros de mesa",
+    "cha": 18,
     "className": "Paladino",
     "coins": {
       "cp": 0,
@@ -216,28 +246,64 @@ let PLAYERS = [
       {
         "icon": "🤲",
         "id": "lay_on_hands",
-        "max": 5,
+        "max": 25,
         "name": "Cura pelas Mãos (PV)",
         "restType": "long",
+        "used": 0
+      },
+      {
+        "icon": "✨",
+        "id": "channel_divinity",
+        "max": 1,
+        "name": "Canalizar Divindade",
+        "restType": "short",
         "used": 0
       }
     ],
     "features": "Retomar o Fôlego (1d10+1 PV)",
+    "fightingStyle": "",
+    "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
-    "hitDice": "1d10",
-    "hp": 0,
+    "hitDice": "5d10",
+    "hp": 43,
     "id": "p_1788965925056",
+    "ideal": "Proteger os inocentes e defender a justiça",
     "inspiration": false,
     "int": 13,
-    "level": 1,
-    "maxHp": 8,
+    "level": 5,
+    "maxHp": 43,
+    "multiclass": [
+      {
+        "className": "Paladino",
+        "level": 5,
+        "subclassIdx": 0
+      }
+    ],
     "name": "Yoshigake Kira",
     "playerNotes": "",
+    "preparedSpells": [
+      "Auxílio Divino",
+      "Bênção",
+      "Escudo da Fé",
+      "Convocar Montaria",
+      "Zona da Verdade",
+      "Curar Ferimentos"
+    ],
     "present": true,
-    "race": "Humano",
+    "race": "Humano (Human)",
+    "saveProficiencies": [
+      "wis",
+      "cha"
+    ],
+    "skillProficiencies": [
+      "atletismo",
+      "intimidacao",
+      "intuicao",
+      "medicina"
+    ],
     "slots": [
-      0,
-      0,
+      4,
+      2,
       0,
       0,
       0
@@ -250,31 +316,56 @@ let PLAYERS = [
       0
     ],
     "speed": "9m",
-    "spells": "Armadura de Couro, Escudo, Mochila",
-    "str": 13,
+    "spells": "Preparadas: Auxílio Divino, Bênção, Escudo da Fé, Convocar Montaria, Zona da Verdade, Curar Ferimentos",
+    "spentHitDice": 0,
+    "str": 14,
     "student": "Gustavo",
+    "subclass": "Juramento de Devoção (Devotion)",
+    "subclassIdx": 0,
     "tempHp": 0,
+    "updatedAt": 1790177357973,
     "wis": 15,
     "xp": 0,
-    "skillProficiencies": [],
-    "saveProficiencies": [],
-    "actionLogs": [],
     "inventory": [],
-    "conditions": [],
-    "skillExpertises": [],
-    "background": "Aventureiro",
-    "ideal": "Proteger meus aliados e triunfar nas batalhas",
-    "bond": "Minha lealdade inabalável aos companheiros de mesa",
-    "flaw": "Às vezes ajo antes de planejar cautelosamente"
+    "conditions": []
   },
   {
     "ac": 19,
-    "activeCardTab": "features",
+    "actionLogs": [
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Guerreiro 4 / Bárbaro 1 | +13 PV (Max: 43)",
+        "timestamp": "12:49",
+        "type": "general"
+      },
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Guerreiro 4 | +7 PV (Max: 30)",
+        "timestamp": "12:46",
+        "type": "general"
+      },
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Guerreiro 3 | +7 PV (Max: 23)",
+        "timestamp": "12:45",
+        "type": "general"
+      },
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Guerreiro 2 | +10 PV (Max: 16)",
+        "timestamp": "12:43",
+        "type": "general"
+      }
+    ],
+    "activeCardTab": "skills",
     "attacks": "Espada Longa (+6, 1d10+24cortante)",
     "avatar": "👤",
+    "background": "Aventureiro",
+    "backstory": "",
     "badges": [
       "⭐ Presença 100%"
     ],
+    "bond": "Minha lealdade inabalável aos companheiros de mesa",
     "cha": 11,
     "className": "Guerreiro",
     "coins": {
@@ -289,7 +380,7 @@ let PLAYERS = [
       "fail": 0,
       "success": 0
     },
-    "dex": 15,
+    "dex": 16,
     "featureCharges": [
       {
         "icon": "💨",
@@ -298,21 +389,32 @@ let PLAYERS = [
         "name": "Retomar o Fôlego",
         "restType": "short",
         "used": 0
+      },
+      {
+        "icon": "⚡",
+        "id": "action_surge",
+        "max": 1,
+        "name": "Surto de Ação",
+        "restType": "short",
+        "used": 0
       }
     ],
     "features": "Retomar o Fôlego (1d10+1 PV)",
+    "fightingStyle": "defense",
+    "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
-    "hitDice": "1d10",
-    "hp": 0,
+    "hitDice": "5d10",
+    "hp": 43,
     "id": "p_1788966076171",
+    "ideal": "Proteger os inocentes e defender a justiça",
     "inspiration": false,
     "int": 15,
-    "level": 1,
-    "maxHp": 6,
+    "level": 5,
+    "maxHp": 43,
     "name": "Deraravely",
     "playerNotes": "",
     "present": true,
-    "race": "Meio Orc",
+    "race": "Orc",
     "slots": [
       0,
       0,
@@ -329,24 +431,30 @@ let PLAYERS = [
     ],
     "speed": "9m",
     "spells": "Armadura de Couro, Escudo, Mochila",
+    "spentHitDice": 0,
     "str": 18,
     "student": "Samuel",
+    "subclass": "Campeão (Champion)",
+    "subclassIdx": 0,
     "tempHp": 0,
-    "wis": 9,
+    "updatedAt": 1790178648395,
+    "wis": 10,
     "xp": 0,
     "skillProficiencies": [],
     "saveProficiencies": [],
-    "actionLogs": [],
     "inventory": [],
-    "conditions": [],
-    "skillExpertises": [],
-    "background": "Aventureiro",
-    "ideal": "Proteger meus aliados e triunfar nas batalhas",
-    "bond": "Minha lealdade inabalável aos companheiros de mesa",
-    "flaw": "Às vezes ajo antes de planejar cautelosamente"
+    "conditions": []
   },
   {
     "ac": 11,
+    "actionLogs": [
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Mago 2 | +4 PV (Max: 9)",
+        "timestamp": "17:41",
+        "type": "general"
+      }
+    ],
     "activeCardTab": "inventory",
     "attacks": "Espada Longa (+4, 1d8+2 cortante)",
     "avatar": "🧙‍♀️",
@@ -372,16 +480,17 @@ let PLAYERS = [
     },
     "dex": 13,
     "features": "Retomar o Fôlego (1d10+1 PV)",
+    "fightingStyle": "",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 0,
     "hitDice": "1d6",
-    "hp": 4,
+    "hp": 6,
     "id": "p_1788966196301",
-    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "ideal": "Proteger os inocentes e defender a justiça",
     "inspiration": false,
     "int": 16,
     "level": 1,
-    "maxHp": 5,
+    "maxHp": 6,
     "name": "Arkhalis",
     "playerNotes": "",
     "preparedSpells": [
@@ -406,23 +515,30 @@ let PLAYERS = [
     ],
     "speed": "9m",
     "spells": "Truques: Amizade, Ataque Certeiro",
+    "spentHitDice": 0,
     "str": 7,
     "student": "Ademar",
     "subclassIdx": 0,
     "tempHp": 0,
+    "updatedAt": 1789764256187,
     "wis": 11,
     "xp": 0,
     "skillProficiencies": [],
     "saveProficiencies": [],
-    "actionLogs": [],
     "inventory": [],
     "conditions": [],
-    "skillExpertises": [],
-    "featureCharges": [],
-    "multiclass": []
+    "featureCharges": []
   },
   {
     "ac": 15,
+    "actionLogs": [
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Ladino 2 | +9 PV (Max: 17)",
+        "timestamp": "17:47",
+        "type": "general"
+      }
+    ],
     "activeCardTab": "features",
     "attacks": "Espada Longa (+6, 1d6+4 cortante), Adaga (+6, 1d4+4 perfurante), arco curto (+6, 1d6+4)",
     "avatar": "👤",
@@ -450,14 +566,21 @@ let PLAYERS = [
     "features": "",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
-    "hitDice": "1d8",
-    "hp": 8,
+    "hitDice": "2d8",
+    "hp": 17,
     "id": "p_1789139150496",
-    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "ideal": "Proteger os inocentes e defender a justiça",
     "inspiration": false,
     "int": 13,
-    "level": 1,
-    "maxHp": 8,
+    "level": 2,
+    "maxHp": 17,
+    "multiclass": [
+      {
+        "className": "Ladino",
+        "level": 2,
+        "subclassIdx": 0
+      }
+    ],
     "name": "Marc Hiroshi",
     "playerNotes": "",
     "present": true,
@@ -482,18 +605,31 @@ let PLAYERS = [
     "student": "Andressa",
     "subclassIdx": 0,
     "tempHp": 0,
+    "updatedAt": 1789764457703,
     "wis": 11,
     "xp": 0,
     "skillProficiencies": [],
     "saveProficiencies": [],
-    "actionLogs": [],
     "inventory": [],
     "conditions": [],
-    "skillExpertises": [],
     "featureCharges": []
   },
   {
     "ac": 15,
+    "actionLogs": [
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Ladino 3 | +8 PV (Max: 19)",
+        "timestamp": "10:27",
+        "type": "general"
+      },
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Ladino 2 | +7 PV (Max: 11)",
+        "timestamp": "17:46",
+        "type": "general"
+      }
+    ],
     "activeCardTab": "spells",
     "attacks": "Espada Curta (+6, 1d6+4 cortante), Adaga (+6, 1d4+4), Arco curto (+6, 1d6+4)",
     "avatar": "👤",
@@ -521,16 +657,30 @@ let PLAYERS = [
     "features": "",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
-    "hitDice": "1d8",
-    "hp": 4,
+    "hitDice": "3d8",
+    "hp": 19,
     "id": "p_1789139310556",
-    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "ideal": "Proteger os inocentes e defender a justiça",
     "inspiration": false,
     "int": 14,
-    "level": 1,
-    "maxHp": 4,
+    "level": 3,
+    "maxHp": 19,
+    "multiclass": [
+      {
+        "className": "Ladino",
+        "level": 3,
+        "subclassIdx": 2
+      }
+    ],
     "name": "Lalw",
     "playerNotes": "",
+    "preparedSpells": [
+      "Mãos Mágicas",
+      "Disfarçar-se",
+      "Enfeitiçar Pessoa",
+      "Rajada de Veneno",
+      "Proteção contra Lâminas"
+    ],
     "present": true,
     "race": "Elfo (Elf)",
     "slots": [
@@ -548,24 +698,35 @@ let PLAYERS = [
       0
     ],
     "speed": "9m",
-    "spells": "",
+    "spells": "Truques: Mãos Mágicas, Rajada de Veneno, Proteção contra Lâminas\nPreparadas: Disfarçar-se, Enfeitiçar Pessoa",
     "str": 14,
     "student": "Luis Guilherme",
     "subclassIdx": 0,
     "tempHp": 0,
+    "updatedAt": 1789997672391,
     "wis": 12,
     "xp": 0,
     "skillProficiencies": [],
     "saveProficiencies": [],
-    "actionLogs": [],
     "inventory": [],
     "conditions": [],
-    "skillExpertises": [],
     "featureCharges": []
   },
   {
     "ac": 14,
     "actionLogs": [
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Bruxo 3 | +5 PV (Max: 22)",
+        "timestamp": "10:16",
+        "type": "general"
+      },
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Bruxo 2 | +8 PV (Max: 17)",
+        "timestamp": "17:45",
+        "type": "general"
+      },
       {
         "icon": "✨",
         "text": "Conjurou Rajada Mística (como Truque)",
@@ -573,7 +734,7 @@ let PLAYERS = [
         "type": "spell"
       }
     ],
-    "activeCardTab": "spells",
+    "activeCardTab": "skills",
     "attacks": "Espada curta (+5, 1d6+3 perfurante), Adaga curta (+5, 1d4+3 perfurante)",
     "avatar": "👤",
     "background": "Aventureiro",
@@ -600,27 +761,46 @@ let PLAYERS = [
     "features": "",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
-    "hitDice": "1d8",
-    "hp": 9,
+    "hitDice": "3d8",
+    "hp": 22,
     "id": "p_1789143431458",
-    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "ideal": "Proteger os inocentes e defender a justiça",
     "inspiration": false,
     "int": 15,
-    "level": 1,
-    "maxHp": 9,
+    "level": 3,
+    "maxHp": 22,
+    "multiclass": [
+      {
+        "className": "Bruxo",
+        "level": 3,
+        "subclassIdx": 0
+      }
+    ],
     "name": "Caim Vonsilford",
     "playerNotes": "",
     "preparedSpells": [
       "Rajada Mística",
       "Toque Arrepiante",
       "Bruxaria",
-      "Mãos Flamejantes"
+      "Mãos Flamejantes",
+      "Invisibilidade",
+      "Patas de Aranha"
     ],
     "present": true,
     "race": "Draconato (Dragonborn)",
+    "saveProficiencies": [
+      "wis",
+      "cha"
+    ],
+    "skillProficiencies": [
+      "atletismo",
+      "furtividade",
+      "percepcao",
+      "religiao"
+    ],
     "slots": [
-      1,
       0,
+      2,
       0,
       0,
       0
@@ -633,23 +813,51 @@ let PLAYERS = [
       0
     ],
     "speed": "9m",
-    "spells": "Truques: Rajada Mística, Toque Arrepiante\nPreparadas: Bruxaria, Mãos Flamejantes",
+    "spells": "Truques: Rajada Mística, Toque Arrepiante\nPreparadas: Bruxaria, Mãos Flamejantes, Invisibilidade, Patas de Aranha",
     "str": 17,
     "student": "Pedro Arthur",
     "subclassIdx": 0,
     "tempHp": 0,
+    "updatedAt": 1789997068586,
     "wis": 13,
     "xp": 0,
-    "skillProficiencies": [],
-    "saveProficiencies": [],
     "inventory": [],
     "conditions": [],
-    "skillExpertises": [],
     "featureCharges": []
   },
   {
     "ac": 12,
     "actionLogs": [
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Bruxo 5 | +9 PV (Max: 37)",
+        "timestamp": "12:34",
+        "type": "general"
+      },
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Bruxo 4 | +7 PV (Max: 28)",
+        "timestamp": "12:33",
+        "type": "general"
+      },
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Bruxo 3 | +9 PV (Max: 21)",
+        "timestamp": "12:33",
+        "type": "general"
+      },
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Bruxo 2 | +4 PV (Max: 12)",
+        "timestamp": "12:32",
+        "type": "general"
+      },
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Bruxo 2 | +8 PV (Max: 14)",
+        "timestamp": "17:42",
+        "type": "general"
+      },
       {
         "icon": "⚔️",
         "text": "Sofreu 1 de dano (3 ➔ 2 PV)",
@@ -684,7 +892,7 @@ let PLAYERS = [
       "⭐ Presença 100%"
     ],
     "bond": "Minha lealdade inabalável aos companheiros de mesa",
-    "cha": 19,
+    "cha": 20,
     "className": "Bruxo",
     "coins": {
       "cp": 0,
@@ -698,18 +906,26 @@ let PLAYERS = [
       "fail": 0,
       "success": 0
     },
-    "dex": 13,
+    "dex": 14,
     "features": "",
+    "fightingStyle": "",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
-    "hitDice": "1d8",
-    "hp": 0,
+    "hitDice": "5d8",
+    "hp": 37,
     "id": "p_1789144892638",
-    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "ideal": "Proteger os inocentes e defender a justiça",
     "inspiration": false,
     "int": 14,
-    "level": 1,
-    "maxHp": 6,
+    "level": 5,
+    "maxHp": 37,
+    "multiclass": [
+      {
+        "className": "Bruxo",
+        "level": 5,
+        "subclassIdx": 0
+      }
+    ],
     "name": "Claker",
     "playerNotes": "",
     "preparedSpells": [
@@ -717,14 +933,18 @@ let PLAYERS = [
       "Rajada Mística",
       "Raio de Bruxa",
       "Proteção contra o Bem e Mal",
-      "Mãos Flamejantes"
+      "Mãos Flamejantes",
+      "Contramágica",
+      "Despedaçar",
+      "Invisibilidade",
+      "Mãos Mágicas"
     ],
     "present": true,
     "race": "Tiefling",
     "slots": [
-      1,
       0,
       0,
+      2,
       0,
       0
     ],
@@ -736,18 +956,20 @@ let PLAYERS = [
       0
     ],
     "speed": "9m",
-    "spells": "Truques: Proteção contra Lâminas, Rajada Mística\nPreparadas: Raio de Bruxa, Proteção contra o Bem e Mal, Mãos Flamejantes",
+    "spells": "Truques: Proteção contra Lâminas, Rajada Mística, Mãos Mágicas\nPreparadas: Raio de Bruxa, Proteção contra o Bem e Mal, Mãos Flamejantes, Contramágica, Despedaçar, Invisibilidade",
+    "spentHitDice": 0,
     "str": 6,
     "student": "Anna Julia",
+    "subclass": "Patrono Corruptor (The Fiend)",
     "subclassIdx": 0,
     "tempHp": 0,
+    "updatedAt": 1790177907160,
     "wis": 10,
     "xp": 0,
     "skillProficiencies": [],
     "saveProficiencies": [],
     "inventory": [],
     "conditions": [],
-    "skillExpertises": [],
     "featureCharges": []
   },
   {
@@ -801,9 +1023,9 @@ let PLAYERS = [
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
     "hitDice": "1d8",
-    "hp": 1,
+    "hp": 7,
     "id": "p_1789395282873",
-    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "ideal": "Proteger os inocentes e defender a justiça",
     "inspiration": false,
     "int": 12,
     "level": 1,
@@ -853,8 +1075,32 @@ let PLAYERS = [
     "featureCharges": []
   },
   {
-    "ac": 10,
+    "ac": 14,
     "actionLogs": [
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Feiticeiro 4 / Bruxo 1 | +11 PV (Max: 36)",
+        "timestamp": "15:45",
+        "type": "general"
+      },
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Feiticeiro 4 | +4 PV (Max: 25)",
+        "timestamp": "15:42",
+        "type": "general"
+      },
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Feiticeiro 3 | +7 PV (Max: 21)",
+        "timestamp": "15:36",
+        "type": "general"
+      },
+      {
+        "icon": "🔼",
+        "text": "Subiu de Nível: Feiticeiro 2 | +8 PV (Max: 14)",
+        "timestamp": "15:35",
+        "type": "general"
+      },
       {
         "icon": "⚔️",
         "text": "Sofreu 1 de dano (4 ➔ 3 PV)",
@@ -883,8 +1129,8 @@ let PLAYERS = [
       "⭐ Presença 100%"
     ],
     "bond": "Minha lealdade inabalável aos companheiros de mesa",
-    "cha": 19,
-    "className": "Feiticeiro",
+    "cha": 20,
+    "className": "Feiticeiro 4 / Bruxo",
     "coins": {
       "cp": 0,
       "ep": 0,
@@ -897,19 +1143,41 @@ let PLAYERS = [
       "fail": 0,
       "success": 0
     },
-    "dex": 11,
+    "dex": 12,
+    "featureCharges": [
+      {
+        "icon": "🔮",
+        "id": "sorcery_points",
+        "max": 5,
+        "name": "Pontos de Feitiçaria",
+        "restType": "long",
+        "used": 0
+      }
+    ],
     "features": "",
     "fightingStyle": "",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
-    "hitDice": "1d6",
-    "hp": 3,
+    "hitDice": "4d6 + 1d8",
+    "hp": 36,
     "id": "p_1789398594305",
-    "ideal": "Proteger meus aliados e triunfar nas batalhas",
+    "ideal": "Proteger os inocentes e defender a justiça",
     "inspiration": false,
     "int": 9,
-    "level": 1,
-    "maxHp": 6,
+    "level": 5,
+    "maxHp": 36,
+    "multiclass": [
+      {
+        "className": "Feiticeiro",
+        "level": 4,
+        "subclassIdx": 0
+      },
+      {
+        "className": "Bruxo",
+        "level": 1,
+        "subclassIdx": 0
+      }
+    ],
     "name": "Zenit",
     "playerNotes": "",
     "preparedSpells": [
@@ -918,7 +1186,12 @@ let PLAYERS = [
       "Toque Chocante",
       "Proteção contra Lâminas",
       "Ilusão Menor",
-      "Mensagem"
+      "Mensagem",
+      "Bruxaria",
+      "Espirro Ácido",
+      "Coroa da Loucura",
+      "Escuridão",
+      "Raio Ardente"
     ],
     "present": true,
     "race": "Draconato (Dragonborn)",
@@ -933,8 +1206,8 @@ let PLAYERS = [
       "sobrevivencia"
     ],
     "slots": [
-      2,
-      0,
+      5,
+      3,
       0,
       0,
       0
@@ -947,17 +1220,18 @@ let PLAYERS = [
       0
     ],
     "speed": "9m",
-    "spells": "Truques: Toque Chocante, Proteção contra Lâminas, Ilusão Menor, Mensagem\nPreparadas: Mãos Flamejantes, Mísseis Mágicos",
+    "spells": "Truques: Toque Chocante, Proteção contra Lâminas, Ilusão Menor, Mensagem, Espirro Ácido\nPreparadas: Mãos Flamejantes, Mísseis Mágicos, Bruxaria, Coroa da Loucura, Escuridão, Raio Ardente",
+    "spentHitDice": 0,
     "str": 16,
     "student": "Diogo",
-    "subclassIdx": 1,
+    "subclass": "Feitiçaria Dracônica (Draconic Sorcery)",
+    "subclassIdx": 0,
     "tempHp": 0,
+    "updatedAt": 1790016740629,
     "wis": 12,
     "xp": 0,
     "inventory": [],
-    "conditions": [],
-    "skillExpertises": [],
-    "featureCharges": []
+    "conditions": []
   }
 ];
 
@@ -965,11 +1239,11 @@ let state = {
   "combatants": [
     {
       "ac": 19,
-      "actions": "Espada Longa (+6, 1d10+24cortante)",
-      "hp": 0,
+      "actions": "Espada Longa (+6, 1d10+4 cortante)",
+      "hp": 43,
       "id": "c_1789399293810_mle9",
       "init": 19,
-      "maxHp": 6,
+      "maxHp": 43,
       "name": "Deraravely (Samuel)",
       "playerId": "p_1788966076171",
       "type": "player"
@@ -985,12 +1259,12 @@ let state = {
       "type": "monster"
     },
     {
-      "ac": 10,
+      "ac": 14,
       "actions": "Besta Leve (+2, 1d8+2)",
-      "hp": 3,
+      "hp": 36,
       "id": "c_1789399332339_r327",
       "init": 16,
-      "maxHp": 6,
+      "maxHp": 36,
       "name": "Zenit (Diogo)",
       "playerId": "p_1789398594305",
       "type": "player"
@@ -998,10 +1272,10 @@ let state = {
     {
       "ac": 11,
       "actions": "Espada Longa (+4, 1d8+2 cortante)",
-      "hp": 4,
+      "hp": 6,
       "id": "c_1789399354643_odnr",
       "init": 15,
-      "maxHp": 5,
+      "maxHp": 6,
       "name": "Arkhalis (Ademar)",
       "playerId": "p_1788966196301",
       "type": "player"
@@ -1009,10 +1283,10 @@ let state = {
     {
       "ac": 12,
       "actions": "Adaga Curta (+3, 1d4+1), Cajado (+3, 1d4+1), Besta (+3, 1d8+1)",
-      "hp": 0,
+      "hp": 37,
       "id": "c_1789399237312_u1h3",
       "init": 12,
-      "maxHp": 6,
+      "maxHp": 37,
       "name": "Claker (Anna Julia)",
       "playerId": "p_1789144892638",
       "type": "player"
@@ -1030,7 +1304,7 @@ let state = {
     {
       "ac": 12,
       "actions": "Espada curta (+4, 1d6+2 cortante), Adaga (+4, 1d6+2)",
-      "hp": 1,
+      "hp": 7,
       "id": "c_1789399271052_hke3",
       "init": 10,
       "maxHp": 7,
@@ -1041,10 +1315,10 @@ let state = {
     {
       "ac": 16,
       "actions": "Espada Longa (+4, 1d8+2 cortante)",
-      "hp": 0,
+      "hp": 43,
       "id": "c_1789399377590_wwib",
       "init": 10,
-      "maxHp": 8,
+      "maxHp": 43,
       "name": "Yoshigake Kira (Gustavo)",
       "playerId": "p_1788965925056",
       "type": "player"
@@ -1315,6 +1589,8 @@ let state = {
   "round": 3,
   "turnIndex": 8
 };
+
+const CANONICAL_INITIAL_PLAYERS = JSON.parse(JSON.stringify(PLAYERS));
 
 let puzzleIdx = 0;
 let managingCondCombatantId = null;
@@ -1701,13 +1977,31 @@ function loadFromLocalStorage() {
       } catch (e) {}
     }
 
-    // Aplica os jogadores carregados
+    // Aplica os jogadores carregados com auto-migração contra caches locais defasados
     if (loadedPlayers && Array.isArray(loadedPlayers)) {
+      const canonicalList = (typeof CANONICAL_INITIAL_PLAYERS !== 'undefined' && Array.isArray(CANONICAL_INITIAL_PLAYERS) && CANONICAL_INITIAL_PLAYERS.length > 0)
+        ? CANONICAL_INITIAL_PLAYERS
+        : (Array.isArray(PLAYERS) ? PLAYERS : []);
       PLAYERS = loadedPlayers.map(p => {
         if (!p.skillProficiencies) p.skillProficiencies = [];
         if (!p.saveProficiencies) p.saveProficiencies = [];
         if (!p.actionLogs) p.actionLogs = [];
         if (p.playerNotes === undefined) p.playerNotes = "";
+
+        // Se o cache local estiver defasado no Nível 1 e canonicamente o herói já evoluiu para Nível superior
+        const canonical = canonicalList.find(c => c.id === p.id || (c.name && p.name && c.name.toLowerCase() === p.name.toLowerCase()));
+        if (canonical && (canonical.level || 1) > (p.level || 1)) {
+          return Object.assign({}, canonical, p, {
+            level: canonical.level,
+            maxHp: Math.max(canonical.maxHp || 1, p.maxHp || 1),
+            hp: (p.hp && p.hp > 0) ? Math.min(canonical.maxHp, Math.max(p.hp, canonical.maxHp)) : canonical.maxHp,
+            className: canonical.className,
+            slots: canonical.slots || p.slots,
+            spells: canonical.spells || p.spells,
+            features: canonical.features || p.features,
+            hitDice: canonical.hitDice || p.hitDice
+          });
+        }
         return p;
       });
     }
@@ -1723,6 +2017,19 @@ function loadFromLocalStorage() {
           if (sV3 && Array.isArray(sV3.combatants)) state = sV3;
         }
       } catch (e) {}
+    }
+
+    // Garante que combatentes de jogadores no state reflitam o PV e maxHp reais
+    if (state && Array.isArray(state.combatants)) {
+      state.combatants.forEach(comb => {
+        if (comb.type === 'player') {
+          const matched = PLAYERS.find(p => (comb.playerId && comb.playerId === p.id) || p.id === comb.id || (comb.name && p.name && comb.name.includes(p.name)));
+          if (matched && matched.maxHp && (comb.maxHp || 0) < matched.maxHp) {
+            comb.maxHp = matched.maxHp;
+            comb.hp = matched.maxHp;
+          }
+        }
+      });
     }
 
     if (loadedGrid && typeof gridState !== 'undefined') {
