@@ -5127,7 +5127,7 @@ function updatePlayerPortalBanner() {
   if (avatarEl) avatarEl.innerText = avatar;
   if (titleEl) titleEl.innerText = `${p.name}`;
   if (subEl) subEl.innerText = `${p.student ? p.student + ' • ' : ''}${p.race || ''} ${p.className || ''} Nv.${p.level || 1} • ${p.hp || 0}/${p.maxHp || 10} PV`;
-  if (badgeEl) {
+  if (badgeEl && !badgeEl.classList.contains('sync-syncing')) {
     badgeEl.className = 'portal-sync-badge sync-online';
     badgeEl.innerText = '🟢 Sincronizado';
   }

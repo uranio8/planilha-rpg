@@ -436,6 +436,11 @@ function mergeCloudCampaignsState(cloudCampaignsState) {
 function applyCloudDataToLocal(cloudData) {
   if (!cloudData) return;
 
+  // Normaliza players caso o Realtime Database retorne como objeto/dicionário indexado ({ "0": {...}, "1": {...} })
+  if (cloudData.players && typeof cloudData.players === 'object' && !Array.isArray(cloudData.players)) {
+    cloudData.players = Object.values(cloudData.players).filter(p => p && typeof p === 'object' && p.id);
+  }
+
   isCloudRoomDataLoaded = true;
   lastReceivedCloudData = cloudData;
   cloudSyncCooldownUntil = Date.now() + 500;
@@ -603,7 +608,17 @@ function applyCloudDataToLocal(cloudData) {
             const currentLocal = mergedMap.get(remoteP.id);
             const remoteUpdated = remoteP.updatedAt || 0;
             const localUpdated = currentLocal.updatedAt || 0;
-            if (remoteUpdated >= localUpdated) {
+
+            // Origem do jogador: se o payload foi publicado por um jogador ou possui updatedBy remoto
+            const isPlayerOrigin = (cloudData.publishedBy === 'player') || (remoteP.updatedBy && remoteP.updatedBy !== localClientId);
+
+            if (isPlayerOrigin) {
+              // Atualização vinda diretamente do portal do jogador: adota PV, condições, cargas, moedas e inventário do herói
+              mergedMap.set(remoteP.id, Object.assign({}, currentLocal, remoteP));
+            } else if (remoteUpdated >= localUpdated) {
+              mergedMap.set(remoteP.id, Object.assign({}, currentLocal, remoteP));
+            } else if (localUpdated === 0 && remoteUpdated === 0) {
+              // Ambos sem carimbo específico: adota dados remotos
               mergedMap.set(remoteP.id, Object.assign({}, currentLocal, remoteP));
             } else {
               // Local é mais recente: preserva campos locais
@@ -623,7 +638,7 @@ function applyCloudDataToLocal(cloudData) {
           return p;
         });
 
-        // Sincroniza HP dos combatentes com as fichas atualizadas (jogador pode ter alterado HP)
+        // Sincroniza HP e Condições dos combatentes com as fichas atualizadas (jogador pode ter alterado HP/condições no portal)
         if (typeof state !== 'undefined' && state && Array.isArray(state.combatants)) {
           let hasCombatChanges = false;
           state.combatants.forEach(comb => {
@@ -631,10 +646,14 @@ function applyCloudDataToLocal(cloudData) {
               const matchedPlayer = (typeof findPlayerForCombatant === 'function')
                 ? findPlayerForCombatant(comb, PLAYERS)
                 : PLAYERS.find(p => (comb.playerId && comb.playerId === p.id) || p.id === comb.id || comb.name.includes(p.name));
-              if (matchedPlayer && matchedPlayer.hp !== undefined) {
-                if (comb.hp !== matchedPlayer.hp || comb.maxHp !== matchedPlayer.maxHp) {
+              if (matchedPlayer) {
+                if (matchedPlayer.hp !== undefined && (comb.hp !== matchedPlayer.hp || comb.maxHp !== matchedPlayer.maxHp)) {
                   comb.hp = matchedPlayer.hp;
                   comb.maxHp = matchedPlayer.maxHp;
+                  hasCombatChanges = true;
+                }
+                if (Array.isArray(matchedPlayer.conditions)) {
+                  comb.conditions = [...matchedPlayer.conditions];
                   hasCombatChanges = true;
                 }
               }
@@ -802,15 +821,21 @@ function executeCloudSave() {
 
   const savePromises = [];
 
-  // Salva no Realtime Database
+  // Salva no Realtime Database (fonte principal de alta velocidade)
   if (realtimeDb) {
     savePromises.push(realtimeDb.ref('dnd_rooms/' + roomId).set(payload));
   }
 
-  // Salva no Firestore
+  // Salva no Firestore secundariamente com tratamento defensivo (não bloqueia caso 404/desativado)
   if (firestoreDb) {
-    const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
-    savePromises.push(roomDocRef.set(payload, { merge: true }));
+    try {
+      const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
+      roomDocRef.set(payload, { merge: true }).catch(err => {
+        console.warn('Firestore fallback silencioso (mestre):', err);
+      });
+    } catch (err) {
+      console.warn('Firestore set ignorado:', err);
+    }
   }
 
   if (savePromises.length > 0) {
@@ -821,7 +846,7 @@ function executeCloudSave() {
       })
       .catch(err => {
         if (cloudSaveStatusTimeout) clearTimeout(cloudSaveStatusTimeout);
-        console.warn('Erro ao salvar no Firebase:', err);
+        console.warn('Erro ao salvar no Realtime DB:', err);
         updateFirebaseUiStatus('connected', `Nuvem: ${roomId}`);
       });
   }
@@ -836,7 +861,7 @@ function executePlayerCloudSave() {
   const myPlayer = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(p => p.id === activePortalPlayerId) : null;
   if (!myPlayer) return;
 
-  // Carimba o timestamp de atualização no próprio herói
+  // Carimba o timestamp de atualização e identificador de cliente no próprio herói
   myPlayer.updatedAt = Date.now();
   myPlayer.updatedBy = localClientId;
 
@@ -850,72 +875,76 @@ function executePlayerCloudSave() {
     syncBadge.innerText = '🟡 Sincronizando...';
   }
 
-  const promises = [];
+  // Prepara promessa principal no Realtime Database
+  let rtdbPromise = Promise.resolve();
 
-  // Realtime Database: transação atômica preservando outros jogadores
   if (realtimeDb) {
     const roomRef = realtimeDb.ref(`dnd_rooms/${roomId}`);
-    const pTransact = roomRef.child('players').transaction(playersList => {
-      if (!Array.isArray(playersList)) return playersList;
-      const idx = playersList.findIndex(p => p.id === activePortalPlayerId);
+    rtdbPromise = roomRef.child('players').once('value').then(snap => {
+      const rawPlayers = snap.val();
+      let list = Array.isArray(rawPlayers) 
+        ? [...rawPlayers] 
+        : (rawPlayers && typeof rawPlayers === 'object' ? Object.values(rawPlayers) : []);
+
+      const idx = list.findIndex(p => p && p.id === activePortalPlayerId);
       if (idx >= 0) {
-        playersList[idx] = Object.assign({}, playersList[idx], myPlayer);
-      }
-      return playersList;
-    });
-
-    // Atualiza metadados raiz separadamente para o Mestre detectar origem
-    const metaUpdate = roomRef.update({
-      lastUpdatedBy: localClientId,
-      lastUpdateIso: nowIso,
-      publishedBy: 'player'
-    });
-
-    promises.push(pTransact, metaUpdate);
-  }
-
-  // Firestore: merge parcial preservando outros campos do documento
-  if (firestoreDb) {
-    const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
-    // Busca o documento atual para atualizar só o jogador ativo
-    const fsPromise = roomDocRef.get().then(snap => {
-      const current = snap.exists ? snap.data() : {};
-      const playersList = Array.isArray(current.players) ? current.players : [];
-      const idx = playersList.findIndex(p => p.id === activePortalPlayerId);
-      if (idx >= 0) {
-        playersList[idx] = Object.assign({}, playersList[idx], myPlayer);
+        list[idx] = Object.assign({}, list[idx], myPlayer);
       } else {
-        playersList.push(myPlayer);
+        list.push(Object.assign({}, myPlayer));
       }
-      return roomDocRef.set({
-        players: playersList,
+
+      const updates = {
+        players: list,
         lastUpdatedBy: localClientId,
         lastUpdateIso: nowIso,
         publishedBy: 'player'
-      }, { merge: true });
+      };
+
+      if (typeof CAMPAIGNS_STATE !== 'undefined' && CAMPAIGNS_STATE) {
+        updates.campaigns = CAMPAIGNS_STATE;
+      }
+
+      return roomRef.update(updates);
     });
-    promises.push(fsPromise);
   }
 
-  // Sincroniza também Baú do Grupo / Campanhas para que saques/depósitos do jogador reflitam na nuvem
-  if (typeof CAMPAIGNS_STATE !== 'undefined' && CAMPAIGNS_STATE) {
-    if (realtimeDb) {
-      promises.push(realtimeDb.ref(`dnd_rooms/${roomId}/campaigns`).set(CAMPAIGNS_STATE));
-    }
-    if (firestoreDb) {
+  // Firestore secundário com tratamento defensivo (nunca bloqueia caso 404/desativado)
+  if (firestoreDb) {
+    try {
       const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
-      promises.push(roomDocRef.set({
-        campaigns: CAMPAIGNS_STATE
-      }, { merge: true }));
+      roomDocRef.get().then(snap => {
+        const current = snap.exists ? snap.data() : {};
+        let list = Array.isArray(current.players) ? [...current.players] : [];
+        const idx = list.findIndex(p => p && p.id === activePortalPlayerId);
+        if (idx >= 0) {
+          list[idx] = Object.assign({}, list[idx], myPlayer);
+        } else {
+          list.push(Object.assign({}, myPlayer));
+        }
+        const fsData = {
+          players: list,
+          lastUpdatedBy: localClientId,
+          lastUpdateIso: nowIso,
+          publishedBy: 'player'
+        };
+        if (typeof CAMPAIGNS_STATE !== 'undefined' && CAMPAIGNS_STATE) {
+          fsData.campaigns = CAMPAIGNS_STATE;
+        }
+        return roomDocRef.set(fsData, { merge: true });
+      }).catch(e => {
+        console.warn('Firestore fallback silencioso (portal):', e);
+      });
+    } catch (e) {
+      console.warn('Firestore portal ignorado:', e);
     }
   }
 
-  // Timeout de resiliência: se a conexão com a nuvem oscilar, nunca trava a badge no amarelo
+  // Timeout de resiliência de 5 segundos
   const safetyTimeout = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('Timeout de sincronização com a nuvem')), 4000);
+    setTimeout(() => reject(new Error('Timeout de sincronização com a nuvem')), 5000);
   });
 
-  Promise.race([Promise.all(promises), safetyTimeout])
+  Promise.race([rtdbPromise, safetyTimeout])
     .then(() => {
       if (syncBadge) {
         syncBadge.className = 'portal-sync-badge sync-online';
@@ -923,7 +952,7 @@ function executePlayerCloudSave() {
       }
     })
     .catch(err => {
-      console.warn('Erro ao sincronizar ficha do jogador:', err);
+      console.warn('Erro ao sincronizar ficha do jogador no Realtime DB:', err);
       if (syncBadge) {
         syncBadge.className = 'portal-sync-badge sync-offline';
         syncBadge.innerText = '🔴 Erro de Sync';
@@ -965,8 +994,12 @@ function publishMasterCampaignToCloud(silent = false) {
     promises.push(realtimeDb.ref('dnd_rooms/' + roomId).set(payload));
   }
   if (firestoreDb) {
-    const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
-    promises.push(roomDocRef.set(payload, { merge: true }));
+    try {
+      const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
+      roomDocRef.set(payload, { merge: true }).catch(err => {
+        console.warn('Firestore fallback silencioso (publicar mesa):', err);
+      });
+    } catch (e) {}
   }
 
   if (promises.length === 0) {

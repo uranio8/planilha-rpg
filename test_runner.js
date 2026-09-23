@@ -4587,6 +4587,65 @@ assert(betweenCloses >= betweenOpens, '#modal-safety-snapshots fecha perfeitamen
 assert(distHtml.includes('body.mode-welcome-screen .tab-pane'), 'Bundle CSS oculta .tab-pane no modo tela de boas-vindas');
 assert(distHtml.includes('body.mode-welcome-screen main'), 'Bundle CSS oculta main no modo tela de boas-vindas');
 
+console.log('\n☁️ 63. Testes de Sincronização em Tempo Real (Firebase RTDB, Objeto vs Array e Smart Merge - ISSUE-90):');
+
+// 1. Normalização de players vindos como Objeto/Dicionário do Realtime Database
+const rtdbObjectPayload = {
+  players: {
+    "0": { id: "p_yoshi", name: "Yoshigake Kira", hp: 4, maxHp: 8, conditions: ["cansado"], updatedAt: Date.now(), updatedBy: "client_mobile" },
+    "1": { id: "p_dera", name: "Deraravely", hp: 6, maxHp: 6, conditions: [], updatedAt: Date.now() }
+  },
+  publishedBy: "player",
+  lastUpdatedBy: "client_mobile"
+};
+
+vm.runInContext(`
+  PLAYERS = [
+    { id: "p_yoshi", name: "Yoshigake Kira", hp: 7, maxHp: 8, conditions: [], updatedAt: 1000 },
+    { id: "p_dera", name: "Deraravely", hp: 6, maxHp: 6, conditions: [], updatedAt: 1000 }
+  ];
+  state = {
+    combatants: [
+      { id: "c1", playerId: "p_yoshi", name: "Yoshigake Kira", hp: 7, maxHp: 8, conditions: [], type: "player" }
+    ],
+    round: 1,
+    current: 0
+  };
+  clientRole = 'master';
+`, sandbox);
+
+// Executa applyCloudDataToLocal com payload de objeto
+vm.runInContext("applyCloudDataToLocal(" + JSON.stringify(rtdbObjectPayload) + ")", sandbox);
+
+const updatedPlayers = vm.runInContext("PLAYERS", sandbox);
+assert(Array.isArray(updatedPlayers), 'PLAYERS é mantido como Array válido após receber objeto do Realtime Database');
+const yoshiLocal = updatedPlayers.find(p => p.id === 'p_yoshi');
+assert(yoshiLocal && yoshiLocal.hp === 4, 'Smart Merge do Mestre adota PV 4 enviado pelo jogador no celular');
+assert(yoshiLocal && yoshiLocal.conditions && yoshiLocal.conditions.includes('cansado'), 'Smart Merge do Mestre adota condição "cansado" enviada pelo jogador');
+
+// 2. Sincronização com state.combatants no gerenciador de combate do Mestre
+const currentState = vm.runInContext("state", sandbox);
+const yoshiComb = currentState.combatants.find(c => c.playerId === 'p_yoshi');
+assert(yoshiComb && yoshiComb.hp === 4, 'Combatente do Yoshigake Kira no gerenciador de combate foi atualizado para 4 PV');
+assert(yoshiComb && yoshiComb.conditions && yoshiComb.conditions.includes('cansado'), 'Combatente no gerenciador de combate recebeu a condição "cansado"');
+
+// 3. Atualização sem timestamp de herói antigo na nuvem mas publicado por jogador
+const legacyCloudPayload = {
+  players: [
+    { id: "p_yoshi", name: "Yoshigake Kira", hp: 3, maxHp: 8, conditions: [] } // updatedAt undefined
+  ],
+  publishedBy: "player",
+  lastUpdatedBy: "client_mobile_2"
+};
+vm.runInContext("applyCloudDataToLocal(" + JSON.stringify(legacyCloudPayload) + ")", sandbox);
+const yoshiUpdatedLegacy = vm.runInContext("PLAYERS", sandbox).find(p => p.id === 'p_yoshi');
+assert(yoshiUpdatedLegacy.hp === 3, 'Smart Merge adota dados enviados pelo jogador mesmo se updatedAt remoto for indefinido');
+
+// 4. Verificação estática do código de desacoplamento do Firestore
+const firebaseSyncCode = fs.readFileSync(path.join(__dirname, 'src', 'js', 'firebase_sync.js'), 'utf8');
+assert(firebaseSyncCode.includes("roomRef.child('players').once('value')"), 'executePlayerCloudSave usa leitura e update consolidados no Realtime Database');
+assert(!firebaseSyncCode.includes('promises.push(fsPromise)'), 'executePlayerCloudSave não acopla fsPromise ao Promise.all principal');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
