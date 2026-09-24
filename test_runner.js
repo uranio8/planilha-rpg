@@ -439,13 +439,13 @@ vm.runInContext(classesCode, sandbox);
 vm.runInContext(classesJsCode, sandbox);
 
 const totalClassesCount = vm.runInContext("typeof CLASSES_DATA !== 'undefined' ? CLASSES_DATA.length : 0", sandbox);
-assert(totalClassesCount === 12, `Todas as 12 classes oficiais D&D 5E 2024 carregadas com sucesso (${totalClassesCount} classes)`);
+assert(totalClassesCount === 12, `Todas as 12 classes oficiais D&D 5ª Edição carregadas com sucesso (${totalClassesCount} classes)`);
 
 const allClassesHave20Levels = vm.runInContext("CLASSES_DATA.every(c => Array.isArray(c.progression) && c.progression.length === 20)", sandbox);
 assert(allClassesHave20Levels, 'Todas as 12 classes possuem tabela completa de progressão do Nível 1 ao 20');
 
-const allClassesHave4Subclasses = vm.runInContext("CLASSES_DATA.every(c => Array.isArray(c.subclasses) && c.subclasses.length >= 4)", sandbox);
-assert(allClassesHave4Subclasses, 'Todas as 12 classes possuem no mínimo 4 subclasses oficiais detalhadas');
+const allClassesHaveSubclasses = vm.runInContext("CLASSES_DATA.every(c => Array.isArray(c.subclasses) && c.subclasses.length >= 2)", sandbox);
+assert(allClassesHaveSubclasses, 'Todas as 12 classes possuem arquétipos e subclasses oficiais detalhadas (no mínimo 2)');
 
 const allClassesHaveFeatures = vm.runInContext("CLASSES_DATA.every(c => Array.isArray(c.features) && c.features.length >= 5)", sandbox);
 assert(allClassesHaveFeatures, 'Todas as classes possuem acervo estruturado de habilidades base');
@@ -470,7 +470,7 @@ vm.runInContext(speciesCode, sandbox);
 vm.runInContext(speciesJsCode, sandbox);
 
 const totalSpeciesCount = vm.runInContext("typeof SPECIES_DATA !== 'undefined' ? SPECIES_DATA.length : 0", sandbox);
-assert(totalSpeciesCount === 10, `Todas as 10 espécies oficiais D&D 5E 2024 carregadas com sucesso (${totalSpeciesCount} espécies)`);
+assert(totalSpeciesCount >= 9, `Raças canônicas D&D 5E carregadas com sucesso (${totalSpeciesCount} raças)`);
 
 const allSpeciesHaveAttributes = vm.runInContext("SPECIES_DATA.every(s => s.id && s.name && s.icon && s.size && s.speed && s.description && Array.isArray(s.traits) && s.traits.length > 0)", sandbox);
 assert(allSpeciesHaveAttributes, 'Todas as espécies possuem atributos completos (ícone, tamanho, deslocamento, descrição e características)');
@@ -4855,6 +4855,266 @@ const mZenit = vm.runInContext("PLAYERS.find(p => p.id === 'p_zenit')", sandbox)
 assert(mKira.slotsUsed[0] === 1, 'Mestre adotou consumo de magia do Aluno (slotsUsed[0] = 1)');
 assert(mDera.hp === 42, 'Smart Merge do Mestre NÃO reverteu o PV de Deraravely (permaneceu 42)');
 assert(mZenit.hp === 31, 'Smart Merge do Mestre NÃO reverteu o PV de Zenit (permaneceu 31)');
+
+console.log('\n📜 67. Testes do Sistema D&D 5ª Edição (2014) - Classes, Raças e Desbloqueio Canônico (ISSUE-96):');
+const testClericLvl = vm.runInContext("getSubclassUnlockLevel('Clérigo')", sandbox);
+const testWarlockLvl = vm.runInContext("getSubclassUnlockLevel('Bruxo')", sandbox);
+const testSorcererLvl = vm.runInContext("getSubclassUnlockLevel('Feiticeiro')", sandbox);
+const testDruidLvl = vm.runInContext("getSubclassUnlockLevel('Druida')", sandbox);
+const testWizardLvl = vm.runInContext("getSubclassUnlockLevel('Mago')", sandbox);
+const testPaladinLvl = vm.runInContext("getSubclassUnlockLevel('Paladino')", sandbox);
+const testFighterLvl = vm.runInContext("getSubclassUnlockLevel('Guerreiro')", sandbox);
+
+assert(testClericLvl === 1, 'Clérigo escolhe seu Domínio Divino no Nível 1 canônico');
+assert(testWarlockLvl === 1, 'Bruxo escolhe seu Patrono no Nível 1 canônico');
+assert(testSorcererLvl === 1, 'Feiticeiro escolhe sua Origem de Feitiçaria no Nível 1 canônico');
+assert(testDruidLvl === 2, 'Druida escolhe seu Círculo Druídico no Nível 2 canônico');
+assert(testWizardLvl === 2, 'Mago escolhe sua Tradição Arcana no Nível 2 canônico');
+assert(testPaladinLvl === 3, 'Paladino escolhe seu Juramento Sagrado no Nível 3 canônico');
+assert(testFighterLvl === 3, 'Guerreiro escolhe seu Arquétipo Marcial no Nível 3 canônico');
+
+// Teste de desbloqueio de traços de subclasse no nível 1 para Clérigo
+const clericFeatsNv1 = vm.runInContext("getUnlockedClassFeatures('Clérigo', 1, 0)", sandbox);
+const hasDomainFeat = clericFeatsNv1.some(f => f.isSubclass && f.source && f.source.includes('Vida'));
+assert(hasDomainFeat, 'Clérigo Nível 1 recebe habilidades do Domínio da Vida imediatamente no Nível 1');
+
+// Teste de atributos das raças canônicas 5e (Aumento no Valor de Habilidade)
+const dwarfRace = vm.runInContext("SPECIES_DATA.find(r => r.id === 'anao')", sandbox);
+const humanRace = vm.runInContext("SPECIES_DATA.find(r => r.id === 'humano')", sandbox);
+const elfRace = vm.runInContext("SPECIES_DATA.find(r => r.id === 'elfo')", sandbox);
+assert(dwarfRace && dwarfRace.abilityScoreSummary.includes('+2'), 'Anão possui aumento de Constituição (+2) nativo');
+assert(humanRace && humanRace.abilityScoreSummary.toLowerCase().includes('+1 em todos'), 'Humano possui +1 em todos os valores de habilidade');
+assert(elfRace && (elfRace.abilityScoreSummary.includes('+2 Destreza') || elfRace.abilityScoreSummary.includes('Destreza +2')), 'Elfo possui Destreza +2 nativo');
+
+// Teste de regras de Paladino (Destruição Divina sem custo de ação bônus)
+const paladinClass = vm.runInContext("CLASSES_DATA.find(c => c.id === 'paladino')", sandbox);
+const divineSmite = paladinClass.features.find(f => f.name.includes('Destruição Divina'));
+assert(divineSmite && !divineSmite.desc.includes('ação bônus para lançar'), 'Destruição Divina opera como recurso ativado ao acertar o golpe (sem custo de ação bônus)');
+
+// Teste de ausência de maestria em armas (mecânica do 2024 eliminada)
+const fighterClass = vm.runInContext("CLASSES_DATA.find(c => c.id === 'guerreiro')", sandbox);
+const hasWeaponMastery = fighterClass.features.some(f => f.name.includes('Maestria em Armas'));
+assert(!hasWeaponMastery, 'Guerreiro 5E não possui Maestria em Armas (regra 2024 eliminada)');
+
+console.log('\n🎲 68. Testes de Resolução Dinâmica de Características e Dados de Dano de Magias (ISSUE-97):');
+
+// 1. Defesa sem Armadura de Bárbaro: DES 16 (+3), CON 14 (+2) => CA 15
+const mockBarbarian = { className: 'Bárbaro', level: 5, dex: 16, con: 14, str: 16, wis: 10, int: 10, cha: 10 };
+const barbUnarmored = vm.runInContext(`
+  formatPlayerFeatureForDisplay(
+    { name: 'Defesa sem Armadura (Unarmored Defense)', desc: '10 + seu modificador de Destreza + seu modificador de Constituição' },
+    ${JSON.stringify(mockBarbarian)}
+  );
+`, sandbox);
+assert(barbUnarmored.name.includes('(CA 15)'), `Defesa sem Armadura do Bárbaro exibe CA calculada 15 (${barbUnarmored.name})`);
+assert(barbUnarmored.desc.includes('CA 15'), 'Descrição da Defesa sem Armadura detalha o cálculo resolvido para CA 15');
+
+// 2. Defesa sem Armadura de Monge: DES 16 (+3), SAB 14 (+2) => CA 15
+const mockMonk = { className: 'Monge', level: 5, dex: 16, con: 12, str: 10, wis: 14, int: 10, cha: 10 };
+const monkUnarmored = vm.runInContext(`
+  formatPlayerFeatureForDisplay(
+    { name: 'Defesa sem Armadura (Unarmored Defense)', desc: '10 + seu modificador de Destreza + seu modificador de Sabedoria' },
+    ${JSON.stringify(mockMonk)}
+  );
+`, sandbox);
+assert(monkUnarmored.name.includes('(CA 15)'), `Defesa sem Armadura do Monge exibe CA calculada 15 (${monkUnarmored.name})`);
+
+// 3. Cura pelas Mãos do Paladino (5 x Nível): Nv 5 => 25 PV
+const mockPaladin = { className: 'Paladino', level: 5, cha: 16, str: 16, dex: 10, con: 14, int: 10, wis: 10 };
+const paladinLayOnHands = vm.runInContext(`
+  formatPlayerFeatureForDisplay(
+    { name: 'Cura pelas Mãos (Lay on Hands)', desc: 'Você tem uma reserva de cura igual a 5 x seu nível.' },
+    ${JSON.stringify(mockPaladin)}
+  );
+`, sandbox);
+assert(paladinLayOnHands.name.includes('(25 PV)'), `Cura pelas Mãos do Paladino Nv 5 exibe 25 PV calculados (${paladinLayOnHands.name})`);
+
+// 4. Sentido Divino do Paladino (1 + CAR): CAR 16 (+3) => 4 usos/dia
+const paladinSense = vm.runInContext(`
+  formatPlayerFeatureForDisplay(
+    { name: 'Sentido Divino (Divine Sense)', desc: '1 + modificador de Carisma usos por dia.' },
+    ${JSON.stringify(mockPaladin)}
+  );
+`, sandbox);
+assert(paladinSense.name.includes('(4 usos/dia)'), `Sentido Divino exibe 4 usos/dia baseados em Carisma (${paladinSense.name})`);
+
+// 5. Ataque Furtivo do Ladino Nv 5 => 3d6
+const mockRogue = { className: 'Ladino', level: 5, dex: 18, con: 12, str: 10, int: 14, wis: 12, cha: 10 };
+const rogueSneak = vm.runInContext(`
+  formatPlayerFeatureForDisplay(
+    { name: 'Ataque Furtivo (Sneak Attack)', desc: 'Dano extra uma vez por turno.' },
+    ${JSON.stringify(mockRogue)}
+  );
+`, sandbox);
+assert(rogueSneak.name.includes('(3d6)'), `Ataque Furtivo do Ladino Nv 5 exibe 3d6 calculados (${rogueSneak.name})`);
+
+// 6. Fúria do Bárbaro Nv 5 => 3 usos/dia, +2 Dano
+const barbRage = vm.runInContext(`
+  formatPlayerFeatureForDisplay(
+    { name: 'Fúria', desc: 'Entra em fúria.' },
+    ${JSON.stringify(mockBarbarian)}
+  );
+`, sandbox);
+assert(barbRage.name.includes('3/dia') && barbRage.name.includes('+2 Dano'), `Fúria Nv 5 exibe usos e bônus de dano (${barbRage.name})`);
+
+// 7. Retomar o Fôlego do Guerreiro Nv 5 => 1d10 + 5 PV
+const testFighterObj = { className: 'Guerreiro', level: 5, str: 18, con: 14, dex: 12, int: 10, wis: 10, cha: 10 };
+const testFighterSecondWind = vm.runInContext(`
+  formatPlayerFeatureForDisplay(
+    { name: 'Retomar o Fôlego (Second Wind)', desc: 'Recupera PV.' },
+    ${JSON.stringify(testFighterObj)}
+  );
+`, sandbox);
+assert(testFighterSecondWind.name.includes('1d10 + 5 PV'), `Retomar o Fôlego exibe 1d10 + 5 PV (${testFighterSecondWind.name})`);
+
+// 8. Resiliência Dracônica (Feiticeiro): DES 14 (+2), Nv 5 => CA 15, +5 PV
+const mockSorcerer = { className: 'Feiticeiro', level: 5, dex: 14, con: 14, cha: 16, int: 10, wis: 10, str: 10 };
+const sorcDraconic = vm.runInContext(`
+  formatPlayerFeatureForDisplay(
+    { name: 'Resiliência Dracônica', desc: 'Sua pele é recoberta por escamas.' },
+    ${JSON.stringify(mockSorcerer)}
+  );
+`, sandbox);
+assert(sorcDraconic.name.includes('CA 15') && sorcDraconic.name.includes('+5 PV'), `Resiliência Dracônica exibe CA 15 e +5 PV (${sorcDraconic.name})`);
+
+// 9. Dados de Dano de Magias (getSpellDiceInfo)
+const fireballDice = vm.runInContext("getSpellDiceInfo('Bola de Fogo')", sandbox);
+assert(fireballDice && fireballDice.dice === '8d6' && fireballDice.type === 'fogo', `Bola de Fogo possui dados 8d6 Fogo (${fireballDice.label})`);
+
+const magicMissileDice = vm.runInContext("getSpellDiceInfo('Mísseis Mágicos')", sandbox);
+assert(magicMissileDice && magicMissileDice.label.includes('3x (1d4+1)'), `Mísseis Mágicos possui label explicativa (${magicMissileDice.label})`);
+
+const shatterDice = vm.runInContext("getSpellDiceInfo('Despedaçar')", sandbox);
+assert(shatterDice && shatterDice.dice === '3d8' && shatterDice.type === 'trovão', `Despedaçar possui dados 3d8 Trovão (${shatterDice.label})`);
+
+// 10. Escalonamento de Truques (Raio de Fogo) Nv 1 vs Nv 5
+const fireBoltLv1 = vm.runInContext(`getSpellDiceInfo('Raio de Fogo', { level: 1 })`, sandbox);
+assert(fireBoltLv1 && fireBoltLv1.dice === '1d10', `Raio de Fogo no Nível 1 causa 1d10 (${fireBoltLv1.label})`);
+
+const fireBoltLv5 = vm.runInContext(`getSpellDiceInfo('Raio de Fogo', { level: 5 })`, sandbox);
+assert(fireBoltLv5 && fireBoltLv5.dice === '2d10', `Raio de Fogo escalona para 2d10 no Nível 5 (${fireBoltLv5.label})`);
+
+const shockingGraspLv5 = vm.runInContext(`getSpellDiceInfo('Toque Chocante', { level: 5 })`, sandbox);
+assert(shockingGraspLv5 && shockingGraspLv5.dice === '2d8', `Toque Chocante escalona para 2d8 no Nível 5 (${shockingGraspLv5.label})`);
+
+// 11. Magias de Cura somando modificador do conjurador
+const cureWoundsDice = vm.runInContext(`
+  getSpellDiceInfo('Curar Ferimentos', { level: 5, className: 'Clérigo', wis: 16 })
+`, sandbox);
+assert(cureWoundsDice && cureWoundsDice.isHeal && cureWoundsDice.dice.includes('1d8 +3'), `Curar Ferimentos soma mod de conjuração 1d8 +3 (${cureWoundsDice.label})`);
+
+// 12. Execução de rolagem de magia (rollPlayerSpellDice)
+vm.runInContext(`
+  PLAYERS = [${JSON.stringify(mockBarbarian)}, ${JSON.stringify(mockSorcerer)}];
+  PLAYERS[1].id = 'p_sorc_test';
+  PLAYERS[1].name = 'Feiticeiro Teste';
+`, sandbox);
+const rollResult = vm.runInContext(`rollPlayerSpellDice('p_sorc_test', 'Bola de Fogo')`, sandbox);
+assert(rollResult && rollResult.total >= 8 && rollResult.total <= 48, `rollPlayerSpellDice rolou 8d6 de Bola de Fogo resultando em ${rollResult ? rollResult.total : 0}`);
+
+console.log('\n⚔️ 69. Testes de Seleção de Estilo de Luta e Cálculo Automático de CA (ISSUE-98):');
+
+// 1. Exportação das funções
+assert(typeof vm.runInContext('setPlayerFightingStyle', sandbox) === 'function', 'Função setPlayerFightingStyle exportada');
+assert(typeof vm.runInContext('getPlayerAcCalculationInfo', sandbox) === 'function', 'Função getPlayerAcCalculationInfo exportada');
+assert(typeof vm.runInContext('ensurePlayerCalculatedAc', sandbox) === 'function', 'Função ensurePlayerCalculatedAc exportada');
+assert(typeof vm.runInContext('updateModalCalculatedAc', sandbox) === 'function', 'Função updateModalCalculatedAc exportada');
+
+// 2. Cálculo de Bárbaro sem armadura com Escudo (10 + DES + CON + Escudo = 17)
+const barbWithShield = {
+  id: 'p_barb_shield',
+  className: 'Bárbaro',
+  dex: 14,
+  con: 16,
+  inventory: [{ name: 'Escudo', equipped: true }]
+};
+const acBarbShield = vm.runInContext(`calculatePlayerAcFromEquipment(${JSON.stringify(barbWithShield)})`, sandbox);
+assert(acBarbShield === 17, `Bárbaro com Escudo calcula 10 + 2 [DES] + 3 [CON] + 2 [Escudo] = 17 (obteve ${acBarbShield})`);
+
+// 3. Monge com Escudo perde a Defesa sem Armadura (vai para 10 + DES = 12)
+const monkWithShield = {
+  id: 'p_monk_shield',
+  className: 'Monge',
+  dex: 14,
+  wis: 16,
+  inventory: [{ name: 'Escudo', equipped: true }]
+};
+const acMonkShield = vm.runInContext(`calculatePlayerAcFromEquipment(${JSON.stringify(monkWithShield)})`, sandbox);
+assert(acMonkShield === 14, `Monge com Escudo desativa Defesa sem Armadura (10 + 2 [DES] + 2 [Escudo] = 14, obteve ${acMonkShield})`);
+
+// 4. Feiticeiro Dracônico (13 + DES)
+const suite69SorcDraconic = {
+  id: 'p_sorc_drac',
+  className: 'Feiticeiro',
+  subclassIdx: 0,
+  subclass: 'Linhagem Dracônica (Draconic Bloodline)',
+  dex: 16,
+  inventory: []
+};
+const acSorcDrac = vm.runInContext(`calculatePlayerAcFromEquipment(${JSON.stringify(suite69SorcDraconic)})`, sandbox);
+assert(acSorcDrac === 16, `Feiticeiro Dracônico calcula 13 + 3 [DES] = 16 (obteve ${acSorcDrac})`);
+
+// 5. Estilo de Luta: Defesa (+1 na CA quando usando armadura)
+const fighterChainMail = {
+  id: 'p_fighter_chain',
+  className: 'Guerreiro',
+  dex: 12,
+  fightingStyle: 'defense',
+  inventory: [{ name: 'Cota de Malha', equipped: true }]
+};
+const acFighterDef = vm.runInContext(`calculatePlayerAcFromEquipment(${JSON.stringify(fighterChainMail)})`, sandbox);
+assert(acFighterDef === 17, `Guerreiro com Cota de Malha (16) + Estilo Defesa (+1) = 17 (obteve ${acFighterDef})`);
+
+// 6. Estilo de Luta: Defesa com Escudo (+1 + 2 = +3 além da armadura)
+fighterChainMail.inventory.push({ name: 'Escudo', equipped: true });
+const acFighterDefShield = vm.runInContext(`calculatePlayerAcFromEquipment(${JSON.stringify(fighterChainMail)})`, sandbox);
+assert(acFighterDefShield === 19, `Guerreiro com Cota de Malha (16) + Estilo Defesa (+1) + Escudo (+2) = 19 (obteve ${acFighterDefShield})`);
+
+// 7. Estilo de Luta: Defesa SEM armadura NÃO concede +1 na CA
+const fighterUnarmored = {
+  id: 'p_fighter_naked',
+  className: 'Guerreiro',
+  dex: 14,
+  fightingStyle: 'defense',
+  inventory: []
+};
+const acFighterNaked = vm.runInContext(`calculatePlayerAcFromEquipment(${JSON.stringify(fighterUnarmored)})`, sandbox);
+assert(acFighterNaked === 12, `Guerreiro sem armadura e Estilo Defesa não recebe bônus de armadura (10 + 2 = 12, obteve ${acFighterNaked})`);
+
+// 8. Teste de getPlayerAcCalculationInfo
+const acInfoFighter = vm.runInContext(`getPlayerAcCalculationInfo(${JSON.stringify(fighterChainMail)})`, sandbox);
+assert(acInfoFighter.ac === 19 && acInfoFighter.hasDefenseStyle && acInfoFighter.hasShield, 'getPlayerAcCalculationInfo retorna dados estruturados completos');
+assert(acInfoFighter.details.includes('Cota de Malha') && acInfoFighter.details.includes('+1 Estilo Defesa'), 'Detalhes de cálculo incluem nome da armadura e bônus de defesa');
+
+// 9. Teste de setPlayerFightingStyle
+vm.runInContext(`
+  const pTestHero = {
+    id: 'p_test_fs_hero',
+    name: 'Valerius',
+    className: 'Guerreiro',
+    dex: 12,
+    fightingStyle: '',
+    inventory: [{ name: 'Cota de Malha', equipped: true }],
+    ac: 16
+  };
+  PLAYERS.push(pTestHero);
+  setPlayerFightingStyle('p_test_fs_hero', 'defense');
+`, sandbox);
+const valeriusHero = vm.runInContext(`PLAYERS.find(p => p.id === 'p_test_fs_hero')`, sandbox);
+assert(valeriusHero.fightingStyle === 'defense', 'setPlayerFightingStyle atualizou fightingStyle para defense');
+assert(valeriusHero.ac === 17, `setPlayerFightingStyle recalculou automaticamente a CA para 17 (obteve ${valeriusHero.ac})`);
+
+// 10. Desacoplamento do Estilo de Luta no modal de edição
+const htmlContentCheck = fs.readFileSync('src/ui/ui.html', 'utf8');
+assert(!htmlContentCheck.includes('<select id="pm-fighting-style">'), 'Select de estilo de luta foi removido do cabeçalho do modal');
+assert(htmlContentCheck.includes('<input type="hidden" id="pm-fighting-style">'), 'Input oculto pm-fighting-style preservado para compatibilidade');
+assert(htmlContentCheck.includes('oninput="updateModalCalculatedAc()"'), 'Inputs de DES/CON/SAB disparam updateModalCalculatedAc');
+
+// 11. Renderização interativa no card da habilidade (renderPlayerUnlockedFeatures)
+const renderedFeaturesHtml = vm.runInContext(`renderPlayerUnlockedFeatures(pTestHero)`, sandbox);
+assert(renderedFeaturesHtml.includes('feature-fighting-style-box'), 'renderPlayerUnlockedFeatures renderiza caixa temática de Estilo de Luta');
+assert(renderedFeaturesHtml.includes('setPlayerFightingStyle'), 'renderPlayerUnlockedFeatures renderiza dropdown interativo com chamada a setPlayerFightingStyle');
+assert(renderedFeaturesHtml.includes('Defesa'), 'renderPlayerUnlockedFeatures exibe o estilo ativo Defesa');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

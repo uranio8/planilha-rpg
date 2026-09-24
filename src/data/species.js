@@ -1,303 +1,127 @@
-// ==========================================
-// 🧬 D&D 5E 2024 - BASE DE DADOS DE ESPÉCIES E LINHAGENS
-// ==========================================
+// ============================================================================
+// 🧬 D&D 5ª EDIÇÃO (2014) - BASE DE DADOS OFICIAL DE RAÇAS E SUB-RAÇAS
+// Baseado nas referências oficiais de regras do portal Orbe dos Dragões
+// (https://orbedosdragoes.com/)
+// ============================================================================
+
 const SPECIES_DATA = [
   {
-    id: 'aasimar',
-    name: 'Aasimar',
-    icon: '✨',
-    type: 'Humanoide',
-    size: 'Médio ou Pequeno (escolhido ao criar o personagem)',
-    speed: '9 metros',
-    description: 'Seres mortais tocados pela centelha dos Planos Superiores, os Aasimar carregam bênçãos celestiais em sua alma e manifestam a luz sagrada de guardiões celestiais.',
-    traits: [
-      {
-        name: 'Mãos que Curam',
-        type: 'Ação',
-        description: 'Como uma Ação, você pode tocar uma criatura e rolar um número de dados d4 igual ao seu Bônus de Proficiência. A criatura recupera uma quantidade de Pontos de Vida igual ao total rolado. Você pode usar esta característica uma vez e recupera seu uso após terminar um Descanso Longo.'
-      },
-      {
-        name: 'Portador da Luz',
-        type: 'Truque',
-        description: 'Você conhece o truque Luz. O Carisma é a sua habilidade de conjuração para este truque.'
-      },
-      {
-        name: 'Resistência Celestial',
-        type: 'Passiva',
-        description: 'Você tem resistência a dano Necrótico e dano Radiante.'
-      },
-      {
-        name: 'Visão no Escuro (18m)',
-        type: 'Sentido',
-        description: 'Você pode enxergar na penumbra a até 18 metros como se fosse luz plena, e na escuridão como se fosse penumbra. Você discerne cores na escuridão apenas como tons de cinza.'
-      },
-      {
-        name: 'Revelação Celestial (3º Nível)',
-        type: 'Ação Bônus / Transformação',
-        description: 'Ao atingir o 3º nível de personagem, você escolhe uma das seguintes revelações celestiais para manifestar como Ação Bônus por 1 minuto (ou até você a encerrar com uma Ação Bônus). Uma vez usada, você recupera o uso após um Descanso Longo ou gastando um espaço de magia de qualquer nível.'
-      }
-    ],
-    lineagesTitle: 'Revelações Celestiais (3º Nível)',
-    lineages: [
-      {
-        name: 'Brilho Interno (Inner Radiance)',
-        icon: '☀️',
-        description: 'Luz abrasadora emana de seus olhos e boca. Você projeta luz plena em um raio de 3 metros e penumbra por mais 3 metros adicionais. No final de cada um de seus turnos, cada criatura a até 3 metros de você sofre dano Radiante igual ao seu Bônus de Proficiência. Além disso, uma vez em cada um de seus turnos ao causar dano a uma criatura com ataque ou magia, você pode causar dano Radiante extra igual ao seu Bônus de Proficiência.'
-      },
-      {
-        name: 'Asas Celestiais (Heavenly Wings)',
-        icon: '🪽',
-        description: 'Duas asas de luz translúcida ou penas celestiais brotam de suas costas. Você adquire deslocamento de Voo igual ao seu Deslocamento de caminhada. Além disso, uma vez em cada um de seus turnos ao causar dano com ataque ou magia, você pode causar dano Radiante extra igual ao seu Bônus de Proficiência.'
-      },
-      {
-        name: 'Véu Necrótico (Necrotic Shroud)',
-        icon: '🌑',
-        description: 'Seus olhos se tornam poços de trevas e asas esqueléticas ou fantasmagóricas surgem. Outras criaturas a até 3 metros que possam vê-lo devem ser bem-sucedidas em um teste de resistência de Carisma (CD 8 + Bônus de Proficiência + mod. Carisma) ou ficarão Amedrontadas por você até o final do seu próximo turno. Além disso, uma vez em cada um de seus turnos ao causar dano com ataque ou magia, você causa dano Necrótico extra igual ao seu Bônus de Proficiência.'
-      }
-    ]
-  },
-  {
     id: 'anao',
-    name: 'Anão (Dwarf)',
+    name: 'Anão',
     icon: '🛡️',
     type: 'Humanoide',
-    size: 'Médio (cerca de 1,20m a 1,50m de altura, corpo robusto e denso)',
-    speed: '9 metros',
-    description: 'Forjados na rocha e nas profundezas das montanhas, os anões são renomados por sua resistência incomparável, maestria no trabalho com pedra e ferro, e ligação ancestral com a terra.',
+    size: 'Médio (cerca de 1,20m a 1,50m de altura, pesados e robustos)',
+    speed: '7,5 metros (não é reduzido pelo uso de armaduras pesadas)',
+    abilityScoreSummary: '+2 Constituição',
+    description: 'Reinos ricos de antiga grandeza, salões esculpidos nas raízes das montanhas, ecos de picaretas e martelos nas minas profundas e forjas ardentes. Os anões são audazes e resistentes, moldados pelo trabalho duro na pedra e pelo orgulho inabalável de seus clãs e tradições ancestrais.',
     traits: [
       {
-        name: 'Firmeza Enânica (Dwarven Toughness)',
-        type: 'Passiva',
-        description: 'Seu máximo de Pontos de Vida aumenta em 1 ponto por nível de personagem, e aumenta em mais 1 sempre que você sobe de nível.'
+        name: 'Aumento no Valor de Habilidade',
+        type: 'Atributo',
+        description: 'Seu valor de **Constituição aumenta em +2**.'
       },
       {
-        name: 'Ligação com a Pedra (Stonecunning)',
-        type: 'Ação Bônus / Sentido Sísmico',
-        description: 'Como uma Ação Bônus, enquanto estiver tocando uma superfície de pedra, você adquire Sentido Sísmico em um raio de 18 metros durante 10 minutos. Este sentido permite perceber a localização exata de qualquer criatura ou objeto em movimento em contato com a mesma rocha. Você pode usar esta característica um número de vezes igual ao seu Bônus de Proficiência, recuperando todos os usos após um Descanso Longo.'
-      },
-      {
-        name: 'Resiliência Enânica (Dwarven Resilience)',
-        type: 'Passiva',
-        description: 'Você tem resistência a dano de Veneno e possui Vantagem em testes de resistência para evitar ou encerrar a condição Envenenado.'
-      },
-      {
-        name: 'Visão no Escuro Aprimorada (18m)',
+        name: 'Visão no Escuro (18 metros)',
         type: 'Sentido',
-        description: 'Você tem visão no escuro com alcance de 18 metros.'
+        description: 'Acostumado à vida subterrânea, você enxerga na penumbra a até 18 metros como se fosse luz plena, e na escuridão como se fosse penumbra. Você não pode discernir cores na escuridão, apenas tons de cinza.'
+      },
+      {
+        name: 'Resiliência Anã',
+        type: 'Defesa / Sobrevivência',
+        description: 'Você possui **Vantagem em salvaguardas contra veneno** e tem **Resistência a dano de veneno**.'
+      },
+      {
+        name: 'Treinamento Anão em Combate',
+        type: 'Proficiência em Armas',
+        description: 'Você tem proficiência com o *machado de batalha*, *machadinha*, *martelo leve* e *martelo de guerra*.'
+      },
+      {
+        name: 'Proficiência com Ferramentas',
+        type: 'Ofício',
+        description: 'Você ganha proficiência em uma ferramenta de artesão à sua escolha: *ferramentas de ferreiro*, *suprimentos de cervejeiro* ou *ferramentas de pedreiro*.'
+      },
+      {
+        name: 'Especialização em Rochas',
+        type: 'Conhecimento',
+        description: 'Sempre que você realizar um teste de Inteligência (História) relacionado à origem de trabalhos em pedra, você é considerado proficiente na perícia e **adiciona o dobro do seu bônus de proficiência** ao teste.'
+      },
+      {
+        name: 'Idiomas',
+        type: 'Comunicação',
+        description: 'Você pode falar, ler e escrever **Comum** e **Anão**.'
       }
     ],
-    lineagesTitle: 'Tradições Enânicas',
+    lineagesTitle: 'Sub-raças de Anão',
     lineages: [
       {
-        name: 'Anão da Colina / Montanha',
+        name: 'Anão da Colina',
+        icon: '🏔️',
+        description: 'Como um anão da colina, você tem sentidos aguçados, intuição profunda e uma resistência física ainda mais notável.\n\n• **Aumento no Valor de Habilidade**: Seu valor de **Sabedoria aumenta em +1**.\n• **Tenacidade Anã**: Seu máximo de Pontos de Vida aumenta em **+1 PV**, e aumenta em **+1 PV adicional cada vez que você sobe de nível**.'
+      },
+      {
+        name: 'Anão da Montanha',
         icon: '⛰️',
-        description: 'Com as novas regras 2024, as sub-raças de anões foram unificadas no chassi principal da espécie, incorporando a lendária Firmeza Enânica e o Sentido Sísmico de Ligação com a Pedra para todos os anões.'
-      }
-    ]
-  },
-  {
-    id: 'draconato',
-    name: 'Draconato (Dragonborn)',
-    icon: '🐲',
-    type: 'Humanoide',
-    size: 'Médio',
-    speed: '9 metros',
-    description: 'Herdeiros do poder e da majestade dos dragões ancestrais, os draconatos empunham o sopro elemental devastador e podem despertar asas draconianas à medida que seu poder amadurece.',
-    traits: [
-      {
-        name: 'Ancestralidade Dracônica',
-        type: 'Passiva / Escolha',
-        description: 'Você escolhe um tipo de ancestral dracônico. Sua escolha determina o tipo de dano e a forma da sua Arma de Sopro, bem como sua Resistência a Dano elemental.'
-      },
-      {
-        name: 'Arma de Sopro (Breath Weapon)',
-        type: 'Ataque Substitutivo',
-        description: 'Quando você realiza a ação de Atacar no seu turno, pode substituir um de seus ataques pela sua Arma de Sopro. Ela pode ser liberada em um Cone de 4,5 metros ou em uma Linha de 9 metros por 1,5m de largura. Criaturas na área devem fazer um teste de resistência de Destreza ou Constituição (conforme a ancestralidade, CD 8 + Bônus de Proficiência + mod. Constituição). Uma criatura sofre 1d10 de dano do tipo dracônico se falhar, ou metade se passar. O dano aumenta para 2d10 no 5º nível, 3d10 no 11º nível e 4d10 no 17º nível. Você pode usar sua Arma de Sopro um número de vezes igual ao seu Bônus de Proficiência, recuperando os usos em Descanso Longo.'
-      },
-      {
-        name: 'Resistência a Dano',
-        type: 'Passiva',
-        description: 'Você tem resistência ao tipo de dano associado à sua Ancestralidade Dracônica.'
-      },
-      {
-        name: 'Visão no Escuro (18m)',
-        type: 'Sentido',
-        description: 'Você enxerga na penumbra e escuridão até 18 metros.'
-      },
-      {
-        name: 'Voo Dracônico (5º Nível)',
-        type: 'Ação Bônus / Voo',
-        description: 'A partir do 5º nível, você pode manifestar asas espectrais ou escamosas como uma Ação Bônus. Você ganha deslocamento de Voo igual ao seu deslocamento de caminhada durante 10 minutos. Você pode usar esta característica uma vez e recupera seu uso após um Descanso Longo.'
-      }
-    ],
-    lineagesTitle: 'Tabela de Ancestralidade Dracônica',
-    lineages: [
-      {
-        name: 'Dragão Negro / Cobre (Ácido)',
-        icon: '🧪',
-        description: 'Dano: Ácido | Forma: Linha de 9m (1,5m de largura) | Teste de Resistência: Destreza | Resistência a Ácido.'
-      },
-      {
-        name: 'Dragão Azul / Bronze (Eletricidade)',
-        icon: '⚡',
-        description: 'Dano: Elétrico | Forma: Linha de 9m (1,5m de largura) | Teste de Resistência: Destreza | Resistência a Eletricidade.'
-      },
-      {
-        name: 'Dragão Latão / Ouro / Vermelho (Fogo)',
-        icon: '🔥',
-        description: 'Dano: Fogo | Forma: Cone de 4,5m (ou Linha de 9m para Latão) | Teste de Resistência: Destreza | Resistência a Fogo.'
-      },
-      {
-        name: 'Dragão Branco / Prata (Frio)',
-        icon: '❄️',
-        description: 'Dano: Frio | Forma: Cone de 4,5m | Teste de Resistência: Constituição | Resistência a Frio.'
-      },
-      {
-        name: 'Dragão Verde (Veneno)',
-        icon: '☣️',
-        description: 'Dano: Veneno | Forma: Cone de 4,5m | Teste de Resistência: Constituição | Resistência a Veneno.'
+        description: 'Como um anão da montanha, você é forte e robusto, acostumado a uma vida difícil em terrenos acidentados.\n\n• **Aumento no Valor de Habilidade**: Seu valor de **Força aumenta em +2**.\n• **Treinamento Anão com Armaduras**: Você tem proficiência com **Armaduras Leves e Médias**.'
       }
     ]
   },
   {
     id: 'elfo',
-    name: 'Elfo (Elf)',
-    icon: '🏹',
+    name: 'Elfo',
+    icon: '🍃',
     type: 'Humanoide',
-    size: 'Médio',
-    speed: '9 metros (10,5m para Elfo da Floresta)',
-    description: 'Povo longevo e gracioso do Reino das Fadas e das florestas ancestrais, os elfos vivem em profunda harmonia com a magia natural e o cosmos, guiados por visões oníricas em seu transe meditativo.',
-    traits: [
-      {
-        name: 'Ancestralidade Feérica (Fey Ancestry)',
-        type: 'Passiva',
-        description: 'Você tem Vantagem em testes de resistência para evitar ou encerrar a condição Enfeitiçado em si mesmo.'
-      },
-      {
-        name: 'Sentidos Afiados (Keen Senses)',
-        type: 'Perícia',
-        description: 'Você tem proficiência na perícia Percepção (Perception).'
-      },
-      {
-        name: 'Transe (Trance)',
-        type: 'Passiva / Descanso',
-        description: 'Você não precisa dormir e magia não pode colocá-lo para dormir. Você pode completar um Descanso Longo em apenas 4 horas se passar esse tempo em meditação profunda e consciente.'
-      },
-      {
-        name: 'Visão no Escuro (18m / 36m)',
-        type: 'Sentido',
-        description: 'Você tem visão no escuro com alcance de 18 metros (36 metros para Linhagem Drow).'
-      }
-    ],
-    lineagesTitle: 'Linhagens Élficas (Escolha 1)',
-    lineages: [
-      {
-        name: 'Drow (Elfo Negro)',
-        icon: '🕷️',
-        description: 'Origem do Subterrâneo. Sua Visão no Escuro aumenta para 36 metros. Você conhece o truque Globos de Luz. No 3º nível você aprende Fogo das Fadas (Fey Fire), e no 5º nível aprende Escuridão (Darkness). Você pode conjurar cada uma dessas magias 1x ao dia sem gastar espaços de magia (ou usando seus espaços normais de magia). Atributo de conjuração: Inteligência, Sabedoria ou Carisma (escolhido ao criar o personagem).'
-      },
-      {
-        name: 'Alto Elfo (High Elf)',
-        icon: '🔮',
-        description: 'Herdeiro da alta magia arcana. Você conhece um truque da lista de Magias de Mago de sua escolha; sempre que terminar um Descanso Longo, você pode trocar esse truque por outro truque de mago. No 3º nível você aprende Passo Nebuloso (Misty Step), podendo conjurá-la 1x ao dia sem gastar espaço (ou usando espaços normais).'
-      },
-      {
-        name: 'Elfo da Floresta (Wood Elf)',
-        icon: '🍃',
-        description: 'Guardião dos bosques veloz e furtivo. Seu deslocamento base de caminhada aumenta para 10,5 metros (35 pés). Você conhece o truque Artifício (Druidcraft). No 3º nível você aprende Passos sem Pegadas (Pass without Trace), podendo conjurá-la 1x ao dia sem gastar espaço (ou usando espaços normais).'
-      }
-    ]
-  },
-  {
-    id: 'gnomo',
-    name: 'Gnomo (Gnome)',
-    icon: '⚙️',
-    type: 'Humanoide',
-    size: 'Pequeno (cerca de 0,90m a 1,20m de altura)',
+    size: 'Médio (cerca de 1,50m a 1,80m de altura, esguios e graciosos)',
     speed: '9 metros',
-    description: 'Pequenos em estatura mas gigantes em curiosidade e intelecto, os gnomos combinam inventividade, entusiasmo mágico e uma mente afiada capaz de repelir influências mágicas.',
+    abilityScoreSummary: '+2 Destreza',
+    description: 'Um povo de graça sobrenatural e beleza etérea, os elfos vivem no mundo sem pertencer inteiramente a ele. Amantes da arte, da magia e da natureza selvagem, possuem vidas que se estendem por séculos, desenvolvendo uma perspectiva paciente e profunda sobre o cosmos.',
     traits: [
       {
-        name: 'Esperteza Gnômica (Gnomish Cunning)',
-        type: 'Passiva',
-        description: 'Você tem Vantagem em todos os testes de resistência de Inteligência, Sabedoria e Carisma.'
+        name: 'Aumento no Valor de Habilidade',
+        type: 'Atributo',
+        description: 'Seu valor de **Destreza aumenta em +2**.'
       },
       {
-        name: 'Visão no Escuro (18m)',
+        name: 'Visão no Escuro (18 metros)',
         type: 'Sentido',
-        description: 'Você tem visão no escuro com alcance de 18 metros.'
+        description: 'Acostumado às florestas crepusculares e ao céu noturno, você enxerga na penumbra a até 18 metros como se fosse luz plena, e na escuridão como se fosse penumbra.'
+      },
+      {
+        name: 'Sentidos Aguçados',
+        type: 'Perícia',
+        description: 'Você tem proficiência na perícia **Percepção**.'
+      },
+      {
+        name: 'Ancestralidade Feérica',
+        type: 'Proteção Mágica',
+        description: 'Você tem **Vantagem em salvaguardas para não ser enfeitiçado**, e a magia não pode colocar você para dormir.'
+      },
+      {
+        name: 'Transe',
+        type: 'Descanso Místico',
+        description: 'Elfos não precisam dormir. Em vez disso, meditam profundamente em transe por **4 horas por dia**, obtendo o mesmo benefício que um humano obtém com 8 horas de sono.'
+      },
+      {
+        name: 'Idiomas',
+        type: 'Comunicação',
+        description: 'Você pode falar, ler e escrever **Comum** e **Élfico**.'
       }
     ],
-    lineagesTitle: 'Linhagens Gnômicas (Escolha 1)',
+    lineagesTitle: 'Sub-raças de Elfo',
     lineages: [
       {
-        name: 'Gnomo da Floresta (Forest Gnome)',
-        icon: '🐿️',
-        description: 'Você conhece o truque Ilusão Menor (Minor Illusion). Além disso, você pode conjurar a magia Falar com Animais (Speak with Animals) um número de vezes igual ao seu Bônus de Proficiência sem gastar espaços de magia (recupera em Descanso Longo). Atributo de conjuração: Inteligência, Sabedoria ou Carisma.'
+        name: 'Alto Elfo',
+        icon: '✨',
+        description: 'Como um alto elfo, você possui uma mente aguçada e domínio sobre a magia primordial.\n\n• **Aumento no Valor de Habilidade**: Seu valor de **Inteligência aumenta em +1**.\n• **Treinamento com Armas Élficas**: Proficiência com *espada longa*, *espada curta*, *arco curto* e *arco longo*.\n• **Truque**: Você conhece um truque à sua escolha da lista de magias de Mago (Inteligência é a sua habilidade para este truque).\n• **Idioma Adicional**: Você pode falar, ler e escrever um idioma extra à sua escolha.'
       },
       {
-        name: 'Gnomo das Rochas / Engenhoqueiro (Rock Gnome)',
-        icon: '🔧',
-        description: 'Você conhece os truques Consertar (Mending) e Prestidigitação (Prestidigitation). Com 10 minutos de trabalho e 10 PO de materiais, você pode criar um mecanismo em miniatura (como um brinquedo mecânico, acendedor de fogo ou caixa de música mágica) que funciona por 8 horas ou até ser desmontado.'
-      }
-    ]
-  },
-  {
-    id: 'golias',
-    name: 'Golias (Goliath)',
-    icon: '🪨',
-    type: 'Humanoide (Sangue de Gigante)',
-    size: 'Médio (2,10m a 2,40m de altura)',
-    speed: '10,5 metros (35 pés)',
-    description: 'Descendentes dos gigantes das mais altas montanhas e tempestades, os Golias possuem força colossal, passos largos e a capacidade mágica de canalizar os poderes ancestrais de seus clãs gigantescos.',
-    traits: [
-      {
-        name: 'Passo Grande (Large Stride)',
-        type: 'Passiva',
-        description: 'Seu deslocamento de caminhada base é de 10,5 metros.'
+        name: 'Elfo da Floresta',
+        icon: '🏹',
+        description: 'Como um elfo da floresta, você possui sentidos aguçados e intuição, além de deslocamento rápido pelas matas.\n\n• **Aumento no Valor de Habilidade**: Seu valor de **Sabedoria aumenta em +1**.\n• **Treinamento com Armas Élficas**: Proficiência com *espada longa*, *espada curta*, *arco curto* e *arco longo*.\n• **Pés Velozes**: Seu deslocamento básico de caminhada aumenta para **10,5 metros**.\n• **Máscara da Natureza**: Você pode tentar se esconder mesmo quando estiver apenas levemente obscurecido por folhagem, chuva forte, névoa ou outro fenômeno natural.'
       },
       {
-        name: 'Forma Imensa (5º Nível)',
-        type: 'Ação Bônus / Transformação',
-        description: 'A partir do 5º nível, como uma Ação Bônus, você pode aumentar dramaticamente seu tamanho para o tamanho Grande durante 10 minutos. Enquanto durar: você tem Vantagem em testes de Força e seu deslocamento de caminhada aumenta em +3 metros (10 pés). Você pode usar esta habilidade 1 vez por Descanso Longo.'
-      },
-      {
-        name: 'Herança de Gigante (Giant Ancestry)',
-        type: 'Escolha de Linhagem',
-        description: 'Você carrega as bênçãos e a magia natural de um dos grandes tipos de gigantes. Você pode usar o poder de sua herança um número de vezes igual ao seu Bônus de Proficiência, recuperando todos os usos em um Descanso Longo.'
-      }
-    ],
-    lineagesTitle: 'Linhagens de Gigantes (Herança Sobrenatural)',
-    lineages: [
-      {
-        name: 'Gigante da Nuvem (Cloud Giant - Passo Nebuloso)',
-        icon: '☁️',
-        description: 'Como uma Ação Bônus, você pode se teletransportar magicamente até 9 metros para um espaço desocupado que você possa ver.'
-      },
-      {
-        name: 'Gigante do Fogo (Fire Giant - Golpe Ígneo)',
-        icon: '🔥',
-        description: 'Quando você atinge um alvo com um ataque e causa dano, pode adicionar 1d10 de dano de Fogo extra a esse dano.'
-      },
-      {
-        name: 'Gigante do Gelo (Frost Giant - Golpe Congelante)',
-        icon: '❄️',
-        description: 'Quando você atinge um alvo com um ataque e causa dano, pode adicionar 1d6 de dano de Frio e reduzir o deslocamento do alvo em 3 metros até o início do seu próximo turno.'
-      },
-      {
-        name: 'Gigante da Colina (Hill Giant - Tombo Sísmico)',
-        icon: '🥋',
-        description: 'Quando você atinge uma criatura de tamanho Grande ou menor com um ataque e causa dano, pode forçar a criatura a cair Prostrada imediatamente.'
-      },
-      {
-        name: 'Gigante da Pedra (Stone Giant - Resistência da Rocha)',
-        icon: '🪨',
-        description: 'Como uma Reação quando você sofre dano, você pode rolar 1d12 + seu modificador de Constituição e reduzir o dano sofrido por essa quantidade total.'
-      },
-      {
-        name: 'Gigante da Tempestade (Storm Giant - Retribuição do Trovão)',
-        icon: '⚡',
-        description: 'Como uma Reação quando você sofre dano de uma criatura a até 18 metros que você possa ver, você faz com que ela sofra 1d8 de dano Elétrico imediatamente.'
+        name: 'Elfo Negro (Drow)',
+        icon: '🕷️',
+        description: 'Descendentes de uma linhagem élfica ancestral dos reinos subterrâneos do Subterrâneo (Underdark).\n\n• **Aumento no Valor de Habilidade**: Seu valor de **Carisma aumenta em +1**.\n• **Visão no Escuro Superior**: Sua visão no escuro tem alcance de **36 metros**.\n• **Sensibilidade à Luz Solar**: Você tem desvantagem em jogadas de ataque e testes de Percepção que dependem da visão quando você ou o alvo estiverem sob luz solar direta.\n• **Magia Drow**: Conhece o truque *Globos de Luz*. No 3º nível, pode conjurar *Fogo das Fadas* 1x/descanso longo. No 5º nível, pode conjurar *Escuridão* 1x/descanso longo (Carisma é a sua habilidade para estas magias).\n• **Treinamento com Armas Drow**: Proficiência com *rapieira*, *espada curta* e *besta de mão*.'
       }
     ]
   },
@@ -306,149 +130,418 @@ const SPECIES_DATA = [
     name: 'Halfling',
     icon: '🍀',
     type: 'Humanoide',
-    size: 'Pequeno (cerca de 0,90m de altura)',
-    speed: '9 metros',
-    description: 'Povo corajoso, caloroso e incrivelmente afortunado, os Halflings navegam pelos perigos do mundo com graça sobrenatural, pés leves e uma sorte inexplicável que dobra o destino a seu favor.',
+    size: 'Pequeno (cerca de 0,90m de altura, pesando cerca de 20 kg)',
+    speed: '7,5 metros',
+    abilityScoreSummary: '+2 Destreza',
+    description: 'Os halflings são um povo pacífico, alegre e caloroso que aprecia os prazeres simples da comida, da amizade e do lar acolhedor. Apesar de sua aversão ao conflito desnecessário, possuem uma coragem surpreendente e uma sorte quase sobrenatural diante do perigo.',
     traits: [
       {
-        name: 'Sortudo (Lucky)',
-        type: 'Passiva',
-        description: 'Quando você rola um 1 no d20 para uma jogada de ataque, teste de habilidade ou teste de resistência, você pode jogar o dado novamente e deve usar o novo resultado.'
+        name: 'Aumento no Valor de Habilidade',
+        type: 'Atributo',
+        description: 'Seu valor de **Destreza aumenta em +2**.'
       },
       {
-        name: 'Corajoso (Brave)',
-        type: 'Passiva',
-        description: 'Você tem Vantagem em testes de resistência para evitar ou encerrar a condição Amedrontado em si mesmo.'
+        name: 'Sortudo',
+        type: 'Característica Rara',
+        description: 'Quando você rolar um **1 natural** em uma jogada de ataque, teste de habilidade ou salvaguarda, você pode **rolar novamente o dado** e deve usar o novo resultado.'
       },
       {
-        name: 'Agilidade Halfling (Halfling Nimbleness)',
-        type: 'Passiva',
-        description: 'Você pode se mover através do espaço de qualquer criatura que seja de um tamanho maior do que o seu.'
+        name: 'Bravo',
+        type: 'Bravura',
+        description: 'Você tem **Vantagem em salvaguardas contra ficar amedrontado**.'
       },
       {
-        name: 'Furtividade Natural (Naturally Stealthy)',
-        type: 'Passiva',
-        description: 'Você pode tentar se Esconder mesmo quando estiver obscurecido apenas por uma criatura que seja de tamanho pelo menos uma categoria maior do que você.'
+        name: 'Agilidade Halfling',
+        type: 'Movimento Tático',
+        description: 'Você pode se mover através do espaço de qualquer criatura que seja de um tamanho maior que o seu.'
+      },
+      {
+        name: 'Idiomas',
+        type: 'Comunicação',
+        description: 'Você pode falar, ler e escrever **Comum** e **Halfling**.'
       }
     ],
-    lineagesTitle: 'Características de Estilo de Vida',
+    lineagesTitle: 'Sub-raças de Halfling',
     lineages: [
       {
-        name: 'Pés-Leves / Robustos (Unificados)',
-        icon: '🥾',
-        description: 'Nas regras D&D 2024, as qualidades essenciais dos Halflings (Sortudo, Coragem e Furtividade Natural) foram consolidadas como pilares universais da espécie.'
+        name: 'Pés-Leves',
+        icon: '👣',
+        description: 'Como um halfling pés-leves, você é capaz de se esconder facilmente e passar despercebido por outros.\n\n• **Aumento no Valor de Habilidade**: Seu valor de **Carisma aumenta em +1**.\n• **Furtividade Natural**: Você pode tentar se esconder mesmo quando estiver obscurecido apenas por uma criatura que seja pelo menos um tamanho maior que você.'
+      },
+      {
+        name: 'Robusto',
+        icon: '🍺',
+        description: 'Dizem que os robustos possuem sangue anão correndo em suas veias, sendo mais fortes e resistentes a toxinas.\n\n• **Aumento no Valor de Habilidade**: Seu valor de **Constituição aumenta em +1**.\n• **Resiliência dos Robustos**: Você tem **Vantagem em salvaguardas contra veneno** e tem **Resistência a dano de veneno**.'
       }
     ]
   },
   {
     id: 'humano',
-    name: 'Humano (Human)',
+    name: 'Humano',
     icon: '👑',
     type: 'Humanoide',
-    size: 'Médio ou Pequeno (escolhido ao criar o personagem)',
+    size: 'Médio (variando amplamente de 1,50m a mais de 1,90m de altura)',
     speed: '9 metros',
-    description: 'A mais adaptável, ambiciosa e resiliente das espécies mortais, os humanos compensam a falta de sentidos mágicos inatos com versatilidade sem limites, inspiração contagiante e maestria em qualquer ofício.',
+    abilityScoreSummary: '+1 em Todos os Atributos (ou +1 em dois + Talento)',
+    description: 'A mais jovem, dinâmica e ambiciosa das raças clássicas. Os humanos são os inovadores, conquistadores e desbravadores dos reinos mortais, construindo grandes impérios e adaptando-se a qualquer ambiente com perseverança e espírito indomável.',
     traits: [
       {
-        name: 'Engenhoso (Resourceful)',
-        type: 'Passiva / Inspiração',
-        description: 'Sua determinação inabalável alimenta sua sorte. Sempre que você terminar um Descanso Longo, você ganha Inspiração Heroica (Heroic Inspiration).'
+        name: 'Versatilidade Humana',
+        type: 'Adaptabilidade',
+        description: 'Humanos se adaptam rapidamente a qualquer cultura, profissão ou estilo de combate, não possuindo limitações congênitas.'
       },
       {
-        name: 'Perito (Skillful)',
-        type: 'Perícia',
-        description: 'Você ganha proficiência em uma perícia à sua escolha.'
-      },
-      {
-        name: 'Versátil (Versatile)',
-        type: 'Talento Extra',
-        description: 'Você ganha um Talento de Origem (Origin Feat) adicional de 1º nível à sua escolha (como Alerta, Sortudo, Iniciado em Magia, Duro na Queda, etc.).'
+        name: 'Idiomas',
+        type: 'Comunicação',
+        description: 'Você pode falar, ler e escrever **Comum** e um idioma adicional à sua escolha.'
       }
     ],
-    lineagesTitle: 'Origens Humanas',
+    lineagesTitle: 'Variantes de Humano',
     lineages: [
       {
-        name: 'Tradição Adaptativa Universal',
-        icon: '🌍',
-        description: 'Humanos prosperam em todas as culturas dos multiversos com flexibilidade suprema, permitindo construir qualquer arquétipo de herói desde o nível 1 com talentos customizados.'
+        name: 'Humano Padrão',
+        icon: '⭐',
+        description: 'O ser humano com ampla capacidade física e mental em todas as áreas.\n\n• **Aumento no Valor de Habilidade**: Todos os seus seis valores de atributo (**Força, Destreza, Constituição, Inteligência, Sabedoria e Carisma**) aumentam em **+1**.\n• **Idioma Adicional**: Um idioma à sua escolha.'
+      },
+      {
+        name: 'Humano Variante (Opcional do Livro do Jogador)',
+        icon: '🎖️',
+        description: 'Uma variante comum em mesas de RPG focada em especialização e talentos heroicos precoces.\n\n• **Aumento no Valor de Habilidade**: Dois valores de atributo diferentes à sua escolha aumentam em **+1**.\n• **Perícia**: Você ganha proficiência em **uma perícia à sua escolha**.\n• **Talento**: Você ganha **um Talento à sua escolha** de D&D 5E à criação do personagem.'
       }
     ]
   },
   {
-    id: 'orc',
-    name: 'Orc',
-    icon: '🪓',
+    id: 'draconato',
+    name: 'Draconato',
+    icon: '🐉',
     type: 'Humanoide',
-    size: 'Médio',
+    size: 'Médio (altos e encorpados, frequentemente ultrapassando 1,90m e 110 kg)',
     speed: '9 metros',
-    description: 'Guerreiros indomáveis com energia vital inextinguível, os orcs canalizam a adrenalina nas batalhas para avançar ferozmente e recusam-se a cair mesmo perante golpes fatais.',
+    abilityScoreSummary: '+2 Força, +1 Carisma',
+    description: 'Nascidos de dragões, como seu nome proclama, os draconatos andam orgulhosamente por um mundo que os saúda com temor e respeito. Moldados por deuses dracônicos ou pelos próprios dragões, carregam escamas reluzentes e a fúria dos elementos em seu sopro.',
     traits: [
       {
-        name: 'Adrenalina (Adrenaline Rush)',
-        type: 'Ação Bônus / Defesa',
-        description: 'Você pode usar a Ação Disparada (Dash) como uma Ação Bônus. Quando faz isso, você ganha um número de Pontos de Vida Temporários igual ao seu Bônus de Proficiência. Você pode usar esta característica um número de vezes igual ao seu Bônus de Proficiência, recuperando todos os usos em um Descanso Curto ou Longo.'
+        name: 'Aumento no Valor de Habilidade',
+        type: 'Atributo',
+        description: 'Seu valor de **Força aumenta em +2** e seu valor de **Carisma aumenta em +1**.'
       },
       {
-        name: 'Resistência Implacável (Relentless Endurance)',
-        type: 'Reação / Sobrevivência',
-        description: 'Quando você é reduzido a 0 Pontos de Vida mas não é morto instantaneamente, você pode cair para 1 Ponto de Vida em vez disso. Uma vez usada esta característica, você não pode usá-la novamente até terminar um Descanso Longo.'
+        name: 'Ancestral Dracônico',
+        type: 'Herança Elemental',
+        description: 'Você possui um ancestral dracônico. Escolha um tipo de dragão da tabela. Isso determina o tipo de dano e a área de efeito da sua Arma de Sopro, bem como a sua Resistência a Dano.'
       },
       {
-        name: 'Visão no Escuro Superior (36m)',
-        type: 'Sentido',
-        description: 'Você tem visão no escuro com alcance estendido de 36 metros (120 pés).'
+        name: 'Arma de Sopro',
+        type: 'Ação / Dano em Área',
+        description: 'Você pode usar sua Ação para exalar energia destrutiva. O tamanho, forma e tipo de salvaguarda dependem do seu ancestral.\n• **Dano**: Causa **2d6 de dano** em uma falha na salvaguarda, ou metade em um sucesso. O dano aumenta para **3d6 no 6º nível**, **4d6 no 11º nível** e **5d6 no 16º nível**.\n• **CD da Salvaguarda**: 8 + seu modificador de Constituição + seu Bônus de Proficiência.\n• **Recarga**: Você pode usar esta característica uma vez e recupera seu uso após terminar um Descanso Curto ou Longo.'
+      },
+      {
+        name: 'Resistência a Dano',
+        type: 'Defesa Passiva',
+        description: 'Você tem **Resistência ao tipo de dano** associado ao seu ancestral dracônico (ex: Fogo, Frio, Ácido, Elétrico ou Veneno).'
+      },
+      {
+        name: 'Idiomas',
+        type: 'Comunicação',
+        description: 'Você pode falar, ler e escrever **Comum** e **Dracônico**.'
       }
     ],
-    lineagesTitle: 'Tradições de Tribo Orc',
+    lineagesTitle: 'Ancestrais Dracônicos (Tipos de Dragão)',
     lineages: [
       {
-        name: 'Fúria & Foco Ancestrais',
-        icon: '⚔️',
-        description: 'Orcs em 2024 são personagens jogáveis completos que combinam agilidade tática superior com extrema sobrevivência marcial.'
+        name: 'Dragão Vermelho / Ouro / Latão (Fogo)',
+        icon: '🔥',
+        description: '• **Tipo de Dano**: Fogo.\n• **Resistência**: Dano de Fogo.\n• **Arma de Sopro**: Vermelho/Ouro: Cone de 4,5m (Salvaguarda de Destreza); Latão: Linha de 9m por 1,5m (Salvaguarda de Destreza).'
+      },
+      {
+        name: 'Dragão Azul / Bronze (Elétrico)',
+        icon: '⚡',
+        description: '• **Tipo de Dano**: Elétrico.\n• **Resistência**: Dano Elétrico.\n• **Arma de Sopro**: Azul: Linha de 9m por 1,5m (Salvaguarda de Destreza); Bronze: Linha de 9m por 1,5m (Salvaguarda de Destreza).'
+      },
+      {
+        name: 'Dragão Branco / Prata (Frio)',
+        icon: '❄️',
+        description: '• **Tipo de Dano**: Frio.\n• **Resistência**: Dano de Frio.\n• **Arma de Sopro**: Cone de 4,5m (Salvaguarda de Constituição).'
+      },
+      {
+        name: 'Dragão Preto / Cobre (Ácido)',
+        icon: '🧪',
+        description: '• **Tipo de Dano**: Ácido.\n• **Resistência**: Dano Ácido.\n• **Arma de Sopro**: Linha de 9m por 1,5m (Salvaguarda de Destreza).'
+      },
+      {
+        name: 'Dragão Verde (Veneno)',
+        icon: '☠️',
+        description: '• **Tipo de Dano**: Veneno.\n• **Resistência**: Dano de Veneno.\n• **Arma de Sopro**: Cone de 4,5m (Salvaguarda de Constituição).'
+      }
+    ]
+  },
+  {
+    id: 'gnomo',
+    name: 'Gnomo',
+    icon: '⚙️',
+    type: 'Humanoide',
+    size: 'Pequeno (cerca de 0,90m a 1,20m de altura, pesando cerca de 20 kg)',
+    speed: '7,5 metros',
+    abilityScoreSummary: '+2 Inteligência',
+    description: 'Uma energia vibrante e curiosidade insaciável pulsam através de cada fibra do corpo de um gnomo. Mestres da engenhosidade mecânica, da ilusão e da magia sutil, enfrentam a vida com entusiasmo contagiante e mente brilhante.',
+    traits: [
+      {
+        name: 'Aumento no Valor de Habilidade',
+        type: 'Atributo',
+        description: 'Seu valor de **Inteligência aumenta em +2**.'
+      },
+      {
+        name: 'Visão no Escuro (18 metros)',
+        type: 'Sentido',
+        description: 'Acostumado à vida subterrânea e tocas escuras, você enxerga na penumbra a até 18 metros como se fosse luz plena, e na escuridão como se fosse penumbra.'
+      },
+      {
+        name: 'Esperteza Gnômica',
+        type: 'Defesa Arcana',
+        description: 'Você tem **Vantagem em todas as salvaguardas de Inteligência, Sabedoria e Carisma contra magias**.'
+      },
+      {
+        name: 'Idiomas',
+        type: 'Comunicação',
+        description: 'Você pode falar, ler e escrever **Comum** e **Gnômico**.'
+      }
+    ],
+    lineagesTitle: 'Sub-raças de Gnomo',
+    lineages: [
+      {
+        name: 'Gnomo das Rochas',
+        icon: '🔧',
+        description: 'Como um gnomo das rochas, você possui uma inventividade natural e precisão para aparelhos mágicos e mecânicos.\n\n• **Aumento no Valor de Habilidade**: Seu valor de **Constituição aumenta em +1**.\n• **Conhecimento de Artífice**: Sempre que fizer um teste de História sobre itens mágicos, objetos alquímicos ou mecanismos tecnológicos, adicione o **dobro do seu bônus de proficiência**.\n• **Engenhoca**: Usando ferramentas de funileiro, 1 hora de trabalho e 10 PO em materiais, você pode construir um dispositivo mecânico Pequeno (AC 5, 1 PV) que dura 24 horas: *Brinquedo Mecânico*, *Isqueiro Mecânico* ou *Caixa de Música*.'
+      },
+      {
+        name: 'Gnomo da Floresta',
+        icon: '🍄',
+        description: 'Como um gnomo da floresta, você possui um talento inato para a ilusão e furtividade natural entre os bosques.\n\n• **Aumento no Valor de Habilidade**: Seu valor de **Destreza aumenta em +1**.\n• **Ilusionista Nato**: Você conhece o truque *Ilusão Menor* (Inteligência é a sua habilidade para conjurá-lo).\n• **Falar com Feras Pequenas**: Através de sons e gestos, você pode comunicar ideias simples para feras Pequenas ou menores (como esquilos, texugos, coelhos e pássaros).'
+      }
+    ]
+  },
+  {
+    id: 'meio-elfo',
+    name: 'Meio-Elfo',
+    icon: '🎭',
+    type: 'Humanoide',
+    size: 'Médio (cerca de 1,50m a 1,80m de altura, combinando traços de ambas as linhagens)',
+    speed: '9 metros',
+    abilityScoreSummary: '+2 Carisma, +1 em Dois Outros Atributos',
+    description: 'Caminhando entre dois mundos mas não pertencendo inteiramente a nenhum, os meio-elfos combinam o que alguns dizem ser as melhores qualidades de seus pais elfos e humanos: a curiosidade, inventividade e ambição humanas temperadas pelos sentidos refinados, amor pela arte e graça mágica dos elfos.',
+    traits: [
+      {
+        name: 'Aumento no Valor de Habilidade',
+        type: 'Atributo',
+        description: 'Seu valor de **Carisma aumenta em +2**, e **dois outros valores de habilidade à sua escolha aumentam em +1**.'
+      },
+      {
+        name: 'Visão no Escuro (18 metros)',
+        type: 'Sentido',
+        description: 'Graças ao seu sangue élfico, você tem visão superior no escuro e na penumbra a até 18 metros.'
+      },
+      {
+        name: 'Ancestralidade Feérica',
+        type: 'Proteção Mágica',
+        description: 'Você tem **Vantagem em salvaguardas para não ser enfeitiçado**, e a magia não pode colocar você para dormir.'
+      },
+      {
+        name: 'Versatilidade em Perícias',
+        type: 'Treinamento Amplo',
+        description: 'Você ganha proficiência em **duas perícias à sua escolha**.'
+      },
+      {
+        name: 'Idiomas',
+        type: 'Comunicação',
+        description: 'Você pode falar, ler e escrever **Comum**, **Élfico** e um idioma adicional à sua escolha.'
+      }
+    ],
+    lineagesTitle: 'Heranças de Meio-Elfo',
+    lineages: [
+      {
+        name: 'Meio-Elfo Clássico (Versatilidade)',
+        icon: '🌟',
+        description: 'A linhagem tradicional dotada de grande carisma social e adaptabilidade incomparável em qualquer terra.\n\n• **Bônus Flexíveis**: +2 Carisma e +1 em outros dois atributos.\n• **2 Perícias Extras**: Escolha livre entre qualquer uma das 18 perícias do jogo.'
+      },
+      {
+        name: 'Herança Silvestre / Drow (Variante de Cenário)',
+        icon: '🌲',
+        description: 'Meio-elfos criados diretamente entre comunidades élficas que trocam a Versatilidade em Perícias por características élficas específicas:\n\n• *Herança da Floresta*: Deslocamento 10,5m ou Máscara da Natureza.\n• *Herança Drow*: Magia Drow (truques e magias inatas).'
+      }
+    ]
+  },
+  {
+    id: 'meio-orc',
+    name: 'Meio-Orc',
+    icon: '⚔️',
+    type: 'Humanoide',
+    size: 'Médio (geralmente entre 1,75m e 2,10m, pesados e musculosos)',
+    speed: '9 metros',
+    abilityScoreSummary: '+2 Força, +1 Constituição',
+    description: 'Quer estejam unidos sob os estandartes de uma horda militar ou lutando para encontrar seu espaço nas cidades civilizadas, os meio-orcs combinam a força bruta e fúria indômita dos orcs com a determinação inabalável dos humanos. Marcados por cicatrizes de batalha, não desistem enquanto houver fôlego em seus pulmões.',
+    traits: [
+      {
+        name: 'Aumento no Valor de Habilidade',
+        type: 'Atributo',
+        description: 'Seu valor de **Força aumenta em +2** e seu valor de **Constituição aumenta em +1**.'
+      },
+      {
+        name: 'Visão no Escuro (18 metros)',
+        type: 'Sentido',
+        description: 'Graças ao seu sangue orc, você enxerga na penumbra a até 18 metros como se fosse luz plena, e na escuridão como se fosse penumbra.'
+      },
+      {
+        name: 'Ameaçador',
+        type: 'Perícia',
+        description: 'Você ganha proficiência na perícia **Intimidação**.'
+      },
+      {
+        name: 'Resistência Implacável',
+        type: 'Superação Heroica',
+        description: 'Quando você for reduzido a **0 Pontos de Vida** mas não for morto instantaneamente, você pode optar por **cair para 1 Ponto de Vida** em vez disso. Uma vez usada, você recupera esta habilidade após terminar um Descanso Longo.'
+      },
+      {
+        name: 'Ataques Selvagens',
+        type: 'Crítico Devastador',
+        description: 'Quando você acertar um **acerto crítico com uma arma corpo a corpo**, você pode rolar **um dos dados de dano da arma mais uma vez** e adicioná-lo ao dano extra do acerto crítico.'
+      },
+      {
+        name: 'Idiomas',
+        type: 'Comunicação',
+        description: 'Você pode falar, ler e escrever **Comum** e **Orc**.'
+      }
+    ],
+    lineagesTitle: 'Origens de Meio-Orc',
+    lineages: [
+      {
+        name: 'Guerreiro das Tribos Fronteiriças',
+        icon: '🛡️',
+        description: 'Criado nas duras estepes e terras ermas, onde a força física e a resistência contra intempéries e monstros determinam a sobrevivência do clã.'
+      },
+      {
+        name: 'Campeão dos Reinos Civilizados',
+        icon: '🏰',
+        description: 'Treinado como gladiador, cavaleiro mercenário ou guarda veterano, canalizando sua fúria natural em disciplina marcial implacável.'
       }
     ]
   },
   {
     id: 'tiefling',
     name: 'Tiefling',
-    icon: '😈',
-    type: 'Humanoide (Sangue Inferior/Planar)',
-    size: 'Médio ou Pequeno (escolhido ao criar o personagem)',
+    icon: '🔥',
+    type: 'Humanoide',
+    size: 'Médio (semelhante aos humanos em altura e peso)',
     speed: '9 metros',
-    description: 'Carregando a herança mágica e as marcas físicas dos Planos Inferiores (o Abismo dos demônios, Carceri/Hades ou os Nove Infernos dos diabos), os tieflings empunham feitiçarias sombrias e resistência elemental.',
+    abilityScoreSummary: '+2 Carisma, +1 Inteligência',
+    description: 'Herdeiros de um pacto ancestral que infundiu a essência dos Nove Infernos em sua linhagem de sangue. Os tieflings possuem chifres imponentes, cauda preênsil e olhos de cores sólidas. Embora frequentemente temidos por preconceito, possuem astúcia, encanto magnético e poder mágico ardente.',
     traits: [
       {
-        name: 'Visão no Escuro (18m)',
-        type: 'Sentido',
-        description: 'Você tem visão no escuro com alcance de 18 metros.'
+        name: 'Aumento no Valor de Habilidade',
+        type: 'Atributo',
+        description: 'Seu valor de **Carisma aumenta em +2** e seu valor de **Inteligência aumenta em +1**.'
       },
       {
-        name: 'Legado Sobrenatural (Otherworldly Presence)',
-        type: 'Escolha de Legado',
-        description: 'Você escolhe um Legado dos Planos Inferiores: Abissal, Ctônico ou Infernal. Sua escolha concede resistência a dano e magias conhecidas adicionais que usam Inteligência, Sabedoria ou Carisma como atributo de conjuração.'
+        name: 'Visão no Escuro (18 metros)',
+        type: 'Sentido',
+        description: 'Graças à sua herança infernal, você enxerga na penumbra a até 18 metros como se fosse luz plena, e na escuridão como se fosse penumbra.'
+      },
+      {
+        name: 'Resistência Infernal',
+        type: 'Proteção Elemental',
+        description: 'Você tem **Resistência a dano de Fogo**.'
+      },
+      {
+        name: 'Legado Infernal',
+        type: 'Magia Inata',
+        description: 'Você conhece o truque *Taumaturgia*.\n• No **3º nível**, você pode conjurar a magia *Repreensão Infernal* como uma magia de 2º círculo uma vez por Descanso Longo.\n• No **5º nível**, você pode conjurar a magia *Escuridão* uma vez por Descanso Longo.\n• **Carisma** é a sua habilidade de conjuração para estas magias.'
+      },
+      {
+        name: 'Idiomas',
+        type: 'Comunicação',
+        description: 'Você pode falar, ler e escrever **Comum** e **Infernal**.'
       }
     ],
-    lineagesTitle: 'Legados dos Planos Inferiores (Escolha 1)',
+    lineagesTitle: 'Linhagens Infernais',
     lineages: [
       {
-        name: 'Legado Abissal (Abyssal - Caos & Veneno)',
-        icon: '🩸',
-        description: 'Ligação com o Abismo e demônios. Resistência a dano de Veneno. Você conhece o truque Veneno (Poison Spray). No 3º nível aprende Raio de Enfraquecimento (Ray of Sickness), e no 5º nível aprende Imobilizar Pessoa (Hold Person). Você pode conjurar as magias de 3º e 5º nível 1x ao dia sem espaço de magia.'
+        name: 'Linhagem de Asmodeus (Clássica do Livro do Jogador)',
+        icon: '👑',
+        description: 'A linhagem tradicional abençoada pelo Senhor dos Nove Infernos.\n\n• **Bônus**: +2 Carisma, +1 Inteligência.\n• **Magias**: *Taumaturgia*, *Repreensão Infernal* (2º nível) e *Escuridão* (3º nível).\n• **Resistência**: Dano de Fogo.'
       },
       {
-        name: 'Legado Ctônico (Chthonic - Morte & Hades)',
-        icon: '💀',
-        description: 'Ligação com Carceri, Gehenna e Hades. Resistência a dano Necrótico. Você conhece o truque Toque Arrepiante (Chill Touch). No 3º nível aprende Falsa Vida (False Life), e no 5º nível aprende Raio de Enfraquecimento / Toque Vampírico (Ray of Enfeeblement). Você pode conjurar as magias de 3º e 5º nível 1x ao dia sem espaço de magia.'
+        name: 'Tiefling Alado (Variante de Cenário)',
+        icon: '🪽',
+        description: 'Alguns tieflings manifestam asas coriáceas de morcego ou gárgula, trocando o Legado Infernal por deslocamento de **Voo de 9 metros** enquanto não vestirem armadura pesada.'
+      }
+    ]
+  },
+  {
+    id: 'aasimar',
+    name: 'Aasimar',
+    icon: '✨',
+    type: 'Humanoide',
+    size: 'Médio',
+    speed: '9 metros',
+    abilityScoreSummary: '+2 Carisma',
+    description: 'Seres mortais tocados pela centelha dos Planos Superiores. Descendentes de humanos com sangue celestial, carregam bênçãos divinas em sua alma e a luz sagrada de guardiões celestiais.',
+    traits: [
+      {
+        name: 'Aumento no Valor de Habilidade',
+        type: 'Atributo',
+        description: 'Seu valor de **Carisma aumenta em +2**.'
       },
       {
-        name: 'Legado Infernal (Infernal - Fogo & Diabos)',
-        icon: '🔥',
-        description: 'Ligação com os Nove Infernos de Baator. Resistência a dano de Fogo. Você conhece o truque Taumaturgia (Thaumaturgy). No 3º nível aprende Repreensão Infernal (Hellish Rebuke), e no 5º nível aprende Escuridão (Darkness). Você pode conjurar as magias de 3º e 5º nível 1x ao dia sem espaço de magia.'
+        name: 'Visão no Escuro (18 metros)',
+        type: 'Sentido',
+        description: 'Você enxerga na penumbra a até 18 metros como se fosse luz plena, e na escuridão como se fosse penumbra.'
+      },
+      {
+        name: 'Resistência Celestial',
+        type: 'Defesa Divina',
+        description: 'Você tem **Resistência a dano Necrótico e dano Radiante**.'
+      },
+      {
+        name: 'Mãos que Curam',
+        type: 'Ação / Cura',
+        description: 'Como uma Ação, você pode tocar uma criatura e fazer com que ela recupere uma quantidade de Pontos de Vida igual ao seu **Nível de Personagem**. Você recupera o uso desta habilidade após um Descanso Longo.'
+      },
+      {
+        name: 'Portador da Luz',
+        type: 'Truque Inato',
+        description: 'Você conhece o truque *Luz* (Carisma é a sua habilidade para este truque).'
+      },
+      {
+        name: 'Idiomas',
+        type: 'Comunicação',
+        description: 'Você pode falar, ler e escrever **Comum** e **Celestial**.'
+      }
+    ],
+    lineagesTitle: 'Sub-raças de Aasimar',
+    lineages: [
+      {
+        name: 'Aasimar Protetor',
+        icon: '🪽',
+        description: '• **Aumento no Valor de Habilidade**: Seu valor de **Sabedoria aumenta em +1**.\n• **Alma Radiante (3º Nível)**: Como Ação Bônus por 1 minuto, asas cintilantes brotam de suas costas concedendo deslocamento de Voo de 9m. Uma vez por turno ao causar dano, causa dano Radiante extra igual ao seu nível.'
+      },
+      {
+        name: 'Aasimar Flagelo',
+        icon: '☀️',
+        description: '• **Aumento no Valor de Habilidade**: Seu valor de **Constituição aumenta em +1**.\n• **Consumo Radiante (3º Nível)**: Como Ação Bônus por 1 minuto, queima com luz divina cegante. Criaturas a até 3m sofrem dano Radiante igual a metade do seu nível no final de seus turnos, e você causa dano Radiante extra igual ao seu nível 1x/turno.'
+      },
+      {
+        name: 'Aasimar Caído',
+        icon: '🌑',
+        description: '• **Aumento no Valor de Habilidade**: Seu valor de **Força aumenta em +1**.\n• **Mortalha Necrótica (3º Nível)**: Como Ação Bônus, manifesta asas esqueléticas aterrorizantes. Criaturas a até 3m devem ser bem-sucedidas em salvaguarda de Carisma ou ficam Amedrontadas até o fim do seu próximo turno. Causa dano Necrótico extra igual ao seu nível 1x/turno.'
       }
     ]
   }
 ];
 
+// Exportação universal para compatibilidade com o sistema
+if (typeof window !== 'undefined') {
+  window.SPECIES_DATA = SPECIES_DATA;
+  window.RACES_DATA = SPECIES_DATA;
+}
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { SPECIES_DATA };
+  module.exports = { SPECIES_DATA, RACES_DATA: SPECIES_DATA };
 }

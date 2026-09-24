@@ -6881,6 +6881,59 @@
       text-overflow: ellipsis;
     }
 
+    .spell-chip-dice-row {
+      display: flex;
+      align-items: center;
+      margin-top: 2px;
+      margin-bottom: 2px;
+    }
+
+    .spell-dice-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      background: rgba(245, 158, 11, 0.12);
+      color: #fef08a;
+      transition: all 0.15s ease;
+      user-select: none;
+      width: 100%;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+
+    .spell-dice-pill:hover {
+      background: rgba(245, 158, 11, 0.28);
+      border-color: #f59e0b;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    }
+
+    .spell-dice-pill.heal {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #a7f3d0;
+    }
+
+    .spell-dice-pill.heal:hover {
+      background: rgba(16, 185, 129, 0.3);
+      border-color: #10b981;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    .feature-calc-val {
+      color: var(--accent-gold);
+      font-weight: 800;
+      background: rgba(245, 158, 11, 0.15);
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+
     .spell-chip-actions-bar {
       display: flex;
       align-items: center;
@@ -8307,6 +8360,66 @@
     .resource-quick-btn:hover {
       background: #334155;
       border-color: var(--accent-gold);
+    }
+
+    /* ESTILO DE LUTA INTERATIVO NA CARACTERÍSTICA DA FICHA (ISSUE-98) */
+    .feature-fighting-style-box {
+      margin-top: 8px;
+      padding: 6px 8px;
+      background: rgba(11, 17, 32, 0.85);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .feature-fighting-style-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-gold);
+    }
+    .feature-inline-select {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      color: #f8fafc;
+      padding: 5px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .feature-inline-select:hover, .feature-inline-select:focus {
+      border-color: #f59e0b;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+      background: #1e293b;
+    }
+    .feature-active-style-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .stat-chip-val.auto-ac {
+      color: #6ee7b7;
+      text-shadow: 0 0 6px rgba(110, 231, 183, 0.3);
+    }
+    .ac-calc-subtext {
+      font-size: 9px;
+      color: var(--text-muted);
+      margin-top: 1px;
     }
 
   </style>

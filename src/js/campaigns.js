@@ -1,9 +1,11 @@
-// src/js/campaigns.js - Gerenciamento de Campanhas, Heróis Vinculados, Diário e Inventário do Grupo
-
-let CAMPAIGNS_STATE = {
+var CAMPAIGNS_STATE = (typeof CAMPAIGNS_STATE !== 'undefined' && CAMPAIGNS_STATE) ? CAMPAIGNS_STATE : {
   activeCampaignId: "camp_1",
   campaigns: (typeof INITIAL_CAMPAIGNS !== 'undefined') ? JSON.parse(JSON.stringify(INITIAL_CAMPAIGNS)) : []
 };
+if (typeof window !== 'undefined') {
+  window.CAMPAIGNS_STATE = CAMPAIGNS_STATE;
+}
+
 
 function touchCampaign(campaignOrId) {
   if (!campaignOrId) return null;
@@ -142,8 +144,29 @@ function loadCampaignsState() {
         const deletedIds = getDeletedCampaignIds();
         parsed.campaigns = parsed.campaigns.filter(c => !deletedIds.includes(c.id));
         if (parsed.campaigns.length > 0) {
+          // Sanitização de sessões de teste legadas (Mina Perdida de Phandelver / Gundren Rockseeker)
+          parsed.campaigns.forEach(c => {
+            if (c.sessions && Array.isArray(c.sessions)) {
+              c.sessions = c.sessions.filter(s => {
+                const title = (s.title || '').toLowerCase();
+                const notes = (s.notes || '').toLowerCase();
+                return !title.includes('trilha triboar') && !title.includes('redbrands') && !notes.includes('gundren rockseeker');
+              });
+            }
+            if (c.partyStash && c.partyStash.history && Array.isArray(c.partyStash.history)) {
+              c.partyStash.history = c.partyStash.history.filter(h => {
+                const txt = (h.text || '').toLowerCase();
+                return !txt.includes('gundren rockseeker') && !txt.includes('redbrands');
+              });
+              if (c.partyStash.gold === 320 && c.partyStash.items && c.partyStash.items.some(i => i.name && i.name.includes('Wave Echo Cave'))) {
+                c.partyStash.gold = 0;
+                c.partyStash.items = [];
+              }
+            }
+          });
           CAMPAIGNS_STATE = parsed;
           const activeCamp = getActiveCampaign();
+
           if (activeCamp && (!activeCamp.sessions || activeCamp.sessions.length === 0)) {
             if (typeof recoverSessionsFromSnapshots === 'function') {
               recoverSessionsFromSnapshots(true);

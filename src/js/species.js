@@ -2,7 +2,7 @@
 // 🧬 D&D 5E 2024 - MÓDULO DE RAÇAS E ESPÉCIES
 // ==========================================
 
-let activeSpeciesId = 'aasimar';
+let activeSpeciesId = 'anao';
 let activeLineageIdx = 0;
 let speciesSearchQuery = '';
 let speciesFilterSize = 'all';
@@ -41,15 +41,15 @@ function renderSpecies() {
     <div class="species-header-panel">
       <div class="species-title-area">
         <h2 style="margin:0; display:flex; align-items:center; gap:8px; color:var(--text-bright);">
-          <span style="font-size:1.6rem;">🧬</span> Compêndio de Raças & Linhagens (D&D 5E 2024)
+          <span style="font-size:1.6rem;">🧬</span> Compêndio de Raças & Sub-raças (D&D 5ª Edição)
         </h2>
         <p style="margin:4px 0 0 0; color:var(--text-muted); font-size:0.88rem;">
-          Guia completo com as 10 espécies oficiais revisadas, características raciais inatas e linhagens/sub-raças detalhadas.
+          Guia oficial de D&D 5E com as raças clássicas do Livro do Jogador, bônus de habilidade, características inatas e sub-raças.
         </p>
       </div>
       <div class="species-controls-bar">
         <div class="search-box-wrapper" style="flex:1; min-width:220px;">
-          <input type="text" id="species-search-input" placeholder="🔍 Buscar raça, característica, magia ou linhagem..." 
+          <input type="text" id="species-search-input" placeholder="🔍 Buscar raça, característica, magia ou sub-raça..." 
                  value="${escapeSpeciesHtml(speciesSearchQuery)}" 
                  oninput="handleSpeciesSearch(this.value)" 
                  class="search-input" style="width:100%;">
@@ -71,11 +71,11 @@ function renderSpecies() {
               <span class="species-nav-icon">${sp.icon}</span>
               <div class="species-nav-info">
                 <div class="species-nav-name">${sp.name}</div>
-                <div class="species-nav-meta">${sp.size.split('(')[0].trim()} • ${sp.speed}</div>
+                <div class="species-nav-meta">${sp.size.split('(')[0].trim()} • ${sp.speed.split('(')[0].trim()}</div>
               </div>
             </button>
           `).join('')}
-          ${filteredSpecies.length === 0 ? `<div style="padding:15px; text-align:center; color:var(--text-muted); font-size:0.85rem;">Nenhuma espécie encontrada.</div>` : ''}
+          ${filteredSpecies.length === 0 ? `<div style="padding:15px; text-align:center; color:var(--text-muted); font-size:0.85rem;">Nenhuma raça encontrada.</div>` : ''}
         </div>
       </div>
 
@@ -90,7 +90,7 @@ function renderSpecies() {
 }
 
 function renderSpeciesDetailCard(species) {
-  if (!species) return '<div class="empty-state">Selecione uma espécie para ver os detalhes.</div>';
+  if (!species) return '<div class="empty-state">Selecione uma raça para ver os detalhes.</div>';
 
   return `
     <div class="species-card-content">
@@ -101,9 +101,10 @@ function renderSpeciesDetailCard(species) {
           <div>
             <h1 class="species-banner-title">${species.name}</h1>
             <div class="species-tags-row">
+              ${species.abilityScoreSummary ? `<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: var(--accent-gold); border: 1px solid rgba(245, 158, 11, 0.4);">⭐ ${species.abilityScoreSummary}</span>` : ''}
               <span class="badge badge-type">🏷️ ${species.type}</span>
-              <span class="badge badge-size">📏 ${species.size}</span>
-              <span class="badge badge-speed">⚡ ${species.speed}</span>
+              <span class="badge badge-size">📏 ${species.size.split('(')[0].trim()}</span>
+              <span class="badge badge-speed">⚡ ${species.speed.split('(')[0].trim()}</span>
             </div>
           </div>
         </div>

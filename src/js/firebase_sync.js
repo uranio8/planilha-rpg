@@ -117,22 +117,23 @@ function initFirebaseSync() {
   }
 
   try {
-    // Se já existiam instâncias de apps no Firebase, reinicializa para aplicar chaves atualizadas
+    // Reutiliza a instância existente se já inicializada para evitar erro fatal de deleção
     if (firebase.apps && firebase.apps.length > 0) {
-      try {
-        firebase.apps.forEach(app => {
-          if (app && typeof app.delete === 'function') app.delete().catch(() => {});
-        });
-      } catch (e) {}
+      firebaseApp = firebase.app();
+    } else {
+      // Auto-deriva a URL do Realtime Database se faltar no objeto colado do console
+      const finalConfig = Object.assign({}, config);
+      if (!finalConfig.databaseURL && finalConfig.projectId) {
+        finalConfig.databaseURL = `https://${finalConfig.projectId}-default-rtdb.firebaseio.com`;
+      }
+      firebaseApp = firebase.initializeApp(finalConfig);
     }
 
-    // Auto-deriva a URL do Realtime Database se faltar no objeto colado do console
-    const finalConfig = Object.assign({}, config);
-    if (!finalConfig.databaseURL && finalConfig.projectId) {
-      finalConfig.databaseURL = `https://${finalConfig.projectId}-default-rtdb.firebaseio.com`;
+    const currentRoom = getStoredFirebaseRoom();
+    if (isFirebaseConnected && realtimeDb && firebaseUnsubscribe) {
+      return true;
     }
 
-    firebaseApp = firebase.initializeApp(finalConfig);
 
     // 1. Suporte prioritário para Realtime Database (conforme configurado no console)
     if (typeof firebase.database === 'function') {
@@ -153,7 +154,6 @@ function initFirebaseSync() {
     }
 
     isFirebaseConnected = true;
-    const currentRoom = getStoredFirebaseRoom();
     updateFirebaseUiStatus('connected', `Nuvem: ${currentRoom}`);
 
     // Inicia a escuta em tempo real
@@ -844,7 +844,11 @@ function executeCloudSave() {
 
   // Salva no Realtime Database (fonte principal de alta velocidade)
   if (realtimeDb) {
-    savePromises.push(realtimeDb.ref('dnd_rooms/' + roomId).set(payload));
+    try {
+      savePromises.push(realtimeDb.ref('dnd_rooms/' + roomId).set(payload));
+    } catch (err) {
+      console.warn('Realtime DB ref/set falhou:', err);
+    }
   }
 
   // Salva no Firestore secundariamente com tratamento defensivo (não bloqueia caso 404/desativado)
@@ -900,35 +904,40 @@ function executePlayerCloudSave() {
   let rtdbPromise = Promise.resolve();
 
   if (realtimeDb) {
-    const roomRef = realtimeDb.ref(`dnd_rooms/${roomId}`);
-    rtdbPromise = roomRef.child('players').once('value').then(snap => {
-      const rawPlayers = snap.val();
-      let list = Array.isArray(rawPlayers) 
-        ? [...rawPlayers] 
-        : (rawPlayers && typeof rawPlayers === 'object' ? Object.values(rawPlayers) : []);
+    try {
+      const roomRef = realtimeDb.ref(`dnd_rooms/${roomId}`);
+      rtdbPromise = roomRef.child('players').once('value').then(snap => {
+        const rawPlayers = snap.val();
+        let list = Array.isArray(rawPlayers) 
+          ? [...rawPlayers] 
+          : (rawPlayers && typeof rawPlayers === 'object' ? Object.values(rawPlayers) : []);
 
-      const idx = list.findIndex(p => p && p.id === activePortalPlayerId);
-      if (idx >= 0) {
-        list[idx] = Object.assign({}, list[idx], myPlayer);
-      } else {
-        list.push(Object.assign({}, myPlayer));
-      }
+        const idx = list.findIndex(p => p && p.id === activePortalPlayerId);
+        if (idx >= 0) {
+          list[idx] = Object.assign({}, list[idx], myPlayer);
+        } else {
+          list.push(Object.assign({}, myPlayer));
+        }
 
-      const updates = {
-        players: list,
-        lastUpdatedBy: localClientId,
-        lastUpdateIso: nowIso,
-        publishedBy: 'player',
-        authorPlayerId: activePortalPlayerId,
-        authorPlayerName: myPlayer.name || ''
-      };
+        const updates = {
+          players: list,
+          lastUpdatedBy: localClientId,
+          lastUpdateIso: nowIso,
+          publishedBy: 'player',
+          authorPlayerId: activePortalPlayerId,
+          authorPlayerName: myPlayer.name || ''
+        };
 
-      if (typeof CAMPAIGNS_STATE !== 'undefined' && CAMPAIGNS_STATE) {
-        updates.campaigns = CAMPAIGNS_STATE;
-      }
+        if (typeof CAMPAIGNS_STATE !== 'undefined' && CAMPAIGNS_STATE) {
+          updates.campaigns = CAMPAIGNS_STATE;
+        }
 
-      return roomRef.update(updates);
-    });
+        return roomRef.update(updates);
+      });
+    } catch (err) {
+      console.warn('Realtime DB player save falhou:', err);
+      rtdbPromise = Promise.resolve();
+    }
   }
 
   // Firestore secundário com tratamento defensivo (nunca bloqueia caso 404/desativado)

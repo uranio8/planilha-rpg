@@ -192,32 +192,7 @@ let PLAYERS = [
   {
     "ac": 16,
     "actionEconomyFilter": "all",
-    "actionLogs": [
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Paladino 5 | +12 PV (Max: 43)",
-        "timestamp": "12:18",
-        "type": "general"
-      },
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Paladino 4 | +8 PV (Max: 31)",
-        "timestamp": "12:17",
-        "type": "general"
-      },
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Paladino 3 | +4 PV (Max: 23)",
-        "timestamp": "12:15",
-        "type": "general"
-      },
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Paladino 2 | +11 PV (Max: 19)",
-        "timestamp": "12:13",
-        "type": "general"
-      }
-    ],
+    "actionLogs": [],
     "activeCardTab": "skills",
     "attacks": "Espada Longa (+4, 1d8+2 cortante)",
     "avatar": "👤",
@@ -331,32 +306,7 @@ let PLAYERS = [
   },
   {
     "ac": 19,
-    "actionLogs": [
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Guerreiro 4 / Bárbaro 1 | +13 PV (Max: 43)",
-        "timestamp": "12:49",
-        "type": "general"
-      },
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Guerreiro 4 | +7 PV (Max: 30)",
-        "timestamp": "12:46",
-        "type": "general"
-      },
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Guerreiro 3 | +7 PV (Max: 23)",
-        "timestamp": "12:45",
-        "type": "general"
-      },
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Guerreiro 2 | +10 PV (Max: 16)",
-        "timestamp": "12:43",
-        "type": "general"
-      }
-    ],
+    "actionLogs": [],
     "activeCardTab": "skills",
     "attacks": "Espada Longa (+6, 1d10+24cortante)",
     "avatar": "👤",
@@ -447,14 +397,7 @@ let PLAYERS = [
   },
   {
     "ac": 11,
-    "actionLogs": [
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Mago 2 | +4 PV (Max: 9)",
-        "timestamp": "17:41",
-        "type": "general"
-      }
-    ],
+    "actionLogs": [],
     "activeCardTab": "inventory",
     "attacks": "Espada Longa (+4, 1d8+2 cortante)",
     "avatar": "🧙‍♀️",
@@ -531,14 +474,7 @@ let PLAYERS = [
   },
   {
     "ac": 15,
-    "actionLogs": [
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Ladino 2 | +9 PV (Max: 17)",
-        "timestamp": "17:47",
-        "type": "general"
-      }
-    ],
+    "actionLogs": [],
     "activeCardTab": "features",
     "attacks": "Espada Longa (+6, 1d6+4 cortante), Adaga (+6, 1d4+4 perfurante), arco curto (+6, 1d6+4)",
     "avatar": "👤",
@@ -616,20 +552,7 @@ let PLAYERS = [
   },
   {
     "ac": 15,
-    "actionLogs": [
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Ladino 3 | +8 PV (Max: 19)",
-        "timestamp": "10:27",
-        "type": "general"
-      },
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Ladino 2 | +7 PV (Max: 11)",
-        "timestamp": "17:46",
-        "type": "general"
-      }
-    ],
+    "actionLogs": [],
     "activeCardTab": "spells",
     "attacks": "Espada Curta (+6, 1d6+4 cortante), Adaga (+6, 1d4+4), Arco curto (+6, 1d6+4)",
     "avatar": "👤",
@@ -714,26 +637,7 @@ let PLAYERS = [
   },
   {
     "ac": 14,
-    "actionLogs": [
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Bruxo 3 | +5 PV (Max: 22)",
-        "timestamp": "10:16",
-        "type": "general"
-      },
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Bruxo 2 | +8 PV (Max: 17)",
-        "timestamp": "17:45",
-        "type": "general"
-      },
-      {
-        "icon": "✨",
-        "text": "Conjurou Rajada Mística (como Truque)",
-        "timestamp": "14:27",
-        "type": "spell"
-      }
-    ],
+    "actionLogs": [],
     "activeCardTab": "skills",
     "attacks": "Espada curta (+5, 1d6+3 perfurante), Adaga curta (+5, 1d4+3 perfurante)",
     "avatar": "👤",
@@ -827,62 +731,7 @@ let PLAYERS = [
   },
   {
     "ac": 12,
-    "actionLogs": [
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Bruxo 5 | +9 PV (Max: 37)",
-        "timestamp": "12:34",
-        "type": "general"
-      },
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Bruxo 4 | +7 PV (Max: 28)",
-        "timestamp": "12:33",
-        "type": "general"
-      },
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Bruxo 3 | +9 PV (Max: 21)",
-        "timestamp": "12:33",
-        "type": "general"
-      },
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Bruxo 2 | +4 PV (Max: 12)",
-        "timestamp": "12:32",
-        "type": "general"
-      },
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Bruxo 2 | +8 PV (Max: 14)",
-        "timestamp": "17:42",
-        "type": "general"
-      },
-      {
-        "icon": "⚔️",
-        "text": "Sofreu 1 de dano (3 ➔ 2 PV)",
-        "timestamp": "12:25",
-        "type": "damage"
-      },
-      {
-        "icon": "⚔️",
-        "text": "Sofreu 1 de dano (4 ➔ 3 PV)",
-        "timestamp": "12:25",
-        "type": "damage"
-      },
-      {
-        "icon": "⚔️",
-        "text": "Sofreu 1 de dano (5 ➔ 4 PV)",
-        "timestamp": "12:25",
-        "type": "damage"
-      },
-      {
-        "icon": "⚔️",
-        "text": "Sofreu 1 de dano (6 ➔ 5 PV)",
-        "timestamp": "12:25",
-        "type": "damage"
-      }
-    ],
+    "actionLogs": [],
     "activeCardTab": "spells",
     "attacks": "Adaga Curta (+3, 1d4+1), Cajado (+3, 1d4+1), Besta (+3, 1d8+1)",
     "avatar": "👤",
@@ -974,26 +823,7 @@ let PLAYERS = [
   },
   {
     "ac": 12,
-    "actionLogs": [
-      {
-        "icon": "💚",
-        "text": "Recuperou 1 PV (0 ➔ 1 PV)",
-        "timestamp": "19:08",
-        "type": "heal"
-      },
-      {
-        "icon": "⚔️",
-        "text": "Sofreu 1 de dano (2 ➔ 1 PV)",
-        "timestamp": "12:59",
-        "type": "damage"
-      },
-      {
-        "icon": "⚔️",
-        "text": "Sofreu 5 de dano (7 ➔ 2 PV)",
-        "timestamp": "12:59",
-        "type": "damage"
-      }
-    ],
+    "actionLogs": [],
     "activeCardTab": "skills",
     "attacks": "Espada curta (+4, 1d6+2 cortante), Adaga (+4, 1d6+2)",
     "avatar": "👤",
@@ -1076,50 +906,7 @@ let PLAYERS = [
   },
   {
     "ac": 14,
-    "actionLogs": [
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Feiticeiro 4 / Bruxo 1 | +11 PV (Max: 36)",
-        "timestamp": "15:45",
-        "type": "general"
-      },
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Feiticeiro 4 | +4 PV (Max: 25)",
-        "timestamp": "15:42",
-        "type": "general"
-      },
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Feiticeiro 3 | +7 PV (Max: 21)",
-        "timestamp": "15:36",
-        "type": "general"
-      },
-      {
-        "icon": "🔼",
-        "text": "Subiu de Nível: Feiticeiro 2 | +8 PV (Max: 14)",
-        "timestamp": "15:35",
-        "type": "general"
-      },
-      {
-        "icon": "⚔️",
-        "text": "Sofreu 1 de dano (4 ➔ 3 PV)",
-        "timestamp": "12:25",
-        "type": "damage"
-      },
-      {
-        "icon": "⚔️",
-        "text": "Sofreu 1 de dano (5 ➔ 4 PV)",
-        "timestamp": "12:25",
-        "type": "damage"
-      },
-      {
-        "icon": "⚔️",
-        "text": "Sofreu 1 de dano (6 ➔ 5 PV)",
-        "timestamp": "12:25",
-        "type": "damage"
-      }
-    ],
+    "actionLogs": [],
     "activeCardTab": "skills",
     "attacks": "Besta Leve (+2, 1d8+2)",
     "avatar": "👤",
@@ -1576,14 +1363,6 @@ let state = {
     {
       "text": "✨ <b>Ficha Sincronizada:</b> Ficha de <b>Arkhalis</b> (Ademar) carregada e salva com sucesso neste dispositivo!",
       "time": "22:21:02"
-    },
-    {
-      "text": "💚 <b>Valerius Martelo Negro</b> recuperou 1 PV (23 ➔ 24 PV)",
-      "time": "18:55:53"
-    },
-    {
-      "text": "⚔️ <b>Valerius Martelo Negro</b> sofreu 1 de dano (24 ➔ 23 PV)",
-      "time": "18:55:52"
     }
   ],
   "round": 3,
@@ -1985,7 +1764,17 @@ function loadFromLocalStorage() {
       PLAYERS = loadedPlayers.map(p => {
         if (!p.skillProficiencies) p.skillProficiencies = [];
         if (!p.saveProficiencies) p.saveProficiencies = [];
-        if (!p.actionLogs) p.actionLogs = [];
+        if (!p.actionLogs || !Array.isArray(p.actionLogs)) {
+          p.actionLogs = [];
+        } else {
+          // Remove resquícios de testes em logs de alunos
+          p.actionLogs = p.actionLogs.filter(log => {
+            const txt = (log && log.text) ? log.text : '';
+            if (txt.includes('Sofreu 1 de dano') || txt.includes('Sofreu 5 de dano') || txt.includes('Recuperou 1 PV (0 ➔ 1 PV)')) return false;
+            if (txt.includes('Subiu de Nível: Mago 2') && (p.level || 1) < 2) return false;
+            return true;
+          });
+        }
         if (p.playerNotes === undefined) p.playerNotes = "";
 
         // Se o cache local estiver defasado no Nível 1 e canonicamente o herói já evoluiu para Nível superior
@@ -2004,6 +1793,12 @@ function loadFromLocalStorage() {
         }
         return p;
       });
+
+      if (typeof calculatePlayerAcFromEquipment === 'function') {
+        PLAYERS.forEach(p => {
+          if (!p.ac) p.ac = calculatePlayerAcFromEquipment(p);
+        });
+      }
     }
 
     // Se state foi carregado ou busca em dnd_tracker_state_v3
@@ -2017,6 +1812,13 @@ function loadFromLocalStorage() {
           if (sV3 && Array.isArray(sV3.combatants)) state = sV3;
         }
       } catch (e) {}
+    }
+
+    if (state && Array.isArray(state.logs)) {
+      state.logs = state.logs.filter(l => {
+        const txt = (l && l.text) ? l.text : '';
+        return !txt.includes('Valerius Martelo Negro');
+      });
     }
 
     // Garante que combatentes de jogadores no state reflitam o PV e maxHp reais

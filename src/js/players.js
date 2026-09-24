@@ -145,8 +145,9 @@ function calculatePlayerAcFromEquipment(player) {
   const dexMod = Math.floor(((player.dex || 10) - 10) / 2);
   const conMod = Math.floor(((player.con || 10) - 10) / 2);
   const wisMod = Math.floor(((player.wis || 10) - 10) / 2);
-  const cls = String(player.className || '').toLowerCase();
-  const sub = String(player.subclass || player.subclassName || '').toLowerCase();
+  const cls = String(player.className || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const sub = String(player.subclass || player.subclassName || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const fStyle = String(player.fightingStyle || '').toLowerCase();
 
   const inventory = Array.isArray(player.inventory) ? player.inventory : [];
   const equippedArmors = inventory.filter(it => it.equipped && isArmorItem(it.name));
@@ -155,11 +156,13 @@ function calculatePlayerAcFromEquipment(player) {
   let baseAc = 10 + dexMod;
 
   if (equippedArmors.length === 0) {
-    if (cls.includes('barbaro') || cls.includes('bárbaro')) {
+    if (cls.includes('barbaro')) {
       baseAc = 10 + dexMod + conMod;
     } else if (cls.includes('monge')) {
       if (equippedShields.length === 0) {
         baseAc = 10 + dexMod + wisMod;
+      } else {
+        baseAc = 10 + dexMod;
       }
     } else if (sub.includes('drac') || (cls.includes('feiticeiro') && player.subclassIdx === 0)) {
       baseAc = 13 + dexMod;
@@ -176,6 +179,10 @@ function calculatePlayerAcFromEquipment(player) {
     } else {
       baseAc = armStats.ac + dexMod;
     }
+    // Estilo de Luta: Defesa (+1 na CA quando estiver usando armadura)
+    if (fStyle === 'defense') {
+      baseAc += 1;
+    }
   }
 
   if (equippedShields.length > 0) {
@@ -183,6 +190,112 @@ function calculatePlayerAcFromEquipment(player) {
   }
 
   return Math.max(1, baseAc);
+}
+
+function getPlayerAcCalculationInfo(player) {
+  if (!player) return { ac: 10, details: 'Padrão: 10' };
+  const dexMod = Math.floor(((player.dex || 10) - 10) / 2);
+  const conMod = Math.floor(((player.con || 10) - 10) / 2);
+  const wisMod = Math.floor(((player.wis || 10) - 10) / 2);
+  const cls = String(player.className || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const sub = String(player.subclass || player.subclassName || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const fStyle = String(player.fightingStyle || '').toLowerCase();
+
+  const inventory = Array.isArray(player.inventory) ? player.inventory : [];
+  const equippedArmors = inventory.filter(it => it.equipped && isArmorItem(it.name));
+  const equippedShields = inventory.filter(it => it.equipped && isShieldItem(it.name));
+
+  let baseAc = 10 + dexMod;
+  let formulaParts = [];
+  let modeName = '';
+
+  if (equippedArmors.length === 0) {
+    if (cls.includes('barbaro')) {
+      baseAc = 10 + dexMod + conMod;
+      modeName = 'Defesa sem Armadura (Bárbaro)';
+      formulaParts.push('10 base');
+      formulaParts.push(`${dexMod >= 0 ? '+' : ''}${dexMod} DES`);
+      formulaParts.push(`${conMod >= 0 ? '+' : ''}${conMod} CON`);
+    } else if (cls.includes('monge')) {
+      if (equippedShields.length === 0) {
+        baseAc = 10 + dexMod + wisMod;
+        modeName = 'Defesa sem Armadura (Monge)';
+        formulaParts.push('10 base');
+        formulaParts.push(`${dexMod >= 0 ? '+' : ''}${dexMod} DES`);
+        formulaParts.push(`${wisMod >= 0 ? '+' : ''}${wisMod} SAB`);
+      } else {
+        baseAc = 10 + dexMod;
+        modeName = 'Sem Armadura (Escudo desativa Monge)';
+        formulaParts.push('10 base');
+        formulaParts.push(`${dexMod >= 0 ? '+' : ''}${dexMod} DES`);
+      }
+    } else if (sub.includes('drac') || (cls.includes('feiticeiro') && player.subclassIdx === 0)) {
+      baseAc = 13 + dexMod;
+      modeName = 'Resiliência Dracônica';
+      formulaParts.push('13 base');
+      formulaParts.push(`${dexMod >= 0 ? '+' : ''}${dexMod} DES`);
+    } else {
+      modeName = 'Sem Armadura';
+      formulaParts.push('10 base');
+      formulaParts.push(`${dexMod >= 0 ? '+' : ''}${dexMod} DES`);
+    }
+  } else {
+    const armor = equippedArmors[0];
+    const armStats = getArmorItemStats(armor.name);
+    modeName = armStats.name || armor.name;
+    if (armStats.type === 'light') {
+      baseAc = armStats.ac + dexMod;
+      formulaParts.push(`${armStats.ac} [${armStats.name || 'Armadura'}]`);
+      formulaParts.push(`${dexMod >= 0 ? '+' : ''}${dexMod} DES`);
+    } else if (armStats.type === 'medium') {
+      const appliedDex = Math.min(dexMod, 2);
+      baseAc = armStats.ac + appliedDex;
+      formulaParts.push(`${armStats.ac} [${armStats.name || 'Armadura'}]`);
+      formulaParts.push(`${appliedDex >= 0 ? '+' : ''}${appliedDex} DES (máx +2)`);
+    } else if (armStats.type === 'heavy') {
+      baseAc = armStats.ac;
+      formulaParts.push(`${armStats.ac} [${armStats.name || 'Armadura'}]`);
+    } else {
+      baseAc = armStats.ac + dexMod;
+      formulaParts.push(`${armStats.ac} [${armStats.name || 'Armadura'}]`);
+      formulaParts.push(`${dexMod >= 0 ? '+' : ''}${dexMod} DES`);
+    }
+
+    if (fStyle === 'defense') {
+      baseAc += 1;
+      formulaParts.push('+1 Estilo Defesa');
+    }
+  }
+
+  if (equippedShields.length > 0) {
+    baseAc += 2;
+    formulaParts.push('+2 Escudo');
+  }
+
+  const finalAc = Math.max(1, baseAc);
+  const details = `${modeName}: ${formulaParts.join(' ')} = CA ${finalAc}`;
+
+  return {
+    ac: finalAc,
+    modeName,
+    details,
+    hasArmor: equippedArmors.length > 0,
+    hasShield: equippedShields.length > 0,
+    hasDefenseStyle: fStyle === 'defense' && equippedArmors.length > 0
+  };
+}
+
+function ensurePlayerCalculatedAc(player) {
+  if (!player) return 10;
+  const newAc = calculatePlayerAcFromEquipment(player);
+  player.ac = newAc;
+  if (typeof state !== 'undefined' && state.combatants && Array.isArray(state.combatants)) {
+    const c = state.combatants.find(x => x.playerId === player.id || (x.type === 'player' && x.name === player.name));
+    if (c) {
+      c.ac = newAc;
+    }
+  }
+  return newAc;
 }
 
 function togglePlayerItemEquipped(playerId, itemIdx) {
@@ -1114,7 +1227,16 @@ function renderPlayers() {
             ${renderPlayerResourceQuickDock(p)}
 
             <div class="stat-chips-grid">
-              <div class="stat-chip"><span class="stat-chip-label">CA</span><span class="stat-chip-val">${p.ac}</span></div>
+              ${(() => {
+                const acInfo = getPlayerAcCalculationInfo(p);
+                const displayAc = p.ac || acInfo.ac;
+                const isCustom = p.ac && p.ac !== acInfo.ac;
+                const titleStr = isCustom ? ('CA: ' + displayAc + ' (Base 5E: ' + acInfo.details + ')') : (acInfo.details + ' • Calculado automaticamente pelas regras 5E');
+                return '<div class="stat-chip" title="' + escapeAttr(titleStr) + '" style="cursor:help;">' +
+                  '<span class="stat-chip-label">CA</span>' +
+                  '<span class="stat-chip-val auto-ac">' + displayAc + '</span>' +
+                '</div>';
+              })()}
               <div class="stat-chip"><span class="stat-chip-label">Profic.</span><span class="stat-chip-val" style="color: var(--primary);">+${prof}</span></div>
               <div class="stat-chip"><span class="stat-chip-label">Iniciat.</span><span class="stat-chip-val" style="color: var(--accent-blue);">${dexMod >= 0 ? '+' + dexMod : dexMod}</span></div>
               <div class="stat-chip"><span class="stat-chip-label">Desloc.</span><span class="stat-chip-val" style="font-size: 12px;">${p.speed}</span></div>
@@ -1274,6 +1396,7 @@ function renderPlayers() {
             const castTime = sp ? (sp.time || sp.castTime || '') : '';
             const spAct = getSpellActionType(sp || sName);
             const spActBadge = spAct === 'bonus' ? '<span class="action-economy-tag bonus">Bônus</span>' : (spAct === 'reaction' ? '<span class="action-economy-tag reaction">Reação</span>' : '<span class="action-economy-tag action">Ação</span>');
+            const diceInfo = typeof getSpellDiceInfo === 'function' ? getSpellDiceInfo(sp || sName, p) : null;
             return `
                   <div class="spell-action-chip">
                     <div class="spell-chip-top">
@@ -1285,6 +1408,13 @@ function renderPlayers() {
                       ${range ? `<span>• ${range}</span>` : ''}
                       ${castTime ? `<span>• ${castTime}</span>` : ''}
                     </div>
+                    ${diceInfo ? `
+                      <div class="spell-chip-dice-row">
+                        <button type="button" class="spell-dice-pill ${diceInfo.isHeal ? 'heal' : 'damage'}" onclick="rollPlayerSpellDice('${p.id}', '${escapeAttr(sName)}')" title="Clique para Rolar ${escapeAttr(diceInfo.label)}">
+                          <span>${diceInfo.icon}</span> <span>${diceInfo.label}</span> <span style="font-size:10px; opacity:0.8;">🎲</span>
+                        </button>
+                      </div>
+                    ` : ''}
                     <div class="spell-chip-actions-bar">
                       <button class="btn-spell-cast" onclick="castPlayerSpellPrompt('${p.id}', '${escapeAttr(sName)}')" title="Lançar ${escapeAttr(sName)} (desconta slot se for magia de nível)">
                         ⚡ Lançar
@@ -3213,6 +3343,34 @@ const FIGHTING_STYLES = {
   druidic: { id: 'druidic', name: 'Guerreiro Druídico', icon: '🍃', desc: 'Você aprende 2 Truques da lista de magias de Druida que contam como magias de Patrulheiro.' }
 };
 
+function setPlayerFightingStyle(playerId, styleKey, event) {
+  if (event && event.stopPropagation) event.stopPropagation();
+  const p = PLAYERS.find(x => String(x.id) === String(playerId));
+  if (!p) return;
+
+  p.fightingStyle = styleKey || '';
+  ensurePlayerCalculatedAc(p);
+
+  const styleObj = (typeof FIGHTING_STYLES !== 'undefined' && FIGHTING_STYLES[styleKey]) ? FIGHTING_STYLES[styleKey] : null;
+  const styleName = styleObj ? (styleObj.icon + ' ' + styleObj.name) : 'Nenhum';
+
+  touchPlayer(p);
+  addPlayerActionLog(p.id, '⚔️', 'Definiu o Estilo de Luta: ' + styleName, 'general');
+  if (typeof addLog === 'function') {
+    addLog('⚔️ <b>' + escapeAttr(p.name) + '</b> adotou o Estilo de Luta: <b>' + escapeAttr(styleName) + '</b> (CA: ' + p.ac + ')');
+  }
+
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+  renderPlayers();
+  if (typeof renderCombat === 'function') renderCombat();
+
+  if (typeof showToast === 'function') {
+    showToast('⚔️ Estilo de Luta: ' + styleName + ' ativado! (CA: ' + p.ac + ')');
+  }
+}
+
 const DND5E_KNOWN_SPELLS_TABLE = {
   bardo: [0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 15, 16, 18, 19, 19, 20, 22, 22, 22],
   feiticeiro: [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 12, 13, 13, 14, 14, 15, 15, 15, 15],
@@ -3606,6 +3764,42 @@ function findSpeciesData(query) {
   return found || null;
 }
 
+const DND5E_SUBCLASS_UNLOCK_LEVEL = {
+  clerigo: 1,
+  cleric: 1,
+  bruxo: 1,
+  warlock: 1,
+  feiticeiro: 1,
+  sorcerer: 1,
+  druida: 2,
+  druid: 2,
+  mago: 2,
+  wizard: 2,
+  barbaro: 3,
+  barbarian: 3,
+  bardo: 3,
+  bard: 3,
+  guerreiro: 3,
+  fighter: 3,
+  ladino: 3,
+  rogue: 3,
+  monge: 3,
+  monk: 3,
+  paladino: 3,
+  paladin: 3,
+  patrulheiro: 3,
+  ranger: 3
+};
+
+function getSubclassUnlockLevel(className) {
+  if (!className) return 3;
+  const norm = String(className).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  for (const [key, lvl] of Object.entries(DND5E_SUBCLASS_UNLOCK_LEVEL)) {
+    if (norm.includes(key)) return lvl;
+  }
+  return 3;
+}
+
 function getUnlockedClassFeatures(className, level, subclassIdx = 0) {
   if (typeof CLASSES_DATA === 'undefined') return [];
   const cls = findClassData(className);
@@ -3622,7 +3816,8 @@ function getUnlockedClassFeatures(className, level, subclassIdx = 0) {
     });
   }
 
-  if (level >= 3 && cls.subclasses && cls.subclasses[subclassIdx]) {
+  const reqSubLvl = getSubclassUnlockLevel(className || (cls && cls.name));
+  if (level >= reqSubLvl && cls.subclasses && cls.subclasses[subclassIdx]) {
     const sub = cls.subclasses[subclassIdx];
     if (sub.features) {
       sub.features.forEach(f => {
@@ -3648,6 +3843,383 @@ function getPlayerClassesList(p) {
   }];
 }
 
+// --- 🎲 DICIONÁRIO E MOTOR DE DADOS DE MAGIAS (DANO E CURA) ---
+const DND5E_SPELL_DICE_DATA = {
+  // Truques com escalonamento (Nv 1: 1d, Nv 5: 2d, Nv 11: 3d, Nv 17: 4d)
+  'raio de fogo': { baseDice: '1d10', diceCount: 1, type: 'fogo', icon: '🔥', isCantripScale: true },
+  'fire bolt': { baseDice: '1d10', diceCount: 1, type: 'fogo', icon: '🔥', isCantripScale: true },
+  'rajada mistica': { baseDice: '1d10', diceCount: 1, type: 'energia', icon: '🟣', isBeamScale: true },
+  'eldritch blast': { baseDice: '1d10', diceCount: 1, type: 'energia', icon: '🟣', isBeamScale: true },
+  'toque chocante': { baseDice: '1d8', diceCount: 1, type: 'elétrico', icon: '⚡', isCantripScale: true },
+  'shocking grasp': { baseDice: '1d8', diceCount: 1, type: 'elétrico', icon: '⚡', isCantripScale: true },
+  'raio de gelo': { baseDice: '1d8', diceCount: 1, type: 'frio', icon: '❄️', isCantripScale: true },
+  'ray of frost': { baseDice: '1d8', diceCount: 1, type: 'frio', icon: '❄️', isCantripScale: true },
+  'espirro acido': { baseDice: '1d6', diceCount: 1, type: 'ácido', icon: '🧪', isCantripScale: true },
+  'acid splash': { baseDice: '1d6', diceCount: 1, type: 'ácido', icon: '🧪', isCantripScale: true },
+  'toque arrepiante': { baseDice: '1d8', diceCount: 1, type: 'necrótico', icon: '💀', isCantripScale: true },
+  'chill touch': { baseDice: '1d8', diceCount: 1, type: 'necrótico', icon: '💀', isCantripScale: true },
+  'rajada de veneno': { baseDice: '1d12', diceCount: 1, type: 'veneno', icon: '☠️', isCantripScale: true },
+  'poison spray': { baseDice: '1d12', diceCount: 1, type: 'veneno', icon: '☠️', isCantripScale: true },
+  'chama sagrada': { baseDice: '1d8', diceCount: 1, type: 'radiante', icon: '✨', isCantripScale: true },
+  'sacred flame': { baseDice: '1d8', diceCount: 1, type: 'radiante', icon: '✨', isCantripScale: true },
+  'chicote de espinhos': { baseDice: '1d6', diceCount: 1, type: 'perfurante', icon: '🌿', isCantripScale: true },
+  'thorn whip': { baseDice: '1d6', diceCount: 1, type: 'perfurante', icon: '🌿', isCantripScale: true },
+  'bordao mistico': { baseDice: '1d8', type: 'concussão', icon: '🪵', addAttr: true },
+  'shillelagh': { baseDice: '1d8', type: 'concussão', icon: '🪵', addAttr: true },
+
+  // Nível 1
+  'curar ferimentos': { baseDice: '1d8', type: 'cura', icon: '💚', isHeal: true, addAttr: true },
+  'cure wounds': { baseDice: '1d8', type: 'cura', icon: '💚', isHeal: true, addAttr: true },
+  'palavra curativa': { baseDice: '1d4', type: 'cura', icon: '💚', isHeal: true, addAttr: true },
+  'healing word': { baseDice: '1d4', type: 'cura', icon: '💚', isHeal: true, addAttr: true },
+  'misseis magicos': { baseDice: '1d4+1', type: 'energia', icon: '✨', label: '3x (1d4+1) Energia', rawFormula: '3d4+3' },
+  'magic missile': { baseDice: '1d4+1', type: 'energia', icon: '✨', label: '3x (1d4+1) Energia', rawFormula: '3d4+3' },
+  'maos flamejantes': { baseDice: '3d6', type: 'fogo', icon: '🔥' },
+  'burning hands': { baseDice: '3d6', type: 'fogo', icon: '🔥' },
+  'onda trovejante': { baseDice: '2d8', type: 'trovão', icon: '⚡' },
+  'thunderwave': { baseDice: '2d8', type: 'trovão', icon: '⚡' },
+  'raio de bruxa': { baseDice: '1d12', type: 'elétrico', icon: '⚡' },
+  'witch bolt': { baseDice: '1d12', type: 'elétrico', icon: '⚡' },
+  'raio guiado': { baseDice: '4d6', type: 'radiante', icon: '✨' },
+  'guiding bolt': { baseDice: '4d6', type: 'radiante', icon: '✨' },
+  'infligir ferimentos': { baseDice: '3d10', type: 'necrótico', icon: '💀' },
+  'inflict wounds': { baseDice: '3d10', type: 'necrótico', icon: '💀' },
+  'repreensao infernal': { baseDice: '2d10', type: 'fogo', icon: '🔥' },
+  'hellish rebuke': { baseDice: '2d10', type: 'fogo', icon: '🔥' },
+  'orbe cromatico': { baseDice: '3d8', type: 'elemental', icon: '🌈' },
+  'chromatic orb': { baseDice: '3d8', type: 'elemental', icon: '🌈' },
+  'auxilio divino': { baseDice: '1d4', type: 'radiante', icon: '⚔️', label: '+1d4 Radiante', rawFormula: '1d4' },
+  'divine favor': { baseDice: '1d4', type: 'radiante', icon: '⚔️', label: '+1d4 Radiante', rawFormula: '1d4' },
+  'bruxaria': { baseDice: '1d6', type: 'necrótico', icon: '🟣', label: '+1d6 Necrótico', rawFormula: '1d6' },
+  'hex': { baseDice: '1d6', type: 'necrótico', icon: '🟣', label: '+1d6 Necrótico', rawFormula: '1d6' },
+  'marca do cacador': { baseDice: '1d6', type: 'dano', icon: '🎯', label: '+1d6 Dano', rawFormula: '1d6' },
+  'hunter\'s mark': { baseDice: '1d6', type: 'dano', icon: '🎯', label: '+1d6 Dano', rawFormula: '1d6' },
+
+  // Nível 2
+  'despedacar': { baseDice: '3d8', type: 'trovão', icon: '💥' },
+  'shatter': { baseDice: '3d8', type: 'trovão', icon: '💥' },
+  'raio ardente': { baseDice: '2d6', type: 'fogo', icon: '🔥', label: '3x 2d6 Fogo', rawFormula: '2d6' },
+  'scorching ray': { baseDice: '2d6', type: 'fogo', icon: '🔥', label: '3x 2d6 Fogo', rawFormula: '2d6' },
+  'arma espiritual': { baseDice: '1d8', type: 'força', icon: '⚔️', addAttr: true },
+  'spiritual weapon': { baseDice: '1d8', type: 'força', icon: '⚔️', addAttr: true },
+  'oracao curativa': { baseDice: '2d8', type: 'cura', icon: '💚', isHeal: true, addAttr: true },
+  'prayer of healing': { baseDice: '2d8', type: 'cura', icon: '💚', isHeal: true, addAttr: true },
+  'flecha acida de melf': { baseDice: '4d4', type: 'ácido', icon: '🧪', label: '4d4 + 2d4 Ácido', rawFormula: '4d4' },
+  'melf\'s acid arrow': { baseDice: '4d4', type: 'ácido', icon: '🧪', label: '4d4 + 2d4 Ácido', rawFormula: '4d4' },
+  'esfera flamejante': { baseDice: '2d6', type: 'fogo', icon: '🔥' },
+  'flaming sphere': { baseDice: '2d6', type: 'fogo', icon: '🔥' },
+
+  // Nível 3
+  'bola de fogo': { baseDice: '8d6', type: 'fogo', icon: '💥' },
+  'fireball': { baseDice: '8d6', type: 'fogo', icon: '💥' },
+  'relampago': { baseDice: '8d6', type: 'elétrico', icon: '⚡' },
+  'lightning bolt': { baseDice: '8d6', type: 'elétrico', icon: '⚡' },
+  'espiritos guardioes': { baseDice: '3d8', type: 'radiante/necrótico', icon: '🛡️' },
+  'spirit guardians': { baseDice: '3d8', type: 'radiante/necrótico', icon: '🛡️' },
+  'palavra de cura em massa': { baseDice: '1d4', type: 'cura', icon: '💚', isHeal: true, addAttr: true },
+  'mass healing word': { baseDice: '1d4', type: 'cura', icon: '💚', isHeal: true, addAttr: true },
+  'toque vampirico': { baseDice: '3d6', type: 'necrótico', icon: '🧛' },
+  'vampiric touch': { baseDice: '3d6', type: 'necrótico', icon: '🧛' }
+};
+
+function getSpellDiceInfo(spellOrName, player = null) {
+  if (!spellOrName) return null;
+  const name = typeof spellOrName === 'string' ? spellOrName : (spellOrName.name || '');
+  const normName = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+  const sp = typeof SPELLS_DATA !== 'undefined'
+    ? SPELLS_DATA.find(s => s.name.toLowerCase() === name.toLowerCase())
+    : (typeof spellOrName === 'object' ? spellOrName : null);
+
+  const pLvl = player ? (parseInt(player.level) || 1) : 1;
+  const isCantrip = sp ? sp.level === 0 : false;
+
+  let spellMod = 0;
+  if (player && typeof getPlayerSpellcastingStats === 'function') {
+    const stats = getPlayerSpellcastingStats(player);
+    spellMod = stats.abilityMod !== undefined ? stats.abilityMod : (stats.modNum || 0);
+  }
+
+  const cantripScale = pLvl >= 17 ? 4 : (pLvl >= 11 ? 3 : (pLvl >= 5 ? 2 : 1));
+
+  const known = DND5E_SPELL_DICE_DATA[normName];
+  if (known) {
+    let dice = known.baseDice;
+    let label = known.label;
+    let rawFormula = known.rawFormula || dice;
+
+    if (known.isCantripScale) {
+      const dieType = known.baseDice.replace(/^\d+/, '');
+      const count = cantripScale * (known.diceCount || 1);
+      dice = `${count}${dieType}`;
+      rawFormula = dice;
+      label = `${dice} ${known.type.charAt(0).toUpperCase() + known.type.slice(1)}`;
+    } else if (known.isBeamScale) {
+      dice = `${cantripScale}x 1d10`;
+      rawFormula = `${cantripScale}d10`;
+      label = `${dice} ${known.type.charAt(0).toUpperCase() + known.type.slice(1)}`;
+    } else if (known.addAttr) {
+      const modStr = spellMod >= 0 ? `+${spellMod}` : `${spellMod}`;
+      dice = `${known.baseDice} ${modStr}`;
+      rawFormula = `${known.baseDice}${modStr}`;
+      label = `${known.baseDice}${modStr} ${known.type.charAt(0).toUpperCase() + known.type.slice(1)}`;
+    } else if (!label) {
+      label = `${dice} ${known.type.charAt(0).toUpperCase() + known.type.slice(1)}`;
+    }
+
+    return {
+      name,
+      dice,
+      type: known.type,
+      icon: known.icon || '🎲',
+      label,
+      rawFormula,
+      isDamage: !known.isHeal,
+      isHeal: !!known.isHeal
+    };
+  }
+
+  if (sp && sp.desc) {
+    const m = sp.desc.match(/(\d+d\d+(\s*[\+\-]\s*\d+)?)\s*(pontos de\s*)?(de\s*)?(dano\s+)?(de\s+)?(ácido|elétrico|fogo|frio|concussão|necrótico|perfurante|veneno|psíquico|radiante|cortante|trovejante|força|energia)?/i);
+    const healMatch = sp.desc.match(/recupera\s+(\d+d\d+(\s*[\+\-]\s*\d+)?)/i);
+
+    if (healMatch) {
+      return {
+        name,
+        dice: healMatch[1],
+        type: 'cura',
+        icon: '💚',
+        label: `${healMatch[1]} Cura`,
+        rawFormula: healMatch[1].replace(/\s+/g, ''),
+        isDamage: false,
+        isHeal: true
+      };
+    }
+
+    if (m) {
+      let diceFormula = m[1].trim();
+      const dmgType = m[7] ? m[7].toLowerCase() : 'dano';
+      const iconMap = {
+        'fogo': '🔥', 'elétrico': '⚡', 'frio': '❄️', 'ácido': '🧪', 'veneno': '☠️',
+        'necrótico': '💀', 'radiante': '✨', 'trovejante': '💥', 'força': '🟣',
+        'energia': '🟣', 'psíquico': '🧠'
+      };
+
+      if (isCantrip && diceFormula.match(/^1d\d+/)) {
+        const dieType = diceFormula.replace(/^1/, '');
+        diceFormula = `${cantripScale}${dieType}`;
+      }
+
+      return {
+        name,
+        dice: diceFormula,
+        type: dmgType,
+        icon: iconMap[dmgType] || '⚔️',
+        label: `${diceFormula} ${dmgType.charAt(0).toUpperCase() + dmgType.slice(1)}`,
+        rawFormula: diceFormula.replace(/\s+/g, ''),
+        isDamage: true,
+        isHeal: false
+      };
+    }
+  }
+
+  return null;
+}
+
+function rollPlayerSpellDice(playerId, spellName) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return null;
+
+  const diceInfo = getSpellDiceInfo(spellName, p);
+  if (!diceInfo || !diceInfo.rawFormula) {
+    if (typeof showToast === 'function') showToast(`A magia ${spellName} não possui fórmula de dados direta.`);
+    return null;
+  }
+
+  const formula = diceInfo.rawFormula;
+  const actionKind = diceInfo.isHeal ? 'Cura' : 'Dano';
+  const rollLabel = `${p.name} - ${spellName} (${actionKind})`;
+
+  let total = 0;
+  let breakdown = '';
+  let isCrit = false;
+
+  if (typeof rollGlobalFormula === 'function') {
+    const res = rollGlobalFormula(formula, rollLabel);
+    if (res) {
+      total = res.total;
+      breakdown = res.breakdown || '';
+      isCrit = !!res.isCrit;
+    }
+  } else {
+    const match = formula.replace(/\s+/g, '').match(/^(\d*)d(\d+)([+-]\d+)?$/i);
+    if (match) {
+      const count = match[1] ? parseInt(match[1]) : 1;
+      const sides = parseInt(match[2]);
+      const mod = match[3] ? parseInt(match[3]) : 0;
+      let sum = 0;
+      const rolls = [];
+      for (let i = 0; i < count; i++) {
+        const r = Math.floor(Math.random() * sides) + 1;
+        rolls.push(r);
+        sum += r;
+      }
+      total = sum + mod;
+      breakdown = `${count}d${sides} [${rolls.join(', ')}]${mod !== 0 ? (mod > 0 ? ' +' + mod : ' ' + mod) : ''}`;
+    } else {
+      total = parseInt(formula) || 0;
+      breakdown = `Fixo: ${total}`;
+    }
+  }
+
+  if (typeof playFX === 'function') playFX('dice');
+
+  const logMsg = `🎲 <b>${p.name}</b> rolou <b>${actionKind} de ${spellName}</b> (${diceInfo.label}): <b>${total}</b> <span style="font-size:11px; opacity:0.8;">(${breakdown})</span>`;
+  if (typeof addLog === 'function') addLog(logMsg);
+  if (typeof addPlayerActionLog === 'function') {
+    addPlayerActionLog(p.id, diceInfo.icon, `Rolou ${actionKind} de ${spellName}: ${total} (${diceInfo.label})`, 'dice');
+  }
+
+  if (typeof showLiveDiceRoll === 'function') {
+    showLiveDiceRoll(`🎲 ${spellName} (${actionKind})`, `${total}`, `${p.name} • ${diceInfo.label} (${breakdown})`, isCrit);
+  }
+
+  if (typeof broadcastCombatState === 'function') {
+    broadcastCombatState(logMsg);
+  }
+
+  return { total, breakdown, formula, label: diceInfo.label };
+}
+
+// --- 🛡️ RESOLUÇÃO DINÂMICA DE VALORES EM CARACTERÍSTICAS DA FICHA ---
+function formatPlayerFeatureForDisplay(feature, p, clsItem = null) {
+  if (!feature) return feature;
+  const f = { ...feature };
+  if (!p) return f;
+
+  const pLvl = parseInt(clsItem ? clsItem.level : (p.level || 1)) || 1;
+  const dexMod = Math.floor(((typeof getPlayerAttr === 'function' ? getPlayerAttr(p, 'des') : (p.dex || 10)) - 10) / 2);
+  const conMod = Math.floor(((typeof getPlayerAttr === 'function' ? getPlayerAttr(p, 'con') : (p.con || 10)) - 10) / 2);
+  const wisMod = Math.floor(((typeof getPlayerAttr === 'function' ? getPlayerAttr(p, 'sab') : (p.wis || 10)) - 10) / 2);
+  const chaMod = Math.floor(((typeof getPlayerAttr === 'function' ? getPlayerAttr(p, 'car') : (p.cha || 10)) - 10) / 2);
+  const intMod = Math.floor(((typeof getPlayerAttr === 'function' ? getPlayerAttr(p, 'int') : (p.int || 10)) - 10) / 2);
+  const strMod = Math.floor(((typeof getPlayerAttr === 'function' ? getPlayerAttr(p, 'for') : (p.str || 10)) - 10) / 2);
+  const prof = typeof getProfBonus === 'function' ? getProfBonus(p.level || pLvl) : Math.ceil(pLvl / 4) + 1;
+
+  let name = f.name || '';
+  let desc = f.desc || '';
+  const normName = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const normCls = String((clsItem ? clsItem.className : p.className) || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const normDesc = String(desc || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+    // 0. Estilo de Luta
+  if (normName.includes('estilo de luta') || normName.includes('fighting style')) {
+    const curStyleKey = p.fightingStyle || '';
+    const styleObj = (typeof FIGHTING_STYLES !== 'undefined' && FIGHTING_STYLES[curStyleKey]) ? FIGHTING_STYLES[curStyleKey] : null;
+    if (styleObj) {
+      name = 'Estilo de Luta (' + styleObj.name + ')';
+      desc = '<b>Especialidade Adotada:</b> ' + styleObj.icon + ' <b>' + styleObj.name + '</b> — ' + styleObj.desc;
+    } else {
+      name = 'Estilo de Luta (Escolha Pendente)';
+    }
+  }
+
+  // 1. Defesa sem Armadura
+  if (normName.includes('defesa sem armadura') || normName.includes('unarmored defense')) {
+    const isBarbarian = normCls.includes('barbaro') || normDesc.includes('constituicao');
+    const isMonk = normCls.includes('monge') || normDesc.includes('sabedoria');
+
+    if (isBarbarian) {
+      const caVal = 10 + dexMod + conMod;
+      name = `Defesa sem Armadura (CA ${caVal})`;
+      desc = desc.replace(/(10\s*\+\s*seu\s+modificador[^.]*|10\s*\+\s*[^.\n]*)/i, `10 + DES (${dexMod >= 0 ? '+' : ''}${dexMod}) + CON (${conMod >= 0 ? '+' : ''}${conMod}) = <b class="feature-calc-val">CA ${caVal}</b>`);
+    } else if (isMonk) {
+      const caVal = 10 + dexMod + wisMod;
+      name = `Defesa sem Armadura (CA ${caVal})`;
+      desc = desc.replace(/(10\s*\+\s*seu\s+modificador[^.]*|10\s*\+\s*[^.\n]*)/i, `10 + DES (${dexMod >= 0 ? '+' : ''}${dexMod}) + SAB (${wisMod >= 0 ? '+' : ''}${wisMod}) = <b class="feature-calc-val">CA ${caVal}</b>`);
+    }
+  }
+
+  // 2. Resiliência Dracônica (Feiticeiro)
+  else if (normName.includes('resiliencia draconica') || normName.includes('draconic resilience')) {
+    const caVal = 13 + dexMod;
+    name = `Resiliência Dracônica (CA ${caVal}, +${pLvl} PV)`;
+  }
+
+  // 3. Cura pelas Mãos (Paladino)
+  else if (normName.includes('cura pelas maos') || normName.includes('lay on hands')) {
+    const pool = 5 * pLvl;
+    name = `Cura pelas Mãos (${pool} PV)`;
+  }
+
+  // 4. Sentido Divino (Paladino)
+  else if (normName.includes('sentido divino') || normName.includes('divine sense')) {
+    const uses = 1 + Math.max(1, chaMod);
+    name = `Sentido Divino (${uses} usos/dia)`;
+  }
+
+  // 5. Ataque Furtivo (Ladino)
+  else if (normName.includes('ataque furtivo') || normName.includes('sneak attack')) {
+    const dice = Math.ceil(pLvl / 2) + 'd6';
+    name = `Ataque Furtivo (${dice})`;
+  }
+
+  // 6. Fúria (Bárbaro)
+  else if (normName === 'furia' || normName.startsWith('furia')) {
+    const rages = pLvl >= 20 ? 'Ilimitada' : (pLvl >= 17 ? '6' : (pLvl >= 12 ? '5' : (pLvl >= 6 ? '4' : (pLvl >= 3 ? '3' : '2'))));
+    const dmgBonus = pLvl >= 16 ? '+4' : (pLvl >= 9 ? '+3' : '+2');
+    name = `Fúria (${rages}/dia, ${dmgBonus} Dano)`;
+  }
+
+  // 7. Artes Marciais (Monge)
+  else if (normName.includes('artes marciais') || normName.includes('martial arts')) {
+    const die = pLvl >= 17 ? '1d10' : (pLvl >= 11 ? '1d8' : (pLvl >= 5 ? '1d6' : '1d4'));
+    name = `Artes Marciais (${die})`;
+  }
+
+  // 8. Inspiração Bárdica (Bardo)
+  else if (normName.includes('inspiracao bardica') || normName.includes('bardic inspiration')) {
+    const die = pLvl >= 15 ? 'd12' : (pLvl >= 10 ? 'd10' : (pLvl >= 5 ? 'd8' : 'd6'));
+    const uses = Math.max(1, chaMod);
+    name = `Inspiração Bárdica (${die}, ${uses} usos)`;
+  }
+
+  // 9. Retomar o Fôlego (Guerreiro)
+  else if (normName.includes('retomar o folego') || normName.includes('second wind')) {
+    name = `Retomar o Fôlego (1d10 + ${pLvl} PV)`;
+  }
+
+  // 10. Surto de Ação (Guerreiro)
+  else if (normName.includes('surto de acao') || normName.includes('action surge')) {
+    const uses = pLvl >= 17 ? '2 usos' : '1 uso';
+    name = `Surto de Ação (${uses})`;
+  }
+
+  // 11. Pontos de Ki (Monge)
+  else if (normName.includes('pontos de ki') || normName.includes('ki')) {
+    const kiCd = 8 + prof + wisMod;
+    name = `Pontos de Ki (${pLvl} Pontos, CD ${kiCd})`;
+  }
+
+  // 12. Pontos de Feitiçaria (Feiticeiro)
+  else if (normName.includes('pontos de feiticeira') || normName.includes('pontos de feiticaria') || normName.includes('sorcery points')) {
+    name = `Pontos de Feitiçaria (${pLvl} Pontos)`;
+  }
+
+  // Substituições genéricas em fórmulas explícitas como "(10 + des + con)"
+  name = name.replace(/\(10\s*\+\s*des\s*\+\s*con\)/gi, `(CA ${10 + dexMod + conMod})`);
+  name = name.replace(/\(10\s*\+\s*des\s*\+\s*sab\)/gi, `(CA ${10 + dexMod + wisMod})`);
+  name = name.replace(/\(13\s*\+\s*des\)/gi, `(CA ${13 + dexMod})`);
+  name = name.replace(/\(5\s*[x*]\s*n[ií]vel\)/gi, `(${5 * pLvl} PV)`);
+
+  desc = desc.replace(/\(10\s*\+\s*des\s*\+\s*con\)/gi, `(CA ${10 + dexMod + conMod})`);
+  desc = desc.replace(/\(10\s*\+\s*des\s*\+\s*sab\)/gi, `(CA ${10 + dexMod + wisMod})`);
+
+  f.name = name;
+  f.desc = desc;
+  return f;
+}
+
 function renderPlayerUnlockedFeatures(p) {
   const classesList = getPlayerClassesList(p);
   let html = '';
@@ -3662,17 +4234,37 @@ function renderPlayerUnlockedFeatures(p) {
           <span>🌳</span> <span>Habilidades de ${clsItem.className} (Nível ${clsItem.level}):</span>
         </div>
         <div class="unlocked-features-list">
-          ${unlocked.map(f => `
-            <div class="unlocked-feature-item" onclick="openPlayerFeatureModal('${escapeAttr(f.name)}', '${escapeAttr(f.desc)}', '${escapeAttr(f.type || 'Característica')}', '${escapeAttr(f.source || clsItem.className)}')" title="Clique para ver detalhes em tópicos">
+          ${unlocked.map(f => {
+            const formatted = formatPlayerFeatureForDisplay(f, p, clsItem);
+            const isFightingStyleFeature = f.name && f.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes('estilo de luta');
+            let fightingStyleActionHtml = '';
+            if (isFightingStyleFeature) {
+              const curStyle = p.fightingStyle || '';
+              const styleObj = (typeof FIGHTING_STYLES !== 'undefined' && FIGHTING_STYLES[curStyle]) ? FIGHTING_STYLES[curStyle] : null;
+              fightingStyleActionHtml = '<div class="feature-fighting-style-box" onclick="event.stopPropagation();">' +
+                '<div class="feature-fighting-style-header">' +
+                  '<span>⚔️ Escolha de Especialidade Marcial:</span>' +
+                  (styleObj ? '<span class="feature-active-style-badge">' + styleObj.icon + ' ' + styleObj.name + '</span>' : '<span style="color:#f87171; font-size:10px;">⚠️ Escolha Pendente</span>') +
+                '</div>' +
+                '<select class="feature-inline-select" onchange="setPlayerFightingStyle(\'' + p.id + '\', this.value, event)" title="Selecione o seu Estilo de Luta para aplicar bônus imediatos na ficha">' +
+                  '<option value="">-- Selecione o Estilo de Luta --</option>' +
+                  Object.values(FIGHTING_STYLES).map(st => '<option value="' + st.id + '" ' + (curStyle === st.id ? 'selected' : '') + '>' + st.icon + ' ' + st.name + ': ' + st.desc + '</option>').join('') +
+                '</select>' +
+              '</div>';
+            }
+            return `
+            <div class="unlocked-feature-item" onclick="openPlayerFeatureModal('${escapeAttr(formatted.name)}', '${escapeAttr(formatted.desc)}', '${escapeAttr(formatted.type || 'Característica')}', '${escapeAttr(formatted.source || clsItem.className)}')" title="Clique para ver detalhes em tópicos">
               <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-weight:700; color:#fff; font-size:12px;">${f.name}</span>
-                <span class="badge ${f.isSubclass ? 'badge-sub' : 'badge-cls'}" style="font-size:9px;">Nv ${f.level}</span>
+                <span style="font-weight:700; color:#fff; font-size:12px;">${formatted.name}</span>
+                <span class="badge ${formatted.isSubclass ? 'badge-sub' : 'badge-cls'}" style="font-size:9px;">Nv ${formatted.level}</span>
               </div>
               <div style="font-size:11px; color:var(--text-muted); line-height:1.3; margin-top:2px;" class="feature-snippet">
-                ${f.desc}
+                ${formatted.desc}
               </div>
+              ${fightingStyleActionHtml}
             </div>
-          `).join('')}
+            `;
+          }).join('')}
         </div>
       `;
     }
@@ -4053,7 +4645,9 @@ function castPlayerSpellPrompt(playerId, spellName) {
 
   const spAct = getSpellActionType(sp || spellName);
   const actBadgeText = spAct === 'bonus' ? ' • ⚡ Ação Bônus' : (spAct === 'reaction' ? ' • 🛡️ Reação' : ' • ⚔️ Ação');
-  document.getElementById('cast-spell-meta').innerText = sp ? `${sp.level === 0 ? 'Truque' : sp.level + 'º Círculo'} (${sp.school || 'Magia'}) • Tempo: ${sp.time || sp.castTime || '1 ação'}${actBadgeText} • Alcance: ${sp.range || 'Pessoal'} • Duração: ${sp.duration || 'Instantânea'}` : 'Magia D&D 5E';
+  const diceInfo = typeof getSpellDiceInfo === 'function' ? getSpellDiceInfo(sp || spellName, p) : null;
+  const diceBadgeText = diceInfo ? ` • 🎲 ${diceInfo.label}` : '';
+  document.getElementById('cast-spell-meta').innerText = sp ? `${sp.level === 0 ? 'Truque' : sp.level + 'º Círculo'} (${sp.school || 'Magia'}) • Tempo: ${sp.time || sp.castTime || '1 ação'}${actBadgeText}${diceBadgeText} • Alcance: ${sp.range || 'Pessoal'} • Duração: ${sp.duration || 'Instantânea'}` : 'Magia D&D 5E';
   document.getElementById('cast-spell-desc').innerHTML = sp ? sp.desc.replace(/\n/g, '<br>') : 'Sem descrição detalhada.';
 
   const slotsOptionsContainer = document.getElementById('cast-slot-options');
@@ -4213,6 +4807,11 @@ function onPlayerModalClassOrLevelChange(preserveSlotsIfSet = false) {
     if (slotInput) slotInput.value = slots[i - 1] || 0;
   }
 
+  // Atualiza CA calculada automaticamente para a classe e atributos
+  if (typeof updateModalCalculatedAc === 'function') {
+    updateModalCalculatedAc();
+  }
+
   const previewBox = document.getElementById('pm-features-preview');
   if (previewBox) {
     const unlocked = getUnlockedClassFeatures(selectedClassName, level, subIdx);
@@ -4226,6 +4825,33 @@ function onPlayerModalClassOrLevelChange(preserveSlotsIfSet = false) {
       previewBox.innerHTML = `<span style="color:var(--text-dim); font-size:11px;">Nenhuma habilidade de classe listada para este nível.</span>`;
     }
   }
+}
+
+function updateModalCalculatedAc() {
+  const pId = document.getElementById('pm-id')?.value;
+  const existing = pId ? PLAYERS.find(x => String(x.id) === String(pId)) : null;
+  const classSel = document.getElementById('pm-class-select');
+  const classInput = document.getElementById('pm-class');
+  const selectedClassName = classSel ? (classSel.value === 'custom' ? (classInput ? classInput.value : 'Guerreiro') : classSel.value) : (classInput ? classInput.value : 'Guerreiro');
+  const subclassSel = document.getElementById('pm-subclass-select');
+  const subIdx = subclassSel ? parseInt(subclassSel.value) || 0 : 0;
+
+  const tempPlayer = {
+    dex: parseInt(document.getElementById('pm-dex')?.value) || 10,
+    con: parseInt(document.getElementById('pm-con')?.value) || 10,
+    wis: parseInt(document.getElementById('pm-wis')?.value) || 10,
+    className: selectedClassName,
+    subclassIdx: subIdx,
+    fightingStyle: (existing && existing.fightingStyle) || document.getElementById('pm-fighting-style')?.value || '',
+    inventory: (existing && existing.inventory) ? existing.inventory : []
+  };
+
+  const calculated = calculatePlayerAcFromEquipment(tempPlayer);
+  const acInput = document.getElementById('pm-ac');
+  if (acInput) {
+    acInput.value = calculated;
+  }
+  return calculated;
 }
 
 function openPlayerModal(id) {
@@ -4284,7 +4910,7 @@ function openPlayerModal(id) {
     document.getElementById('pm-level').value = p.level;
     document.getElementById('pm-xp').value = p.xp;
     document.getElementById('pm-hitdice').value = p.hitDice || getHitDieForClass(p.className);
-    document.getElementById('pm-ac').value = p.ac;
+    document.getElementById('pm-ac').value = calculatePlayerAcFromEquipment(p) || p.ac || 10;
     document.getElementById('pm-maxhp').value = p.maxHp;
     document.getElementById('pm-speed').value = p.speed;
     document.getElementById('pm-gold').value = (p.coins && p.coins.gp !== undefined) ? p.coins.gp : (p.gold || 15);
@@ -4504,7 +5130,16 @@ function savePlayerSheet() {
     level: parseInt(document.getElementById('pm-level').value) || 1,
     xp: parseInt(document.getElementById('pm-xp').value) || 0,
     hitDice: document.getElementById('pm-hitdice').value || '1d10',
-    ac: parseInt(document.getElementById('pm-ac').value) || 14,
+    ac: parseInt(document.getElementById('pm-ac').value) || calculatePlayerAcFromEquipment({
+      ...(existing || {}),
+      dex: parseInt(document.getElementById('pm-dex').value) || 10,
+      con: parseInt(document.getElementById('pm-con').value) || 10,
+      wis: parseInt(document.getElementById('pm-wis').value) || 10,
+      className: classNameVal,
+      subclassIdx,
+      fightingStyle: (existing && existing.fightingStyle) || fightingStyle,
+      inventory: existing && existing.inventory ? existing.inventory : []
+    }) || 10,
     hp: existing ? Math.min(maxHp, existing.hp) : maxHp,
     maxHp,
     tempHp: existing ? existing.tempHp : 0,
@@ -6448,9 +7083,10 @@ function renderLevelUpWizardStep() {
       newFeatures = clsData.features.filter(f => f.level === targetLvl);
     }
 
-    // Se for nível 3+, checa se precisa escolher ou ver subclasse
+    // Se for no nível de subclasse ou superior (Nv 1 para Clérigo/Bruxo/Feiticeiro, Nv 2 para Druida/Mago, Nv 3 para outros)
+    const reqSubLvl = getSubclassUnlockLevel(clsName);
     let subclassSelectHtml = '';
-    if (targetLvl >= 3 && clsData && clsData.subclasses && clsData.subclasses.length > 0) {
+    if (targetLvl >= reqSubLvl && clsData && clsData.subclasses && clsData.subclasses.length > 0) {
       subclassSelectHtml = `
         <div style="margin: 12px 20px; padding: 12px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.3); border-radius: 10px;">
           <div style="font-size: 12px; font-weight: 800; color: var(--accent-gold); margin-bottom: 6px;">
@@ -7295,6 +7931,10 @@ if (typeof window !== 'undefined') {
   window.isShieldItem = isShieldItem;
   window.getArmorItemStats = getArmorItemStats;
   window.calculatePlayerAcFromEquipment = calculatePlayerAcFromEquipment;
+  window.getPlayerAcCalculationInfo = getPlayerAcCalculationInfo;
+  window.ensurePlayerCalculatedAc = ensurePlayerCalculatedAc;
+  window.setPlayerFightingStyle = setPlayerFightingStyle;
+  window.updateModalCalculatedAc = updateModalCalculatedAc;
   window.togglePlayerItemAttunement = togglePlayerItemAttunement;
   window.togglePlayerDiceMode = togglePlayerDiceMode;
   window.openPhysicalD20Modal = openPhysicalD20Modal;
@@ -7332,7 +7972,7 @@ if (typeof module !== 'undefined' && module.exports) {
     removePlayerItem,
     adjustPlayerHp,
     renderPlayers,
-    savePlayerEditModal,
+    savePlayerSheet,
     trackDeletedPlayerId,
     getDeletedPlayerIds,
     openTradeItemModal,
@@ -7368,6 +8008,10 @@ if (typeof module !== 'undefined' && module.exports) {
     isShieldItem,
     getArmorItemStats,
     calculatePlayerAcFromEquipment,
+    getPlayerAcCalculationInfo,
+    ensurePlayerCalculatedAc,
+    setPlayerFightingStyle,
+    updateModalCalculatedAc,
     togglePlayerItemAttunement,
     togglePlayerDiceMode,
     openPhysicalD20Modal,
@@ -7391,8 +8035,21 @@ if (typeof module !== 'undefined' && module.exports) {
     rollPlayerSkill,
     rollPlayerSavingThrow,
     rollPlayerAttr,
-    rollPlayerSpellAttack
+    rollPlayerSpellAttack,
+
+    // ISSUE-97: Resolução Dinâmica de Características & Dados de Dano de Magias
+    DND5E_SPELL_DICE_DATA,
+    getSpellDiceInfo,
+    rollPlayerSpellDice,
+    formatPlayerFeatureForDisplay
   };
+}
+
+if (typeof window !== 'undefined') {
+  window.DND5E_SPELL_DICE_DATA = DND5E_SPELL_DICE_DATA;
+  window.getSpellDiceInfo = getSpellDiceInfo;
+  window.rollPlayerSpellDice = rollPlayerSpellDice;
+  window.formatPlayerFeatureForDisplay = formatPlayerFeatureForDisplay;
 }
 
 

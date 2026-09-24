@@ -175,13 +175,13 @@ function renderClasses() {
               <th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);">Prof.</th>
               <th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);">Habilidades e Recursos Desbloqueados</th>
               ${currentClass.progression[0].rages ? '<th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);">Fúrias</th><th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);">Dano Fúria</th>' : ''}
-              ${currentClass.progression[0].mastery ? '<th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);">Maestrias</th>' : ''}
               ${currentClass.progression[0].slots ? '<th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);">Espaços de Magia</th>' : ''}
               ${currentClass.progression[0].cantrips ? '<th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);">Truques</th>' : ''}
               ${currentClass.progression[0].sneak ? '<th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);">Ataque Furtivo</th>' : ''}
-              ${currentClass.progression[0].focus ? '<th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);">Pontos de Foco</th>' : ''}
-              ${currentClass.progression[0].die ? '<th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);">Dado Básico</th>' : ''}
+              ${(currentClass.progression[0].ki || currentClass.progression[0].focus) ? '<th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);">Pontos de Ki</th>' : ''}
+              ${(currentClass.progression[0].martialArts || currentClass.progression[0].die) ? '<th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);">Artes Marciais</th>' : ''}
               ${currentClass.progression[0].sp ? '<th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);">Pontos Feitiçaria</th>' : ''}
+              ${currentClass.progression[0].invocations ? '<th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);">Invocações</th>' : ''}
               ${currentClass.progression[0].pactSlots ? '<th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);">Slots de Pacto</th>' : ''}
             </tr>
           </thead>
@@ -192,13 +192,13 @@ function renderClasses() {
                 <td style="padding: 6px 10px; color: var(--primary-light);">${row.prof}</td>
                 <td style="padding: 6px 10px; color: #e2e8f0;">${row.features}</td>
                 ${row.rages ? `<td style="padding: 6px 10px; color: #fca5a5;">${row.rages}</td><td style="padding: 6px 10px; color: #fca5a5;">${row.rageDmg}</td>` : ''}
-                ${row.mastery ? `<td style="padding: 6px 10px; color: var(--accent-green);">${row.mastery}</td>` : ''}
                 ${row.slots ? `<td style="padding: 6px 10px; color: #93c5fd;">${row.slots}</td>` : ''}
                 ${row.cantrips ? `<td style="padding: 6px 10px; color: #c084fc;">${row.cantrips}</td>` : ''}
                 ${row.sneak ? `<td style="padding: 6px 10px; color: #f59e0b;">${row.sneak}</td>` : ''}
-                ${row.focus ? `<td style="padding: 6px 10px; color: #38bdf8;">${row.focus}</td>` : ''}
-                ${row.die ? `<td style="padding: 6px 10px; color: #fbbf24;">${row.die}</td>` : ''}
+                ${(row.ki || row.focus) ? `<td style="padding: 6px 10px; color: #38bdf8;">${row.ki || row.focus}</td>` : ''}
+                ${(row.martialArts || row.die) ? `<td style="padding: 6px 10px; color: #fbbf24;">${row.martialArts || row.die}</td>` : ''}
                 ${row.sp ? `<td style="padding: 6px 10px; color: #e879f9;">${row.sp}</td>` : ''}
+                ${row.invocations ? `<td style="padding: 6px 10px; color: #ec4899;">${row.invocations}</td>` : ''}
                 ${row.pactSlots ? `<td style="padding: 6px 10px; color: #a855f7;">${row.pactSlots}</td>` : ''}
               </tr>
             `).join('')}

@@ -58,7 +58,7 @@
           </button>
           <div class="dropdown-sep"></div>
           <button class="dropdown-item" onclick="switchTab('classes')">🌳 Classes & Subclasses</button>
-          <button class="dropdown-item" onclick="switchTab('species')">🧬 Raças & Linhagens</button>
+          <button class="dropdown-item" onclick="switchTab('species')">🧬 Raças & Sub-raças (D&D 5E)</button>
         </div>
       </div>
 
@@ -1280,7 +1280,7 @@
       <div id="grid-equipment" class="cards-grid"></div>
     </div>
 
-    <!-- TAB 6: ÁRVORES DE HABILIDADES & CLASSES D&D 2024 -->
+    <!-- TAB 6: ÁRVORES DE HABILIDADES & CLASSES D&D 5E -->
     <div id="tab-classes" class="tab-pane">
       <!-- Seletor Rápido de Classes (12 Classes) -->
       <div id="classes-selector-grid" class="classes-selector-bar"></div>
@@ -1312,7 +1312,7 @@
       <div id="class-skill-tree"></div>
     </div>
 
-    <!-- TAB 7: RAÇAS & ESPÉCIES D&D 2024 -->
+    <!-- TAB 7: RAÇAS & SUB-RAÇAS D&D 5E -->
     <div id="tab-species" class="tab-pane">
       <div id="species-container"></div>
     </div>
@@ -1538,7 +1538,7 @@
         <div><label>Nome do Aluno(a)</label><input type="text" id="pm-student" placeholder="Ex: Arthur Lima"></div>
         <div><label>Nome do Personagem</label><input type="text" id="pm-name" placeholder="Ex: Valerius Martelo Negro"></div>
         <div>
-          <label>Raça & Espécie (D&D 2024)</label>
+          <label>Raça (D&D 5E)</label>
           <div style="display:flex; gap:4px;">
             <select id="pm-race-select" onchange="onPlayerModalClassOrLevelChange()" style="flex:1;"></select>
             <input type="hidden" id="pm-race">
@@ -1548,31 +1548,14 @@
 
       <div class="form-row" style="background: #080c16; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); align-items: flex-end;">
         <div>
-          <label>Classe (D&D 2024)</label>
+          <label>Classe (D&D 5E)</label>
           <select id="pm-class-select" onchange="onPlayerModalClassOrLevelChange()"></select>
           <input type="hidden" id="pm-class">
         </div>
         <div>
           <label>Subclasse / Especialização</label>
           <select id="pm-subclass-select" onchange="onPlayerModalClassOrLevelChange()"></select>
-        </div>
-        <div>
-          <label>⚔️ Estilo de Luta</label>
-          <select id="pm-fighting-style">
-            <option value="">Nenhum / Padrão</option>
-            <option value="archery">🏹 Arquearia (+2 ataque à distância)</option>
-            <option value="defense">🛡️ Defesa (+1 CA com armadura)</option>
-            <option value="dueling">⚔️ Duelo (+2 dano arma 1 mão)</option>
-            <option value="twoweapon">🗡️⚔️ Combate Duas Armas (Soma mod no bônus)</option>
-            <option value="protection">🛡️⚡ Proteção (Reação: desvantagem a inimigo)</option>
-            <option value="interception">🎯 Intercepção (Reação: reduz 1d10+Prof)</option>
-            <option value="greatweapon">🔨 Luta Armas Grandes (Re-rola 1 e 2)</option>
-            <option value="unarmed">🥊 Combatente Desarmado (1d6/1d8)</option>
-            <option value="thrown">🪓 Arremessador (+2 dano arremesso)</option>
-            <option value="blind">👁️ Luta às Cegas (Visão às Cegas 3m)</option>
-            <option value="blessed">🔮 Guerreiro Abençoado (Truques Clérigo)</option>
-            <option value="druidic">🍃 Guerreiro Druídico (Truques Druida)</option>
-          </select>
+          <input type="hidden" id="pm-fighting-style">
         </div>
         <div>
           <label>Nível (1-20)</label>
@@ -1585,17 +1568,17 @@
       </div>
 
       <div class="form-row">
-        <div><label>CA (Classe de Armadura)</label><input type="number" id="pm-ac" value="16"></div>
+        <div><label>CA (Classe de Armadura) <span style="font-size:10px; color:var(--accent-gold); font-weight:normal;">(Auto 5E)</span></label><input type="number" id="pm-ac" value="16" title="Classe de Armadura calculada automaticamente pelas regras do D&D 5E"></div>
         <div><label>PV Máximo</label><input type="number" id="pm-maxhp" value="12"></div>
         <div><label>Deslocamento</label><input type="text" id="pm-speed" value="9m"></div>
         <div><label>Ouro / Moedas (PO)</label><input type="number" id="pm-gold" value="15"></div>
         <div><label>XP Atual</label><input type="number" id="pm-xp" value="0"></div>
       </div>
 
-      <!-- SEÇÃO ORIGEM & ANTECEDENTE (D&D 2024 - P3) -->
+      <!-- SEÇÃO ORIGEM & ANTECEDENTE (D&D 5E) -->
       <div style="background: #080c16; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px;">
         <div style="font-size: 11px; font-weight: 800; color: var(--primary-light); text-transform: uppercase;">
-          🎭 Origem, Antecedente & Personalidade (D&D 2024)
+          🎭 Antecedente & Personalidade (D&D 5E)
         </div>
         <div class="form-row">
           <div>
@@ -1627,10 +1610,10 @@
         <label>6 Atributos D&D (Valores Brutos 1 a 20)</label>
         <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px;">
           <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">FOR</span><input type="number" id="pm-str" value="16" style="text-align: center;"></div>
-          <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">DES</span><input type="number" id="pm-dex" value="12" style="text-align: center;"></div>
-          <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">CON</span><input type="number" id="pm-con" value="14" style="text-align: center;"></div>
+          <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">DES</span><input type="number" id="pm-dex" value="12" style="text-align: center;" oninput="updateModalCalculatedAc()"></div>
+          <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">CON</span><input type="number" id="pm-con" value="14" style="text-align: center;" oninput="updateModalCalculatedAc()"></div>
           <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">INT</span><input type="number" id="pm-int" value="10" style="text-align: center;"></div>
-          <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">SAB</span><input type="number" id="pm-wis" value="12" style="text-align: center;"></div>
+          <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">SAB</span><input type="number" id="pm-wis" value="12" style="text-align: center;" oninput="updateModalCalculatedAc()"></div>
           <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">CAR</span><input type="number" id="pm-cha" value="8" style="text-align: center;"></div>
         </div>
       </div>
