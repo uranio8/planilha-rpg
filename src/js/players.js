@@ -587,7 +587,7 @@ function clearPlayerConcentration(playerId) {
 }
 
 // ========================================================
-// ⚡ CONTADORES TÁTEIS & RECURSOS RÁPIDOS (DOCK DE 1-TOQUE)
+// ⚡ CONTADORES TÁTEIS & RECURSOS RÁPIDOS (DOCK DE 1-TOQUE - ISSUE-102)
 // ========================================================
 function renderPlayerResourceQuickDock(p) {
   initPlayerFeatureCharges(p);
@@ -599,11 +599,12 @@ function renderPlayerResourceQuickDock(p) {
 
     if (f.id === 'lay_on_hands') {
       return `
-        <div class="resource-quick-chip lay-on-hands" title="Cura pelas Mãos (Paladino D&D 5E): Toque para gastar e curar">
-          <span>🤲 Mãos: <b>${remaining}</b>/${f.max} PV</span>
+        <div class="resource-quick-chip lay-on-hands" title="Cura pelas Mãos (Paladino D&D 5E): Toque em -1 ou -5 para gastar e curar">
+          <span>🤲 Mãos:</span>
+          <span class="resource-counter-badge"><b class="res-cur">${remaining}</b><span class="res-sep">/</span><span class="res-max">${f.max} PV</span></span>
           <div style="display:inline-flex; gap:3px; margin-left:4px;">
-            <button class="btn-micro" onclick="usePlayerLayOnHandsQuick('${p.id}', 1)" title="Curar 1 PV">-1</button>
-            <button class="btn-micro" onclick="usePlayerLayOnHandsQuick('${p.id}', 5)" title="Curar 5 PV">-5</button>
+            <button type="button" class="resource-stepper-btn" onclick="usePlayerLayOnHandsQuick('${p.id}', 1)" title="Curar 1 PV">-1</button>
+            <button type="button" class="resource-stepper-btn" onclick="usePlayerLayOnHandsQuick('${p.id}', 5)" title="Curar 5 PV">-5</button>
           </div>
         </div>
       `;
@@ -611,34 +612,173 @@ function renderPlayerResourceQuickDock(p) {
 
     if (f.id === 'second_wind') {
       return `
-        <button class="resource-quick-chip ${!isAvail ? 'exhausted' : ''}" 
+        <button type="button" class="resource-quick-chip ${!isAvail ? 'exhausted' : ''}" 
                 onclick="usePlayerSecondWindQuick('${p.id}')" 
                 title="Retomar o Fôlego (Guerreiro): Cura 1d10 + Nível de Guerreiro (${p.level}) em Ação Bônus">
-          💨 Fôlego (${remaining}/${f.max})
+          <span>💨 Fôlego</span>
+          <span class="resource-counter-badge"><b class="res-cur">${remaining}</b><span class="res-sep">/</span><span class="res-max">${f.max}</span></span>
         </button>
       `;
     }
 
     if (f.id === 'action_surge') {
       return `
-        <button class="resource-quick-chip ${!isAvail ? 'exhausted' : ''}" 
+        <button type="button" class="resource-quick-chip ${!isAvail ? 'exhausted' : ''}" 
                 onclick="usePlayerActionSurgeQuick('${p.id}')" 
                 title="Surto de Ação (Guerreiro): 1 Ação adicional no turno">
-          ⚡ Surto (${remaining}/${f.max})
+          <span>⚡ Surto</span>
+          <span class="resource-counter-badge"><b class="res-cur">${remaining}</b><span class="res-sep">/</span><span class="res-max">${f.max}</span></span>
         </button>
       `;
     }
 
     return `
-      <button class="resource-quick-chip ${!isAvail ? 'exhausted' : ''}" 
+      <button type="button" class="resource-quick-chip ${!isAvail ? 'exhausted' : ''}" 
               onclick="${isAvail ? `usePlayerFeatureCharge('${p.id}', '${f.id}', 1)` : `restorePlayerFeatureCharge('${p.id}', '${f.id}', 1)`}" 
               title="${f.name} (${f.restType === 'short' ? 'Recupera em Descanso Curto' : 'Recupera em Descanso Longo'}) • ${isAvail ? 'Clique para usar 1' : 'Esgotado (clique para restaurar 1)'}">
-        ${f.icon || '⚡'} ${f.name} (<b>${remaining}</b>/${f.max})
+        <span>${f.icon || '⚡'} ${f.name}</span>
+        <span class="resource-counter-badge"><b class="res-cur">${remaining}</b><span class="res-sep">/</span><span class="res-max">${f.max}</span></span>
       </button>
     `;
   }).join('');
 
-  return `<div class="resource-quick-dock">${pills}</div>`;
+  return `<div class="resource-quick-dock"><span class="resource-quick-dock-label">⚡ Recursos:</span>${pills}</div>`;
+}
+
+// ========================================================
+// ⏱️ MOTOR DE ECONOMIA DE AÇÕES (D&D 5E - ISSUE-101)
+// ========================================================
+function getFeatureActionType(f, player) {
+  if (!f) return 'passive';
+  const name = String(f.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const desc = String(f.desc || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  // 1. Surto de Ação (Ação Principal / Especial)
+  if (name.includes('surto de acao') || name.includes('action surge')) {
+    return 'action';
+  }
+
+  // 2. Ação Bônus (Bonus Action)
+  if (
+    name.includes('retomar o folego') ||
+    name.includes('second wind') ||
+    name.includes('furia') ||
+    name.includes('rage') ||
+    name.includes('acao astuta') ||
+    name.includes('acao arrojada') ||
+    name.includes('cunning action') ||
+    name.includes('inspiracao bardica') ||
+    name.includes('bardic inspiration') ||
+    name.includes('passo do vento') ||
+    name.includes('defesa paciente') ||
+    name.includes('rajada de golpes') ||
+    name.includes('passo das sombras') ||
+    name.includes('palavra') ||
+    name.includes('luz bonus') ||
+    name.includes('healing word') ||
+    desc.includes('como uma acao bonus') ||
+    desc.includes('gasta uma acao bonus') ||
+    desc.includes('com uma acao bonus') ||
+    desc.includes('usando uma acao bonus') ||
+    desc.includes('em acao bonus') ||
+    desc.includes('as a bonus action')
+  ) {
+    return 'bonus';
+  }
+
+  // 3. Reação (Reaction)
+  if (
+    name.includes('esquiva sobrenatural') ||
+    name.includes('uncanny dodge') ||
+    name.includes('aparar') ||
+    name.includes('reacao defensiva') ||
+    name.includes('repreensao') ||
+    desc.includes('como uma reacao') ||
+    desc.includes('com uma reacao') ||
+    desc.includes('usando uma reacao') ||
+    desc.includes('em resposta a') ||
+    desc.includes('as a reaction')
+  ) {
+    return 'reaction';
+  }
+
+  // 4. Ação Principal (Action)
+  if (
+    name.includes('cura pelas maos') ||
+    name.includes('lay on hands') ||
+    name.includes('sentido divino') ||
+    name.includes('divine sense') ||
+    name.includes('canalizar divindade') ||
+    name.includes('channel divinity') ||
+    name.includes('forma selvagem') ||
+    name.includes('wild shape') ||
+    desc.includes('como uma acao') ||
+    desc.includes('gasta uma acao') ||
+    desc.includes('usar uma acao') ||
+    desc.includes('com uma acao') ||
+    desc.includes('acao para') ||
+    desc.includes('as an action')
+  ) {
+    return 'action';
+  }
+
+  return 'passive';
+}
+
+function renderUniversalCombatActions(actionFilter) {
+  if (actionFilter === 'all' || !actionFilter) {
+    return `
+      <div class="universal-actions-card">
+        <div class="universal-actions-header"><span>⚔️ Ações Universais de Combate (D&D 5E):</span></div>
+        <div class="universal-actions-chips">
+          <span class="universal-act-chip" title="Realiza 1 ou mais ataques com suas armas ou desarmado">⚔️ <b>Atacar</b></span>
+          <span class="universal-act-chip" title="Dobra seu deslocamento para a rodada atual">🏃 <b>Disparada (Dash)</b></span>
+          <span class="universal-act-chip" title="Seu movimento não provoca ataques de oportunidade pelo resto do turno">💨 <b>Desengajar</b></span>
+          <span class="universal-act-chip" title="Ataques contra você têm desvantagem e testes de DES têm vantagem">🛡️ <b>Esquiva (Dodge)</b></span>
+          <span class="universal-act-chip" title="Concede vantagem no próximo teste de perícia ou ataque de um aliado">🤝 <b>Ajudar (Help)</b></span>
+          <span class="universal-act-chip" title="Realiza um teste de Furtividade para se esconder">👁️ <b>Esconder-se</b></span>
+          <span class="universal-act-chip" title="Beber uma poção, puxar alavancas ou interagir com o cenário">🧪 <b>Usar Objeto</b></span>
+        </div>
+      </div>
+    `;
+  } else if (actionFilter === 'action') {
+    return `
+      <div class="universal-actions-card">
+        <div class="universal-actions-header"><span>⚔️ Ações Universais de Combate (D&D 5E):</span></div>
+        <div class="universal-actions-chips">
+          <span class="universal-act-chip" title="Realiza 1 ou mais ataques com suas armas ou desarmado">⚔️ <b>Atacar</b></span>
+          <span class="universal-act-chip" title="Dobra seu deslocamento para a rodada atual">🏃 <b>Disparada (Dash)</b></span>
+          <span class="universal-act-chip" title="Seu movimento não provoca ataques de oportunidade pelo resto do turno">💨 <b>Desengajar</b></span>
+          <span class="universal-act-chip" title="Ataques contra você têm desvantagem e testes de DES têm vantagem">🛡️ <b>Esquiva (Dodge)</b></span>
+          <span class="universal-act-chip" title="Concede vantagem no próximo teste de perícia ou ataque de um aliado">🤝 <b>Ajudar (Help)</b></span>
+          <span class="universal-act-chip" title="Realiza um teste de Furtividade para se esconder">👁️ <b>Esconder-se</b></span>
+          <span class="universal-act-chip" title="Beber uma poção, puxar alavancas ou interagir com o cenário">🧪 <b>Usar Objeto</b></span>
+        </div>
+      </div>
+    `;
+  } else if (actionFilter === 'bonus') {
+    return `
+      <div class="universal-actions-card">
+        <div class="universal-actions-header" style="color: #fde047;"><span>⚡ Ações Bônus Universais (D&D 5E):</span></div>
+        <div class="universal-actions-chips">
+          <span class="universal-act-chip" title="Ao atacar com arma leve corpo a corpo em uma mão, use a ação bônus para atacar com arma leve na outra mão">🗡️ <b>Combate com Duas Armas</b></span>
+          <span class="universal-act-chip" title="Lançar magia com tempo de conjuração de 1 ação bônus">✨ <b>Magia Bônus</b></span>
+          <span class="universal-act-chip" title="Habilidades de classe (ex: Retomar o Fôlego, Fúria, Ação Astuta) e magias de 1 Ação Bônus">✨ <b>Recursos & Magias de Bônus</b></span>
+        </div>
+      </div>
+    `;
+  } else if (actionFilter === 'reaction') {
+    return `
+      <div class="universal-actions-card">
+        <div class="universal-actions-header" style="color: #d8b4fe;"><span>🛡️ Reações Universais (D&D 5E):</span></div>
+        <div class="universal-actions-chips">
+          <span class="universal-act-chip" title="Ataque corpo a corpo imediato contra criatura que sair do seu alcance sem Desengajar">⚔️ <b>Ataque de Oportunidade</b></span>
+          <span class="universal-act-chip" title="Magias defensivas como Escudo Arcano, Contramágica, Queda Suave ou Esquiva Sobrenatural">🔮 <b>Magias & Habilidades Reativas</b></span>
+        </div>
+      </div>
+    `;
+  }
+  return '';
 }
 
 function usePlayerLayOnHandsQuick(playerId, amount = 1) {
@@ -1224,7 +1364,7 @@ function renderPlayers() {
             </div>
           ` : ''}
 
-          <div class="player-toolbar">
+          <div class="player-toolbar" onclick="event.stopPropagation();">
             <button class="btn-action" style="padding: 5px 12px; font-size: 11px; font-weight: 700;" onclick="addPlayerToCombat('${p.id}')" title="Adicionar este jogador ao combate ativo">
               ⚔️ Combate
             </button>
@@ -1235,7 +1375,7 @@ function renderPlayers() {
               🔀 Classes
             </button>
 
-            <div class="player-actions-group">
+            <div class="player-actions-group" onclick="event.stopPropagation();">
               <button class="btn-secondary" style="padding: 5px 7px; font-size: 11px; color: var(--primary-light); border-color: rgba(245, 158, 11, 0.4);" onclick="openSharePlayerModal('${p.id}')" title="Compartilhar Ficha com o Jogador (Link & QR Code)">📱 QR Code</button>
               <button class="btn-secondary" style="padding: 5px 7px; font-size: 11px;" onclick="playerShortRest('${p.id}')" title="Descanso Curto (1h)">☕ Curto</button>
               <button class="btn-secondary" style="padding: 5px 7px; font-size: 11px;" onclick="playerLongRest('${p.id}')" title="Descanso Longo (8h)">🌙 Longo</button>
@@ -1404,6 +1544,8 @@ function renderPlayers() {
               <button class="action-economy-chip ${actionFilter === 'reaction' ? 'active' : ''}" onclick="setPlayerActionFilter('${p.id}', 'reaction')">🛡️ Reação</button>
             </div>
 
+            ${renderUniversalCombatActions(actionFilter)}
+
             <div class="powers-section-box">
               <div class="powers-section-header">
                 <span>⚔️ Ataques & Arsenal</span>
@@ -1526,7 +1668,7 @@ function renderPlayers() {
                 <span>📜 Traços & Habilidades</span>
               </div>
               <div style="display: flex; flex-direction: column; gap: 4px; max-height: 250px; overflow-y: auto; padding-right: 2px;">
-                ${renderPlayerUnlockedFeatures(p)}
+                ${renderPlayerUnlockedFeatures(p, actionFilter)}
               </div>
               ${p.features ? `<div style="font-size: 10px; color: var(--text-dim); margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 3px;"><b>Outros Traços:</b> ${p.features}</div>` : ''}
             </div>
@@ -4315,22 +4457,38 @@ function openPlayerFeatureModalByKey(key) {
   openPlayerFeatureModal(feat.name, feat.desc, feat.type, feat.source);
 }
 
-function renderPlayerUnlockedFeatures(p) {
+function renderPlayerUnlockedFeatures(p, actionFilter = 'all') {
   const classesList = getPlayerClassesList(p);
   let html = '';
   let totalFeaturesCount = 0;
+  let matchingFeaturesCount = 0;
 
   classesList.forEach(clsItem => {
     const unlocked = getUnlockedClassFeatures(clsItem.className, clsItem.level, clsItem.subclassIdx || 0);
     if (unlocked.length > 0) {
       totalFeaturesCount += unlocked.length;
+
+      // Filtra de acordo com a economia de ações se um filtro específico estiver ativo
+      const matching = unlocked.filter(f => {
+        if (actionFilter === 'all') return true;
+        const actType = getFeatureActionType(f, p);
+        return actType === actionFilter;
+      });
+
+      if (matching.length === 0) return;
+      matchingFeaturesCount += matching.length;
+
       html += `
         <div style="font-size: 11px; font-weight: 800; color: var(--primary-light); margin-top: 8px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
           <span>🌳</span> <span>Habilidades de ${clsItem.className} (Nível ${clsItem.level}):</span>
         </div>
         <div class="unlocked-features-list">
-          ${unlocked.map(f => {
+          ${matching.map(f => {
             const formatted = formatPlayerFeatureForDisplay(f, p, clsItem);
+            const actType = getFeatureActionType(f, p);
+            const actTagLabel = actType === 'bonus' ? 'Bônus' : (actType === 'reaction' ? 'Reação' : (actType === 'action' ? 'Ação' : 'Passiva'));
+            const actBadgeHtml = `<span class="action-economy-tag ${actType}">${actTagLabel}</span>`;
+
             const isFightingStyleFeature = f.name && f.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes('estilo de luta');
             let fightingStyleActionHtml = '';
             if (isFightingStyleFeature) {
@@ -4347,11 +4505,14 @@ function renderPlayerUnlockedFeatures(p) {
                 '</select>' +
               '</div>';
             }
-            const featKey = registerFeatureForModal(formatted.name, formatted.desc, formatted.type || 'Característica', formatted.source || clsItem.className);
+            const featKey = registerFeatureForModal(formatted.name, formatted.desc, formatted.type || (actTagLabel + ' de Classe'), formatted.source || clsItem.className);
             return `
             <div class="unlocked-feature-item" onclick="openPlayerFeatureModalByKey('${featKey}')" title="Clique para ver detalhes em tópicos">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-weight:700; color:#fff; font-size:12px;">${formatted.name}</span>
+              <div style="display:flex; justify-content:space-between; align-items:center; gap: 4px;">
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                  <span style="font-weight:700; color:#fff; font-size:12px;">${formatted.name}</span>
+                  ${actBadgeHtml}
+                </div>
                 <span class="badge ${formatted.isSubclass ? 'badge-sub' : 'badge-cls'}" style="font-size:9px;">Nv ${formatted.level}</span>
               </div>
               <div style="font-size:11px; color:var(--text-muted); line-height:1.3; margin-top:2px;" class="feature-snippet">
@@ -4365,6 +4526,11 @@ function renderPlayerUnlockedFeatures(p) {
       `;
     }
   });
+
+  if (actionFilter !== 'all' && matchingFeaturesCount === 0) {
+    const actFilterLabel = actionFilter === 'bonus' ? 'Ação Bônus' : (actionFilter === 'reaction' ? 'Reação' : 'Ação');
+    return `<div style="background: rgba(0,0,0,0.25); border: 1px dashed var(--border-color); padding: 8px; border-radius: 6px; text-align: center; color: var(--text-muted); font-size: 11px;">Nenhuma característica de classe com custo de ${actFilterLabel}.</div>`;
+  }
 
   if (totalFeaturesCount === 0 && !p.features) {
     return `<div style="background: rgba(0,0,0,0.25); border: 1px dashed var(--border-color); padding: 10px; border-radius: 6px; text-align: center; color: var(--text-muted); font-size: 11px;">Nenhuma habilidade de classe registrada.</div>`;
@@ -8469,7 +8635,11 @@ if (typeof module !== 'undefined' && module.exports) {
     setPlayerEquippedArmor,
     registerFeatureForModal,
     openPlayerFeatureModalByKey,
-    PLAYER_FEATURES_CACHE
+    PLAYER_FEATURES_CACHE,
+
+    // ISSUE-100/101/102: Economia de Ações em Características e Ações Universais
+    getFeatureActionType,
+    renderUniversalCombatActions
   };
 }
 
@@ -8479,6 +8649,8 @@ if (typeof window !== 'undefined') {
   window.getSpellDiceInfo = getSpellDiceInfo;
   window.rollPlayerSpellDice = rollPlayerSpellDice;
   window.formatPlayerFeatureForDisplay = formatPlayerFeatureForDisplay;
+  window.getFeatureActionType = getFeatureActionType;
+  window.renderUniversalCombatActions = renderUniversalCombatActions;
 }
 
 

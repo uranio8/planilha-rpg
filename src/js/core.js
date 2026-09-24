@@ -2190,6 +2190,10 @@ function closeFabMenu() {
 }
 
 function handleFabQuickAction(action) {
+  if (typeof window !== 'undefined' && window.event && typeof document !== 'undefined') {
+    const fab = document.getElementById('fab-speed-dial');
+    if (fab && !fab.classList.contains('open')) return;
+  }
   closeFabMenu();
   if (action === 'dice') {
     if (typeof openDiceModal === 'function') openDiceModal();

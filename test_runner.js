@@ -5210,6 +5210,118 @@ assert(compiledHtmlIssue99.includes('id="pm-armor-select"'), 'HTML contém selet
 assert(compiledHtmlIssue99.includes('id="pm-shield-check"'), 'HTML contém checkbox pm-shield-check no modal de edição');
 assert(compiledHtmlIssue99.includes('openPlayerClassesModal'), 'HTML contém chamada para openPlayerClassesModal');
 
+// =========================================================================
+// --- SUÍTE 71: Testes de Eliminação de Hitbox Fantasma do FAB, Economia de Ações em Características e Redesign de Contadores Táteis (ISSUE-100, ISSUE-101, ISSUE-102) ---
+// =========================================================================
+console.log('\n🛡️ 71. Testes de Eliminação de Hitbox Fantasma do FAB, Economia de Ações em Características e Redesign de Contadores Táteis (ISSUE-100, ISSUE-101, ISSUE-102):');
+
+// 1. ISSUE-100: Validação de Estilos e Desativação Estrita de Pointer Events no FAB Fechado
+const compiledHtmlIssue100 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(compiledHtmlIssue100.includes('#fab-speed-dial .fab-actions-menu') && compiledHtmlIssue100.includes('display: none !important;'), 'FAB fechado possui display: none !important');
+assert(compiledHtmlIssue100.includes('#fab-speed-dial .fab-actions-menu *') && compiledHtmlIssue100.includes('pointer-events: none !important;'), 'Descendentes do FAB fechado possuem pointer-events: none !important');
+assert(compiledHtmlIssue100.includes('#fab-speed-dial.open .fab-actions-menu') && compiledHtmlIssue100.includes('display: flex !important;'), 'FAB aberto possui display: flex !important');
+assert(compiledHtmlIssue100.includes('body.mode-welcome-screen .fab-speed-dial-container') && compiledHtmlIssue100.includes('display: none !important;'), 'FAB é completamente ocultado na tela de boas-vindas');
+assert(compiledHtmlIssue100.includes('class="player-toolbar" onclick="event.stopPropagation();"'), 'Toolbar do jogador bloqueia propagação de cliques');
+assert(compiledHtmlIssue100.includes('class="player-actions-group" onclick="event.stopPropagation();"'), 'Grupo de ações da toolbar bloqueia propagação de cliques');
+
+// Validação do comportamento defensivo em handleFabQuickAction contra cliques fantasma no navegador
+vm.runInContext(`
+  let ghostNotesCalled = false;
+  const mockFabDial = {
+    classList: {
+      contains: (c) => c === 'open' ? false : false
+    }
+  };
+  const origWin = typeof window !== 'undefined' ? window : {};
+  const origDoc = typeof document !== 'undefined' ? document : {};
+  // Simula clique capturado via window.event com FAB fechado
+  window.event = { type: 'click', isTrusted: true };
+  const origGetEl = document.getElementById;
+  document.getElementById = (id) => id === 'fab-speed-dial' ? mockFabDial : origGetEl(id);
+  toggleDMNotesDrawer = () => { ghostNotesCalled = true; };
+  handleFabQuickAction('notes');
+  document.getElementById = origGetEl;
+  delete window.event;
+`, sandbox);
+assert(vm.runInContext('ghostNotesCalled', sandbox) === false, 'handleFabQuickAction bloqueou execução quando chamado por evento com FAB fechado');
+
+// 2. ISSUE-101: Classificação de Economia de Ações em Características de Classe e Ações Universais
+assert(typeof vm.runInContext('getFeatureActionType', sandbox) === 'function', 'Função getFeatureActionType exportada');
+assert(typeof vm.runInContext('renderUniversalCombatActions', sandbox) === 'function', 'Função renderUniversalCombatActions exportada');
+
+// Validação de tipos de ação para características D&D 5E
+assert(vm.runInContext("getFeatureActionType({ name: 'Fúria' })", sandbox) === 'bonus', 'Fúria classificada como Ação Bônus');
+assert(vm.runInContext("getFeatureActionType({ name: 'Retomar o Fôlego' })", sandbox) === 'bonus', 'Retomar o Fôlego classificado como Ação Bônus');
+assert(vm.runInContext("getFeatureActionType({ name: 'Ação Arrojada' })", sandbox) === 'bonus', 'Ação Arrojada classificada como Ação Bônus');
+assert(vm.runInContext("getFeatureActionType({ name: 'Palavra Divina' })", sandbox) === 'bonus', 'Habilidade com Palavra/Luz Bônus classificada como Bônus');
+assert(vm.runInContext("getFeatureActionType({ name: 'Aparar' })", sandbox) === 'reaction', 'Aparar classificado como Reação');
+assert(vm.runInContext("getFeatureActionType({ name: 'Repreensão' })", sandbox) === 'reaction', 'Repreensão classificada como Reação');
+assert(vm.runInContext("getFeatureActionType({ name: 'Esquiva Sobrenatural' })", sandbox) === 'reaction', 'Esquiva Sobrenatural classificada como Reação');
+assert(vm.runInContext("getFeatureActionType({ name: 'Sentido Divino' })", sandbox) === 'action', 'Sentido Divino classificado como Ação Principal');
+assert(vm.runInContext("getFeatureActionType({ name: 'Canalizar Divindade' })", sandbox) === 'action', 'Canalizar Divindade classificado como Ação Principal');
+assert(vm.runInContext("getFeatureActionType({ name: 'Surto de Ação' })", sandbox) === 'action', 'Surto de Ação classificado como Ação');
+assert(vm.runInContext("getFeatureActionType({ name: 'Forma Selvagem' })", sandbox) === 'action', 'Forma Selvagem classificada como Ação');
+assert(vm.runInContext("getFeatureActionType({ name: 'Ataque Furtivo' })", sandbox) === 'passive', 'Ataque Furtivo classificado como Passiva');
+assert(vm.runInContext("getFeatureActionType({ name: 'Defesa sem Armadura' })", sandbox) === 'passive', 'Defesa sem Armadura classificada como Passiva');
+assert(vm.runInContext("getFeatureActionType({ name: 'Resiliência Dracônica' })", sandbox) === 'passive', 'Resiliência Dracônica classificada como Passiva');
+
+// Validação do Guia Universal de Ações de Combate
+const allUniversalHtml = vm.runInContext("renderUniversalCombatActions('all')", sandbox);
+assert(allUniversalHtml.includes('universal-actions-card'), 'renderUniversalCombatActions gera container universal-actions-card');
+assert(allUniversalHtml.includes('Atacar'), 'Guia universal inclui ação de Atacar');
+assert(allUniversalHtml.includes('Disparada'), 'Guia universal inclui ação de Disparada');
+assert(allUniversalHtml.includes('Desengajar'), 'Guia universal inclui ação de Desengajar');
+assert(allUniversalHtml.includes('Esquiva'), 'Guia universal inclui ação de Esquiva');
+
+const bonusUniversalHtml = vm.runInContext("renderUniversalCombatActions('bonus')", sandbox);
+assert(bonusUniversalHtml.includes('Combate com Duas Armas'), 'Filtro bônus inclui Combate com Duas Armas');
+assert(bonusUniversalHtml.includes('Magia Bônus'), 'Filtro bônus inclui Magia Bônus');
+
+const reactionUniversalHtml = vm.runInContext("renderUniversalCombatActions('reaction')", sandbox);
+assert(reactionUniversalHtml.includes('Ataque de Oportunidade'), 'Filtro reação inclui Ataque de Oportunidade');
+
+// Validação da renderização filtrada de características em personagens
+const mockFighterSuite71 = {
+  id: 'test_fighter_act',
+  className: 'Guerreiro',
+  level: 5,
+  features: 'Retomar o Fôlego, Surto de Ação, Ataque Extra'
+};
+const fighterBonusHtml = vm.runInContext(`renderPlayerUnlockedFeatures(${JSON.stringify(mockFighterSuite71)}, 'bonus')`, sandbox);
+assert(fighterBonusHtml.includes('Retomar o Fôlego'), 'Filtro Bônus exibe Retomar o Fôlego do Guerreiro');
+assert(fighterBonusHtml.includes('action-economy-tag bonus'), 'Retomar o Fôlego exibe tag de Ação Bônus');
+assert(!fighterBonusHtml.includes('Surto de Ação'), 'Filtro Bônus NÃO exibe Surto de Ação');
+
+const fighterActionHtml = vm.runInContext(`renderPlayerUnlockedFeatures(${JSON.stringify(mockFighterSuite71)}, 'action')`, sandbox);
+assert(fighterActionHtml.includes('Surto de Ação'), 'Filtro Ação exibe Surto de Ação');
+assert(fighterActionHtml.includes('action-economy-tag action'), 'Surto de Ação exibe tag de Ação');
+
+// 3. ISSUE-102: Redesign Estético Dark Fantasy dos Contadores Rápidos de Recursos
+const mockPaladinSuite71 = {
+  id: 'test_paladin_res',
+  className: 'Paladino',
+  level: 5,
+  maxHp: 44,
+  channelDivinity: 1,
+  channelDivinityMax: 1,
+  layOnHandsPool: 25
+};
+const paladinDockHtml = vm.runInContext(`renderPlayerResourceQuickDock(${JSON.stringify(mockPaladinSuite71)})`, sandbox);
+assert(paladinDockHtml.includes('resource-quick-dock'), 'renderPlayerResourceQuickDock gera container resource-quick-dock');
+assert(paladinDockHtml.includes('resource-quick-chip'), 'renderPlayerResourceQuickDock gera chips de recurso');
+assert(paladinDockHtml.includes('resource-counter-badge'), 'renderPlayerResourceQuickDock gera badge estruturada resource-counter-badge');
+assert(paladinDockHtml.includes('res-cur') && paladinDockHtml.includes('res-max'), 'resource-counter-badge possui spans res-cur e res-max');
+assert(paladinDockHtml.includes('resource-stepper-btn'), 'Cura pelas Mãos gera botões táteis estilizados resource-stepper-btn');
+assert(paladinDockHtml.includes('usePlayerLayOnHandsQuick'), 'Botão stepper aciona usePlayerLayOnHandsQuick');
+assert(!paladinDockHtml.includes('class="btn-micro"'), 'Botões genéricos não estilizados btn-micro foram eliminados do dock de recursos');
+
+// Validação dos estilos CSS compilados para os novos contadores
+assert(compiledHtmlIssue100.includes('.resource-quick-dock'), 'CSS compilado contém estilo .resource-quick-dock');
+assert(compiledHtmlIssue100.includes('.resource-quick-chip'), 'CSS compilado contém estilo .resource-quick-chip');
+assert(compiledHtmlIssue100.includes('.resource-stepper-btn'), 'CSS compilado contém estilo .resource-stepper-btn');
+assert(compiledHtmlIssue100.includes('.resource-counter-badge'), 'CSS compilado contém estilo .resource-counter-badge');
+assert(compiledHtmlIssue100.includes('.action-economy-tag'), 'CSS compilado contém estilo .action-economy-tag');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
