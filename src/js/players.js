@@ -298,7 +298,84 @@ function ensurePlayerCalculatedAc(player) {
   return newAc;
 }
 
+function getPlayerEquippedArmorKey(player) {
+  if (!player || !Array.isArray(player.inventory)) return 'none';
+  const arm = player.inventory.find(it => it.equipped && isArmorItem(it.name));
+  if (!arm) return 'none';
+  const n = String(arm.name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  if (DND5E_ARMOR_DATA[n]) return n;
+  for (const k in DND5E_ARMOR_DATA) {
+    if (n === k) return k;
+  }
+  for (const k in DND5E_ARMOR_DATA) {
+    if (n.includes(k)) return k;
+  }
+  for (const k in DND5E_ARMOR_DATA) {
+    if (k.includes(n)) return k;
+  }
+  return n;
+}
+
+function hasPlayerEquippedShield(player) {
+  if (!player || !Array.isArray(player.inventory)) return false;
+  return player.inventory.some(it => it.equipped && isShieldItem(it.name));
+}
+
+function setPlayerEquippedArmor(playerId, armorKey, hasShield) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+  if (!Array.isArray(p.inventory)) p.inventory = [];
+
+  p.inventory.forEach(it => {
+    if (isArmorItem(it.name) || isShieldItem(it.name)) {
+      it.equipped = false;
+    }
+  });
+
+  if (armorKey && armorKey !== 'none') {
+    const armStats = getArmorItemStats(armorKey);
+    const armName = armStats.name || armorKey;
+    const existingArm = p.inventory.find(it => isArmorItem(it.name) && (it.name.toLowerCase().includes(armorKey.toLowerCase()) || armorKey.toLowerCase().includes(it.name.toLowerCase())));
+    if (existingArm) {
+      existingArm.equipped = true;
+    } else {
+      p.inventory.push({
+        id: 'item_arm_' + Date.now(),
+        name: armName,
+        qty: 1,
+        weight: armStats.type === 'heavy' ? 20 : (armStats.type === 'medium' ? 12 : 5),
+        equipped: true
+      });
+    }
+  }
+
+  if (hasShield) {
+    const existingShield = p.inventory.find(it => isShieldItem(it.name));
+    if (existingShield) {
+      existingShield.equipped = true;
+    } else {
+      p.inventory.push({
+        id: 'item_shd_' + Date.now(),
+        name: 'Escudo',
+        qty: 1,
+        weight: 6,
+        equipped: true
+      });
+    }
+  }
+
+  ensurePlayerCalculatedAc(p);
+  if (typeof touchPlayer === 'function') touchPlayer(p);
+  renderPlayers();
+  if (typeof renderCombat === 'function') renderCombat();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+  if (typeof showToast === 'function') showToast(`🛡️ Equipamentos de ${p.name} atualizados (CA: ${p.ac})!`, 'success');
+}
+
 function togglePlayerItemEquipped(playerId, itemIdx) {
+
   const p = PLAYERS.find(x => x.id === playerId);
   if (!p || !p.inventory || !p.inventory[itemIdx]) return;
   const item = p.inventory[itemIdx];
@@ -1154,6 +1231,10 @@ function renderPlayers() {
             <button class="btn-levelup-trigger" onclick="openLevelUpWizard('${p.id}')" title="Assistente de Subir de Nível e Multiclasse">
               🔼 Subir Nível
             </button>
+            <button class="btn-secondary" style="padding: 5px 8px; font-size: 11px; font-weight: 700; color: #fef08a; border-color: rgba(245, 158, 11, 0.4);" onclick="openPlayerClassesModal('${p.id}')" title="Ajustar Classes e Multiclasse">
+              🔀 Classes
+            </button>
+
             <div class="player-actions-group">
               <button class="btn-secondary" style="padding: 5px 7px; font-size: 11px; color: var(--primary-light); border-color: rgba(245, 158, 11, 0.4);" onclick="openSharePlayerModal('${p.id}')" title="Compartilhar Ficha com o Jogador (Link & QR Code)">📱 QR Code</button>
               <button class="btn-secondary" style="padding: 5px 7px; font-size: 11px;" onclick="playerShortRest('${p.id}')" title="Descanso Curto (1h)">☕ Curto</button>
@@ -1990,8 +2071,8 @@ function rollPlayerAttr(id, attrName, customD20) {
     banner.style.display = 'block';
     document.getElementById('dice-total-number').innerText = total;
     document.getElementById('dice-breakdown-text').innerText = `${p.name} - Teste de ${label}: ${breakdown}`;
-    openDiceModal();
   }
+
 
   if (r === 20) { if (typeof playFX === 'function') playFX('crit'); }
   else if (r === 1) { if (typeof playFX === 'function') playFX('fumble'); }
@@ -2777,8 +2858,8 @@ function rollPlayerAttack(id, rawAttackText, customD20) {
     banner.style.display = 'block';
     document.getElementById('dice-total-number').innerText = totalHit;
     document.getElementById('dice-breakdown-text').innerText = `${p.name}: Acerto ${totalHit} | Dano: ${totalDmg}`;
-    openDiceModal();
   }
+
   renderPlayers();
   return { d20, totalHit, totalDmg, isCrit, isFumble };
 }
@@ -4220,6 +4301,20 @@ function formatPlayerFeatureForDisplay(feature, p, clsItem = null) {
   return f;
 }
 
+const PLAYER_FEATURES_CACHE = {};
+
+function registerFeatureForModal(name, desc, type, source) {
+  const key = 'feat_' + Math.random().toString(36).substring(2, 10);
+  PLAYER_FEATURES_CACHE[key] = { name, desc, type, source };
+  return key;
+}
+
+function openPlayerFeatureModalByKey(key) {
+  const feat = PLAYER_FEATURES_CACHE[key];
+  if (!feat) return;
+  openPlayerFeatureModal(feat.name, feat.desc, feat.type, feat.source);
+}
+
 function renderPlayerUnlockedFeatures(p) {
   const classesList = getPlayerClassesList(p);
   let html = '';
@@ -4252,8 +4347,9 @@ function renderPlayerUnlockedFeatures(p) {
                 '</select>' +
               '</div>';
             }
+            const featKey = registerFeatureForModal(formatted.name, formatted.desc, formatted.type || 'Característica', formatted.source || clsItem.className);
             return `
-            <div class="unlocked-feature-item" onclick="openPlayerFeatureModal('${escapeAttr(formatted.name)}', '${escapeAttr(formatted.desc)}', '${escapeAttr(formatted.type || 'Característica')}', '${escapeAttr(formatted.source || clsItem.className)}')" title="Clique para ver detalhes em tópicos">
+            <div class="unlocked-feature-item" onclick="openPlayerFeatureModalByKey('${featKey}')" title="Clique para ver detalhes em tópicos">
               <div style="display:flex; justify-content:space-between; align-items:center;">
                 <span style="font-weight:700; color:#fff; font-size:12px;">${formatted.name}</span>
                 <span class="badge ${formatted.isSubclass ? 'badge-sub' : 'badge-cls'}" style="font-size:9px;">Nv ${formatted.level}</span>
@@ -4308,6 +4404,7 @@ function openPlayerFeatureModal(name, desc, type, source) {
 
   modal.classList.add('open');
 }
+
 
 function getCompatibleClassKey(className, subclassIdx = null, subclassName = '') {
   const norm = (className || '').toLowerCase();
@@ -4836,6 +4933,19 @@ function updateModalCalculatedAc() {
   const subclassSel = document.getElementById('pm-subclass-select');
   const subIdx = subclassSel ? parseInt(subclassSel.value) || 0 : 0;
 
+  const armorSel = document.getElementById('pm-armor-select');
+  const shieldChk = document.getElementById('pm-shield-check');
+  const selectedArmorKey = armorSel ? armorSel.value : (existing ? getPlayerEquippedArmorKey(existing) : 'none');
+  const hasShield = shieldChk ? shieldChk.checked : (existing ? hasPlayerEquippedShield(existing) : false);
+
+  let simulatedInventory = [];
+  if (selectedArmorKey && selectedArmorKey !== 'none') {
+    simulatedInventory.push({ name: selectedArmorKey, equipped: true });
+  }
+  if (hasShield) {
+    simulatedInventory.push({ name: 'Escudo', equipped: true });
+  }
+
   const tempPlayer = {
     dex: parseInt(document.getElementById('pm-dex')?.value) || 10,
     con: parseInt(document.getElementById('pm-con')?.value) || 10,
@@ -4843,7 +4953,7 @@ function updateModalCalculatedAc() {
     className: selectedClassName,
     subclassIdx: subIdx,
     fightingStyle: (existing && existing.fightingStyle) || document.getElementById('pm-fighting-style')?.value || '',
-    inventory: (existing && existing.inventory) ? existing.inventory : []
+    inventory: simulatedInventory
   };
 
   const calculated = calculatePlayerAcFromEquipment(tempPlayer);
@@ -4910,6 +5020,17 @@ function openPlayerModal(id) {
     document.getElementById('pm-level').value = p.level;
     document.getElementById('pm-xp').value = p.xp;
     document.getElementById('pm-hitdice').value = p.hitDice || getHitDieForClass(p.className);
+
+    // Sincroniza seletor de armadura e escudo
+    const armorSel = document.getElementById('pm-armor-select');
+    if (armorSel) {
+      armorSel.value = getPlayerEquippedArmorKey(p) || 'none';
+    }
+    const shieldChk = document.getElementById('pm-shield-check');
+    if (shieldChk) {
+      shieldChk.checked = hasPlayerEquippedShield(p);
+    }
+
     document.getElementById('pm-ac').value = calculatePlayerAcFromEquipment(p) || p.ac || 10;
     document.getElementById('pm-maxhp').value = p.maxHp;
     document.getElementById('pm-speed').value = p.speed;
@@ -4951,6 +5072,7 @@ function openPlayerModal(id) {
     document.getElementById('pm-slot-5').value = slots[4] || 0;
 
     document.getElementById('pm-badges').value = (p.badges || []).join(', ');
+
 
     const subclassSel = document.getElementById('pm-subclass-select');
     if (subclassSel) {
@@ -5118,6 +5240,61 @@ function savePlayerSheet() {
     }
   }
 
+  // Sincroniza a armadura e escudo selecionados no inventário
+  const armorSel = document.getElementById('pm-armor-select');
+  const shieldChk = document.getElementById('pm-shield-check');
+  let currentInv = existing && Array.isArray(existing.inventory) ? JSON.parse(JSON.stringify(existing.inventory)) : [];
+
+  if (armorSel && armorSel.value !== undefined) {
+    const chosenArmor = armorSel.value;
+    if (chosenArmor === 'none') {
+      currentInv.forEach(item => {
+        if (isArmorItem(item.name)) item.equipped = false;
+      });
+    } else if (isArmorItem(chosenArmor)) {
+      currentInv.forEach(item => {
+        if (isArmorItem(item.name)) item.equipped = false;
+      });
+      const armStats = getArmorItemStats(chosenArmor);
+      const armName = armStats.name || chosenArmor;
+      const existingArm = currentInv.find(it => isArmorItem(it.name) && (it.name.toLowerCase().includes(chosenArmor.toLowerCase()) || chosenArmor.toLowerCase().includes(it.name.toLowerCase())));
+      if (existingArm) {
+        existingArm.equipped = true;
+      } else {
+        currentInv.push({
+          id: 'item_arm_' + Date.now(),
+          name: armName,
+          qty: 1,
+          weight: armStats.type === 'heavy' ? 20 : (armStats.type === 'medium' ? 12 : 5),
+          equipped: true
+        });
+      }
+    }
+  }
+
+  if (shieldChk && shieldChk.checked !== undefined) {
+    const hasShield = !!shieldChk.checked;
+    if (!hasShield) {
+      currentInv.forEach(item => {
+        if (isShieldItem(item.name)) item.equipped = false;
+      });
+    } else {
+      const existingShield = currentInv.find(it => isShieldItem(it.name));
+      if (existingShield) {
+        existingShield.equipped = true;
+      } else {
+        currentInv.push({
+          id: 'item_shd_' + Date.now(),
+          name: 'Escudo',
+          qty: 1,
+          weight: 6,
+          equipped: true
+        });
+      }
+    }
+  }
+
+
   const data = {
     id: id || 'p_' + Date.now(),
     student, name,
@@ -5138,7 +5315,7 @@ function savePlayerSheet() {
       className: classNameVal,
       subclassIdx,
       fightingStyle: (existing && existing.fightingStyle) || fightingStyle,
-      inventory: existing && existing.inventory ? existing.inventory : []
+      inventory: currentInv
     }) || 10,
     hp: existing ? Math.min(maxHp, existing.hp) : maxHp,
     maxHp,
@@ -5146,7 +5323,8 @@ function savePlayerSheet() {
     speed: document.getElementById('pm-speed').value || '9m',
     gold: parseInt(document.getElementById('pm-gold').value) || 0,
     coins: existing && existing.coins ? { ...existing.coins, gp: parseInt(document.getElementById('pm-gold').value) || 0 } : { cp: 0, sp: 0, ep: 0, gp: parseInt(document.getElementById('pm-gold').value) || 0, pp: 0 },
-    inventory: existing && Array.isArray(existing.inventory) ? existing.inventory : [],
+    inventory: currentInv,
+
     customSpells: existing && Array.isArray(existing.customSpells) ? existing.customSpells : [],
     customAttacks: existing && Array.isArray(existing.customAttacks) ? existing.customAttacks : [],
     attunedItems: existing && Array.isArray(existing.attunedItems) ? existing.attunedItems : [],
@@ -7893,14 +8071,249 @@ function renderPlayerCombatModalContent() {
   listEl.innerHTML = html;
 }
 
+// --- GERENCIADOR DE CLASSES & MULTICLASSE (D&D 5E) ---
+let editingClassesPlayerId = null;
+let workingClassesList = [];
+
+function openPlayerClassesModal(playerId) {
+  if (!playerId) {
+    const pmId = document.getElementById('pm-id')?.value;
+    playerId = pmId;
+  }
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+
+  editingClassesPlayerId = playerId;
+  const current = getPlayerClassesList(p);
+  workingClassesList = JSON.parse(JSON.stringify(current));
+  if (workingClassesList.length === 0) {
+    workingClassesList = [{ className: p.className || 'Guerreiro', level: p.level || 1, subclassIdx: p.subclassIdx || 0, subclass: p.subclass || '' }];
+  }
+
+  const modal = document.getElementById('modal-player-classes');
+  if (!modal) return;
+
+  const subtitle = document.getElementById('mc-modal-player-subtitle');
+  if (subtitle) {
+    subtitle.innerHTML = `Configurando classes de <b>${escapeAttr(p.name)}</b> (${escapeAttr(p.student || 'Jogador')})`;
+  }
+
+  renderPlayerClassesModalContent();
+  modal.classList.add('open');
+}
+
+function closePlayerClassesModal() {
+  const modal = document.getElementById('modal-player-classes');
+  if (modal) modal.classList.remove('open');
+  editingClassesPlayerId = null;
+  workingClassesList = [];
+}
+
+function renderPlayerClassesModalContent() {
+  const container = document.getElementById('mc-classes-container');
+  if (!container) return;
+
+  const availableClasses = (typeof CLASSES_DATA !== 'undefined') ? CLASSES_DATA : [];
+
+  let html = '';
+  workingClassesList.forEach((clsItem, idx) => {
+    const clsData = (typeof findClassData === 'function' ? findClassData(clsItem.className) : null) || availableClasses.find(c => c.name.toLowerCase() === (clsItem.className || '').toLowerCase()) || availableClasses[0];
+    const reqSubLvl = typeof getSubclassUnlockLevel === 'function' ? getSubclassUnlockLevel(clsItem.className) : 3;
+    const hasSubclassUnlocked = (clsItem.level || 1) >= reqSubLvl;
+    const subclasses = (clsData && clsData.subclasses) ? clsData.subclasses : [];
+
+    html += `
+      <div class="multiclass-row-card" style="background:#0f172a; border:1px solid var(--border-color); border-radius:8px; padding:10px; display:flex; flex-direction:column; gap:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:20px;">${clsData ? clsData.icon : '⚔️'}</span>
+            <span style="font-weight:800; color:#fff; font-size:13px;">Classe ${idx + 1}${idx === 0 ? ' (Principal)' : ' (Multiclasse)'}</span>
+          </div>
+          ${workingClassesList.length > 1 ? `
+            <button class="btn-micro" type="button" onclick="removePlayerClassRow(${idx})" style="color:#f87171; border-color:rgba(248,113,113,0.3);" title="Remover esta classe">🗑️ Remover</button>
+          ` : ''}
+        </div>
+
+        <div style="display:grid; grid-template-columns: 2fr 1fr 2fr; gap:8px; align-items:flex-end;">
+          <div>
+            <label style="font-size:10px; color:var(--text-muted); font-weight:700;">Classe D&D 5E</label>
+            <select class="filter-select" style="width:100%; font-size:12px; font-weight:700;" onchange="updatePlayerClassRow(${idx}, 'className', this.value)">
+              ${availableClasses.map(c => `
+                <option value="${c.name}" ${c.name.toLowerCase() === (clsItem.className || '').toLowerCase() ? 'selected' : ''}>
+                  ${c.icon} ${c.name}
+                </option>
+              `).join('')}
+            </select>
+          </div>
+
+          <div>
+            <label style="font-size:10px; color:var(--text-muted); font-weight:700;">Nível (1-20)</label>
+            <input type="number" min="1" max="20" value="${clsItem.level || 1}" class="filter-input" style="width:100%; font-weight:800; text-align:center;" oninput="updatePlayerClassRow(${idx}, 'level', parseInt(this.value) || 1)">
+          </div>
+
+          <div>
+            <label style="font-size:10px; color:var(--text-muted); font-weight:700;">Subclasse ${hasSubclassUnlocked ? `<span style="color:var(--accent-gold);">(Nv ${reqSubLvl}+)</span>` : `<span style="color:#94a3b8;">(Desbloqueia Nv ${reqSubLvl})</span>`}</label>
+            ${hasSubclassUnlocked && subclasses.length > 0 ? `
+              <select class="filter-select" style="width:100%; font-size:11px;" onchange="updatePlayerClassRow(${idx}, 'subclassIdx', parseInt(this.value))">
+                ${subclasses.map((s, sIdx) => `
+                  <option value="${sIdx}" ${sIdx === (clsItem.subclassIdx || 0) ? 'selected' : ''}>
+                    ${s.name}
+                  </option>
+                `).join('')}
+              </select>
+            ` : `
+              <input type="text" disabled value="Disponível no Nível ${reqSubLvl}" style="width:100%; font-size:10px; color:#64748b; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.05); padding:6px; border-radius:4px;">
+            `}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+
+  const totalLevel = workingClassesList.reduce((sum, c) => sum + (c.level || 1), 0);
+  const hitDiceParts = workingClassesList.map(c => `${c.level || 1}${getHitDieForClass(c.className).replace(/^[0-9]+/, '')}`).join(' + ');
+  const prof = typeof getProfBonus === 'function' ? getProfBonus(totalLevel) : Math.ceil(totalLevel / 4) + 1;
+
+  const lvlEl = document.getElementById('mc-summary-level');
+  if (lvlEl) lvlEl.innerText = `Nv ${totalLevel}`;
+  const hdEl = document.getElementById('mc-summary-hitdice');
+  if (hdEl) hdEl.innerText = hitDiceParts;
+  const profEl = document.getElementById('mc-summary-prof');
+  if (profEl) profEl.innerText = `+${prof}`;
+}
+
+function addPlayerClassRow() {
+  const availableClasses = (typeof CLASSES_DATA !== 'undefined') ? CLASSES_DATA : [];
+  const existingNames = workingClassesList.map(c => (c.className || '').toLowerCase());
+  const unused = availableClasses.find(c => !existingNames.includes(c.name.toLowerCase())) || availableClasses[0];
+  const newClassName = unused ? unused.name : 'Guerreiro';
+
+  workingClassesList.push({
+    className: newClassName,
+    level: 1,
+    subclassIdx: 0,
+    subclass: ''
+  });
+  renderPlayerClassesModalContent();
+}
+
+function removePlayerClassRow(idx) {
+  if (workingClassesList.length <= 1) {
+    if (typeof showToast === 'function') showToast('O personagem deve ter pelo menos uma classe.', 'warn');
+    return;
+  }
+  workingClassesList.splice(idx, 1);
+  renderPlayerClassesModalContent();
+}
+
+function updatePlayerClassRow(idx, field, value) {
+  if (!workingClassesList[idx]) return;
+  workingClassesList[idx][field] = value;
+  if (field === 'className') {
+    workingClassesList[idx].subclassIdx = 0;
+    const clsData = typeof findClassData === 'function' ? findClassData(value) : null;
+    if (clsData && clsData.subclasses && clsData.subclasses[0]) {
+      workingClassesList[idx].subclass = clsData.subclasses[0].name;
+    } else {
+      workingClassesList[idx].subclass = '';
+    }
+  } else if (field === 'subclassIdx') {
+    const clsData = typeof findClassData === 'function' ? findClassData(workingClassesList[idx].className) : null;
+    if (clsData && clsData.subclasses && clsData.subclasses[value]) {
+      workingClassesList[idx].subclass = clsData.subclasses[value].name;
+    }
+  }
+  renderPlayerClassesModalContent();
+}
+
+function savePlayerClassesModal() {
+  if (!editingClassesPlayerId) return;
+  const p = PLAYERS.find(x => x.id === editingClassesPlayerId);
+  if (!p) return;
+
+  if (workingClassesList.length === 0) {
+    if (typeof showToast === 'function') showToast('Adicione ao menos uma classe.', 'warn');
+    return;
+  }
+
+  workingClassesList.forEach(c => {
+    c.level = Math.max(1, Math.min(20, parseInt(c.level, 10) || 1));
+    c.subclassIdx = parseInt(c.subclassIdx, 10) || 0;
+    const clsData = typeof findClassData === 'function' ? findClassData(c.className) : null;
+    if (clsData && clsData.subclasses && clsData.subclasses[c.subclassIdx]) {
+      c.subclass = clsData.subclasses[c.subclassIdx].name;
+    }
+  });
+
+  p.multiclass = JSON.parse(JSON.stringify(workingClassesList));
+  p.level = workingClassesList.reduce((sum, c) => sum + c.level, 0);
+
+  if (workingClassesList.length === 1) {
+    p.className = workingClassesList[0].className;
+    p.subclassIdx = workingClassesList[0].subclassIdx;
+    p.subclass = workingClassesList[0].subclass || '';
+  } else {
+    p.className = workingClassesList.map(c => `${c.className} ${c.level}`).join(' / ');
+    p.subclassIdx = workingClassesList[0].subclassIdx;
+    p.subclass = workingClassesList[0].subclass || '';
+  }
+
+  p.hitDice = workingClassesList.map(c => `${c.level}${getHitDieForClass(c.className).replace(/^[0-9]+/, '')}`).join(' + ');
+  p.slots = calculateMulticlassSpellSlots(p);
+  ensurePlayerCalculatedAc(p);
+
+  const pmId = document.getElementById('pm-id')?.value;
+  if (pmId === p.id) {
+    const classInp = document.getElementById('pm-class');
+    if (classInp) classInp.value = p.className;
+    const lvlInp = document.getElementById('pm-level');
+    if (lvlInp) lvlInp.value = p.level;
+    const hdInp = document.getElementById('pm-hitdice');
+    if (hdInp) hdInp.value = p.hitDice;
+    updateModalCalculatedAc();
+  }
+
+  addPlayerActionLog(p.id, '🎭', `Classes atualizadas: ${p.className} (Nível Total ${p.level})`, 'general');
+  addLog(`🎭 <b>${p.name}</b> teve suas classes atualizadas para <b>${p.className}</b> (Nível Total ${p.level})`);
+
+  if (typeof touchPlayer === 'function') touchPlayer(p);
+  renderPlayers();
+  if (typeof renderCombat === 'function') renderCombat();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+
+  closePlayerClassesModal();
+  if (typeof showToast === 'function') showToast(`Classes de ${p.name} salvas com sucesso!`, 'success');
+}
+
 // Vincula no window para navegadores
 if (typeof window !== 'undefined') {
+  window.openPlayerClassesModal = openPlayerClassesModal;
+  window.closePlayerClassesModal = closePlayerClassesModal;
+  window.renderPlayerClassesModalContent = renderPlayerClassesModalContent;
+  window.addPlayerClassRow = addPlayerClassRow;
+  window.removePlayerClassRow = removePlayerClassRow;
+  window.updatePlayerClassRow = updatePlayerClassRow;
+  window.savePlayerClassesModal = savePlayerClassesModal;
+
+  window.getPlayerEquippedArmorKey = getPlayerEquippedArmorKey;
+  window.hasPlayerEquippedShield = hasPlayerEquippedShield;
+  window.setPlayerEquippedArmor = setPlayerEquippedArmor;
+
+  window.PLAYER_FEATURES_CACHE = PLAYER_FEATURES_CACHE;
+  window.registerFeatureForModal = registerFeatureForModal;
+  window.openPlayerFeatureModalByKey = openPlayerFeatureModalByKey;
+
   window.openTradeItemModal = openTradeItemModal;
   window.closeTradeItemModal = closeTradeItemModal;
   window.adjustTradeQty = adjustTradeQty;
   window.setTradeQtyMax = setTradeQtyMax;
   window.confirmTradeItem = confirmTradeItem;
   window.transferPlayerItem = transferPlayerItem;
+
 
   window.openBatchRewardsModal = openBatchRewardsModal;
   window.closeBatchRewardsModal = closeBatchRewardsModal;
@@ -8041,9 +8454,25 @@ if (typeof module !== 'undefined' && module.exports) {
     DND5E_SPELL_DICE_DATA,
     getSpellDiceInfo,
     rollPlayerSpellDice,
-    formatPlayerFeatureForDisplay
+    formatPlayerFeatureForDisplay,
+
+    // ISSUE-99: Gerenciador de Classes, Leitura Segura e Armaduras
+    openPlayerClassesModal,
+    closePlayerClassesModal,
+    renderPlayerClassesModalContent,
+    addPlayerClassRow,
+    removePlayerClassRow,
+    updatePlayerClassRow,
+    savePlayerClassesModal,
+    getPlayerEquippedArmorKey,
+    hasPlayerEquippedShield,
+    setPlayerEquippedArmor,
+    registerFeatureForModal,
+    openPlayerFeatureModalByKey,
+    PLAYER_FEATURES_CACHE
   };
 }
+
 
 if (typeof window !== 'undefined') {
   window.DND5E_SPELL_DICE_DATA = DND5E_SPELL_DICE_DATA;

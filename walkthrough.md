@@ -1,81 +1,107 @@
-# Walkthrough - Implementação de Subclasses Mágicas (Trapaceiro Arcano e Cavaleiro Místico - ISSUE-84)
+# Walkthrough - Leitura Segura de Características, Rolagem Não Invasiva, Equipamento de Armaduras/Escudo e Gerenciador de Multiclasse (ISSUE-99)
 
-Implementação do suporte completo para subclasses arcanas e terço-conjuradores (1/3 Casters) de D&D 5E: **Trapaceiro Arcano (Ladino)** e **Cavaleiro Místico (Guerreiro)**.
+Implementação completa das correções e novas funcionalidades solicitadas:
+1. Leitura sem erros de características da ficha.
+2. Eliminação de popups intrusivos do modal de dados ao rolar atributos e ataques.
+3. Seletor intuitivo e dedicado para equipar armaduras e escudos com recálculo automático de CA.
+4. Gerenciador dedicado de Classes e Multiclasse com configuração canônica de Deraravely (Guerreiro 4 / Bárbaro 1).
 
 ---
 
-## 🎯 Problema Resolvido
-O usuário reportou que ao jogar com o **Trapaceiro Arcano do Ladino**, a ficha não indicava quantas magias ele podia ter nem calculava seus espaços de magia (*spell slots*), exibindo "Sem conjuração de classe".
+## 🎯 Problemas Resolvidos
 
-### 🔍 Causa Raiz
-1. `getMaxPreparedSpells(p)` avaliava apenas `p.className` (que continha `"Ladino"` ou `"Guerreiro"`). Sem inspecionar a subclasse (`p.subclassIdx === 2` ou `p.subclass`), retornava `type: 'none'`.
-2. `calculateSpellSlots(className, level)` não recebia a subclasse e não possuía a progressão de terço-conjuradores (1/3 casters), gerando `[0, 0, 0, 0, 0]`.
-3. O seletor de magias (`getCompatibleClassKey`) não mapeava Trapaceiro Arcano e Cavaleiro Místico para a lista de **Mago (Wizard)**.
+1. **Características não abriam para leitura**:
+   - Ao clicar em características de classe com quebras de linha (`\n`) ou aspas na descrição, o navegador gerava `Uncaught SyntaxError: Invalid or unexpected token` devido à interpolação direta no atributo `onclick="..."`.
+2. **Modal de dados abrindo inadvertidamente**:
+   - Rolagens rápidas de atributos (`rollPlayerAttr`) e de ataques de armas (`rollPlayerAttack`) chamavam explicitamente `openDiceModal()`, abrindo a tela cheia de rolagem sobre a ficha.
+3. **Falta de local para equipar armadura e escudo**:
+   - Não havia seletor visível e direto para o usuário dizer que o personagem usa determinada armadura (ex: Cota de Malha, Couro Batido, Placas) e escudo.
+4. **Classes e Níveis travados / Multiclasse inacessível**:
+   - Personagens multiclasse (como Deraravely, que é Guerreiro 4 / Bárbaro 1) apareciam forçados como Guerreiro 5 sem opção de edição das classes secundárias e níveis.
 
 ---
 
 ## 🛠️ Alterações Realizadas
 
-### 1. Detecção Precisa de Subclasses Mágicas
-- Criada a função `isMagicalSubclass(className, subclassIdx, subclassName)` em [`src/js/players.js`](file:///c:/Users/wesle/.gemini/antigravity-ide/scratch/Planilha%20RPG/src/js/players.js):
-  - Ladino com `subclassIdx === 2` ou subclasse contendo "Trapaceiro", "Arcano" ou "Trickster".
-  - Guerreiro com `subclassIdx === 2` ou subclasse contendo "Cavaleiro Místico", "Eldritch Knight" ou "Arcano".
-  - Suporte a classes compostas como "Ladino (Trapaceiro Arcano)".
+### 1. Leitura Segura de Características (Sem Injeção Inline)
+- Criado o cache em memória `PLAYER_FEATURES_CACHE` em [`src/js/players.js`](file:///c:/Users/wesle/.gemini/antigravity-ide/scratch/Planilha%20RPG/src/js/players.js).
+- Implementadas as funções:
+  - `registerFeatureForModal(title, desc, type, source)`: gera uma chave única alfanumérica segura (`feat_123_456`) e armazena os dados sem passar strings com quebras de linha pelo parser HTML.
+  - `openPlayerFeatureModalByKey(key)`: busca os dados íntegros e abre o modal `#modal-skill-detail`.
+- `renderPlayerUnlockedFeatures(p)` agora usa exclusivamente `onclick="openPlayerFeatureModalByKey('...')"` garantindo 100% de compatibilidade em qualquer dispositivo.
 
-### 2. Tabela Oficial de Espaços de Magia (D&D 5E 1/3 Casters)
-- Atualizada `calculateSpellSlots(className, level, subclassIdx)`:
-  - **Níveis 1-2**: `[0, 0, 0, 0, 0]` (sem conjuração até o 3º nível)
-  - **Nível 3**: `[2, 0, 0, 0, 0]` (2 espaços de 1º círculo)
-  - **Níveis 4-6**: `[3, 0, 0, 0, 0]`
-  - **Níveis 7-9**: `[4, 2, 0, 0, 0]` (libera 2º círculo)
-  - **Níveis 10-12**: `[4, 3, 0, 0, 0]`
-  - **Níveis 13-15**: `[4, 3, 2, 0, 0]` (libera 3º círculo)
-  - **Níveis 16-18**: `[4, 3, 3, 0, 0]`
-  - **Níveis 19-20**: `[4, 3, 3, 1, 0]` (libera 4º círculo)
+### 2. Rolagem de Dados Não Invasiva
+- Removidas as chamadas `openDiceModal()` dentro de `rollPlayerAttr()` e `rollPlayerAttack()`.
+- O resultado continua sendo exibido dinamicamente no componente `showLiveDiceRoll()` e no feed de combate/logs, permitindo rolagens ágeis sem popups cobrindo a tela.
 
-### 3. Magias Conhecidas e Truques
-- Em `getMaxPreparedSpells(p)`:
-  - Retorna `type: 'known'` e `isKnownCaster: true`.
-  - Integrado a `DND5E_KNOWN_SPELLS_TABLE`: 3 a 13 magias conhecidas.
-  - Integrado a `DND5E_CANTRIPS_KNOWN_TABLE`: 3 a 4 truques (Trapaceiro Arcano) e 2 a 3 truques (Cavaleiro Místico).
-  - Atributo chave de conjuração: `INT` (Inteligência).
+### 3. Equipamento Rápido de Armaduras e Escudo
+- Adicionado seletor de armaduras `#pm-armor-select` e checkbox de escudo `#pm-shield-check` no modal de edição da ficha (`#modal-player`) em [`src/ui/ui.html`](file:///c:/Users/wesle/.gemini/antigravity-ide/scratch/Planilha%20RPG/src/ui/ui.html).
+- Implementadas as funções em [`src/js/players.js`](file:///c:/Users/wesle/.gemini/antigravity-ide/scratch/Planilha%20RPG/src/js/players.js):
+  - `getPlayerEquippedArmorKey(player)`: detecta a armadura equipada atualmente no inventário com prioridade para correspondência exata.
+  - `hasPlayerEquippedShield(player)`: verifica se possui escudo equipado.
+  - `setPlayerEquippedArmor(playerId, armorKey, hasShield)`: equipa a armadura e o escudo, recalculando instantaneamente a CA e sincronizando com combate, nuvem e localStorage.
+- Botão rápido `🛡️ Equipamentos` na barra de ferramentas da ficha do personagem para acesso direto.
 
-### 4. Estatísticas de Conjuração
-- Em `getPlayerSpellcastingStats(p)`:
-  - CD de Resistência de Magia: $8 + \text{Proficiência} + \text{Modificador de INT}$.
-  - Bônus de Ataque Mágico: $+\text{Proficiência} + \text{Modificador de INT}$.
+### 4. Gerenciador Completo de Classes e Multiclasse
+- Adicionado o modal `#modal-player-classes` em [`src/ui/ui.html`](file:///c:/Users/wesle/.gemini/antigravity-ide/scratch/Planilha%20RPG/src/ui/ui.html) com botão disparador `🔀 Classes` na toolbar do personagem e dentro do modal de edição da ficha.
+- Suite de funções em [`src/js/players.js`](file:///c:/Users/wesle/.gemini/antigravity-ide/scratch/Planilha%20RPG/src/js/players.js):
+  - `openPlayerClassesModal(playerId)`
+  - `renderPlayerClassesModalContent()`
+  - `addPlayerClassRow()`: adiciona novas classes à multiclasse.
+  - `removePlayerClassRow(idx)`: remove classes adicionadas.
+  - `updatePlayerClassRow(idx, field, val)`: altera classe, nível ou subclasse em tempo real.
+  - `savePlayerClassesModal()`: consolida a multiclasse, calcula o nível total, recompõe os dados de vida combinados (ex: `4d10 + 1d12`), ajusta espaços de magia e recalcula a CA.
 
-### 5. Seletor de Magias e Filtro do Grimório
-- Em `getCompatibleClassKey(className, subclassIdx, subclassName)`:
-  - Redireciona automaticamente para **Mago**, permitindo que o Trapaceiro Arcano e o Cavaleiro Místico escolham magias da lista de Mago.
-
-### 6. Modal de Ficha e Assistente de Level Up
-- `openPlayerModal(id)` e `onPlayerModalClassOrLevelChange(preserveSlotsIfSet)`:
-  - Preserva e inicializa `subclassSel.dataset.pendingSubIdx` para selecionar a subclasse correta do herói.
-  - Recalcula e preenche os espaços de magia automaticamente ao escolher a subclasse mágica.
-- `savePlayerSheet()`:
-  - Grava `subclassIdx` e `subclass` (`Trapaceiro Arcano (Arcane Trickster)`).
-  - Auto-calcula espaços de magia se a tela estiver zerada.
-- `calculateMulticlassSpellSlots(player)`:
-  - Trata classe única pura preservando a tabela de terço-conjurador.
-  - Para multiclasse com múltiplos conjuradores, soma $\lfloor \text{nível}/3 \rfloor$ ao nível de conjurador efetivo.
-- `applyLevelUpConfirm()`:
-  - Atualiza `p.subclassIdx` e `p.subclass` no nível raiz do herói quando a classe principal sobe de nível.
+### 5. Configuração Canônica de Deraravely
+- Atualizado em [`src/js/core.js`](file:///c:/Users/wesle/.gemini/antigravity-ide/scratch/Planilha%20RPG/src/js/core.js) como:
+  - **Classes**: Guerreiro Nível 4 (Campeão) e Bárbaro Nível 1 (Nível Total 5).
+  - **Dados de Vida**: `4d10 + 1d12`.
+  - **Equipamento**: Cota de Malha equipada (16) + Estilo de Luta Defesa (+1) + Escudo (+2) = **CA 19**.
+  - **Recursos**: Fúria (2/dia), Retomar o Fôlego (1d10+4), Surto de Ação (1/descanso).
+  - Auto-migração em `loadFromLocalStorage()` para navegadores que possuíam versão em cache antiga de Deraravely.
 
 ---
 
-## 🧪 Validação Automatizada (`test_runner.js`)
-Adicionada a **SUÍTE 57** cobrindo:
-1. Identificação de subclasses mágicas (`isMagicalSubclass`).
-2. Cálculo de espaços de magia de nível 1 a 20 para Trapaceiro Arcano e Cavaleiro Místico.
-3. Quantidade de magias conhecidas, truques e atributo INT via `getMaxPreparedSpells`.
-4. CD e bônus de ataque mágico via `getPlayerSpellcastingStats`.
-5. Compatibilidade no catálogo de magias via `getCompatibleClassKey`.
-6. Assistente de Level Up (`applyLevelUpConfirm`) evoluindo Ladino Nv 2 para Nv 3 Trapaceiro Arcano com `[2, 0, 0, 0, 0]` espaços gerados automaticamente.
+## 🧪 Verificação e Testes
 
-### Resultado:
+Executada a suíte completa de testes automatizados:
 ```bash
+node builder.js
 node test_runner.js
-📊 RESULTADO DOS TESTES: 845/845 passaram
+```
+
+### Resultados da Suíte 70:
+```
+🛡️ 70. Testes de Leitura Segura de Características, Rolagem Não Invasiva, Seleção de Armaduras e Multiclasse (ISSUE-99):
+  ✅ [PASS] registerFeatureForModal gera chave segura alfanumérica
+  ✅ [PASS] openPlayerFeatureModalByKey abriu e preencheu título corretamente
+  ✅ [PASS] renderPlayerUnlockedFeatures eliminou injeção direta de strings inseguras no onclick
+  ✅ [PASS] renderPlayerUnlockedFeatures utiliza openPlayerFeatureModalByKey
+  ✅ [PASS] rollPlayerAttr executou rolagem sem abrir modal de dados invasivo
+  ✅ [PASS] rollPlayerAttack executou rolagem sem abrir modal de dados invasivo
+  ✅ [PASS] getPlayerEquippedArmorKey identifica Cota de Malha equipada
+  ✅ [PASS] hasPlayerEquippedShield identifica Escudo equipado
+  ✅ [PASS] Cota de Malha (16) + Estilo Defesa (+1) + Escudo (+2) resulta em CA 19 (obteve 19)
+  ✅ [PASS] Armadura de Placas (18) + Estilo Defesa (+1) + Escudo (+2) resulta em CA 21 (obteve 21)
+  ✅ [PASS] Sem Armadura e sem Escudo resulta em 10 + 1 [DES] = 11 (obteve 11)
+  ✅ [PASS] Deraravely possui array multiclass
+  ✅ [PASS] Deraravely possui exatamente 2 classes
+  ✅ [PASS] Deraravely é Guerreiro Nível 4
+  ✅ [PASS] Deraravely é Bárbaro Nível 1
+  ✅ [PASS] Nível total de Deraravely é 5
+  ✅ [PASS] Dados de vida combinados de Deraravely são 4d10 + 1d12 (obteve 4d10 + 1d12)
+  ✅ [PASS] loadFromLocalStorage auto-migrou Deraravely defasado para multiclasse
+  ✅ [PASS] loadFromLocalStorage atualizou className para Guerreiro 4 / Bárbaro 1
+  ✅ [PASS] Função openPlayerClassesModal exportada
+  ✅ [PASS] Função savePlayerClassesModal exportada
+  ✅ [PASS] Função addPlayerClassRow exportada
+  ✅ [PASS] HTML contém modal-player-classes
+  ✅ [PASS] HTML contém seletor pm-armor-select no modal de edição
+  ✅ [PASS] HTML contém checkbox pm-shield-check no modal de edição
+  ✅ [PASS] HTML contém chamada para openPlayerClassesModal
+
+========================================
+📊 RESULTADO DOS TESTES: 1089/1089 passaram
 🎉 TODOS OS TESTES PASSARAM COM SUCESSO! 🚀
+========================================
 ```

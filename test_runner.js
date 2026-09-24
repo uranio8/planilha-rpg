@@ -5116,9 +5116,104 @@ assert(renderedFeaturesHtml.includes('feature-fighting-style-box'), 'renderPlaye
 assert(renderedFeaturesHtml.includes('setPlayerFightingStyle'), 'renderPlayerUnlockedFeatures renderiza dropdown interativo com chamada a setPlayerFightingStyle');
 assert(renderedFeaturesHtml.includes('Defesa'), 'renderPlayerUnlockedFeatures exibe o estilo ativo Defesa');
 
+// ========================================================
+// 70. TESTES DE LEITURA SEGURA DE CARACTERÍSTICAS, ROLAGEM NÃO INVASIVA, SELEÇÃO DE ARMADURAS E MULTICLASSE (ISSUE-99)
+// ========================================================
+console.log('\n🛡️ 70. Testes de Leitura Segura de Características, Rolagem Não Invasiva, Seleção de Armaduras e Multiclasse (ISSUE-99):');
+
+// 1. Registro seguro e leitura de características com quebras de linha e aspas
+const testFeatKey = vm.runInContext(`registerFeatureForModal("Habilidade de Teste", "Linha 1 com aspas: 'teste' e \\"aspas duplas\\".\\nLinha 2 com tópicos:\\n• Tópico 1\\n• Tópico 2", "Especial", "Mago")`, sandbox);
+assert(typeof testFeatKey === 'string' && testFeatKey.startsWith('feat_'), 'registerFeatureForModal gera chave segura alfanumérica');
+
+vm.runInContext(`openPlayerFeatureModalByKey('${testFeatKey}')`, sandbox);
+const modalTitleVal = vm.runInContext(`document.getElementById('skill-modal-title').innerText`, sandbox);
+assert(modalTitleVal === 'Habilidade de Teste', 'openPlayerFeatureModalByKey abriu e preencheu título corretamente');
+
+// 2. Renderização de características não contém quebras de linha nem aspas perigosas no atributo onclick
+const renderedSafeFeatures = vm.runInContext(`renderPlayerUnlockedFeatures(pTestHero)`, sandbox);
+assert(!renderedSafeFeatures.includes('onclick="openPlayerFeatureModal(\''), 'renderPlayerUnlockedFeatures eliminou injeção direta de strings inseguras no onclick');
+assert(renderedSafeFeatures.includes('openPlayerFeatureModalByKey('), 'renderPlayerUnlockedFeatures utiliza openPlayerFeatureModalByKey');
+
+// 3. Ausência de modal invasivo de dados ao rolar atributos e ataques
+vm.runInContext(`
+  document.getElementById('modal-dice').classList.remove('open');
+  rollPlayerAttr('p_test_fs_hero', 'str');
+`, sandbox);
+const isDiceModalOpenAttr = vm.runInContext(`document.getElementById('modal-dice').classList.contains('open')`, sandbox);
+assert(!isDiceModalOpenAttr, 'rollPlayerAttr executou rolagem sem abrir modal de dados invasivo');
+
+vm.runInContext(`
+  document.getElementById('modal-dice').classList.remove('open');
+  rollPlayerAttack('p_test_fs_hero', 'Espada Curta (+4, 1d6+2)');
+`, sandbox);
+const isDiceModalOpenAtk = vm.runInContext(`document.getElementById('modal-dice').classList.contains('open')`, sandbox);
+assert(!isDiceModalOpenAtk, 'rollPlayerAttack executou rolagem sem abrir modal de dados invasivo');
+
+// 4. Detecção e equipamento de armaduras
+vm.runInContext(`
+  const pArmorTest = {
+    id: 'p_armor_test',
+    name: 'Guerreiro de Armadura',
+    className: 'Guerreiro',
+    dex: 12,
+    fightingStyle: 'defense',
+    inventory: []
+  };
+  PLAYERS.push(pArmorTest);
+  setPlayerEquippedArmor('p_armor_test', 'cota de malha', true);
+`, sandbox);
+const pArmorUpdated = vm.runInContext(`PLAYERS.find(p => p.id === 'p_armor_test')`, sandbox);
+assert(vm.runInContext(`getPlayerEquippedArmorKey(PLAYERS.find(p => p.id === 'p_armor_test'))`, sandbox) === 'cota de malha', 'getPlayerEquippedArmorKey identifica Cota de Malha equipada');
+assert(vm.runInContext(`hasPlayerEquippedShield(PLAYERS.find(p => p.id === 'p_armor_test'))`, sandbox) === true, 'hasPlayerEquippedShield identifica Escudo equipado');
+assert(pArmorUpdated.ac === 19, `Cota de Malha (16) + Estilo Defesa (+1) + Escudo (+2) resulta em CA 19 (obteve ${pArmorUpdated.ac})`);
+
+// 5. Teste de troca rápida para Armadura de Placas
+vm.runInContext(`setPlayerEquippedArmor('p_armor_test', 'armadura de placas', true)`, sandbox);
+const pArmorPlates = vm.runInContext(`PLAYERS.find(p => p.id === 'p_armor_test')`, sandbox);
+assert(pArmorPlates.ac === 21, `Armadura de Placas (18) + Estilo Defesa (+1) + Escudo (+2) resulta em CA 21 (obteve ${pArmorPlates.ac})`);
+
+// 6. Teste de desequipar armadura (Sem Armadura / none)
+vm.runInContext(`setPlayerEquippedArmor('p_armor_test', 'none', false)`, sandbox);
+const pArmorNone = vm.runInContext(`PLAYERS.find(p => p.id === 'p_armor_test')`, sandbox);
+assert(pArmorNone.ac === 11, `Sem Armadura e sem Escudo resulta em 10 + 1 [DES] = 11 (obteve ${pArmorNone.ac})`);
+
+
+// 7. Validação do Deraravely como Guerreiro 4 / Bárbaro 1 canônico
+const deraravelyHeroCheck = parsedCorePlayers93.find(p => p.name === 'Deraravely' || p.id === 'p_1788966076171');
+assert(deraravelyHeroCheck && Array.isArray(deraravelyHeroCheck.multiclass), 'Deraravely possui array multiclass');
+assert(deraravelyHeroCheck && deraravelyHeroCheck.multiclass.length === 2, 'Deraravely possui exatamente 2 classes');
+assert(deraravelyHeroCheck.multiclass[0].className === 'Guerreiro' && deraravelyHeroCheck.multiclass[0].level === 4, 'Deraravely é Guerreiro Nível 4');
+assert(deraravelyHeroCheck.multiclass[1].className === 'Bárbaro' && deraravelyHeroCheck.multiclass[1].level === 1, 'Deraravely é Bárbaro Nível 1');
+assert(deraravelyHeroCheck.level === 5, 'Nível total de Deraravely é 5');
+assert(deraravelyHeroCheck.hitDice === '4d10 + 1d12', `Dados de vida combinados de Deraravely são 4d10 + 1d12 (obteve ${deraravelyHeroCheck.hitDice})`);
+
+// Validação da auto-migração de Deraravely em loadFromLocalStorage
+vm.runInContext(`
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    players: [{ id: 'p_1788966076171', name: 'Deraravely', className: 'Guerreiro', level: 5 }]
+  }));
+  loadFromLocalStorage();
+`, sandbox);
+const deraMigrated = vm.runInContext(`PLAYERS.find(p => p.id === 'p_1788966076171')`, sandbox);
+assert(deraMigrated && deraMigrated.multiclass && deraMigrated.multiclass.length === 2, 'loadFromLocalStorage auto-migrou Deraravely defasado para multiclasse');
+assert(deraMigrated.className === 'Guerreiro 4 / Bárbaro 1', 'loadFromLocalStorage atualizou className para Guerreiro 4 / Bárbaro 1');
+
+// 8. Teste das funções do modal de gerenciamento de classes
+assert(typeof vm.runInContext(`openPlayerClassesModal`, sandbox) === 'function', 'Função openPlayerClassesModal exportada');
+assert(typeof vm.runInContext(`savePlayerClassesModal`, sandbox) === 'function', 'Função savePlayerClassesModal exportada');
+assert(typeof vm.runInContext(`addPlayerClassRow`, sandbox) === 'function', 'Função addPlayerClassRow exportada');
+
+// 9. Elementos na interface compilada (HTML)
+const compiledHtmlIssue99 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(compiledHtmlIssue99.includes('id="modal-player-classes"'), 'HTML contém modal-player-classes');
+assert(compiledHtmlIssue99.includes('id="pm-armor-select"'), 'HTML contém seletor pm-armor-select no modal de edição');
+assert(compiledHtmlIssue99.includes('id="pm-shield-check"'), 'HTML contém checkbox pm-shield-check no modal de edição');
+assert(compiledHtmlIssue99.includes('openPlayerClassesModal'), 'HTML contém chamada para openPlayerClassesModal');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
+
   console.log('🎉 TODOS OS TESTES PASSARAM COM SUCESSO! 🚀');
   console.log('========================================\n');
   process.exit(0);

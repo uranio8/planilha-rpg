@@ -317,7 +317,7 @@ let PLAYERS = [
     ],
     "bond": "Minha lealdade inabalável aos companheiros de mesa",
     "cha": 11,
-    "className": "Guerreiro",
+    "className": "Guerreiro 4 / Bárbaro 1",
     "coins": {
       "cp": 0,
       "ep": 0,
@@ -347,13 +347,21 @@ let PLAYERS = [
         "name": "Surto de Ação",
         "restType": "short",
         "used": 0
+      },
+      {
+        "icon": "🔥",
+        "id": "furia",
+        "max": 2,
+        "name": "Fúria",
+        "restType": "long",
+        "used": 0
       }
     ],
-    "features": "Retomar o Fôlego (1d10+1 PV)",
+    "features": "Retomar o Fôlego (1d10+4 PV), Surto de Ação, Fúria (2/dia, +2 Dano)",
     "fightingStyle": "defense",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
-    "hitDice": "5d10",
+    "hitDice": "4d10 + 1d12",
     "hp": 43,
     "id": "p_1788966076171",
     "ideal": "Proteger os inocentes e defender a justiça",
@@ -361,6 +369,20 @@ let PLAYERS = [
     "int": 15,
     "level": 5,
     "maxHp": 43,
+    "multiclass": [
+      {
+        "className": "Guerreiro",
+        "level": 4,
+        "subclass": "Campeão (Champion)",
+        "subclassIdx": 0
+      },
+      {
+        "className": "Bárbaro",
+        "level": 1,
+        "subclass": "",
+        "subclassIdx": 0
+      }
+    ],
     "name": "Deraravely",
     "playerNotes": "",
     "present": true,
@@ -380,7 +402,7 @@ let PLAYERS = [
       0
     ],
     "speed": "9m",
-    "spells": "Armadura de Couro, Escudo, Mochila",
+    "spells": "Armadura de Cota de Malha, Escudo, Mochila",
     "spentHitDice": 0,
     "str": 18,
     "student": "Samuel",
@@ -392,9 +414,25 @@ let PLAYERS = [
     "xp": 0,
     "skillProficiencies": [],
     "saveProficiencies": [],
-    "inventory": [],
+    "inventory": [
+      {
+        "id": "inv_der_1",
+        "name": "Cota de Malha",
+        "qty": 1,
+        "weight": 25,
+        "equipped": true
+      },
+      {
+        "id": "inv_der_2",
+        "name": "Escudo",
+        "qty": 1,
+        "weight": 6,
+        "equipped": true
+      }
+    ],
     "conditions": []
   },
+
   {
     "ac": 11,
     "actionLogs": [],
@@ -1791,8 +1829,27 @@ function loadFromLocalStorage() {
             hitDice: canonical.hitDice || p.hitDice
           });
         }
+
+        // Se for o Deraravely e estiver sem a estrutura de multiclasse canônica
+
+        if (p.name && p.name.toLowerCase().includes('deraravely') && (!p.multiclass || p.multiclass.length <= 1)) {
+          p.multiclass = [
+            { className: 'Guerreiro', level: 4, subclassIdx: 0, subclass: 'Campeão (Champion)' },
+            { className: 'Bárbaro', level: 1, subclassIdx: 0, subclass: '' }
+          ];
+          p.level = 5;
+          p.className = 'Guerreiro 4 / Bárbaro 1';
+          p.hitDice = '4d10 + 1d12';
+          if (!p.inventory || p.inventory.length === 0) {
+            p.inventory = [
+              { id: 'inv_der_1', name: 'Cota de Malha', qty: 1, weight: 25, equipped: true },
+              { id: 'inv_der_2', name: 'Escudo', qty: 1, weight: 6, equipped: true }
+            ];
+          }
+        }
         return p;
       });
+
 
       if (typeof calculatePlayerAcFromEquipment === 'function') {
         PLAYERS.forEach(p => {

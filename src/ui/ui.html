@@ -1547,33 +1547,75 @@
       </div>
 
       <div class="form-row" style="background: #080c16; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); align-items: flex-end;">
-        <div>
+        <div style="flex: 2;">
           <label>Classe (D&D 5E)</label>
           <select id="pm-class-select" onchange="onPlayerModalClassOrLevelChange()"></select>
           <input type="hidden" id="pm-class">
         </div>
-        <div>
+        <div style="flex: 2;">
           <label>Subclasse / Especialização</label>
           <select id="pm-subclass-select" onchange="onPlayerModalClassOrLevelChange()"></select>
           <input type="hidden" id="pm-fighting-style">
         </div>
-        <div>
+        <div style="flex: 1;">
           <label>Nível (1-20)</label>
           <div style="display: flex; gap: 4px;">
             <input type="number" id="pm-level" min="1" max="20" value="1" oninput="onPlayerModalClassOrLevelChange()">
             <button class="btn-action" style="padding: 4px 8px; font-size: 11px;" type="button" onclick="autoLevelUpPrompt()" title="Subir de Nível Automaticamente">⭐ Subir</button>
           </div>
         </div>
-        <div><label>Dado de Vida</label><input type="text" id="pm-hitdice" placeholder="Ex: 1d10" value="1d10"></div>
+        <div>
+          <label>Dado de Vida</label>
+          <input type="text" id="pm-hitdice" placeholder="Ex: 1d10" value="1d10">
+        </div>
+        <div>
+          <button class="btn-secondary" style="padding: 7px 10px; font-size: 11px; white-space: nowrap; border-color: rgba(245,158,11,0.5); color: #fef08a; font-weight: 700;" type="button" onclick="openPlayerClassesModal(document.getElementById('pm-id').value)" title="Gerenciar todas as classes e níveis do personagem">
+            🔀 Multiclasse
+          </button>
+        </div>
       </div>
 
-      <div class="form-row">
-        <div><label>CA (Classe de Armadura) <span style="font-size:10px; color:var(--accent-gold); font-weight:normal;">(Auto 5E)</span></label><input type="number" id="pm-ac" value="16" title="Classe de Armadura calculada automaticamente pelas regras do D&D 5E"></div>
-        <div><label>PV Máximo</label><input type="number" id="pm-maxhp" value="12"></div>
-        <div><label>Deslocamento</label><input type="text" id="pm-speed" value="9m"></div>
-        <div><label>Ouro / Moedas (PO)</label><input type="number" id="pm-gold" value="15"></div>
-        <div><label>XP Atual</label><input type="number" id="pm-xp" value="0"></div>
+      <div class="form-row" style="background: #080c16; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); align-items: flex-end;">
+        <div style="flex: 2;">
+          <label>🛡️ Armadura Equipada</label>
+          <select id="pm-armor-select" onchange="updateModalCalculatedAc()">
+            <option value="none">Nenhuma (Sem Armadura / Defesa Natural)</option>
+            <optgroup label="Armaduras Leves">
+              <option value="armadura acolchoada">Armadura Acolchoada (CA 11 + DES)</option>
+              <option value="armadura de couro">Armadura de Couro (CA 11 + DES)</option>
+              <option value="armadura de couro batido">Armadura de Couro Batido (CA 12 + DES)</option>
+            </optgroup>
+            <optgroup label="Armaduras Médias">
+              <option value="gibao de peles">Gibão de Peles (CA 12 + DES máx +2)</option>
+              <option value="camisa de cota de malha">Camisão de Cota de Malha (CA 13 + DES máx +2)</option>
+              <option value="cota de escamas">Cota de Escamas (CA 14 + DES máx +2)</option>
+              <option value="peitoral">Peitoral (CA 14 + DES máx +2)</option>
+              <option value="meia-armadura">Meia-Armadura (CA 15 + DES máx +2)</option>
+            </optgroup>
+            <optgroup label="Armaduras Pesadas">
+              <option value="cota de aneis">Cota de Anéis (CA 14)</option>
+              <option value="cota de malha">Cota de Malha (CA 16)</option>
+              <option value="cota de talas">Cota de Talas (CA 17)</option>
+              <option value="armadura de placas">Armadura de Placas (CA 18)</option>
+            </optgroup>
+          </select>
+        </div>
+        <div style="display: flex; align-items: center; padding-bottom: 6px;">
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; font-weight: 700; color: #e2e8f0; margin: 0;">
+            <input type="checkbox" id="pm-shield-check" onchange="updateModalCalculatedAc()" style="cursor: pointer; width: 16px; height: 16px;">
+            🛡️ Escudo (+2 CA)
+          </label>
+        </div>
+        <div style="flex: 1;">
+          <label>CA Resultante <span style="font-size:10px; color:var(--accent-gold); font-weight:normal;">(Auto 5E)</span></label>
+          <input type="number" id="pm-ac" value="16" title="Classe de Armadura calculada automaticamente pelas regras do D&D 5E">
+        </div>
+        <div style="flex: 1;"><label>PV Máximo</label><input type="number" id="pm-maxhp" value="12"></div>
+        <div style="flex: 1;"><label>Deslocamento</label><input type="text" id="pm-speed" value="9m"></div>
+        <div style="flex: 1;"><label>Ouro (PO)</label><input type="number" id="pm-gold" value="15"></div>
+        <div style="flex: 1;"><label>XP</label><input type="number" id="pm-xp" value="0"></div>
       </div>
+
 
       <!-- SEÇÃO ORIGEM & ANTECEDENTE (D&D 5E) -->
       <div style="background: #080c16; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px;">
@@ -1671,8 +1713,59 @@
     </div>
   </div>
 
+  <!-- MODAL: AJUSTAR CLASSES & MULTICLASSE (D&D 5E) -->
+  <div id="modal-player-classes" class="modal-overlay">
+    <div class="modal-body" style="max-width: 680px;">
+      <div class="panel-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">🎭</span>
+          <div>
+            <span style="font-weight: 800; color: #fff; font-size: 15px;">Gerenciador de Classes & Multiclasse (D&D 5E)</span>
+            <div id="mc-modal-player-subtitle" style="font-size: 11px; color: var(--primary-light);">Configuração de trilhas de classe para o herói</div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closePlayerClassesModal()">✕</button>
+      </div>
+
+      <div style="padding: 10px 0;">
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+          Adicione ou ajuste as classes e níveis do personagem. O nível total, dados de vida e características desbloqueadas serão calculados automaticamente pelas regras oficiais da 5ª Edição.
+        </p>
+
+        <!-- Container dinâmico das classes -->
+        <div id="mc-classes-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
+
+        <button class="btn-secondary" type="button" onclick="addPlayerClassRow()" style="margin-top: 10px; width: 100%; border-style: dashed; padding: 8px; font-weight: 700; color: var(--accent-gold); border-color: rgba(245,158,11,0.4);">
+          ➕ Adicionar Outra Classe (Multiclasse)
+        </button>
+
+        <!-- Resumo em tempo real -->
+        <div id="mc-summary-box" style="margin-top: 14px; background: #080c16; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center;">
+          <div>
+            <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 800; display: block;">Nível Total</span>
+            <span id="mc-summary-level" style="font-size: 16px; font-weight: 800; color: var(--primary);">Nv 1</span>
+          </div>
+          <div>
+            <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 800; display: block;">Dados de Vida</span>
+            <span id="mc-summary-hitdice" style="font-size: 14px; font-weight: 700; color: #cbd5e1;">1d10</span>
+          </div>
+          <div>
+            <span style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; font-weight: 800; display: block;">Bônus Profic.</span>
+            <span id="mc-summary-prof" style="font-size: 16px; font-weight: 800; color: var(--accent-green);">+2</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+        <button class="btn-secondary" onclick="closePlayerClassesModal()">Cancelar</button>
+        <button class="btn-action" onclick="savePlayerClassesModal()">Salvar Classes</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: MODO TELÃO / VISUALIZAÇÃO DOS JOGADORES -->
   <div id="modal-player-view" class="player-view-overlay theme-default" style="display: none;">
+
     <div class="pv-header">
       <div style="display: flex; align-items: center; gap: 14px;">
         <span style="font-size: 28px;">⚔️</span>
