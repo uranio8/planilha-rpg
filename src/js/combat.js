@@ -239,6 +239,7 @@ function nextTurn() {
   const turnNarrative = `É a vez de <b>${currentCombatant ? currentCombatant.name : 'combatente'}</b> agir!`;
   renderCombat();
   if (typeof renderPlayerView === 'function') renderPlayerView(turnNarrative);
+  if (typeof updatePlayerPortalBanner === 'function') updatePlayerPortalBanner();
   saveToLocalStorage();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }

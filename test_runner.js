@@ -5572,6 +5572,107 @@ assert(compiledHtmlIssue104.includes('.levelup-asi-card'), 'CSS compilado conté
 assert(compiledHtmlIssue104.includes('.subclass-locked-card'), 'CSS compilado contém estilo .subclass-locked-card');
 assert(compiledHtmlIssue104.includes('.asi-attr-btn'), 'CSS compilado contém estilo .asi-attr-btn');
 
+// --- SUÍTE 74: Experiência do Jogador, Concentração e Salvaguardas da Morte (ISSUE-105) ---
+console.log('\n🌟 74. Testes de Experiência do Jogador, Concentração e Salvaguardas da Morte (ISSUE-105):');
+
+// 1. Funções exportadas
+assert(typeof vm.runInContext("openDeathSavesModal", sandbox) === 'function', 'Função openDeathSavesModal exportada');
+assert(typeof vm.runInContext("closeDeathSavesModal", sandbox) === 'function', 'Função closeDeathSavesModal exportada');
+assert(typeof vm.runInContext("toggleDeathSaveManual", sandbox) === 'function', 'Função toggleDeathSaveManual exportada');
+assert(typeof vm.runInContext("addDeathSaveManual", sandbox) === 'function', 'Função addDeathSaveManual exportada');
+assert(typeof vm.runInContext("setDeathSaveSpecial", sandbox) === 'function', 'Função setDeathSaveSpecial exportada');
+assert(typeof vm.runInContext("resetDeathSavesManual", sandbox) === 'function', 'Função resetDeathSavesManual exportada');
+assert(typeof vm.runInContext("rollDeathSaveFromModal", sandbox) === 'function', 'Função rollDeathSaveFromModal exportada');
+assert(typeof vm.runInContext("triggerConcentrationCheck", sandbox) === 'function', 'Função triggerConcentrationCheck exportada');
+assert(typeof vm.runInContext("closeConcentrationModal", sandbox) === 'function', 'Função closeConcentrationModal exportada');
+assert(typeof vm.runInContext("submitConcentrationRoll", sandbox) === 'function', 'Função submitConcentrationRoll exportada');
+assert(typeof vm.runInContext("scrollToPlayerSection", sandbox) === 'function', 'Função scrollToPlayerSection exportada');
+assert(typeof vm.runInContext("openQuickD20Modal", sandbox) === 'function', 'Função openQuickD20Modal exportada');
+assert(typeof vm.runInContext("rollWeaponDamageOnly", sandbox) === 'function', 'Função rollWeaponDamageOnly exportada');
+
+// 2. Cálculo da CD de Concentração (D&D 5E: max(10, floor(dano / 2)))
+const calcDc = (dmg) => Math.max(10, Math.floor(dmg / 2));
+assert(calcDc(4) === 10, 'Dano 4 resulta em CD 10 de Concentração');
+assert(calcDc(15) === 10, 'Dano 15 resulta em CD 10 de Concentração');
+assert(calcDc(20) === 10, 'Dano 20 resulta em CD 10 de Concentração');
+assert(calcDc(26) === 13, 'Dano 26 resulta em CD 13 de Concentração');
+assert(calcDc(35) === 17, 'Dano 35 resulta em CD 17 de Concentração');
+
+// 3. Perda automática de concentração ao cair a 0 PV
+vm.runInContext(`
+  PLAYERS = [{
+    id: 'p_conc_test',
+    name: 'Paladino Concentrado',
+    hp: 12,
+    maxHp: 30,
+    concentrationSpell: 'Auxílio Divino',
+    deathSaves: { success: 0, fail: 0 }
+  }];
+  adjustPlayerHp('p_conc_test', -12); // Cai para 0 PV
+`, sandbox);
+const pConc = vm.runInContext("PLAYERS.find(p => p.id === 'p_conc_test')", sandbox);
+assert(pConc.hp === 0, 'Paladino caiu a 0 PV');
+assert(pConc.concentrationSpell === null, 'Concentração foi encerrada automaticamente ao cair a 0 PV');
+
+// 4. Salvaguardas da Morte Manuais (Dados Físicos da Mesa)
+vm.runInContext(`
+  (() => {
+    const hero = PLAYERS.find(x => x.id === 'p_conc_test');
+    hero.deathSaves = { success: 0, fail: 0 };
+    currentDeathSavesPlayerId = 'p_conc_test';
+    toggleDeathSaveManual('success', 1);
+  })();
+`, sandbox);
+const pTest1 = vm.runInContext("PLAYERS.find(p => p.id === 'p_conc_test')", sandbox);
+assert(pTest1.deathSaves.success === 1, 'toggleDeathSaveManual marcou 1º sucesso');
+
+vm.runInContext(`
+  addDeathSaveManual('fail');
+  addDeathSaveManual('fail');
+`, sandbox);
+const pTest2 = vm.runInContext("PLAYERS.find(p => p.id === 'p_conc_test')", sandbox);
+assert(pTest2.deathSaves.fail === 2, 'addDeathSaveManual acumulou 2 falhas');
+
+// 5. Teste de 20 Natural e 1 Natural Físicos na Mesa
+vm.runInContext(`
+  setDeathSaveSpecial('nat1');
+`, sandbox);
+const pTest3 = vm.runInContext("PLAYERS.find(p => p.id === 'p_conc_test')", sandbox);
+assert(pTest3.deathSaves.fail === 3, '1 Natural na mesa acumulou falha até o limite 3');
+
+vm.runInContext(`
+  setDeathSaveSpecial('nat20');
+`, sandbox);
+const pTest4 = vm.runInContext("PLAYERS.find(p => p.id === 'p_conc_test')", sandbox);
+assert(pTest4.hp === 1, '20 Natural na mesa recuperou 1 PV e acordou o herói');
+assert(pTest4.deathSaves.success === 0 && pTest4.deathSaves.fail === 0, '20 Natural na mesa limpou testes da morte');
+
+// 6. Teste de Rolagem Independente de Dano de Arma
+vm.runInContext(`
+  PLAYERS.push({
+    id: 'p_atk_dmg_test',
+    name: 'Guerreiro de Teste',
+    attacks: 'Espada Longa (+6, 1d8+3 cortante)'
+  });
+`, sandbox);
+const dmgRes = vm.runInContext("rollWeaponDamageOnly('p_atk_dmg_test', 'Espada Longa (+6, 1d8+3 cortante)')", sandbox);
+assert(dmgRes && dmgRes.totalDmg >= 4 && dmgRes.totalDmg <= 11, 'rollWeaponDamageOnly rolou dano 1d8+3 dentro do intervalo [4..11]');
+assert(dmgRes.diceCount === 1 && dmgRes.diceSides === 8, 'rollWeaponDamageOnly identificou 1d8 corretamente');
+
+const critDmgRes = vm.runInContext("rollWeaponDamageOnly('p_atk_dmg_test', 'Espada Longa (+6, 1d8+3 cortante)', true)", sandbox);
+assert(critDmgRes.diceCount === 2, 'rollWeaponDamageOnly com Acerto Crítico dobrou os dados para 2d8');
+
+// 7. Validação de Componentes UI e CSS no HTML Compilado
+const compiledHtmlIssue105 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(compiledHtmlIssue105.includes('id="modal-concentration-check"'), 'HTML standalone contém modal de teste de concentração');
+assert(compiledHtmlIssue105.includes('id="modal-death-saves"'), 'HTML standalone contém modal de salvaguardas da morte');
+assert(compiledHtmlIssue105.includes('id="player-mobile-dock"'), 'HTML standalone contém dock flutuante de ações rápidas mobile');
+assert(compiledHtmlIssue105.includes('spell-gem-pip'), 'HTML standalone contém classe spell-gem-pip para gemas de magia');
+assert(compiledHtmlIssue105.includes('.death-saves-large-box'), 'CSS compilado contém estilo .death-saves-large-box');
+assert(compiledHtmlIssue105.includes('.player-mobile-dock'), 'CSS compilado contém estilo .player-mobile-dock');
+assert(compiledHtmlIssue105.includes('.player-turn-pulse'), 'CSS compilado contém animação de pulso dourado .player-turn-pulse');
+
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

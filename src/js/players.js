@@ -1191,12 +1191,12 @@ function renderPlayers() {
         let bubbles = '';
         for (let i = 0; i < maxSlots; i++) {
           const isUsed = i < used;
-          bubbles += `<div class="slot-bubble lvl-${lvlIdx + 1} ${isUsed ? 'used' : ''}" title="${isUsed ? 'Gasto (clique para restaurar)' : 'Disponível (clique para gastar)'}" onclick="togglePlayerSlot('${p.id}', ${lvlIdx}, ${i})"></div>`;
+          bubbles += `<button type="button" class="slot-bubble spell-gem-pip lvl-${lvlIdx + 1} ${isUsed ? 'used spent' : ''}" title="${isUsed ? 'Gasto (clique para restaurar)' : 'Disponível (clique para gastar)'}" onclick="togglePlayerSlot('${p.id}', ${lvlIdx}, ${i})"></button>`;
         }
         return `
               <div class="slot-row">
                 <span class="slot-label">${lvlIdx + 1}º Círculo (${maxSlots - used}/${maxSlots})</span>
-                <div class="slot-bubbles">${bubbles}</div>
+                <div class="slot-bubbles spell-slot-gems">${bubbles}</div>
               </div>
             `;
       }).join('')}
@@ -1274,7 +1274,10 @@ function renderPlayers() {
               </div>
             </div>
           </div>
-          <button class="btn-action" style="padding: 5px 10px; font-size: 11px;" onclick="rollPlayerDeathSave('${p.id}')">🎲 Rolar Salvação</button>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <button class="btn-action" style="padding: 5px 8px; font-size: 11px; white-space: nowrap;" onclick="rollPlayerDeathSave('${p.id}')">🎲 Rolar Salvação</button>
+            <button class="btn-secondary" style="padding: 3px 6px; font-size: 10px; border-color: #ef4444; color: #f87171; white-space: nowrap;" onclick="openDeathSavesModal('${p.id}')" title="Abrir Painel Completo de Testes da Morte (Físico / Digital)">📋 Painel / Mesa</button>
+          </div>
         </div>
       `;
     }
@@ -1297,7 +1300,10 @@ function renderPlayers() {
       return `
         <div class="attack-item-row">
           <span class="attack-info">⚔️ ${att} ${atkBadge}</span>
-          <button class="btn-action" style="padding: 4px 10px; font-size: 11px; white-space: nowrap;" onclick="rollPlayerAttack('${p.id}', '${att.replace(/'/g, "\\'")}')">🎲 Rolar</button>
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <button class="btn-action" style="padding: 4px 8px; font-size: 11px; white-space: nowrap;" onclick="rollPlayerAttack('${p.id}', '${att.replace(/'/g, "\\'")}')" title="Rolar Ataque Completo">🎲 Ataque</button>
+            <button class="btn-secondary btn-card-damage-roll" style="margin-top: 0; padding: 4px 8px; font-size: 10.5px; white-space: nowrap;" onclick="rollWeaponDamageOnly('${p.id}', '${att.replace(/'/g, "\\'")}')" title="Rolar Apenas Dano">💥 Dano</button>
+          </div>
         </div>
       `;
     }).join('');
@@ -2145,7 +2151,21 @@ function adjustPlayerHp(id, delta) {
       const toastType = p.hp === 0 ? 'error' : (p.hp <= p.maxHp * 0.25 ? 'warning' : 'info');
       showToast(`⚔️ ${p.name}: ${delta} PV (${p.hp}/${p.maxHp})`, toastType);
     }
+
+    // Regra D&D 5E: Teste de Concentração ao sofrer dano (CD = max(10, dano/2))
+    if (p.concentrationSpell && dmg > 0 && p.hp > 0) {
+      const concDc = Math.max(10, Math.floor(dmg / 2));
+      if (typeof triggerConcentrationCheck === 'function') {
+        setTimeout(() => triggerConcentrationCheck(p.id, p.concentrationSpell, dmg, concDc), 150);
+      }
+    }
+
     if (p.hp === 0) {
+      if (p.concentrationSpell) {
+        addLog(`🧘 <b>${p.name}</b> perdeu a concentração em <b>${p.concentrationSpell}</b> ao cair inconsciente!`);
+        addPlayerActionLog(p.id, '🧘', `Perdeu concentração em ${p.concentrationSpell} (inconsciente)`, 'spell');
+        p.concentrationSpell = null;
+      }
       if (prev === 0) {
         // Já estava a 0 PV e sofreu dano adicional (Regra oficial D&D 5e: +1 falha no teste da morte)
         p.deathSaves = p.deathSaves || { success: 0, fail: 0 };
@@ -2164,6 +2184,11 @@ function adjustPlayerHp(id, delta) {
         addPlayerActionLog(p.id, '💀', `Caiu inconsciente a 0 PV!`, 'damage');
         if (typeof playFX === 'function') playFX('fumble');
       }
+
+      // Abre automaticamente o painel de salvaguardas da morte no portal
+      if (typeof openDeathSavesModal === 'function') {
+        setTimeout(() => openDeathSavesModal(p.id), 250);
+      }
     }
   } else {
     p.hp = Math.min(p.maxHp, p.hp + delta);
@@ -2172,6 +2197,9 @@ function adjustPlayerHp(id, delta) {
       p.deathSaves = { success: 0, fail: 0 };
       addLog(`✨ <b>${p.name}</b> recobrou a consciência e os testes da morte foram zerados!`);
       addPlayerActionLog(p.id, '✨', `Recobrou a consciência (testes da morte zerados)`, 'heal');
+      if (typeof closeDeathSavesModal === 'function') {
+        closeDeathSavesModal();
+      }
     }
     addLog(`💚 <b>${p.name}</b> recuperou ${delta} PV (${prev} ➔ ${p.hp} PV)`);
     addPlayerActionLog(p.id, '💚', `Recuperou ${delta} PV (${prev} ➔ ${p.hp} PV)`, 'heal');
@@ -3043,6 +3071,57 @@ function rollPlayerAttack(id, rawAttackText, customD20) {
   return { d20, totalHit, totalDmg, isCrit, isFumble };
 }
 
+function rollWeaponDamageOnly(id, rawAttackText, isCrit = false) {
+  const p = PLAYERS.find(x => x.id === id);
+  if (!p) return;
+
+  const dmgMatch = rawAttackText.match(/(\d+d\d+(?:\s*[+-]\s*\d+)?)/i);
+  let dmgFormula = dmgMatch ? dmgMatch[1].replace(/\s+/g, '') : '1d8+3';
+  let dmgParts = dmgFormula.split(/[+-]/);
+  let dicePart = dmgParts[0];
+  let dmgMod = dmgFormula.includes('+') ? parseInt(dmgFormula.split('+')[1], 10) : (dmgFormula.includes('-') ? -parseInt(dmgFormula.split('-')[1], 10) : 0);
+
+  let [diceCount, diceSides] = dicePart.split('d').map(x => parseInt(x, 10));
+  diceCount = diceCount || 1;
+  diceSides = diceSides || 8;
+
+  if (isCrit) diceCount *= 2;
+
+  let dmgRolls = [];
+  let totalDmg = 0;
+  for (let i = 0; i < diceCount; i++) {
+    const r = Math.floor(Math.random() * diceSides) + 1;
+    dmgRolls.push(r);
+    totalDmg += r;
+  }
+  totalDmg += dmgMod;
+
+  const weaponName = rawAttackText.split('(')[0].trim() || 'Arma';
+  const dmgBreakdown = `${diceCount}d${diceSides} [${dmgRolls.join(', ')}] ${dmgMod !== 0 ? (dmgMod > 0 ? '+ ' + dmgMod : '- ' + Math.abs(dmgMod)) : ''} ➔ <b>${totalDmg}</b>`;
+  const logMsg = `💥 <b>${p.name}</b> rolou dano com <b>${weaponName}</b>: ${dmgBreakdown} de dano${isCrit ? ' 🔥 (CRÍTICO!)' : ''}`;
+
+  addLog(logMsg);
+  addPlayerActionLog(p.id, '💥', `Dano ${weaponName}: ${totalDmg} (${dmgBreakdown})`, 'damage');
+  if (typeof playFX === 'function') playFX(isCrit ? 'crit' : 'sword');
+
+  // Preenche o campo de dano na central de combate se disponível
+  const inpDmg = document.getElementById('inp-damage');
+  if (inpDmg && totalDmg > 0) inpDmg.value = totalDmg;
+
+  if (typeof showLiveDiceRoll === 'function') {
+    showLiveDiceRoll(`💥 Dano - ${p.name}`, totalDmg, `${weaponName}: ${dmgBreakdown}`, isCrit, false);
+  }
+
+  const banner = document.getElementById('dice-banner');
+  if (banner) {
+    banner.style.display = 'block';
+    document.getElementById('dice-total-number').innerText = totalDmg;
+    document.getElementById('dice-breakdown-text').innerText = `${p.name} - ${weaponName}: ${totalDmg} Dano`;
+  }
+
+  return { totalDmg, dmgRolls, diceCount, diceSides, isCrit };
+}
+
 function togglePlayerSlot(id, lvlIdx, slotIdx) {
   const p = PLAYERS.find(x => x.id === id);
   if (!p || !p.slots) return;
@@ -3459,6 +3538,294 @@ function rollPlayerDeathSave(id) {
 
 function rollDeathSave(id) {
   return rollPlayerDeathSave(id);
+}
+
+// =========================================================
+// 💀 PAINEL DE SALVAGUARDAS DA MORTE (0 PV - DADOS DIGITAIS OU FÍSICOS)
+// =========================================================
+let currentDeathSavesPlayerId = null;
+
+function openDeathSavesModal(playerId) {
+  const targetId = playerId || activePortalPlayerId || (typeof PLAYERS !== 'undefined' && PLAYERS[0] ? PLAYERS[0].id : null);
+  const p = PLAYERS ? PLAYERS.find(x => x.id === targetId) : null;
+  if (!p) return;
+  currentDeathSavesPlayerId = targetId;
+  p.deathSaves = p.deathSaves || { success: 0, fail: 0 };
+
+  const modal = document.getElementById('modal-death-saves');
+  if (!modal) return;
+
+  const charNameEl = document.getElementById('ds-modal-char-name');
+  if (charNameEl) charNameEl.innerText = `${p.name} (0/${p.maxHp} PV)`;
+
+  updateDeathSavesModalView(p);
+  modal.classList.add('open');
+}
+
+function closeDeathSavesModal() {
+  const modal = document.getElementById('modal-death-saves');
+  if (modal) modal.classList.remove('open');
+  currentDeathSavesPlayerId = null;
+}
+
+function updateDeathSavesModalView(p) {
+  if (!p) return;
+  p.deathSaves = p.deathSaves || { success: 0, fail: 0 };
+  const s = p.deathSaves.success || 0;
+  const f = p.deathSaves.fail || 0;
+
+  for (let i = 1; i <= 3; i++) {
+    const sDot = document.getElementById(`ds-s-${i}`);
+    if (sDot) sDot.classList.toggle('active', i <= s);
+    const fDot = document.getElementById(`ds-f-${i}`);
+    if (fDot) fDot.classList.toggle('active', i <= f);
+  }
+
+  const statusText = document.getElementById('ds-modal-status-text');
+  if (statusText) {
+    if (f >= 3) {
+      statusText.innerHTML = '<span style="color: #ef4444; font-weight: 800;">⚰️ O herói acumulou 3 falhas e faleceu.</span>';
+    } else if (s >= 3) {
+      statusText.innerHTML = '<span style="color: #10b981; font-weight: 800;">💚 O herói acumulou 3 sucessos e estabilizou!</span>';
+    } else {
+      statusText.innerText = `Sucessos: ${s}/3 | Falhas: ${f}/3`;
+    }
+  }
+}
+
+function toggleDeathSaveManual(type, index) {
+  const targetId = currentDeathSavesPlayerId || activePortalPlayerId;
+  const p = PLAYERS ? PLAYERS.find(x => x.id === targetId) : null;
+  if (!p) return;
+  p.deathSaves = p.deathSaves || { success: 0, fail: 0 };
+
+  if (p.deathSaves[type] === index) {
+    p.deathSaves[type] = index - 1;
+  } else {
+    p.deathSaves[type] = index;
+  }
+
+  checkDeathSaveThresholds(p);
+  updateDeathSavesModalView(p);
+  if (typeof touchPlayer === 'function') touchPlayer(p);
+  renderPlayers();
+  if (typeof renderCombat === 'function') renderCombat();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+}
+
+function addDeathSaveManual(type) {
+  const targetId = currentDeathSavesPlayerId || activePortalPlayerId;
+  const p = PLAYERS ? PLAYERS.find(x => x.id === targetId) : null;
+  if (!p) return;
+  p.deathSaves = p.deathSaves || { success: 0, fail: 0 };
+  p.deathSaves[type] = Math.min(3, (p.deathSaves[type] || 0) + 1);
+
+  addLog(`🎲 <b>${p.name}</b> registrou +1 ${type === 'success' ? 'SUCESSO' : 'FALHA'} manual no teste da morte (${p.deathSaves[type]}/3).`);
+  addPlayerActionLog(p.id, type === 'success' ? '✨' : '💀', `+1 ${type === 'success' ? 'Sucesso' : 'Falha'} da Morte (Manual: ${p.deathSaves[type]}/3)`, 'save');
+
+  checkDeathSaveThresholds(p);
+  updateDeathSavesModalView(p);
+  if (typeof touchPlayer === 'function') touchPlayer(p);
+  renderPlayers();
+  if (typeof renderCombat === 'function') renderCombat();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+}
+
+function setDeathSaveSpecial(special) {
+  const targetId = currentDeathSavesPlayerId || activePortalPlayerId;
+  const p = PLAYERS ? PLAYERS.find(x => x.id === targetId) : null;
+  if (!p) return;
+  p.deathSaves = p.deathSaves || { success: 0, fail: 0 };
+
+  if (special === 'nat20') {
+    p.hp = 1;
+    p.deathSaves = { success: 0, fail: 0 };
+    addLog(`🔥 <b>20 NATURAL NA MESA!</b> <b>${p.name}</b> recobrou a consciência com <b>1 PV</b>!`);
+    addPlayerActionLog(p.id, '🔥', '20 Nat na Mesa! Recobrou consciência com 1 PV!', 'save');
+    if (typeof playFX === 'function') playFX('crit');
+    updateDeathSavesModalView(p);
+    setTimeout(() => closeDeathSavesModal(), 1200);
+  } else if (special === 'nat1') {
+    p.deathSaves.fail = Math.min(3, (p.deathSaves.fail || 0) + 2);
+    addLog(`💀 <b>1 NATURAL NA MESA!</b> <b>${p.name}</b> acumulou <b>+2 FALHAS</b> da morte (${p.deathSaves.fail}/3)!`);
+    addPlayerActionLog(p.id, '💀', `1 Nat na Mesa: +2 falhas (${p.deathSaves.fail}/3)`, 'save');
+    if (typeof playFX === 'function') playFX('fumble');
+    checkDeathSaveThresholds(p);
+    updateDeathSavesModalView(p);
+  }
+
+  if (typeof touchPlayer === 'function') touchPlayer(p);
+  renderPlayers();
+  if (typeof renderCombat === 'function') renderCombat();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+}
+
+function resetDeathSavesManual() {
+  const targetId = currentDeathSavesPlayerId || activePortalPlayerId;
+  const p = PLAYERS ? PLAYERS.find(x => x.id === targetId) : null;
+  if (!p) return;
+  p.deathSaves = { success: 0, fail: 0 };
+  addLog(`🔄 Testes da morte de <b>${p.name}</b> foram resetados.`);
+  updateDeathSavesModalView(p);
+  if (typeof touchPlayer === 'function') touchPlayer(p);
+  renderPlayers();
+  if (typeof renderCombat === 'function') renderCombat();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+}
+
+function checkDeathSaveThresholds(p) {
+  if (!p || !p.deathSaves) return;
+  if (p.deathSaves.success >= 3) {
+    p.hp = 1;
+    p.deathSaves = { success: 0, fail: 0 };
+    addLog(`💚 <b>${p.name} ESTABILIZOU</b> com 1 PV!`);
+    addPlayerActionLog(p.id, '💚', 'Estabilizou com 1 PV!', 'save');
+    if (typeof playFX === 'function') playFX('heal');
+  } else if (p.deathSaves.fail >= 3) {
+    addLog(`⚰️ <b>${p.name} faleceu heroicamente.</b>`);
+    addPlayerActionLog(p.id, '⚰️', 'Faleceu heroicamente.', 'damage');
+    if (typeof playFX === 'function') playFX('fumble');
+  }
+}
+
+function rollDeathSaveFromModal() {
+  const targetId = currentDeathSavesPlayerId || activePortalPlayerId;
+  if (!targetId) return;
+  rollPlayerDeathSave(targetId);
+  const p = PLAYERS ? PLAYERS.find(x => x.id === targetId) : null;
+  if (p) updateDeathSavesModalView(p);
+}
+
+// =========================================================
+// 🧘 MODAL DE TESTE DE CONCENTRAÇÃO (D&D 5E)
+// =========================================================
+let activeConcentrationCheck = null;
+
+function triggerConcentrationCheck(playerId, spellName, damage, dc) {
+  const p = PLAYERS ? PLAYERS.find(x => x.id === playerId) : null;
+  if (!p) return;
+
+  activeConcentrationCheck = { playerId, spellName, damage, dc };
+  const conScore = p.con !== undefined ? p.con : (p.attributes?.con || 10);
+  const conMod = Math.floor((conScore - 10) / 2);
+
+  const modal = document.getElementById('modal-concentration-check');
+  if (!modal) return;
+
+  const spellEl = document.getElementById('conc-modal-spell-name');
+  if (spellEl) spellEl.innerText = spellName;
+
+  const dmgEl = document.getElementById('conc-modal-dmg-val');
+  if (dmgEl) dmgEl.innerText = damage;
+
+  const dcEl = document.getElementById('conc-modal-dc-val');
+  if (dcEl) dcEl.innerText = dc;
+
+  const modEl = document.getElementById('conc-modal-con-mod');
+  if (modEl) modEl.innerText = (conMod >= 0 ? `+${conMod}` : `${conMod}`);
+
+  modal.classList.add('open');
+}
+
+function closeConcentrationModal() {
+  const modal = document.getElementById('modal-concentration-check');
+  if (modal) modal.classList.remove('open');
+  activeConcentrationCheck = null;
+}
+
+function submitConcentrationRoll(type) {
+  if (!activeConcentrationCheck) {
+    closeConcentrationModal();
+    return;
+  }
+  const { playerId, spellName, dc } = activeConcentrationCheck;
+  const p = PLAYERS ? PLAYERS.find(x => x.id === playerId) : null;
+  if (!p) {
+    closeConcentrationModal();
+    return;
+  }
+
+  const conScore = p.con !== undefined ? p.con : (p.attributes?.con || 10);
+  const conMod = Math.floor((conScore - 10) / 2);
+
+  if (type === 'digital') {
+    const d20 = Math.floor(Math.random() * 20) + 1;
+    const total = d20 + conMod;
+    const passed = total >= dc;
+
+    if (passed) {
+      addLog(`✨ <b>${p.name} MANTEVE a concentração</b> em <b>${spellName}</b>! (Rolagem: <b>${total}</b> [d20: ${d20} + CON: ${conMod}] vs CD ${dc})`);
+      addPlayerActionLog(p.id, '✨', `Concentração Mantida: ${total} vs CD ${dc}`, 'save');
+      if (typeof playFX === 'function') playFX('heal');
+      if (typeof showToast === 'function') showToast(`✨ Concentração mantida em ${spellName}!`, 'success');
+    } else {
+      p.concentrationSpell = null;
+      addLog(`💥 <b>${p.name} FALHOU</b> na salvaguarda de CON e <b>PERDEU a concentração</b> em <b>${spellName}</b>! (Rolagem: <b>${total}</b> [d20: ${d20} + CON: ${conMod}] vs CD ${dc})`);
+      addPlayerActionLog(p.id, '💥', `Concentração Perdida em ${spellName}: ${total} vs CD ${dc}`, 'spell');
+      if (typeof playFX === 'function') playFX('fumble');
+      if (typeof showToast === 'function') showToast(`💥 Concentração perdida em ${spellName}!`, 'error');
+    }
+  } else if (type === 'manual_pass') {
+    addLog(`✨ <b>${p.name} passou no teste de concentração</b> com dado físico (CD ${dc}) e manteve <b>${spellName}</b>!`);
+    addPlayerActionLog(p.id, '✨', `Concentração Mantida (Dado Físico: CD ${dc})`, 'save');
+    if (typeof playFX === 'function') playFX('heal');
+  } else if (type === 'manual_fail') {
+    p.concentrationSpell = null;
+    addLog(`💥 <b>${p.name} falhou na salvaguarda física</b> e perdeu a concentração em <b>${spellName}</b>!`);
+    addPlayerActionLog(p.id, '💥', `Concentração Perdida (Dado Físico: CD ${dc})`, 'spell');
+    if (typeof playFX === 'function') playFX('fumble');
+  }
+
+  if (typeof touchPlayer === 'function') touchPlayer(p);
+  renderPlayers();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  closeConcentrationModal();
+}
+
+// =========================================================
+// 📱 DOCK FLUTUANTE DE AÇÕES RÁPIDAS MOBILE
+// =========================================================
+function scrollToPlayerSection(section) {
+  let target = null;
+  if (section === 'hp') {
+    target = document.querySelector('.player-card-hero, .hp-display-box, .player-hp-section, .player-card, .player-stats-grid');
+  } else if (section === 'spells') {
+    target = document.querySelector('.player-spells-section, .slots-grid, #player-prepared-spells-list, .spells-grid');
+  } else if (section === 'attacks') {
+    target = document.querySelector('.player-attacks-section, .player-weapons-grid, .attack-item-row, .attacks-box');
+  } else if (section === 'inventory') {
+    target = document.querySelector('.player-inventory-section, .inventory-container, .inventory-list, .backpack-box');
+  }
+
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } else {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function openQuickD20Modal() {
+  const activeId = activePortalPlayerId || (typeof PLAYERS !== 'undefined' && PLAYERS[0] ? PLAYERS[0].id : null);
+  const p = PLAYERS ? PLAYERS.find(x => x.id === activeId) : null;
+  const name = p ? p.name : 'Jogador';
+
+  const d20 = Math.floor(Math.random() * 20) + 1;
+  const isCrit = d20 === 20;
+  const isFumble = d20 === 1;
+
+  const resultText = isCrit ? '🔥 20 NATURAL! ACERTO CRÍTICO!' : (isFumble ? '💀 1 NATURAL! FALHA CRÍTICA!' : `Resultado: ${d20}`);
+  addLog(`🎲 <b>${name}</b> rolou d20 puro: <b>${d20}</b> ${isCrit ? '🔥' : (isFumble ? '💀' : '')}`);
+  if (p) addPlayerActionLog(p.id, '🎲', `Rolou d20 puro: ${d20}`, 'roll');
+
+  if (typeof showLiveDiceRoll === 'function') {
+    showLiveDiceRoll(name, d20, resultText);
+  }
+  if (typeof playFX === 'function') playFX(isCrit ? 'crit' : (isFumble ? 'fumble' : 'dice'));
 }
 
 function escapeAttr(str) {
@@ -6631,7 +6998,7 @@ function updatePlayerPortalBanner() {
   // Verifica se combate está ativo e se é a vez do jogador atual
   let isPlayerTurn = false;
   if (typeof state !== 'undefined' && state && Array.isArray(state.combatants) && state.combatants.length > 0) {
-    const curIdx = state.turn || 0;
+    const curIdx = (state.turnIndex !== undefined ? state.turnIndex : (state.turn || 0));
     const activeCombatant = state.combatants[curIdx];
     if (activeCombatant) {
       const matchId = (activeCombatant.playerId && activeCombatant.playerId === p.id) || activeCombatant.id === p.id;
@@ -6642,12 +7009,17 @@ function updatePlayerPortalBanner() {
     }
   }
 
+  if (banner) {
+    banner.classList.toggle('player-turn-pulse', isPlayerTurn);
+  }
+
   if (turnAlertEl) {
     if (isPlayerTurn) {
       if (turnAlertEl.style.display !== 'inline-flex') {
         turnAlertEl.style.display = 'inline-flex';
         if (typeof playFX === 'function') playFX('crit');
         if (typeof addLog === 'function') addLog(`⚔️ <b>SUA VEZ!</b> É o seu turno de agir no combate!`);
+        if (typeof showToast === 'function') showToast(`⚔️ ${p.name}: É a sua vez de agir!`, 'warning');
       }
     } else {
       turnAlertEl.style.display = 'none';
@@ -9482,7 +9854,22 @@ if (typeof module !== 'undefined' && module.exports) {
     castSpellAsRitual,
     togglePlayerSpellbookView,
     switchPickerMode,
-    playerSpellbookViews
+    playerSpellbookViews,
+
+    // ISSUE-105: Experiência do Jogador, Concentração e Salvaguardas da Morte
+    openDeathSavesModal,
+    closeDeathSavesModal,
+    toggleDeathSaveManual,
+    addDeathSaveManual,
+    setDeathSaveSpecial,
+    resetDeathSavesManual,
+    rollDeathSaveFromModal,
+    triggerConcentrationCheck,
+    closeConcentrationModal,
+    submitConcentrationRoll,
+    scrollToPlayerSection,
+    openQuickD20Modal,
+    rollWeaponDamageOnly
   };
 }
 
@@ -9506,6 +9893,21 @@ if (typeof window !== 'undefined') {
   window.togglePlayerSpellbookView = togglePlayerSpellbookView;
   window.switchPickerMode = switchPickerMode;
   window.playerSpellbookViews = playerSpellbookViews;
+
+  // ISSUE-105: Experiência do Jogador, Concentração e Salvaguardas da Morte
+  window.openDeathSavesModal = openDeathSavesModal;
+  window.closeDeathSavesModal = closeDeathSavesModal;
+  window.toggleDeathSaveManual = toggleDeathSaveManual;
+  window.addDeathSaveManual = addDeathSaveManual;
+  window.setDeathSaveSpecial = setDeathSaveSpecial;
+  window.resetDeathSavesManual = resetDeathSavesManual;
+  window.rollDeathSaveFromModal = rollDeathSaveFromModal;
+  window.triggerConcentrationCheck = triggerConcentrationCheck;
+  window.closeConcentrationModal = closeConcentrationModal;
+  window.submitConcentrationRoll = submitConcentrationRoll;
+  window.scrollToPlayerSection = scrollToPlayerSection;
+  window.openQuickD20Modal = openQuickD20Modal;
+  window.rollWeaponDamageOnly = rollWeaponDamageOnly;
 }
 
 

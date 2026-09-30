@@ -3820,3 +3820,141 @@
       </div>
     </div>
   </div>
+
+  <!-- ===================================================
+       🧘 MODAL: TESTE DE CONCENTRAÇÃO (D&D 5E)
+       =================================================== -->
+  <div id="modal-concentration-check" class="modal">
+    <div class="modal-content" style="max-width: 440px; border: 2px solid var(--primary-light);">
+      <div class="modal-header">
+        <h3 style="font-family: var(--font-title); color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">
+          <span>🧘</span> Teste de Concentração
+        </h3>
+        <button class="btn-secondary" onclick="closeConcentrationModal()">✕</button>
+      </div>
+      <div style="padding: 14px 0;">
+        <div style="font-size: 13.5px; color: #fff; margin-bottom: 8px;">
+          Você sofreu <b id="conc-modal-dmg-val" style="color: #ef4444; font-size: 15px;">0</b> de dano enquanto concentrado em:
+        </div>
+        <div style="background: rgba(59, 130, 246, 0.15); border: 1px solid var(--primary-light); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+          <div style="font-weight: 800; font-size: 15px; color: #60a5fa;" id="conc-modal-spell-name">Magia</div>
+          <div style="font-size: 12px; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 6px; font-weight: 700; color: var(--accent-gold);">
+            CD <span id="conc-modal-dc-val" style="font-size: 15px; font-weight: 900;">10</span>
+          </div>
+        </div>
+        <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
+          Conforme regra oficial de D&D 5e, a CD é 10 ou metade do dano sofrido (o que for maior). Modificador de Constituição: <b id="conc-modal-con-mod" style="color:#fff;">+0</b>.
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button class="btn-action" style="padding: 10px; font-size: 13.5px; font-weight: 800; background: linear-gradient(135deg, #2563eb, #7c3aed);" onclick="submitConcentrationRoll('digital')">
+            🎲 Rolar Salvaguarda no App (d20 + CON)
+          </button>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-secondary" style="flex: 1; border-color: #10b981; color: #34d399; font-weight: 700; padding: 8px;" onclick="submitConcentrationRoll('manual_pass')">
+              ✅ Passei no Dado Físico
+            </button>
+            <button class="btn-secondary" style="flex: 1; border-color: #ef4444; color: #f87171; font-weight: 700; padding: 8px;" onclick="submitConcentrationRoll('manual_fail')">
+              ❌ Falhei / Perdi Concentração
+            </button>
+          </div>
+        </div>
+      </div>
+      <div style="border-top: 1px solid var(--border-color); padding-top: 10px; display: flex; justify-content: flex-end;">
+        <button class="btn-secondary" style="font-size: 11.5px;" onclick="closeConcentrationModal()">Decidir Depois</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================
+       💀 MODAL: PAINEL DE SALVAGUARDAS DA MORTE (0 PV)
+       =================================================== -->
+  <div id="modal-death-saves" class="modal">
+    <div class="modal-content" style="max-width: 460px; border: 2px solid #ef4444; background: linear-gradient(180deg, #180d12 0%, #0f172a 100%);">
+      <div class="modal-header">
+        <h3 style="font-family: var(--font-title); color: #f87171; display: flex; align-items: center; gap: 8px;">
+          <span>💀</span> Testes Contra a Morte (0 PV)
+        </h3>
+        <button class="btn-secondary" onclick="closeDeathSavesModal()">✕</button>
+      </div>
+      <div style="padding: 12px 0;">
+        <div style="text-align: center; margin-bottom: 12px;">
+          <div style="font-size: 15px; font-weight: 800; color: #fff;" id="ds-modal-char-name">Herói Inconsciente</div>
+          <div style="font-size: 11.5px; color: var(--text-dim);" id="ds-modal-status-text">O personagem está a 0 PV e inconsciente.</div>
+        </div>
+
+        <!-- Rastreador Visual de Bolinhas Clicáveis -->
+        <div class="death-saves-large-box">
+          <div class="ds-row">
+            <span class="ds-label" style="color: #34d399;">SUCESSOS:</span>
+            <div class="ds-dots-group" id="ds-modal-success-group">
+              <button type="button" class="ds-large-dot dot-success" id="ds-s-1" onclick="toggleDeathSaveManual('success', 1)" title="Sucesso 1 (Clique para marcar/desmarcar)"></button>
+              <button type="button" class="ds-large-dot dot-success" id="ds-s-2" onclick="toggleDeathSaveManual('success', 2)" title="Sucesso 2 (Clique para marcar/desmarcar)"></button>
+              <button type="button" class="ds-large-dot dot-success" id="ds-s-3" onclick="toggleDeathSaveManual('success', 3)" title="Sucesso 3 (Clique para marcar/desmarcar)"></button>
+            </div>
+          </div>
+          <div class="ds-row" style="margin-top: 10px;">
+            <span class="ds-label" style="color: #f87171;">FALHAS:</span>
+            <div class="ds-dots-group" id="ds-modal-fail-group">
+              <button type="button" class="ds-large-dot dot-fail" id="ds-f-1" onclick="toggleDeathSaveManual('fail', 1)" title="Falha 1 (Clique para marcar/desmarcar)"></button>
+              <button type="button" class="ds-large-dot dot-fail" id="ds-f-2" onclick="toggleDeathSaveManual('fail', 2)" title="Falha 2 (Clique para marcar/desmarcar)"></button>
+              <button type="button" class="ds-large-dot dot-fail" id="ds-f-3" onclick="toggleDeathSaveManual('fail', 3)" title="Falha 3 (Clique para marcar/desmarcar)"></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botão Digital Principal -->
+        <div style="margin: 14px 0 10px 0;">
+          <button class="btn-action" style="width: 100%; padding: 11px; font-size: 14px; font-weight: 800; background: linear-gradient(135deg, #dc2626, #991b1b);" onclick="rollDeathSaveFromModal()">
+            🎲 Rolar Teste da Morte no App (1d20)
+          </button>
+        </div>
+
+        <!-- Botões de Ação Rápida para Dados Físicos da Mesa -->
+        <div style="background: rgba(0,0,0,0.3); border: 1px dashed var(--border-color); border-radius: 8px; padding: 10px; margin-top: 10px;">
+          <div style="font-size: 11px; font-weight: 700; color: var(--accent-gold); margin-bottom: 6px; text-transform: uppercase;">
+            🎲 Lançamentos com Dados Físicos na Mesa:
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <button class="btn-secondary" style="font-size: 11px; padding: 6px;" onclick="addDeathSaveManual('success')">+1 Sucesso (10-19)</button>
+            <button class="btn-secondary" style="font-size: 11px; padding: 6px;" onclick="addDeathSaveManual('fail')">+1 Falha (2-9)</button>
+            <button class="btn-secondary" style="font-size: 11px; padding: 6px; color: #34d399; border-color: #059669;" onclick="setDeathSaveSpecial('nat20')">✨ 20 Nat (+1 PV Acorda)</button>
+            <button class="btn-secondary" style="font-size: 11px; padding: 6px; color: #f87171; border-color: #dc2626;" onclick="setDeathSaveSpecial('nat1')">💀 1 Nat (+2 Falhas)</button>
+          </div>
+          <div style="margin-top: 6px; text-align: center;">
+            <button class="btn-secondary" style="font-size: 10.5px; padding: 4px 10px; color: var(--text-muted);" onclick="resetDeathSavesManual()">🔄 Resetar Testes da Morte</button>
+          </div>
+        </div>
+      </div>
+      <div style="border-top: 1px solid var(--border-color); padding-top: 10px; display: flex; justify-content: flex-end;">
+        <button class="btn-secondary" onclick="closeDeathSavesModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================
+       📱 DOCK FLUTUANTE DE AÇÕES RÁPIDAS MOBILE
+       =================================================== -->
+  <nav id="player-mobile-dock" class="player-mobile-dock" aria-label="Ações Rápidas do Aluno">
+    <button type="button" class="dock-btn" onclick="scrollToPlayerSection('hp')" title="Vida / PV">
+      <span class="dock-icon">❤️</span>
+      <span class="dock-label">Vida</span>
+    </button>
+    <button type="button" class="dock-btn" onclick="scrollToPlayerSection('spells')" title="Magias e Espaços">
+      <span class="dock-icon">✨</span>
+      <span class="dock-label">Magias</span>
+    </button>
+    <button type="button" class="dock-btn" onclick="scrollToPlayerSection('attacks')" title="Ataques e Armas">
+      <span class="dock-icon">⚔️</span>
+      <span class="dock-label">Ataques</span>
+    </button>
+    <button type="button" class="dock-btn" onclick="openQuickD20Modal()" title="Rolar d20 Rápido">
+      <span class="dock-icon">🎲</span>
+      <span class="dock-label">d20</span>
+    </button>
+    <button type="button" class="dock-btn" onclick="scrollToPlayerSection('inventory')" title="Mochila e Itens">
+      <span class="dock-icon">🎒</span>
+      <span class="dock-label">Mochila</span>
+    </button>
+  </nav>
+

@@ -8828,4 +8828,203 @@
       margin-top: 1px;
     }
 
+    /* ===================================================
+       💀 ESTILOS: PAINEL DE SALVAGUARDAS DA MORTE GRANDE
+       =================================================== */
+    .death-saves-large-box {
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .ds-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .ds-label {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+    .ds-dots-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .ds-large-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.8);
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .ds-large-dot:hover {
+      transform: scale(1.18);
+    }
+    .ds-large-dot.dot-success {
+      border-color: #10b981;
+    }
+    .ds-large-dot.dot-success.active {
+      background: #10b981;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.8);
+    }
+    .ds-large-dot.dot-fail {
+      border-color: #ef4444;
+    }
+    .ds-large-dot.dot-fail.active {
+      background: #ef4444;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.8);
+    }
+
+    /* ===================================================
+       📱 ESTILOS: DOCK FLUTUANTE DE AÇÕES RÁPIDAS MOBILE
+       =================================================== */
+    .player-mobile-dock {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      z-index: 10000;
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 2px solid var(--accent-gold);
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.6);
+      justify-content: space-around;
+      align-items: center;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    body.mode-player-portal .player-mobile-dock {
+      display: flex;
+    }
+    @media (max-width: 900px) {
+      .player-mobile-dock {
+        display: flex;
+      }
+      body.mode-player-portal {
+        padding-bottom: 64px !important;
+      }
+    }
+    .dock-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 6px 0;
+      transition: all 0.2s ease;
+      touch-action: manipulation;
+    }
+    .dock-btn:hover, .dock-btn:active {
+      color: #fef08a;
+      transform: translateY(-2px);
+    }
+    .dock-icon {
+      font-size: 18px;
+      line-height: 1;
+    }
+    .dock-label {
+      font-size: 9.5px;
+      font-weight: 800;
+      margin-top: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ===================================================
+       💎 ESTILOS: GEMAS TÁTEIS DE ESPAÇOS DE MAGIA
+       =================================================== */
+    .spell-slot-gems {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    .spell-gem-pip {
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      border: 1.5px solid #3b82f6;
+      background: radial-gradient(circle at 35% 35%, #93c5fd 0%, #2563eb 60%, #1e3a8a 100%);
+      box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: inline-block;
+      padding: 0;
+    }
+    .spell-gem-pip:hover {
+      transform: scale(1.25);
+      box-shadow: 0 0 12px rgba(96, 165, 250, 0.9);
+      border-color: #bfdbfe;
+    }
+    .spell-gem-pip.spent {
+      border-color: #475569;
+      background: #0f172a;
+      box-shadow: none;
+      opacity: 0.35;
+      transform: scale(0.88);
+    }
+    .spell-gem-pip.spent:hover {
+      opacity: 0.8;
+      transform: scale(1.1);
+      border-color: #94a3b8;
+    }
+
+    /* ===================================================
+       🔔 ESTILOS: ALERTA PULSANTE DE TURNO ATIVO (PORTAL)
+       =================================================== */
+    @keyframes goldPulseBorder {
+      0%, 100% {
+        box-shadow: inset 0 0 10px rgba(245, 158, 11, 0.3), 0 0 8px rgba(245, 158, 11, 0.3);
+        border-color: rgba(245, 158, 11, 0.6);
+      }
+      50% {
+        box-shadow: inset 0 0 25px rgba(245, 158, 11, 0.85), 0 0 20px rgba(245, 158, 11, 0.9);
+        border-color: #fbbf24;
+      }
+    }
+    .player-turn-pulse {
+      animation: goldPulseBorder 1.6s infinite ease-in-out !important;
+    }
+
+    /* ===================================================
+       💥 ESTILOS: BOTÃO DE ROLAGEM DE DANO NO CARD DO LOG
+       =================================================== */
+    .btn-card-damage-roll {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 800;
+      border-radius: 5px;
+      background: linear-gradient(135deg, #b91c1c, #ef4444);
+      color: #fff;
+      border: 1px solid #f87171;
+      cursor: pointer;
+      margin-top: 6px;
+      box-shadow: 0 2px 6px rgba(239, 68, 68, 0.35);
+      transition: all 0.2s ease;
+    }
+    .btn-card-damage-roll:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.15);
+      box-shadow: 0 4px 10px rgba(239, 68, 68, 0.6);
+    }
+
   </style>
