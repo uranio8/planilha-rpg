@@ -232,11 +232,11 @@ function openSpeciesTraitModal(speciesId, traitIdx) {
       <span class="skill-tag-pill">${species.size ? species.size.split('(')[0].trim() : 'Médio'}</span>
     </div>
 
-    <div style="padding-top: 4px;">
+    <div class="skill-modal-scrollable-body" style="padding-top: 4px;">
       ${topicsHtml}
     </div>
 
-    <div style="display: flex; justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.08); padding: 12px 20px; background: rgba(0,0,0,0.2);">
+    <div class="skill-modal-footer">
       <button class="btn-action" onclick="closeSpeciesTraitModal()" style="padding: 6px 18px; font-weight: 700;">Fechar</button>
     </div>
   `;

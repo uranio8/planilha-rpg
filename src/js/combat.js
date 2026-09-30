@@ -198,9 +198,14 @@ function renderCombat() {
                   const actIcon = spAct === 'bonus' ? '⚡' : (spAct === 'reaction' ? '🛡️' : '⚔️');
                   const actTitle = spAct === 'bonus' ? 'Ação Bônus' : (spAct === 'reaction' ? 'Reação' : 'Ação');
                   return `
-                    <button class="btn-secondary" style="font-size:10px; padding:3px 7px; display:inline-flex; align-items:center; gap:4px; border-color:rgba(59,130,246,0.4);" onclick="castPlayerSpellPrompt('${playerObj.id}', '${(sName||'').replace(/'/g, "\\'")}')" title="${actTitle}: Lançar ${sName}">
-                      <span>${actIcon} ${sName}</span> <span style="font-size:8px; opacity:0.8; color:var(--primary-light); font-weight:bold;">${lvlBadge}</span>
-                    </button>
+                    <div style="display:inline-flex; align-items:center; background:rgba(0,0,0,0.3); border:1px solid rgba(59,130,246,0.3); border-radius:6px; overflow:hidden;">
+                      <button class="btn-secondary" style="font-size:10px; padding:3px 7px; border:none; display:inline-flex; align-items:center; gap:4px; border-radius:0;" onclick="castPlayerSpellPrompt('${playerObj.id}', '${(sName||'').replace(/'/g, "\\'")}')" title="${actTitle}: Lançar ${sName}">
+                        <span>${actIcon} ${sName}</span> <span style="font-size:8px; opacity:0.8; color:var(--primary-light); font-weight:bold;">${lvlBadge}</span>
+                      </button>
+                      <button type="button" class="btn-spell-info" style="border:none; border-left:1px solid rgba(59,130,246,0.3); width:20px; height:24px; border-radius:0; font-size:10px;" onclick="openSpellQuickSummaryModal('${(sName||'').replace(/'/g, "\\'")}', '${playerObj.id}', event)" title="Ver detalhes rápidos de ${sName}">
+                        ℹ️
+                      </button>
+                    </div>
                   `;
                 }).join('')}
               </div>

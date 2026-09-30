@@ -525,6 +525,14 @@ function applyCloudDataToLocal(cloudData) {
               xp: remoteP.xp !== undefined ? remoteP.xp : localChar.xp,
               level: resolvedLevel,
               className: isLocalLevelHigher ? (localChar.className || remoteP.className) : (remoteP.className || localChar.className),
+              subclass: isLocalLevelHigher ? (localChar.subclass || remoteP.subclass) : (remoteP.subclass || localChar.subclass),
+              subclassIdx: isLocalLevelHigher ? (localChar.subclassIdx !== undefined ? localChar.subclassIdx : remoteP.subclassIdx) : (remoteP.subclassIdx !== undefined ? remoteP.subclassIdx : localChar.subclassIdx),
+              str: isLocalLevelHigher ? (localChar.str !== undefined ? localChar.str : remoteP.str) : (remoteP.str !== undefined ? remoteP.str : localChar.str),
+              dex: isLocalLevelHigher ? (localChar.dex !== undefined ? localChar.dex : remoteP.dex) : (remoteP.dex !== undefined ? remoteP.dex : localChar.dex),
+              con: isLocalLevelHigher ? (localChar.con !== undefined ? localChar.con : remoteP.con) : (remoteP.con !== undefined ? remoteP.con : localChar.con),
+              int: isLocalLevelHigher ? (localChar.int !== undefined ? localChar.int : remoteP.int) : (remoteP.int !== undefined ? remoteP.int : localChar.int),
+              wis: isLocalLevelHigher ? (localChar.wis !== undefined ? localChar.wis : remoteP.wis) : (remoteP.wis !== undefined ? remoteP.wis : localChar.wis),
+              cha: isLocalLevelHigher ? (localChar.cha !== undefined ? localChar.cha : remoteP.cha) : (remoteP.cha !== undefined ? remoteP.cha : localChar.cha),
               race: isLocalLevelHigher ? (localChar.race || remoteP.race) : (remoteP.race || localChar.race),
               multiclass: isLocalLevelHigher ? (localChar.multiclass || remoteP.multiclass) : (remoteP.multiclass || localChar.multiclass),
               hitDice: isLocalLevelHigher ? (localChar.hitDice || remoteP.hitDice) : (remoteP.hitDice || localChar.hitDice),
@@ -644,6 +652,15 @@ function applyCloudDataToLocal(cloudData) {
             // Blindagem: resolvedLevel e resolvedMaxHp nunca regridem acidentalmente
             mergedPlayer.level = Math.max(currentLocal.level || 1, remoteP.level || 1);
             mergedPlayer.maxHp = Math.max(currentLocal.maxHp || 1, remoteP.maxHp || 1);
+            if ((currentLocal.level || 1) > (remoteP.level || 1)) {
+              mergedPlayer.className = currentLocal.className;
+              if (currentLocal.subclass) mergedPlayer.subclass = currentLocal.subclass;
+              if (currentLocal.subclassIdx !== undefined) mergedPlayer.subclassIdx = currentLocal.subclassIdx;
+              if (currentLocal.multiclass) mergedPlayer.multiclass = currentLocal.multiclass;
+              ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(attr => {
+                if (currentLocal[attr] !== undefined) mergedPlayer[attr] = currentLocal[attr];
+              });
+            }
             mergedMap.set(remoteP.id, mergedPlayer);
           } else {
             // Personagem novo vindo da nuvem

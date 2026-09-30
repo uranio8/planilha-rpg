@@ -1939,9 +1939,9 @@
         <span id="skill-modal-type" class="skill-tag-pill">Habilidade</span>
       </div>
 
-      <div id="skill-modal-desc" style="padding-top: 4px;"></div>
+      <div id="skill-modal-desc" class="skill-modal-scrollable-body" style="padding-top: 4px;"></div>
 
-      <div style="display: flex; justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.08); padding: 12px 20px; background: rgba(0,0,0,0.2);">
+      <div class="skill-modal-footer">
         <button class="btn-action" onclick="closeSkillModal()" style="padding: 6px 18px; font-weight: 700;">Fechar</button>
       </div>
     </div>
@@ -1950,6 +1950,74 @@
   <!-- MODAL: DETALHES DE CARACTERÍSTICA RACIAL -->
   <div id="modal-species-detail" class="modal-overlay">
     <div class="modal-body skill-modal-card" style="max-width: 620px; padding: 0;" id="modal-species-detail-content">
+    </div>
+  </div>
+
+  <!-- MODAL: RESUMO RÁPIDO & DETALHES DE MAGIA (SPELL QUICK SUMMARY) -->
+  <div id="modal-spell-summary" class="modal-overlay">
+    <div class="modal-body skill-modal-card" style="max-width: 600px; padding: 0;">
+      <div class="skill-modal-hero">
+        <div class="skill-modal-hero-left">
+          <div id="spell-summary-icon" class="skill-modal-icon-badge">✨</div>
+          <div>
+            <div id="spell-summary-name" class="skill-modal-title">-</div>
+            <div id="spell-summary-meta" class="skill-modal-meta">-</div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeSpellQuickSummaryModal()" style="border-radius: 50%; width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px;">✕</button>
+      </div>
+
+      <div class="skill-modal-tags-bar" id="spell-summary-tags-container">
+        <span id="spell-summary-level-pill" class="skill-tag-pill gold">Truque</span>
+        <span id="spell-summary-school-pill" class="skill-tag-pill">Escola</span>
+        <span id="spell-summary-action-pill" class="skill-tag-pill">Ação</span>
+      </div>
+
+      <div class="skill-modal-scrollable-body" style="padding: 12px 20px;">
+        <div class="spell-summary-tactical-grid">
+          <div class="spell-summary-tactical-item">
+            <span class="spell-summary-tactical-label">⏱️ Tempo</span>
+            <span id="spell-summary-time" class="spell-summary-tactical-val">1 ação</span>
+          </div>
+          <div class="spell-summary-tactical-item">
+            <span class="spell-summary-tactical-label">📏 Alcance</span>
+            <span id="spell-summary-range" class="spell-summary-tactical-val">Pessoal</span>
+          </div>
+          <div class="spell-summary-tactical-item">
+            <span class="spell-summary-tactical-label">⌛ Duração</span>
+            <span id="spell-summary-duration" class="spell-summary-tactical-val">Instantânea</span>
+          </div>
+          <div class="spell-summary-tactical-item">
+            <span class="spell-summary-tactical-label">🔮 Componentes</span>
+            <span id="spell-summary-components" class="spell-summary-tactical-val">V, S</span>
+          </div>
+        </div>
+
+        <div id="spell-summary-caster-box" class="spell-summary-caster-hud" style="display: none;">
+          <div class="spell-summary-caster-badge">
+            <span>🧙‍♂️</span>
+            <span id="spell-summary-caster-name">Herói</span>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <span class="badge" style="background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.4);" id="spell-summary-cd-badge">CD --</span>
+            <span class="badge" style="background: rgba(59,130,246,0.2); color: #93c5fd; border: 1px solid rgba(59,130,246,0.4);" id="spell-summary-atk-badge">Ataque --</span>
+            <span class="badge" style="background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid rgba(168,85,247,0.4);" id="spell-summary-slots-badge">Slots --</span>
+          </div>
+        </div>
+
+        <div id="spell-summary-desc" style="font-size: 13px; line-height: 1.6; color: #cbd5e1;"></div>
+      </div>
+
+      <div class="skill-modal-footer">
+        <div style="display: flex; gap: 8px; width: 100%; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+          <div id="spell-summary-status-tag" style="font-size: 11px; color: var(--text-dim);"></div>
+          <div style="display: flex; gap: 8px;">
+            <button id="btn-spell-summary-roll" class="btn-secondary" style="font-size: 11px; padding: 6px 12px; display: none;">🎲 Rolar Efeito</button>
+            <button id="btn-spell-summary-cast" class="btn-action" style="font-size: 11px; padding: 6px 14px;">⚡ Lançar Magia</button>
+            <button class="btn-secondary" onclick="closeSpellQuickSummaryModal()" style="font-size: 11px; padding: 6px 14px;">Fechar</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1968,8 +2036,29 @@
         <button class="btn-secondary" onclick="closeSpellPickerModal()">✕</button>
       </div>
 
+      <!-- Abas de Conjurador: Preparadas vs Grimório / Transcrever -->
+      <div id="picker-wizard-tabs" class="spellbook-tabs-nav" style="display: none; margin-top: 10px;">
+        <button type="button" class="spellbook-tab-btn active" id="tab-btn-picker-prep" onclick="switchPickerMode('prep')">
+          <span>⭐ Magias Preparadas</span>
+        </button>
+        <button type="button" class="spellbook-tab-btn" id="tab-btn-picker-book" onclick="switchPickerMode('book')">
+          <span>📖 Meu Grimório (<b id="picker-book-count">0</b>)</span>
+        </button>
+        <button type="button" class="spellbook-tab-btn" id="tab-btn-picker-copy" onclick="switchPickerMode('copy')">
+          <span>🖋️ Transcrever Nova Magia</span>
+        </button>
+      </div>
+
       <!-- Medidor de Limite de Preparação -->
-      <div id="picker-prep-meter-box" style="margin-top: 10px;"></div>
+      <div id="picker-prep-meter-box" style="margin-top: 6px;"></div>
+
+      <!-- Painel Informativo de Cópia de Magias para Magos -->
+      <div id="picker-copy-banner" style="display: none; font-size:11.5px; color:#cbd5e1; background:rgba(245,158,11,0.08); border-left:3px solid var(--accent-gold); padding:8px 12px; border-radius:4px; margin: 8px 0;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+          <span>🖋️ <b>Transcrever Magia:</b> Custa <b>50 PO</b> e <b>2 horas</b> por círculo (ou <b>25 PO / 1h</b> para Tradição Arcana).</span>
+          <span style="font-weight:700; color:#fbbf24;">🪙 Saldo em Ouro: <b id="picker-player-gold">0 PO</b></span>
+        </div>
+      </div>
 
       <!-- Filtros de busca no picker -->
       <div style="display: flex; gap: 8px; margin: 12px 0 8px 0; flex-wrap: wrap;">
@@ -2067,7 +2156,7 @@
       <div id="levelup-wizard-body" style="max-height: 60vh; overflow-y: auto; padding: 4px 0;"></div>
 
       <!-- Rodapé com Botões de Navegação -->
-      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.08); padding: 14px 20px; background: rgba(0,0,0,0.25);">
+      <div class="levelup-footer" style="display: flex; justify-content: space-between; align-items: center;">
         <button id="btn-levelup-back" class="btn-secondary" onclick="handleLevelUpBack()" style="display: none;">◀ Voltar</button>
         <div style="flex: 1;"></div>
         <div style="display: flex; gap: 8px;">

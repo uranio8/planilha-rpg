@@ -893,6 +893,9 @@
       border-radius: 16px !important;
       box-shadow: 0 16px 50px rgba(0,0,0,0.85), 0 0 25px rgba(245, 158, 11, 0.12) !important;
       padding: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      max-height: 85vh !important;
       overflow: hidden !important;
       gap: 0 !important;
     }
@@ -6004,14 +6007,18 @@
     /* ===================================================
        ✨ HUD REFINADO & TÓPICOS INTELIGENTES (SKILLS/TRAITS/MODALS)
        =================================================== */
-    .skill-modal-card {
-      background: linear-gradient(180deg, #101828 0%, #0c1220 100%);
-      border: 1px solid rgba(245, 158, 11, 0.25);
-      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.8), 0 0 25px rgba(245, 158, 11, 0.1);
-      border-radius: 14px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
+    .skill-modal-card,
+    .levelup-card {
+      background: linear-gradient(180deg, #101828 0%, #0c1220 100%) !important;
+      border: 1px solid rgba(245, 158, 11, 0.28) !important;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.8), 0 0 25px rgba(245, 158, 11, 0.1) !important;
+      border-radius: 14px !important;
+      overflow: hidden !important;
+      display: flex !important;
+      flex-direction: column !important;
+      max-height: 85vh !important;
+      padding: 0 !important;
+      gap: 0 !important;
     }
 
     .skill-modal-hero {
@@ -6022,6 +6029,7 @@
       justify-content: space-between;
       align-items: flex-start;
       gap: 14px;
+      flex-shrink: 0;
     }
 
     .skill-modal-hero-left {
@@ -6071,6 +6079,7 @@
       gap: 6px;
       flex-wrap: wrap;
       padding: 12px 20px 0 20px;
+      flex-shrink: 0;
     }
 
     .skill-tag-pill {
@@ -6105,13 +6114,213 @@
       color: #e2e8f0;
     }
 
+    .skill-modal-scrollable-body {
+      overflow-y: auto !important;
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+      padding: 12px 20px;
+    }
+
+    .skill-modal-footer {
+      flex-shrink: 0 !important;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: flex-end;
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    /* BOTÃO 'i' INFORMATIVO DE MAGIAS */
+    .btn-spell-info {
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      color: #93c5fd;
+      border-radius: 6px;
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+    .btn-spell-info:hover {
+      background: rgba(59, 130, 246, 0.28);
+      border-color: #60a5fa;
+      color: #fff;
+      transform: scale(1.08);
+      box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+    }
+
+    /* MODAL DE RESUMO RÁPIDO DE MAGIA (SPELL SUMMARY) */
+    .spell-summary-tactical-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(115px, 1fr));
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 11.5px;
+    }
+    .spell-summary-tactical-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .spell-summary-tactical-label {
+      font-size: 10px;
+      color: var(--text-dim);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .spell-summary-tactical-val {
+      color: #fff;
+      font-weight: 600;
+    }
+    .spell-summary-caster-hud {
+      display: flex;
+      gap: 8px;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(59, 130, 246, 0.08));
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+    .spell-summary-caster-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #fde047;
+      font-weight: 700;
+    }
+
+    /* GRIMÓRIO DO MAGO & TRANSCRIÇÃO (SPELLBOOK & COPYING) */
+    .spellbook-tabs-nav {
+      display: flex;
+      gap: 4px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 10px;
+    }
+    .spellbook-tab-btn {
+      flex: 1;
+      padding: 6px 10px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .spellbook-tab-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.06);
+    }
+    .spellbook-tab-btn.active {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(217, 119, 6, 0.35));
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+    .spellbook-copy-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 8px 12px;
+      gap: 10px;
+      transition: all 0.15s ease;
+    }
+    .spellbook-copy-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+    .spellbook-cost-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fde047;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .spellbook-cost-pill.discount {
+      background: rgba(52, 211, 153, 0.15);
+      border-color: rgba(52, 211, 153, 0.35);
+      color: #6ee7b7;
+    }
+    .btn-spell-ritual {
+      background: rgba(168, 85, 247, 0.15);
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      color: #d8b4fe;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 7px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+    .btn-spell-ritual:hover {
+      background: rgba(168, 85, 247, 0.3);
+      border-color: #c084fc;
+      color: #fff;
+    }
+
+    .skill-modal-scrollable-body,
+    #skill-modal-desc,
+    #modal-species-detail-content .skill-modal-scrollable-body,
+    #levelup-wizard-body {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      min-height: 0;
+      overscroll-behavior: contain;
+    }
+
+    .skill-modal-footer,
+    .levelup-footer {
+      flex-shrink: 0;
+      margin-top: auto;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 12px 20px;
+      background: rgba(0, 0, 0, 0.35);
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      z-index: 2;
+    }
+
     .skill-topics-list {
       display: flex;
       flex-direction: column;
       gap: 10px;
       padding: 0 20px 16px 20px;
-      max-height: 55vh;
-      overflow-y: auto;
     }
 
     .skill-topic-card {
@@ -6359,6 +6568,23 @@
 
     .btn-levelup-trigger:hover {
       box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+      transform: translateY(-1px);
+    }
+
+    /* --- ESTILOS DO SISTEMA DE ASI & SUBCLASSE NO LEVEL UP --- */
+    .levelup-asi-card {
+      transition: all 0.25s ease;
+    }
+    .subclass-locked-card {
+      transition: all 0.25s ease;
+    }
+    .asi-attr-btn {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .asi-attr-btn:hover {
+      border-color: var(--accent-gold) !important;
+      background: rgba(245, 158, 11, 0.1) !important;
       transform: translateY(-1px);
     }
 

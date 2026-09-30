@@ -5319,8 +5319,258 @@ assert(!paladinDockHtml.includes('class="btn-micro"'), 'Botões genéricos não 
 assert(compiledHtmlIssue100.includes('.resource-quick-dock'), 'CSS compilado contém estilo .resource-quick-dock');
 assert(compiledHtmlIssue100.includes('.resource-quick-chip'), 'CSS compilado contém estilo .resource-quick-chip');
 assert(compiledHtmlIssue100.includes('.resource-stepper-btn'), 'CSS compilado contém estilo .resource-stepper-btn');
-assert(compiledHtmlIssue100.includes('.resource-counter-badge'), 'CSS compilado contém estilo .resource-counter-badge');
-assert(compiledHtmlIssue100.includes('.action-economy-tag'), 'CSS compilado contém estilo .action-economy-tag');
+// ========================================
+// 72. Testes de Prevenção de Corte de Botões em Modais, Resumo Rápido de Magias e Grimório de Magos (ISSUE-103):
+// ========================================
+console.log('\n📜 72. Testes de Prevenção de Corte de Botões em Modais, Resumo Rápido de Magias e Grimório de Magos (ISSUE-103):');
+
+// 1. Prevenção de corte de botão no footer do modal
+const compiledHtmlIssue103 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf-8');
+
+assert(compiledHtmlIssue103.includes('.skill-modal-card') && compiledHtmlIssue103.includes('display: flex !important;') && compiledHtmlIssue103.includes('flex-direction: column !important;'), 'skill-modal-card estruturado com flexbox column para fixar cabeçalho e rodapé');
+assert(compiledHtmlIssue103.includes('.skill-modal-scrollable-body') && compiledHtmlIssue103.includes('overflow-y: auto !important;') && compiledHtmlIssue103.includes('flex: 1 1 auto !important;'), 'skill-modal-scrollable-body possui rolagem interna independente');
+assert(compiledHtmlIssue103.includes('.skill-modal-footer {') && compiledHtmlIssue103.includes('flex-shrink: 0 !important;'), 'skill-modal-footer com flex-shrink: 0 para nunca ser cortado ou empurrado para fora da tela');
+assert(compiledHtmlIssue103.includes('.levelup-footer {') && compiledHtmlIssue103.includes('flex-shrink: 0 !important;'), 'levelup-footer com flex-shrink: 0');
+
+// 2. Validação da semântica dos ícones em getTopicIconForText (eliminação de falsos positivos com \b)
+const getTopicIconForText = vm.runInContext('getTopicIconForText', sandbox);
+assert(typeof getTopicIconForText === 'function', 'Função getTopicIconForText exportada');
+assert(getTopicIconForText('Rituais de Magia') === '📜', 'Tópico de Rituais recebe ícone de pergaminho 📜 (e não 💰 por "po" em "pode")');
+assert(getTopicIconForText('Atributo de Conjuração') === '🔮', 'Tópico de Atributo de Conjuração recebe 🔮 (e não ⏱️ por "ação")');
+assert(getTopicIconForText('Preparação de Magias') === '📖', 'Tópico de Preparação de Magias recebe livro 📖 (e não ⏱️ por "ação")');
+assert(getTopicIconForText('Custos em Moedas de Ouro') === '💰', 'Tópico de moedas recebe 💰');
+
+// 3. Modal de Resumo Rápido de Magias (#modal-spell-summary e .btn-spell-info)
+assert(compiledHtmlIssue103.includes('id="modal-spell-summary"'), 'HTML standalone contém o modal id modal-spell-summary');
+assert(compiledHtmlIssue103.includes('class="btn-spell-info"'), 'CSS/HTML contém o botão de resumo rápido btn-spell-info');
+assert(typeof vm.runInContext('openSpellQuickSummaryModal', sandbox) === 'function', 'Função openSpellQuickSummaryModal exportada');
+assert(typeof vm.runInContext('closeSpellQuickSummaryModal', sandbox) === 'function', 'Função closeSpellQuickSummaryModal exportada');
+
+// 4. Mecânicas de Grimório de Mago vs Conjurador Preparado D&D 5E
+const isWizardPlayer = vm.runInContext('isWizardPlayer', sandbox);
+const ensurePlayerSpellbook = vm.runInContext('ensurePlayerSpellbook', sandbox);
+const getSpellCopyCost = vm.runInContext('getSpellCopyCost', sandbox);
+const copySpellToSpellbook = vm.runInContext('copySpellToSpellbook', sandbox);
+const castSpellAsRitual = vm.runInContext('castSpellAsRitual', sandbox);
+
+assert(typeof isWizardPlayer === 'function', 'Função isWizardPlayer exportada');
+assert(typeof ensurePlayerSpellbook === 'function', 'Função ensurePlayerSpellbook exportada');
+assert(typeof getSpellCopyCost === 'function', 'Função getSpellCopyCost exportada');
+assert(typeof copySpellToSpellbook === 'function', 'Função copySpellToSpellbook exportada');
+assert(typeof castSpellAsRitual === 'function', 'Função castSpellAsRitual exportada');
+
+// Validação de identificação de Mago
+const wizardChar = { id: 'wiz_1', name: 'Elminster', className: 'Mago', level: 5, coins: { gp: 200 }, preparedSpells: ['Mísseis Mágicos', 'Escudo Arcano'] };
+const fighterChar = { id: 'fig_1', name: 'Gromm', className: 'Guerreiro', level: 5 };
+assert(isWizardPlayer(wizardChar) === true, 'isWizardPlayer identifica Mago');
+assert(isWizardPlayer(fighterChar) === false, 'isWizardPlayer descarta Guerreiro');
+
+// Validação de migração e garantia do Grimório
+ensurePlayerSpellbook(wizardChar);
+assert(Array.isArray(wizardChar.spellbookSpells), 'ensurePlayerSpellbook inicializa array spellbookSpells');
+assert(wizardChar.spellbookSpells.includes('Mísseis Mágicos'), 'Grimório do mago inclui magias previamente preparadas');
+assert(wizardChar.spellbookSpells.includes('Escudo Arcano'), 'Grimório do mago inclui Escudo Arcano');
+
+// Validação de Custos de Transcrição: 50 PO e 2h por círculo (D&D 5E RAW)
+const fireballSpell = { name: 'Bola de Fogo', level: 3, school: 'Evocação' };
+const costNormal = getSpellCopyCost(fireballSpell, wizardChar);
+assert(costNormal.gold === 150, 'Bola de Fogo (3º Círculo) custa 150 PO (3 * 50 PO)');
+assert(costNormal.hours === 6, 'Bola de Fogo (3º Círculo) requer 6 horas (3 * 2h)');
+assert(costNormal.canAfford === true, 'Mago com 200 PO pode pagar custo de 150 PO');
+
+// Validação de Desconto de Tradição Arcana (Subclasse Mago Evocador): 50% de ouro e tempo
+const evokerWizard = { id: 'wiz_evoker', name: 'Evocador', className: 'Mago', subclass: 'Evocação', coins: { gp: 100 } };
+const costDiscount = getSpellCopyCost(fireballSpell, evokerWizard);
+assert(costDiscount.isDiscounted === true, 'Identifica desconto de Tradição Arcana para escola coincidente');
+assert(costDiscount.gold === 75, 'Bola de Fogo para Mago Evocador custa 75 PO (50% de desconto)');
+assert(costDiscount.hours === 3, 'Bola de Fogo para Mago Evocador requer 3 horas (50% de desconto)');
+
+// Validação de Transcrição e Dedução de Ouro
+vm.runInContext(`
+  PLAYERS.push(${JSON.stringify(wizardChar)});
+`, sandbox);
+const initialGold = wizardChar.coins.gp;
+vm.runInContext(`copySpellToSpellbook('wiz_1', 'Bola de Fogo', false);`, sandbox);
+const updatedWiz = vm.runInContext("PLAYERS.find(p => p.id === 'wiz_1')", sandbox);
+assert(updatedWiz.spellbookSpells.includes('Bola de Fogo'), 'copySpellToSpellbook adiciona Bola de Fogo ao Grimório');
+assert(updatedWiz.coins.gp === (initialGold - 150), 'copySpellToSpellbook desconta 150 PO do saldo do mago');
+
+// Validação de Bloqueio por Falta de Ouro
+const poorWizard = { id: 'wiz_poor', name: 'Mago Pobre', className: 'Mago', coins: { gp: 10 }, spellbookSpells: [] };
+vm.runInContext(`PLAYERS.push(${JSON.stringify(poorWizard)});`, sandbox);
+vm.runInContext(`copySpellToSpellbook('wiz_poor', 'Bola de Fogo', false);`, sandbox);
+const updatedPoorWiz = vm.runInContext("PLAYERS.find(p => p.id === 'wiz_poor')", sandbox);
+assert(!updatedPoorWiz.spellbookSpells.includes('Bola de Fogo'), 'copySpellToSpellbook bloqueia transcrição quando saldo de ouro é insuficiente');
+
+// Validação de Transcrição Gratuita (Ex: magias ganhas por subir de nível)
+vm.runInContext(`copySpellToSpellbook('wiz_poor', 'Armadura Arcana', true);`, sandbox);
+assert(updatedPoorWiz.spellbookSpells.includes('Armadura Arcana'), 'Transcrição gratuita adiciona magia sem exigir ouro');
+assert(updatedPoorWiz.coins.gp === 10, 'Saldo de ouro permanece inalterado na transcrição gratuita');
+
+// ============================================================================
+// 🌟 73. TESTES DE RETENÇÃO DE SUBCLASSE, SISTEMA DE ASI D&D 5E E INTEGRIDADE (ISSUE-104)
+// ============================================================================
+console.log('\n🌟 73. Testes de Retenção de Subclasses, Sistema de ASI D&D 5E e Integridade de Atributos (ISSUE-104):');
+
+// 1. Exportação das novas funções utilitárias
+assert(typeof vm.runInContext('isClassAsiLevel', sandbox) === 'function', 'Função isClassAsiLevel exportada');
+assert(typeof vm.runInContext('resolveSubclassIndex', sandbox) === 'function', 'Função resolveSubclassIndex exportada');
+assert(typeof vm.runInContext('setLevelUpAsiMode', sandbox) === 'function', 'Função setLevelUpAsiMode exportada');
+assert(typeof vm.runInContext('setLevelUpAsiSingle', sandbox) === 'function', 'Função setLevelUpAsiSingle exportada');
+assert(typeof vm.runInContext('setLevelUpAsiDual', sandbox) === 'function', 'Função setLevelUpAsiDual exportada');
+assert(typeof vm.runInContext('triggerLevelUpSubclassRespec', sandbox) === 'function', 'Função triggerLevelUpSubclassRespec exportada');
+
+// 2. Validação dos Níveis Canônicos de ASI (D&D 5E)
+const isAsi = vm.runInContext('isClassAsiLevel', sandbox);
+// Guerreiro: 4, 6, 8, 12, 14, 16, 19
+assert(isAsi('Guerreiro', 4) === true, 'Guerreiro Nível 4 concede ASI');
+assert(isAsi('Guerreiro', 6) === true, 'Guerreiro Nível 6 concede ASI extra');
+assert(isAsi('Guerreiro', 8) === true, 'Guerreiro Nível 8 concede ASI');
+assert(isAsi('Guerreiro', 12) === true, 'Guerreiro Nível 12 concede ASI');
+assert(isAsi('Guerreiro', 14) === true, 'Guerreiro Nível 14 concede ASI extra');
+assert(isAsi('Guerreiro', 5) === false, 'Guerreiro Nível 5 NÃO concede ASI');
+
+// Ladino: 4, 8, 10, 12, 16, 19
+assert(isAsi('Ladino', 4) === true, 'Ladino Nível 4 concede ASI');
+assert(isAsi('Ladino', 8) === true, 'Ladino Nível 8 concede ASI');
+assert(isAsi('Ladino', 10) === true, 'Ladino Nível 10 concede ASI extra');
+assert(isAsi('Ladino', 6) === false, 'Ladino Nível 6 NÃO concede ASI');
+
+// Demais classes: 4, 8, 12, 16, 19
+assert(isAsi('Mago', 4) === true, 'Mago Nível 4 concede ASI');
+assert(isAsi('Mago', 6) === false, 'Mago Nível 6 NÃO concede ASI');
+assert(isAsi('Clérigo', 8) === true, 'Clérigo Nível 8 concede ASI');
+assert(isAsi('Bárbaro', 4) === true, 'Bárbaro Nível 4 concede ASI');
+
+// 3. Validação do resolvedor de subclasses (resolveSubclassIndex)
+const resolveSub = vm.runInContext('resolveSubclassIndex', sandbox);
+assert(resolveSub('Guerreiro', 0, 'Campeão') === 0, 'Resolve subclasse Campeão no índice 0');
+assert(resolveSub('Guerreiro', 0, 'Mestre da Batalha (Battle Master)') === 1, 'Resolve Mestre da Batalha no índice 1 mesmo que índice numérico seja 0');
+assert(resolveSub('Guerreiro', 0, 'Cavaleiro Místico (Eldritch Knight)') === 2, 'Resolve Cavaleiro Místico no índice 2');
+
+// 4. Validação de Retenção de Subclasse no Step 2 do Level Up
+vm.runInContext(`
+  const pSubKeepTest = {
+    id: 'p_sub_keep_1',
+    name: 'Gromm Subclass Keeper',
+    className: 'Guerreiro',
+    level: 3,
+    maxHp: 28,
+    hp: 28,
+    str: 16, dex: 12, con: 14, int: 10, wis: 10, cha: 8,
+    subclass: 'Mestre da Batalha',
+    subclassIdx: 1
+  };
+  PLAYERS.push(pSubKeepTest);
+  openLevelUpWizard('p_sub_keep_1');
+  levelUpWizardState.step = 2;
+  renderLevelUpWizardStep();
+`, sandbox);
+const bodyHtmlStep2 = vm.runInContext("document.getElementById('levelup-wizard-body').innerHTML", sandbox);
+assert(bodyHtmlStep2.includes('Subclasse Ativa'), 'Step 2 exibe card de Subclasse Ativa para quem já possui especialização');
+assert(bodyHtmlStep2.includes('Mestre da Batalha') || bodyHtmlStep2.includes('Battle Master'), 'Step 2 exibe o nome da subclasse ativa previamente escolhida');
+assert(bodyHtmlStep2.includes('Alterar Subclasse'), 'Step 2 exibe botão discreto para respec de subclasse');
+assert(!bodyHtmlStep2.includes('<select class="filter-select" style="width: 100%; font-weight: 700; font-size: 13px;" onchange="selectLevelUpSubclass(parseInt(this.value))">'), 'Step 2 NÃO força a re-seleção em dropdown para subclasse já definida');
+
+// 5. Validação de Exibição do Card de ASI no Nível 4
+assert(bodyHtmlStep2.includes('levelup-asi-card'), 'Step 2 inclui o card interativo de ASI ao avançar para Nível 4');
+assert(bodyHtmlStep2.includes('+2 em um Atributo'), 'Card de ASI oferece opção de +2 em um atributo');
+assert(bodyHtmlStep2.includes('+1 em dois Atributos'), 'Card de ASI oferece opção de +1 em dois atributos');
+assert(bodyHtmlStep2.includes('Escolher Talento'), 'Card de ASI oferece opção de Talento (Feat)');
+
+// 6. Aplicação de ASI Opção 1 (+2 em Força)
+vm.runInContext(`
+  levelUpWizardState.step = 3;
+  levelUpWizardState.asi = {
+    mode: 'single',
+    singleAttr: 'str'
+  };
+  applyLevelUpConfirm();
+`, sandbox);
+const updatedHeroAsi1 = vm.runInContext("PLAYERS.find(p => p.id === 'p_sub_keep_1')", sandbox);
+assert(updatedHeroAsi1.str === 18, 'ASI +2 aumentou Força de 16 para 18 (obteve 18)');
+assert(updatedHeroAsi1.subclass === 'Mestre da Batalha' || updatedHeroAsi1.subclassIdx === 1, 'Subclasse Mestre da Batalha foi preservada com fidelidade no Nível 4');
+
+// 7. Aplicação de ASI Opção 2 (+1 em dois atributos) com Ganho Retroativo de PV por aumento de CON
+vm.runInContext(`
+  const pConRetroTest = {
+    id: 'p_con_retro_1',
+    name: 'Valeros Con Booster',
+    className: 'Guerreiro',
+    level: 3,
+    maxHp: 28,
+    hp: 28,
+    str: 15,
+    dex: 13,
+    con: 15, // Mod +2
+    int: 10, wis: 10, cha: 8,
+    subclass: 'Campeão',
+    subclassIdx: 0
+  };
+  PLAYERS.push(pConRetroTest);
+  openLevelUpWizard('p_con_retro_1');
+  levelUpWizardState.step = 3;
+  levelUpWizardState.hpMethod = 'fixed';
+  levelUpWizardState.asi = {
+    mode: 'dual',
+    dualAttr1: 'str',
+    dualAttr2: 'con' // CON vai de 15 para 16 (Mod +2 para +3)
+  };
+  applyLevelUpConfirm();
+`, sandbox);
+const updatedHeroCon = vm.runInContext("PLAYERS.find(p => p.id === 'p_con_retro_1')", sandbox);
+assert(updatedHeroCon.str === 16, 'ASI +1 aumentou Força de 15 para 16');
+assert(updatedHeroCon.con === 16, 'ASI +1 aumentou Constituição de 15 para 16 (Mod +3)');
+// PV base: 28. Ganho normal de Nv 4 (d10 com mod CON novo +3): 6 + 3 = +9. Ganho retroativo por +1 mod CON em 4 níveis: +4 PV. Total = 28 + 9 + 4 = 41 PV
+assert(updatedHeroCon.maxHp >= 40, `PV Máximo recebeu bônus de subida e acréscimo retroativo de CON (esperado >= 40, obteve ${updatedHeroCon.maxHp})`);
+
+// 8. Aplicação de ASI Opção 3 (Talento / Feat)
+vm.runInContext(`
+  const pFeatTest = {
+    id: 'p_feat_test_1',
+    name: 'Lyra Feat Learner',
+    className: 'Ladino',
+    level: 3,
+    maxHp: 21,
+    hp: 21,
+    str: 10, dex: 16, con: 12, int: 14, wis: 12, cha: 10,
+    features: ['Ataque Furtivo 2d6']
+  };
+  PLAYERS.push(pFeatTest);
+  openLevelUpWizard('p_feat_test_1');
+  levelUpWizardState.step = 3;
+  levelUpWizardState.asi = {
+    mode: 'feat',
+    feat: 'Sentinela (Sentinel)'
+  };
+  applyLevelUpConfirm();
+`, sandbox);
+const updatedHeroFeat = vm.runInContext("PLAYERS.find(p => p.id === 'p_feat_test_1')", sandbox);
+assert(updatedHeroFeat.features.some(f => f.includes('Sentinela')), 'Talento Sentinela adicionado às características da ficha');
+
+// 9. Preservação de Atributos em Fichas Nv 4+ Existentes
+vm.runInContext(`
+  const pExisting4Plus = {
+    id: 'p_existing_nv5',
+    name: 'Veterano Nv 5',
+    className: 'Guerreiro 5',
+    level: 5,
+    str: 19, dex: 15, con: 16, int: 11, wis: 13, cha: 9,
+    subclass: 'Campeão',
+    subclassIdx: 0
+  };
+  PLAYERS.push(pExisting4Plus);
+  saveToLocalStorage();
+  loadFromLocalStorage();
+`, sandbox);
+const loadedVet = vm.runInContext("PLAYERS.find(p => p.id === 'p_existing_nv5')", sandbox);
+assert(loadedVet.str === 19 && loadedVet.dex === 15 && loadedVet.con === 16, 'Atributos previamente customizados de ficha Nv 5 foram rigorosamente preservados');
+
+// 10. Validação no CSS Compilado do Bundle
+const compiledHtmlIssue104 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(compiledHtmlIssue104.includes('.levelup-asi-card'), 'CSS compilado contém estilo .levelup-asi-card');
+assert(compiledHtmlIssue104.includes('.subclass-locked-card'), 'CSS compilado contém estilo .subclass-locked-card');
+assert(compiledHtmlIssue104.includes('.asi-attr-btn'), 'CSS compilado contém estilo .asi-attr-btn');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

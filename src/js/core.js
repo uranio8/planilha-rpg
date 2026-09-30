@@ -2486,14 +2486,28 @@ function highlightInlineRules(text) {
 
 function getTopicIconForText(text) {
   const t = (text || '').toLowerCase();
-  if (t.includes('ouro') || t.includes(' po') || t.includes('custo') || t.includes('gasta') || t.includes('gasto') || t.includes('preço') || t.includes('preco')) return '💰';
-  if (t.includes('hora') || t.includes('minuto') || t.includes('descanso') || t.includes('turno') || t.includes('rodada') || t.includes('ação') || t.includes('acao') || t.includes('reação') || t.includes('reacao')) return '⏱️';
-  if (t.includes('magia') || t.includes('grimório') || t.includes('grimorio') || t.includes('pergaminho') || t.includes('círculo') || t.includes('circulo') || t.includes('truque') || t.includes('slot') || t.includes('arcano') || t.includes('divin')) return '✨';
-  if (t.includes('ataque') || t.includes('dano') || t.includes('arma') || t.includes('acerto') || t.includes('crítico') || t.includes('critico') || t.includes('combate') || t.includes('golpe')) return '⚔️';
-  if (t.includes('ca ') || t.includes('armadura') || t.includes('escudo') || t.includes('defesa') || t.includes('resiste') || t.includes('salvaguarda') || t.includes('pv ') || t.includes('vida')) return '🛡️';
-  if (t.includes('começa') || t.includes('comeca') || t.includes('ganha') || t.includes('nível') || t.includes('nivel') || t.includes('+') || t.includes('evolu')) return '🎲';
-  if (t.includes('metro') || t.includes('distân') || t.includes('distan') || t.includes('alcance') || t.includes('deslocamento') || t.includes('área') || t.includes('area') || t.includes('raio')) return '📏';
-  if (t.includes('tomo') || t.includes('livro') || t.includes('estudo') || t.includes('conhecimento') || t.includes('saber')) return '📜';
+  // Rituais e Tomos Arcanos
+  if (/\b(ritual|rituais)\b/i.test(t)) return '📜';
+  // Atributo de Conjuração e CD
+  if (/\b(atributo de conjura[çc][ãa]o|modificador de conjura[çc][ãa]o|\bcd\b|intelig[êe]ncia|sabedoria|carisma)\b/i.test(t)) return '🔮';
+  // Preparação de Magias
+  if (/\b(prepara[çc][ãa]o de magias|preparar magias|magias preparadas)\b/i.test(t)) return '📖';
+  // Moedas e Custos em Dinheiro (usar \b para evitar casar "pode", "por", etc.)
+  if (/\b(\d+\s*po|\d+\s*pe[çc]as? de ouro|moedas?|pe[çc]as de prata|custo em ouro)\b/i.test(t) || (/\b(custo|pre[çc]o|gasta|gasto)\b/i.test(t) && !t.includes('ação') && !t.includes('tempo'))) return '💰';
+  // Tempo e Economia de Ações específicas
+  if (/\b(1 a[çc][ãa]o|a[çc][ãa]o b[ôo]nus|rea[çc][ãa]o|a[çc][ãa]o livre|a[çc][ãa]o padr[ãa]o|\d+\s*horas?|\d+\s*minutos?|\d+\s*segundos?|descanso|turno|rodada)\b/i.test(t)) return '⏱️';
+  // Magias, Grimórios e Fórmulas Arcanas
+  if (/\b(magia|magias|grim[óo]rio|grimorios?|pergaminho|c[íi]rculo|truque|slot|espa[çc]o de magia|arcano|divin)/i.test(t)) return '✨';
+  // Ataques, Armas e Dano de Combate
+  if (/\b(ataque|dano|arma|armas|acerto|cr[íi]tico|combate|golpe)/i.test(t)) return '⚔️';
+  // Armadura, Defesa, Salvaguarda e Vida
+  if (/\b(ca\b|armadura|escudo|defesa|resiste|salvaguarda|pv\b|vida)/i.test(t)) return '🛡️';
+  // Evolução, Nível e Benefícios Cumulativos
+  if (/\b(come[çc]a|ganha|n[íi]vel|evolu)/i.test(t) || t.includes('+')) return '🎲';
+  // Distância e Alcance
+  if (/\b(metro|metros|dist[âa]n|alcance|deslocamento|[áa]rea|raio)/i.test(t)) return '📏';
+  // Livros, Conhecimento e Tomos
+  if (/\b(tomo|livro|estudo|conhecimento|saber)/i.test(t)) return '📜';
   return '💡';
 }
 

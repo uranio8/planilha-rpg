@@ -1559,6 +1559,10 @@ function renderPlayers() {
             <div class="powers-section-box">
               <div class="powers-section-header">
                 ${(() => {
+        const isWizard = isWizardPlayer(p);
+        if (isWizard) ensurePlayerSpellbook(p);
+        const currentView = (isWizard && playerSpellbookViews[p.id] === 'spellbook') ? 'spellbook' : 'prepared';
+
         const prepInfo = getMaxPreparedSpells(p);
         const leveledSpells = (p.preparedSpells || []).filter(sName => {
           const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
@@ -1569,15 +1573,27 @@ function renderPlayers() {
           return sp && sp.level === 0;
         });
 
-        if (prepInfo.isPreparedCaster) {
-          return `<span>🔮 Magias Preparadas (${leveledSpells.length}/${prepInfo.maxLeveled}) ${cantripSpells.length > 0 ? `• <span style="color:#34d399; font-size:10px;">${cantripSpells.length} truques</span>` : ''}</span>`;
+        let titleHtml = '';
+        if (isWizard && currentView === 'spellbook') {
+          titleHtml = `<span>📖 Grimório (${(p.spellbookSpells || []).length} transcritas)</span>`;
+        } else if (prepInfo.isPreparedCaster) {
+          titleHtml = `<span>🔮 Magias Preparadas (${leveledSpells.length}/${prepInfo.maxLeveled}) ${cantripSpells.length > 0 ? `• <span style="color:#34d399; font-size:10px;">${cantripSpells.length} truques</span>` : ''}</span>`;
         } else if (prepInfo.isKnownCaster) {
-          return `<span>🔮 Magias Conhecidas (${leveledSpells.length}/${prepInfo.maxLeveled}) ${cantripSpells.length > 0 ? `• <span style="color:#34d399; font-size:10px;">${cantripSpells.length}/${prepInfo.maxCantrips} truques</span>` : ''}</span>`;
+          titleHtml = `<span>🔮 Magias Conhecidas (${leveledSpells.length}/${prepInfo.maxLeveled}) ${cantripSpells.length > 0 ? `• <span style="color:#34d399; font-size:10px;">${cantripSpells.length}/${prepInfo.maxCantrips} truques</span>` : ''}</span>`;
         } else {
-          return `<span>🔮 Magias (${(p.preparedSpells || []).length})</span>`;
+          titleHtml = `<span>🔮 Magias (${(p.preparedSpells || []).length})</span>`;
         }
+
+        const navHtml = isWizard ? `
+          <div class="spellbook-tabs-nav" style="margin: 0 4px;">
+            <button type="button" class="spellbook-tab-btn ${currentView === 'prepared' ? 'active' : ''}" onclick="togglePlayerSpellbookView('${p.id}')" title="Ver apenas magias preparadas">⭐ Prep (${leveledSpells.length})</button>
+            <button type="button" class="spellbook-tab-btn ${currentView === 'spellbook' ? 'active' : ''}" onclick="togglePlayerSpellbookView('${p.id}')" title="Ver todo o grimório de magias">📖 Livro (${(p.spellbookSpells || []).length})</button>
+          </div>
+        ` : '';
+
+        return `<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">${titleHtml}${navHtml}</div>`;
       })()}
-                <button class="btn-secondary player-spell-picker-btn" style="font-size: 10px; padding: 2px 6px;" onclick="openSpellPickerModal('${p.id}')" title="Selecionar e preparar magias deste herói">📖 Escolher</button>
+                <button class="btn-secondary player-spell-picker-btn" style="font-size: 10px; padding: 2px 6px;" onclick="openSpellPickerModal('${p.id}')" title="Selecionar e preparar magias deste herói">📖 ${isWizardPlayer(p) ? 'Gerenciar' : 'Escolher'}</button>
               </div>
 
               ${(() => {
@@ -1601,7 +1617,12 @@ function renderPlayers() {
                 `;
       })()}
               ${(() => {
-        const filteredSpells = (p.preparedSpells || []).filter(sName => {
+        const isWizard = isWizardPlayer(p);
+        if (isWizard) ensurePlayerSpellbook(p);
+        const currentView = (isWizard && playerSpellbookViews[p.id] === 'spellbook') ? 'spellbook' : 'prepared';
+
+        const rawList = currentView === 'spellbook' ? (p.spellbookSpells || []) : (p.preparedSpells || []);
+        const filteredSpells = rawList.filter(sName => {
           if (actionFilter === 'all') return true;
           const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
           return getSpellActionType(sp || sName) === actionFilter;
@@ -1620,16 +1641,23 @@ function renderPlayers() {
             const spAct = getSpellActionType(sp || sName);
             const spActBadge = spAct === 'bonus' ? '<span class="action-economy-tag bonus">Bônus</span>' : (spAct === 'reaction' ? '<span class="action-economy-tag reaction">Reação</span>' : '<span class="action-economy-tag action">Ação</span>');
             const diceInfo = typeof getSpellDiceInfo === 'function' ? getSpellDiceInfo(sp || sName, p) : null;
+            const isPrep = (p.preparedSpells || []).includes(sName);
+            const isRitual = sp && (sp.ritual || (sp.desc && sp.desc.toLowerCase().includes('ritual')));
+
             return `
-                  <div class="spell-action-chip">
+                  <div class="spell-action-chip ${!isPrep && currentView === 'spellbook' ? 'unprepared-book-chip' : ''}">
                     <div class="spell-chip-top">
                       <div class="spell-chip-name" title="${escapeAttr(sName)}">${sName} ${spActBadge}</div>
-                      <span class="spell-chip-lvl ${isCantrip ? 'cantrip' : 'leveled'}">${lvlBadge}</span>
+                      <div style="display:flex; align-items:center; gap:4px;">
+                        <button type="button" class="btn-spell-info" onclick="openSpellQuickSummaryModal('${escapeAttr(sName)}', '${p.id}', event)" title="Ver resumo rápido de ${escapeAttr(sName)}">ℹ️</button>
+                        <span class="spell-chip-lvl ${isCantrip ? 'cantrip' : 'leveled'}">${lvlBadge}</span>
+                      </div>
                     </div>
                     <div class="spell-chip-subinfo">
                       ${school ? `<span>${school}</span>` : ''}
                       ${range ? `<span>• ${range}</span>` : ''}
                       ${castTime ? `<span>• ${castTime}</span>` : ''}
+                      ${isRitual ? `<span style="color:#38bdf8; font-weight:700;">• Ritual</span>` : ''}
                     </div>
                     ${diceInfo ? `
                       <div class="spell-chip-dice-row">
@@ -1639,11 +1667,18 @@ function renderPlayers() {
                       </div>
                     ` : ''}
                     <div class="spell-chip-actions-bar">
-                      <button class="btn-spell-cast" onclick="castPlayerSpellPrompt('${p.id}', '${escapeAttr(sName)}')" title="Lançar ${escapeAttr(sName)} (desconta slot se for magia de nível)">
-                        ⚡ Lançar
-                      </button>
-                      <button class="btn-spell-prep-toggle" onclick="togglePlayerSpellPrepared('${p.id}', '${escapeAttr(sName)}')" title="Alternar status desta magia">
-                        ⭐ ${isCantrip ? 'Ativa' : 'Preparada'}
+                      ${isPrep || isCantrip ? `
+                        <button class="btn-spell-cast" onclick="castPlayerSpellPrompt('${p.id}', '${escapeAttr(sName)}')" title="Lançar ${escapeAttr(sName)} (desconta slot se for magia de nível)">
+                          ⚡ Lançar
+                        </button>
+                      ` : ''}
+                      ${(!isPrep && isRitual && isWizard) ? `
+                        <button class="btn-spell-ritual" onclick="castSpellAsRitual('${p.id}', '${escapeAttr(sName)}')" title="Conjurar como Ritual (+10 min, não gasta slot)">
+                          📜 Ritual
+                        </button>
+                      ` : ''}
+                      <button class="btn-spell-prep-toggle ${isPrep ? 'active' : ''}" onclick="togglePlayerSpellPrepared('${p.id}', '${escapeAttr(sName)}')" title="Alternar status desta magia">
+                        ⭐ ${isCantrip ? 'Ativa' : (isPrep ? 'Preparada' : 'Preparar')}
                       </button>
                     </div>
                   </div>
@@ -1654,8 +1689,8 @@ function renderPlayers() {
         } else {
           return `
             <div style="background: rgba(0,0,0,0.25); border: 1px dashed var(--border-color); padding: 8px; border-radius: 6px; text-align: center; color: var(--text-muted); font-size: 11px;">
-              ${actionFilter !== 'all' ? `Nenhuma magia encontrada com economia de "${actionFilter}".` : 'Nenhuma magia preparada.'}<br>
-              <button class="btn-action" style="font-size: 10px; margin-top: 4px; padding: 3px 8px;" onclick="openSpellPickerModal('${p.id}')">✨ Escolher Magias</button>
+              ${actionFilter !== 'all' ? `Nenhuma magia encontrada com economia de "${actionFilter}".` : (currentView === 'spellbook' ? 'Nenhuma magia transcrita no grimório.' : 'Nenhuma magia preparada.')}<br>
+              <button class="btn-action" style="font-size: 10px; margin-top: 4px; padding: 3px 8px;" onclick="openSpellPickerModal('${p.id}')">✨ ${isWizard ? 'Gerenciar Grimório' : 'Escolher Magias'}</button>
             </div>
           `;
         }
@@ -2692,7 +2727,9 @@ function getPlayerBonusHpPerLevel(player, className) {
   const race = (player.race || '').toLowerCase();
   const sub = (player.subclass || player.subclassName || '').toLowerCase();
   const cls = (className || player.className || '').toLowerCase();
-  const features = (player.features || '').toLowerCase();
+  const features = Array.isArray(player.features)
+    ? player.features.join(' ').toLowerCase()
+    : String(player.features || '').toLowerCase();
 
   // 1. Anão da Colina (Hill Dwarf) - Tenacidade Anã: +1 PV por nível do personagem
   if (race.includes('colina') || race.includes('hill') || features.includes('tenacidade anã') || features.includes('tenacidade ana')) {
@@ -4023,6 +4060,42 @@ function getSubclassUnlockLevel(className) {
   return 3;
 }
 
+function isClassAsiLevel(className, classLevel) {
+  const lvl = parseInt(classLevel, 10);
+  if (isNaN(lvl) || lvl < 4) return false;
+  const norm = String(className || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  if (norm.includes('guerreiro') || norm.includes('fighter')) {
+    return [4, 6, 8, 12, 14, 16, 19].includes(lvl);
+  }
+  if (norm.includes('ladino') || norm.includes('rogue')) {
+    return [4, 8, 10, 12, 16, 19].includes(lvl);
+  }
+  return [4, 8, 12, 16, 19].includes(lvl);
+}
+
+function resolveSubclassIndex(className, subclassIdx = 0, subclassName = '') {
+  if (typeof CLASSES_DATA === 'undefined') return subclassIdx || 0;
+  const cls = (typeof findClassData === 'function') ? findClassData(className) : null;
+  if (!cls || !cls.subclasses || cls.subclasses.length === 0) return subclassIdx || 0;
+
+  if (subclassName && typeof subclassName === 'string') {
+    const normTarget = subclassName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    if (normTarget && normTarget !== 'padrao' && normTarget !== 'default') {
+      const idx = cls.subclasses.findIndex(s => {
+        const sNorm = (s.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        return sNorm === normTarget || sNorm.includes(normTarget) || normTarget.includes(sNorm);
+      });
+      if (idx >= 0) return idx;
+    }
+  }
+
+  const numIdx = parseInt(subclassIdx, 10);
+  if (!isNaN(numIdx) && numIdx >= 0 && numIdx < cls.subclasses.length) {
+    return numIdx;
+  }
+  return 0;
+}
+
 function getUnlockedClassFeatures(className, level, subclassIdx = 0) {
   if (typeof CLASSES_DATA === 'undefined') return [];
   const cls = findClassData(className);
@@ -4062,7 +4135,8 @@ function getPlayerClassesList(p) {
   return [{
     className: p.className || 'Guerreiro',
     level: parseInt(p.level, 10) || 1,
-    subclassIdx: parseInt(p.subclassIdx, 10) || 0
+    subclassIdx: parseInt(p.subclassIdx, 10) || 0,
+    subclass: p.subclass || ''
   }];
 }
 
@@ -4570,8 +4644,273 @@ function openPlayerFeatureModal(name, desc, type, source) {
 
   modal.classList.add('open');
 }
+function openSpellQuickSummaryModal(spellName, playerId = null, event = null) {
+  if (event) event.stopPropagation();
+  const modal = document.getElementById('modal-spell-summary');
+  if (!modal) return;
 
+  const sp = (typeof SPELLS_DATA !== 'undefined' && Array.isArray(SPELLS_DATA))
+    ? SPELLS_DATA.find(s => s.name.toLowerCase() === (spellName || '').toLowerCase())
+    : null;
 
+  if (!sp) {
+    if (typeof showToast === 'function') showToast(`Magia "${spellName}" não encontrada no catálogo.`, 'warning');
+    return;
+  }
+
+  const p = (playerId && typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS))
+    ? PLAYERS.find(x => x.id === playerId)
+    : null;
+
+  const isCantrip = sp.level === 0;
+  const circleText = isCantrip ? 'Truque' : `${sp.level}º Círculo`;
+  const spAct = typeof getSpellActionType === 'function' ? getSpellActionType(sp) : 'action';
+  const spActLabel = spAct === 'bonus' ? 'Ação Bônus' : (spAct === 'reaction' ? 'Reação' : 'Ação');
+  const isConc = (sp.duration || '').toLowerCase().includes('concentra') || (sp.desc || '').toLowerCase().includes('concentra');
+  const isRitual = (sp.components || '').toLowerCase().includes('r') || (sp.time || '').toLowerCase().includes('ritual') || (sp.desc || '').toLowerCase().includes('ritual');
+
+  const nameEl = document.getElementById('spell-summary-name');
+  if (nameEl) nameEl.innerText = sp.name;
+
+  const metaEl = document.getElementById('spell-summary-meta');
+  if (metaEl) {
+    metaEl.innerHTML = `
+      <span>${circleText}</span>
+      <span>•</span>
+      <span style="color:#c084fc;">${sp.school || 'Magia'}</span>
+      ${sp.classes && sp.classes.length > 0 ? `<span>•</span> <span>${sp.classes.slice(0, 3).join(', ')}</span>` : ''}
+    `;
+  }
+
+  const tagsContainer = document.getElementById('spell-summary-tags-container');
+  if (tagsContainer) {
+    tagsContainer.innerHTML = `
+      <span class="skill-tag-pill ${isCantrip ? 'gold' : ''}">${circleText}</span>
+      <span class="skill-tag-pill" style="border-color:rgba(192,132,252,0.4); color:#c084fc;">${sp.school || 'Magia'}</span>
+      <span class="action-economy-tag ${spAct}">${spActLabel}</span>
+      ${isConc ? '<span class="badge badge-cr" style="font-size:10px;">🧠 Concentração</span>' : ''}
+      ${isRitual ? '<span class="badge badge-src" style="font-size:10px;">📜 Ritual</span>' : ''}
+    `;
+  }
+
+  const timeEl = document.getElementById('spell-summary-time');
+  if (timeEl) timeEl.innerText = sp.time || sp.castTime || '1 ação';
+
+  const rangeEl = document.getElementById('spell-summary-range');
+  if (rangeEl) rangeEl.innerText = sp.range || 'Pessoal';
+
+  const durEl = document.getElementById('spell-summary-duration');
+  if (durEl) durEl.innerText = sp.duration || 'Instantânea';
+
+  const compEl = document.getElementById('spell-summary-components');
+  if (compEl) compEl.innerText = sp.components || 'V, S';
+
+  const casterBox = document.getElementById('spell-summary-caster-box');
+  const statusTag = document.getElementById('spell-summary-status-tag');
+  const btnCast = document.getElementById('btn-spell-summary-cast');
+  const btnRoll = document.getElementById('btn-spell-summary-roll');
+
+  if (p) {
+    const castStats = typeof getPlayerSpellcastingStats === 'function' ? getPlayerSpellcastingStats(p) : { saveDc: 10, attackBonus: '+2', ability: 'INT', modStr: '+0', profBonus: 2 };
+    if (casterBox) casterBox.style.display = 'flex';
+
+    const casterNameEl = document.getElementById('spell-summary-caster-name');
+    if (casterNameEl) casterNameEl.innerText = `${p.name} (${p.className || 'Herói'})`;
+
+    const cdBadge = document.getElementById('spell-summary-cd-badge');
+    if (cdBadge) cdBadge.innerText = `CD ${castStats.saveDc} (${castStats.ability})`;
+
+    const atkBadge = document.getElementById('spell-summary-atk-badge');
+    if (atkBadge) atkBadge.innerText = `Ataque ${castStats.attackBonus}`;
+
+    const slotsBadge = document.getElementById('spell-summary-slots-badge');
+    if (slotsBadge) {
+      if (isCantrip) {
+        slotsBadge.innerText = 'Truque (Livre)';
+      } else {
+        const slotIdx = sp.level - 1;
+        const maxSlots = (p.slots || [])[slotIdx] || 0;
+        const usedSlots = (p.slotsUsed || [])[slotIdx] || 0;
+        const remSlots = Math.max(0, maxSlots - usedSlots);
+        slotsBadge.innerText = `${remSlots}/${maxSlots} Espaços Nv ${sp.level}`;
+      }
+    }
+
+    const isPrepared = (p.preparedSpells || []).some(s => s.toLowerCase() === sp.name.toLowerCase());
+    if (statusTag) {
+      statusTag.innerHTML = isPrepared
+        ? '<span style="color:#34d399; font-weight:700;">⭐ Magia Ativa / Preparada na Ficha</span>'
+        : '<span style="color:var(--text-dim);">⚠️ Magia Não Preparada</span>';
+    }
+
+    if (btnCast) {
+      btnCast.style.display = 'inline-flex';
+      btnCast.onclick = () => {
+        closeSpellQuickSummaryModal();
+        if (typeof castPlayerSpellPrompt === 'function') {
+          castPlayerSpellPrompt(p.id, sp.name);
+        }
+      };
+    }
+
+    const diceInfo = typeof getSpellDiceInfo === 'function' ? getSpellDiceInfo(sp, p) : null;
+    if (diceInfo && btnRoll) {
+      btnRoll.style.display = 'inline-flex';
+      btnRoll.innerText = `🎲 Rolar ${diceInfo.label}`;
+      btnRoll.onclick = () => {
+        if (typeof rollPlayerSpellDice === 'function') rollPlayerSpellDice(p.id, sp.name);
+      };
+    } else if (btnRoll) {
+      btnRoll.style.display = 'none';
+    }
+  } else {
+    if (casterBox) casterBox.style.display = 'none';
+    if (statusTag) statusTag.innerText = '';
+    if (btnCast) btnCast.style.display = 'none';
+    if (btnRoll) btnRoll.style.display = 'none';
+  }
+
+  const descEl = document.getElementById('spell-summary-desc');
+  if (descEl) {
+    const formattedDesc = typeof highlightInlineRules === 'function'
+      ? highlightInlineRules(sp.desc || '')
+      : (sp.desc || '').replace(/\n/g, '<br>');
+    descEl.innerHTML = formattedDesc;
+  }
+
+  modal.classList.add('open');
+}
+
+function closeSpellQuickSummaryModal() {
+  const modal = document.getElementById('modal-spell-summary');
+  if (modal) modal.classList.remove('open');
+}
+
+function isWizardPlayer(p) {
+  if (!p) return false;
+  const norm = (p.className || '').toLowerCase();
+  if (norm.includes('mago') || norm.includes('wizard')) return true;
+  if (Array.isArray(p.classes)) {
+    return p.classes.some(c => (c.className || c.name || '').toLowerCase().includes('mago'));
+  }
+  return false;
+}
+
+function ensurePlayerSpellbook(p) {
+  if (!p) return;
+  if (!Array.isArray(p.spellbookSpells)) {
+    p.spellbookSpells = Array.isArray(p.preparedSpells) ? [...p.preparedSpells] : [];
+  }
+  if (Array.isArray(p.preparedSpells)) {
+    p.preparedSpells.forEach(sName => {
+      if (!p.spellbookSpells.includes(sName)) {
+        p.spellbookSpells.push(sName);
+      }
+    });
+  }
+}
+
+function getSpellCopyCost(spellObj, player) {
+  if (!spellObj) return { gold: 0, hours: 0, isDiscounted: false, canAfford: true, curGold: 0 };
+  const lvl = spellObj.level || 0;
+  if (lvl === 0) return { gold: 0, hours: 0, isDiscounted: false, canAfford: true, curGold: 0 };
+
+  let isDiscounted = false;
+  if (player) {
+    const sub = (player.subclass || '').toLowerCase();
+    const school = (spellObj.school || '').toLowerCase();
+    if (sub && school && (sub.includes(school) || school.includes(sub))) {
+      isDiscounted = true;
+    }
+  }
+
+  const goldPerCircle = isDiscounted ? 25 : 50;
+  const hoursPerCircle = isDiscounted ? 1 : 2;
+  const gold = lvl * goldPerCircle;
+  const hours = lvl * hoursPerCircle;
+
+  const curGold = (player && player.coins && player.coins.gp !== undefined)
+    ? player.coins.gp
+    : ((player && player.gold) ? player.gold : 0);
+  const canAfford = curGold >= gold;
+
+  return { gold, hours, isDiscounted, canAfford, curGold };
+}
+
+function copySpellToSpellbook(playerId, spellName, isFree = false) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+  ensurePlayerSpellbook(p);
+
+  if (p.spellbookSpells.includes(spellName)) {
+    if (typeof showToast === 'function') showToast(`A magia "${spellName}" já consta no seu Grimório!`, 'warning');
+    return;
+  }
+
+  const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === spellName.toLowerCase()) : null;
+  const costInfo = getSpellCopyCost(sp, p);
+
+  if (!isFree && costInfo.gold > 0) {
+    if (!costInfo.canAfford) {
+      if (typeof showToast === 'function') showToast(`Ouro insuficiente! A transcrição de ${spellName} requer ${costInfo.gold} PO (saldo: ${costInfo.curGold} PO).`, 'error');
+      return;
+    }
+    if (p.coins && p.coins.gp !== undefined) {
+      p.coins.gp = Math.max(0, p.coins.gp - costInfo.gold);
+      p.gold = p.coins.gp;
+    } else {
+      p.gold = Math.max(0, (p.gold || 0) - costInfo.gold);
+    }
+  }
+
+  p.spellbookSpells.push(spellName);
+  if (typeof touchPlayer === 'function') touchPlayer(p);
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+
+  const costMsg = isFree || costInfo.gold === 0 ? 'gratuitamente' : `gastando ${costInfo.gold} PO e ${costInfo.hours} horas`;
+  if (typeof addLog === 'function') {
+    addLog(`📖 <b>${p.name}</b> transcreveu a magia <b>${spellName}</b> no seu Grimório (${costMsg}).`);
+  }
+  if (typeof showToast === 'function') {
+    showToast(`✨ "${spellName}" transcrita no Grimório! (${costMsg})`, 'success');
+  }
+  if (typeof playFX === 'function') playFX('spell');
+
+  renderSpellPickerList();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+}
+
+function castSpellAsRitual(playerId, spellName) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+  if (typeof addLog === 'function') {
+    addLog(`🧙‍♂️ <b>${p.name}</b> conjura <b>${spellName}</b> como <b>RITUAL</b> (+10 min de conjuração, sem consumir espaço de magia).`);
+  }
+  if (typeof showToast === 'function') {
+    showToast(`📜 Ritual "${spellName}" iniciado (+10 min)!`, 'success');
+  }
+  if (typeof playFX === 'function') playFX('spell');
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+}
+
+const playerSpellbookViews = {};
+function togglePlayerSpellbookView(playerId) {
+  playerSpellbookViews[playerId] = playerSpellbookViews[playerId] === 'spellbook' ? 'prepared' : 'spellbook';
+  renderPlayers();
+}
+
+let pickerMode = 'prep'; // 'prep' | 'book' | 'copy'
+function switchPickerMode(mode) {
+  pickerMode = mode || 'prep';
+  const btnPrep = document.getElementById('tab-btn-picker-prep');
+  const btnBook = document.getElementById('tab-btn-picker-book');
+  const btnCopy = document.getElementById('tab-btn-picker-copy');
+  if (btnPrep) btnPrep.classList.toggle('active', pickerMode === 'prep');
+  if (btnBook) btnBook.classList.toggle('active', pickerMode === 'book');
+  if (btnCopy) btnCopy.classList.toggle('active', pickerMode === 'copy');
+  renderSpellPickerList();
+}
 function getCompatibleClassKey(className, subclassIdx = null, subclassName = '') {
   const norm = (className || '').toLowerCase();
   if (norm.includes('bardo')) return 'Bardo';
@@ -4605,6 +4944,11 @@ function openSpellPickerModal(playerId) {
   if (!p) return;
 
   currentPickerPlayerId = playerId;
+  const isWiz = isWizardPlayer(p);
+  if (isWiz) {
+    ensurePlayerSpellbook(p);
+  }
+  pickerMode = 'prep';
 
   // Se preparedSpells já existe, usa; senão tenta extrair de p.spells
   let initialSpells = Array.isArray(p.preparedSpells) ? [...p.preparedSpells] : [];
@@ -4631,16 +4975,33 @@ function openSpellPickerModal(playerId) {
   const actionFilterSelect = document.getElementById('picker-action-filter');
   const searchInput = document.getElementById('picker-search-input');
   const btnOnlySelected = document.getElementById('btn-picker-only-selected');
+  const wizardTabs = document.getElementById('picker-wizard-tabs');
+  const copyBanner = document.getElementById('picker-copy-banner');
 
   if (classFilterSelect) classFilterSelect.value = 'auto';
   if (actionFilterSelect) actionFilterSelect.value = 'all';
   if (searchInput) searchInput.value = '';
   if (btnOnlySelected) btnOnlySelected.classList.remove('active');
 
+  if (wizardTabs) {
+    wizardTabs.style.display = isWiz ? 'flex' : 'none';
+  }
+  if (copyBanner) {
+    copyBanner.style.display = 'none';
+  }
+
+  const btnPrep = document.getElementById('tab-btn-picker-prep');
+  const btnBook = document.getElementById('tab-btn-picker-book');
+  const btnCopy = document.getElementById('tab-btn-picker-copy');
+  if (btnPrep) btnPrep.classList.add('active');
+  if (btnBook) btnBook.classList.remove('active');
+  if (btnCopy) btnCopy.classList.remove('active');
+
   if (modal) {
-    document.getElementById('picker-player-name').innerText = p.name;
-    document.getElementById('picker-player-class').innerText = `${p.className} (Nível ${p.level})`;
-    document.getElementById('picker-player-class').innerText = `${p.className} (Nível ${p.level})`;
+    const nameEl = document.getElementById('picker-player-name');
+    const classEl = document.getElementById('picker-player-class');
+    if (nameEl) nameEl.innerText = p.name;
+    if (classEl) classEl.innerText = `${p.className} (Nível ${p.level})`;
     renderSpellPickerList();
     modal.classList.add('open');
   }
@@ -4663,87 +5024,129 @@ function renderSpellPickerList() {
   const container = document.getElementById('picker-spells-list');
   const countBadge = document.getElementById('picker-selected-count');
   const countBtnBadge = document.getElementById('picker-btn-selected-count');
+  const bookCountBadge = document.getElementById('picker-book-count');
+  const playerGoldBadge = document.getElementById('picker-player-gold');
+  const copyBanner = document.getElementById('picker-copy-banner');
   if (!container) return;
 
   const p = PLAYERS.find(x => x.id === currentPickerPlayerId);
   const heroClassKey = p ? getCompatibleClassKey(p.className, p.subclassIdx, p.subclass) : null;
+  const isWiz = isWizardPlayer(p);
+  if (isWiz && p) ensurePlayerSpellbook(p);
 
   if (countBadge) countBadge.innerText = pickerSelectedSpells.size;
   if (countBtnBadge) countBtnBadge.innerText = pickerSelectedSpells.size;
+  if (bookCountBadge && p) bookCountBadge.innerText = (p.spellbookSpells || []).length;
+
+  const curGold = (p && p.coins && p.coins.gp !== undefined) ? p.coins.gp : ((p && p.gold) ? p.gold : 0);
+  if (playerGoldBadge) playerGoldBadge.innerText = `${curGold} PO`;
+
+  if (copyBanner) {
+    copyBanner.style.display = (isWiz && pickerMode === 'copy') ? 'block' : 'none';
+  }
 
   const prepBox = document.getElementById('picker-prep-meter-box');
   if (prepBox && p) {
-    const prepInfo = getMaxPreparedSpells(p);
-    const leveledCount = Array.from(pickerSelectedSpells).filter(sName => {
-      const s = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(x => x.name.toLowerCase() === sName.toLowerCase()) : null;
-      return !s || s.level > 0;
-    }).length;
-    const cantripsCount = Array.from(pickerSelectedSpells).filter(sName => {
-      const s = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(x => x.name.toLowerCase() === sName.toLowerCase()) : null;
-      return s && s.level === 0;
-    }).length;
-
-    if (prepInfo.isPreparedCaster) {
-      const isOverLeveled = leveledCount > prepInfo.maxLeveled;
-      const isOverCantrips = prepInfo.maxCantrips > 0 && cantripsCount > prepInfo.maxCantrips;
-      const isOver = isOverLeveled || isOverCantrips;
-
+    if (pickerMode === 'copy') {
       prepBox.innerHTML = `
-        <div class="prepared-spells-meter" style="${isOver ? 'background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); color:#fca5a5;' : ''}">
-          <span style="font-size: 14px;">🔮</span>
-          <div style="flex: 1;">
-            <div>
-              <b>Magias Preparadas Diariamente:</b> <span style="font-weight:800; color:#fff;">${leveledCount} / ${prepInfo.maxLeveled}</span> (${prepInfo.formula})
-            </div>
-            <div style="font-size: 10px; color:${isOverCantrips ? '#f87171' : 'var(--primary-light)'}; margin-top:2px;">
-              ✨ Truques Conhecidos: <b>${cantripsCount} ${prepInfo.maxCantrips > 0 ? `/ ${prepInfo.maxCantrips}` : ''}</b> ${isOverCantrips ? '(Limite de truques excedido)' : ''}
+        <div class="prepared-spells-meter" style="background:rgba(245,158,11,0.1); border-color:rgba(245,158,11,0.3);">
+          <span style="font-size:16px;">🖋️</span>
+          <div style="flex:1;">
+            <b>Oficina de Transcrição Arcana:</b> Escolha novas magias para adicionar ao seu Grimório permanente.
+            <div style="font-size:10px; color:#fbbf24; margin-top:2px;">
+              Magias aprendidas pelo mago ficam disponíveis para serem preparadas a cada descanso longo ou conjuradas como ritual.
             </div>
           </div>
-          <span class="badge ${isOver ? 'badge-warn' : 'badge-cls'}" style="font-size: 10px;">${isOver ? '⚠️ Acima do Limite' : '✅ Válido'}</span>
-        </div>
-      `;
-    } else if (prepInfo.isKnownCaster) {
-      const isOverLeveled = leveledCount > prepInfo.maxLeveled;
-      const isOverCantrips = prepInfo.maxCantrips > 0 && cantripsCount > prepInfo.maxCantrips;
-      const isOver = isOverLeveled || isOverCantrips;
-
-      prepBox.innerHTML = `
-        <div class="prepared-spells-meter" style="${isOver ? 'background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); color:#fca5a5;' : 'background:rgba(168,85,247,0.1); border-color:rgba(168,85,247,0.3);'}">
-          <span style="font-size: 14px;">📖</span>
-          <div style="flex: 1;">
-            <div>
-              <b>Magias Conhecidas (${prepInfo.className}):</b> <span style="font-weight:800; color:#fff;">${leveledCount} / ${prepInfo.maxLeveled}</span> (${prepInfo.formula})
-            </div>
-            <div style="font-size: 10px; color:${isOverCantrips ? '#f87171' : 'var(--primary-light)'}; margin-top:2px;">
-              ✨ Truques Conhecidos: <b>${cantripsCount} ${prepInfo.maxCantrips > 0 ? `/ ${prepInfo.maxCantrips}` : ''}</b> ${isOverCantrips ? '(Limite de truques excedido)' : ''}
-            </div>
-          </div>
-          <span class="badge ${isOver ? 'badge-warn' : 'badge-sub'}" style="font-size: 10px;">${isOver ? '⚠️ Acima do Limite' : '✅ Válido'}</span>
+          <span class="badge" style="background:rgba(245,158,11,0.2); color:#fbbf24; border:1px solid rgba(245,158,11,0.4);">Grimório: ${(p.spellbookSpells || []).length}</span>
         </div>
       `;
     } else {
-      prepBox.innerHTML = `
-        <div class="prepared-spells-meter">
-          <span style="font-size: 14px;">📜</span>
-          <div style="flex: 1;">
-            <b>Conjurador Especial / Customizado:</b> ${pickerSelectedSpells.size} magias selecionadas pelo Mestre.
+      const prepInfo = getMaxPreparedSpells(p);
+      const leveledCount = Array.from(pickerSelectedSpells).filter(sName => {
+        const s = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(x => x.name.toLowerCase() === sName.toLowerCase()) : null;
+        return !s || s.level > 0;
+      }).length;
+      const cantripsCount = Array.from(pickerSelectedSpells).filter(sName => {
+        const s = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(x => x.name.toLowerCase() === sName.toLowerCase()) : null;
+        return s && s.level === 0;
+      }).length;
+
+      if (prepInfo.isPreparedCaster) {
+        const isOverLeveled = leveledCount > prepInfo.maxLeveled;
+        const isOverCantrips = prepInfo.maxCantrips > 0 && cantripsCount > prepInfo.maxCantrips;
+        const isOver = isOverLeveled || isOverCantrips;
+
+        prepBox.innerHTML = `
+          <div class="prepared-spells-meter" style="${isOver ? 'background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); color:#fca5a5;' : ''}">
+            <span style="font-size: 14px;">🔮</span>
+            <div style="flex: 1;">
+              <div>
+                <b>Magias Preparadas Diariamente:</b> <span style="font-weight:800; color:#fff;">${leveledCount} / ${prepInfo.maxLeveled}</span> (${prepInfo.formula})
+              </div>
+              <div style="font-size: 10px; color:${isOverCantrips ? '#f87171' : 'var(--primary-light)'}; margin-top:2px;">
+                ✨ Truques Conhecidos: <b>${cantripsCount} ${prepInfo.maxCantrips > 0 ? `/ ${prepInfo.maxCantrips}` : ''}</b> ${isOverCantrips ? '(Limite de truques excedido)' : ''}
+              </div>
+            </div>
+            <span class="badge ${isOver ? 'badge-warn' : 'badge-cls'}" style="font-size: 10px;">${isOver ? '⚠️ Acima do Limite' : '✅ Válido'}</span>
           </div>
-        </div>
-      `;
+        `;
+      } else if (prepInfo.isKnownCaster) {
+        const isOverLeveled = leveledCount > prepInfo.maxLeveled;
+        const isOverCantrips = prepInfo.maxCantrips > 0 && cantripsCount > prepInfo.maxCantrips;
+        const isOver = isOverLeveled || isOverCantrips;
+
+        prepBox.innerHTML = `
+          <div class="prepared-spells-meter" style="${isOver ? 'background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); color:#fca5a5;' : 'background:rgba(168,85,247,0.1); border-color:rgba(168,85,247,0.3);'}">
+            <span style="font-size: 14px;">📖</span>
+            <div style="flex: 1;">
+              <div>
+                <b>Magias Conhecidas (${prepInfo.className}):</b> <span style="font-weight:800; color:#fff;">${leveledCount} / ${prepInfo.maxLeveled}</span> (${prepInfo.formula})
+              </div>
+              <div style="font-size: 10px; color:${isOverCantrips ? '#f87171' : 'var(--primary-light)'}; margin-top:2px;">
+                ✨ Truques Conhecidos: <b>${cantripsCount} ${prepInfo.maxCantrips > 0 ? `/ ${prepInfo.maxCantrips}` : ''}</b> ${isOverCantrips ? '(Limite de truques excedido)' : ''}
+              </div>
+            </div>
+            <span class="badge ${isOver ? 'badge-warn' : 'badge-sub'}" style="font-size: 10px;">${isOver ? '⚠️ Acima do Limite' : '✅ Válido'}</span>
+          </div>
+        `;
+      } else {
+        prepBox.innerHTML = `
+          <div class="prepared-spells-meter">
+            <span style="font-size: 14px;">📜</span>
+            <div style="flex: 1;">
+              <b>Conjurador Especial / Customizado:</b> ${pickerSelectedSpells.size} magias selecionadas pelo Mestre.
+            </div>
+          </div>
+        `;
+      }
     }
   }
 
   let spells = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA : [];
 
+  if (isWiz && (pickerMode === 'book' || (pickerMode === 'prep' && (p.spellbookSpells || []).length > 0 && !pickerShowOnlySelected))) {
+    // No modo 'book', mostra apenas magias que estão no grimório
+    if (pickerMode === 'book') {
+      spells = spells.filter(s => (p.spellbookSpells || []).includes(s.name));
+    }
+  }
+
   // Filtragem por apenas selecionadas
   if (pickerShowOnlySelected) {
     spells = spells.filter(s => pickerSelectedSpells.has(s.name));
-  } else {
-    // Filtragem por classe
+  } else if (pickerMode !== 'copy') {
+    // Filtragem por classe no modo normal
     if (pickerClassFilter === 'auto') {
       if (heroClassKey) {
         spells = spells.filter(s => Array.isArray(s.classes) && s.classes.includes(heroClassKey));
       }
+    } else if (pickerClassFilter !== 'all') {
+      spells = spells.filter(s => Array.isArray(s.classes) && s.classes.includes(pickerClassFilter));
+    }
+  } else {
+    // Modo COPY: se classe for auto, filtra por Mago ou classe do herói
+    if (pickerClassFilter === 'auto') {
+      spells = spells.filter(s => Array.isArray(s.classes) && s.classes.includes('Mago'));
     } else if (pickerClassFilter !== 'all') {
       spells = spells.filter(s => Array.isArray(s.classes) && s.classes.includes(pickerClassFilter));
     }
@@ -4761,10 +5164,76 @@ function renderSpellPickerList() {
   });
 
   if (filtered.length === 0) {
-    container.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-muted); font-size:12px;">Nenhuma magia encontrada com os filtros selecionados.<br><span style="font-size:11px; color:var(--primary-light);">Dica: selecione "🌐 Todas as Magias" para ver o catálogo completo de 361 magias.</span></div>`;
+    if (pickerMode === 'book') {
+      container.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-muted); font-size:12px;">Seu Grimório ainda não possui magias com este filtro.<br><button class="btn-action" style="margin-top:10px;" onclick="switchPickerMode('copy')">🖋️ Transcrever Novas Magias no Grimório</button></div>`;
+    } else {
+      container.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-muted); font-size:12px;">Nenhuma magia encontrada com os filtros selecionados.<br><span style="font-size:11px; color:var(--primary-light);">Dica: selecione "🌐 Todas as Magias" para ver o catálogo completo.</span></div>`;
+    }
     return;
   }
 
+  if (pickerMode === 'copy') {
+    container.innerHTML = filtered.map(s => {
+      const isAlreadyInBook = (p.spellbookSpells || []).includes(s.name);
+      const circleLabel = s.level === 0 ? 'Truque' : `${s.level}º Círculo`;
+      const isExpanded = pickerExpandedSpell === s.name;
+      const costInfo = getSpellCopyCost(s, p);
+
+      return `
+        <div class="spellbook-copy-item ${isAlreadyInBook ? 'in-book' : ''}">
+          <div style="flex:1;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+              <span style="font-weight:700; color:#fff; font-size:13px;">${s.name}</span>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span class="badge ${s.level === 0 ? 'badge-cls' : 'badge-lvl'}" style="font-size:10px;">${circleLabel}</span>
+                <button type="button" class="btn-secondary" style="padding:1px 6px; font-size:10px;" onclick="toggleSpellDetailInPicker('${escapeAttr(s.name)}', event)">
+                  ${isExpanded ? '▲ Fechar' : 'ℹ️ Detalhes'}
+                </button>
+              </div>
+            </div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
+              ${s.school || 'Magia'} • Alcance: <b>${s.range || 'Pessoal'}</b> • Tempo: <b>${s.time || s.castTime || '1 ação'}</b>
+            </div>
+            ${isExpanded ? `
+              <div style="margin-top:8px; padding:8px 10px; background:rgba(0,0,0,0.4); border-left:3px solid var(--accent-gold); border-radius:4px; font-size:12px; line-height:1.5; color:#e2e8f0;">
+                <div style="margin-bottom:4px; color:var(--accent-gold); font-size:10px; font-weight:700; text-transform:uppercase;">
+                  Duração: ${s.duration || 'Instantânea'} | Componentes: ${s.components || 'V, S'}
+                </div>
+                ${typeof highlightInlineRules === 'function' ? highlightInlineRules(s.desc || '') : (s.desc || '').replace(/\n/g, '<br>')}
+              </div>
+            ` : ''}
+          </div>
+          <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+            ${isAlreadyInBook ? `
+              <span class="badge" style="background:rgba(52,211,153,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.3); font-size:11px; padding:4px 8px;">
+                ✓ No Grimório
+              </span>
+            ` : `
+              <div style="display:flex; flex-direction:column; align-items:flex-end; gap:3px;">
+                <div style="display:flex; gap:4px;">
+                  <span class="spellbook-cost-pill ${costInfo.canAfford ? 'afford' : 'expensive'}" title="${costInfo.isDiscounted ? 'Desconto de Tradição Arcana (50% de ouro e tempo)!' : ''}">
+                    💰 ${costInfo.gold} PO ${costInfo.isDiscounted ? '★ Tradição' : ''}
+                  </span>
+                  <span class="spellbook-cost-pill time">⏱️ ${costInfo.hours}h</span>
+                </div>
+                <div style="display:flex; gap:4px; margin-top:2px;">
+                  <button type="button" class="btn-action" style="padding:2px 8px; font-size:11px;" ${!costInfo.canAfford ? 'disabled style="opacity:0.5;"' : ''} onclick="copySpellToSpellbook('${p.id}', '${escapeAttr(s.name)}', false)" title="Transcrever gastando ${costInfo.gold} PO e ${costInfo.hours} horas">
+                    🖋️ Transcrever
+                  </button>
+                  <button type="button" class="btn-secondary" style="padding:2px 6px; font-size:10px;" onclick="copySpellToSpellbook('${p.id}', '${escapeAttr(s.name)}', true)" title="Transcrever gratuitamente (ex: magia aprendida por subir de nível)">
+                    ✨ Grátis
+                  </button>
+                </div>
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }).join('');
+    return;
+  }
+
+  // Modo padrão (prep ou book)
   container.innerHTML = filtered.map(s => {
     const isSelected = pickerSelectedSpells.has(s.name);
     const circleLabel = s.level === 0 ? 'Truque' : `${s.level}º Círculo`;
@@ -4787,7 +5256,7 @@ function renderSpellPickerList() {
               <span style="font-weight:700; color:${isSelected ? 'var(--primary-light)' : '#fff'}; font-size:13px;">${s.name}${spActBadge}</span>
               <div style="display:flex; align-items:center; gap:6px;">
                 <span class="badge ${s.level === 0 ? 'badge-cls' : 'badge-lvl'}" style="font-size:10px;">${circleLabel}</span>
-                <button class="btn-secondary" style="padding:1px 6px; font-size:10px;" onclick="toggleSpellDetailInPicker('${escapeAttr(s.name)}', event)" title="Ver descrição da magia">
+                <button type="button" class="btn-secondary" style="padding:1px 6px; font-size:10px;" onclick="toggleSpellDetailInPicker('${escapeAttr(s.name)}', event)" title="Ver descrição da magia">
                   ${isExpanded ? '▲ Fechar' : 'ℹ️ Detalhes'}
                 </button>
               </div>
@@ -4852,6 +5321,9 @@ function saveSpellPickerSelection() {
   if (!p) return;
 
   p.preparedSpells = Array.from(pickerSelectedSpells);
+  if (isWizardPlayer(p)) {
+    ensurePlayerSpellbook(p);
+  }
 
   const cantrips = [];
   const leveled = [];
@@ -5046,7 +5518,10 @@ function onPlayerModalClassOrLevelChange(preserveSlotsIfSet = false) {
       subclassSel.disabled = false;
     } else {
       delete subclassSel.dataset.pendingSubIdx;
-      subclassSel.innerHTML = `<option value="0">Padrão / Sem Subclasse</option>`;
+      const pId = document.getElementById('pm-id')?.value;
+      const existing = pId ? PLAYERS.find(x => String(x.id) === String(pId)) : null;
+      const existingSubName = existing && existing.subclass ? existing.subclass : 'Padrão / Sem Subclasse';
+      subclassSel.innerHTML = `<option value="0">${existingSubName}</option>`;
       subclassSel.disabled = true;
     }
   }
@@ -5362,15 +5837,23 @@ function savePlayerSheet() {
   const badges = rawBadges.split(',').map(b => b.trim()).filter(b => b);
 
   const subclassSel = document.getElementById('pm-subclass-select');
-  const subclassIdx = subclassSel ? parseInt(subclassSel.value) || 0 : (existing ? existing.subclassIdx || 0 : 0);
-
   const classSel = document.getElementById('pm-class-select');
   const classNameVal = classSel && classSel.value !== 'custom' ? classSel.value : (document.getElementById('pm-class').value || 'Guerreiro');
-
   const clsObj = typeof findClassData === 'function' ? findClassData(classNameVal) : null;
-  const subclassName = (clsObj && clsObj.subclasses && clsObj.subclasses[subclassIdx])
-    ? clsObj.subclasses[subclassIdx].name
-    : (existing ? existing.subclass || '' : '');
+
+  let subclassIdx = 0;
+  let subclassName = '';
+  if (subclassSel && !subclassSel.disabled && subclassSel.value !== undefined && subclassSel.value !== '') {
+    subclassIdx = parseInt(subclassSel.value) || 0;
+    if (clsObj && clsObj.subclasses && clsObj.subclasses[subclassIdx]) {
+      subclassName = clsObj.subclasses[subclassIdx].name;
+    } else {
+      subclassName = existing ? (existing.subclass || '') : '';
+    }
+  } else if (existing) {
+    subclassIdx = existing.subclassIdx !== undefined ? existing.subclassIdx : 0;
+    subclassName = existing.subclass || '';
+  }
 
   const charLevel = parseInt(document.getElementById('pm-level').value) || 1;
   if (isMagicalSubclass(classNameVal, subclassIdx, subclassName) && slots.every(s => s === 0)) {
@@ -7291,6 +7774,10 @@ function openLevelUpWizard(playerId) {
   const conMod = Math.floor((getPlayerAttr(p, 'con') - 10) / 2);
   const avgGain = Math.max(1, Math.floor(dieSides / 2) + 1 + conMod);
 
+  const existingSubName = primaryClass.subclass || (classesList.length === 1 ? p.subclass : '');
+  const existingSubIdx = primaryClass.subclassIdx !== undefined ? primaryClass.subclassIdx : (classesList.length === 1 ? p.subclassIdx : 0);
+  const resolvedSubIdx = resolveSubclassIndex(primaryClass.className, existingSubIdx, existingSubName);
+
   levelUpWizardState = {
     playerId,
     targetPlayerId: playerId,
@@ -7299,7 +7786,15 @@ function openLevelUpWizard(playerId) {
     selectedClass: primaryClass.className,
     isNewClass: false,
     targetClassLevel: primaryClass.level + 1,
-    selectedSubclassIdx: primaryClass.subclassIdx || 0,
+    selectedSubclassIdx: resolvedSubIdx,
+    subclassRespec: false,
+    asi: {
+      mode: 'single',
+      singleAttr: 'str',
+      dualAttr1: 'str',
+      dualAttr2: 'dex',
+      feat: 'Robustez (Tough)'
+    },
     hpMethod: 'fixed',
     calculatedHpGain: avgGain,
     rolledHp: null
@@ -7427,24 +7922,67 @@ function renderLevelUpWizardStep() {
       newFeatures = clsData.features.filter(f => f.level === targetLvl);
     }
 
-    // Se for no nível de subclasse ou superior (Nv 1 para Clérigo/Bruxo/Feiticeiro, Nv 2 para Druida/Mago, Nv 3 para outros)
+    // Gerenciamento Inteligente de Subclasse D&D 5E
     const reqSubLvl = getSubclassUnlockLevel(clsName);
     let subclassSelectHtml = '';
-    if (targetLvl >= reqSubLvl && clsData && clsData.subclasses && clsData.subclasses.length > 0) {
-      subclassSelectHtml = `
-        <div style="margin: 12px 20px; padding: 12px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.3); border-radius: 10px;">
-          <div style="font-size: 12px; font-weight: 800; color: var(--accent-gold); margin-bottom: 6px;">
-            🌟 Especialização / Subclasse (Nível ${targetLvl}):
+    const currentClasses = getPlayerClassesList(p);
+    const existingClassItem = currentClasses.find(c => c.className.toLowerCase() === clsName.toLowerCase());
+    const existingSubName = existingClassItem ? (existingClassItem.subclass || (currentClasses.length === 1 ? p.subclass : '')) : '';
+    const hasChosenSubclass = Boolean(existingSubName && existingSubName.trim() && existingSubName.toLowerCase() !== 'padrao' && existingSubName.toLowerCase() !== 'default');
+
+    if (clsData && clsData.subclasses && clsData.subclasses.length > 0) {
+      if (targetLvl < reqSubLvl) {
+        subclassSelectHtml = `
+          <div style="margin: 12px 20px; padding: 10px 14px; background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1); border-radius: 8px; font-size: 11.5px; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
+            <span>🔒</span>
+            <span>A <b>Especialização / Subclasse</b> de ${clsName} é desbloqueada no <b>Nível ${reqSubLvl}</b>.</span>
           </div>
-          <select class="filter-select" style="width: 100%; font-weight: 700;" onchange="selectLevelUpSubclass(parseInt(this.value))">
-            ${clsData.subclasses.map((sub, idx) => `
-              <option value="${idx}" ${idx === levelUpWizardState.selectedSubclassIdx ? 'selected' : ''}>
-                ${sub.name}
-              </option>
-            `).join('')}
-          </select>
-        </div>
-      `;
+        `;
+      } else if (targetLvl === reqSubLvl || !hasChosenSubclass || levelUpWizardState.subclassRespec) {
+        subclassSelectHtml = `
+          <div class="subclass-locked-card" style="margin: 12px 20px; padding: 14px; background: rgba(245,158,11,0.08); border: 1.5px solid var(--accent-gold); border-radius: 10px; box-shadow: 0 4px 15px rgba(245,158,11,0.12);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="font-size: 12.5px; font-weight: 800; color: var(--accent-gold); display: flex; align-items: center; gap: 6px;">
+                <span>🌟</span>
+                <span>Escolha sua Especialização / Subclasse (${targetLvl === reqSubLvl ? `Desbloqueada no Nível ${reqSubLvl}` : `Nível ${targetLvl}`}):</span>
+              </div>
+              ${levelUpWizardState.subclassRespec ? `
+                <button type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 10px;" onclick="cancelLevelUpSubclassRespec()">
+                  ✖ Cancelar Alteração
+                </button>
+              ` : ''}
+            </div>
+            <select class="filter-select" style="width: 100%; font-weight: 700; font-size: 13px;" onchange="selectLevelUpSubclass(parseInt(this.value))">
+              ${clsData.subclasses.map((sub, idx) => `
+                <option value="${idx}" ${idx === levelUpWizardState.selectedSubclassIdx ? 'selected' : ''}>
+                  ${sub.name}
+                </option>
+              `).join('')}
+            </select>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
+              A subclasse concede arquétipos e habilidades exclusivas para o seu herói a partir deste nível.
+            </div>
+          </div>
+        `;
+      } else {
+        const curSub = clsData.subclasses[levelUpWizardState.selectedSubclassIdx] || clsData.subclasses[0];
+        const displaySubName = curSub ? curSub.name : (existingSubName || 'Ativa');
+        subclassSelectHtml = `
+          <div class="subclass-locked-card" style="margin: 12px 20px; padding: 12px 14px; background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(245,158,11,0.3); border-radius: 10px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+            <div>
+              <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent-gold); font-weight: 800; display: flex; align-items: center; gap: 5px;">
+                <span>🌟</span> Subclasse Ativa (Escolhida no Nv ${reqSubLvl})
+              </div>
+              <div style="font-size: 14px; font-weight: 800; color: #fff; margin-top: 2px;">
+                ${displaySubName}
+              </div>
+            </div>
+            <button type="button" class="btn-secondary" style="padding: 4px 10px; font-size: 11px; border-color: rgba(245,158,11,0.4); color: var(--accent-gold);" onclick="triggerLevelUpSubclassRespec()">
+              🔄 Alterar Subclasse
+            </button>
+          </div>
+        `;
+      }
 
       // Inclui traços da subclasse para este nível
       const curSub = clsData.subclasses[levelUpWizardState.selectedSubclassIdx] || clsData.subclasses[0];
@@ -7454,6 +7992,193 @@ function renderLevelUpWizardStep() {
           newFeatures.push({ ...sf, isSubclass: true, source: curSub.name });
         });
       }
+    }
+
+    // ================= ASI (Aumento no Valor de Atributo) =================
+    const isAsiLevel = isClassAsiLevel(clsName, targetLvl);
+    let asiHtml = '';
+    if (isAsiLevel) {
+      if (!levelUpWizardState.asi) {
+        levelUpWizardState.asi = {
+          mode: 'single',
+          singleAttr: 'str',
+          dualAttr1: 'str',
+          dualAttr2: 'dex',
+          feat: 'Robustez (Tough)'
+        };
+      }
+      const asi = levelUpWizardState.asi;
+      const attrNames = [
+        { key: 'str', label: 'Força', icon: '💪' },
+        { key: 'dex', label: 'Destreza', icon: '🎯' },
+        { key: 'con', label: 'Constituição', icon: '🛡️' },
+        { key: 'int', label: 'Inteligência', icon: '🧠' },
+        { key: 'wis', label: 'Sabedoria', icon: '🦉' },
+        { key: 'cha', label: 'Carisma', icon: '👑' }
+      ];
+
+      const getPreviewAttr = (key, delta) => {
+        const curr = getPlayerAttr(p, key);
+        const next = Math.min(20, curr + delta);
+        const currMod = Math.floor((curr - 10) / 2);
+        const nextMod = Math.floor((next - 10) / 2);
+        const currModStr = (currMod >= 0 ? '+' : '') + currMod;
+        const nextModStr = (nextMod >= 0 ? '+' : '') + nextMod;
+        return { curr, next, currModStr, nextModStr, diffMod: nextMod !== currMod };
+      };
+
+      let asiModeControls = '';
+      if (asi.mode === 'single') {
+        const prev = getPreviewAttr(asi.singleAttr, 2);
+        asiModeControls = `
+          <div style="margin-top: 10px;">
+            <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 6px;">
+              Selecione o atributo para receber <b>+2 pontos</b> (máximo 20):
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px;">
+              ${attrNames.map(a => {
+                const isSelected = asi.singleAttr === a.key;
+                const pInfo = getPreviewAttr(a.key, 2);
+                return `
+                  <button type="button" class="btn-secondary asi-attr-btn ${isSelected ? 'active' : ''}" 
+                          onclick="setLevelUpAsiSingle('${a.key}')" 
+                          style="display: flex; flex-direction: column; align-items: center; padding: 8px 6px; gap: 3px; border-radius: 8px; border: 1.5px solid ${isSelected ? 'var(--accent-gold)' : 'rgba(255,255,255,0.1)'}; background: ${isSelected ? 'rgba(245,158,11,0.15)' : 'rgba(0,0,0,0.2)'};">
+                    <span style="font-size: 16px;">${a.icon}</span>
+                    <span style="font-size: 12px; font-weight: 700; color: ${isSelected ? 'var(--accent-gold)' : '#fff'};">${a.label}</span>
+                    <span style="font-size: 10.5px; color: ${isSelected ? '#34d399' : 'var(--text-muted)'}; font-weight: 600;">
+                      ${pInfo.curr} ➔ <b>${pInfo.next}</b>
+                    </span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+            <div style="margin-top: 10px; padding: 8px 12px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 12px; color: #e2e8f0;">
+                Prévia: <b>${attrNames.find(x => x.key === asi.singleAttr)?.label}</b> aumentará de <b>${prev.curr} (${prev.currModStr})</b> para <b style="color: #34d399;">${prev.next} (${prev.nextModStr})</b>
+              </span>
+              ${prev.diffMod ? `<span class="badge" style="background: rgba(16,185,129,0.2); color: #34d399; font-size: 10px;">Modificador +1!</span>` : ''}
+            </div>
+          </div>
+        `;
+      } else if (asi.mode === 'dual') {
+        const prev1 = getPreviewAttr(asi.dualAttr1, 1);
+        const prev2 = getPreviewAttr(asi.dualAttr2, 1);
+        asiModeControls = `
+          <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="font-size: 11.5px; color: var(--text-muted);">
+              Selecione <b>dois atributos distintos</b> para receber <b>+1 ponto cada</b>:
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div>
+                <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); display: block; margin-bottom: 4px;">
+                  1º Atributo (+1):
+                </label>
+                <select class="filter-select" style="width: 100%;" onchange="setLevelUpAsiDual(1, this.value)">
+                  ${attrNames.map(a => `
+                    <option value="${a.key}" ${asi.dualAttr1 === a.key ? 'selected' : ''}>
+                      ${a.icon} ${a.label} (${getPlayerAttr(p, a.key)})
+                    </option>
+                  `).join('')}
+                </select>
+                <div style="font-size: 11px; color: #34d399; margin-top: 4px;">
+                  ➔ ${prev1.curr} (${prev1.currModStr}) ➔ <b>${prev1.next} (${prev1.nextModStr})</b>
+                </div>
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); display: block; margin-bottom: 4px;">
+                  2º Atributo (+1):
+                </label>
+                <select class="filter-select" style="width: 100%;" onchange="setLevelUpAsiDual(2, this.value)">
+                  ${attrNames.map(a => `
+                    <option value="${a.key}" ${asi.dualAttr2 === a.key ? 'selected' : ''}>
+                      ${a.icon} ${a.label} (${getPlayerAttr(p, a.key)})
+                    </option>
+                  `).join('')}
+                </select>
+                <div style="font-size: 11px; color: #34d399; margin-top: 4px;">
+                  ➔ ${prev2.curr} (${prev2.currModStr}) ➔ <b>${prev2.next} (${prev2.nextModStr})</b>
+                </div>
+              </div>
+            </div>
+            ${asi.dualAttr1 === asi.dualAttr2 ? `
+              <div style="padding: 6px 10px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; font-size: 11px; color: #fca5a5;">
+                ⚠️ Pela regra de D&D 5E, os dois atributos devem ser diferentes. Caso queira +2 no mesmo atributo, use a opção <b>+2 em um Atributo</b> acima.
+              </div>
+            ` : ''}
+          </div>
+        `;
+      } else {
+        const featOptions = [
+          'Robustez (Tough)',
+          'Sentinela (Sentinel)',
+          'Atirador Aguçado (Sharpshooter)',
+          'Mestre de Armas Grandes (Great Weapon Master)',
+          'Mestre em Armas de Haste (Polearm Master)',
+          'Conjurador de Guerra (War Caster)',
+          'Mestre do Escudo (Shield Master)',
+          'Sortudo (Lucky)',
+          'Resiliente (Resilient)',
+          'Alerta (Alert)',
+          'Observador (Observant)',
+          'Iniciado em Magia (Magic Initiate)'
+        ];
+        asiModeControls = `
+          <div style="margin-top: 10px;">
+            <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 6px;">
+              Escolha ou digite o <b>Talento (Feat)</b> recebido em vez do aumento de atributo:
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <select class="filter-select" style="flex: 1; min-width: 200px;" onchange="setLevelUpAsiFeat(this.value)">
+                ${featOptions.map(f => `
+                  <option value="${f}" ${asi.feat === f ? 'selected' : ''}>${f}</option>
+                `).join('')}
+              </select>
+              <input type="text" class="filter-input" style="flex: 1; min-width: 160px; font-size: 12px;" 
+                     placeholder="Ou digite outro talento..." 
+                     value="${asi.feat || ''}" 
+                     oninput="setLevelUpAsiFeat(this.value)">
+            </div>
+            <div style="font-size: 11px; color: var(--text-dim); margin-top: 6px;">
+              O talento será registrado no diário de evolução e traços da ficha.
+            </div>
+          </div>
+        `;
+      }
+
+      asiHtml = `
+        <div class="levelup-asi-card" style="margin: 14px 20px; padding: 14px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.6) 100%); border: 1.5px solid #10b981; border-radius: 12px; box-shadow: 0 4px 20px rgba(16,185,129,0.15);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="font-size: 13px; font-weight: 800; color: #34d399; display: flex; align-items: center; gap: 6px;">
+              <span>📈</span>
+              <span>Aumento no Valor de Atributo (ASI) - Nível ${targetLvl}</span>
+            </div>
+            <span class="badge" style="background: rgba(16,185,129,0.2); color: #34d399; font-size: 10px; font-weight: 700;">
+              D&D 5E Oficial
+            </span>
+          </div>
+          <p style="font-size: 11px; color: var(--text-muted); margin: 0 0 10px 0;">
+            Você alcançou um marco de classe que aprimora suas capacidades físicas ou mentais:
+          </p>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="btn-secondary ${asi.mode === 'single' ? 'active' : ''}" 
+                    style="font-size: 11px; padding: 5px 12px; ${asi.mode === 'single' ? 'border-color: #10b981; background: rgba(16,185,129,0.2); color: #fff;' : ''}" 
+                    onclick="setLevelUpAsiMode('single')">
+              💪 +2 em um Atributo
+            </button>
+            <button type="button" class="btn-secondary ${asi.mode === 'dual' ? 'active' : ''}" 
+                    style="font-size: 11px; padding: 5px 12px; ${asi.mode === 'dual' ? 'border-color: #10b981; background: rgba(16,185,129,0.2); color: #fff;' : ''}" 
+                    onclick="setLevelUpAsiMode('dual')">
+              ⚖️ +1 em dois Atributos
+            </button>
+            <button type="button" class="btn-secondary ${asi.mode === 'feat' ? 'active' : ''}" 
+                    style="font-size: 11px; padding: 5px 12px; ${asi.mode === 'feat' ? 'border-color: #10b981; background: rgba(16,185,129,0.2); color: #fff;' : ''}" 
+                    onclick="setLevelUpAsiMode('feat')">
+              📜 Escolher Talento (Feat)
+            </button>
+          </div>
+          ${asiModeControls}
+        </div>
+      `;
     }
 
     let featuresListHtml = '';
@@ -7499,6 +8224,7 @@ function renderLevelUpWizardStep() {
       </div>
 
       ${subclassSelectHtml}
+      ${asiHtml}
       ${featuresListHtml}
     `;
   }
@@ -7618,7 +8344,11 @@ function selectLevelUpClass(classKey, isNewClass) {
   levelUpWizardState.selectedClass = classKey;
   levelUpWizardState.isNewClass = !!isNewClass;
   levelUpWizardState.targetClassLevel = found ? found.level + 1 : 1;
-  levelUpWizardState.selectedSubclassIdx = found ? found.subclassIdx || 0 : 0;
+
+  const existingSubName = found ? (found.subclass || (currentClasses.length === 1 ? p.subclass : '')) : '';
+  const existingSubIdx = found ? (found.subclassIdx !== undefined ? found.subclassIdx : (currentClasses.length === 1 ? p.subclassIdx : 0)) : 0;
+  levelUpWizardState.selectedSubclassIdx = resolveSubclassIndex(classKey, existingSubIdx, existingSubName);
+  levelUpWizardState.subclassRespec = false;
 
   const hitDieStr = getHitDieForClass(classKey);
   const dieSides = getHitDieSides(hitDieStr);
@@ -7632,6 +8362,40 @@ function selectLevelUpClass(classKey, isNewClass) {
 function selectLevelUpSubclass(subIdx) {
   levelUpWizardState.selectedSubclassIdx = subIdx;
   renderLevelUpWizardStep();
+}
+
+function triggerLevelUpSubclassRespec() {
+  levelUpWizardState.subclassRespec = true;
+  renderLevelUpWizardStep();
+}
+
+function cancelLevelUpSubclassRespec() {
+  levelUpWizardState.subclassRespec = false;
+  renderLevelUpWizardStep();
+}
+
+function setLevelUpAsiMode(mode) {
+  if (!levelUpWizardState.asi) levelUpWizardState.asi = {};
+  levelUpWizardState.asi.mode = mode;
+  renderLevelUpWizardStep();
+}
+
+function setLevelUpAsiSingle(attrKey) {
+  if (!levelUpWizardState.asi) levelUpWizardState.asi = {};
+  levelUpWizardState.asi.singleAttr = attrKey;
+  renderLevelUpWizardStep();
+}
+
+function setLevelUpAsiDual(slotIdx, attrKey) {
+  if (!levelUpWizardState.asi) levelUpWizardState.asi = {};
+  if (slotIdx === 1) levelUpWizardState.asi.dualAttr1 = attrKey;
+  if (slotIdx === 2) levelUpWizardState.asi.dualAttr2 = attrKey;
+  renderLevelUpWizardStep();
+}
+
+function setLevelUpAsiFeat(featName) {
+  if (!levelUpWizardState.asi) levelUpWizardState.asi = {};
+  levelUpWizardState.asi.feat = featName;
 }
 
 function setLevelUpPhysicalRolledHp(val, dieSides) {
@@ -7681,6 +8445,17 @@ function rollLevelUpHpDice(dieSides) {
 }
 
 function handleLevelUpNext() {
+  if (levelUpWizardState.step === 2) {
+    const clsName = levelUpWizardState.selectedClassKey || levelUpWizardState.selectedClass;
+    const targetLvl = levelUpWizardState.targetClassLevel;
+    if (isClassAsiLevel(clsName, targetLvl) && levelUpWizardState.asi) {
+      if (levelUpWizardState.asi.mode === 'dual' && levelUpWizardState.asi.dualAttr1 === levelUpWizardState.asi.dualAttr2) {
+        alert('⚠️ Regra D&D 5E: Escolha dois atributos distintos para a opção +1 / +1 (ou use a opção +2 em um único atributo).');
+        return;
+      }
+    }
+  }
+
   if (levelUpWizardState.step < 3) {
     levelUpWizardState.step++;
     renderLevelUpWizardStep();
@@ -7705,16 +8480,23 @@ function applyLevelUpConfirm() {
   const targetLvl = levelUpWizardState.targetClassLevel;
   const subIdx = levelUpWizardState.selectedSubclassIdx;
 
+  const clsData = typeof findClassData === 'function' ? findClassData(clsName) : null;
+  const chosenSubName = (clsData && clsData.subclasses && clsData.subclasses[subIdx])
+    ? clsData.subclasses[subIdx].name
+    : '';
+
   // Atualiza ou adiciona a classe na lista de multiclasse
   const existingIdx = classesList.findIndex(c => c.className.toLowerCase() === clsName.toLowerCase());
   if (existingIdx >= 0) {
     classesList[existingIdx].level = targetLvl;
     classesList[existingIdx].subclassIdx = subIdx;
+    if (chosenSubName) classesList[existingIdx].subclass = chosenSubName;
   } else {
     classesList.push({
       className: clsName,
       level: targetLvl,
-      subclassIdx: subIdx
+      subclassIdx: subIdx,
+      subclass: chosenSubName
     });
   }
 
@@ -7724,9 +8506,8 @@ function applyLevelUpConfirm() {
   // Se a classe evoluída for a principal (ou única), atualiza também no nível raiz do jogador
   if (classesList.length === 1 || classesList[0].className.toLowerCase() === clsName.toLowerCase()) {
     p.subclassIdx = subIdx;
-    const clsData = typeof findClassData === 'function' ? findClassData(clsName) : null;
-    if (clsData && clsData.subclasses && clsData.subclasses[subIdx]) {
-      p.subclass = clsData.subclasses[subIdx].name;
+    if (chosenSubName) {
+      p.subclass = chosenSubName;
     }
   }
 
@@ -7735,6 +8516,56 @@ function applyLevelUpConfirm() {
 
   // Atualiza reserva de Dados de Vida combinados
   p.hitDice = classesList.map(c => `${c.level}${getHitDieForClass(c.className).replace(/^[0-9]+/, '')}`).join(' + ');
+
+  // ================= APLICAÇÃO DE ASI (Aumento de Atributos) =================
+  const isAsi = isClassAsiLevel(clsName, targetLvl);
+  let asiSummaryLog = '';
+
+  if (isAsi && levelUpWizardState.asi) {
+    const asi = levelUpWizardState.asi;
+    const oldCon = getPlayerAttr(p, 'con');
+    const oldConMod = Math.floor((oldCon - 10) / 2);
+
+    if (asi.mode === 'single') {
+      const attr = asi.singleAttr || 'str';
+      const curVal = getPlayerAttr(p, attr);
+      const newVal = Math.min(20, curVal + 2);
+      p[attr] = newVal;
+      const attrLabel = { str: 'Força', dex: 'Destreza', con: 'Constituição', int: 'Inteligência', wis: 'Sabedoria', cha: 'Carisma' }[attr] || attr;
+      asiSummaryLog = `📈 ASI: +2 em ${attrLabel} (${curVal} ➔ ${newVal})`;
+    } else if (asi.mode === 'dual') {
+      const a1 = asi.dualAttr1 || 'str';
+      const a2 = asi.dualAttr2 || 'dex';
+      const v1 = getPlayerAttr(p, a1);
+      const v2 = getPlayerAttr(p, a2);
+      const n1 = Math.min(20, v1 + 1);
+      const n2 = Math.min(20, v2 + 1);
+      p[a1] = n1;
+      p[a2] = n2;
+      const lbl = key => ({ str: 'Força', dex: 'Destreza', con: 'Constituição', int: 'Inteligência', wis: 'Sabedoria', cha: 'Carisma' }[key] || key);
+      asiSummaryLog = `📈 ASI: +1 em ${lbl(a1)} (${v1} ➔ ${n1}) e +1 em ${lbl(a2)} (${v2} ➔ ${n2})`;
+    } else if (asi.mode === 'feat') {
+      const featName = asi.feat || 'Talento';
+      if (!Array.isArray(p.features)) p.features = [];
+      p.features.push(`Talento: ${featName}`);
+      asiSummaryLog = `📜 Talento Adquirido: ${featName}`;
+    }
+
+    // Regra Oficial D&D 5E: Se o modificador de Constituição aumentar, concede PV retroativo para todos os níveis do personagem!
+    const newCon = getPlayerAttr(p, 'con');
+    const newConMod = Math.floor((newCon - 10) / 2);
+    if (newConMod > oldConMod) {
+      const retroHp = (newConMod - oldConMod) * p.level;
+      p.maxHp = (p.maxHp || 10) + retroHp;
+      p.hp = (p.hp || p.maxHp) + retroHp;
+      asiSummaryLog += ` | 🛡️ +${retroHp} PV Retroativo (Aumento de Mod CON)`;
+    }
+
+    // Se Destreza ou Constituição mudaram, recalcula a CA
+    if (typeof ensurePlayerCalculatedAc === 'function') {
+      ensurePlayerCalculatedAc(p);
+    }
+  }
 
   // Cálculo de ganho de PV
   const hitDieStr = getHitDieForClass(clsName);
@@ -7753,9 +8584,9 @@ function applyLevelUpConfirm() {
   p.slots = calculateMulticlassSpellSlots(p);
 
   // Registra no histórico de ações e log
-  const logMsg = `🎉 <b>${p.name}</b> subiu para o <b>Nível ${p.level}</b> (${p.className})! (+${chosenGain} PV Máximo)`;
+  const logMsg = `🎉 <b>${p.name}</b> subiu para o <b>Nível ${p.level}</b> (${p.className})! (+${chosenGain} PV Máximo)${asiSummaryLog ? `<br>${asiSummaryLog}` : ''}`;
   addLog(logMsg);
-  addPlayerActionLog(p.id, '🔼', `Subiu de Nível: ${p.className} | +${chosenGain} PV (Max: ${p.maxHp})`, 'general');
+  addPlayerActionLog(p.id, '🔼', `Subiu de Nível: ${p.className} | +${chosenGain} PV (Max: ${p.maxHp})${asiSummaryLog ? ` | ${asiSummaryLog}` : ''}`, 'general');
   if (typeof playFX === 'function') playFX('crit');
 
   closeLevelUpModal();
@@ -8639,7 +9470,19 @@ if (typeof module !== 'undefined' && module.exports) {
 
     // ISSUE-100/101/102: Economia de Ações em Características e Ações Universais
     getFeatureActionType,
-    renderUniversalCombatActions
+    renderUniversalCombatActions,
+
+    // ISSUE-103: Resumo Rápido de Magias, Grimório de Magos & Transcrição
+    openSpellQuickSummaryModal,
+    closeSpellQuickSummaryModal,
+    isWizardPlayer,
+    ensurePlayerSpellbook,
+    getSpellCopyCost,
+    copySpellToSpellbook,
+    castSpellAsRitual,
+    togglePlayerSpellbookView,
+    switchPickerMode,
+    playerSpellbookViews
   };
 }
 
@@ -8651,6 +9494,18 @@ if (typeof window !== 'undefined') {
   window.formatPlayerFeatureForDisplay = formatPlayerFeatureForDisplay;
   window.getFeatureActionType = getFeatureActionType;
   window.renderUniversalCombatActions = renderUniversalCombatActions;
+
+  // ISSUE-103: Resumo Rápido de Magias, Grimório de Magos & Transcrição
+  window.openSpellQuickSummaryModal = openSpellQuickSummaryModal;
+  window.closeSpellQuickSummaryModal = closeSpellQuickSummaryModal;
+  window.isWizardPlayer = isWizardPlayer;
+  window.ensurePlayerSpellbook = ensurePlayerSpellbook;
+  window.getSpellCopyCost = getSpellCopyCost;
+  window.copySpellToSpellbook = copySpellToSpellbook;
+  window.castSpellAsRitual = castSpellAsRitual;
+  window.togglePlayerSpellbookView = togglePlayerSpellbookView;
+  window.switchPickerMode = switchPickerMode;
+  window.playerSpellbookViews = playerSpellbookViews;
 }
 
 
