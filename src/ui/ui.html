@@ -2023,11 +2023,11 @@
 
   <!-- MODAL: SELETOR DE MAGIAS PREPARADAS DA FICHA -->
   <div id="modal-spell-picker" class="modal-overlay">
-    <div class="modal-body" style="max-width: 650px;">
-      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+    <div class="modal-body modal-spell-picker-body" style="max-width: 960px; width: 95vw; height: 88vh; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; padding: 18px 22px; gap: 10px;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; flex-shrink: 0;">
         <div>
-          <div style="font-size: 17px; font-weight: 800; font-family: var(--font-title); color: #fff;">
-            📖 Grimório & Magias Preparadas
+          <div style="font-size: 17px; font-weight: 800; font-family: var(--font-title); color: #fff; display: flex; align-items: center; gap: 8px;">
+            <span>📖</span> Grimório & Magias Preparadas
           </div>
           <div style="font-size: 11px; color: var(--primary-light); margin-top: 2px;">
             <span id="picker-player-name">Herói</span> • <span id="picker-player-class">Classe</span> • Preparadas: <b id="picker-selected-count" style="color:#fff;">0</b>
@@ -2037,7 +2037,7 @@
       </div>
 
       <!-- Abas de Conjurador: Preparadas vs Grimório / Transcrever -->
-      <div id="picker-wizard-tabs" class="spellbook-tabs-nav" style="display: none; margin-top: 10px;">
+      <div id="picker-wizard-tabs" class="spellbook-tabs-nav" style="display: none; flex-shrink: 0; margin-top: 2px;">
         <button type="button" class="spellbook-tab-btn active" id="tab-btn-picker-prep" onclick="switchPickerMode('prep')">
           <span>⭐ Magias Preparadas</span>
         </button>
@@ -2049,11 +2049,11 @@
         </button>
       </div>
 
-      <!-- Medidor de Limite de Preparação -->
-      <div id="picker-prep-meter-box" style="margin-top: 6px;"></div>
+      <!-- Medidor de Limite de Preparação / Banner Compacto -->
+      <div id="picker-prep-meter-box" style="flex-shrink: 0;"></div>
 
       <!-- Painel Informativo de Cópia de Magias para Magos -->
-      <div id="picker-copy-banner" style="display: none; font-size:11.5px; color:#cbd5e1; background:rgba(245,158,11,0.08); border-left:3px solid var(--accent-gold); padding:8px 12px; border-radius:4px; margin: 8px 0;">
+      <div id="picker-copy-banner" style="display: none; font-size:11.5px; color:#cbd5e1; background:rgba(245,158,11,0.08); border-left:3px solid var(--accent-gold); padding:8px 12px; border-radius:4px; flex-shrink: 0;">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
           <span>🖋️ <b>Transcrever Magia:</b> Custa <b>50 PO</b> e <b>2 horas</b> por círculo (ou <b>25 PO / 1h</b> para Tradição Arcana).</span>
           <span style="font-weight:700; color:#fbbf24;">🪙 Saldo em Ouro: <b id="picker-player-gold">0 PO</b></span>
@@ -2061,9 +2061,9 @@
       </div>
 
       <!-- Filtros de busca no picker -->
-      <div style="display: flex; gap: 8px; margin: 12px 0 8px 0; flex-wrap: wrap;">
-        <input type="text" id="picker-search-input" placeholder="🔍 Buscar magia (nome, descrição)..." style="flex: 1; min-width: 160px;" oninput="handlePickerSearch(this.value)">
-        <select id="picker-class-filter" onchange="handlePickerClassFilter(this.value)" style="max-width: 135px;" title="Filtrar por Lista de Classe">
+      <div class="picker-filters-bar" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; flex-shrink: 0; background: rgba(0, 0, 0, 0.25); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05);">
+        <input type="text" id="picker-search-input" placeholder="🔍 Buscar magia (nome, descrição)..." style="flex: 2; min-width: 170px; padding: 6px 10px; font-size: 12px;" oninput="handlePickerSearch(this.value)">
+        <select id="picker-class-filter" onchange="handlePickerClassFilter(this.value)" style="flex: 1; min-width: 120px; padding: 6px 8px; font-size: 12px;" title="Filtrar por Lista de Classe">
           <option value="auto">Classe do Herói</option>
           <option value="all">🌐 Todas as Magias</option>
           <option value="Bardo">Bardo</option>
@@ -2075,7 +2075,7 @@
           <option value="Paladino">Paladino</option>
           <option value="Patrulheiro">Patrulheiro</option>
         </select>
-        <select onchange="handlePickerCircleFilter(this.value)" style="max-width: 125px;">
+        <select onchange="handlePickerCircleFilter(this.value)" style="flex: 1; min-width: 105px; padding: 6px 8px; font-size: 12px;">
           <option value="all">Todos Círculos</option>
           <option value="0">Truques (Nv 0)</option>
           <option value="1">1º Círculo</option>
@@ -2088,7 +2088,7 @@
           <option value="8">8º Círculo</option>
           <option value="9">9º Círculo</option>
         </select>
-        <select onchange="handlePickerSchoolFilter(this.value)" style="max-width: 125px;">
+        <select onchange="handlePickerSchoolFilter(this.value)" style="flex: 1; min-width: 110px; padding: 6px 8px; font-size: 12px;">
           <option value="all">Todas Escolas</option>
           <option value="Evocação">Evocação</option>
           <option value="Abjuração">Abjuração</option>
@@ -2099,28 +2099,28 @@
           <option value="Conjuração">Conjuração</option>
           <option value="Adivinhação">Adivinhação</option>
         </select>
-        <select id="picker-action-filter" onchange="handlePickerActionFilter(this.value)" style="max-width: 125px;" title="Filtrar por Economia de Ação">
+        <select id="picker-action-filter" onchange="handlePickerActionFilter(this.value)" style="flex: 1; min-width: 105px; padding: 6px 8px; font-size: 12px;" title="Filtrar por Economia de Ação">
           <option value="all">Todas Ações</option>
           <option value="action">⚔️ Ação</option>
           <option value="bonus">⚡ Ação Bônus</option>
           <option value="reaction">🛡️ Reação</option>
         </select>
-        <button id="btn-picker-only-selected" class="btn-secondary" style="font-size:11px; padding:4px 10px; border-color:var(--accent-gold);" onclick="togglePickerShowOnlySelected()" title="Ver apenas as magias já marcadas no herói">
+        <button id="btn-picker-only-selected" class="btn-secondary" style="font-size: 11px; padding: 6px 12px; border-color: var(--accent-gold); white-space: nowrap;" onclick="togglePickerShowOnlySelected()" title="Ver apenas as magias já marcadas no herói">
           ⭐ Selecionadas (<b id="picker-btn-selected-count">0</b>)
         </button>
       </div>
 
-      <!-- Dica de uso -->
-      <div style="font-size:11px; color:#cbd5e1; background:rgba(245,158,11,0.08); border-left:3px solid var(--accent-gold); padding:6px 10px; border-radius:4px; margin-bottom:8px;">
+      <!-- Dica dinâmica de uso -->
+      <div id="picker-instructions-tip" style="font-size:11px; color:#cbd5e1; background:rgba(245,158,11,0.08); border-left:3px solid var(--accent-gold); padding:6px 10px; border-radius:4px; flex-shrink: 0;">
         💡 <b>Como funciona:</b> Clique em qualquer magia para marcá-la (você pode selecionar de <b>qualquer classe</b>). Ao finalizar, clique em <b>"Salvar Magias Preparadas"</b> abaixo.
       </div>
 
-      <!-- Lista de magias -->
+      <!-- Lista de magias flexível (ocupa todo o espaço vertical disponível) -->
       <div id="picker-spells-list" class="picker-spells-container"></div>
 
-      <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
-        <button class="btn-secondary" onclick="closeSpellPickerModal()">Cancelar</button>
-        <button class="btn-action" onclick="saveSpellPickerSelection()">Salvar Magias Preparadas</button>
+      <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 10px; flex-shrink: 0;">
+        <button class="btn-secondary" onclick="closeSpellPickerModal()">Fechar</button>
+        <button id="btn-save-spell-picker" class="btn-action" onclick="saveSpellPickerSelection()">Salvar Magias Preparadas</button>
       </div>
     </div>
   </div>
@@ -3824,8 +3824,8 @@
   <!-- ===================================================
        🧘 MODAL: TESTE DE CONCENTRAÇÃO (D&D 5E)
        =================================================== -->
-  <div id="modal-concentration-check" class="modal">
-    <div class="modal-content" style="max-width: 440px; border: 2px solid var(--primary-light);">
+  <div id="modal-concentration-check" class="modal-overlay">
+    <div class="modal-body" style="max-width: 440px; border: 2px solid var(--primary-light);">
       <div class="modal-header">
         <h3 style="font-family: var(--font-title); color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">
           <span>🧘</span> Teste de Concentração
@@ -3869,8 +3869,8 @@
   <!-- ===================================================
        💀 MODAL: PAINEL DE SALVAGUARDAS DA MORTE (0 PV)
        =================================================== -->
-  <div id="modal-death-saves" class="modal">
-    <div class="modal-content" style="max-width: 460px; border: 2px solid #ef4444; background: linear-gradient(180deg, #180d12 0%, #0f172a 100%);">
+  <div id="modal-death-saves" class="modal-overlay">
+    <div class="modal-body" style="max-width: 460px; border: 2px solid #ef4444; background: linear-gradient(180deg, #180d12 0%, #0f172a 100%);">
       <div class="modal-header">
         <h3 style="font-family: var(--font-title); color: #f87171; display: flex; align-items: center; gap: 8px;">
           <span>💀</span> Testes Contra a Morte (0 PV)

@@ -5409,22 +5409,41 @@ function renderSpellPickerList() {
   if (playerGoldBadge) playerGoldBadge.innerText = `${curGold} PO`;
 
   if (copyBanner) {
-    copyBanner.style.display = (isWiz && pickerMode === 'copy') ? 'block' : 'none';
+    copyBanner.style.display = 'none'; // Unificado com prepBox para visual limpo e sem redundância
+  }
+
+  const tipEl = document.getElementById('picker-instructions-tip');
+  if (tipEl) {
+    if (pickerMode === 'copy') {
+      tipEl.innerHTML = `💡 <b>Como funciona:</b> Clique em <b>"🖋️ Transcrever"</b> para copiar uma nova magia para seu Grimório pagando ouro e tempo, ou <b>"✨ Grátis"</b> para magias aprendidas ao subir de nível.`;
+    } else if (pickerMode === 'book') {
+      tipEl.innerHTML = `💡 <b>Meu Grimório:</b> Todas as suas magias aprendidas. Marque a caixinha nas que deseja deixar preparadas para o dia e clique em <b>"Salvar Magias Preparadas"</b>.`;
+    } else {
+      tipEl.innerHTML = `💡 <b>Como funciona:</b> Clique em qualquer magia para marcá-la (você pode selecionar de <b>qualquer classe</b>). Ao finalizar, clique em <b>"Salvar Magias Preparadas"</b> abaixo.`;
+    }
+  }
+
+  const saveBtn = document.getElementById('btn-save-spell-picker');
+  if (saveBtn) {
+    saveBtn.style.display = pickerMode === 'copy' ? 'none' : 'inline-block';
   }
 
   const prepBox = document.getElementById('picker-prep-meter-box');
   if (prepBox && p) {
     if (pickerMode === 'copy') {
       prepBox.innerHTML = `
-        <div class="prepared-spells-meter" style="background:rgba(245,158,11,0.1); border-color:rgba(245,158,11,0.3);">
-          <span style="font-size:16px;">🖋️</span>
-          <div style="flex:1;">
-            <b>Oficina de Transcrição Arcana:</b> Escolha novas magias para adicionar ao seu Grimório permanente.
-            <div style="font-size:10px; color:#fbbf24; margin-top:2px;">
-              Magias aprendidas pelo mago ficam disponíveis para serem preparadas a cada descanso longo ou conjuradas como ritual.
+        <div class="prepared-spells-meter" style="background:rgba(245,158,11,0.08); border-color:rgba(245,158,11,0.3); padding:8px 12px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:16px;">🖋️</span>
+            <div>
+              <b style="color:var(--accent-gold); font-size:12px;">Oficina de Transcrição Arcana:</b>
+              <span style="font-size:11.5px; color:#cbd5e1; margin-left:4px;">Custa <b>50 PO</b> e <b>2h</b> por círculo (ou <b>25 PO / 1h</b> para Tradição Arcana).</span>
             </div>
           </div>
-          <span class="badge" style="background:rgba(245,158,11,0.2); color:#fbbf24; border:1px solid rgba(245,158,11,0.4);">Grimório: ${(p.spellbookSpells || []).length}</span>
+          <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+            <span style="font-size:11.5px; font-weight:700; color:#fbbf24; background:rgba(0,0,0,0.3); padding:3px 8px; border-radius:6px; border:1px solid rgba(251,191,36,0.3);">🪙 Saldo: <b id="picker-player-gold">${curGold} PO</b></span>
+            <span class="badge" style="background:rgba(245,158,11,0.2); color:#fbbf24; border:1px solid rgba(245,158,11,0.4); font-size:11px;">📖 Grimório: ${(p.spellbookSpells || []).length}</span>
+          </div>
         </div>
       `;
     } else {

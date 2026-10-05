@@ -1,146 +1,82 @@
-# 📋 Plano de Implementação: Correção de Seleção Recorrente de Subclasses, Sistema de Aumento no Valor de Atributo (ASI / D&D 5E) e Preservação de Estado
+# 📋 Plano de Implementação: Correção do Modal no Canto Inferior Esquerdo e Otimização Completa do Grimório / Seletor de Magias
 
-Este plano detalha o diagnóstico completo, as causas raízes e as soluções para:
-1. **Eliminar a necessidade de re-escolher a subclasse repetidas vezes** (garantindo que escolhas já feitas com base na evolução da classe permaneçam salvas e não sejam sobrescritas em subidas de nível ou edição de fichas).
-2. **Implementar o Sistema de Aumento no Valor de Atributo (ASI / D&D 5E)** nos níveis canônicos de cada classe no Assistente de Evolução de Nível, com seleção interativa (+2 em um atributo, +1 em dois atributos, ou Talento).
-3. **Respeito aos Atributos Atuais de Fichas Nv 4+**: Conforme diretriz do usuário, as fichas que já foram criadas e estão no nível 4 ou superior **já tiveram seus atributos aumentados manualmente** pelo mestre. Portanto, o sistema **não** aplicará nenhum aumento retroativo automático para não duplicar os valores existentes. O fluxo interativo de ASI funcionará quando as demais fichas evoluírem para o nível 4 e em todas as futuras subidas de nível nos marcos de ASI (4, 6, 8, 10, 12, etc.).
-4. **Mapear e corrigir todos os outros pontos do sistema onde ocorrem falhas semelhantes** (modal de edição da ficha, sincronização na nuvem Firebase e gerenciador de multiclasse).
+Este plano aborda e resolve os dois problemas relatados pelo usuário:
+1. **Bug visual no canto inferior esquerdo** ("Teste de Concentração" aparecendo estático e cortado no rodapé).
+2. **Experiência e visualização ruim no modal de magias** ("Grimório & Magias Preparadas" espremido, ocupando pouco espaço vertical útil, com banners redundantes empurrando a lista e exibindo apenas 1 magia por vez).
 
 ---
 
-## 🔍 1. Diagnóstico Profundo dos Problemas
+## 🔍 1. Diagnóstico dos Problemas e Causas Raízes
 
-### 1.1 Por que a subclasse precisava ser escolhida novamente?
-Investigamos o ciclo de vida da subclasse nos arquivos `src/js/players.js`, `src/js/firebase_sync.js`, `src/js/core.js` e `src/ui/ui.html`. Foram identificadas **três causas raízes críticas combinadas**:
+### 1.1 Bug do Canto Inferior Esquerdo (Modal de Concentração e Salvaguardas)
+- **Causa**: Em `src/ui/ui.html` (linhas 3827 e 3872), `#modal-concentration-check` e `#modal-death-saves` foram estruturados com as classes `class="modal"` e `class="modal-content"`.
+- **Efeito**: Não existia regra CSS para `.modal` no projeto. Por padrão, o navegador os renderizou como blocos normais (`display: block`) no final do documento HTML. Com isso, o card do Teste de Concentração fica visível e cortado no rodapé/canto inferior da tela o tempo todo, mesmo sem sofrer dano.
+- **Solução**: Padronizar para `class="modal-overlay"` e `class="modal-body"`, além de blindar o CSS para que `.modal` também seja tratado como overlay oculto (`display: none`).
 
-1. **Condição Incorreta no Assistente de Level Up (`renderLevelUpWizardStep`, Passo 2)**:
-   - O código verificava: `if (targetLvl >= reqSubLvl && clsData && clsData.subclasses)`.
-   - Como `targetLvl >= reqSubLvl` é verdadeiro para **todos os níveis a partir do nível de desbloqueio** (ex: Nv 3, Nv 4, Nv 5, Nv 6...), o seletor `<select onchange="selectLevelUpSubclass(...)">` era exibido **em todas as subidas de nível**.
-   - Em D&D 5E, a subclasse é escolhida **uma única vez** no nível de desbloqueio (`reqSubLvl`):
-     - Clérigo, Bruxo, Feiticeiro: Nível 1.
-     - Druida, Mago: Nível 2.
-     - Bárbaro, Bardo, Guerreiro, Ladino, Monge, Paladino, Patrulheiro: Nível 3.
-   - Pior: o estado inicial da subclasse no assistente era populado com `levelUpWizardState.selectedSubclassIdx = primaryClass.subclassIdx || 0`. Se o personagem tinha subclasse armazenada como texto (ex: `p.subclass = 'Mestre da Batalha'`) ou se `subclassIdx` vinha nulo/indefinido, o assistente **revertia silenciosamente para o índice 0 (ex: 'Campeão')**, forçando o usuário a re-selecionar ou sobrescrevendo sua especialização original!
-
-2. **Sobrescrita Acidental no Modal de Edição da Ficha (`savePlayerSheet` & `onPlayerModalClassOrLevelChange`)**:
-   - Em `openPlayerModal`, se o personagem possui multiclasse ou formato `"Guerreiro 4 / Bárbaro 1"`, o dropdown `pm-class-select` era definido como `'custom'`.
-   - `onPlayerModalClassOrLevelChange` buscava `findClassData("Guerreiro 4 / Bárbaro 1")`, que retornava `null`.
-   - Como consequência, o seletor `pm-subclass-select` era limpo para `<option value="0">Padrão / Sem Subclasse</option>` e desabilitado (`disabled`).
-   - Ao clicar em "Salvar Ficha", `savePlayerSheet` lia `parseInt(subclassSel.value) || 0`, **gravando `subclassIdx = 0` na ficha**, corrompendo a subclasse existente.
-
-3. **Vulnerabilidade no Smart Merge de Sincronização na Nuvem (`firebase_sync.js`)**:
-   - Em `applyCloudDataToLocal`, o objeto de mesclagem do jogador (`Object.assign({}, remoteP, { ... })`) **não continha proteções explícitas para `subclass` nem `subclassIdx`**.
-   - Se um snapshot remoto continha dados de subclasse vazios ou índice defasado, ele sobrescrevia a escolha local do jogador.
+### 1.2 Dificuldade de Visualização das Magias no Grimório / Seletor
+- **Causas**:
+  1. **Layout e Altura do Modal**: O modal `#modal-spell-picker` usa `max-width: 650px` e depende do `.modal-body` padrão com `max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; gap: 16px;`.
+  2. **Empilhamento Excessivo de Banners**:
+     - No modo de transcrição (`copy`), aparecem 3 banners informativos simultâneos empilhados:
+       - `picker-prep-meter-box`: 3 linhas explicando a oficina de transcrição.
+       - `picker-copy-banner`: 2 linhas explicando custo e ouro.
+       - Banner de dica estático: 2 linhas de "Como funciona: Clique em qualquer magia para marcá-la...".
+     - Barra de filtros com 5 selects que quebram em 2 linhas.
+  3. **Efeito Espremido**: Os cabeçalhos e banners somados aos espaçamentos de 16px consomem mais de 450px da altura. Em telas comuns de notebook (768px a 900px), a altura útil restante para a lista de magias é de quase zero (~30px a 50px). Isso faz com que apenas 1 magia (ou meia magia) apareça visível, gerando um scroll duplo (um no modal e outro na lista de magias).
+  4. **Modo de Transcrição Inadequado**: No modo "Transcrever Nova Magia", o banner de dica diz para "marcar a caixinha e salvar", o que confunde o usuário, pois na transcrição clica-se no botão "Transcrever" diretamente em cada magia.
 
 ---
 
-### 1.2 Por que os níveis com Aumento de Atributo (ASI) não mostram a opção de upgrade?
-- Em D&D 5E, o **Aumento no Valor de Atributo (Ability Score Improvement - ASI)** é concedido nos seguintes níveis de classe:
-  - **Guerreiro**: Níveis **4, 6, 8, 12, 14, 16, 19**
-  - **Ladino**: Níveis **4, 8, 10, 12, 16, 19**
-  - **Demais Classes**: Níveis **4, 8, 12, 16, 19**
-- No código atual de `renderLevelUpWizardStep`:
-  - **Não existia interface nem lógica de seleção de atributos**.
-  - O assistente apenas listava o texto plano `"Aumento no Valor de Atributo"` na prévia de características.
-  - Ao confirmar a subida de nível em `applyLevelUpConfirm`, nenhum ponto de atributo era acrescido à ficha (`p.str`, `p.dex`, `p.con`, `p.int`, `p.wis`, `p.cha` permaneciam intocados).
-  - Bônus decorrentes de aumento de Constituição (regra oficial D&D 5E: se o mod de CON aumenta, o PV Máximo aumenta retroativamente em $+1$ por nível) também não eram calculados.
+## 🛠️ 2. Arquitetura da Solução Proposta
+
+### 2.1 Correção do Canto Inferior Esquerdo (`src/ui/ui.html` e `src/styles/head_css.html`)
+1. Em `src/ui/ui.html`:
+   - Mudar `<div id="modal-concentration-check" class="modal">` para `<div id="modal-concentration-check" class="modal-overlay">` e o card interno para `class="modal-body"`.
+   - Mudar `<div id="modal-death-saves" class="modal">` para `<div id="modal-death-saves" class="modal-overlay">` e o card interno para `class="modal-body"`.
+2. Em `src/styles/head_css.html`:
+   - Vincular `.modal` à mesma regra de `.modal-overlay`:
+     ```css
+     .modal-overlay, .modal { display: none; position: fixed; inset: 0; ... }
+     .modal-overlay.open, .modal.open { display: flex; }
+     ```
+
+### 2.2 Redesenho do Modal de Grimório & Magias Preparadas (`src/ui/ui.html`, `src/styles/head_css.html`, `src/js/players.js`)
+1. **Expansão e Layout Flexível com Rolagem Única**:
+   - Ampliar a largura do modal para `max-width: 960px; width: 95vw;` (aproveitando o espaço horizontal da tela).
+   - Definir altura fixa e estruturada no card: `height: 88vh; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; padding: 18px 22px; gap: 10px;`.
+   - Elementos superiores (header, abas, banner compacto, filtros) com `flex-shrink: 0;`.
+   - Rodapé com botões de ação com `flex-shrink: 0;`.
+   - O container da lista (`#picker-spells-list`) passa a ter `flex: 1; min-height: 0; max-height: none; overflow-y: auto;` — ele **ocupa 100% de todo o espaço vertical disponível**, permitindo visualizar confortavelmente 6 a 10 magias simultaneamente sem quebras de layout.
+
+2. **Consolidação dos Banners de Informação**:
+   - No modo **Transcrever Nova Magia** (`copy`):
+     - Unificar a mensagem em um único banner moderno, horizontal e compacto:
+       `🖋️ Oficina de Transcrição: Custo de 50 PO e 2h por círculo (25 PO / 1h para Tradição Arcana) | 🪙 Saldo: X PO | 📖 Grimório: Y magias`
+     - Ocultar a dica redundante de "clique na caixinha para salvar".
+   - No modo **Magias Preparadas** (`prep`):
+     - Manter o medidor compacto de preparação diária (`🔮 Preparadas: X / Y | ✨ Truques: A / B`).
+     - Dica discreta integrada ao cabeçalho ou à barra de filtros.
+
+3. **Barra de Filtros Otimizada**:
+   - Disposição horizontal harmoniosa: Campo de busca ágil + Selects de Classe, Círculo, Escola e Ação + Botão de "⭐ Selecionadas".
+   - Inputs com altura e espaçamento consistentes (`padding: 6px 10px; font-size: 12px;`).
+
+4. **Cards de Magia Aprimorados e Mais Legíveis**:
+   - Com 960px de largura, o card de cada magia distribui perfeitamente:
+     - Checkbox + Nome da Magia + Badge de Círculo + Tipo de Ação (Bônus, Reação, Ritual).
+     - Escola, Alcance, Tempo de Conjuração.
+     - Botão "ℹ️ Detalhes" para expansão da descrição completa.
+     - No modo transcrição: Badge de custo `💰 X PO`, tempo `⏱️ Yh`, botão `🖋️ Transcrever` e botão `✨ Grátis` alinhados e sem cortes.
 
 ---
 
-### 1.3 Outras funções do sistema que apresentam o mesmo problema mapeado
-1. **`getPlayerClassesList(p)`**: Retornava apenas `className` e `level`, sem resolver ou associar o nome canônico `subclass`.
-2. **`openPlayerClassesModal` / `savePlayerClassesModal`**: Ao alterar níveis de classes no gerenciador de multiclasse, a correspondência entre nome de subclasse e índice numérico dependia de ordenação estrita.
-3. **`core.js` (Auto-migração no carregamento)**: Ao sincronizar dados legados com a lista canônica, a subclasse pré-existente podia ser sobrescrita por registros canônicos caso `canonical` tivesse campos vazios.
+## 🧪 3. Plano de Verificação
 
----
-
-## 🛠️ 2. Arquitetura da Solução
-
-### 2.1 Preservação Definitiva de Subclasses (Zero Re-seleção)
-1. **Criar Helper Universal de Resolução de Subclasse (`resolveSubclassIndex`)**:
-   - `resolveSubclassIndex(className, subclassIdx, subclassName)`:
-     - Localiza a classe em `CLASSES_DATA`.
-     - Se `subclassName` estiver preenchido, localiza o índice exato pelo nome (ignorando maiúsculas/minúsculas e variações em inglês/português, ex: `"Campeão (Champion)"`).
-     - Garante que o índice numérico seja sempre fidedigno ao nome da especialização.
-2. **Refatorar o Passo 2 do Assistente de Level Up (`renderLevelUpWizardStep`)**:
-   - Identificar se a classe evoluída já possui uma subclasse registrada (`currentSubclassName` ou `existingClassItem.subclass`).
-   - **Caso 1: Nível inferior ao desbloqueio (`targetLvl < reqSubLvl`)**: Não exibe seleção de subclasse.
-   - **Caso 2: Nível exato de desbloqueio (`targetLvl === reqSubLvl`) OU classe sem subclasse definida**:
-     - Exibe o seletor interativo com destaque: `🌟 Escolha sua Especialização / Subclasse (Desbloqueada no Nível ${reqSubLvl})`.
-   - **Caso 3: Nível superior ao desbloqueio (`targetLvl > reqSubLvl`) e subclasse já escolhida anteriormente**:
-     - **NÃO EXIBE O SELETOR DE ESCOLHA**.
-     - Exibe um card elegante e seguro:
-       `🌟 Subclasse Ativa: ${subName} (Especialização do Nível ${reqSubLvl})`
-       com um botão discreto `[🔄 Alterar Subclasse]` caso o mestre/jogador deseje propositalmente realizar um *respec*.
-3. **Persistência Completa em `applyLevelUpConfirm`**:
-   - Salva `subclass: subName` e `subclassIdx: subIdx` tanto no item correspondente em `p.multiclass` quanto no nível raiz da ficha (`p.subclass` e `p.subclassIdx`).
-4. **Proteção no Modal da Ficha (`savePlayerSheet` & `onPlayerModalClassOrLevelChange`)**:
-   - Se `subclassSel` estiver desabilitado ou se a classe for multiclasse/customizada, preserva incondicionalmente `existing.subclass` e `existing.subclassIdx`.
-5. **Proteção no Smart Merge (`firebase_sync.js`)**:
-   - Inclui `subclass`, `subclassIdx` e os atributos `str, dex, con, int, wis, cha` no objeto de propriedades protegidas contra snapshots remotos atrasados.
-
----
-
-### 2.2 Sistema Completo de Aumento de Atributos (ASI) no Level Up
-1. **Diretriz de Segurança para Fichas Existentes**:
-   - **Zero Alteração Automática nas Fichas Nv 4+ Existentes**: Como o mestre já ajustou os atributos dessas fichas manualmente, nenhuma rotina automática irá re-alterar seus atributos ao carregar o aplicativo.
-   - O fluxo de ASI é acionado exclusivamente quando o personagem sobe de nível através do Assistente de Evolução (seja subindo para o Nv 4 ou em futuros marcos de ASI como 6, 8, 10, 12, etc.).
-2. **Função Mecânica Canônica D&D 5E (`isClassAsiLevel`)**:
-   ```javascript
-   function isClassAsiLevel(className, classLevel) {
-     const norm = (className || '').toLowerCase();
-     if (norm.includes('guerreiro') || norm.includes('fighter')) {
-       return [4, 6, 8, 12, 14, 16, 19].includes(classLevel);
-     }
-     if (norm.includes('ladino') || norm.includes('rogue')) {
-       return [4, 8, 10, 12, 16, 19].includes(classLevel);
-     }
-     return [4, 8, 12, 16, 19].includes(classLevel);
-   }
-   ```
-3. **Interface Interativa de ASI no Passo 2 do Level Up**:
-   - Quando `isClassAsiLevel(selectedClass, targetClassLevel)` for verdadeiro, renderizar o card `.levelup-asi-card`:
-     - **Opção 1: +2 em um único Atributo**:
-       - Botões/pills para: Força, Destreza, Constituição, Inteligência, Sabedoria, Carisma.
-       - Prévia visual em tempo real: ex. `💪 Força: 16 (Mod +3) ➔ 18 (Mod +4)`.
-     - **Opção 2: +1 em dois Atributos distintos**:
-       - Seletores para Atributo 1 e Atributo 2 (impedindo selecionar o mesmo).
-       - Prévia visual em tempo real: ex. `🎯 Destreza: 14 (+2) ➔ 15 (+2)` e `🛡️ Constituição: 15 (+2) ➔ 16 (+3)`.
-     - **Opção 3: Talento D&D 5E (Feat)**:
-       - Dropdown com talentos clássicos (Robustez, Sentinela, Atirador Aguçado, Especialista, etc.) ou digitação livre.
-4. **Execução e Bônus Retroativos em `applyLevelUpConfirm`**:
-   - Aplica os acréscimos aos atributos numéricos da ficha (`p.str`, `p.dex`, etc.).
-   - **Regra Oficial de Constituição**: Se o modificador de CON aumentar, aplica automaticamente o ganho retroativo de PV:
-     $$\Delta \text{PV} = (\text{novoModCON} - \text{antigoModCON}) \times \text{nívelTotal}$$
-     acrescentando aos PVs máximos e atuais do herói.
-   - **Regra de Destreza/Armadura**: Se DES ou CON aumentarem, dispara `ensurePlayerCalculatedAc(p)` para atualizar a CA da ficha.
-   - Registra no log de ações e no log geral: `📈 ${p.name} aprimorou seus atributos: Força 16 ➔ 18 (+2)`.
-
----
-
-## 📁 3. Arquivos e Módulos Afetados
-
-| Arquivo | Modificações Planejadas |
-|---|---|
-| `src/js/players.js` | Implementação de `isClassAsiLevel`, `resolveSubclassIndex`, renderização interativa do ASI e card de subclasse ativa no Passo 2 do Level Up, aplicação dos atributos no `applyLevelUpConfirm` com PV retroativo de CON, e proteção no `savePlayerSheet`. |
-| `src/styles/head_css.html` | Estilos visuais dark fantasy para `.levelup-asi-card`, `.subclass-locked-card`, seletores de atributos e prévias de modificadores. |
-| `src/js/firebase_sync.js` | Proteção explícita de `subclass`, `subclassIdx` e dos 6 atributos (`str, dex, con, int, wis, cha`) no Smart Merge. |
-| `src/js/core.js` | Garantia de integridade da subclasse na auto-migração de `loadFromLocalStorage` (sem tocar nos atributos já customizados). |
-| `test_runner.js` | Adição da Suíte 73 com testes automatizados para validação de retenção de subclasse, ativação do ASI nos níveis corretos de guerreiro/ladino/outros, cálculo de atributos e PV retroativo. |
-| `issues/README.md` | Documentação formal da ISSUE-104. |
-
----
-
-## 🧪 4. Estratégia de Verificação e Testes
-
-1. **Testes Automatizados (`node test_runner.js`) - Suíte 73**:
-   - Validar que um guerreiro Nv 3 com subclasse "Campeão" ao subir para o Nv 4 **NÃO** exibe o dropdown de escolha e mantém a subclasse.
-   - Validar que o Nível 4 ativa o card de ASI para todas as classes, Nível 6 ativa para Guerreiro, Nível 10 ativa para Ladino, etc.
-   - Validar aplicação da opção $+2$ (ex: Força de 16 para 18).
-   - Validar aplicação da opção $+1/+1$ (ex: DES de 14 para 15 e CON de 15 para 16).
-   - Validar recálculo retroativo de PV ao aumentar CON.
-   - Validar que salvar a ficha via modal não corrompe a subclasse de personagens multiclasse.
-   - Validar que fichas existentes Nv 4+ carregam preservando exatamente os atributos customizados pelo mestre.
-2. **Compilação**:
-   - `node builder.js`
-3. **Taxa de Sucesso Alvo**: 100% dos testes aprovados (mínimo 1195+ testes).
+1. **Compilação**:
+   - Rodar `node builder.js` gerando a build final do HTML standalone.
+2. **Testes Automatizados**:
+   - Executar `node test_runner.js` garantindo que todos os 1.245 testes continuam passando com 100% de êxito.
+3. **Verificação Visual e Funcional**:
+   - Inspecionar a ausência do card de concentração no canto inferior esquerdo no estado normal de tela.
+   - Abrir o modal de magias e verificar a ampla área de exibição da lista com rolagem suave, banners compactos e sem scrollbars duplas.
+   - Testar a troca entre as abas "⭐ Magias Preparadas", "📖 Meu Grimório" e "🖋️ Transcrever Nova Magia".
