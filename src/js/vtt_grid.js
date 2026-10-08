@@ -2877,6 +2877,21 @@ function deleteCurrentSceneConfirm() {
   }
 }
 
+function toggleVttHudCollapse() {
+  const container = document.getElementById('battlegrid-container');
+  if (!container) return false;
+  const isFocus = container.classList.toggle('vtt-focus-mode');
+  const btn = document.getElementById('btn-toggle-vtt-focus');
+  if (btn) {
+    btn.innerHTML = isFocus ? '👁️ Painéis' : '👁️ Foco';
+    btn.classList.toggle('active', isFocus);
+  }
+  if (typeof showToast === 'function') {
+    showToast(isFocus ? '🗺️ VTT em Modo Foco (100% de visão do mapa)' : '🗺️ Painéis do VTT reexibidos', 'info');
+  }
+  return isFocus;
+}
+
 // Exportações para Window e Node.js
 if (typeof window !== 'undefined') {
   window.handleBoardTouchStart = handleBoardTouchStart;
@@ -2884,6 +2899,7 @@ if (typeof window !== 'undefined') {
   window.handleBoardTouchEnd = handleBoardTouchEnd;
   window.setTokenAura = setTokenAura;
   window.rollDiceFormula = rollDiceFormula;
+  window.toggleVttHudCollapse = toggleVttHudCollapse;
 }
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -2892,7 +2908,8 @@ if (typeof module !== 'undefined' && module.exports) {
     handleBoardTouchMove,
     handleBoardTouchEnd,
     setTokenAura,
-    rollDiceFormula
+    rollDiceFormula,
+    toggleVttHudCollapse
   };
 }
 

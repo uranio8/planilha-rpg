@@ -9034,6 +9034,138 @@
       box-shadow: 0 4px 10px rgba(239, 68, 68, 0.6);
     }
 
+    /* ===================================================
+       ✨ ISSUE-108: OVERHAUL DE INTUITIVIDADE & RESPONSIVIDADE
+       =================================================== */
+    /* 1. Indicador On-Deck (Próximo a Agir no Combate) */
+    .combatant-item.combatant-on-deck {
+      border-left: 3px solid #38bdf8 !important;
+      background: linear-gradient(90deg, rgba(56, 189, 248, 0.08) 0%, rgba(15, 23, 42, 0.75) 100%) !important;
+    }
+    .badge-on-deck {
+      background: rgba(56, 189, 248, 0.18);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      letter-spacing: 0.3px;
+    }
+
+    /* 2. Popover de Condições Rápidas no Combate */
+    .quick-cond-popover {
+      position: absolute;
+      z-index: 1000;
+      background: #0f172a;
+      border: 1px solid var(--accent-gold);
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.85);
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 5px;
+      min-width: 220px;
+      animation: fadeInFast 0.15s ease-out;
+    }
+    .btn-quick-cond-tag {
+      font-size: 11px;
+      padding: 5px 8px;
+      border-radius: 5px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.05);
+      color: #e2e8f0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .btn-quick-cond-tag:hover {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: #f59e0b;
+      color: #fbbf24;
+    }
+    .btn-quick-cond-tag.active {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #000;
+      border-color: #f59e0b;
+      font-weight: 700;
+    }
+
+    /* 3. Cards Táteis de Magias & Popover de Resumo */
+    .player-spell-card-tactile {
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      touch-action: manipulation;
+    }
+    .player-spell-card-tactile:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-gold);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    }
+    .player-spell-card-tactile:active {
+      transform: scale(0.98);
+    }
+    .spell-quick-view-box {
+      background: #0f172a;
+      border: 1px solid var(--accent-gold);
+      border-radius: 12px;
+      padding: 16px;
+      max-width: 520px;
+      width: 90vw;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.9);
+      animation: modalSlideUp 0.2s ease-out;
+    }
+
+    /* 4. Micro-interações Cromáticas (Impacto Dano e Cura) */
+    @keyframes damagePulseAnim {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8); border-color: #ef4444; }
+      50% { box-shadow: 0 0 20px 4px rgba(239, 68, 68, 0.9); border-color: #f87171; background: rgba(239, 68, 68, 0.15); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+    @keyframes healPulseAnim {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.8); border-color: #10b981; }
+      50% { box-shadow: 0 0 20px 4px rgba(16, 185, 129, 0.9); border-color: #34d399; background: rgba(16, 185, 129, 0.15); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    .damage-pulse {
+      animation: damagePulseAnim 0.75s ease-out !important;
+    }
+    .heal-pulse {
+      animation: healPulseAnim 0.75s ease-out !important;
+    }
+
+    /* 5. VTT Grid: Modo Foco e HUD Retrátil */
+    .battlegrid-container.vtt-focus-mode .vtt-combat-drawer,
+    .battlegrid-container.vtt-focus-mode .battlegrid-toolbar .toolbar-group:not(:first-child) {
+      display: none !important;
+    }
+    .battlegrid-container.vtt-focus-mode #board {
+      height: calc(100vh - 44px) !important;
+    }
+
+    /* 6. Ergonomia Mobile e Touch Targets >= 44px */
+    @media (max-width: 600px) {
+      .dock-btn {
+        min-height: 48px !important;
+        padding: 4px 0 !important;
+      }
+      .btn-spell-cast, .btn-spell-prep-toggle, .btn-spell-ritual {
+        min-height: 40px !important;
+        padding: 8px 12px !important;
+        font-size: 12px !important;
+      }
+      .player-hp-btn {
+        min-height: 44px !important;
+        font-size: 14px !important;
+        font-weight: 800 !important;
+      }
+    }
+
   </style>
 
   <!-- Google Firebase SDK Compat (Nuvem em Tempo Real) -->
@@ -9292,11 +9424,11 @@
               </div>
             </div>
             <div style="display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap;">
-              <button class="btn-action" style="flex: 1; min-width: 110px; background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff;" onclick="applyCombatAction('damage')">⚔️ Dano Cheio</button>
-              <button class="btn-secondary" style="padding: 7px 10px; font-size: 11px;" onclick="applyHalfDamage()" title="Aplica metade do valor digitado (Resistência ou Sucesso em Teste de Destreza/Constituição)">🛡️ Metade (Resist.)</button>
-              <button class="btn-secondary" style="padding: 7px 10px; font-size: 11px;" onclick="applyDoubleDamage()" title="Aplica o dobro do valor digitado (Vulnerabilidade a Dano)">💥 Dobro (Vuln.)</button>
-              <button class="btn-action" style="flex: 1; min-width: 90px; background: linear-gradient(135deg, #10b981, #047857); color: #fff;" onclick="applyCombatAction('heal')">💚 Curar</button>
-              <button class="btn-action" style="background: linear-gradient(135deg, #f59e0b, #b45309); color: #000;" onclick="applyCombatAction('crit')">🔥 Crítico</button>
+              <button id="btn-full-damage" class="btn-action" style="flex: 1; min-width: 105px; background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff;" onclick="applyCombatAction('damage')">⚔️ Dano Cheio</button>
+              <button id="btn-half-damage" class="btn-secondary" style="padding: 7px 10px; font-size: 11px; font-weight: 700; color: #38bdf8; border-color: rgba(56,189,248,0.4);" onclick="applyHalfDamage()" title="Aplica metade do valor digitado (Resistência ou Sucesso em Teste de Salvaguarda)">🛡️ ½ Dano (Save)</button>
+              <button id="btn-double-damage" class="btn-secondary" style="padding: 7px 10px; font-size: 11px; font-weight: 700; color: #f59e0b; border-color: rgba(245,158,11,0.4);" onclick="applyDoubleDamage()" title="Aplica o dobro do valor digitado (Vulnerabilidade a Dano)">💥 x2 (Vuln.)</button>
+              <button id="btn-heal-action" class="btn-action" style="flex: 1; min-width: 85px; background: linear-gradient(135deg, #10b981, #047857); color: #fff;" onclick="applyCombatAction('heal')">💚 Curar</button>
+              <button id="btn-crit-damage" class="btn-action" style="background: linear-gradient(135deg, #f59e0b, #b45309); color: #000; font-weight: 800;" onclick="applyCombatAction('crit')">🔥 Crítico</button>
             </div>
           </div>
         </div>
@@ -9339,6 +9471,7 @@
             </select>
             <button class="btn-secondary" onclick="openCreateSceneModal()" title="Criar Nova Cena">➕</button>
             <button class="btn-secondary" onclick="switchTab('grid-config')" title="Abrir Configurações do Grid & Mapas">⚙️ Config</button>
+            <button id="btn-toggle-vtt-focus" class="btn-secondary" onclick="toggleVttHudCollapse()" title="Modo Foco: Oculta/Mostra controles para 100% de área do mapa">👁️ Foco</button>
           </div>
 
           <!-- GRUPO 2: DOCK DE FERRAMENTAS TÁTICAS (SEGMENTED PILL) -->
@@ -10706,14 +10839,18 @@
 
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-          <label style="margin:0;">Espaços de Magia (Círculos 1º ao 5º - Calculados Automaticamente)</label>
+          <label style="margin:0;">Espaços de Magia (Círculos 1º ao 9º - Calculados Automaticamente)</label>
         </div>
-        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; background: #080c16; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color);">
-          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">1º CÍRCULO</span><input type="number" id="pm-slot-1" value="0" min="0" max="9" style="text-align: center;"></div>
-          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">2º CÍRCULO</span><input type="number" id="pm-slot-2" value="0" min="0" max="9" style="text-align: center;"></div>
-          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">3º CÍRCULO</span><input type="number" id="pm-slot-3" value="0" min="0" max="9" style="text-align: center;"></div>
-          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">4º CÍRCULO</span><input type="number" id="pm-slot-4" value="0" min="0" max="9" style="text-align: center;"></div>
-          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">5º CÍRCULO</span><input type="number" id="pm-slot-5" value="0" min="0" max="9" style="text-align: center;"></div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(58px, 1fr)); gap: 6px; background: #080c16; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color);">
+          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">1º CÍRC.</span><input type="number" id="pm-slot-1" value="0" min="0" max="9" style="text-align: center;"></div>
+          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">2º CÍRC.</span><input type="number" id="pm-slot-2" value="0" min="0" max="9" style="text-align: center;"></div>
+          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">3º CÍRC.</span><input type="number" id="pm-slot-3" value="0" min="0" max="9" style="text-align: center;"></div>
+          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">4º CÍRC.</span><input type="number" id="pm-slot-4" value="0" min="0" max="9" style="text-align: center;"></div>
+          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">5º CÍRC.</span><input type="number" id="pm-slot-5" value="0" min="0" max="9" style="text-align: center;"></div>
+          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">6º CÍRC.</span><input type="number" id="pm-slot-6" value="0" min="0" max="9" style="text-align: center;"></div>
+          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">7º CÍRC.</span><input type="number" id="pm-slot-7" value="0" min="0" max="9" style="text-align: center;"></div>
+          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">8º CÍRC.</span><input type="number" id="pm-slot-8" value="0" min="0" max="9" style="text-align: center;"></div>
+          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">9º CÍRC.</span><input type="number" id="pm-slot-9" value="0" min="0" max="9" style="text-align: center;"></div>
         </div>
       </div>
 
@@ -13001,6 +13138,37 @@
       <span class="dock-label">Mochila</span>
     </button>
   </nav>
+
+  <!-- ===================================================
+       ✨ MODAL: RESUMO RÁPIDO DE MAGIA (TACTILE PREVIEW)
+       =================================================== -->
+  <div id="modal-spell-quick-view" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeSpellQuickView()">
+    <div class="spell-quick-view-box">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 12px;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span id="sqv-icon" style="font-size: 24px;">✨</span>
+            <h3 id="sqv-name" style="margin: 0; font-family: var(--font-title); color: var(--primary-light); font-size: 18px;">Nome da Magia</h3>
+          </div>
+          <div id="sqv-type" style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">1º Círculo • Evocação</div>
+        </div>
+        <button class="modal-close-btn" onclick="closeSpellQuickView()" style="background: none; border: none; font-size: 20px; color: #94a3b8; cursor: pointer;">✕</button>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; font-size: 11px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px;">
+        <div><b style="color: #94a3b8;">Tempo:</b> <span id="sqv-time">-</span></div>
+        <div><b style="color: #94a3b8;">Alcance:</b> <span id="sqv-range">-</span></div>
+        <div><b style="color: #94a3b8;">Duração:</b> <span id="sqv-duration">-</span></div>
+      </div>
+      <div id="sqv-desc" style="font-size: 13px; line-height: 1.5; color: #cbd5e1; max-height: 220px; overflow-y: auto; margin-bottom: 16px; padding-right: 4px;"></div>
+      <div style="display: flex; gap: 8px; justify-content: flex-end;">
+        <button type="button" class="btn-secondary" onclick="closeSpellQuickView()">Fechar</button>
+        <button type="button" id="sqv-btn-cast" class="btn-action" style="min-height: 44px; padding: 8px 18px; font-weight: 800; font-size: 13px; background: linear-gradient(135deg, #06b6d4, #2563eb); color: #fff;">✨ Conjurar Esta Magia</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- POPOVER: CONDIÇÕES RÁPIDAS NO COMBATE -->
+  <div id="popover-combat-conditions" class="quick-cond-popover" style="display: none;" onclick="event.stopPropagation()"></div>
 
 
 <script>
@@ -32869,8 +33037,10 @@ function applyCloudDataToLocal(cloudData) {
               hitDice: isLocalLevelHigher ? (localChar.hitDice || remoteP.hitDice) : (remoteP.hitDice || localChar.hitDice),
               hitDiceCurrent: isLocalLevelHigher ? (localChar.hitDiceCurrent !== undefined ? localChar.hitDiceCurrent : remoteP.hitDiceCurrent) : (remoteP.hitDiceCurrent !== undefined ? remoteP.hitDiceCurrent : localChar.hitDiceCurrent),
               slots: isLocalLevelHigher ? (localChar.slots || remoteP.slots) : (remoteP.slots || localChar.slots),
-              slotsUsed: keepLocalSlots ? localChar.slotsUsed : (remoteP.slotsUsed || localChar.slotsUsed || [0, 0, 0, 0, 0]),
+              slotsUsed: keepLocalSlots ? localChar.slotsUsed : (remoteP.slotsUsed || localChar.slotsUsed || [0, 0, 0, 0, 0, 0, 0, 0, 0]),
               preparedSpells: (localChar.preparedSpells && localChar.preparedSpells.length > 0) ? localChar.preparedSpells : (remoteP.preparedSpells || []),
+              spellbookSpells: (localChar.spellbookSpells && localChar.spellbookSpells.length > 0) ? localChar.spellbookSpells : (remoteP.spellbookSpells || []),
+              customSpells: (localChar.customSpells && localChar.customSpells.length > 0) ? localChar.customSpells : (remoteP.customSpells || []),
               spells: (localChar.spells && localChar.spells.length > 0) ? localChar.spells : (remoteP.spells || localChar.spells),
               featureCharges: keepLocalFeatures ? localChar.featureCharges : (remoteP.featureCharges || localChar.featureCharges || []),
               // Mantém inventário mais recente entre ambos
@@ -32956,6 +33126,9 @@ function applyCloudDataToLocal(cloudData) {
                 className: remoteP.className,
                 slots: remoteP.slots || currentLocal.slots,
                 spells: remoteP.spells || currentLocal.spells,
+                preparedSpells: (remoteP.preparedSpells && remoteP.preparedSpells.length > 0) ? remoteP.preparedSpells : currentLocal.preparedSpells,
+                spellbookSpells: (remoteP.spellbookSpells && remoteP.spellbookSpells.length > 0) ? remoteP.spellbookSpells : currentLocal.spellbookSpells,
+                customSpells: (remoteP.customSpells && remoteP.customSpells.length > 0) ? remoteP.customSpells : currentLocal.customSpells,
                 hitDice: remoteP.hitDice || currentLocal.hitDice
               });
             } else if (isThisSpecificPlayerAuthor) {
@@ -33829,6 +34002,7 @@ function renderCombat() {
 
   list.innerHTML = state.combatants.map((c, i) => {
     const isActive = i === state.turnIndex;
+    const isOnDeck = (state.combatants.length > 1) && (i === (state.turnIndex + 1) % state.combatants.length);
     const hpPct = Math.max(0, Math.min(100, Math.round((c.hp / c.maxHp) * 100)));
     const hpColor = hpPct > 50 ? 'var(--accent-green)' : (hpPct > 25 ? '#eab308' : 'var(--accent-red)');
     const isDying = c.hp === 0;
@@ -33841,15 +34015,17 @@ function renderCombat() {
     }).join('');
 
     return `
-      <div class="combatant-item ${isActive ? 'glow' : ''} ${isDying ? 'dying' : (isBloodied ? 'bloodied' : '')} ${isCritical ? 'hp-critical' : ''}">
+      <div class="combatant-item ${isActive ? 'glow' : ''} ${isOnDeck ? 'combatant-on-deck' : ''} ${isDying ? 'dying' : (isBloodied ? 'bloodied' : '')} ${isCritical ? 'hp-critical' : ''}">
         <div class="combatant-header">
           <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
             <button class="btn-secondary" style="padding: 1px 6px; font-weight: 800; font-family: var(--font-mono); color: var(--primary); font-size: 13px; cursor: pointer; border: 1px dashed rgba(245,158,11,0.5);" onclick="editCombatantInit('${c.id}')" title="Clique para editar a Iniciativa">${c.init}</button>
             <span class="combatant-name" style="${isDying ? 'text-decoration: line-through; color: var(--accent-red);' : ''}">${c.name}</span>
+            ${isOnDeck ? '<span class="badge-on-deck" title="Próximo na ordem de iniciativa">⏳ Próximo</span>' : ''}
             ${c.type === 'player' ? '<span class="badge badge-cls">Aluno</span>' : '<span class="badge badge-cr">Monstro</span>'}
             ${isDying ? '<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border-color: #ef4444; font-size: 10px;">💀 0 PV</span>' : (isBloodied ? '<span class="badge" style="background: rgba(234, 179, 8, 0.2); color: #eab308; border-color: #eab308; font-size: 10px;">🩸 Sangrando</span>' : '')}
           </div>
           <div style="display: flex; gap: 4px; align-items: center;">
+            <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px;" onclick="openCombatQuickConditions(event, '${c.id}')" title="Condições Rápidas (Caído, Cego, etc.)">⚡ Status</button>
             <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px;" onclick="editCombatantInit('${c.id}')" title="Editar Iniciativa">🎲</button>
             <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px;" onclick="openCondModal('${c.id}')" title="Adicionar Condições / Status">🏷️</button>
             <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px; color: #f87171;" onclick="removeCombatant('${c.id}')" title="Remover do Combate">✕</button>
@@ -34548,6 +34724,94 @@ function applyDoubleDamage() {
   applyCombatAction('damage', `💥 Dobro do Dano (Vulnerabilidade): ${doubleVal} PV`);
 }
 
+function applyCriticalDamageMultiplier() {
+  applyDoubleDamage();
+}
+
+let activeQuickCondCombatantId = null;
+
+function openCombatQuickConditions(event, combatantId) {
+  if (event) event.stopPropagation();
+  const pop = document.getElementById('popover-combat-conditions');
+  if (!pop) return;
+  activeQuickCondCombatantId = combatantId;
+  const c = (state.combatants || []).find(x => x.id === combatantId);
+  if (!c) return;
+
+  const currentConds = c.conditions || [];
+  const quickList = [
+    { id: 'caido', name: '🤸 Caído' },
+    { id: 'atordoado', name: '💫 Atordoado' },
+    { id: 'cego', name: '👁️ Cego' },
+    { id: 'envenenado', name: '🧪 Envenenado' },
+    { id: 'paralisado', name: '⚡ Paralisado' },
+    { id: 'imobilizado', name: '🕸️ Imobilizado' },
+    { id: 'amedrontado', name: '😱 Amedrontado' },
+    { id: 'agarrado', name: '🤼 Agarrado' },
+    { id: 'invisivel', name: '👻 Invisível' },
+    { id: 'concentracao', name: '🔮 Concentração' }
+  ];
+
+  pop.innerHTML = `
+    <div style="grid-column: 1 / -1; display:flex; justify-content:space-between; align-items:center; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 2px;">
+      <b style="font-size: 11px; color: var(--accent-gold);">Condições: ${c.name}</b>
+      <span style="font-size: 11px; cursor: pointer; color: #94a3b8; padding: 0 4px;" onclick="closeCombatQuickConditions()">✕</span>
+    </div>
+    ${quickList.map(item => {
+      const active = currentConds.includes(item.id);
+      return `<button type="button" class="btn-quick-cond-tag ${active ? 'active' : ''}" onclick="toggleCombatQuickCondition('${combatantId}', '${item.id}')">${item.name} ${active ? '✓' : ''}</button>`;
+    }).join('')}
+  `;
+
+  if (event && event.pageX && event.pageY) {
+    pop.style.top = `${Math.min(window.innerHeight - 200, event.pageY + 10)}px`;
+    pop.style.left = `${Math.min(window.innerWidth - 240, Math.max(10, event.pageX - 100))}px`;
+  } else {
+    pop.style.top = '120px';
+    pop.style.left = '50%';
+    pop.style.transform = 'translateX(-50%)';
+  }
+  pop.style.display = 'grid';
+
+  setTimeout(() => {
+    const closeListener = (e) => {
+      if (!pop.contains(e.target)) {
+        closeCombatQuickConditions();
+        document.removeEventListener('click', closeListener);
+      }
+    };
+    document.addEventListener('click', closeListener);
+  }, 10);
+}
+
+function closeCombatQuickConditions() {
+  const pop = document.getElementById('popover-combat-conditions');
+  if (pop) pop.style.display = 'none';
+  activeQuickCondCombatantId = null;
+}
+
+function toggleCombatQuickCondition(combatantId, conditionId) {
+  const c = (state.combatants || []).find(x => x.id === combatantId);
+  if (!c) return;
+  c.conditions = c.conditions || [];
+  const idx = c.conditions.indexOf(conditionId);
+  if (idx > -1) {
+    c.conditions.splice(idx, 1);
+    addLog(`🏷️ <b>${c.name}</b> removeu a condição: <i>${conditionId}</i>`);
+  } else {
+    c.conditions.push(conditionId);
+    addLog(`🏷️ <b>${c.name}</b> recebeu a condição: <b>${conditionId}</b>`);
+  }
+  renderCombat();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  const pop = document.getElementById('popover-combat-conditions');
+  if (pop && pop.style.display !== 'none') {
+    openCombatQuickConditions(null, combatantId);
+  }
+}
+
+
 function addLog(msg) {
   if (typeof state === 'undefined' || !state) return;
   state.logs = state.logs || [];
@@ -34972,6 +35236,10 @@ if (typeof window !== 'undefined') {
   window.saveInlineHpEdit = saveInlineHpEdit;
   window.updateCombatantNotes = updateCombatantNotes;
   window.announceActiveTurn = announceActiveTurn;
+  window.applyCriticalDamageMultiplier = applyCriticalDamageMultiplier;
+  window.openCombatQuickConditions = openCombatQuickConditions;
+  window.closeCombatQuickConditions = closeCombatQuickConditions;
+  window.toggleCombatQuickCondition = toggleCombatQuickCondition;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -34989,7 +35257,11 @@ if (typeof module !== 'undefined' && module.exports) {
     enableInlineHpEdit,
     saveInlineHpEdit,
     updateCombatantNotes,
-    announceActiveTurn
+    announceActiveTurn,
+    applyCriticalDamageMultiplier,
+    openCombatQuickConditions,
+    closeCombatQuickConditions,
+    toggleCombatQuickCondition
   };
 }
 
@@ -36646,11 +36918,11 @@ function renderPlayers() {
             const isRitual = sp && (sp.ritual || (sp.desc && sp.desc.toLowerCase().includes('ritual')));
 
             return `
-                  <div class="spell-action-chip ${!isPrep && currentView === 'spellbook' ? 'unprepared-book-chip' : ''}">
+                  <div class="spell-action-chip player-spell-card-tactile ${!isPrep && currentView === 'spellbook' ? 'unprepared-book-chip' : ''}" onclick="openSpellQuickView('${escapeAttr(sName)}', '${p.id}', event)">
                     <div class="spell-chip-top">
                       <div class="spell-chip-name" title="${escapeAttr(sName)}">${sName} ${spActBadge}</div>
                       <div style="display:flex; align-items:center; gap:4px;">
-                        <button type="button" class="btn-spell-info" onclick="openSpellQuickSummaryModal('${escapeAttr(sName)}', '${p.id}', event)" title="Ver resumo rápido de ${escapeAttr(sName)}">ℹ️</button>
+                        <button type="button" class="btn-spell-info" onclick="openSpellQuickView('${escapeAttr(sName)}', '${p.id}', event)" title="Ver resumo rápido de ${escapeAttr(sName)}">ℹ️</button>
                         <span class="spell-chip-lvl ${isCantrip ? 'cantrip' : 'leveled'}">${lvlBadge}</span>
                       </div>
                     </div>
@@ -36662,23 +36934,23 @@ function renderPlayers() {
                     </div>
                     ${diceInfo ? `
                       <div class="spell-chip-dice-row">
-                        <button type="button" class="spell-dice-pill ${diceInfo.isHeal ? 'heal' : 'damage'}" onclick="rollPlayerSpellDice('${p.id}', '${escapeAttr(sName)}')" title="Clique para Rolar ${escapeAttr(diceInfo.label)}">
+                        <button type="button" class="spell-dice-pill ${diceInfo.isHeal ? 'heal' : 'damage'}" onclick="event.stopPropagation(); rollPlayerSpellDice('${p.id}', '${escapeAttr(sName)}')" title="Clique para Rolar ${escapeAttr(diceInfo.label)}">
                           <span>${diceInfo.icon}</span> <span>${diceInfo.label}</span> <span style="font-size:10px; opacity:0.8;">🎲</span>
                         </button>
                       </div>
                     ` : ''}
-                    <div class="spell-chip-actions-bar">
+                    <div class="spell-chip-actions-bar" onclick="event.stopPropagation()">
                       ${isPrep || isCantrip ? `
-                        <button class="btn-spell-cast" onclick="castPlayerSpellPrompt('${p.id}', '${escapeAttr(sName)}')" title="Lançar ${escapeAttr(sName)} (desconta slot se for magia de nível)">
+                        <button class="btn-spell-cast" onclick="event.stopPropagation(); castPlayerSpellPrompt('${p.id}', '${escapeAttr(sName)}')" title="Lançar ${escapeAttr(sName)} (desconta slot se for magia de nível)">
                           ⚡ Lançar
                         </button>
                       ` : ''}
                       ${(!isPrep && isRitual && isWizard) ? `
-                        <button class="btn-spell-ritual" onclick="castSpellAsRitual('${p.id}', '${escapeAttr(sName)}')" title="Conjurar como Ritual (+10 min, não gasta slot)">
+                        <button class="btn-spell-ritual" onclick="event.stopPropagation(); castSpellAsRitual('${p.id}', '${escapeAttr(sName)}')" title="Conjurar como Ritual (+10 min, não gasta slot)">
                           📜 Ritual
                         </button>
                       ` : ''}
-                      <button class="btn-spell-prep-toggle ${isPrep ? 'active' : ''}" onclick="togglePlayerSpellPrepared('${p.id}', '${escapeAttr(sName)}')" title="Alternar status desta magia">
+                      <button class="btn-spell-prep-toggle ${isPrep ? 'active' : ''}" onclick="event.stopPropagation(); togglePlayerSpellPrepared('${p.id}', '${escapeAttr(sName)}')" title="Alternar status desta magia">
                         ⭐ ${isCantrip ? 'Ativa' : (isPrep ? 'Preparada' : 'Preparar')}
                       </button>
                     </div>
@@ -37210,6 +37482,19 @@ function adjustPlayerHp(id, delta) {
   if (comb) { comb.hp = p.hp; if (typeof renderCombat === 'function') renderCombat(); }
 
   renderPlayers();
+
+  // Micro-interação cromática tátil (Dano / Cura)
+  if (typeof document !== 'undefined') {
+    const pulseTarget = document.getElementById(`hp-val-${id}`) || document.getElementById(`player-card-${id}`) || document.querySelector(`.player-hp-box[data-id="${id}"]`);
+    if (pulseTarget) {
+      const pClass = delta < 0 ? 'damage-pulse' : 'heal-pulse';
+      pulseTarget.classList.remove('damage-pulse', 'heal-pulse');
+      void pulseTarget.offsetWidth;
+      pulseTarget.classList.add(pClass);
+      setTimeout(() => pulseTarget.classList.remove(pClass), 800);
+    }
+  }
+
   saveToLocalStorage();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
   if (typeof broadcastStateSync === 'function') broadcastStateSync();
@@ -38868,78 +39153,86 @@ function getPlayerSubclassName(p, classItem = null) {
   return '';
 }
 
+function isSpellcasterClass(className, subclassIdx = 0, subclassName = '') {
+  const norm = String(className || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (norm.includes('mago') || norm.includes('clerigo') || norm.includes('druida') || norm.includes('feiticeiro') || norm.includes('bardo') || norm.includes('paladino') || norm.includes('patrulheiro') || norm.includes('bruxo') || norm.includes('warlock') || norm.includes('ranger') || norm.includes('wizard') || norm.includes('sorcerer') || norm.includes('cleric') || norm.includes('druid') || norm.includes('bard') || norm.includes('paladin')) {
+    return true;
+  }
+  return isMagicalSubclass(className, subclassIdx, subclassName);
+}
+
 function calculateSpellSlots(className, level, subclassIdx = null) {
-  const norm = (className || '').toLowerCase();
+  const norm = (className || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   level = parseInt(level) || 1;
   const isThird = isMagicalSubclass(className, subclassIdx);
 
-  // Full Casters: Bardo, Clérigo, Druida, Feiticeiro, Mago
-  if (norm.includes('bardo') || norm.includes('clérigo') || norm.includes('clerigo') || norm.includes('druida') || norm.includes('feiticeiro') || norm.includes('mago')) {
+  // Full Casters: Bardo, Clérigo, Druida, Feiticeiro, Mago (9 círculos D&D 5E)
+  if (norm.includes('bardo') || norm.includes('clerigo') || norm.includes('druida') || norm.includes('feiticeiro') || norm.includes('mago') || norm.includes('wizard') || norm.includes('cleric') || norm.includes('druid') || norm.includes('sorcerer') || norm.includes('bard')) {
     const fullTable = [
-      [2, 0, 0, 0, 0], // Nv 1
-      [3, 0, 0, 0, 0], // Nv 2
-      [4, 2, 0, 0, 0], // Nv 3
-      [4, 3, 0, 0, 0], // Nv 4
-      [4, 3, 2, 0, 0], // Nv 5
-      [4, 3, 3, 0, 0], // Nv 6
-      [4, 3, 3, 1, 0], // Nv 7
-      [4, 3, 3, 2, 0], // Nv 8
-      [4, 3, 3, 3, 1], // Nv 9
-      [4, 3, 3, 3, 2], // Nv 10
-      [4, 3, 3, 3, 2], // Nv 11
-      [4, 3, 3, 3, 2], // Nv 12
-      [4, 3, 3, 3, 2], // Nv 13
-      [4, 3, 3, 3, 2], // Nv 14
-      [4, 3, 3, 3, 2], // Nv 15
-      [4, 3, 3, 3, 2], // Nv 16
-      [4, 3, 3, 3, 2], // Nv 17
-      [4, 3, 3, 3, 3], // Nv 18
-      [4, 3, 3, 3, 3], // Nv 19
-      [4, 3, 3, 3, 3]  // Nv 20
+      [2, 0, 0, 0, 0, 0, 0, 0, 0], // Nv 1
+      [3, 0, 0, 0, 0, 0, 0, 0, 0], // Nv 2
+      [4, 2, 0, 0, 0, 0, 0, 0, 0], // Nv 3
+      [4, 3, 0, 0, 0, 0, 0, 0, 0], // Nv 4
+      [4, 3, 2, 0, 0, 0, 0, 0, 0], // Nv 5
+      [4, 3, 3, 0, 0, 0, 0, 0, 0], // Nv 6
+      [4, 3, 3, 1, 0, 0, 0, 0, 0], // Nv 7
+      [4, 3, 3, 2, 0, 0, 0, 0, 0], // Nv 8
+      [4, 3, 3, 3, 1, 0, 0, 0, 0], // Nv 9
+      [4, 3, 3, 3, 2, 0, 0, 0, 0], // Nv 10
+      [4, 3, 3, 3, 2, 1, 0, 0, 0], // Nv 11
+      [4, 3, 3, 3, 2, 1, 0, 0, 0], // Nv 12
+      [4, 3, 3, 3, 2, 1, 1, 0, 0], // Nv 13
+      [4, 3, 3, 3, 2, 1, 1, 0, 0], // Nv 14
+      [4, 3, 3, 3, 2, 1, 1, 1, 0], // Nv 15
+      [4, 3, 3, 3, 2, 1, 1, 1, 0], // Nv 16
+      [4, 3, 3, 3, 2, 1, 1, 1, 1], // Nv 17
+      [4, 3, 3, 3, 3, 1, 1, 1, 1], // Nv 18
+      [4, 3, 3, 3, 3, 2, 1, 1, 1], // Nv 19
+      [4, 3, 3, 3, 3, 2, 2, 1, 1]  // Nv 20
     ];
     return fullTable[Math.min(20, Math.max(1, level)) - 1];
   }
 
   // Half Casters: Paladino, Patrulheiro
-  if (norm.includes('paladino') || norm.includes('patrulheiro')) {
-    if (level < 2) return [0, 0, 0, 0, 0];
-    if (level === 2) return [2, 0, 0, 0, 0];
-    if (level <= 4) return [3, 0, 0, 0, 0];
-    if (level <= 6) return [4, 2, 0, 0, 0];
-    if (level <= 8) return [4, 3, 0, 0, 0];
-    if (level <= 10) return [4, 3, 2, 0, 0];
-    if (level <= 12) return [4, 3, 3, 0, 0];
-    if (level <= 14) return [4, 3, 3, 1, 0];
-    if (level <= 16) return [4, 3, 3, 2, 0];
-    if (level <= 18) return [4, 3, 3, 3, 1];
-    return [4, 3, 3, 3, 2];
+  if (norm.includes('paladino') || norm.includes('patrulheiro') || norm.includes('ranger') || norm.includes('paladin')) {
+    if (level < 2) return [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    if (level === 2) return [2, 0, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 4) return [3, 0, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 6) return [4, 2, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 8) return [4, 3, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 10) return [4, 3, 2, 0, 0, 0, 0, 0, 0];
+    if (level <= 12) return [4, 3, 3, 0, 0, 0, 0, 0, 0];
+    if (level <= 14) return [4, 3, 3, 1, 0, 0, 0, 0, 0];
+    if (level <= 16) return [4, 3, 3, 2, 0, 0, 0, 0, 0];
+    if (level <= 18) return [4, 3, 3, 3, 1, 0, 0, 0, 0];
+    return [4, 3, 3, 3, 2, 0, 0, 0, 0];
   }
 
   // Warlock / Bruxo: Pact Magic
   if (norm.includes('bruxo') || norm.includes('warlock')) {
-    if (level === 1) return [1, 0, 0, 0, 0];
-    if (level === 2) return [2, 0, 0, 0, 0];
-    if (level <= 4) return [0, 2, 0, 0, 0];
-    if (level <= 6) return [0, 0, 2, 0, 0];
-    if (level <= 8) return [0, 0, 0, 2, 0];
-    if (level <= 10) return [0, 0, 0, 0, 2];
-    if (level <= 16) return [0, 0, 0, 0, 3];
-    return [0, 0, 0, 0, 4];
+    if (level === 1) return [1, 0, 0, 0, 0, 0, 0, 0, 0];
+    if (level === 2) return [2, 0, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 4) return [0, 2, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 6) return [0, 0, 2, 0, 0, 0, 0, 0, 0];
+    if (level <= 8) return [0, 0, 0, 2, 0, 0, 0, 0, 0];
+    if (level <= 10) return [0, 0, 0, 0, 2, 0, 0, 0, 0];
+    if (level <= 16) return [0, 0, 0, 0, 3, 0, 0, 0, 0];
+    return [0, 0, 0, 0, 4, 0, 0, 0, 0];
   }
 
   // Third Casters: Ladino Trapaceiro Arcano (subclasse 2) / Guerreiro Cavaleiro Místico (subclasse 2)
   if (isThird || norm.includes('arcano') || norm.includes('eldritch') || norm.includes('trickster')) {
-    if (level < 3) return [0, 0, 0, 0, 0];
-    if (level <= 3) return [2, 0, 0, 0, 0];
-    if (level <= 6) return [3, 0, 0, 0, 0];
-    if (level <= 9) return [4, 2, 0, 0, 0];
-    if (level <= 12) return [4, 3, 0, 0, 0];
-    if (level <= 15) return [4, 3, 2, 0, 0];
-    if (level <= 18) return [4, 3, 3, 0, 0];
-    return [4, 3, 3, 1, 0];
+    if (level < 3) return [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 3) return [2, 0, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 6) return [3, 0, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 9) return [4, 2, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 12) return [4, 3, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 15) return [4, 3, 2, 0, 0, 0, 0, 0, 0];
+    if (level <= 18) return [4, 3, 3, 0, 0, 0, 0, 0, 0];
+    return [4, 3, 3, 1, 0, 0, 0, 0, 0];
   }
 
-  return [0, 0, 0, 0, 0];
+  return [0, 0, 0, 0, 0, 0, 0, 0, 0];
 }
 
 function getHitDieForClass(className) {
@@ -40148,6 +40441,65 @@ function closeSpellQuickSummaryModal() {
   if (modal) modal.classList.remove('open');
 }
 
+function openSpellQuickView(spellName, playerId = null, event = null) {
+  if (event) event.stopPropagation();
+  const modal = document.getElementById('modal-spell-quick-view');
+  if (!modal) {
+    if (typeof openSpellQuickSummaryModal === 'function') {
+      openSpellQuickSummaryModal(spellName, playerId, event);
+    }
+    return;
+  }
+
+  const sp = (typeof SPELLS_DATA !== 'undefined' && Array.isArray(SPELLS_DATA))
+    ? SPELLS_DATA.find(s => s.name.toLowerCase() === (spellName || '').toLowerCase())
+    : null;
+
+  const isCantrip = sp && sp.level === 0;
+  const circleText = sp ? (isCantrip ? 'Truque' : `${sp.level}º Círculo`) : 'Magia';
+  const school = sp ? sp.school : '';
+  const time = sp ? (sp.time || sp.castTime || '1 Ação') : '1 Ação';
+  const range = sp ? (sp.range || 'Pessoal') : 'Pessoal';
+  const duration = sp ? (sp.duration || 'Instantâneo') : 'Instantâneo';
+  const desc = sp ? (sp.desc || 'Sem descrição cadastrada.') : 'Magia D&D 5E.';
+
+  const nameEl = document.getElementById('sqv-name');
+  const typeEl = document.getElementById('sqv-type');
+  const timeEl = document.getElementById('sqv-time');
+  const rangeEl = document.getElementById('sqv-range');
+  const durEl = document.getElementById('sqv-duration');
+  const descEl = document.getElementById('sqv-desc');
+  const btnCast = document.getElementById('sqv-btn-cast');
+
+  if (nameEl) nameEl.textContent = spellName;
+  if (typeEl) typeEl.textContent = `${circleText} • ${school || 'Magia'}`;
+  if (timeEl) timeEl.textContent = time;
+  if (rangeEl) rangeEl.textContent = range;
+  if (durEl) durEl.textContent = duration;
+  if (descEl) descEl.innerHTML = desc;
+
+  if (btnCast) {
+    btnCast.onclick = () => {
+      closeSpellQuickView();
+      if (playerId && typeof castPlayerSpellPrompt === 'function') {
+        castPlayerSpellPrompt(playerId, spellName);
+      }
+    };
+  }
+
+  modal.classList.add('open');
+  modal.style.display = 'flex';
+}
+
+function closeSpellQuickView() {
+  const modal = document.getElementById('modal-spell-quick-view');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.style.display = 'none';
+  }
+}
+
+
 function isWizardPlayer(p) {
   if (!p) return false;
   const norm = (p.className || '').toLowerCase();
@@ -40767,8 +41119,20 @@ function castPlayerSpellPrompt(playerId, spellName) {
   document.getElementById('cast-spell-desc').innerHTML = sp ? sp.desc.replace(/\n/g, '<br>') : 'Sem descrição detalhada.';
 
   const slotsOptionsContainer = document.getElementById('cast-slot-options');
-  const slots = p.slots || [0, 0, 0, 0, 0];
-  const slotsUsed = p.slotsUsed || [0, 0, 0, 0, 0];
+  
+  // Se p.slots não existir ou estiver zerado, auto-calcula para conjuradores
+  if ((!p.slots || p.slots.every(s => s === 0)) && typeof calculateMulticlassSpellSlots === 'function') {
+    const calc = calculateMulticlassSpellSlots(p);
+    if (calc && calc.some(s => s > 0)) {
+      p.slots = calc;
+      p.slotsUsed = p.slots.map(() => 0);
+    }
+  }
+
+  const slots = (Array.isArray(p.slots) && p.slots.length > 0) ? [...p.slots] : [0, 0, 0, 0, 0, 0, 0, 0, 0];
+  while (slots.length < 9) slots.push(0);
+  const slotsUsed = (Array.isArray(p.slotsUsed) && p.slotsUsed.length > 0) ? [...p.slotsUsed] : slots.map(() => 0);
+  while (slotsUsed.length < 9) slotsUsed.push(0);
 
   let optionsHtml = '';
   let firstAvailableSlot = null;
@@ -40828,9 +41192,24 @@ function executeCastSpell(playerId, spellName, slotLevel) {
   const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === spellName.toLowerCase()) : null;
 
   if (slotLevel > 0) {
-    p.slotsUsed = p.slotsUsed || [0, 0, 0, 0, 0];
+    if (!Array.isArray(p.slots) || p.slots.length < 9) {
+      const defSlots = (typeof calculateMulticlassSpellSlots === 'function' ? calculateMulticlassSpellSlots(p) : null) || [0, 0, 0, 0, 0, 0, 0, 0, 0];
+      p.slots = Array.isArray(p.slots) ? [...p.slots] : [...defSlots];
+      while (p.slots.length < 9) p.slots.push(defSlots[p.slots.length] || 0);
+    }
+    if (!Array.isArray(p.slotsUsed) || p.slotsUsed.length < p.slots.length) {
+      p.slotsUsed = Array.isArray(p.slotsUsed) ? [...p.slotsUsed] : [];
+      while (p.slotsUsed.length < p.slots.length) p.slotsUsed.push(0);
+    }
+
     const lvlIdx = slotLevel - 1;
-    p.slotsUsed[lvlIdx] = Math.min((p.slots[lvlIdx] || 0), (p.slotsUsed[lvlIdx] || 0) + 1);
+    const maxAtLvl = p.slots[lvlIdx] || 0;
+    if (maxAtLvl > 0) {
+      p.slotsUsed[lvlIdx] = Math.min(maxAtLvl, (p.slotsUsed[lvlIdx] || 0) + 1);
+    } else {
+      p.slotsUsed[lvlIdx] = (p.slotsUsed[lvlIdx] || 0) + 1;
+      p.slots[lvlIdx] = Math.max(p.slots[lvlIdx] || 0, p.slotsUsed[lvlIdx]);
+    }
   }
 
   const slotText = slotLevel === 0 ? (sp && sp.level === 0 ? 'como Truque' : 'sem gastar espaço') : `gastando 1 espaço de ${slotLevel}º Círculo`;
@@ -40910,18 +41289,15 @@ function onPlayerModalClassOrLevelChange(preserveSlotsIfSet = false) {
   const subIdx = subclassSel ? parseInt(subclassSel.value) || 0 : 0;
 
   // Verifica se deve preservar slots existentes (se não estiverem zerados)
-  const currentSlots = [
-    parseInt(document.getElementById('pm-slot-1')?.value) || 0,
-    parseInt(document.getElementById('pm-slot-2')?.value) || 0,
-    parseInt(document.getElementById('pm-slot-3')?.value) || 0,
-    parseInt(document.getElementById('pm-slot-4')?.value) || 0,
-    parseInt(document.getElementById('pm-slot-5')?.value) || 0
-  ];
+  const currentSlots = [];
+  for (let i = 1; i <= 9; i++) {
+    currentSlots.push(parseInt(document.getElementById(`pm-slot-${i}`)?.value) || 0);
+  }
 
   const hasCustomSlots = preserveSlotsIfSet && currentSlots.some(s => s > 0);
   const slots = hasCustomSlots ? currentSlots : calculateSpellSlots(selectedClassName, level, subIdx);
 
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= 9; i++) {
     const slotInput = document.getElementById(`pm-slot-${i}`);
     if (slotInput) slotInput.value = slots[i - 1] || 0;
   }
@@ -41086,12 +41462,11 @@ function openPlayerModal(id) {
       fsSel.value = p.fightingStyle || '';
     }
 
-    const slots = p.slots || [0, 0, 0, 0, 0];
-    document.getElementById('pm-slot-1').value = slots[0] || 0;
-    document.getElementById('pm-slot-2').value = slots[1] || 0;
-    document.getElementById('pm-slot-3').value = slots[2] || 0;
-    document.getElementById('pm-slot-4').value = slots[3] || 0;
-    document.getElementById('pm-slot-5').value = slots[4] || 0;
+    const slots = p.slots || [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for (let i = 1; i <= 9; i++) {
+      const slotEl = document.getElementById(`pm-slot-${i}`);
+      if (slotEl) slotEl.value = slots[i - 1] || 0;
+    }
 
     document.getElementById('pm-badges').value = (p.badges || []).join(', ');
 
@@ -41206,13 +41581,11 @@ function savePlayerSheet() {
   const existing = id ? PLAYERS.find(x => x.id === id) : null;
   const maxHp = parseInt(document.getElementById('pm-maxhp').value) || 12;
 
-  let slots = [
-    parseInt(document.getElementById('pm-slot-1').value) || 0,
-    parseInt(document.getElementById('pm-slot-2').value) || 0,
-    parseInt(document.getElementById('pm-slot-3').value) || 0,
-    parseInt(document.getElementById('pm-slot-4').value) || 0,
-    parseInt(document.getElementById('pm-slot-5').value) || 0
-  ];
+  let slots = [];
+  for (let i = 1; i <= 9; i++) {
+    const el = document.getElementById(`pm-slot-${i}`);
+    slots.push(el ? (parseInt(el.value) || 0) : 0);
+  }
 
   const rawBadges = document.getElementById('pm-badges').value || '';
   const badges = rawBadges.split(',').map(b => b.trim()).filter(b => b);
@@ -41237,7 +41610,8 @@ function savePlayerSheet() {
   }
 
   const charLevel = parseInt(document.getElementById('pm-level').value) || 1;
-  if (isMagicalSubclass(classNameVal, subclassIdx, subclassName) && slots.every(s => s === 0)) {
+  const isCaster = isSpellcasterClass(classNameVal, subclassIdx, subclassName);
+  if (isCaster && slots.every(s => s === 0)) {
     slots = calculateSpellSlots(classNameVal, charLevel, subclassIdx);
   }
 
@@ -41325,6 +41699,27 @@ function savePlayerSheet() {
   }
 
 
+  let currentPrepared = existing && Array.isArray(existing.preparedSpells) ? [...existing.preparedSpells] : [];
+  let currentBook = existing && Array.isArray(existing.spellbookSpells) ? [...existing.spellbookSpells] : [...currentPrepared];
+  const spellsInputVal = document.getElementById('pm-spells') ? document.getElementById('pm-spells').value.trim() : '';
+
+  if (spellsInputVal) {
+    const spellTokens = spellsInputVal.split(/[\n,;]+/).map(s => s.trim()).filter(s => s.length > 0);
+    spellTokens.forEach(token => {
+      let matchedName = token;
+      if (typeof SPELLS_DATA !== 'undefined') {
+        const found = SPELLS_DATA.find(sp => sp.name.toLowerCase() === token.toLowerCase());
+        if (found) matchedName = found.name;
+      }
+      if (!currentPrepared.some(s => s.toLowerCase() === matchedName.toLowerCase())) {
+        currentPrepared.push(matchedName);
+      }
+      if (!currentBook.some(s => s.toLowerCase() === matchedName.toLowerCase())) {
+        currentBook.push(matchedName);
+      }
+    });
+  }
+
   const data = {
     id: id || 'p_' + Date.now(),
     student, name,
@@ -41363,8 +41758,9 @@ function savePlayerSheet() {
     conditions: existing ? (existing.conditions || []) : [],
     deathSaves: existing ? existing.deathSaves : { success: 0, fail: 0 },
     slots,
-    slotsUsed: existing ? existing.slotsUsed : [0, 0, 0, 0, 0],
-    preparedSpells: existing && existing.preparedSpells ? existing.preparedSpells : [],
+    slotsUsed: existing && Array.isArray(existing.slotsUsed) ? existing.slotsUsed : [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    spellbookSpells: currentBook,
+    preparedSpells: currentPrepared,
     skillProficiencies: existing && existing.skillProficiencies ? existing.skillProficiencies : [],
     skillExpertises: existing && existing.skillExpertises ? existing.skillExpertises : [],
     saveProficiencies: existing && existing.saveProficiencies ? existing.saveProficiencies : defaultSaves,
@@ -41716,8 +42112,8 @@ function serializePlayerForShare(p) {
     inspiration: !!p.inspiration,
     conditions: Array.isArray(p.conditions) ? p.conditions : [],
     deathSaves: p.deathSaves || { success: 0, fail: 0 },
-    slots: Array.isArray(p.slots) ? p.slots : [0, 0, 0, 0, 0],
-    slotsUsed: Array.isArray(p.slotsUsed) ? p.slotsUsed : [0, 0, 0, 0, 0],
+    slots: Array.isArray(p.slots) ? p.slots : [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    slotsUsed: Array.isArray(p.slotsUsed) ? p.slotsUsed : [0, 0, 0, 0, 0, 0, 0, 0, 0],
     str: parseInt(p.str) || 10,
     dex: parseInt(p.dex) || 10,
     con: parseInt(p.con) || 10,
@@ -41734,6 +42130,8 @@ function serializePlayerForShare(p) {
     attacks: p.attacks || '',
     spells: p.spells || '',
     preparedSpells: Array.isArray(p.preparedSpells) ? p.preparedSpells : [],
+    spellbookSpells: Array.isArray(p.spellbookSpells) ? p.spellbookSpells : [],
+    customSpells: Array.isArray(p.customSpells) ? p.customSpells : [],
     features: p.features || '',
     featureCharges: Array.isArray(p.featureCharges) ? p.featureCharges : [],
     inventory: Array.isArray(p.inventory) ? p.inventory : [],
@@ -43116,12 +43514,12 @@ function calculateMulticlassSpellSlots(player) {
 
   const baseSlots = calculateSpellSlots('mago', Math.max(1, casterLevel));
   // Se não tiver nenhum conjurador tradicional, zera os slots normais
-  const finalSlots = casterLevel > 0 ? baseSlots : [0, 0, 0, 0, 0];
+  const finalSlots = casterLevel > 0 ? baseSlots : [0, 0, 0, 0, 0, 0, 0, 0, 0];
 
   // Adiciona os slots de pacto do bruxo
   if (warlockLevel > 0) {
     const warlockSlots = calculateSpellSlots('bruxo', warlockLevel);
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 9; i++) {
       finalSlots[i] = (finalSlots[i] || 0) + (warlockSlots[i] || 0);
     }
   }
@@ -44713,6 +45111,7 @@ if (typeof window !== 'undefined') {
   window.openLevelUpWizardForActivePlayer = openLevelUpWizardForActivePlayer;
 
   window.isMagicalSubclass = isMagicalSubclass;
+  window.isSpellcasterClass = isSpellcasterClass;
   window.getPlayerSubclassName = getPlayerSubclassName;
   window.calculateSpellSlots = calculateSpellSlots;
   window.calculateMulticlassSpellSlots = calculateMulticlassSpellSlots;
@@ -44790,6 +45189,7 @@ if (typeof module !== 'undefined' && module.exports) {
     renderPlayerCombatModalContent,
     openLevelUpWizardForActivePlayer,
     isMagicalSubclass,
+    isSpellcasterClass,
     getPlayerSubclassName,
     calculateSpellSlots,
     calculateMulticlassSpellSlots,
@@ -44883,7 +45283,11 @@ if (typeof module !== 'undefined' && module.exports) {
     submitConcentrationRoll,
     scrollToPlayerSection,
     openQuickD20Modal,
-    rollWeaponDamageOnly
+    rollWeaponDamageOnly,
+
+    // ISSUE-108: Resumo Tátil de Magias
+    openSpellQuickView,
+    closeSpellQuickView
   };
 }
 
@@ -44922,6 +45326,10 @@ if (typeof window !== 'undefined') {
   window.scrollToPlayerSection = scrollToPlayerSection;
   window.openQuickD20Modal = openQuickD20Modal;
   window.rollWeaponDamageOnly = rollWeaponDamageOnly;
+
+  // ISSUE-108: Resumo Tátil de Magias
+  window.openSpellQuickView = openSpellQuickView;
+  window.closeSpellQuickView = closeSpellQuickView;
 }
 
 
@@ -51796,6 +52204,21 @@ function deleteCurrentSceneConfirm() {
   }
 }
 
+function toggleVttHudCollapse() {
+  const container = document.getElementById('battlegrid-container');
+  if (!container) return false;
+  const isFocus = container.classList.toggle('vtt-focus-mode');
+  const btn = document.getElementById('btn-toggle-vtt-focus');
+  if (btn) {
+    btn.innerHTML = isFocus ? '👁️ Painéis' : '👁️ Foco';
+    btn.classList.toggle('active', isFocus);
+  }
+  if (typeof showToast === 'function') {
+    showToast(isFocus ? '🗺️ VTT em Modo Foco (100% de visão do mapa)' : '🗺️ Painéis do VTT reexibidos', 'info');
+  }
+  return isFocus;
+}
+
 // Exportações para Window e Node.js
 if (typeof window !== 'undefined') {
   window.handleBoardTouchStart = handleBoardTouchStart;
@@ -51803,6 +52226,7 @@ if (typeof window !== 'undefined') {
   window.handleBoardTouchEnd = handleBoardTouchEnd;
   window.setTokenAura = setTokenAura;
   window.rollDiceFormula = rollDiceFormula;
+  window.toggleVttHudCollapse = toggleVttHudCollapse;
 }
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -51811,7 +52235,8 @@ if (typeof module !== 'undefined' && module.exports) {
     handleBoardTouchMove,
     handleBoardTouchEnd,
     setTokenAura,
-    rollDiceFormula
+    rollDiceFormula,
+    toggleVttHudCollapse
   };
 }
 

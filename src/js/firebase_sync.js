@@ -538,8 +538,10 @@ function applyCloudDataToLocal(cloudData) {
               hitDice: isLocalLevelHigher ? (localChar.hitDice || remoteP.hitDice) : (remoteP.hitDice || localChar.hitDice),
               hitDiceCurrent: isLocalLevelHigher ? (localChar.hitDiceCurrent !== undefined ? localChar.hitDiceCurrent : remoteP.hitDiceCurrent) : (remoteP.hitDiceCurrent !== undefined ? remoteP.hitDiceCurrent : localChar.hitDiceCurrent),
               slots: isLocalLevelHigher ? (localChar.slots || remoteP.slots) : (remoteP.slots || localChar.slots),
-              slotsUsed: keepLocalSlots ? localChar.slotsUsed : (remoteP.slotsUsed || localChar.slotsUsed || [0, 0, 0, 0, 0]),
+              slotsUsed: keepLocalSlots ? localChar.slotsUsed : (remoteP.slotsUsed || localChar.slotsUsed || [0, 0, 0, 0, 0, 0, 0, 0, 0]),
               preparedSpells: (localChar.preparedSpells && localChar.preparedSpells.length > 0) ? localChar.preparedSpells : (remoteP.preparedSpells || []),
+              spellbookSpells: (localChar.spellbookSpells && localChar.spellbookSpells.length > 0) ? localChar.spellbookSpells : (remoteP.spellbookSpells || []),
+              customSpells: (localChar.customSpells && localChar.customSpells.length > 0) ? localChar.customSpells : (remoteP.customSpells || []),
               spells: (localChar.spells && localChar.spells.length > 0) ? localChar.spells : (remoteP.spells || localChar.spells),
               featureCharges: keepLocalFeatures ? localChar.featureCharges : (remoteP.featureCharges || localChar.featureCharges || []),
               // Mantém inventário mais recente entre ambos
@@ -625,6 +627,9 @@ function applyCloudDataToLocal(cloudData) {
                 className: remoteP.className,
                 slots: remoteP.slots || currentLocal.slots,
                 spells: remoteP.spells || currentLocal.spells,
+                preparedSpells: (remoteP.preparedSpells && remoteP.preparedSpells.length > 0) ? remoteP.preparedSpells : currentLocal.preparedSpells,
+                spellbookSpells: (remoteP.spellbookSpells && remoteP.spellbookSpells.length > 0) ? remoteP.spellbookSpells : currentLocal.spellbookSpells,
+                customSpells: (remoteP.customSpells && remoteP.customSpells.length > 0) ? remoteP.customSpells : currentLocal.customSpells,
                 hitDice: remoteP.hitDice || currentLocal.hitDice
               });
             } else if (isThisSpecificPlayerAuthor) {

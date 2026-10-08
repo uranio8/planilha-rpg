@@ -1651,11 +1651,11 @@ function renderPlayers() {
             const isRitual = sp && (sp.ritual || (sp.desc && sp.desc.toLowerCase().includes('ritual')));
 
             return `
-                  <div class="spell-action-chip ${!isPrep && currentView === 'spellbook' ? 'unprepared-book-chip' : ''}">
+                  <div class="spell-action-chip player-spell-card-tactile ${!isPrep && currentView === 'spellbook' ? 'unprepared-book-chip' : ''}" onclick="openSpellQuickView('${escapeAttr(sName)}', '${p.id}', event)">
                     <div class="spell-chip-top">
                       <div class="spell-chip-name" title="${escapeAttr(sName)}">${sName} ${spActBadge}</div>
                       <div style="display:flex; align-items:center; gap:4px;">
-                        <button type="button" class="btn-spell-info" onclick="openSpellQuickSummaryModal('${escapeAttr(sName)}', '${p.id}', event)" title="Ver resumo rápido de ${escapeAttr(sName)}">ℹ️</button>
+                        <button type="button" class="btn-spell-info" onclick="openSpellQuickView('${escapeAttr(sName)}', '${p.id}', event)" title="Ver resumo rápido de ${escapeAttr(sName)}">ℹ️</button>
                         <span class="spell-chip-lvl ${isCantrip ? 'cantrip' : 'leveled'}">${lvlBadge}</span>
                       </div>
                     </div>
@@ -1667,23 +1667,23 @@ function renderPlayers() {
                     </div>
                     ${diceInfo ? `
                       <div class="spell-chip-dice-row">
-                        <button type="button" class="spell-dice-pill ${diceInfo.isHeal ? 'heal' : 'damage'}" onclick="rollPlayerSpellDice('${p.id}', '${escapeAttr(sName)}')" title="Clique para Rolar ${escapeAttr(diceInfo.label)}">
+                        <button type="button" class="spell-dice-pill ${diceInfo.isHeal ? 'heal' : 'damage'}" onclick="event.stopPropagation(); rollPlayerSpellDice('${p.id}', '${escapeAttr(sName)}')" title="Clique para Rolar ${escapeAttr(diceInfo.label)}">
                           <span>${diceInfo.icon}</span> <span>${diceInfo.label}</span> <span style="font-size:10px; opacity:0.8;">🎲</span>
                         </button>
                       </div>
                     ` : ''}
-                    <div class="spell-chip-actions-bar">
+                    <div class="spell-chip-actions-bar" onclick="event.stopPropagation()">
                       ${isPrep || isCantrip ? `
-                        <button class="btn-spell-cast" onclick="castPlayerSpellPrompt('${p.id}', '${escapeAttr(sName)}')" title="Lançar ${escapeAttr(sName)} (desconta slot se for magia de nível)">
+                        <button class="btn-spell-cast" onclick="event.stopPropagation(); castPlayerSpellPrompt('${p.id}', '${escapeAttr(sName)}')" title="Lançar ${escapeAttr(sName)} (desconta slot se for magia de nível)">
                           ⚡ Lançar
                         </button>
                       ` : ''}
                       ${(!isPrep && isRitual && isWizard) ? `
-                        <button class="btn-spell-ritual" onclick="castSpellAsRitual('${p.id}', '${escapeAttr(sName)}')" title="Conjurar como Ritual (+10 min, não gasta slot)">
+                        <button class="btn-spell-ritual" onclick="event.stopPropagation(); castSpellAsRitual('${p.id}', '${escapeAttr(sName)}')" title="Conjurar como Ritual (+10 min, não gasta slot)">
                           📜 Ritual
                         </button>
                       ` : ''}
-                      <button class="btn-spell-prep-toggle ${isPrep ? 'active' : ''}" onclick="togglePlayerSpellPrepared('${p.id}', '${escapeAttr(sName)}')" title="Alternar status desta magia">
+                      <button class="btn-spell-prep-toggle ${isPrep ? 'active' : ''}" onclick="event.stopPropagation(); togglePlayerSpellPrepared('${p.id}', '${escapeAttr(sName)}')" title="Alternar status desta magia">
                         ⭐ ${isCantrip ? 'Ativa' : (isPrep ? 'Preparada' : 'Preparar')}
                       </button>
                     </div>
@@ -2215,6 +2215,19 @@ function adjustPlayerHp(id, delta) {
   if (comb) { comb.hp = p.hp; if (typeof renderCombat === 'function') renderCombat(); }
 
   renderPlayers();
+
+  // Micro-interação cromática tátil (Dano / Cura)
+  if (typeof document !== 'undefined') {
+    const pulseTarget = document.getElementById(`hp-val-${id}`) || document.getElementById(`player-card-${id}`) || document.querySelector(`.player-hp-box[data-id="${id}"]`);
+    if (pulseTarget) {
+      const pClass = delta < 0 ? 'damage-pulse' : 'heal-pulse';
+      pulseTarget.classList.remove('damage-pulse', 'heal-pulse');
+      void pulseTarget.offsetWidth;
+      pulseTarget.classList.add(pClass);
+      setTimeout(() => pulseTarget.classList.remove(pClass), 800);
+    }
+  }
+
   saveToLocalStorage();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
   if (typeof broadcastStateSync === 'function') broadcastStateSync();
@@ -3873,78 +3886,86 @@ function getPlayerSubclassName(p, classItem = null) {
   return '';
 }
 
+function isSpellcasterClass(className, subclassIdx = 0, subclassName = '') {
+  const norm = String(className || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (norm.includes('mago') || norm.includes('clerigo') || norm.includes('druida') || norm.includes('feiticeiro') || norm.includes('bardo') || norm.includes('paladino') || norm.includes('patrulheiro') || norm.includes('bruxo') || norm.includes('warlock') || norm.includes('ranger') || norm.includes('wizard') || norm.includes('sorcerer') || norm.includes('cleric') || norm.includes('druid') || norm.includes('bard') || norm.includes('paladin')) {
+    return true;
+  }
+  return isMagicalSubclass(className, subclassIdx, subclassName);
+}
+
 function calculateSpellSlots(className, level, subclassIdx = null) {
-  const norm = (className || '').toLowerCase();
+  const norm = (className || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   level = parseInt(level) || 1;
   const isThird = isMagicalSubclass(className, subclassIdx);
 
-  // Full Casters: Bardo, Clérigo, Druida, Feiticeiro, Mago
-  if (norm.includes('bardo') || norm.includes('clérigo') || norm.includes('clerigo') || norm.includes('druida') || norm.includes('feiticeiro') || norm.includes('mago')) {
+  // Full Casters: Bardo, Clérigo, Druida, Feiticeiro, Mago (9 círculos D&D 5E)
+  if (norm.includes('bardo') || norm.includes('clerigo') || norm.includes('druida') || norm.includes('feiticeiro') || norm.includes('mago') || norm.includes('wizard') || norm.includes('cleric') || norm.includes('druid') || norm.includes('sorcerer') || norm.includes('bard')) {
     const fullTable = [
-      [2, 0, 0, 0, 0], // Nv 1
-      [3, 0, 0, 0, 0], // Nv 2
-      [4, 2, 0, 0, 0], // Nv 3
-      [4, 3, 0, 0, 0], // Nv 4
-      [4, 3, 2, 0, 0], // Nv 5
-      [4, 3, 3, 0, 0], // Nv 6
-      [4, 3, 3, 1, 0], // Nv 7
-      [4, 3, 3, 2, 0], // Nv 8
-      [4, 3, 3, 3, 1], // Nv 9
-      [4, 3, 3, 3, 2], // Nv 10
-      [4, 3, 3, 3, 2], // Nv 11
-      [4, 3, 3, 3, 2], // Nv 12
-      [4, 3, 3, 3, 2], // Nv 13
-      [4, 3, 3, 3, 2], // Nv 14
-      [4, 3, 3, 3, 2], // Nv 15
-      [4, 3, 3, 3, 2], // Nv 16
-      [4, 3, 3, 3, 2], // Nv 17
-      [4, 3, 3, 3, 3], // Nv 18
-      [4, 3, 3, 3, 3], // Nv 19
-      [4, 3, 3, 3, 3]  // Nv 20
+      [2, 0, 0, 0, 0, 0, 0, 0, 0], // Nv 1
+      [3, 0, 0, 0, 0, 0, 0, 0, 0], // Nv 2
+      [4, 2, 0, 0, 0, 0, 0, 0, 0], // Nv 3
+      [4, 3, 0, 0, 0, 0, 0, 0, 0], // Nv 4
+      [4, 3, 2, 0, 0, 0, 0, 0, 0], // Nv 5
+      [4, 3, 3, 0, 0, 0, 0, 0, 0], // Nv 6
+      [4, 3, 3, 1, 0, 0, 0, 0, 0], // Nv 7
+      [4, 3, 3, 2, 0, 0, 0, 0, 0], // Nv 8
+      [4, 3, 3, 3, 1, 0, 0, 0, 0], // Nv 9
+      [4, 3, 3, 3, 2, 0, 0, 0, 0], // Nv 10
+      [4, 3, 3, 3, 2, 1, 0, 0, 0], // Nv 11
+      [4, 3, 3, 3, 2, 1, 0, 0, 0], // Nv 12
+      [4, 3, 3, 3, 2, 1, 1, 0, 0], // Nv 13
+      [4, 3, 3, 3, 2, 1, 1, 0, 0], // Nv 14
+      [4, 3, 3, 3, 2, 1, 1, 1, 0], // Nv 15
+      [4, 3, 3, 3, 2, 1, 1, 1, 0], // Nv 16
+      [4, 3, 3, 3, 2, 1, 1, 1, 1], // Nv 17
+      [4, 3, 3, 3, 3, 1, 1, 1, 1], // Nv 18
+      [4, 3, 3, 3, 3, 2, 1, 1, 1], // Nv 19
+      [4, 3, 3, 3, 3, 2, 2, 1, 1]  // Nv 20
     ];
     return fullTable[Math.min(20, Math.max(1, level)) - 1];
   }
 
   // Half Casters: Paladino, Patrulheiro
-  if (norm.includes('paladino') || norm.includes('patrulheiro')) {
-    if (level < 2) return [0, 0, 0, 0, 0];
-    if (level === 2) return [2, 0, 0, 0, 0];
-    if (level <= 4) return [3, 0, 0, 0, 0];
-    if (level <= 6) return [4, 2, 0, 0, 0];
-    if (level <= 8) return [4, 3, 0, 0, 0];
-    if (level <= 10) return [4, 3, 2, 0, 0];
-    if (level <= 12) return [4, 3, 3, 0, 0];
-    if (level <= 14) return [4, 3, 3, 1, 0];
-    if (level <= 16) return [4, 3, 3, 2, 0];
-    if (level <= 18) return [4, 3, 3, 3, 1];
-    return [4, 3, 3, 3, 2];
+  if (norm.includes('paladino') || norm.includes('patrulheiro') || norm.includes('ranger') || norm.includes('paladin')) {
+    if (level < 2) return [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    if (level === 2) return [2, 0, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 4) return [3, 0, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 6) return [4, 2, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 8) return [4, 3, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 10) return [4, 3, 2, 0, 0, 0, 0, 0, 0];
+    if (level <= 12) return [4, 3, 3, 0, 0, 0, 0, 0, 0];
+    if (level <= 14) return [4, 3, 3, 1, 0, 0, 0, 0, 0];
+    if (level <= 16) return [4, 3, 3, 2, 0, 0, 0, 0, 0];
+    if (level <= 18) return [4, 3, 3, 3, 1, 0, 0, 0, 0];
+    return [4, 3, 3, 3, 2, 0, 0, 0, 0];
   }
 
   // Warlock / Bruxo: Pact Magic
   if (norm.includes('bruxo') || norm.includes('warlock')) {
-    if (level === 1) return [1, 0, 0, 0, 0];
-    if (level === 2) return [2, 0, 0, 0, 0];
-    if (level <= 4) return [0, 2, 0, 0, 0];
-    if (level <= 6) return [0, 0, 2, 0, 0];
-    if (level <= 8) return [0, 0, 0, 2, 0];
-    if (level <= 10) return [0, 0, 0, 0, 2];
-    if (level <= 16) return [0, 0, 0, 0, 3];
-    return [0, 0, 0, 0, 4];
+    if (level === 1) return [1, 0, 0, 0, 0, 0, 0, 0, 0];
+    if (level === 2) return [2, 0, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 4) return [0, 2, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 6) return [0, 0, 2, 0, 0, 0, 0, 0, 0];
+    if (level <= 8) return [0, 0, 0, 2, 0, 0, 0, 0, 0];
+    if (level <= 10) return [0, 0, 0, 0, 2, 0, 0, 0, 0];
+    if (level <= 16) return [0, 0, 0, 0, 3, 0, 0, 0, 0];
+    return [0, 0, 0, 0, 4, 0, 0, 0, 0];
   }
 
   // Third Casters: Ladino Trapaceiro Arcano (subclasse 2) / Guerreiro Cavaleiro Místico (subclasse 2)
   if (isThird || norm.includes('arcano') || norm.includes('eldritch') || norm.includes('trickster')) {
-    if (level < 3) return [0, 0, 0, 0, 0];
-    if (level <= 3) return [2, 0, 0, 0, 0];
-    if (level <= 6) return [3, 0, 0, 0, 0];
-    if (level <= 9) return [4, 2, 0, 0, 0];
-    if (level <= 12) return [4, 3, 0, 0, 0];
-    if (level <= 15) return [4, 3, 2, 0, 0];
-    if (level <= 18) return [4, 3, 3, 0, 0];
-    return [4, 3, 3, 1, 0];
+    if (level < 3) return [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 3) return [2, 0, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 6) return [3, 0, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 9) return [4, 2, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 12) return [4, 3, 0, 0, 0, 0, 0, 0, 0];
+    if (level <= 15) return [4, 3, 2, 0, 0, 0, 0, 0, 0];
+    if (level <= 18) return [4, 3, 3, 0, 0, 0, 0, 0, 0];
+    return [4, 3, 3, 1, 0, 0, 0, 0, 0];
   }
 
-  return [0, 0, 0, 0, 0];
+  return [0, 0, 0, 0, 0, 0, 0, 0, 0];
 }
 
 function getHitDieForClass(className) {
@@ -5153,6 +5174,65 @@ function closeSpellQuickSummaryModal() {
   if (modal) modal.classList.remove('open');
 }
 
+function openSpellQuickView(spellName, playerId = null, event = null) {
+  if (event) event.stopPropagation();
+  const modal = document.getElementById('modal-spell-quick-view');
+  if (!modal) {
+    if (typeof openSpellQuickSummaryModal === 'function') {
+      openSpellQuickSummaryModal(spellName, playerId, event);
+    }
+    return;
+  }
+
+  const sp = (typeof SPELLS_DATA !== 'undefined' && Array.isArray(SPELLS_DATA))
+    ? SPELLS_DATA.find(s => s.name.toLowerCase() === (spellName || '').toLowerCase())
+    : null;
+
+  const isCantrip = sp && sp.level === 0;
+  const circleText = sp ? (isCantrip ? 'Truque' : `${sp.level}º Círculo`) : 'Magia';
+  const school = sp ? sp.school : '';
+  const time = sp ? (sp.time || sp.castTime || '1 Ação') : '1 Ação';
+  const range = sp ? (sp.range || 'Pessoal') : 'Pessoal';
+  const duration = sp ? (sp.duration || 'Instantâneo') : 'Instantâneo';
+  const desc = sp ? (sp.desc || 'Sem descrição cadastrada.') : 'Magia D&D 5E.';
+
+  const nameEl = document.getElementById('sqv-name');
+  const typeEl = document.getElementById('sqv-type');
+  const timeEl = document.getElementById('sqv-time');
+  const rangeEl = document.getElementById('sqv-range');
+  const durEl = document.getElementById('sqv-duration');
+  const descEl = document.getElementById('sqv-desc');
+  const btnCast = document.getElementById('sqv-btn-cast');
+
+  if (nameEl) nameEl.textContent = spellName;
+  if (typeEl) typeEl.textContent = `${circleText} • ${school || 'Magia'}`;
+  if (timeEl) timeEl.textContent = time;
+  if (rangeEl) rangeEl.textContent = range;
+  if (durEl) durEl.textContent = duration;
+  if (descEl) descEl.innerHTML = desc;
+
+  if (btnCast) {
+    btnCast.onclick = () => {
+      closeSpellQuickView();
+      if (playerId && typeof castPlayerSpellPrompt === 'function') {
+        castPlayerSpellPrompt(playerId, spellName);
+      }
+    };
+  }
+
+  modal.classList.add('open');
+  modal.style.display = 'flex';
+}
+
+function closeSpellQuickView() {
+  const modal = document.getElementById('modal-spell-quick-view');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.style.display = 'none';
+  }
+}
+
+
 function isWizardPlayer(p) {
   if (!p) return false;
   const norm = (p.className || '').toLowerCase();
@@ -5772,8 +5852,20 @@ function castPlayerSpellPrompt(playerId, spellName) {
   document.getElementById('cast-spell-desc').innerHTML = sp ? sp.desc.replace(/\n/g, '<br>') : 'Sem descrição detalhada.';
 
   const slotsOptionsContainer = document.getElementById('cast-slot-options');
-  const slots = p.slots || [0, 0, 0, 0, 0];
-  const slotsUsed = p.slotsUsed || [0, 0, 0, 0, 0];
+  
+  // Se p.slots não existir ou estiver zerado, auto-calcula para conjuradores
+  if ((!p.slots || p.slots.every(s => s === 0)) && typeof calculateMulticlassSpellSlots === 'function') {
+    const calc = calculateMulticlassSpellSlots(p);
+    if (calc && calc.some(s => s > 0)) {
+      p.slots = calc;
+      p.slotsUsed = p.slots.map(() => 0);
+    }
+  }
+
+  const slots = (Array.isArray(p.slots) && p.slots.length > 0) ? [...p.slots] : [0, 0, 0, 0, 0, 0, 0, 0, 0];
+  while (slots.length < 9) slots.push(0);
+  const slotsUsed = (Array.isArray(p.slotsUsed) && p.slotsUsed.length > 0) ? [...p.slotsUsed] : slots.map(() => 0);
+  while (slotsUsed.length < 9) slotsUsed.push(0);
 
   let optionsHtml = '';
   let firstAvailableSlot = null;
@@ -5833,9 +5925,24 @@ function executeCastSpell(playerId, spellName, slotLevel) {
   const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === spellName.toLowerCase()) : null;
 
   if (slotLevel > 0) {
-    p.slotsUsed = p.slotsUsed || [0, 0, 0, 0, 0];
+    if (!Array.isArray(p.slots) || p.slots.length < 9) {
+      const defSlots = (typeof calculateMulticlassSpellSlots === 'function' ? calculateMulticlassSpellSlots(p) : null) || [0, 0, 0, 0, 0, 0, 0, 0, 0];
+      p.slots = Array.isArray(p.slots) ? [...p.slots] : [...defSlots];
+      while (p.slots.length < 9) p.slots.push(defSlots[p.slots.length] || 0);
+    }
+    if (!Array.isArray(p.slotsUsed) || p.slotsUsed.length < p.slots.length) {
+      p.slotsUsed = Array.isArray(p.slotsUsed) ? [...p.slotsUsed] : [];
+      while (p.slotsUsed.length < p.slots.length) p.slotsUsed.push(0);
+    }
+
     const lvlIdx = slotLevel - 1;
-    p.slotsUsed[lvlIdx] = Math.min((p.slots[lvlIdx] || 0), (p.slotsUsed[lvlIdx] || 0) + 1);
+    const maxAtLvl = p.slots[lvlIdx] || 0;
+    if (maxAtLvl > 0) {
+      p.slotsUsed[lvlIdx] = Math.min(maxAtLvl, (p.slotsUsed[lvlIdx] || 0) + 1);
+    } else {
+      p.slotsUsed[lvlIdx] = (p.slotsUsed[lvlIdx] || 0) + 1;
+      p.slots[lvlIdx] = Math.max(p.slots[lvlIdx] || 0, p.slotsUsed[lvlIdx]);
+    }
   }
 
   const slotText = slotLevel === 0 ? (sp && sp.level === 0 ? 'como Truque' : 'sem gastar espaço') : `gastando 1 espaço de ${slotLevel}º Círculo`;
@@ -5915,18 +6022,15 @@ function onPlayerModalClassOrLevelChange(preserveSlotsIfSet = false) {
   const subIdx = subclassSel ? parseInt(subclassSel.value) || 0 : 0;
 
   // Verifica se deve preservar slots existentes (se não estiverem zerados)
-  const currentSlots = [
-    parseInt(document.getElementById('pm-slot-1')?.value) || 0,
-    parseInt(document.getElementById('pm-slot-2')?.value) || 0,
-    parseInt(document.getElementById('pm-slot-3')?.value) || 0,
-    parseInt(document.getElementById('pm-slot-4')?.value) || 0,
-    parseInt(document.getElementById('pm-slot-5')?.value) || 0
-  ];
+  const currentSlots = [];
+  for (let i = 1; i <= 9; i++) {
+    currentSlots.push(parseInt(document.getElementById(`pm-slot-${i}`)?.value) || 0);
+  }
 
   const hasCustomSlots = preserveSlotsIfSet && currentSlots.some(s => s > 0);
   const slots = hasCustomSlots ? currentSlots : calculateSpellSlots(selectedClassName, level, subIdx);
 
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= 9; i++) {
     const slotInput = document.getElementById(`pm-slot-${i}`);
     if (slotInput) slotInput.value = slots[i - 1] || 0;
   }
@@ -6091,12 +6195,11 @@ function openPlayerModal(id) {
       fsSel.value = p.fightingStyle || '';
     }
 
-    const slots = p.slots || [0, 0, 0, 0, 0];
-    document.getElementById('pm-slot-1').value = slots[0] || 0;
-    document.getElementById('pm-slot-2').value = slots[1] || 0;
-    document.getElementById('pm-slot-3').value = slots[2] || 0;
-    document.getElementById('pm-slot-4').value = slots[3] || 0;
-    document.getElementById('pm-slot-5').value = slots[4] || 0;
+    const slots = p.slots || [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for (let i = 1; i <= 9; i++) {
+      const slotEl = document.getElementById(`pm-slot-${i}`);
+      if (slotEl) slotEl.value = slots[i - 1] || 0;
+    }
 
     document.getElementById('pm-badges').value = (p.badges || []).join(', ');
 
@@ -6211,13 +6314,11 @@ function savePlayerSheet() {
   const existing = id ? PLAYERS.find(x => x.id === id) : null;
   const maxHp = parseInt(document.getElementById('pm-maxhp').value) || 12;
 
-  let slots = [
-    parseInt(document.getElementById('pm-slot-1').value) || 0,
-    parseInt(document.getElementById('pm-slot-2').value) || 0,
-    parseInt(document.getElementById('pm-slot-3').value) || 0,
-    parseInt(document.getElementById('pm-slot-4').value) || 0,
-    parseInt(document.getElementById('pm-slot-5').value) || 0
-  ];
+  let slots = [];
+  for (let i = 1; i <= 9; i++) {
+    const el = document.getElementById(`pm-slot-${i}`);
+    slots.push(el ? (parseInt(el.value) || 0) : 0);
+  }
 
   const rawBadges = document.getElementById('pm-badges').value || '';
   const badges = rawBadges.split(',').map(b => b.trim()).filter(b => b);
@@ -6242,7 +6343,8 @@ function savePlayerSheet() {
   }
 
   const charLevel = parseInt(document.getElementById('pm-level').value) || 1;
-  if (isMagicalSubclass(classNameVal, subclassIdx, subclassName) && slots.every(s => s === 0)) {
+  const isCaster = isSpellcasterClass(classNameVal, subclassIdx, subclassName);
+  if (isCaster && slots.every(s => s === 0)) {
     slots = calculateSpellSlots(classNameVal, charLevel, subclassIdx);
   }
 
@@ -6330,6 +6432,27 @@ function savePlayerSheet() {
   }
 
 
+  let currentPrepared = existing && Array.isArray(existing.preparedSpells) ? [...existing.preparedSpells] : [];
+  let currentBook = existing && Array.isArray(existing.spellbookSpells) ? [...existing.spellbookSpells] : [...currentPrepared];
+  const spellsInputVal = document.getElementById('pm-spells') ? document.getElementById('pm-spells').value.trim() : '';
+
+  if (spellsInputVal) {
+    const spellTokens = spellsInputVal.split(/[\n,;]+/).map(s => s.trim()).filter(s => s.length > 0);
+    spellTokens.forEach(token => {
+      let matchedName = token;
+      if (typeof SPELLS_DATA !== 'undefined') {
+        const found = SPELLS_DATA.find(sp => sp.name.toLowerCase() === token.toLowerCase());
+        if (found) matchedName = found.name;
+      }
+      if (!currentPrepared.some(s => s.toLowerCase() === matchedName.toLowerCase())) {
+        currentPrepared.push(matchedName);
+      }
+      if (!currentBook.some(s => s.toLowerCase() === matchedName.toLowerCase())) {
+        currentBook.push(matchedName);
+      }
+    });
+  }
+
   const data = {
     id: id || 'p_' + Date.now(),
     student, name,
@@ -6368,8 +6491,9 @@ function savePlayerSheet() {
     conditions: existing ? (existing.conditions || []) : [],
     deathSaves: existing ? existing.deathSaves : { success: 0, fail: 0 },
     slots,
-    slotsUsed: existing ? existing.slotsUsed : [0, 0, 0, 0, 0],
-    preparedSpells: existing && existing.preparedSpells ? existing.preparedSpells : [],
+    slotsUsed: existing && Array.isArray(existing.slotsUsed) ? existing.slotsUsed : [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    spellbookSpells: currentBook,
+    preparedSpells: currentPrepared,
     skillProficiencies: existing && existing.skillProficiencies ? existing.skillProficiencies : [],
     skillExpertises: existing && existing.skillExpertises ? existing.skillExpertises : [],
     saveProficiencies: existing && existing.saveProficiencies ? existing.saveProficiencies : defaultSaves,
@@ -6721,8 +6845,8 @@ function serializePlayerForShare(p) {
     inspiration: !!p.inspiration,
     conditions: Array.isArray(p.conditions) ? p.conditions : [],
     deathSaves: p.deathSaves || { success: 0, fail: 0 },
-    slots: Array.isArray(p.slots) ? p.slots : [0, 0, 0, 0, 0],
-    slotsUsed: Array.isArray(p.slotsUsed) ? p.slotsUsed : [0, 0, 0, 0, 0],
+    slots: Array.isArray(p.slots) ? p.slots : [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    slotsUsed: Array.isArray(p.slotsUsed) ? p.slotsUsed : [0, 0, 0, 0, 0, 0, 0, 0, 0],
     str: parseInt(p.str) || 10,
     dex: parseInt(p.dex) || 10,
     con: parseInt(p.con) || 10,
@@ -6739,6 +6863,8 @@ function serializePlayerForShare(p) {
     attacks: p.attacks || '',
     spells: p.spells || '',
     preparedSpells: Array.isArray(p.preparedSpells) ? p.preparedSpells : [],
+    spellbookSpells: Array.isArray(p.spellbookSpells) ? p.spellbookSpells : [],
+    customSpells: Array.isArray(p.customSpells) ? p.customSpells : [],
     features: p.features || '',
     featureCharges: Array.isArray(p.featureCharges) ? p.featureCharges : [],
     inventory: Array.isArray(p.inventory) ? p.inventory : [],
@@ -8121,12 +8247,12 @@ function calculateMulticlassSpellSlots(player) {
 
   const baseSlots = calculateSpellSlots('mago', Math.max(1, casterLevel));
   // Se não tiver nenhum conjurador tradicional, zera os slots normais
-  const finalSlots = casterLevel > 0 ? baseSlots : [0, 0, 0, 0, 0];
+  const finalSlots = casterLevel > 0 ? baseSlots : [0, 0, 0, 0, 0, 0, 0, 0, 0];
 
   // Adiciona os slots de pacto do bruxo
   if (warlockLevel > 0) {
     const warlockSlots = calculateSpellSlots('bruxo', warlockLevel);
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 9; i++) {
       finalSlots[i] = (finalSlots[i] || 0) + (warlockSlots[i] || 0);
     }
   }
@@ -9718,6 +9844,7 @@ if (typeof window !== 'undefined') {
   window.openLevelUpWizardForActivePlayer = openLevelUpWizardForActivePlayer;
 
   window.isMagicalSubclass = isMagicalSubclass;
+  window.isSpellcasterClass = isSpellcasterClass;
   window.getPlayerSubclassName = getPlayerSubclassName;
   window.calculateSpellSlots = calculateSpellSlots;
   window.calculateMulticlassSpellSlots = calculateMulticlassSpellSlots;
@@ -9795,6 +9922,7 @@ if (typeof module !== 'undefined' && module.exports) {
     renderPlayerCombatModalContent,
     openLevelUpWizardForActivePlayer,
     isMagicalSubclass,
+    isSpellcasterClass,
     getPlayerSubclassName,
     calculateSpellSlots,
     calculateMulticlassSpellSlots,
@@ -9888,7 +10016,11 @@ if (typeof module !== 'undefined' && module.exports) {
     submitConcentrationRoll,
     scrollToPlayerSection,
     openQuickD20Modal,
-    rollWeaponDamageOnly
+    rollWeaponDamageOnly,
+
+    // ISSUE-108: Resumo Tátil de Magias
+    openSpellQuickView,
+    closeSpellQuickView
   };
 }
 
@@ -9927,6 +10059,10 @@ if (typeof window !== 'undefined') {
   window.scrollToPlayerSection = scrollToPlayerSection;
   window.openQuickD20Modal = openQuickD20Modal;
   window.rollWeaponDamageOnly = rollWeaponDamageOnly;
+
+  // ISSUE-108: Resumo Tátil de Magias
+  window.openSpellQuickView = openSpellQuickView;
+  window.closeSpellQuickView = closeSpellQuickView;
 }
 
 

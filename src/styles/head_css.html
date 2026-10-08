@@ -9031,4 +9031,136 @@
       box-shadow: 0 4px 10px rgba(239, 68, 68, 0.6);
     }
 
+    /* ===================================================
+       ✨ ISSUE-108: OVERHAUL DE INTUITIVIDADE & RESPONSIVIDADE
+       =================================================== */
+    /* 1. Indicador On-Deck (Próximo a Agir no Combate) */
+    .combatant-item.combatant-on-deck {
+      border-left: 3px solid #38bdf8 !important;
+      background: linear-gradient(90deg, rgba(56, 189, 248, 0.08) 0%, rgba(15, 23, 42, 0.75) 100%) !important;
+    }
+    .badge-on-deck {
+      background: rgba(56, 189, 248, 0.18);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      letter-spacing: 0.3px;
+    }
+
+    /* 2. Popover de Condições Rápidas no Combate */
+    .quick-cond-popover {
+      position: absolute;
+      z-index: 1000;
+      background: #0f172a;
+      border: 1px solid var(--accent-gold);
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.85);
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 5px;
+      min-width: 220px;
+      animation: fadeInFast 0.15s ease-out;
+    }
+    .btn-quick-cond-tag {
+      font-size: 11px;
+      padding: 5px 8px;
+      border-radius: 5px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.05);
+      color: #e2e8f0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .btn-quick-cond-tag:hover {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: #f59e0b;
+      color: #fbbf24;
+    }
+    .btn-quick-cond-tag.active {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #000;
+      border-color: #f59e0b;
+      font-weight: 700;
+    }
+
+    /* 3. Cards Táteis de Magias & Popover de Resumo */
+    .player-spell-card-tactile {
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      touch-action: manipulation;
+    }
+    .player-spell-card-tactile:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-gold);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    }
+    .player-spell-card-tactile:active {
+      transform: scale(0.98);
+    }
+    .spell-quick-view-box {
+      background: #0f172a;
+      border: 1px solid var(--accent-gold);
+      border-radius: 12px;
+      padding: 16px;
+      max-width: 520px;
+      width: 90vw;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.9);
+      animation: modalSlideUp 0.2s ease-out;
+    }
+
+    /* 4. Micro-interações Cromáticas (Impacto Dano e Cura) */
+    @keyframes damagePulseAnim {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8); border-color: #ef4444; }
+      50% { box-shadow: 0 0 20px 4px rgba(239, 68, 68, 0.9); border-color: #f87171; background: rgba(239, 68, 68, 0.15); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+    @keyframes healPulseAnim {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.8); border-color: #10b981; }
+      50% { box-shadow: 0 0 20px 4px rgba(16, 185, 129, 0.9); border-color: #34d399; background: rgba(16, 185, 129, 0.15); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    .damage-pulse {
+      animation: damagePulseAnim 0.75s ease-out !important;
+    }
+    .heal-pulse {
+      animation: healPulseAnim 0.75s ease-out !important;
+    }
+
+    /* 5. VTT Grid: Modo Foco e HUD Retrátil */
+    .battlegrid-container.vtt-focus-mode .vtt-combat-drawer,
+    .battlegrid-container.vtt-focus-mode .battlegrid-toolbar .toolbar-group:not(:first-child) {
+      display: none !important;
+    }
+    .battlegrid-container.vtt-focus-mode #board {
+      height: calc(100vh - 44px) !important;
+    }
+
+    /* 6. Ergonomia Mobile e Touch Targets >= 44px */
+    @media (max-width: 600px) {
+      .dock-btn {
+        min-height: 48px !important;
+        padding: 4px 0 !important;
+      }
+      .btn-spell-cast, .btn-spell-prep-toggle, .btn-spell-ritual {
+        min-height: 40px !important;
+        padding: 8px 12px !important;
+        font-size: 12px !important;
+      }
+      .player-hp-btn {
+        min-height: 44px !important;
+        font-size: 14px !important;
+        font-weight: 800 !important;
+      }
+    }
+
   </style>

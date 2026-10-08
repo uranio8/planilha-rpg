@@ -41,6 +41,7 @@ function renderCombat() {
 
   list.innerHTML = state.combatants.map((c, i) => {
     const isActive = i === state.turnIndex;
+    const isOnDeck = (state.combatants.length > 1) && (i === (state.turnIndex + 1) % state.combatants.length);
     const hpPct = Math.max(0, Math.min(100, Math.round((c.hp / c.maxHp) * 100)));
     const hpColor = hpPct > 50 ? 'var(--accent-green)' : (hpPct > 25 ? '#eab308' : 'var(--accent-red)');
     const isDying = c.hp === 0;
@@ -53,15 +54,17 @@ function renderCombat() {
     }).join('');
 
     return `
-      <div class="combatant-item ${isActive ? 'glow' : ''} ${isDying ? 'dying' : (isBloodied ? 'bloodied' : '')} ${isCritical ? 'hp-critical' : ''}">
+      <div class="combatant-item ${isActive ? 'glow' : ''} ${isOnDeck ? 'combatant-on-deck' : ''} ${isDying ? 'dying' : (isBloodied ? 'bloodied' : '')} ${isCritical ? 'hp-critical' : ''}">
         <div class="combatant-header">
           <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
             <button class="btn-secondary" style="padding: 1px 6px; font-weight: 800; font-family: var(--font-mono); color: var(--primary); font-size: 13px; cursor: pointer; border: 1px dashed rgba(245,158,11,0.5);" onclick="editCombatantInit('${c.id}')" title="Clique para editar a Iniciativa">${c.init}</button>
             <span class="combatant-name" style="${isDying ? 'text-decoration: line-through; color: var(--accent-red);' : ''}">${c.name}</span>
+            ${isOnDeck ? '<span class="badge-on-deck" title="Próximo na ordem de iniciativa">⏳ Próximo</span>' : ''}
             ${c.type === 'player' ? '<span class="badge badge-cls">Aluno</span>' : '<span class="badge badge-cr">Monstro</span>'}
             ${isDying ? '<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border-color: #ef4444; font-size: 10px;">💀 0 PV</span>' : (isBloodied ? '<span class="badge" style="background: rgba(234, 179, 8, 0.2); color: #eab308; border-color: #eab308; font-size: 10px;">🩸 Sangrando</span>' : '')}
           </div>
           <div style="display: flex; gap: 4px; align-items: center;">
+            <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px;" onclick="openCombatQuickConditions(event, '${c.id}')" title="Condições Rápidas (Caído, Cego, etc.)">⚡ Status</button>
             <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px;" onclick="editCombatantInit('${c.id}')" title="Editar Iniciativa">🎲</button>
             <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px;" onclick="openCondModal('${c.id}')" title="Adicionar Condições / Status">🏷️</button>
             <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px; color: #f87171;" onclick="removeCombatant('${c.id}')" title="Remover do Combate">✕</button>
@@ -760,6 +763,94 @@ function applyDoubleDamage() {
   applyCombatAction('damage', `💥 Dobro do Dano (Vulnerabilidade): ${doubleVal} PV`);
 }
 
+function applyCriticalDamageMultiplier() {
+  applyDoubleDamage();
+}
+
+let activeQuickCondCombatantId = null;
+
+function openCombatQuickConditions(event, combatantId) {
+  if (event) event.stopPropagation();
+  const pop = document.getElementById('popover-combat-conditions');
+  if (!pop) return;
+  activeQuickCondCombatantId = combatantId;
+  const c = (state.combatants || []).find(x => x.id === combatantId);
+  if (!c) return;
+
+  const currentConds = c.conditions || [];
+  const quickList = [
+    { id: 'caido', name: '🤸 Caído' },
+    { id: 'atordoado', name: '💫 Atordoado' },
+    { id: 'cego', name: '👁️ Cego' },
+    { id: 'envenenado', name: '🧪 Envenenado' },
+    { id: 'paralisado', name: '⚡ Paralisado' },
+    { id: 'imobilizado', name: '🕸️ Imobilizado' },
+    { id: 'amedrontado', name: '😱 Amedrontado' },
+    { id: 'agarrado', name: '🤼 Agarrado' },
+    { id: 'invisivel', name: '👻 Invisível' },
+    { id: 'concentracao', name: '🔮 Concentração' }
+  ];
+
+  pop.innerHTML = `
+    <div style="grid-column: 1 / -1; display:flex; justify-content:space-between; align-items:center; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 2px;">
+      <b style="font-size: 11px; color: var(--accent-gold);">Condições: ${c.name}</b>
+      <span style="font-size: 11px; cursor: pointer; color: #94a3b8; padding: 0 4px;" onclick="closeCombatQuickConditions()">✕</span>
+    </div>
+    ${quickList.map(item => {
+      const active = currentConds.includes(item.id);
+      return `<button type="button" class="btn-quick-cond-tag ${active ? 'active' : ''}" onclick="toggleCombatQuickCondition('${combatantId}', '${item.id}')">${item.name} ${active ? '✓' : ''}</button>`;
+    }).join('')}
+  `;
+
+  if (event && event.pageX && event.pageY) {
+    pop.style.top = `${Math.min(window.innerHeight - 200, event.pageY + 10)}px`;
+    pop.style.left = `${Math.min(window.innerWidth - 240, Math.max(10, event.pageX - 100))}px`;
+  } else {
+    pop.style.top = '120px';
+    pop.style.left = '50%';
+    pop.style.transform = 'translateX(-50%)';
+  }
+  pop.style.display = 'grid';
+
+  setTimeout(() => {
+    const closeListener = (e) => {
+      if (!pop.contains(e.target)) {
+        closeCombatQuickConditions();
+        document.removeEventListener('click', closeListener);
+      }
+    };
+    document.addEventListener('click', closeListener);
+  }, 10);
+}
+
+function closeCombatQuickConditions() {
+  const pop = document.getElementById('popover-combat-conditions');
+  if (pop) pop.style.display = 'none';
+  activeQuickCondCombatantId = null;
+}
+
+function toggleCombatQuickCondition(combatantId, conditionId) {
+  const c = (state.combatants || []).find(x => x.id === combatantId);
+  if (!c) return;
+  c.conditions = c.conditions || [];
+  const idx = c.conditions.indexOf(conditionId);
+  if (idx > -1) {
+    c.conditions.splice(idx, 1);
+    addLog(`🏷️ <b>${c.name}</b> removeu a condição: <i>${conditionId}</i>`);
+  } else {
+    c.conditions.push(conditionId);
+    addLog(`🏷️ <b>${c.name}</b> recebeu a condição: <b>${conditionId}</b>`);
+  }
+  renderCombat();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  const pop = document.getElementById('popover-combat-conditions');
+  if (pop && pop.style.display !== 'none') {
+    openCombatQuickConditions(null, combatantId);
+  }
+}
+
+
 function addLog(msg) {
   if (typeof state === 'undefined' || !state) return;
   state.logs = state.logs || [];
@@ -1184,6 +1275,10 @@ if (typeof window !== 'undefined') {
   window.saveInlineHpEdit = saveInlineHpEdit;
   window.updateCombatantNotes = updateCombatantNotes;
   window.announceActiveTurn = announceActiveTurn;
+  window.applyCriticalDamageMultiplier = applyCriticalDamageMultiplier;
+  window.openCombatQuickConditions = openCombatQuickConditions;
+  window.closeCombatQuickConditions = closeCombatQuickConditions;
+  window.toggleCombatQuickCondition = toggleCombatQuickCondition;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -1201,6 +1296,10 @@ if (typeof module !== 'undefined' && module.exports) {
     enableInlineHpEdit,
     saveInlineHpEdit,
     updateCombatantNotes,
-    announceActiveTurn
+    announceActiveTurn,
+    applyCriticalDamageMultiplier,
+    openCombatQuickConditions,
+    closeCombatQuickConditions,
+    toggleCombatQuickCondition
   };
 }

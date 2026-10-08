@@ -190,6 +190,9 @@ const sandbox = {
   clearTimeout: () => {},
   setInterval: (fn) => 1,
   clearInterval: () => {},
+  Buffer: Buffer,
+  atob: (str) => Buffer.from(str, 'base64').toString('binary'),
+  btoa: (str) => Buffer.from(str, 'binary').toString('base64'),
   CONDITIONS_LIST: [
     { id: 'caido', name: 'Caído' },
     { id: 'envenenado', name: 'Envenenado' }
@@ -3886,19 +3889,19 @@ const slotsRogueLvl10 = vm.runInContext("calculateSpellSlots('Ladino', 10, 2)", 
 const slotsRogueLvl13 = vm.runInContext("calculateSpellSlots('Ladino', 13, 2)", sandbox);
 const slotsRogueLvl19 = vm.runInContext("calculateSpellSlots('Ladino', 19, 2)", sandbox);
 
-assert(JSON.stringify(slotsRogueLvl1) === JSON.stringify([0, 0, 0, 0, 0]), 'Trapaceiro Arcano Nv 1 não tem espaços de magia');
-assert(JSON.stringify(slotsRogueLvl2) === JSON.stringify([0, 0, 0, 0, 0]), 'Trapaceiro Arcano Nv 2 não tem espaços de magia');
-assert(JSON.stringify(slotsRogueLvl3) === JSON.stringify([2, 0, 0, 0, 0]), 'Trapaceiro Arcano Nv 3 recebe [2, 0, 0, 0, 0] espaços de 1º círculo');
-assert(JSON.stringify(slotsRogueLvl4) === JSON.stringify([3, 0, 0, 0, 0]), 'Trapaceiro Arcano Nv 4 recebe [3, 0, 0, 0, 0] espaços de 1º círculo');
-assert(JSON.stringify(slotsRogueLvl7) === JSON.stringify([4, 2, 0, 0, 0]), 'Trapaceiro Arcano Nv 7 recebe [4, 2, 0, 0, 0] (espaços de 2º círculo)');
-assert(JSON.stringify(slotsRogueLvl10) === JSON.stringify([4, 3, 0, 0, 0]), 'Trapaceiro Arcano Nv 10 recebe [4, 3, 0, 0, 0]');
-assert(JSON.stringify(slotsRogueLvl13) === JSON.stringify([4, 3, 2, 0, 0]), 'Trapaceiro Arcano Nv 13 recebe [4, 3, 2, 0, 0] (espaços de 3º círculo)');
-assert(JSON.stringify(slotsRogueLvl19) === JSON.stringify([4, 3, 3, 1, 0]), 'Trapaceiro Arcano Nv 19 recebe [4, 3, 3, 1, 0] (espaços de 4º círculo)');
+assert(JSON.stringify(slotsRogueLvl1) === JSON.stringify([0, 0, 0, 0, 0, 0, 0, 0, 0]), 'Trapaceiro Arcano Nv 1 não tem espaços de magia');
+assert(JSON.stringify(slotsRogueLvl2) === JSON.stringify([0, 0, 0, 0, 0, 0, 0, 0, 0]), 'Trapaceiro Arcano Nv 2 não tem espaços de magia');
+assert(JSON.stringify(slotsRogueLvl3) === JSON.stringify([2, 0, 0, 0, 0, 0, 0, 0, 0]), 'Trapaceiro Arcano Nv 3 recebe [2, 0, 0, 0, 0] espaços de 1º círculo');
+assert(JSON.stringify(slotsRogueLvl4) === JSON.stringify([3, 0, 0, 0, 0, 0, 0, 0, 0]), 'Trapaceiro Arcano Nv 4 recebe [3, 0, 0, 0, 0] espaços de 1º círculo');
+assert(JSON.stringify(slotsRogueLvl7) === JSON.stringify([4, 2, 0, 0, 0, 0, 0, 0, 0]), 'Trapaceiro Arcano Nv 7 recebe [4, 2, 0, 0, 0] (espaços de 2º círculo)');
+assert(JSON.stringify(slotsRogueLvl10) === JSON.stringify([4, 3, 0, 0, 0, 0, 0, 0, 0]), 'Trapaceiro Arcano Nv 10 recebe [4, 3, 0, 0, 0]');
+assert(JSON.stringify(slotsRogueLvl13) === JSON.stringify([4, 3, 2, 0, 0, 0, 0, 0, 0]), 'Trapaceiro Arcano Nv 13 recebe [4, 3, 2, 0, 0] (espaços de 3º círculo)');
+assert(JSON.stringify(slotsRogueLvl19) === JSON.stringify([4, 3, 3, 1, 0, 0, 0, 0, 0]), 'Trapaceiro Arcano Nv 19 recebe [4, 3, 3, 1, 0] (espaços de 4º círculo)');
 
 const slotsFighterLvl3 = vm.runInContext("calculateSpellSlots('Guerreiro', 3, 2)", sandbox);
 const slotsFighterLvl7 = vm.runInContext("calculateSpellSlots('Guerreiro', 7, 2)", sandbox);
-assert(JSON.stringify(slotsFighterLvl3) === JSON.stringify([2, 0, 0, 0, 0]), 'Cavaleiro Místico Nv 3 recebe [2, 0, 0, 0, 0] espaços de magia');
-assert(JSON.stringify(slotsFighterLvl7) === JSON.stringify([4, 2, 0, 0, 0]), 'Cavaleiro Místico Nv 7 recebe [4, 2, 0, 0, 0] espaços de magia');
+assert(JSON.stringify(slotsFighterLvl3) === JSON.stringify([2, 0, 0, 0, 0, 0, 0, 0, 0]), 'Cavaleiro Místico Nv 3 recebe [2, 0, 0, 0, 0] espaços de magia');
+assert(JSON.stringify(slotsFighterLvl7) === JSON.stringify([4, 2, 0, 0, 0, 0, 0, 0, 0]), 'Cavaleiro Místico Nv 7 recebe [4, 2, 0, 0, 0] espaços de magia');
 
 // 3. Limite de Magias Conhecidas e Truques (getMaxPreparedSpells)
 vm.runInContext(`
@@ -3992,7 +3995,7 @@ const evolvedHero = vm.runInContext("PLAYERS.find(p => p.id === 'p_arcane_rogue_
 assert(evolvedHero.level === 3, 'Herói subiu para o Nível 3');
 assert(evolvedHero.subclassIdx === 2, 'subclassIdx atualizado para 2 (Trapaceiro Arcano)');
 assert(evolvedHero.subclass && evolvedHero.subclass.includes('Trapaceiro Arcano'), 'subclass nome atualizado para conter "Trapaceiro Arcano"');
-assert(JSON.stringify(evolvedHero.slots) === JSON.stringify([2, 0, 0, 0, 0]), 'Herói recebeu automaticamente [2, 0, 0, 0, 0] espaços de magia');
+assert(JSON.stringify(evolvedHero.slots) === JSON.stringify([2, 0, 0, 0, 0, 0, 0, 0, 0]), 'Herói recebeu automaticamente [2, 0, 0, 0, 0, 0, 0, 0, 0] espaços de magia');
 
 // ========================================================
 // 58. TESTES DE SINCRONIZAÇÃO AUTOMÁTICA EM TEMPO REAL,
@@ -5672,6 +5675,185 @@ assert(compiledHtmlIssue105.includes('.death-saves-large-box'), 'CSS compilado c
 assert(compiledHtmlIssue105.includes('.player-mobile-dock'), 'CSS compilado contém estilo .player-mobile-dock');
 assert(compiledHtmlIssue105.includes('.player-turn-pulse'), 'CSS compilado contém animação de pulso dourado .player-turn-pulse');
 
+
+
+// ========================================================
+// 75. TESTES DE RETENÇÃO DE MAGIAS, AUTO-CÁLCULO E DESCONTO
+//     DE ESPAÇOS DE MAGIA DE 1º A 9º CÍRCULO (ISSUE-106)
+// ========================================================
+console.log('\n🔮 75. Testes de Retenção de Magias, Auto-Cálculo e Desconto de 1º a 9º Círculo (ISSUE-106):');
+
+// 1. Validação de exportações
+assert(typeof sandbox.isSpellcasterClass === 'function', 'Função isSpellcasterClass exportada');
+
+// 2. Identificação de classes conjuradoras
+assert(sandbox.isSpellcasterClass('Mago') === true, 'isSpellcasterClass identifica Mago como conjurador');
+assert(sandbox.isSpellcasterClass('Clérigo') === true, 'isSpellcasterClass identifica Clérigo como conjurador');
+assert(sandbox.isSpellcasterClass('Paladino') === true, 'isSpellcasterClass identifica Paladino como conjurador');
+assert(sandbox.isSpellcasterClass('Bruxo') === true, 'isSpellcasterClass identifica Bruxo como conjurador');
+assert(sandbox.isSpellcasterClass('Ladino', 2, 'Trapaceiro Arcano') === true, 'isSpellcasterClass identifica Ladino Trapaceiro Arcano');
+assert(sandbox.isSpellcasterClass('Guerreiro', 0, 'Campeão') === false, 'isSpellcasterClass descarta Guerreiro Campeão');
+assert(sandbox.isSpellcasterClass('Bárbaro') === false, 'isSpellcasterClass descarta Bárbaro puro');
+
+// 3. Suporte aos 9 Círculos de D&D 5E
+const wizard17Slots = vm.runInContext("calculateSpellSlots('Mago', 17)", sandbox);
+assert(wizard17Slots.length === 9, 'Tabela de Mago possui 9 círculos de magia');
+assert(wizard17Slots[8] === 1, 'Mago Nível 17 possui 1 espaço de 9º círculo');
+assert(wizard17Slots[7] === 1, 'Mago Nível 17 possui 1 espaço de 8º círculo');
+assert(wizard17Slots[6] === 1, 'Mago Nível 17 possui 1 espaço de 7º círculo');
+assert(wizard17Slots[5] === 1, 'Mago Nível 17 possui 1 espaço de 6º círculo');
+assert(JSON.stringify(wizard17Slots) === JSON.stringify([4, 3, 3, 3, 2, 1, 1, 1, 1]), 'Mago Nível 17 recebe distribuição oficial D&D 5E de 9 círculos');
+
+// 4. Retenção de Grimório (spellbookSpells) e Magias Customizadas ao Salvar Ficha
+vm.runInContext(`
+  PLAYERS.push({
+    id: 'p_wizard_retention_test',
+    student: 'Arthur',
+    name: 'Elminster Júnior',
+    className: 'Mago',
+    level: 5,
+    str: 10, dex: 14, con: 14, int: 18, wis: 12, cha: 10,
+    slots: [4, 3, 2, 0, 0, 0, 0, 0, 0],
+    slotsUsed: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    preparedSpells: ['Escudo Arcano', 'Mísseis Mágicos', 'Bola de Fogo'],
+    spellbookSpells: ['Escudo Arcano', 'Mísseis Mágicos', 'Bola de Fogo', 'Invisibilidade', 'Passo Nebuloso', 'Detectar Magia'],
+    customSpells: ['Lâmina Espiritual Arcana']
+  });
+
+  // Simula formulário de edição do jogador
+  document.getElementById('pm-id').value = 'p_wizard_retention_test';
+  document.getElementById('pm-student').value = 'Arthur';
+  document.getElementById('pm-name').value = 'Elminster Júnior';
+  document.getElementById('pm-class').value = 'Mago';
+  document.getElementById('pm-level').value = '5';
+  document.getElementById('pm-maxhp').value = '28';
+  document.getElementById('pm-speed').value = '9m';
+  document.getElementById('pm-gold').value = '150';
+  document.getElementById('pm-str').value = '10';
+  document.getElementById('pm-dex').value = '14';
+  document.getElementById('pm-con').value = '14';
+  document.getElementById('pm-int').value = '18';
+  document.getElementById('pm-wis').value = '12';
+  document.getElementById('pm-cha').value = '10';
+  document.getElementById('pm-attacks').value = '';
+  document.getElementById('pm-features').value = '';
+  document.getElementById('pm-spells').value = 'Armadura Arcana, Queda Suave';
+  document.getElementById('pm-badges').value = '';
+
+  for (let i = 1; i <= 9; i++) {
+    const inp = document.getElementById('pm-slot-' + i);
+    if (inp) inp.value = (i <= 3) ? (i === 1 ? 4 : (i === 2 ? 3 : 2)) : 0;
+  }
+
+  savePlayerSheet();
+`, sandbox);
+
+const savedWizard = vm.runInContext("PLAYERS.find(p => p.id === 'p_wizard_retention_test')", sandbox);
+assert(Array.isArray(savedWizard.spellbookSpells), 'spellbookSpells preservado como Array no salvamento da ficha');
+assert(savedWizard.spellbookSpells.includes('Bola de Fogo'), 'Bola de Fogo preservada no Grimório');
+assert(savedWizard.spellbookSpells.includes('Invisibilidade'), 'Invisibilidade preservada no Grimório');
+assert(savedWizard.spellbookSpells.includes('Armadura Arcana'), 'Armadura Arcana (digitada em pm-spells) sincronizada no Grimório');
+assert(savedWizard.preparedSpells.includes('Armadura Arcana'), 'Armadura Arcana sincronizada nas magias preparadas');
+assert(savedWizard.customSpells.includes('Lâmina Espiritual Arcana'), 'Magia customizada preservada na ficha');
+
+// 5. Testes de Desconto Automático de Slots (executeCastSpell)
+vm.runInContext(`
+  // Conjurando magia de 1º círculo
+  executeCastSpell('p_wizard_retention_test', 'Escudo Arcano', 1);
+`, sandbox);
+const afterCast1 = vm.runInContext("PLAYERS.find(p => p.id === 'p_wizard_retention_test')", sandbox);
+assert(afterCast1.slotsUsed[0] === 1, 'executeCastSpell descontou 1 espaço de 1º círculo (slotsUsed[0] = 1)');
+
+vm.runInContext(`
+  // Conjurando com Upcasting (magia de 1º círculo lançada gastando slot de 3º círculo)
+  executeCastSpell('p_wizard_retention_test', 'Mísseis Mágicos', 3);
+`, sandbox);
+const afterCastUpcast = vm.runInContext("PLAYERS.find(p => p.id === 'p_wizard_retention_test')", sandbox);
+assert(afterCastUpcast.slotsUsed[2] === 1, 'executeCastSpell com Upcasting descontou 1 espaço de 3º círculo (slotsUsed[2] = 1)');
+
+// 6. Teste de Desconto em Círculos Altos (6º Círculo)
+vm.runInContext(`
+  PLAYERS.push({
+    id: 'p_high_mage',
+    name: 'Mago Arquimago',
+    className: 'Mago',
+    level: 13,
+    slots: [4, 3, 3, 3, 2, 1, 1, 0, 0],
+    slotsUsed: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    preparedSpells: ['Desintegrar']
+  });
+  executeCastSpell('p_high_mage', 'Desintegrar', 6);
+`, sandbox);
+const highMage = vm.runInContext("PLAYERS.find(p => p.id === 'p_high_mage')", sandbox);
+assert(highMage.slotsUsed[5] === 1, 'executeCastSpell descontou 1 espaço de 6º círculo para Desintegrar (slotsUsed[5] = 1)');
+
+// 7. Teste de Serialização para Compartilhamento
+const sharedData = vm.runInContext("serializePlayerForShare(PLAYERS.find(p => p.id === 'p_wizard_retention_test'))", sandbox);
+const deserialized = vm.runInContext(`deserializePlayerFromShare("${sharedData}")`, sandbox);
+assert(Array.isArray(deserialized.spellbookSpells) && deserialized.spellbookSpells.includes('Bola de Fogo'), 'serializePlayerForShare inclui spellbookSpells');
+assert(Array.isArray(deserialized.customSpells) && deserialized.customSpells.includes('Lâmina Espiritual Arcana'), 'serializePlayerForShare inclui customSpells');
+
+// 8. Validação de Componentes UI Standalone
+const standaloneHtmlSpells = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(standaloneHtmlSpells.includes('id="pm-slot-6"'), 'HTML standalone contém input pm-slot-6');
+assert(standaloneHtmlSpells.includes('id="pm-slot-7"'), 'HTML standalone contém input pm-slot-7');
+assert(standaloneHtmlSpells.includes('id="pm-slot-8"'), 'HTML standalone contém input pm-slot-8');
+assert(standaloneHtmlSpells.includes('id="pm-slot-9"'), 'HTML standalone contém input pm-slot-9');
+
+
+// ========================================================
+// 76. TESTES DE INTUITIVIDADE, RESPONSIVIDADE E ERGONOMIA (ISSUE-108)
+// ========================================================
+console.log('\n📱 76. Testes de Intuitividade, Responsividade e Ergonomia (ISSUE-108):');
+
+// 1. Funções de combate e utilitários exportados
+assert(typeof vm.runInContext('applyHalfDamage', sandbox) === 'function', 'Função applyHalfDamage exportada');
+assert(typeof vm.runInContext('applyDoubleDamage', sandbox) === 'function', 'Função applyDoubleDamage exportada');
+assert(typeof vm.runInContext('applyCriticalDamageMultiplier', sandbox) === 'function', 'Função applyCriticalDamageMultiplier exportada');
+assert(typeof vm.runInContext('openCombatQuickConditions', sandbox) === 'function', 'Função openCombatQuickConditions exportada');
+assert(typeof vm.runInContext('closeCombatQuickConditions', sandbox) === 'function', 'Função closeCombatQuickConditions exportada');
+assert(typeof vm.runInContext('toggleCombatQuickCondition', sandbox) === 'function', 'Função toggleCombatQuickCondition exportada');
+assert(typeof vm.runInContext('openSpellQuickView', sandbox) === 'function', 'Função openSpellQuickView exportada');
+assert(typeof vm.runInContext('closeSpellQuickView', sandbox) === 'function', 'Função closeSpellQuickView exportada');
+assert(typeof vm.runInContext('toggleVttHudCollapse', sandbox) === 'function', 'Função toggleVttHudCollapse exportada');
+
+// 2. Teste de Condições Rápidas (Toggle)
+vm.runInContext(`
+  state.combatants = [
+    { id: 'c_test_1', name: 'Herói Ativo', hp: 30, maxHp: 30, init: 18, conditions: [] },
+    { id: 'c_test_2', name: 'Monstro OnDeck', hp: 20, maxHp: 20, init: 12, conditions: [] }
+  ];
+  state.turnIndex = 0;
+  toggleCombatQuickCondition('c_test_2', 'caido');
+`, sandbox);
+const combWithCond = vm.runInContext("state.combatants.find(c => c.id === 'c_test_2')", sandbox);
+assert(combWithCond.conditions.includes('caido'), 'toggleCombatQuickCondition adicionou condição "caido"');
+
+vm.runInContext(`
+  toggleCombatQuickCondition('c_test_2', 'caido');
+`, sandbox);
+const combWithoutCond = vm.runInContext("state.combatants.find(c => c.id === 'c_test_2')", sandbox);
+assert(!combWithoutCond.conditions.includes('caido'), 'toggleCombatQuickCondition removeu condição "caido"');
+
+// 3. Teste de On-Deck (Próximo a Agir) no HTML gerado pelo renderCombat
+vm.runInContext(`renderCombat()`, sandbox);
+const listHtml = vm.runInContext("document.getElementById('list-combatants')?.innerHTML || ''", sandbox);
+assert(listHtml.includes('combatant-on-deck'), 'renderCombat atribuiu classe combatant-on-deck ao próximo da iniciativa');
+assert(listHtml.includes('badge-on-deck'), 'renderCombat exibiu badge "Próximo" no combatente seguinte');
+
+// 4. Validação de Elementos e Classes no Bundle Standalone
+const standaloneHtml108 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(standaloneHtml108.includes('id="btn-half-damage"'), 'HTML standalone contém botão #btn-half-damage');
+assert(standaloneHtml108.includes('id="btn-crit-damage"'), 'HTML standalone contém botão #btn-crit-damage');
+assert(standaloneHtml108.includes('id="btn-toggle-vtt-focus"'), 'HTML standalone contém botão #btn-toggle-vtt-focus');
+assert(standaloneHtml108.includes('id="modal-spell-quick-view"'), 'HTML standalone contém modal #modal-spell-quick-view');
+assert(standaloneHtml108.includes('id="popover-combat-conditions"'), 'HTML standalone contém popover #popover-combat-conditions');
+assert(standaloneHtml108.includes('.combatant-on-deck'), 'CSS compilado contém estilo .combatant-on-deck');
+assert(standaloneHtml108.includes('.quick-cond-popover'), 'CSS compilado contém estilo .quick-cond-popover');
+assert(standaloneHtml108.includes('.player-spell-card-tactile'), 'CSS compilado contém estilo .player-spell-card-tactile');
+assert(standaloneHtml108.includes('.damage-pulse'), 'CSS compilado contém estilo .damage-pulse');
+assert(standaloneHtml108.includes('.heal-pulse'), 'CSS compilado contém estilo .heal-pulse');
+assert(standaloneHtml108.includes('.vtt-focus-mode'), 'CSS compilado contém estilo .vtt-focus-mode');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

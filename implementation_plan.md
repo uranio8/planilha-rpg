@@ -1,82 +1,101 @@
-# 📋 Plano de Implementação: Correção do Modal no Canto Inferior Esquerdo e Otimização Completa do Grimório / Seletor de Magias
+# 📋 Plano de Implementação: Overhaul de Intuitividade, Responsividade e Ergonomia (Mestre & Jogador)
 
-Este plano aborda e resolve os dois problemas relatados pelo usuário:
-1. **Bug visual no canto inferior esquerdo** ("Teste de Concentração" aparecendo estático e cortado no rodapé).
-2. **Experiência e visualização ruim no modal de magias** ("Grimório & Magias Preparadas" espremido, ocupando pouco espaço vertical útil, com banners redundantes empurrando a lista e exibindo apenas 1 magia por vez).
+## 📌 Contexto & Objetivos
 
----
+Com a estabilização das mecânicas de persistência, 9 círculos de magias, upcasting e sincronização na nuvem (ISSUE-107), o sistema necessita de uma evolução substancial em **intuitividade de uso** e **responsividade tátil**, tanto no uso presencial/celular pelos alunos quanto na gestão ágil de mesa pelo Mestre.
 
-## 🔍 1. Diagnóstico dos Problemas e Causas Raízes
-
-### 1.1 Bug do Canto Inferior Esquerdo (Modal de Concentração e Salvaguardas)
-- **Causa**: Em `src/ui/ui.html` (linhas 3827 e 3872), `#modal-concentration-check` e `#modal-death-saves` foram estruturados com as classes `class="modal"` e `class="modal-content"`.
-- **Efeito**: Não existia regra CSS para `.modal` no projeto. Por padrão, o navegador os renderizou como blocos normais (`display: block`) no final do documento HTML. Com isso, o card do Teste de Concentração fica visível e cortado no rodapé/canto inferior da tela o tempo todo, mesmo sem sofrer dano.
-- **Solução**: Padronizar para `class="modal-overlay"` e `class="modal-body"`, além de blindar o CSS para que `.modal` também seja tratado como overlay oculto (`display: none`).
-
-### 1.2 Dificuldade de Visualização das Magias no Grimório / Seletor
-- **Causas**:
-  1. **Layout e Altura do Modal**: O modal `#modal-spell-picker` usa `max-width: 650px` e depende do `.modal-body` padrão com `max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; gap: 16px;`.
-  2. **Empilhamento Excessivo de Banners**:
-     - No modo de transcrição (`copy`), aparecem 3 banners informativos simultâneos empilhados:
-       - `picker-prep-meter-box`: 3 linhas explicando a oficina de transcrição.
-       - `picker-copy-banner`: 2 linhas explicando custo e ouro.
-       - Banner de dica estático: 2 linhas de "Como funciona: Clique em qualquer magia para marcá-la...".
-     - Barra de filtros com 5 selects que quebram em 2 linhas.
-  3. **Efeito Espremido**: Os cabeçalhos e banners somados aos espaçamentos de 16px consomem mais de 450px da altura. Em telas comuns de notebook (768px a 900px), a altura útil restante para a lista de magias é de quase zero (~30px a 50px). Isso faz com que apenas 1 magia (ou meia magia) apareça visível, gerando um scroll duplo (um no modal e outro na lista de magias).
-  4. **Modo de Transcrição Inadequado**: No modo "Transcrever Nova Magia", o banner de dica diz para "marcar a caixinha e salvar", o que confunde o usuário, pois na transcrição clica-se no botão "Transcrever" diretamente em cada magia.
+Com base na seleção completa dos 4 pilares estratégicos pelo usuário, este plano estrutura as melhorias em:
+1. **Foco Mobile-First no Celular dos Jogadores/Alunos**: Touch targets ampliados (≥ 44-48px), cards táteis de magias com popover informativo e conjuração de 1 toque, barra inferior fixa ergonômica e botoeira de vitalidade fluida.
+2. **Painel de Combate do Mestre Ágil & Tático**: Ações com 1 clique para ½ dano (salvaguardas), dano crítico dobrado, popover de condições rápidas e indicador visual de "Próximo a Agir" (*On Deck*).
+3. **Design & Estética Dark Fantasy Premium**: Micro-animações cromáticas (impacto vermelho ao sofrer dano, brilho verde ao receber cura, cintilação nas gemas de magia), glassmorphism refinado e toasts contextuais.
+4. **Grid Tático VTT Mais Fluido & HUD Retrátil**: Botão para recolher o HUD e gavetas laterais em smartphones/tablets, liberando 100% da área do mapa.
 
 ---
 
-## 🛠️ 2. Arquitetura da Solução Proposta
+## 🏗️ Pilares de Implementação & Detalhamento Técnico
 
-### 2.1 Correção do Canto Inferior Esquerdo (`src/ui/ui.html` e `src/styles/head_css.html`)
-1. Em `src/ui/ui.html`:
-   - Mudar `<div id="modal-concentration-check" class="modal">` para `<div id="modal-concentration-check" class="modal-overlay">` e o card interno para `class="modal-body"`.
-   - Mudar `<div id="modal-death-saves" class="modal">` para `<div id="modal-death-saves" class="modal-overlay">` e o card interno para `class="modal-body"`.
-2. Em `src/styles/head_css.html`:
-   - Vincular `.modal` à mesma regra de `.modal-overlay`:
-     ```css
-     .modal-overlay, .modal { display: none; position: fixed; inset: 0; ... }
-     .modal-overlay.open, .modal.open { display: flex; }
-     ```
-
-### 2.2 Redesenho do Modal de Grimório & Magias Preparadas (`src/ui/ui.html`, `src/styles/head_css.html`, `src/js/players.js`)
-1. **Expansão e Layout Flexível com Rolagem Única**:
-   - Ampliar a largura do modal para `max-width: 960px; width: 95vw;` (aproveitando o espaço horizontal da tela).
-   - Definir altura fixa e estruturada no card: `height: 88vh; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; padding: 18px 22px; gap: 10px;`.
-   - Elementos superiores (header, abas, banner compacto, filtros) com `flex-shrink: 0;`.
-   - Rodapé com botões de ação com `flex-shrink: 0;`.
-   - O container da lista (`#picker-spells-list`) passa a ter `flex: 1; min-height: 0; max-height: none; overflow-y: auto;` — ele **ocupa 100% de todo o espaço vertical disponível**, permitindo visualizar confortavelmente 6 a 10 magias simultaneamente sem quebras de layout.
-
-2. **Consolidação dos Banners de Informação**:
-   - No modo **Transcrever Nova Magia** (`copy`):
-     - Unificar a mensagem em um único banner moderno, horizontal e compacto:
-       `🖋️ Oficina de Transcrição: Custo de 50 PO e 2h por círculo (25 PO / 1h para Tradição Arcana) | 🪙 Saldo: X PO | 📖 Grimório: Y magias`
-     - Ocultar a dica redundante de "clique na caixinha para salvar".
-   - No modo **Magias Preparadas** (`prep`):
-     - Manter o medidor compacto de preparação diária (`🔮 Preparadas: X / Y | ✨ Truques: A / B`).
-     - Dica discreta integrada ao cabeçalho ou à barra de filtros.
-
-3. **Barra de Filtros Otimizada**:
-   - Disposição horizontal harmoniosa: Campo de busca ágil + Selects de Classe, Círculo, Escola e Ação + Botão de "⭐ Selecionadas".
-   - Inputs com altura e espaçamento consistentes (`padding: 6px 10px; font-size: 12px;`).
-
-4. **Cards de Magia Aprimorados e Mais Legíveis**:
-   - Com 960px de largura, o card de cada magia distribui perfeitamente:
-     - Checkbox + Nome da Magia + Badge de Círculo + Tipo de Ação (Bônus, Reação, Ritual).
-     - Escola, Alcance, Tempo de Conjuração.
-     - Botão "ℹ️ Detalhes" para expansão da descrição completa.
-     - No modo transcrição: Badge de custo `💰 X PO`, tempo `⏱️ Yh`, botão `🖋️ Transcrever` e botão `✨ Grátis` alinhados e sem cortes.
+### 📱 Pilar 1: Celular dos Jogadores/Alunos (Mobile-First)
+- **Barra de Navegação Inferior Fixa (`#player-mobile-dock`)**:
+  - Transformar o dock em uma barra ergonômica de navegação por abas com rolagem suave entre seções da ficha:
+    - `❤️ Vida` (scroll imediato para vitalidade e atributos)
+    - `✨ Magias` (scroll imediato para slots e grimório)
+    - `⚔️ Ataques` (scroll para armas e ações)
+    - `🎒 Mochila` (scroll para inventário, moedas e baú coletivo)
+    - `🎲 d20` (abre rolador rápido)
+  - Touch targets de pelo menos 48px de altura com ícones destacados e labels legíveis.
+- **Cards Táteis de Magias & Popover de 1 Toque (`.player-spell-card-tactile`)**:
+  - Transformar as magias preparadas e do grimório em cards ergonômicos contendo:
+    - Ícone temático da escola/estilo arcano.
+    - Badges táteis de economia de ação (`⚡ Bônus`, `⚔️ Ação`, `🛡️ Reação`).
+    - Alcance e duração.
+    - Botão de 1 toque `[✨ Conjurar]` com feedback imediato.
+    - Toque no corpo do card abre um modal/bottom sheet leve (`#modal-spell-quick-view`) exibindo a descrição completa da magia, dano/cura, CD e componentes sem sair da ficha.
+- **Botoeira de Vitalidade & PV Ergonômica**:
+  - Ampliar botões `+1`, `-1`, `+5`, `-5` e botões de dano rápido com espaçamento confortável para dedos em telas de smartphone (evitando toques acidentais).
 
 ---
 
-## 🧪 3. Plano de Verificação
+### ⚔️ Pilar 2: Painel de Combate do Mestre Ágil & Tático
+- **Despachante Rápido de Dano no Combate**:
+  - Adicionar botão **`½ Dano`** no despachante (`#btn-half-damage`): ao digitar o dano (ex: 28 de uma *Bola de Fogo*), 1 clique divide por 2 arredondando para baixo (14) e aplica nos combatentes que passaram na salvaguarda.
+  - Adicionar botão **`💥 Crítico (x2)`** para dobrar rapidamente o dano em acertos críticos.
+- **Indicador de "Próximo a Agir" (*On Deck / Next Up*)**:
+  - No rastreador de iniciativa, adicionar um badge e destaque visual refinado (`.combatant-on-deck`) no herói ou monstro que agirá no próximo turno, facilitando ao mestre avisar o jogador com antecedência ("*Fulano, você é o próximo!*").
+- **Popover de Condições Rápidas de 1 Clique**:
+  - Botão direto `[⚡ Condição]` no card do combatente que abre um popover rápido com as condições mais comuns D&D 5E (Caído, Atordoado, Envenenado, Cego, Imobilizado, Agarrado, Invisível) para aplicar ou remover com 1 toque.
 
-1. **Compilação**:
-   - Rodar `node builder.js` gerando a build final do HTML standalone.
-2. **Testes Automatizados**:
-   - Executar `node test_runner.js` garantindo que todos os 1.245 testes continuam passando com 100% de êxito.
-3. **Verificação Visual e Funcional**:
-   - Inspecionar a ausência do card de concentração no canto inferior esquerdo no estado normal de tela.
-   - Abrir o modal de magias e verificar a ampla área de exibição da lista com rolagem suave, banners compactos e sem scrollbars duplas.
-   - Testar a troca entre as abas "⭐ Magias Preparadas", "📖 Meu Grimório" e "🖋️ Transcrever Nova Magia".
+---
+
+### 🔮 Pilar 3: Estética Dark Fantasy Premium & Micro-interações
+- **Feedback Visual de Vitalidade**:
+  - Ao sofrer dano: efeito de impacto carmesim suave (`.damage-pulse`) piscando na barra de vida do card.
+  - Ao receber cura: efeito de brilho esmeralda suave (`.heal-pulse`).
+- **Gemas de Magia Vivas (`.spell-gem-pip`)**:
+  - Estilização em ametista translúcida brilhante (`#a855f7` / `#06b6d4`) com micro-animação de escala ao gastar e restaurar.
+- **Glassmorphism e Contraste**:
+  - Refinamento das superfícies com `backdrop-filter: blur(12px)` e bordas douradas sutis (`rgba(255, 215, 0, 0.18)`), garantindo alto contraste e leitura sem cansaço visual.
+
+---
+
+### 🗺️ Pilar 4: Grid Tático VTT Mais Fluido & HUD Retrátil
+- **Modo Foco Tático / HUD Retrátil (`toggleVttHudCollapse`)**:
+  - Adicionar botão flutuante `[👁️ Ocultar Controles / Modo Foco]` na toolbar do VTT que recolhe suavemente as gavetas de combatentes e painéis de configuração.
+  - No celular/tablet, o mapa passa a ocupar 100% da viewport útil, com botão discreto para reabrir os controles com 1 toque.
+- **Sensibilidade Touch no Canvas**:
+  - Ajustar limiares de toque para medição de régua e arraste de tokens, prevenindo saltos bruscos no smartphone.
+
+---
+
+## 📂 Arquivos Afetados
+
+1. [`src/styles/head_css.html`](file:///c:/Users/wesle/.gemini/antigravity-ide/scratch/Planilha%20RPG/src/styles/head_css.html):
+   - Estilização da barra fixa mobile com touch targets de 48px e safe area insets.
+   - Estilização dos cards táteis de magias (`.player-spell-card-tactile`), bottom sheet e popover de resumo.
+   - Classes de micro-interações (`.damage-pulse`, `.heal-pulse`, `.combatant-on-deck`, `.spell-gem-pip.pulse`).
+   - Classes de HUD retrátil no VTT (`.vtt-hud-collapsed`).
+2. [`src/ui/ui.html`](file:///c:/Users/wesle/.gemini/antigravity-ide/scratch/Planilha%20RPG/src/ui/ui.html):
+   - Inclusão dos botões `½ Dano` e `Crítico` na barra do despachante de combate.
+   - Scaffolding do Modal/Popover de Resumo Rápido de Magia (`#modal-spell-quick-view`).
+   - Botão de colapso de HUD no VTT Grid.
+   - Popover de condições rápidas no combate.
+3. [`src/js/combat.js`](file:///c:/Users/wesle/.gemini/antigravity-ide/scratch/Planilha%20RPG/src/js/combat.js):
+   - Implementação de `applyHalfDamage()` e `applyCriticalDamageMultiplier()`.
+   - Lógica do indicador visual de "Próximo a Agir" no `renderCombat()`.
+   - Atalho de condições rápidas por combatente (`toggleQuickCondition`).
+4. [`src/js/players.js`](file:///c:/Users/wesle/.gemini/antigravity-ide/scratch/Planilha%20RPG/src/js/players.js):
+   - Atualização do renderizador de magias para o formato de cards táteis com 1-toque e detalhes via popover (`openSpellQuickView`).
+   - Integração das micro-animações de impacto/cura em `adjustPlayerHp()`.
+   - Navegação por seções via `#player-mobile-dock`.
+5. [`src/js/vtt_grid.js`](file:///c:/Users/wesle/.gemini/antigravity-ide/scratch/Planilha%20RPG/src/js/vtt_grid.js):
+   - Implementação de `toggleVttHudCollapse()` com persistência de estado.
+6. [`test_runner.js`](file:///c:/Users/wesle/.gemini/antigravity-ide/scratch/Planilha%20RPG/test_runner.js):
+   - Criação da **Suíte 76 (ISSUE-108)** cobrindo todas as novas funções, classes CSS compiladas e integridade do builder.
+
+---
+
+## 🧪 Estratégia de Verificação e Testes
+
+1. **Compilação**: Executar `node builder.js` para atualizar `planilha do rpg.html` e `index.html`.
+2. **Suíte Automatizada**: Executar `node test_runner.js` validando que 100% dos testes passem (incluindo a nova Suíte 76).
+3. **Simulação Live**: Executar `node test_online_live_sync.js` e `node simulate_dm_and_player_live.js` assegurando que todas as novas ações sincronizem perfeitamente entre dispositivos.
+4. **Governança**: Registrar a conclusão da ISSUE-108 no [`issues/README.md`](file:///c:/Users/wesle/.gemini/antigravity-ide/scratch/Planilha%20RPG/issues/README.md).
