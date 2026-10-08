@@ -630,9 +630,12 @@ let PLAYERS = [
       {
         "className": "Ladino",
         "level": 3,
-        "subclassIdx": 2
+        "subclassIdx": 2,
+        "subclass": "Trapaceiro Arcano"
       }
     ],
+    "subclassIdx": 2,
+    "subclass": "Trapaceiro Arcano",
     "name": "Lalw",
     "playerNotes": "",
     "preparedSpells": [
@@ -645,7 +648,7 @@ let PLAYERS = [
     "present": true,
     "race": "Elfo (Elf)",
     "slots": [
-      0,
+      2,
       0,
       0,
       0,

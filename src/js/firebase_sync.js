@@ -539,10 +539,18 @@ function applyCloudDataToLocal(cloudData) {
               hitDiceCurrent: isLocalLevelHigher ? (localChar.hitDiceCurrent !== undefined ? localChar.hitDiceCurrent : remoteP.hitDiceCurrent) : (remoteP.hitDiceCurrent !== undefined ? remoteP.hitDiceCurrent : localChar.hitDiceCurrent),
               slots: isLocalLevelHigher ? (localChar.slots || remoteP.slots) : (remoteP.slots || localChar.slots),
               slotsUsed: keepLocalSlots ? localChar.slotsUsed : (remoteP.slotsUsed || localChar.slotsUsed || [0, 0, 0, 0, 0, 0, 0, 0, 0]),
-              preparedSpells: (localChar.preparedSpells && localChar.preparedSpells.length > 0) ? localChar.preparedSpells : (remoteP.preparedSpells || []),
-              spellbookSpells: (localChar.spellbookSpells && localChar.spellbookSpells.length > 0) ? localChar.spellbookSpells : (remoteP.spellbookSpells || []),
-              customSpells: (localChar.customSpells && localChar.customSpells.length > 0) ? localChar.customSpells : (remoteP.customSpells || []),
-              spells: (localChar.spells && localChar.spells.length > 0) ? localChar.spells : (remoteP.spells || localChar.spells),
+              preparedSpells: isLocalNewer
+                ? ((localChar.preparedSpells && localChar.preparedSpells.length > 0) ? localChar.preparedSpells : (remoteP.preparedSpells || []))
+                : ((remoteP.preparedSpells && remoteP.preparedSpells.length > 0) ? remoteP.preparedSpells : (localChar.preparedSpells || [])),
+              spellbookSpells: isLocalNewer
+                ? ((localChar.spellbookSpells && localChar.spellbookSpells.length > 0) ? localChar.spellbookSpells : (remoteP.spellbookSpells || []))
+                : ((remoteP.spellbookSpells && remoteP.spellbookSpells.length > 0) ? remoteP.spellbookSpells : (localChar.spellbookSpells || [])),
+              customSpells: isLocalNewer
+                ? ((localChar.customSpells && localChar.customSpells.length > 0) ? localChar.customSpells : (remoteP.customSpells || []))
+                : ((remoteP.customSpells && remoteP.customSpells.length > 0) ? remoteP.customSpells : (localChar.customSpells || [])),
+              spells: isLocalNewer
+                ? ((localChar.spells && localChar.spells.length > 0) ? localChar.spells : (remoteP.spells || localChar.spells))
+                : (remoteP.spells || localChar.spells),
               featureCharges: keepLocalFeatures ? localChar.featureCharges : (remoteP.featureCharges || localChar.featureCharges || []),
               // Mantém inventário mais recente entre ambos
               inventory: (localChar.inventory && localChar.inventory.length > 0) ? localChar.inventory : (remoteP.inventory || []),

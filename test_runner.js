@@ -5801,6 +5801,7 @@ assert(standaloneHtmlSpells.includes('id="pm-slot-8"'), 'HTML standalone contém
 assert(standaloneHtmlSpells.includes('id="pm-slot-9"'), 'HTML standalone contém input pm-slot-9');
 
 
+
 // ========================================================
 // 76. TESTES DE INTUITIVIDADE, RESPONSIVIDADE E ERGONOMIA (ISSUE-108)
 // ========================================================
@@ -5855,7 +5856,89 @@ assert(standaloneHtml108.includes('.damage-pulse'), 'CSS compilado contém estil
 assert(standaloneHtml108.includes('.heal-pulse'), 'CSS compilado contém estilo .heal-pulse');
 assert(standaloneHtml108.includes('.vtt-focus-mode'), 'CSS compilado contém estilo .vtt-focus-mode');
 
+
+// ========================================================
+// 77. TESTES DE VISIBILIDADE DE MAGIAS E CONJURADORES CONHECIDOS (ISSUE-109)
+// ========================================================
+console.log('\n🔮 77. Testes de Visibilidade de Magias e Conjuradores Conhecidos (ISSUE-109):');
+
+
+// 1. Exportação e funcionamento de getPlayerCompatibleClassKeys
+assert(typeof vm.runInContext('getPlayerCompatibleClassKeys', sandbox) === 'function', 'Função getPlayerCompatibleClassKeys exportada');
+
+const keysSingle = vm.runInContext("getPlayerCompatibleClassKeys({ className: 'Bruxo' })", sandbox);
+assert(Array.isArray(keysSingle) && keysSingle.includes('Bruxo'), 'getPlayerCompatibleClassKeys retorna ["Bruxo"] para Bruxo simples');
+
+const keysMulti = vm.runInContext("getPlayerCompatibleClassKeys({ className: 'Feiticeiro 3 / Bruxo 2' })", sandbox);
+assert(Array.isArray(keysMulti) && keysMulti.includes('Feiticeiro') && keysMulti.includes('Bruxo'), 'getPlayerCompatibleClassKeys retorna Feiticeiro e Bruxo para multiclasse');
+
+const keysTrickster = vm.runInContext("getPlayerCompatibleClassKeys({ className: 'Ladino', subclass: 'Trapaceiro Arcano' })", sandbox);
+assert(Array.isArray(keysTrickster) && keysTrickster.includes('Mago'), 'getPlayerCompatibleClassKeys mapeia Trapaceiro Arcano para Mago');
+
+// 2. Teste do Seletor de Magias: Magias já selecionadas aparecem incondicionalmente no filtro auto
+vm.runInContext(`
+  // Configura estado do seletor para Bruxo com 'Mãos Flamejantes' selecionada
+  pickerTargetPlayerId = 'p_warlock_test';
+  pickerSelectedSpells = new Set(['Mãos Flamejantes', 'Rajada Mística']);
+  pickerClassFilter = 'auto';
+  pickerLevelFilter = 'all';
+  pickerSearchQuery = '';
+  
+  const warlockHero = {
+    id: 'p_warlock_test',
+    name: 'Warlock Teste',
+    student: 'Aluno Teste',
+    className: 'Bruxo',
+    level: 3,
+    hp: 24,
+    maxHp: 24,
+    speed: '9m',
+    str: 10, dex: 14, con: 14, int: 10, wis: 12, cha: 16,
+    preparedSpells: ['Mãos Flamejantes', 'Rajada Mística']
+  };
+  
+  // Garante que o herói está na lista PLAYERS
+  const existingWIdx = PLAYERS.findIndex(p => p.id === 'p_warlock_test');
+  if (existingWIdx >= 0) PLAYERS[existingWIdx] = warlockHero;
+  else PLAYERS.push(warlockHero);
+  
+  renderSpellPickerList();
+`, sandbox);
+
+const pickerHtml109 = vm.runInContext("document.getElementById('picker-spells-list')?.innerHTML || ''", sandbox);
+assert(pickerHtml109.includes('Mãos Flamejantes'), 'renderSpellPickerList exibe Mãos Flamejantes mesmo sendo de lista de patrono sob filtro auto');
+assert(pickerHtml109.includes('Rajada Mística'), 'renderSpellPickerList exibe Rajada Mística para Bruxo');
+
+// 3. Teste de Multiclasse no Seletor: Feiticeiro / Bruxo exibe magias de ambas as classes
+vm.runInContext(`
+  const multiHero = {
+    id: 'p_multi_test',
+    name: 'Conjurador Híbrido',
+    className: 'Feiticeiro 3 / Bruxo 2',
+    level: 5,
+    preparedSpells: []
+  };
+  PLAYERS.push(multiHero);
+  pickerTargetPlayerId = 'p_multi_test';
+  pickerSelectedSpells = new Set();
+  pickerClassFilter = 'auto';
+  renderSpellPickerList();
+`, sandbox);
+const multiPickerHtml109 = vm.runInContext("document.getElementById('picker-spells-list')?.innerHTML || ''", sandbox);
+assert(multiPickerHtml109.includes('Rajada Mística') || multiPickerHtml109.includes('Bruxaria'), 'Seletor exibe magias de Bruxo para multiclasse com Feiticeiro');
+
+// 4. Teste de Card de Personagem para Conjurador de Magias Conhecidas (Bruxo, Bardo, Feiticeiro)
+vm.runInContext(`
+  activePortalPlayerId = null;
+  const filterQ = document.getElementById('filter-player-q');
+  if (filterQ) filterQ.value = '';
+  renderPlayers();
+`, sandbox);
+const playersHtml109 = vm.runInContext("document.getElementById('grid-players')?.innerHTML || ''", sandbox);
+assert(playersHtml109.includes('🔮 Conhecida') || playersHtml109.includes('badge-spell-known'), 'Ficha de Bruxo/Bardo/Feiticeiro exibe badge "🔮 Conhecida" em vez de botão desmarcador');
+
 console.log('\n========================================');
+
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
 

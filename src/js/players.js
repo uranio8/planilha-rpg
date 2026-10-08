@@ -1626,6 +1626,7 @@ function renderPlayers() {
         const isWizard = isWizardPlayer(p);
         if (isWizard) ensurePlayerSpellbook(p);
         const currentView = (isWizard && playerSpellbookViews[p.id] === 'spellbook') ? 'spellbook' : 'prepared';
+        const prepInfo = getMaxPreparedSpells(p);
 
         const rawList = currentView === 'spellbook' ? (p.spellbookSpells || []) : (p.preparedSpells || []);
         const filteredSpells = rawList.filter(sName => {
@@ -1683,9 +1684,15 @@ function renderPlayers() {
                           📜 Ritual
                         </button>
                       ` : ''}
-                      <button class="btn-spell-prep-toggle ${isPrep ? 'active' : ''}" onclick="event.stopPropagation(); togglePlayerSpellPrepared('${p.id}', '${escapeAttr(sName)}')" title="Alternar status desta magia">
-                        ⭐ ${isCantrip ? 'Ativa' : (isPrep ? 'Preparada' : 'Preparar')}
-                      </button>
+                      ${prepInfo.isKnownCaster ? `
+                        <span class="badge badge-sub" style="font-size: 9.5px; padding: 2px 6px; cursor: default;" title="Magia Conhecida Fixa (D&D 5E)">
+                          🔮 Conhecida
+                        </span>
+                      ` : `
+                        <button class="btn-spell-prep-toggle ${isPrep ? 'active' : ''}" onclick="event.stopPropagation(); togglePlayerSpellPrepared('${p.id}', '${escapeAttr(sName)}')" title="Alternar status desta magia">
+                          ⭐ ${isCantrip ? 'Ativa' : (isPrep ? 'Preparada' : 'Preparar')}
+                        </button>
+                      `}
                     </div>
                   </div>
                 `;
@@ -1695,7 +1702,7 @@ function renderPlayers() {
         } else {
           return `
             <div style="background: rgba(0,0,0,0.25); border: 1px dashed var(--border-color); padding: 8px; border-radius: 6px; text-align: center; color: var(--text-muted); font-size: 11px;">
-              ${actionFilter !== 'all' ? `Nenhuma magia encontrada com economia de "${actionFilter}".` : (currentView === 'spellbook' ? 'Nenhuma magia transcrita no grimório.' : 'Nenhuma magia preparada.')}<br>
+              ${actionFilter !== 'all' ? `Nenhuma magia encontrada com economia de "${actionFilter}". <a href="javascript:void(0)" onclick="setPlayerActionFilter('${p.id}', 'all')" style="color:var(--primary-light); text-decoration:underline; margin-left:4px;">Ver todas</a>` : (currentView === 'spellbook' ? 'Nenhuma magia transcrita no grimório.' : 'Nenhuma magia preparada.')}<br>
               <button class="btn-action" style="font-size: 10px; margin-top: 4px; padding: 3px 8px;" onclick="openSpellPickerModal('${p.id}')">✨ ${isWizard ? 'Gerenciar Grimório' : 'Escolher Magias'}</button>
             </div>
           `;
@@ -5377,6 +5384,61 @@ function getCompatibleClassKey(className, subclassIdx = null, subclassName = '')
   return null;
 }
 
+function getPlayerCompatibleClassKeys(p) {
+  if (!p) return [];
+  const keys = new Set();
+
+  // 1. Se o herói tiver lista estruturada de classes (ex: p.classes)
+  if (Array.isArray(p.classes)) {
+    p.classes.forEach(c => {
+      const cName = typeof c === 'string' ? c : (c.name || c.className || '');
+      const sIdx = typeof c === 'object' ? (c.subclassIdx ?? null) : null;
+      const sName = typeof c === 'object' ? (c.subclass || '') : '';
+      const key = getCompatibleClassKey(cName, sIdx, sName);
+      if (key) keys.add(key);
+    });
+  }
+
+  // 2. Extrai de p.className dividindo por barras, hífens ou vírgulas (ex: "Feiticeiro 3 / Bruxo 2")
+  const fullClassName = (p.className || '').toString();
+  const parts = fullClassName.split(/[\/\+&,;]|\be\b/i).map(s => s.trim()).filter(Boolean);
+  if (parts.length > 1) {
+    parts.forEach(part => {
+      const key = getCompatibleClassKey(part, p.subclassIdx, p.subclass);
+      if (key) keys.add(key);
+    });
+  } else {
+    // Também checa se múltiplas classes estão mencionadas no mesmo texto
+    const norm = fullClassName.toLowerCase();
+    const standardKeys = [
+      { key: 'Bardo', match: 'bardo' },
+      { key: 'Bruxo', match: 'bruxo', alt: 'warlock' },
+      { key: 'Clérigo', match: 'clérigo', alt: 'clerigo' },
+      { key: 'Druida', match: 'druida' },
+      { key: 'Feiticeiro', match: 'feiticeiro', alt: 'sorcerer' },
+      { key: 'Mago', match: 'mago', alt: 'wizard' },
+      { key: 'Paladino', match: 'paladino' },
+      { key: 'Patrulheiro', match: 'patrulheiro', alt: 'ranger' }
+    ];
+    standardKeys.forEach(({ key, match, alt }) => {
+      if (norm.includes(match) || (alt && norm.includes(alt))) {
+        keys.add(key);
+      }
+    });
+  }
+
+  // 3. Checa subclasse mágica
+  if (isMagicalSubclass(p.className, p.subclassIdx, p.subclass)) {
+    keys.add('Mago');
+  }
+
+  if (keys.size === 0) {
+    const fallback = getCompatibleClassKey(p.className, p.subclassIdx, p.subclass);
+    if (fallback) keys.add(fallback);
+  }
+  return Array.from(keys);
+}
+
 let currentPickerPlayerId = null;
 let pickerSelectedSpells = new Set();
 let pickerSearchQuery = '';
@@ -5478,6 +5540,7 @@ function renderSpellPickerList() {
 
   const p = PLAYERS.find(x => x.id === currentPickerPlayerId);
   const heroClassKey = p ? getCompatibleClassKey(p.className, p.subclassIdx, p.subclass) : null;
+  const heroClassKeys = p ? getPlayerCompatibleClassKeys(p) : [];
   const isWiz = isWizardPlayer(p);
   if (isWiz && p) ensurePlayerSpellbook(p);
 
@@ -5603,8 +5666,14 @@ function renderSpellPickerList() {
   } else if (pickerMode !== 'copy') {
     // Filtragem por classe no modo normal
     if (pickerClassFilter === 'auto') {
-      if (heroClassKey) {
-        spells = spells.filter(s => Array.isArray(s.classes) && s.classes.includes(heroClassKey));
+      if (heroClassKeys.length > 0) {
+        // Mostra magias das classes do herói (incluindo multiclasse) OU qualquer magia já selecionada pelo herói (patrono, raça, talento, etc.)
+        spells = spells.filter(s => 
+          pickerSelectedSpells.has(s.name) || 
+          (Array.isArray(s.classes) && heroClassKeys.some(k => s.classes.includes(k)))
+        );
+      } else if (pickerSelectedSpells.size > 0) {
+        spells = spells.filter(s => pickerSelectedSpells.has(s.name));
       }
     } else if (pickerClassFilter !== 'all') {
       spells = spells.filter(s => Array.isArray(s.classes) && s.classes.includes(pickerClassFilter));
@@ -6437,18 +6506,24 @@ function savePlayerSheet() {
   const spellsInputVal = document.getElementById('pm-spells') ? document.getElementById('pm-spells').value.trim() : '';
 
   if (spellsInputVal) {
-    const spellTokens = spellsInputVal.split(/[\n,;]+/).map(s => s.trim()).filter(s => s.length > 0);
+    const cleanSpellsText = spellsInputVal
+      .replace(/truques\s*:/gi, '')
+      .replace(/preparadas\s*:/gi, '')
+      .replace(/magias\s*:/gi, '');
+    const spellTokens = cleanSpellsText.split(/[\n,;]+/).map(s => s.trim()).filter(s => s.length > 0);
     spellTokens.forEach(token => {
-      let matchedName = token;
+      let matchedName = null;
       if (typeof SPELLS_DATA !== 'undefined') {
         const found = SPELLS_DATA.find(sp => sp.name.toLowerCase() === token.toLowerCase());
         if (found) matchedName = found.name;
       }
-      if (!currentPrepared.some(s => s.toLowerCase() === matchedName.toLowerCase())) {
-        currentPrepared.push(matchedName);
-      }
-      if (!currentBook.some(s => s.toLowerCase() === matchedName.toLowerCase())) {
-        currentBook.push(matchedName);
+      if (matchedName) {
+        if (!currentPrepared.some(s => s.toLowerCase() === matchedName.toLowerCase())) {
+          currentPrepared.push(matchedName);
+        }
+        if (!currentBook.some(s => s.toLowerCase() === matchedName.toLowerCase())) {
+          currentBook.push(matchedName);
+        }
       }
     });
   }
@@ -9851,6 +9926,7 @@ if (typeof window !== 'undefined') {
   window.getMaxPreparedSpells = getMaxPreparedSpells;
   window.getPlayerSpellcastingStats = getPlayerSpellcastingStats;
   window.getCompatibleClassKey = getCompatibleClassKey;
+  window.getPlayerCompatibleClassKeys = getPlayerCompatibleClassKeys;
   window.togglePlayerLoginRoomConfig = togglePlayerLoginRoomConfig;
 
   // ISSUE-87: Armaduras, Sintonização, Modo Físico & Economia de Ações
@@ -9929,6 +10005,7 @@ if (typeof module !== 'undefined' && module.exports) {
     getMaxPreparedSpells,
     getPlayerSpellcastingStats,
     getCompatibleClassKey,
+    getPlayerCompatibleClassKeys,
     togglePlayerLoginRoomConfig,
 
     // ISSUE-87: Armaduras, Sintonização, Modo Físico & Economia de Ações
