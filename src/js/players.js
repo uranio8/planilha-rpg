@@ -998,6 +998,232 @@ function getPlayerCoinPurse(p) {
   };
 }
 
+// --- FUNÇÕES AUXILIARES ROLL20 (D&D 5E 2024 SHEET) ---
+
+function getPlayerCalculatedAttacks(p) {
+  if (!p) return [];
+  const prof = getProfBonus(p.level || 1);
+  const strMod = Math.floor(((p.str || 10) - 10) / 2);
+  const dexMod = Math.floor(((p.dex || 10) - 10) / 2);
+
+  const attacks = [];
+  const equipData = typeof EQUIPMENT_DATA !== 'undefined' ? EQUIPMENT_DATA : [];
+
+  // 1. Armas e Itens Equipados no Inventário
+  if (p.inventory && Array.isArray(p.inventory)) {
+    p.inventory.forEach((it, idx) => {
+      if (!it.equipped) return;
+
+      const equipMatch = equipData.find(e => e.name.toLowerCase() === (it.name || '').toLowerCase());
+      const dmgRaw = it.damage || (equipMatch ? equipMatch.damage : '');
+      const propRaw = it.prop || (equipMatch ? equipMatch.prop : '') || '';
+
+      const isRanged = propRaw.toLowerCase().includes('distância') || propRaw.toLowerCase().includes('munição') || propRaw.toLowerCase().includes('alcance') || it.name.toLowerCase().includes('arco') || it.name.toLowerCase().includes('besta');
+      const isFinesse = propRaw.toLowerCase().includes('acuidade') || propRaw.toLowerCase().includes('finesse');
+      
+      let attrMod = strMod;
+      if (isRanged) {
+        attrMod = dexMod;
+      } else if (isFinesse) {
+        attrMod = Math.max(strMod, dexMod);
+      }
+
+      if (dmgRaw || equipMatch || it.name.toLowerCase().includes('espada') || it.name.toLowerCase().includes('adaga') || it.name.toLowerCase().includes('arco') || it.name.toLowerCase().includes('machado') || it.name.toLowerCase().includes('martelo') || it.name.toLowerCase().includes('lança')) {
+        const toHit = prof + attrMod;
+        const toHitStr = toHit >= 0 ? `+${toHit}` : `${toHit}`;
+        
+        let baseDice = '1d6';
+        let dmgType = 'Concussão';
+        if (dmgRaw) {
+          const match = dmgRaw.match(/(\d+d\d+)(?:\s+([a-zA-Zçãáéíóú]+))?/i);
+          if (match) {
+            baseDice = match[1];
+            if (match[2]) dmgType = match[2];
+          } else {
+            baseDice = dmgRaw;
+          }
+        } else if (it.name.toLowerCase().includes('espada')) {
+          baseDice = '1d8';
+          dmgType = 'Cortante';
+        } else if (it.name.toLowerCase().includes('adaga')) {
+          baseDice = '1d4';
+          dmgType = 'Perfurante';
+        } else if (it.name.toLowerCase().includes('arco')) {
+          baseDice = '1d8';
+          dmgType = 'Perfurante';
+        }
+
+        const totalDmgMod = attrMod;
+        const dmgModStr = totalDmgMod >= 0 ? `+${totalDmgMod}` : `${totalDmgMod}`;
+        const finalDmg = `${baseDice}${totalDmgMod !== 0 ? dmgModStr : ''}`;
+        const rangeStr = isRanged ? '24/96m' : '1,5m';
+
+        attacks.push({
+          name: it.name,
+          type: isRanged ? 'Distância' : 'Corpo a Corpo',
+          range: rangeStr,
+          toHit: toHitStr,
+          toHitVal: toHit,
+          hitBonus: toHitStr,
+          damage: finalDmg,
+          damageType: dmgType,
+          notes: propRaw || 'Arma equipada',
+          isEquipped: true,
+          itemIndex: idx,
+          rawAttackText: `${it.name} (${toHitStr}) ${finalDmg} ${dmgType}`
+        });
+      }
+    });
+  }
+
+  // 2. Ataques declarados no array legado p.attacks (se não duplicados)
+  if (p.attacks && Array.isArray(p.attacks)) {
+    p.attacks.forEach(attStr => {
+      if (!attStr || typeof attStr !== 'string') return;
+      if (attacks.some(a => a.name.toLowerCase() === attStr.toLowerCase())) return;
+      
+      const hitMatch = attStr.match(/([+-]\d+)/);
+      const dmgMatch = attStr.match(/(\d+d\d+(?:\s*[+-]\s*\d+)?)/i);
+      const toHitStr = hitMatch ? hitMatch[1] : (strMod + prof >= 0 ? `+${strMod + prof}` : `${strMod + prof}`);
+      const dmgStr = dmgMatch ? dmgMatch[1] : `1d6${strMod >= 0 ? '+' + strMod : strMod}`;
+      
+      attacks.push({
+        name: attStr.replace(/\s*\([+-]\d+\).*/, '').trim(),
+        type: 'Ação',
+        range: '1,5m',
+        toHit: toHitStr,
+        toHitVal: parseInt(toHitStr, 10) || 0,
+        hitBonus: toHitStr,
+        damage: dmgStr,
+        damageType: 'Dano',
+        notes: 'Ataque cadastrado',
+        isEquipped: true,
+        rawAttackText: attStr
+      });
+    });
+  }
+
+  // 3. Fallback: Se não tem nenhum ataque, adiciona Ataque Desarmado
+  if (attacks.length === 0) {
+    const unarmHit = prof + strMod;
+    const unarmHitStr = unarmHit >= 0 ? `+${unarmHit}` : `${unarmHit}`;
+    const unarmDmg = Math.max(1, 1 + strMod);
+    attacks.push({
+      name: 'Ataque Desarmado',
+      type: 'Corpo a Corpo',
+      range: '1,5m',
+      toHit: unarmHitStr,
+      toHitVal: unarmHit,
+      hitBonus: unarmHitStr,
+      damage: `${unarmDmg}`,
+      damageType: 'Concussão',
+      notes: 'Golpe corporal básico',
+      isEquipped: true,
+      rawAttackText: `Ataque Desarmado (${unarmHitStr}) ${unarmDmg} concussão`
+    });
+  }
+
+  return attacks;
+}
+
+function togglePlayerItemEquipped(playerId, itemIndex) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p || !p.inventory || !p.inventory[itemIndex]) return;
+
+  p.inventory[itemIndex].equipped = !p.inventory[itemIndex].equipped;
+  if (typeof calculatePlayerAcFromEquipment === 'function') {
+    p.ac = calculatePlayerAcFromEquipment(p);
+  }
+  if (typeof touchPlayer === 'function') touchPlayer(p);
+
+  const it = p.inventory[itemIndex];
+  if (it.equipped) {
+    if (typeof playFX === 'function') playFX('equip');
+    addLog(`⚔️ <b>${p.name}</b> equipou <b>${it.name}</b>.`);
+  } else {
+    addLog(`🎒 <b>${p.name}</b> desequipou <b>${it.name}</b>.`);
+  }
+
+  if (typeof syncCombatantWithPlayer === 'function') syncCombatantWithPlayer(p);
+  renderPlayers();
+  if (typeof renderCombat === 'function') renderCombat();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+}
+
+function setPlayerCardRoll20Tab(playerId, tabName) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+  p.activeRoll20Tab = tabName;
+  renderPlayers();
+  saveToLocalStorage();
+}
+
+function applyRoll20QuickDamage(playerId) {
+  const input = document.getElementById(`roll20-hp-input-${playerId}`);
+  const val = input ? parseInt(input.value, 10) : 0;
+  if (!val || val <= 0) return;
+  adjustPlayerHp(playerId, -val);
+  if (input) input.value = '';
+}
+
+function applyRoll20QuickHeal(playerId) {
+  const input = document.getElementById(`roll20-hp-input-${playerId}`);
+  const val = input ? parseInt(input.value, 10) : 0;
+  if (!val || val <= 0) return;
+  adjustPlayerHp(playerId, val);
+  if (input) input.value = '';
+}
+
+function sharePlayerCalculatedAttackToFeed(playerId, atkIndex) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+  const attacks = getPlayerCalculatedAttacks(p);
+  const atk = attacks[atkIndex];
+  if (!atk) return;
+
+  const msg = `⚔️ <b>${p.name}</b> compartilha ataque: <b>${atk.name}</b> | Acerto: <b>${atk.toHit}</b> | Dano: <b>${atk.damage}</b> (${atk.damageType}) | Alcance: ${atk.range}`;
+  addLog(msg);
+  addPlayerActionLog(p.id, '⚔️', `Compartilhou ${atk.name} (${atk.toHit} / ${atk.damage})`, 'attack');
+  if (typeof playFX === 'function') playFX('dice');
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+}
+
+function sharePlayerSpellToFeed(playerId, spellName) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+  const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === (spellName || '').toLowerCase()) : null;
+  const desc = sp ? (sp.desc || sp.description || '') : 'Sem descrição detalhada.';
+  const lvl = sp ? (sp.level === 0 ? 'Truque' : `${sp.level}º Círculo`) : 'Magia';
+  const range = sp ? (sp.range || '18m') : '';
+  const msg = `✨ <b>${p.name}</b> conjura / compartilha: <b>${spellName}</b> (${lvl}) | Alcance: ${range} <br><small style="color:#94a3b8;">${desc.substring(0, 140)}...</small>`;
+  addLog(msg);
+  addPlayerActionLog(p.id, '✨', `Compartilhou magia: ${spellName}`, 'spell');
+  if (typeof playFX === 'function') playFX('spell');
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+}
+
+function sharePlayerItemToFeed(playerId, itemIndex) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p || !p.inventory || !p.inventory[itemIndex]) return;
+  const it = p.inventory[itemIndex];
+  const msg = `🎒 <b>${p.name}</b> exibe o item: <b>${it.name}</b> (Qtd: ${it.qty || 1} ${it.weight ? '• ' + it.weight + 'kg' : ''})`;
+  addLog(msg);
+  addPlayerActionLog(p.id, '🎒', `Exibiu item: ${it.name}`, 'inventory');
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+}
+
+function sharePlayerTraitToFeed(playerId, traitName, traitDesc) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+  const msg = `📜 <b>${p.name}</b> utiliza/apresenta: <b>${traitName}</b><br><small style="color:#94a3b8;">${(traitDesc || '').substring(0, 160)}...</small>`;
+  addLog(msg);
+  addPlayerActionLog(p.id, '📜', `Habilidade: ${traitName}`, 'feature');
+  if (typeof playFX === 'function') playFX('crit');
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+}
+
 function getPlayerXpProgress(p) {
   const lvl = Math.min(20, Math.max(1, p.level || 1));
   const currentFloor = (typeof DND5E_XP_TABLE !== 'undefined' ? DND5E_XP_TABLE[lvl - 1] : 0) || 0;
@@ -1109,6 +1335,7 @@ function handlePlayerNotesInput(id, text) {
     }
   }, 400);
 }
+
 
 function renderPlayers() {
   const grid = document.getElementById('grid-players');
@@ -1309,638 +1536,590 @@ function renderPlayers() {
     }).join('');
 
     const isCritical = p.hp > 0 && p.maxHp > 0 && (p.hp / p.maxHp) <= 0.25;
+    const activeRoll20Tab = p.activeRoll20Tab || 'combat';
+    const calculatedAttacks = getPlayerCalculatedAttacks(p);
+
+    const intMod = Math.floor(((p.int || 10) - 10) / 2);
+    const chaMod = Math.floor(((p.cha || 10) - 10) / 2);
+    const isInvestProf = (p.skillProficiencies || []).includes('investigacao') || (p.skillProficiencies || []).includes('investigation');
+    const isInvestExp = (p.skillExpertises || []).includes('investigacao') || (p.skillExpertises || []).includes('investigation');
+    const passInv = 10 + intMod + (isInvestExp ? (prof * 2) : (isInvestProf ? prof : 0));
+
+    const isInsightProf = (p.skillProficiencies || []).includes('intuicao') || (p.skillProficiencies || []).includes('insight');
+    const isInsightExp = (p.skillExpertises || []).includes('intuicao') || (p.skillExpertises || []).includes('insight');
+    const passIns = 10 + wisMod + (isInsightExp ? (prof * 2) : (isInsightProf ? prof : 0));
+
+    const acInfo = getPlayerAcCalculationInfo(p);
+    const displayAc = p.ac || acInfo.ac;
 
     return `
-      <div class="player-card ${activePortalPlayerId && p.id === activePortalPlayerId ? 'portal-view' : ''} ${p.compact ? 'is-compact' : ''} ${isCritical ? 'hp-critical' : ''} cls-${(classBadgeHtml.match(/class-(\w+)/) || ['', ''])[1]}">
-        <div class="player-card-top">
-          <div class="player-title-row">
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <div class="player-avatar-badge" onclick="openAvatarModal('${p.id}')" title="Alterar Avatar / Imagem">
-                ${avatarDisplay}
-                <span class="avatar-edit-overlay">✏️</span>
-              </div>
-              <div class="player-title">
-                <span>${p.name}</span>
-                <span class="badge badge-src">Nv ${p.level}</span>
-                ${classBadgeHtml}
-                <span class="rest-status-badge ${restStatus.css}" title="${restStatus.title}">${restStatus.label}</span>
-              </div>
+      <div class="player-card roll20-sheet ${activePortalPlayerId && p.id === activePortalPlayerId ? 'portal-view' : ''} ${p.compact ? 'is-compact' : ''} ${isCritical ? 'hp-critical' : ''} cls-${(classBadgeHtml.match(/class-(\w+)/) || ['', ''])[1]}">
+        
+        <!-- 1. TOPO ROLL20: HERO CARD + HIT POINTS CARD -->
+        <div class="roll20-top-grid">
+          <!-- CARD DE PERFIL DO HERÓI -->
+          <div class="roll20-hero-card">
+            <div class="roll20-avatar-box" onclick="openAvatarModal('${p.id}')" title="Alterar Avatar / Foto">
+              ${avatarDisplay}
+              <div class="roll20-level-shield">${p.level}</div>
             </div>
-            <div style="display: flex; gap: 4px; align-items: center;">
-              <button class="btn-micro dice-mode-toggle-btn ${p.diceMode === 'physical' ? 'is-physical' : ''}" onclick="togglePlayerDiceMode('${p.id}')" title="Alternar modo de rolagem: Virtual (App) ou Físico (Mesa Real)">
-                ${p.diceMode === 'physical' ? '🎲 Físico' : '💻 Virtual'}
-              </button>
-              <button class="btn-micro" onclick="togglePlayerCardCompact('${p.id}')" title="${p.compact ? 'Expandir Ficha Completa' : 'Compactar Ficha'}">
-                ${p.compact ? '🔍 Expandir' : '🗜️'}
-              </button>
-              <button class="btn-insp ${p.inspiration ? 'active' : ''}" onclick="togglePlayerInspiration('${p.id}')" title="Alternar Inspiração Heroica (D&D 5E/2024)">
-                ⭐ Inspiração
-              </button>
-              ${p.inspiration ? `
-                <button class="btn-action btn-insp-roll" style="padding: 4px 8px; font-size: 10px; background: linear-gradient(135deg, #d97706, #b45309); border: 1px solid #f59e0b; color: #fff; font-weight: 700; border-radius: 4px;" onclick="usePlayerInspirationRoll('${p.id}')" title="Rolar Teste com VANTAGEM (D&D 2024) e consumir Inspiração">
-                  🎲 Vantagem
+
+            <div class="roll20-hero-info">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                <div class="roll20-hero-name" title="${p.name}">${p.name}</div>
+                <div class="player-toolbar" onclick="event.stopPropagation();">
+                  <div class="player-actions-group" onclick="event.stopPropagation();">
+                    <button class="btn-micro" onclick="openPlayerModal('${p.id}')" title="Editar Ficha Completa">✏️</button>
+                    <button class="btn-micro" onclick="openSharePlayerModal('${p.id}')" title="Compartilhar Link/QR Code">📱</button>
+                    <button class="btn-micro" onclick="togglePlayerCardCompact('${p.id}')" title="Alternar Modo Compacto">📏</button>
+                    <button class="btn-micro" style="color: #f87171;" onclick="deletePlayer('${p.id}')" title="Excluir Personagem">🗑️</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="roll20-hero-subtitle">
+                <b>${p.className}</b> • <span>${p.race}</span> • <span style="color: #64748b;">${p.student || 'Aluno'}</span>
+              </div>
+
+              <div style="font-size: 11px; color: #94a3b8; display: flex; gap: 10px; margin-top: 2px;">
+                <span>Exp: <b>${p.xp || 0}</b></span>
+                <span>Bônus Profic: <b style="color: var(--accent-gold);">+${prof}</b></span>
+              </div>
+
+              <div class="roll20-hero-actions-row">
+                <button type="button" class="btn-insp ${p.inspiration ? 'active' : ''}" onclick="togglePlayerInspiration('${p.id}')" title="Inspiração Heroica (D&D 5E)">
+                  ⭐ Inspiração ${p.inspiration ? '✓' : ''}
                 </button>
-              ` : ''}
+                <button type="button" class="roll20-btn-init" onclick="rollPlayerAttr('${p.id}', 'dex')" title="Rolar Teste de Iniciativa (d20 + ${dexMod})">
+                  INICIATIVA ${dexMod >= 0 ? '+' + dexMod : dexMod}
+                </button>
+                <button type="button" class="btn-secondary" style="font-size: 10.5px; padding: 4px 8px;" onclick="openLevelUpWizard('${p.id}')" title="Subir de Nível e Multiclasse">
+                  🔼 Nv
+                </button>
+                <button type="button" class="btn-secondary" style="font-size: 10.5px; padding: 4px 8px;" onclick="openPlayerClassesModal('${p.id}')" title="Gerenciar Classes">
+                  🔀 Classes
+                </button>
+              </div>
             </div>
           </div>
 
-          <div class="player-meta" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-            <span>👤 <b>${p.student}</b> • <span style="color: #cbd5e1;">${p.race}</span> • <span style="color: var(--primary-light);">${p.className}</span></span>
-            ${(p.fightingStyle && typeof FIGHTING_STYLES !== 'undefined' && FIGHTING_STYLES[p.fightingStyle]) ? `
-              <span class="fighting-style-badge" title="${escapeAttr(FIGHTING_STYLES[p.fightingStyle].desc)}">
-                ${FIGHTING_STYLES[p.fightingStyle].icon} ${FIGHTING_STYLES[p.fightingStyle].name}
-              </span>
-            ` : ''}
-          </div>
-
-          <!-- V4: BARRA DE EXPERIÊNCIA (XP) ANIMADA -->
-          <div class="player-xp-container">
-            <div class="player-xp-header">
-              <span style="color: #cbd5e1; font-weight: 700;">✨ ${xpInfo.text}</span>
-              <button class="btn-xp-quick" onclick="addPlayerXpPrompt('${p.id}')" title="Adicionar Pontos de Experiência">+ XP</button>
+          <!-- CARD DE PONTOS DE VIDA (HIT POINTS ROLL20) -->
+          <div class="roll20-hp-card">
+            <div class="roll20-hp-header">
+              <span>HIT POINTS</span>
+              <div style="display: flex; gap: 6px;">
+                <button class="btn-micro" onclick="playerShortRest('${p.id}')" title="Descanso Curto (1h)">🏕️ Curto</button>
+                <button class="btn-micro" onclick="playerLongRest('${p.id}')" title="Descanso Longo (8h)">🌙 Longo</button>
+              </div>
             </div>
-            <div class="player-xp-bar-bg">
-              <div class="player-xp-bar-fill" style="width: ${xpInfo.pct}%;"></div>
+
+            <div class="roll20-hp-main-row">
+              <div class="roll20-hp-numbers">
+                <span class="roll20-hp-current" style="color: ${hpColor};">${p.hp}</span>
+                <span class="roll20-hp-slash">/</span>
+                <span class="roll20-hp-max">${p.maxHp}</span>
+                ${p.tempHp > 0 ? `<span class="roll20-hp-temp">+${p.tempHp} Temp</span>` : ''}
+              </div>
+
+              <!-- STEPPER DE DANO / CURA INSTANTÂNEO -->
+              <div class="roll20-hp-stepper-box">
+                <button type="button" class="roll20-btn-hp-dmg" onclick="applyRoll20QuickDamage('${p.id}')" title="Aplicar Dano">💔 Dano</button>
+                <input type="number" id="roll20-hp-in-${p.id}" class="roll20-hp-input" value="1" min="1" max="999">
+                <button type="button" class="roll20-btn-hp-heal" onclick="applyRoll20QuickHeal('${p.id}')" title="Aplicar Cura">💚 Cura</button>
+              </div>
             </div>
-          </div>
 
-          ${(p.badges && p.badges.length > 0) ? `
-            <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">
-              ${p.badges.map(b => `<span class="achievement-tag">${b}</span>`).join('')}
+            <!-- BARRA DE VIDA VISUAL -->
+            <div class="hp-bar-bg" style="height: 7px; margin: 2px 0;">
+              <div class="hp-bar-fill" style="width: ${hpPct}%; background-color: ${hpColor};"></div>
             </div>
-          ` : ''}
 
-          <div class="player-toolbar" onclick="event.stopPropagation();">
-            <button class="btn-action" style="padding: 5px 12px; font-size: 11px; font-weight: 700;" onclick="addPlayerToCombat('${p.id}')" title="Adicionar este jogador ao combate ativo">
-              ⚔️ Combate
-            </button>
-            <button class="btn-levelup-trigger" onclick="openLevelUpWizard('${p.id}')" title="Assistente de Subir de Nível e Multiclasse">
-              🔼 Subir Nível
-            </button>
-            <button class="btn-secondary" style="padding: 5px 8px; font-size: 11px; font-weight: 700; color: #fef08a; border-color: rgba(245, 158, 11, 0.4);" onclick="openPlayerClassesModal('${p.id}')" title="Ajustar Classes e Multiclasse">
-              🔀 Classes
-            </button>
-
-            <div class="player-actions-group" onclick="event.stopPropagation();">
-              <button class="btn-secondary" style="padding: 5px 7px; font-size: 11px; color: var(--primary-light); border-color: rgba(245, 158, 11, 0.4);" onclick="openSharePlayerModal('${p.id}')" title="Compartilhar Ficha com o Jogador (Link & QR Code)">📱 QR Code</button>
-              <button class="btn-secondary" style="padding: 5px 7px; font-size: 11px;" onclick="playerShortRest('${p.id}')" title="Descanso Curto (1h)">☕ Curto</button>
-              <button class="btn-secondary" style="padding: 5px 7px; font-size: 11px;" onclick="playerLongRest('${p.id}')" title="Descanso Longo (8h)">🌙 Longo</button>
-              <button class="btn-secondary" style="padding: 5px 7px; font-size: 11px;" onclick="clonePlayerSheet('${p.id}')" title="Duplicar / Clonar esta Ficha">📋 Clonar</button>
-              <button class="btn-secondary" style="padding: 5px 7px; font-size: 11px;" onclick="printPlayerSheet('${p.id}')" title="Gerar Ficha Limpa para Impressão A4">🖨️ Imprimir</button>
-              <button class="btn-secondary" style="padding: 5px 7px; font-size: 11px;" onclick="openPlayerModal('${p.id}')" title="Editar Ficha Completa">✏️ Editar</button>
-              <button class="btn-secondary" style="padding: 5px 7px; font-size: 11px; color: #f87171; border-color: rgba(248, 113, 113, 0.3);" onclick="deletePlayerDirect('${p.id}')" title="Excluir Ficha Permanentemente">🗑️</button>
+            <!-- LINHA DE DADOS DE VIDA -->
+            <div class="roll20-hitdice-row">
+              <span>Hit Dice: <b>${hdPool.dieType}</b> (${hdPool.available}/${hdPool.total} disp.)</span>
+              <button class="btn-micro" onclick="openShortRestModal('${p.id}')" title="Gastar Dado de Vida para Curar">🎲 Curar c/ Dado</button>
             </div>
           </div>
         </div>
 
-        <!-- CORPO DA FICHA EM GRID MULTI-COLUNAS (M-L1) -->
-        <div class="player-sheet-grid">
-          <!-- COLUNA 1: VITALIDADE, DEFESAS, ATRIBUTOS & SALVAGUARDAS -->
-          <div class="player-col-vital">
-            <div class="hp-section">
-              <div class="hp-header-row">
-                <div class="hp-val-display">
-                  <span style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">PONTOS DE VIDA:</span>
-                  <span class="hp-current" style="color: ${hpColor};">${p.hp}</span>
-                  <span class="hp-max">/ ${p.maxHp} PV</span>
-                  ${p.tempHp > 0 ? `<span class="hp-temp-badge">+${p.tempHp} Temp</span>` : ''}
+        <!-- 2. BARRA DE ATRIBUTOS & SALVAGUARDAS UNIFICADOS (ABILITIES ROLL20) -->
+        <div class="roll20-abilities-bar">
+          ${[
+            { key: 'str', label: 'STR' },
+            { key: 'dex', label: 'DEX' },
+            { key: 'con', label: 'CON' },
+            { key: 'int', label: 'INT' },
+            { key: 'wis', label: 'WIS' },
+            { key: 'cha', label: 'CHA' }
+          ].map(attr => {
+            const raw = p[attr.key] || 10;
+            const baseMod = Math.floor((raw - 10) / 2);
+            const isSaveProf = (p.saveProficiencies || []).includes(attr.key);
+            const saveMod = baseMod + (isSaveProf ? prof : 0);
+            const modSign = baseMod >= 0 ? `+${baseMod}` : `${baseMod}`;
+            const saveSign = saveMod >= 0 ? `+${saveMod}` : `${saveMod}`;
+
+            return `
+              <div class="roll20-ability-box">
+                <div class="roll20-ability-header">
+                  <span>${attr.label}</span>
+                  <span class="roll20-ability-val">${raw}</span>
                 </div>
-
-                <div class="hit-dice-badge" onclick="openShortRestModal('${p.id}')" title="Dados de Vida: ${hdPool.available}/${hdPool.total} (${hdPool.dieType}) disponíveis. Clique para Descanso Curto">
-                  <span>🎲 <b>${hdPool.available}/${hdPool.total}</b> ${hdPool.dieType}</span>
-                </div>
-              </div>
-
-              <div class="hp-bar-bg" style="height: 9px;">
-                <div class="hp-bar-fill" style="width: ${hpPct}%; background-color: ${hpColor};"></div>
-              </div>
-
-              <!-- CONTROLE RÁPIDO DE PV: INPUT NUMÉRICO + BOTÕES INSTANTÂNEOS (M-A2) -->
-              <div class="hp-header-row" style="margin-top: 2px;">
-                <div class="hp-quick-input-box">
-                  <input type="number" id="hp-quick-val-${p.id}" class="hp-quick-input" placeholder="0" min="1" max="999" onkeydown="if(event.key==='Enter') applyQuickDamage('${p.id}')" title="Digite um valor e clique em Dano ou Cura">
-                  <button class="btn-hp-dmg" onclick="applyQuickDamage('${p.id}')" title="Aplicar Dano">💀 DMG</button>
-                  <button class="btn-hp-heal" onclick="applyQuickHeal('${p.id}')" title="Aplicar Cura">💖 HEAL</button>
-                </div>
-
-                <div class="hp-btn-group">
-                  <button class="btn-hp-adj minus" onclick="adjustPlayerHp('${p.id}', -5)">-5</button>
-                  <button class="btn-hp-adj minus" onclick="adjustPlayerHp('${p.id}', -1)">-1</button>
-                  <button class="btn-hp-adj plus" onclick="adjustPlayerHp('${p.id}', 1)">+1</button>
-                  <button class="btn-hp-adj plus" onclick="adjustPlayerHp('${p.id}', 5)">+5</button>
-                  <button class="btn-secondary" style="padding: 3px 6px; font-size: 10px;" onclick="setPlayerTempHp('${p.id}')" title="Definir PV Temporários">🛡️ Temp</button>
-                  <button class="btn-secondary" style="padding: 3px 6px; font-size: 10px; color: var(--accent-green);" onclick="adjustPlayerHp('${p.id}', ${p.maxHp})" title="Cura Total">💖 Full</button>
+                <div class="roll20-mod-save-row">
+                  <div class="roll20-sub-chip" onclick="rollPlayerAttr('${p.id}', '${attr.key}')" title="Rolar Teste de ${attr.label} (${modSign})">
+                    <span class="roll20-chip-val">${modSign}</span>
+                    <span class="roll20-chip-lbl">Mod</span>
+                  </div>
+                  <div class="roll20-sub-chip ${isSaveProf ? 'proficient' : ''}" onclick="rollPlayerSavingThrow('${p.id}', '${attr.key}')" title="Rolar Salvaguarda de ${attr.label} (${saveSign})${isSaveProf ? ' • Proficiente' : ''}">
+                    <span class="roll20-chip-val">${saveSign}</span>
+                    <span class="roll20-chip-lbl">Save</span>
+                  </div>
                 </div>
               </div>
+            `;
+          }).join('')}
 
-              ${deathSavesHtml}
-
-              <!-- SEÇÃO DE CONDIÇÕES & STATUS (M2) -->
-              <div class="player-conditions-box">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                  <span style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Condições & Status:</span>
-                  <button class="btn-secondary" style="font-size: 10px; padding: 2px 6px;" onclick="openPlayerCondModal('${p.id}')">➕ Alterar Status</button>
-                </div>
-                <div class="player-conds-chips">
-                  ${(p.conditions && p.conditions.length > 0) ? p.conditions.map(cId => {
-      const condObj = (typeof CONDITIONS_LIST !== 'undefined' ? CONDITIONS_LIST.find(c => c.id === cId) : null) || { name: cId, desc: '' };
-      return `<span class="player-cond-chip" onclick="togglePlayerCondition('${p.id}', '${cId}')" title="${escapeAttr(condObj.desc || '')} • Clique para remover">${condObj.name} ✕</span>`;
-    }).join('') : '<span style="color: var(--text-dim); font-size: 10px; font-style: italic;">Normal (Sem condições)</span>'}
-                </div>
-              </div>
+          <!-- BLOCO LATERAL AC / SPEED -->
+          <div class="roll20-ac-speed-box">
+            <div class="roll20-ac-row" title="${escapeAttr(acInfo.details)}">
+              <span>ARMOR CLASS</span>
+              <span class="roll20-ac-shield">${displayAc}</span>
             </div>
-
-            <!-- ⚡ CONTADORES TÁTEIS & RECURSOS RÁPIDOS (1-TOQUE) -->
-            ${renderPlayerResourceQuickDock(p)}
-
-            <div class="stat-chips-grid">
-              ${(() => {
-                const acInfo = getPlayerAcCalculationInfo(p);
-                const displayAc = p.ac || acInfo.ac;
-                const isCustom = p.ac && p.ac !== acInfo.ac;
-                const titleStr = isCustom ? ('CA: ' + displayAc + ' (Base 5E: ' + acInfo.details + ')') : (acInfo.details + ' • Calculado automaticamente pelas regras 5E');
-                return '<div class="stat-chip" title="' + escapeAttr(titleStr) + '" style="cursor:help;">' +
-                  '<span class="stat-chip-label">CA</span>' +
-                  '<span class="stat-chip-val auto-ac">' + displayAc + '</span>' +
-                '</div>';
-              })()}
-              <div class="stat-chip"><span class="stat-chip-label">Profic.</span><span class="stat-chip-val" style="color: var(--primary);">+${prof}</span></div>
-              <div class="stat-chip"><span class="stat-chip-label">Iniciat.</span><span class="stat-chip-val" style="color: var(--accent-blue);">${dexMod >= 0 ? '+' + dexMod : dexMod}</span></div>
-              <div class="stat-chip"><span class="stat-chip-label">Desloc.</span><span class="stat-chip-val" style="font-size: 12px;">${p.speed}</span></div>
-              <div class="stat-chip"><span class="stat-chip-label">Percep. Pass.</span><span class="stat-chip-val">${passPerc}</span></div>
+            <div class="roll20-speed-row">
+              <span>SPEED</span>
+              <span style="font-weight: 800; color: #fff;">${p.speed || '9m'}</span>
             </div>
+          </div>
+        </div>
 
-            <div class="attrs-chips-grid">
-              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'str')" title="Rolar Teste de Força (FOR ${p.str || 10})">
-                <span class="attr-name">FOR</span>
-                <span class="attr-mod">${getMod(p.str)}</span>
-                <span class="attr-raw">${p.str}</span>
-              </button>
-              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'dex')" title="Rolar Teste de Destreza (DES ${p.dex || 10})">
-                <span class="attr-name">DES</span>
-                <span class="attr-mod">${getMod(p.dex)}</span>
-                <span class="attr-raw">${p.dex}</span>
-              </button>
-              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'con')" title="Rolar Teste de Constituição (CON ${p.con || 10})">
-                <span class="attr-name">CON</span>
-                <span class="attr-mod">${getMod(p.con)}</span>
-                <span class="attr-raw">${p.con}</span>
-              </button>
-              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'int')" title="Rolar Teste de Inteligência (INT ${p.int || 10})">
-                <span class="attr-name">INT</span>
-                <span class="attr-mod">${getMod(p.int)}</span>
-                <span class="attr-raw">${p.int}</span>
-              </button>
-              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'wis')" title="Rolar Teste de Sabedoria (SAB ${p.wis || 10})">
-                <span class="attr-name">SAB</span>
-                <span class="attr-mod">${getMod(p.wis)}</span>
-                <span class="attr-raw">${p.wis}</span>
-              </button>
-              <button class="attr-btn" onclick="rollPlayerAttr('${p.id}', 'cha')" title="Rolar Teste de Carisma (CAR ${p.cha || 10})">
-                <span class="attr-name">CAR</span>
-                <span class="attr-mod">${getMod(p.cha)}</span>
-                <span class="attr-raw">${p.cha}</span>
-              </button>
-            </div>
-
-            <!-- SALVAGUARDAS RÁPIDAS NO NÚCLEO -->
-            <div class="player-saves-card-box">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">🛡️ Salvaguardas & Resistências:</span>
-                <button class="btn-secondary" style="font-size: 9px; padding: 2px 6px;" onclick="openPlayerSkillsModal('${p.id}')">⚙️ Editar</button>
+        <!-- 3. GRADE PRINCIPAL EM 3 COLUNAS ROLL20 -->
+        <div class="roll20-columns-grid">
+          
+          <!-- ==============================================
+               COLUNA 1: PERÍCIAS & PROFICIÊNCIAS ROLL20
+          =============================================== -->
+          <div class="roll20-col-skills">
+            <div class="roll20-panel">
+              <div class="roll20-panel-title">
+                <span>🎯 PERÍCIAS (PB: +${prof})</span>
+                <button class="btn-micro" onclick="openPlayerSkillsModal('${p.id}')" title="Configurar Proficiências e Especializações">⚙️</button>
               </div>
-              <div class="saves-card-bar">
-                ${['str', 'dex', 'con', 'int', 'wis', 'cha'].map(attrKey => {
-      const attrNames = { str: 'FOR', dex: 'DES', con: 'CON', int: 'INT', wis: 'SAB', cha: 'CAR' };
-      const isProf = (p.saveProficiencies || []).includes(attrKey);
-      const baseMod = Math.floor(((p[attrKey] || 10) - 10) / 2);
-      const totalMod = baseMod + (isProf ? prof : 0);
-      const modStr = totalMod >= 0 ? '+' + totalMod : `${totalMod}`;
-      return `
-                    <div class="save-card-chip ${isProf ? 'prof' : ''}" onclick="rollPlayerSavingThrow('${p.id}', '${attrKey}')" title="Rolar Salvaguarda de ${attrNames[attrKey]} (${modStr})${isProf ? ' • Proficiente' : ''}">
-                      <div class="save-chip-name">${attrNames[attrKey]} ${isProf ? '<span class="save-prof-dot"></span>' : ''}</div>
-                      <div class="save-chip-val">${modStr}</div>
-                    </div>
-                  `;
-    }).join('')}
+
+              <!-- TABELA ROLL20 DE PERÍCIAS -->
+              <div class="roll20-skills-list">
+                ${(() => {
+                  const skillsList = typeof DND5E_SKILLS !== 'undefined' ? DND5E_SKILLS : [];
+                  return skillsList.map(sk => {
+                    const isProf = (p.skillProficiencies || []).includes(sk.key);
+                    const isExpert = (p.skillExpertises || []).includes(sk.key);
+                    const baseMod = Math.floor(((p[sk.attr] || 10) - 10) / 2);
+                    const profBonus = isExpert ? (prof * 2) : (isProf ? prof : 0);
+                    const totalMod = baseMod + profBonus;
+                    const modStr = totalMod >= 0 ? `+${totalMod}` : `${totalMod}`;
+                    const dotClass = isExpert ? 'expert' : (isProf ? 'active' : '');
+                    return `
+                      <div class="roll20-skill-item" onclick="rollPlayerSkill('${p.id}', '${sk.key}')" title="Rolar teste de ${sk.name} (${modStr})${isExpert ? ' • Especialista (+2x PB)' : (isProf ? ' • Proficiente' : '')}">
+                        <div class="roll20-skill-left">
+                          <span class="roll20-prof-dot ${dotClass}"></span>
+                          <span class="roll20-skill-attr">${(sk.label || sk.attr).toUpperCase()}</span>
+                          <span class="roll20-skill-name">${sk.name}</span>
+                        </div>
+                        <span class="roll20-skill-bonus ${isProf ? 'is-prof' : ''}">${modStr}</span>
+                      </div>
+                    `;
+                  }).join('');
+                })()}
+              </div>
+
+              <!-- BLOCO DE TREINAMENTOS E IDIOMAS -->
+              <div class="roll20-proficiencies-block" style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px; font-size: 11px;">
+                <div style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">🗣️ IDIOMAS</div>
+                <div style="color: #cbd5e1; margin-bottom: 4px;">${p.languages || 'Comum'}</div>
+
+                <div style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">🛠️ FERRAMENTAS</div>
+                <div style="color: #cbd5e1; margin-bottom: 4px;">${(p.toolProficiencies && p.toolProficiencies.length > 0) ? p.toolProficiencies.join(', ') : 'Nenhuma ferramenta configurada.'}</div>
+
+                <div style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">🛡️ ARMADURAS & ARMAS</div>
+                <div style="color: #cbd5e1;">${p.armorProficiencies ? p.armorProficiencies : 'Padrão da classe.'}</div>
               </div>
             </div>
           </div>
 
-          <!-- COLUNA 2: ARSENAL, PODERES & MAGIAS -->
-          <div class="player-col-powers">
-            ${slotsHtml}
+          <!-- ==============================================
+               COLUNA 2: ABAS CENTRAIS ROLL20
+          =============================================== -->
+          <div class="roll20-col-main">
 
-            <!-- 🧘 BANNER DE CONCENTRAÇÃO ATIVA -->
+            <!-- NAVEGAÇÃO DE ABAS ROLL20 -->
+            <div class="roll20-tabs-header">
+              <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'combat' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'combat')">⚔️ Ações</button>
+              <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'spells' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'spells')">✨ Magias</button>
+              <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'inventory' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'inventory')">🎒 Inventário (${(p.inventory || []).length})</button>
+              <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'traits' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'traits')">📜 Traços</button>
+              <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'notes' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'notes')">📝 Notas</button>
+              <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'about' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'about')">👤 Sobre</button>
+            </div>
+
+            <!-- CONTEÚDO DINÂMICO DAS ABAS ROLL20 -->
+            <div class="roll20-tab-body" style="padding-top: 10px;">
+              
+              <!-- ABA 1: COMBATE & AÇÕES -->
+              <div class="roll20-tab-panel" style="display: ${activeRoll20Tab === 'combat' ? 'block' : 'none'};">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span class="roll20-panel-title" style="margin: 0; border: none; padding: 0;">⚔️ ATAQUES & ARMAS CALCULADAS</span>
+                  <div style="display: flex; gap: 4px;">
+                    <button type="button" class="btn-micro" onclick="openWeaponPickerModal('${p.id}')" title="Adicionar arma rápida do acervo D&D">⚔️ + Arma</button>
+                    <button type="button" class="btn-micro" onclick="openAddPlayerItemModal('${p.id}')" title="Adicionar item ao inventário">➕ Item</button>
+                  </div>
+                </div>
+
+                <!-- TABELA DE ATAQUES ROLL20 -->
+                <table class="roll20-attacks-table">
+                  <thead>
+                    <tr>
+                      <th>Arma / Ataque</th>
+                      <th style="text-align: center;">Alcance</th>
+                      <th style="text-align: center;">Acerto</th>
+                      <th>Dano & Tipo</th>
+                      <th style="text-align: right;">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${calculatedAttacks.length > 0 ? calculatedAttacks.map((atk, aIdx) => `
+                      <tr>
+                        <td>
+                          <div class="roll20-atk-name" title="${escapeAttr(atk.notes || '')}">
+                            <span>${atk.name}</span>
+                            ${atk.isEquipped ? '<span style="color:var(--accent-gold); font-size:10px;" title="Equipado no Inventário">★</span>' : ''}
+                          </div>
+                          <div style="font-size: 9.5px; color: #64748b;">${atk.type} ${atk.notes ? '• ' + atk.notes : ''}</div>
+                        </td>
+                        <td style="text-align: center; color: #94a3b8; font-size: 11px;">${atk.range}</td>
+                        <td style="text-align: center;">
+                          <button type="button" class="roll20-btn-roll-atk" onclick="rollPlayerAttack('${p.id}', '${escapeAttr(atk.rawAttackText)}')" title="Rolar Ataque Completo (d20 ${atk.toHit})">
+                            🎲 ${atk.toHit}
+                          </button>
+                        </td>
+                        <td style="color: #f8fafc; font-size: 11px;">
+                          <b style="color: #fbbf24;">${atk.damage}</b> <span style="font-size: 10px; color: #94a3b8;">${atk.damageType}</span>
+                        </td>
+                        <td style="text-align: right; white-space: nowrap;">
+                          <button type="button" class="btn-micro" onclick="rollWeaponDamageOnly('${p.id}', '${escapeAttr(atk.rawAttackText)}')" title="Rolar Apenas Dano">💥</button>
+                          <button type="button" class="btn-chat-feed" onclick="sharePlayerCalculatedAttackToFeed('${p.id}', ${aIdx})" title="Compartilhar ataque no chat da mesa">💬</button>
+                        </td>
+                      </tr>
+                    `).join('') : `
+                      <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-dim); padding: 12px; font-style: italic;">
+                          Nenhuma arma equipada no inventário. Equipe uma arma na aba <b>Inventário</b> ou clique em <b>+ Arma</b>.
+                        </td>
+                      </tr>
+                    `}
+                  </tbody>
+                </table>
+
+                <!-- RECURSOS TÁTEIS & CARGAS RÁPIDAS DA CLASSE -->
+                <div style="margin-top: 12px;">
+                  ${renderPlayerResourceQuickDock(p)}
+                </div>
+
+                <!-- ECONOMIA DE TURNO (D&D 5E) -->
+                <div style="margin-top: 10px;">
+                  <div class="action-economy-nav">
+                    <button type="button" class="action-economy-chip ${actionFilter === 'all' ? 'active' : ''}" onclick="setPlayerActionFilter('${p.id}', 'all')">Todas</button>
+                    <button type="button" class="action-economy-chip ${actionFilter === 'action' ? 'active' : ''}" onclick="setPlayerActionFilter('${p.id}', 'action')">⚔️ Ação</button>
+                    <button type="button" class="action-economy-chip ${actionFilter === 'bonus' ? 'active' : ''}" onclick="setPlayerActionFilter('${p.id}', 'bonus')">⚡ Bônus</button>
+                    <button type="button" class="action-economy-chip ${actionFilter === 'reaction' ? 'active' : ''}" onclick="setPlayerActionFilter('${p.id}', 'reaction')">🛡️ Reação</button>
+                  </div>
+                  ${renderUniversalCombatActions(actionFilter)}
+                </div>
+              </div>
+
+              <!-- ABA 2: MAGIAS & CONJURAÇÃO -->
+              <div class="roll20-tab-panel" style="display: ${activeRoll20Tab === 'spells' ? 'block' : 'none'};">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span class="roll20-panel-title" style="margin: 0; border: none; padding: 0;">🔮 GRIMÓRIO & ESPAÇOS DE MAGIA</span>
+                  <button type="button" class="btn-secondary player-spell-picker-btn" style="font-size: 10px; padding: 2px 8px;" onclick="openSpellPickerModal('${p.id}')">📖 Gerenciar Magias</button>
+                </div>
+
+                <!-- HUD DE CONJURAÇÃO -->
+                ${(() => {
+                  const castStats = getPlayerSpellcastingStats(p);
+                  if (!castStats.isCaster && (!p.preparedSpells || p.preparedSpells.length === 0) && (!p.slots || !p.slots.some(s => s > 0))) {
+                    return '<div style="color: var(--text-dim); font-size: 11px; padding: 8px; text-align: center; font-style: italic;">Este personagem não possui habilidades de conjuração configuradas.</div>';
+                  }
+                  return `
+                    <div class="spellcasting-hud-bar">
+                      <div class="spell-stat-chip" title="CD de Salvaguarda de Magia: Inimigos devem tirar ${castStats.saveDc} ou mais no d20 para resistir às suas magias (${castStats.formula})">
+                        <span class="spell-stat-label">CD DA MAGIA</span>
+                        <span class="spell-stat-val cd-val">CD ${castStats.saveDc}</span>
+                      </div>
+                      <button type="button" class="spell-stat-chip rollable" onclick="rollPlayerSpellAttack('${p.id}')" title="Clique para Rolar Ataque Mágico (d20 ${castStats.attackBonus})">
+                        <span class="spell-stat-label">ATAQUE MÁGICO 🎲</span>
+                        <span class="spell-stat-val atk-val">${castStats.attackBonus}</span>
+                      </button>
+                      <div class="spell-stat-chip" title="Atributo-Chave: ${castStats.ability} (Modificador ${castStats.modStr}) • Bônus de Proficiência: +${castStats.profBonus}">
+                        <span class="spell-stat-label">ATRIBUTO-CHAVE</span>
+                        <span class="spell-stat-val mod-val">${castStats.ability} (${castStats.modStr})</span>
+                      </div>
+                    </div>
+                  `;
+                })()}
+
+                <!-- SLOTS DE MAGIA -->
+                ${slotsHtml}
+
+                <!-- MAGIAS PREPARADAS E TRUQUES -->
+                <div style="margin-top: 8px;">
+                  ${(() => {
+                    const isWizard = isWizardPlayer(p);
+                    if (isWizard) ensurePlayerSpellbook(p);
+                    const currentView = (isWizard && playerSpellbookViews[p.id] === 'spellbook') ? 'spellbook' : 'prepared';
+                    const prepInfo = typeof getMaxPreparedSpells === 'function' ? getMaxPreparedSpells(p) : { isKnownCaster: false };
+                    const rawList = currentView === 'spellbook' ? (p.spellbookSpells || []) : (p.preparedSpells || []);
+                    
+                    if (!rawList || rawList.length === 0) {
+                      return `
+                        <div style="text-align: center; padding: 16px; background: rgba(0,0,0,0.25); border: 1px dashed var(--border-color); border-radius: 6px; font-size: 11px; color: var(--text-dim);">
+                          Nenhuma magia preparada no momento.<br>
+                          <button type="button" class="btn-action" style="font-size: 10px; margin-top: 6px; padding: 3px 8px;" onclick="openSpellPickerModal('${p.id}')">✨ Escolher Magias</button>
+                        </div>
+                      `;
+                    }
+
+                    return `
+                      <div class="player-spells-chips-grid">
+                        ${rawList.map(sName => {
+                          const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+                          const isCantrip = sp && sp.level === 0;
+                          const lvlBadge = sp ? (isCantrip ? 'Truque' : `${sp.level}º Círc.`) : 'Magia';
+                          const school = sp ? sp.school : '';
+                          const range = sp ? sp.range : '';
+                          const diceInfo = typeof getSpellDiceInfo === 'function' ? getSpellDiceInfo(sp || sName, p) : null;
+                          const isPrep = (p.preparedSpells || []).includes(sName);
+
+                          return `
+                            <div class="spell-action-chip player-spell-card-tactile" onclick="openSpellQuickView('${escapeAttr(sName)}', '${p.id}', event)">
+                              <div class="spell-chip-top">
+                                <div class="spell-chip-name" title="${escapeAttr(sName)}">${sName}</div>
+                                <div style="display:flex; align-items:center; gap:4px;">
+                                  <button type="button" class="btn-chat-feed" onclick="event.stopPropagation(); sharePlayerSpellToFeed('${p.id}', '${escapeAttr(sName)}')" title="Compartilhar magia no chat">💬</button>
+                                  <span class="spell-chip-lvl ${isCantrip ? 'cantrip' : 'leveled'}">${lvlBadge}</span>
+                                </div>
+                              </div>
+                              <div class="spell-chip-subinfo">
+                                ${school ? `<span>${school}</span>` : ''}
+                                ${range ? `<span>• ${range}</span>` : ''}
+                              </div>
+                              ${diceInfo ? `
+                                <div class="spell-chip-dice-row">
+                                  <button type="button" class="spell-dice-pill ${diceInfo.isHeal ? 'heal' : 'damage'}" onclick="event.stopPropagation(); rollPlayerSpellDice('${p.id}', '${escapeAttr(sName)}')" title="Clique para Rolar ${escapeAttr(diceInfo.label)}">
+                                    <span>${diceInfo.icon}</span> <span>${diceInfo.label}</span> 🎲
+                                  </button>
+                                </div>
+                              ` : ''}
+                              <div class="spell-chip-actions-bar" onclick="event.stopPropagation()">
+                                <button type="button" class="btn-spell-cast" onclick="event.stopPropagation(); castPlayerSpellPrompt('${p.id}', '${escapeAttr(sName)}')" title="Lançar Magia">⚡ Lançar</button>
+                                ${prepInfo.isKnownCaster ? `
+                                  <span class="badge badge-spell-known" style="font-size: 9.5px; padding: 2px 6px; cursor: default;" title="Magia Conhecida Fixa (D&D 5E)">
+                                    🔮 Conhecida
+                                  </span>
+                                ` : `
+                                  <button type="button" class="btn-spell-prep-toggle ${isPrep ? 'active' : ''}" onclick="event.stopPropagation(); togglePlayerSpellPrepared('${p.id}', '${escapeAttr(sName)}')">
+                                    ⭐ ${isCantrip ? 'Truque' : (isPrep ? 'Prep' : 'Não prep')}
+                                  </button>
+                                `}
+                              </div>
+                            </div>
+                          `;
+                        }).join('')}
+                      </div>
+                    `;
+                  })()}
+                </div>
+              </div>
+
+              <!-- ABA 3: INVENTÁRIO, PESO & MOCHILA -->
+              <div class="roll20-tab-panel" style="display: ${activeRoll20Tab === 'inventory' ? 'block' : 'none'};">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span class="roll20-panel-title" style="margin: 0; border: none; padding: 0;">🎒 INVENTÁRIO & CAPACIDADE DE CARGA</span>
+                  <div style="display: flex; gap: 4px;">
+                    <button type="button" class="btn-action" style="font-size: 10px; padding: 3px 8px;" onclick="openAddPlayerItemModal('${p.id}')">➕ Item</button>
+                    <button type="button" class="btn-secondary" style="font-size: 10px; padding: 3px 8px;" onclick="openPlayerCoinsModal('${p.id}')">🪙 Moedas</button>
+                  </div>
+                </div>
+
+                <!-- CARTEIRA DE MOEDAS ROLL20 -->
+                <div class="roll20-coins-row" style="margin-bottom: 8px;">
+                  <div class="roll20-coin-box"><span class="roll20-coin-val">${(p.coins && p.coins.cp) || 0}</span><span>PC</span></div>
+                  <div class="roll20-coin-box"><span class="roll20-coin-val">${(p.coins && p.coins.sp) || 0}</span><span>PP</span></div>
+                  <div class="roll20-coin-box"><span class="roll20-coin-val">${(p.coins && p.coins.ep) || 0}</span><span>PE</span></div>
+                  <div class="roll20-coin-box"><span class="roll20-coin-val">${(p.coins && p.coins.gp) || p.gold || 0}</span><span>PO</span></div>
+                  <div class="roll20-coin-box"><span class="roll20-coin-val">${(p.coins && p.coins.pp) || 0}</span><span>PL</span></div>
+                </div>
+
+                <!-- STATUS DE PESO E CARGA ROLL20 -->
+                <div class="roll20-weight-status-bar" style="margin-bottom: 8px;">
+                  <span>⚖️ Carga (FOR ${p.str || 10}): <b style="color: ${carry.isOverloaded ? '#f87171' : (carry.isEncumbered ? '#facc15' : '#34d399')};">${carry.totalWeight} kg</b> / ${carry.maxKg} kg</span>
+                  <span style="color: var(--text-dim); font-size: 10px;">${carry.pct}% ${carry.isOverloaded ? '⚠️ SOBRECARREGADO' : (carry.isEncumbered ? '⚡ PESADO' : '✅')}</span>
+                </div>
+                <div class="hp-bar-bg" style="height: 6px; margin-bottom: 8px;">
+                  <div class="hp-bar-fill" style="width: ${carry.pct}%; background-color: ${carry.isOverloaded ? 'var(--accent-red)' : (carry.isEncumbered ? '#eab308' : 'var(--accent-green)')};"></div>
+                </div>
+
+                <!-- LISTA DE ITENS DO INVENTÁRIO -->
+                <div style="display: flex; flex-direction: column; gap: 4px; max-height: 280px; overflow-y: auto;">
+                  ${(p.inventory && p.inventory.length > 0) ? p.inventory.map((it, idx) => {
+                    const actionInfo = typeof getItemActionInfo === 'function' ? getItemActionInfo(it.name) : { icon: '⚡', label: 'Usar' };
+                    const itemQty = parseInt(it.qty, 10) || 0;
+                    return `
+                      <div class="inventory-item-row ${it.equipped ? 'equipped' : ''}">
+                        <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 4px;">
+                          <span style="font-weight: 700; color: #fff;">${it.equipped ? '⚔️ ' : ''}${it.name}${it.attuned ? ' <span title="Item Mágico Sintonizado" style="color:#38bdf8; font-size:10px;">💎</span>' : ''}</span>
+                          <span style="font-size: 9px; color: var(--text-dim);">${it.weight ? ' • ' + it.weight + 'kg' : ''}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 3px;">
+                          <button type="button" class="btn-item-use ${itemQty <= 0 ? 'empty' : ''}" onclick="usePlayerInventoryItem('${p.id}', ${idx})" title="${itemQty > 0 ? `${actionInfo.label} 1x ${it.name}` : 'Item esgotado'}" ${itemQty <= 0 ? 'disabled' : ''}>
+                            ${actionInfo.icon}
+                          </button>
+                          <button type="button" class="roll20-item-equipped-toggle ${it.equipped ? 'active' : ''}" onclick="togglePlayerItemEquipped('${p.id}', ${idx})" title="${it.equipped ? 'Equipado! Clique para Desequipar' : 'Guardado na mochila. Clique para Equipar e calcular ataque/armadura'}">
+                          </button>
+                          <button type="button" class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, -1)" title="Diminuir" style="padding: 1px 4px; font-size: 9px;">−</button>
+                          <span style="font-weight: 800; min-width: 14px; text-align: center; color: ${itemQty > 0 ? 'var(--primary-light)' : 'var(--text-dim)'}; font-size: 10px;">${itemQty}x</span>
+                          <button type="button" class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, 1)" title="Aumentar" style="padding: 1px 4px; font-size: 9px;">+</button>
+                          <button type="button" class="btn-chat-feed" onclick="sharePlayerItemToFeed('${p.id}', ${idx})" title="Compartilhar no Chat">💬</button>
+                          <button type="button" class="btn-micro" style="color: #f87171; padding: 1px 4px; font-size: 9px;" onclick="removePlayerItem('${p.id}', ${idx})" title="Remover item">🗑️</button>
+                        </div>
+                      </div>
+                    `;
+                  }).join('') : `
+                    <div style="text-align: center; padding: 16px; color: var(--text-dim); font-size: 11px; font-style: italic;">
+                      A mochila está vazia. Clique em <b>➕ Item</b> para adicionar equipamentos.
+                    </div>
+                  `}
+                </div>
+              </div>
+
+              <!-- ABA 4: TRAÇOS & CARACTERÍSTICAS -->
+              <div class="roll20-tab-panel" style="display: ${activeRoll20Tab === 'traits' ? 'block' : 'none'};">
+                <div class="roll20-panel-title" style="margin-bottom: 8px; border: none; padding: 0;">
+                  <span>📜 CARACTERÍSTICAS DE CLASSE, RAÇA & TALENTOS</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px; max-height: 280px; overflow-y: auto;">
+                  ${renderPlayerUnlockedFeatures(p, actionFilter)}
+                </div>
+                ${p.features ? `<div style="font-size: 10px; color: var(--text-dim); margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;"><b>Outras Características:</b> ${p.features}</div>` : ''}
+              </div>
+
+              <!-- ABA 5: NOTAS PRIVADAS -->
+              <div class="roll20-tab-panel" style="display: ${activeRoll20Tab === 'notes' ? 'block' : 'none'};">
+                <div class="player-notes-container">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span class="roll20-panel-title" style="margin: 0; border: none; padding: 0;">📝 BLOCO DE NOTAS PRIVADO</span>
+                    <span id="notes-status-${p.id}" style="font-size: 10px; color: var(--text-muted);">Salvo automaticamente</span>
+                  </div>
+                  <textarea class="player-notes-textarea" placeholder="Escreva aqui anotações pessoais, nomes de NPCs, pistas de missões..." oninput="handlePlayerNotesInput('${p.id}', this.value)">${escapeAttr(p.playerNotes || '')}</textarea>
+                </div>
+              </div>
+
+              <!-- ABA 6: SOBRE & HISTÓRIA -->
+              <div class="roll20-tab-panel" style="display: ${activeRoll20Tab === 'about' ? 'block' : 'none'};">
+                <div class="background-info-card">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 12px; font-weight: 800; color: var(--primary-light);">🎭 Origem: <b style="color: #fff;">${p.background || 'Aventureiro'}</b></span>
+                    <button type="button" class="btn-secondary" style="font-size: 10px; padding: 2px 8px;" onclick="openPlayerModal('${p.id}')">✏️ Editar</button>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; margin-bottom: 8px;">
+                    <div class="origin-field-box">
+                      <span class="origin-label">💡 Ideal:</span>
+                      <div class="origin-text">${p.ideal || 'Nenhum ideal definido.'}</div>
+                    </div>
+                    <div class="origin-field-box">
+                      <span class="origin-label">🔗 Vínculo:</span>
+                      <div class="origin-text">${p.bond || 'Nenhum vínculo definido.'}</div>
+                    </div>
+                  </div>
+                  <div style="font-size: 11px; margin-bottom: 8px;" class="origin-field-box">
+                    <span class="origin-label">⚡ Defeito:</span>
+                    <div class="origin-text">${p.flaw || 'Nenhum defeito definido.'}</div>
+                  </div>
+                  <div class="origin-field-box">
+                    <span class="origin-label">📜 História & Biografia:</span>
+                    <div class="origin-text" style="white-space: pre-wrap; line-height: 1.5; color: #cbd5e1;">${p.backstory || 'Nenhum histórico biográfico registrado.'}</div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- ==============================================
+               COLUNA 3: DEFESAS, CONDIÇÕES & SENTIDOS ROLL20
+          =============================================== -->
+          <div class="roll20-col-side">
+            <!-- SALVAGUARDAS CONTRA A MORTE SE HP <= 0 -->
+            ${deathSavesHtml}
+
+            <!-- CONDIÇÕES & STATUS -->
+            <div class="roll20-panel">
+              <div class="roll20-panel-title">
+                <span>CONDIÇÕES & STATUS</span>
+                <button type="button" class="btn-micro" onclick="openPlayerCondModal('${p.id}')" title="Adicionar / Remover Condições">➕</button>
+              </div>
+              <div class="player-conds-chips" style="margin-top: 4px;">
+                ${(p.conditions && p.conditions.length > 0) ? p.conditions.map(cId => {
+                  const condObj = (typeof CONDITIONS_LIST !== 'undefined' ? CONDITIONS_LIST.find(c => c.id === cId) : null) || { name: cId, desc: '' };
+                  return `<span class="player-cond-chip" onclick="togglePlayerCondition('${p.id}', '${cId}')" title="${escapeAttr(condObj.desc || '')} • Clique para remover">${condObj.name} ✕</span>`;
+                }).join('') : '<span style="color: var(--text-dim); font-size: 10px; font-style: italic;">Normal (Sem condições ativas)</span>'}
+              </div>
+            </div>
+
+            <!-- SENTIDOS PASSIVOS ROLL20 -->
+            <div class="roll20-panel" style="margin-top: 10px;">
+              <div class="roll20-panel-title">
+                <span>SENTIDOS PASSIVOS</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 4px 6px; border-radius: 4px;">
+                  <span style="color: #94a3b8;">Percepção Passiva (SAB)</span>
+                  <span style="font-weight: 800; color: #fbbf24; font-size: 12px;">${passPerc}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 4px 6px; border-radius: 4px;">
+                  <span style="color: #94a3b8;">Investigação Passiva (INT)</span>
+                  <span style="font-weight: 800; color: #38bdf8; font-size: 12px;">${passInv}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 4px 6px; border-radius: 4px;">
+                  <span style="color: #94a3b8;">Intuição Passiva (SAB)</span>
+                  <span style="font-weight: 800; color: #a78bfa; font-size: 12px;">${passIns}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- DEFESAS & IMUNIDADES -->
+            <div class="roll20-panel" style="margin-top: 10px;">
+              <div class="roll20-panel-title">
+                <span>DEFESAS & RESISTÊNCIAS</span>
+              </div>
+              <div style="font-size: 11px; color: #cbd5e1; line-height: 1.4;">
+                ${p.damageResistances ? `<div style="margin-bottom: 2px;">🛡️ <b>Resistências:</b> ${p.damageResistances}</div>` : ''}
+                ${p.damageImmunities ? `<div style="margin-bottom: 2px;">✨ <b>Imunidades:</b> ${p.damageImmunities}</div>` : ''}
+                ${p.damageVulnerabilities ? `<div style="margin-bottom: 2px;">⚠️ <b>Vulnerabilidades:</b> ${p.damageVulnerabilities}</div>` : ''}
+                ${(!p.damageResistances && !p.damageImmunities && !p.damageVulnerabilities) ? '<span style="color: var(--text-dim); font-size: 10px; font-style: italic;">Nenhuma resistência especial cadastrada.</span>' : ''}
+              </div>
+            </div>
+
+            <!-- BANNER DE CONCENTRAÇÃO ATIVA -->
             ${p.concentrationSpell ? `
-              <div class="concentration-banner">
+              <div class="concentration-banner" style="margin-top: 10px;">
                 <div class="concentration-text">
                   <span class="concentration-pulse"></span>
                   <span>Concentrando em: <b>${p.concentrationSpell}</b></span>
                 </div>
-                <button class="concentration-stop-btn" onclick="clearPlayerConcentration('${p.id}')" title="Encerrar Concentração">✕ Parar</button>
+                <button type="button" class="concentration-stop-btn" onclick="clearPlayerConcentration('${p.id}')" title="Encerrar Concentração">✕</button>
               </div>
             ` : ''}
-
-            <!-- ⏱️ SELETOR DE ECONOMIA DE TURNO (D&D BEYOND) -->
-            <div class="action-economy-nav">
-              <button class="action-economy-chip ${actionFilter === 'all' ? 'active' : ''}" onclick="setPlayerActionFilter('${p.id}', 'all')">Todas</button>
-              <button class="action-economy-chip ${actionFilter === 'action' ? 'active' : ''}" onclick="setPlayerActionFilter('${p.id}', 'action')">⚔️ Ação</button>
-              <button class="action-economy-chip ${actionFilter === 'bonus' ? 'active' : ''}" onclick="setPlayerActionFilter('${p.id}', 'bonus')">⚡ Bônus</button>
-              <button class="action-economy-chip ${actionFilter === 'reaction' ? 'active' : ''}" onclick="setPlayerActionFilter('${p.id}', 'reaction')">🛡️ Reação</button>
-            </div>
-
-            ${renderUniversalCombatActions(actionFilter)}
-
-            <div class="powers-section-box">
-              <div class="powers-section-header">
-                <span>⚔️ Ataques & Arsenal</span>
-                <button class="btn-secondary" style="font-size: 10px; padding: 2px 7px;" onclick="openWeaponPickerModal('${p.id}')" title="Adicionar arma calculada do catálogo D&D Beyond">⚔️ + Arma</button>
-              </div>
-              <div style="display: flex; flex-direction: column; gap: 4px;">
-                ${attacksHtml || '<div style="color: var(--text-dim); font-size: 11px; padding: 6px;">Nenhum ataque com este filtro.</div>'}
-              </div>
-            </div>
-
-            <div class="powers-section-box">
-              <div class="powers-section-header">
-                ${(() => {
-        const isWizard = isWizardPlayer(p);
-        if (isWizard) ensurePlayerSpellbook(p);
-        const currentView = (isWizard && playerSpellbookViews[p.id] === 'spellbook') ? 'spellbook' : 'prepared';
-
-        const prepInfo = getMaxPreparedSpells(p);
-        const leveledSpells = (p.preparedSpells || []).filter(sName => {
-          const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
-          return !sp || sp.level > 0;
-        });
-        const cantripSpells = (p.preparedSpells || []).filter(sName => {
-          const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
-          return sp && sp.level === 0;
-        });
-
-        let titleHtml = '';
-        if (isWizard && currentView === 'spellbook') {
-          titleHtml = `<span>📖 Grimório (${(p.spellbookSpells || []).length} transcritas)</span>`;
-        } else if (prepInfo.isPreparedCaster) {
-          titleHtml = `<span>🔮 Magias Preparadas (${leveledSpells.length}/${prepInfo.maxLeveled}) ${cantripSpells.length > 0 ? `• <span style="color:#34d399; font-size:10px;">${cantripSpells.length} truques</span>` : ''}</span>`;
-        } else if (prepInfo.isKnownCaster) {
-          titleHtml = `<span>🔮 Magias Conhecidas (${leveledSpells.length}/${prepInfo.maxLeveled}) ${cantripSpells.length > 0 ? `• <span style="color:#34d399; font-size:10px;">${cantripSpells.length}/${prepInfo.maxCantrips} truques</span>` : ''}</span>`;
-        } else {
-          titleHtml = `<span>🔮 Magias (${(p.preparedSpells || []).length})</span>`;
-        }
-
-        const navHtml = isWizard ? `
-          <div class="spellbook-tabs-nav" style="margin: 0 4px;">
-            <button type="button" class="spellbook-tab-btn ${currentView === 'prepared' ? 'active' : ''}" onclick="togglePlayerSpellbookView('${p.id}')" title="Ver apenas magias preparadas">⭐ Prep (${leveledSpells.length})</button>
-            <button type="button" class="spellbook-tab-btn ${currentView === 'spellbook' ? 'active' : ''}" onclick="togglePlayerSpellbookView('${p.id}')" title="Ver todo o grimório de magias">📖 Livro (${(p.spellbookSpells || []).length})</button>
-          </div>
-        ` : '';
-
-        return `<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">${titleHtml}${navHtml}</div>`;
-      })()}
-                <button class="btn-secondary player-spell-picker-btn" style="font-size: 10px; padding: 2px 6px;" onclick="openSpellPickerModal('${p.id}')" title="Selecionar e preparar magias deste herói">📖 ${isWizardPlayer(p) ? 'Gerenciar' : 'Escolher'}</button>
-              </div>
-
-              ${(() => {
-        const castStats = getPlayerSpellcastingStats(p);
-        if (!castStats.isCaster && (!p.preparedSpells || p.preparedSpells.length === 0) && (!p.slots || !p.slots.some(s => s > 0))) return '';
-        return `
-                  <div class="spellcasting-hud-bar">
-                    <div class="spell-stat-chip" title="CD de Salvaguarda de Magia: Inimigos devem tirar ${castStats.saveDc} ou mais no d20 para resistir às suas magias (${castStats.formula})">
-                      <span class="spell-stat-label">CD DA MAGIA</span>
-                      <span class="spell-stat-val cd-val">CD ${castStats.saveDc}</span>
-                    </div>
-                    <button class="spell-stat-chip rollable" onclick="rollPlayerSpellAttack('${p.id}')" title="Clique para Rolar Ataque Mágico (d20 ${castStats.attackBonus})">
-                      <span class="spell-stat-label">ATAQUE MÁGICO 🎲</span>
-                      <span class="spell-stat-val atk-val">${castStats.attackBonus}</span>
-                    </button>
-                    <div class="spell-stat-chip" title="Atributo-Chave: ${castStats.ability} (Modificador ${castStats.modStr}) • Bônus de Proficiência: +${castStats.profBonus}">
-                      <span class="spell-stat-label">ATRIBUTO-CHAVE</span>
-                      <span class="spell-stat-val mod-val">${castStats.ability} (${castStats.modStr})</span>
-                    </div>
-                  </div>
-                `;
-      })()}
-              ${(() => {
-        const isWizard = isWizardPlayer(p);
-        if (isWizard) ensurePlayerSpellbook(p);
-        const currentView = (isWizard && playerSpellbookViews[p.id] === 'spellbook') ? 'spellbook' : 'prepared';
-        const prepInfo = getMaxPreparedSpells(p);
-
-        const rawList = currentView === 'spellbook' ? (p.spellbookSpells || []) : (p.preparedSpells || []);
-        const filteredSpells = rawList.filter(sName => {
-          if (actionFilter === 'all') return true;
-          const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
-          return getSpellActionType(sp || sName) === actionFilter;
-        });
-
-        if (filteredSpells.length > 0) {
-          return `
-            <div class="player-spells-chips-grid">
-              ${filteredSpells.map(sName => {
-            const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
-            const isCantrip = sp && sp.level === 0;
-            const lvlBadge = sp ? (isCantrip ? 'Truque' : `${sp.level}º Círc.`) : 'Magia';
-            const school = sp ? sp.school : '';
-            const range = sp ? sp.range : '';
-            const castTime = sp ? (sp.time || sp.castTime || '') : '';
-            const spAct = getSpellActionType(sp || sName);
-            const spActBadge = spAct === 'bonus' ? '<span class="action-economy-tag bonus">Bônus</span>' : (spAct === 'reaction' ? '<span class="action-economy-tag reaction">Reação</span>' : '<span class="action-economy-tag action">Ação</span>');
-            const diceInfo = typeof getSpellDiceInfo === 'function' ? getSpellDiceInfo(sp || sName, p) : null;
-            const isPrep = (p.preparedSpells || []).includes(sName);
-            const isRitual = sp && (sp.ritual || (sp.desc && sp.desc.toLowerCase().includes('ritual')));
-
-            return `
-                  <div class="spell-action-chip player-spell-card-tactile ${!isPrep && currentView === 'spellbook' ? 'unprepared-book-chip' : ''}" onclick="openSpellQuickView('${escapeAttr(sName)}', '${p.id}', event)">
-                    <div class="spell-chip-top">
-                      <div class="spell-chip-name" title="${escapeAttr(sName)}">${sName} ${spActBadge}</div>
-                      <div style="display:flex; align-items:center; gap:4px;">
-                        <button type="button" class="btn-spell-info" onclick="openSpellQuickView('${escapeAttr(sName)}', '${p.id}', event)" title="Ver resumo rápido de ${escapeAttr(sName)}">ℹ️</button>
-                        <span class="spell-chip-lvl ${isCantrip ? 'cantrip' : 'leveled'}">${lvlBadge}</span>
-                      </div>
-                    </div>
-                    <div class="spell-chip-subinfo">
-                      ${school ? `<span>${school}</span>` : ''}
-                      ${range ? `<span>• ${range}</span>` : ''}
-                      ${castTime ? `<span>• ${castTime}</span>` : ''}
-                      ${isRitual ? `<span style="color:#38bdf8; font-weight:700;">• Ritual</span>` : ''}
-                    </div>
-                    ${diceInfo ? `
-                      <div class="spell-chip-dice-row">
-                        <button type="button" class="spell-dice-pill ${diceInfo.isHeal ? 'heal' : 'damage'}" onclick="event.stopPropagation(); rollPlayerSpellDice('${p.id}', '${escapeAttr(sName)}')" title="Clique para Rolar ${escapeAttr(diceInfo.label)}">
-                          <span>${diceInfo.icon}</span> <span>${diceInfo.label}</span> <span style="font-size:10px; opacity:0.8;">🎲</span>
-                        </button>
-                      </div>
-                    ` : ''}
-                    <div class="spell-chip-actions-bar" onclick="event.stopPropagation()">
-                      ${isPrep || isCantrip ? `
-                        <button class="btn-spell-cast" onclick="event.stopPropagation(); castPlayerSpellPrompt('${p.id}', '${escapeAttr(sName)}')" title="Lançar ${escapeAttr(sName)} (desconta slot se for magia de nível)">
-                          ⚡ Lançar
-                        </button>
-                      ` : ''}
-                      ${(!isPrep && isRitual && isWizard) ? `
-                        <button class="btn-spell-ritual" onclick="event.stopPropagation(); castSpellAsRitual('${p.id}', '${escapeAttr(sName)}')" title="Conjurar como Ritual (+10 min, não gasta slot)">
-                          📜 Ritual
-                        </button>
-                      ` : ''}
-                      ${prepInfo.isKnownCaster ? `
-                        <span class="badge badge-sub" style="font-size: 9.5px; padding: 2px 6px; cursor: default;" title="Magia Conhecida Fixa (D&D 5E)">
-                          🔮 Conhecida
-                        </span>
-                      ` : `
-                        <button class="btn-spell-prep-toggle ${isPrep ? 'active' : ''}" onclick="event.stopPropagation(); togglePlayerSpellPrepared('${p.id}', '${escapeAttr(sName)}')" title="Alternar status desta magia">
-                          ⭐ ${isCantrip ? 'Ativa' : (isPrep ? 'Preparada' : 'Preparar')}
-                        </button>
-                      `}
-                    </div>
-                  </div>
-                `;
-          }).join('')}
-            </div>
-          `;
-        } else {
-          return `
-            <div style="background: rgba(0,0,0,0.25); border: 1px dashed var(--border-color); padding: 8px; border-radius: 6px; text-align: center; color: var(--text-muted); font-size: 11px;">
-              ${actionFilter !== 'all' ? `Nenhuma magia encontrada com economia de "${actionFilter}". <a href="javascript:void(0)" onclick="setPlayerActionFilter('${p.id}', 'all')" style="color:var(--primary-light); text-decoration:underline; margin-left:4px;">Ver todas</a>` : (currentView === 'spellbook' ? 'Nenhuma magia transcrita no grimório.' : 'Nenhuma magia preparada.')}<br>
-              <button class="btn-action" style="font-size: 10px; margin-top: 4px; padding: 3px 8px;" onclick="openSpellPickerModal('${p.id}')">✨ ${isWizard ? 'Gerenciar Grimório' : 'Escolher Magias'}</button>
-            </div>
-          `;
-        }
-      })()}
-              ${p.spells ? `<div style="font-size: 10px; color: var(--text-dim); margin-top: 4px; line-height: 1.4; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 3px;"><b>Anotações:</b> ${p.spells}</div>` : ''}
-            </div>
-
-            <div class="powers-section-box">
-              <div class="powers-section-header">
-                <span>📜 Traços & Habilidades</span>
-              </div>
-              <div style="display: flex; flex-direction: column; gap: 4px; max-height: 250px; overflow-y: auto; padding-right: 2px;">
-                ${renderPlayerUnlockedFeatures(p, actionFilter)}
-              </div>
-              ${p.features ? `<div style="font-size: 10px; color: var(--text-dim); margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 3px;"><b>Outros Traços:</b> ${p.features}</div>` : ''}
-            </div>
           </div>
 
-          <!-- COLUNA 3: PERÍCIAS, CARGAS, MOCHILA, ORIGEM, HISTÓRICO & NOTAS -->
-          <div class="player-col-utility">
-            <div class="player-tab-nav">
-              <button class="p-tab-btn ${activeTab === 'skills' ? 'active' : ''}" onclick="switchPlayerCardTab('${p.id}', 'skills')">🎯 Perícias (${(p.skillProficiencies || []).length})</button>
-              <button class="p-tab-btn ${activeTab === 'charges' ? 'active' : ''}" onclick="switchPlayerCardTab('${p.id}', 'charges')">⚡ Cargas</button>
-              <button class="p-tab-btn ${activeTab === 'inventory' ? 'active' : ''}" onclick="switchPlayerCardTab('${p.id}', 'inventory')">🎒 Mochila/PO</button>
-              <button class="p-tab-btn ${activeTab === 'background' ? 'active' : ''}" onclick="switchPlayerCardTab('${p.id}', 'background')">📖 Origem</button>
-              <button class="p-tab-btn ${activeTab === 'history' ? 'active' : ''}" onclick="switchPlayerCardTab('${p.id}', 'history')">⏳ Histórico (${(p.actionLogs || []).length})</button>
-              <button class="p-tab-btn ${activeTab === 'notes' ? 'active' : ''}" onclick="switchPlayerCardTab('${p.id}', 'notes')">📝 Notas</button>
-            </div>
-
-            <!-- ABA 1: PERÍCIAS COM FILTRO E AGRUPAMENTO POR ATRIBUTO (M-L2) -->
-            <div class="p-tab-content ${activeTab === 'skills' ? 'active' : ''}">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <span style="font-size: 11px; font-weight: 800; color: var(--primary-light);">🎯 Perícias D&D 5E (Profic: +${prof})</span>
-                <button class="btn-secondary" style="font-size: 10px; padding: 4px 10px;" onclick="openPlayerSkillsModal('${p.id}')">⚙️ Proficiências</button>
-              </div>
-
-              <div class="skill-filter-box">
-                <input type="text" class="skill-filter-input" placeholder="🔍 Filtrar perícia..." oninput="filterSkillsCard('${p.id}', this.value)" title="Digite para filtrar instantaneamente as perícias">
-              </div>
-
-              <div class="skills-card-grid" id="skills-grid-${p.id}">
-                ${(() => {
-        const skillsList = typeof DND5E_SKILLS !== 'undefined' ? DND5E_SKILLS : [];
-        const attrGroups = [
-          { attr: 'str', label: 'Força (FOR)', css: 'attr-str' },
-          { attr: 'dex', label: 'Destreza (DES)', css: 'attr-dex' },
-          { attr: 'int', label: 'Inteligência (INT)', css: 'attr-int' },
-          { attr: 'wis', label: 'Sabedoria (SAB)', css: 'attr-wis' },
-          { attr: 'cha', label: 'Carisma (CAR)', css: 'attr-cha' }
-        ];
-
-        return attrGroups.map(grp => {
-          const grpSkills = skillsList.filter(sk => sk.attr === grp.attr);
-          if (grpSkills.length === 0) return '';
-          return `
-                      <div class="skill-attr-group-header ${grp.css}" style="grid-column: 1 / -1;">
-                        <span>${grp.label}</span>
-                      </div>
-                      ${grpSkills.map(sk => {
-            const isProf = (p.skillProficiencies || []).includes(sk.key);
-            const isExpert = (p.skillExpertises || []).includes(sk.key);
-            const baseMod = Math.floor(((p[sk.attr] || 10) - 10) / 2);
-            const profBonus = isExpert ? (prof * 2) : (isProf ? prof : 0);
-            const totalMod = baseMod + profBonus;
-            const modStr = totalMod >= 0 ? '+' + totalMod : `${totalMod}`;
-            const starIcon = isExpert ? '<span style="color:#fbbf24; font-size:10px;" title="Especialização (Bônus Dobrado)">★★</span>' : (isProf ? '<span style="color:var(--primary); font-size:10px;" title="Proficiente">★</span>' : '');
-            return `
-                          <div class="skill-card-item ${isExpert ? 'expert' : (isProf ? 'prof' : '')}" data-skill-name="${sk.name.toLowerCase()}">
-                            <div class="skill-card-name ${isExpert ? 'expert' : ''}">
-                              ${starIcon}
-                              <span>${sk.name}</span>
-                              <span class="skill-card-attr">(${sk.label})</span>
-                            </div>
-                            <button class="skill-card-roll-btn ${isExpert ? 'expert' : (isProf ? 'prof' : '')}" onclick="rollPlayerSkill('${p.id}', '${sk.key}')" title="Rolar teste de ${sk.name} (${modStr})${isExpert ? ' • Especialista (Bônus Dobrado +2x PB)' : (isProf ? ' • Proficiente' : '')}">
-                              <span>🎲</span> <span class="roll-mod">${modStr}</span>
-                            </button>
-                          </div>
-                        `;
-          }).join('')}
-                    `;
-        }).join('');
-      })()}
-              </div>
-            </div>
-
-            <!-- ABA 2: HABILIDADES & CARGAS (M-A1) -->
-            <div class="p-tab-content ${activeTab === 'charges' ? 'active' : ''}">
-              ${featureChargesHtml || `
-                <div style="background: rgba(0,0,0,0.25); border: 1px dashed var(--border-color); padding: 12px; border-radius: 6px; text-align: center; color: var(--text-muted); font-size: 11px;">
-                  Nenhuma habilidade com cargas configurada para esta classe.<br>
-                  <small style="color: var(--text-dim);">As cargas de classes (Fúria, Ki, Surto de Ação, Cura pelas Mãos, etc.) aparecem aqui automaticamente.</small>
-                </div>
-              `}
-            </div>
-
-            <!-- ABA 3: MOCHILA / INVENTÁRIO / OURO (M-B4) -->
-            <div class="p-tab-content ${activeTab === 'inventory' ? 'active' : ''}">
-              <div class="party-stash-quickbar">
-                <span style="font-size: 10px; font-weight: 700; color: #fbbf24;">📦 Baú do Grupo: <b>${(typeof getActiveCampaign === 'function' && getActiveCampaign()?.partyStash?.gold !== undefined) ? getActiveCampaign().partyStash.gold : 0} PO</b></span>
-                <button class="btn-secondary" style="font-size: 9px; padding: 2px 8px; border-color: rgba(245,158,11,0.4); color: #fef08a;" onclick="openPartyStashModal()">🎒 Ver Baú do Grupo</button>
-              </div>
-
-              <div style="background: #080c16; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 6px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                  <span style="font-weight: 800; font-size: 11px; color: #fbbf24;">🪙 Carteira: ${(purse && purse.totalGp !== undefined) ? purse.totalGp : p.gold} PO</span>
-                  <button class="btn-secondary" style="font-size: 9px; padding: 2px 6px;" onclick="openPlayerCoinsModal('${p.id}')">⚙️ Moedas</button>
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; font-size: 9px; text-align: center;">
-                  <div style="background: rgba(180,83,9,0.15); border: 1px solid rgba(180,83,9,0.3); padding: 2px; border-radius: 4px; color: #d97706;"><b>${(p.coins && p.coins.cp) || 0}</b> PC</div>
-                  <div style="background: rgba(148,163,184,0.15); border: 1px solid rgba(148,163,184,0.3); padding: 2px; border-radius: 4px; color: #e2e8f0;"><b>${(p.coins && p.coins.sp) || 0}</b> PP</div>
-                  <div style="background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.3); padding: 2px; border-radius: 4px; color: #38bdf8;"><b>${(p.coins && p.coins.ep) || 0}</b> PE</div>
-                  <div style="background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); padding: 2px; border-radius: 4px; color: #f59e0b;"><b>${(p.coins && p.coins.gp) || p.gold || 0}</b> PO</div>
-                  <div style="background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); padding: 2px; border-radius: 4px; color: #c084fc;"><b>${(p.coins && p.coins.pp) || 0}</b> PL</div>
-                </div>
-              </div>
-
-              <div style="background: #080c16; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 6px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; margin-bottom: 3px;">
-                  <span style="color: var(--text-muted);">⚖️ Carga (FOR ${p.str || 10}): <b style="color: ${carry.isOverloaded ? '#f87171' : (carry.isEncumbered ? '#facc15' : '#34d399')};">${carry.totalWeight} kg</b> / ${carry.maxKg} kg</span>
-                  <span style="font-size: 9px; color: var(--text-dim);">${carry.pct}%</span>
-                </div>
-                <div class="hp-bar-bg" style="height: 5px;">
-                  <div class="hp-bar-fill" style="width: ${carry.pct}%; background-color: ${carry.isOverloaded ? 'var(--accent-red)' : (carry.isEncumbered ? '#eab308' : 'var(--accent-green)')};"></div>
-                </div>
-              </div>
-
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <span style="font-size: 10px; font-weight: 800; color: var(--primary-light);">🎒 Itens (${(p.inventory || []).length}) • <span class="attunement-indicator">💎 ${(p.inventory || []).filter(it => it.attuned).length}/3 Sintonizados</span></span>
-                <button class="btn-action" style="font-size: 9px; padding: 2px 6px;" onclick="openAddPlayerItemModal('${p.id}')">➕ Item</button>
-              </div>
-
-              <div style="display: flex; flex-direction: column; gap: 4px; max-height: 250px; overflow-y: auto;">
-                ${(p.inventory && p.inventory.length > 0) ? p.inventory.map((it, idx) => {
-        const actionInfo = typeof getItemActionInfo === 'function' ? getItemActionInfo(it.name) : { icon: '⚡', label: 'Usar' };
-        const itemQty = parseInt(it.qty, 10) || 0;
-        return `
-                    <div class="inventory-item-row ${it.equipped ? 'equipped' : ''}">
-                      <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 4px;">
-                        <span style="font-weight: 700; color: #fff;">${it.equipped ? '⚔️ ' : ''}${it.name}${it.attuned ? ' <span title="Item Mágico Sintonizado" style="color:#38bdf8; font-size:10px;">💎</span>' : ''}</span>
-                        <span style="font-size: 9px; color: var(--text-dim);">${it.weight ? ' • ' + it.weight + 'kg' : ''}</span>
-                      </div>
-                      <div style="display: flex; align-items: center; gap: 2px;">
-                        <button class="btn-item-use ${itemQty <= 0 ? 'empty' : ''}" onclick="usePlayerInventoryItem('${p.id}', ${idx})" title="${itemQty > 0 ? `${actionInfo.label} 1x ${it.name} (gasta 1 da quantidade)` : 'Item esgotado'}" ${itemQty <= 0 ? 'disabled' : ''}>
-                          ${actionInfo.icon} ${actionInfo.label}
-                        </button>
-                        <button class="btn-item-equip ${it.equipped ? 'active' : ''}" onclick="togglePlayerItemEquipped('${p.id}', ${idx})" title="${it.equipped ? 'Item Equipado (clique para guardar)' : 'Item na Mochila (clique para equipar)'}">
-                          ${it.equipped ? '⚔️' : '🎒'}
-                        </button>
-                        <button class="btn-item-attune ${it.attuned ? 'active' : ''}" onclick="togglePlayerItemAttunement('${p.id}', ${idx})" title="${it.attuned ? 'Item Mágico Sintonizado (clique para cancelar sintonização)' : 'Sintonizar Item Mágico (Máximo 3)'}">
-                          💎
-                        </button>
-                        <button class="btn-item-trade" onclick="openTradeItemModal('${p.id}', ${idx})" title="Passar este item para outro herói (Troca Direta)">
-                          🤝
-                        </button>
-                        <button class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, -1)" title="Diminuir quantidade" style="padding: 1px 4px; font-size: 9px;">−</button>
-                        <span style="font-weight: 800; min-width: 14px; text-align: center; color: ${itemQty > 0 ? 'var(--primary-light)' : 'var(--text-dim)'}; font-size: 10px;">${itemQty}x</span>
-                        <button class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, 1)" title="Aumentar quantidade" style="padding: 1px 4px; font-size: 9px;">+</button>
-                        <button class="btn-micro" style="color: #f87171; padding: 1px 4px; font-size: 9px;" onclick="removePlayerItem('${p.id}', ${idx})" title="Remover item">🗑️</button>
-                      </div>
-                    </div>
-                  `;
-      }).join('') : `
-                  <div style="background: #080c16; padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border-color); color: #cbd5e1; font-size: 10px; line-height: 1.4;">
-                    ${p.spells || 'Mochila de Aventureiro padrão.'}
-                  </div>
-                `}
-              </div>
-            </div>
-
-            <!-- ABA 4: ORIGEM -->
-            <div class="p-tab-content ${activeTab === 'background' ? 'active' : ''}">
-              <div class="background-info-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 4px;">
-                  <span style="font-size: 12px; font-weight: 800; color: var(--primary-light);">🎭 Origem: <b style="color: #fff;">${p.background || 'Aventureiro'}</b></span>
-                  <div style="display: flex; gap: 4px;">
-                    <button class="btn-secondary" style="font-size: 10px; padding: 2px 8px; border-color: rgba(56, 189, 248, 0.4); color: #7dd3fc;" onclick="openChroniclesViewerModal()" title="Ver Crônicas e Diários de Sessões da Mesa">📖 Crônicas da Mesa</button>
-                    <button class="btn-secondary" style="font-size: 10px; padding: 2px 8px;" onclick="openPlayerModal('${p.id}')">✏️ Editar Origem</button>
-                  </div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; margin-bottom: 8px;">
-                  <div class="origin-field-box">
-                    <span class="origin-label">💡 Ideal:</span>
-                    <div class="origin-text">${p.ideal || 'Nenhum ideal definido.'}</div>
-                  </div>
-                  <div class="origin-field-box">
-                    <span class="origin-label">🔗 Vínculo:</span>
-                    <div class="origin-text">${p.bond || 'Nenhum vínculo definido.'}</div>
-                  </div>
-                </div>
-                <div style="font-size: 11px; margin-bottom: 8px;" class="origin-field-box">
-                  <span class="origin-label">⚡ Defeito:</span>
-                  <div class="origin-text">${p.flaw || 'Nenhum defeito definido.'}</div>
-                </div>
-                <div class="origin-field-box">
-                  <span class="origin-label">📜 História & Biografia:</span>
-                  <div class="origin-text" style="white-space: pre-wrap; line-height: 1.5; color: #cbd5e1;">${p.backstory || 'Nenhum histórico biográfico registrado.'}</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- ABA 5: HISTÓRICO COM CATEGORIZAÇÃO VISUAL (M-L7) -->
-            <div class="p-tab-content ${activeTab === 'history' ? 'active' : ''}">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span style="font-size: 11px; font-weight: 700; color: var(--primary-light);">📜 Histórico de Ações da Sessão</span>
-                ${(p.actionLogs && p.actionLogs.length > 0) ? `<button class="btn-secondary" style="font-size: 10px; padding: 2px 6px; color:#f87171;" onclick="clearPlayerActionLogs('${p.id}')">🗑️ Limpar</button>` : ''}
-              </div>
-              <div class="action-logs-timeline">
-                ${(p.actionLogs && p.actionLogs.length > 0) ? p.actionLogs.map(log => `
-                  <div class="action-log-entry" data-type="${log.type || 'general'}">
-                    <span class="action-log-icon">${log.icon || '⚡'}</span>
-                    <div style="flex:1;">
-                      <div class="action-log-text">${log.text}</div>
-                    </div>
-                    <span class="action-log-time">${log.timestamp}</span>
-                  </div>
-                `).join('') : `
-                  <div style="text-align: center; color: var(--text-dim); font-size: 11px; padding: 12px; font-style: italic;">
-                    Nenhuma ação recente registrada para este herói. As rolagens de combate, magias, perícias e descansos aparecerão aqui.
-                  </div>
-                `}
-              </div>
-            </div>
-
-            <!-- ABA 6: NOTAS -->
-            <div class="p-tab-content ${activeTab === 'notes' ? 'active' : ''}">
-              <div class="player-notes-container">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-size: 11px; font-weight: 700; color: var(--primary-light);">📝 Bloco de Notas Privado</span>
-                  <span id="notes-status-${p.id}" style="font-size: 10px; color: var(--text-muted);">Salvo automaticamente</span>
-                </div>
-                <textarea class="player-notes-textarea" placeholder="Escreva aqui segredos descobertos, nomes de NPCs, pistas da missão, lembretes de inventário..." oninput="handlePlayerNotesInput('${p.id}', this.value)">${escapeAttr(p.playerNotes || '')}</textarea>
-                <div class="player-notes-footer">
-                  <span>As anotações são salvas localmente e preservadas no portal do jogador.</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     `;
@@ -10097,7 +10276,18 @@ if (typeof module !== 'undefined' && module.exports) {
 
     // ISSUE-108: Resumo Tátil de Magias
     openSpellQuickView,
-    closeSpellQuickView
+    closeSpellQuickView,
+
+    // ISSUE-111: Roll20 2024 Layout Overhaul
+    getPlayerCalculatedAttacks,
+    togglePlayerItemEquipped,
+    setPlayerCardRoll20Tab,
+    applyRoll20QuickDamage,
+    applyRoll20QuickHeal,
+    sharePlayerCalculatedAttackToFeed,
+    sharePlayerSpellToFeed,
+    sharePlayerItemToFeed,
+    sharePlayerTraitToFeed
   };
 }
 
@@ -10140,6 +10330,17 @@ if (typeof window !== 'undefined') {
   // ISSUE-108: Resumo Tátil de Magias
   window.openSpellQuickView = openSpellQuickView;
   window.closeSpellQuickView = closeSpellQuickView;
+
+  // ISSUE-111: Roll20 2024 Layout Overhaul
+  window.getPlayerCalculatedAttacks = getPlayerCalculatedAttacks;
+  window.togglePlayerItemEquipped = togglePlayerItemEquipped;
+  window.setPlayerCardRoll20Tab = setPlayerCardRoll20Tab;
+  window.applyRoll20QuickDamage = applyRoll20QuickDamage;
+  window.applyRoll20QuickHeal = applyRoll20QuickHeal;
+  window.sharePlayerCalculatedAttackToFeed = sharePlayerCalculatedAttackToFeed;
+  window.sharePlayerSpellToFeed = sharePlayerSpellToFeed;
+  window.sharePlayerItemToFeed = sharePlayerItemToFeed;
+  window.sharePlayerTraitToFeed = sharePlayerTraitToFeed;
 }
 
 

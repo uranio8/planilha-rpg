@@ -5937,8 +5937,99 @@ vm.runInContext(`
 const playersHtml109 = vm.runInContext("document.getElementById('grid-players')?.innerHTML || ''", sandbox);
 assert(playersHtml109.includes('🔮 Conhecida') || playersHtml109.includes('badge-spell-known'), 'Ficha de Bruxo/Bardo/Feiticeiro exibe badge "🔮 Conhecida" em vez de botão desmarcador');
 
-console.log('\n========================================');
+// ============================================================================
+// 📱 78. Testes de Responsividade Mobile, Viewport e Usabilidade Tátil (ISSUE-110)
+// ============================================================================
+console.log('\n📱 78. Testes de Responsividade Mobile, Viewport e Usabilidade Tátil (ISSUE-110):');
 
+const standaloneHtml110 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(standaloneHtml110.includes('viewport-fit=cover'), 'HTML compilado possui viewport-fit=cover no meta viewport');
+assert(standaloneHtml110.includes('100dvh'), 'CSS compilado suporta 100dvh para cálculo de altura dinâmica em mobile');
+assert(standaloneHtml110.includes('env(safe-area-inset-bottom'), 'CSS compilado utiliza env(safe-area-inset-bottom) no dock inferior');
+assert(standaloneHtml110.includes('.dock-label') && (standaloneHtml110.includes('font-size: 11px') || standaloneHtml110.includes('letter-spacing: 0.3px')), 'CSS compilado possui labels legíveis (.dock-label) no dock inferior');
+assert(standaloneHtml110.includes('@media (max-width: 900px)') && standaloneHtml110.includes('.player-hp-btn'), 'CSS compilado estende ergonomia de touch targets (≥ 44px) até 900px');
+assert(standaloneHtml110.includes('.battlegrid-toolbar') && standaloneHtml110.includes('@media (max-width: 768px)'), 'CSS compilado contém regras responsivas de toolbar em 768px');
+assert(standaloneHtml110.includes('.battlegrid-toolbar') && standaloneHtml110.includes('@media (max-width: 600px)'), 'CSS compilado contém regras responsivas de toolbar em 600px');
+// ============================================================================
+// 🎲 79. Testes do Overhaul de Layout Roll20 D&D 5E 2024 (ISSUE-111)
+// ============================================================================
+console.log('\n🎲 79. Testes do Overhaul de Layout Roll20 D&D 5E 2024 (ISSUE-111):');
+
+assert(typeof sandbox.getPlayerCalculatedAttacks === 'function', 'Função getPlayerCalculatedAttacks exportada');
+assert(typeof sandbox.togglePlayerItemEquipped === 'function', 'Função togglePlayerItemEquipped exportada');
+assert(typeof sandbox.setPlayerCardRoll20Tab === 'function', 'Função setPlayerCardRoll20Tab exportada');
+assert(typeof sandbox.applyRoll20QuickDamage === 'function', 'Função applyRoll20QuickDamage exportada');
+assert(typeof sandbox.applyRoll20QuickHeal === 'function', 'Função applyRoll20QuickHeal exportada');
+assert(typeof sandbox.sharePlayerCalculatedAttackToFeed === 'function', 'Função sharePlayerCalculatedAttackToFeed exportada');
+assert(typeof sandbox.sharePlayerSpellToFeed === 'function', 'Função sharePlayerSpellToFeed exportada');
+assert(typeof sandbox.sharePlayerItemToFeed === 'function', 'Função sharePlayerItemToFeed exportada');
+assert(typeof sandbox.sharePlayerTraitToFeed === 'function', 'Função sharePlayerTraitToFeed exportada');
+
+// 1. Cálculo de Ataques de Armas Equipadas
+const testHeroRoll20 = {
+  id: 'p_roll20',
+  name: 'Guerreiro Épico',
+  level: 5,
+  str: 16,
+  dex: 14,
+  hp: 40,
+  maxHp: 40,
+  speed: '9m',
+  inventory: [
+    { name: 'Espada Longa', equipped: true, damage: '1d8 cortante' },
+    { name: 'Arco Curto', equipped: true, damage: '1d6 perfurante', prop: 'Distância' },
+    { name: 'Adaga de Prata', equipped: false, damage: '1d4 perfurante' }
+  ]
+};
+
+const calcAttacks = sandbox.getPlayerCalculatedAttacks(testHeroRoll20);
+assert(calcAttacks.length === 2, 'Apenas as 2 armas com equipped: true foram calculadas');
+const swordAtk = calcAttacks.find(a => a.name === 'Espada Longa');
+assert(swordAtk && swordAtk.toHit === '+6', 'Espada Longa possui acerto +6 (PB +3 + FOR +3)');
+assert(swordAtk && swordAtk.damage === '1d8+3', 'Espada Longa possui dano 1d8+3 (1d8 + FOR +3)');
+
+const bowAtk = calcAttacks.find(a => a.name === 'Arco Curto');
+assert(bowAtk && bowAtk.toHit === '+5', 'Arco Curto à distância possui acerto +5 (PB +3 + DES +2)');
+assert(bowAtk && bowAtk.damage === '1d6+2', 'Arco Curto possui dano 1d6+2 (1d6 + DES +2)');
+
+// 2. Toggle de Item Equipado
+vm.runInContext(`
+  PLAYERS.push(${JSON.stringify(testHeroRoll20)});
+  togglePlayerItemEquipped('p_roll20', 2);
+`, sandbox);
+const toggledHero = vm.runInContext("PLAYERS.find(p => p.id === 'p_roll20')", sandbox);
+assert(toggledHero && toggledHero.inventory[2].equipped === true, 'togglePlayerItemEquipped alternou Adaga de Prata para equipada');
+
+// 3. Fallback de Ataque Desarmado se nenhuma arma equipada
+const unarmedHero = { id: 'p_unarmed', name: 'Monge', level: 1, str: 10, dex: 10, inventory: [] };
+const unarmedAttacks = sandbox.getPlayerCalculatedAttacks(unarmedHero);
+assert(unarmedAttacks.length === 1 && unarmedAttacks[0].name === 'Ataque Desarmado', 'Fallback de Ataque Desarmado gerado quando sem armas');
+
+// 4. Renderização HTML com Seletores do Layout Roll20 2024
+sandbox.PLAYERS = [testHeroRoll20];
+sandbox.renderPlayers();
+const renderedRoll20Html = sandbox.document.getElementById('grid-players')?.innerHTML || '';
+
+assert(renderedRoll20Html.includes('roll20-sheet'), 'Ficha renderizada contém classe .roll20-sheet');
+assert(renderedRoll20Html.includes('roll20-top-grid'), 'Ficha renderizada contém topo Roll20 (.roll20-top-grid)');
+assert(renderedRoll20Html.includes('roll20-hero-card'), 'Ficha renderizada contém .roll20-hero-card');
+assert(renderedRoll20Html.includes('roll20-hp-card'), 'Ficha renderizada contém .roll20-hp-card');
+assert(renderedRoll20Html.includes('roll20-abilities-bar'), 'Ficha renderizada contém barra unificada de atributos (.roll20-abilities-bar)');
+assert(renderedRoll20Html.includes('roll20-columns-grid'), 'Ficha renderizada contém grade em 3 colunas (.roll20-columns-grid)');
+assert(renderedRoll20Html.includes('roll20-col-skills'), 'Ficha renderizada contém coluna 1 de perícias (.roll20-col-skills)');
+assert(renderedRoll20Html.includes('roll20-col-main'), 'Ficha renderizada contém coluna 2 de abas centrais (.roll20-col-main)');
+assert(renderedRoll20Html.includes('roll20-col-side'), 'Ficha renderizada contém coluna 3 de defesas (.roll20-col-side)');
+assert(renderedRoll20Html.includes('roll20-attacks-table'), 'Ficha renderizada contém tabela de ataques (.roll20-attacks-table)');
+assert(renderedRoll20Html.includes('btn-chat-feed'), 'Ficha renderizada contém botões de balão de fala 💬 para envio ao chat');
+
+// 5. Verificação no Standalone Compilado
+const standaloneRoll20 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(standaloneRoll20.includes('.roll20-sheet'), 'Standalone compilado contém estilos .roll20-sheet');
+assert(standaloneRoll20.includes('.roll20-columns-grid'), 'Standalone compilado contém estilos .roll20-columns-grid');
+assert(standaloneRoll20.includes('.roll20-ability-box'), 'Standalone compilado contém estilos .roll20-ability-box');
+assert(standaloneRoll20.includes('getPlayerCalculatedAttacks'), 'Standalone compilado contém função getPlayerCalculatedAttacks');
+
+console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
 
