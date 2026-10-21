@@ -3971,6 +3971,143 @@
       scrollbar-color: rgba(245, 158, 11, 0.3) transparent;
     }
 
+    /* MODAL DE EDIÇÃO DE FICHA DE PERSONAGEM (ISSUE-115) */
+    .stat-box-editor {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 6px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    .stat-box-editor:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+      background: rgba(30, 41, 59, 0.85);
+    }
+    .stat-box-editor-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+    .stat-box-editor input {
+      width: 100%;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      padding: 3px 0;
+    }
+    .stat-box-editor input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .stat-mod-pill {
+      font-size: 11px;
+      font-weight: 800;
+      color: #fde047;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 4px;
+      padding: 1px 6px;
+      min-width: 30px;
+      text-align: center;
+      font-family: var(--font-mono);
+    }
+    .stat-mod-pill.neg {
+      color: #f87171;
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    /* CARDS DE HABILIDADES DESBLOQUEADAS NO MODAL DE EDIÇÃO (ISSUE-115) */
+    .pm-feature-item {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: all 0.2s ease;
+    }
+    .pm-feature-item:hover {
+      background: rgba(30, 41, 59, 0.85);
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+    .pm-feature-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .pm-feature-name {
+      font-weight: 700;
+      color: #f1f5f9;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pm-feature-badges {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .pm-feature-body {
+      font-size: 11.5px;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+
+    /* SLOTS DE MAGIA NO MODAL DE EDIÇÃO (ISSUE-115) */
+    .pm-slot-card {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 6px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      transition: all 0.2s ease;
+    }
+    .pm-slot-card.active {
+      border-color: rgba(168, 85, 247, 0.4);
+      background: rgba(88, 28, 135, 0.15);
+    }
+    .pm-slot-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .pm-slot-input {
+      width: 100%;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: #d8b4fe;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      padding: 2px 0;
+    }
+    .pm-slot-input:focus {
+      outline: none;
+      border-color: var(--accent-purple);
+    }
+
     /* MODAL PICKER DE MAGIAS */
     .picker-spells-container {
       flex: 1;

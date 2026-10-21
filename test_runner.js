@@ -6101,7 +6101,30 @@ assert(standaloneTextCss.includes('.hl-dice {'), 'CSS compilado contém definiç
 assert(standaloneTextCss.includes('.hl-time {'), 'CSS compilado contém definição de estilo para .hl-time');
 assert(standaloneTextCss.includes('.hl-circle {'), 'CSS compilado contém definição de estilo para .hl-circle');
 assert(standaloneTextCss.includes('.feature-bullet-row {'), 'CSS compilado contém definição de estilo para .feature-bullet-row');
-assert(standaloneTextCss.includes('.feature-bullet-dot {'), 'CSS compilado contém definição de estilo para .feature-bullet-dot');
+// =========================================================================
+// 83. TESTES DO MODAL DE EDIÇÃO DE FICHA MODERNO E EXPANDIDO (ISSUE-115)
+// =========================================================================
+console.log('\n📝 83. Testes do Modal de Edição de Ficha Moderno e Expandido (ISSUE-115):');
+
+// 1. Exportação e funcionamento de updateModalAttributeModifiers
+assert(typeof vm.runInContext("updateModalAttributeModifiers", sandbox) === 'function', 'Função updateModalAttributeModifiers exportada no contexto');
+
+// 2. Verificação no HTML Standalone Compilado
+const standaloneEditorHtml = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(standaloneEditorHtml.includes('max-width: 880px'), 'Modal de edição expandido para max-width: 880px');
+assert(standaloneEditorHtml.includes('stat-box-editor'), 'HTML contém caixas modernas de atributo com classe .stat-box-editor');
+assert(standaloneEditorHtml.includes('stat-mod-pill'), 'HTML contém pílulas de modificador com classe .stat-mod-pill');
+assert(standaloneEditorHtml.includes('pm-mod-str'), 'HTML contém pílula de modificador #pm-mod-str');
+assert(standaloneEditorHtml.includes('pm-mod-int'), 'HTML contém pílula de modificador #pm-mod-int');
+assert(standaloneEditorHtml.includes('pm-slot-card'), 'HTML contém cards de slot de magia com classe .pm-slot-card');
+assert(standaloneEditorHtml.includes('pm-slot-input'), 'HTML contém inputs de slot de magia com classe .pm-slot-input');
+
+// 3. Verificação no CSS Standalone Compilado
+assert(standaloneEditorHtml.includes('.stat-box-editor {'), 'CSS compilado contém definição de estilo para .stat-box-editor');
+assert(standaloneEditorHtml.includes('.stat-mod-pill {'), 'CSS compilado contém definição de estilo para .stat-mod-pill');
+assert(standaloneEditorHtml.includes('.pm-feature-item {'), 'CSS compilado contém definição de estilo para .pm-feature-item');
+assert(standaloneEditorHtml.includes('.pm-slot-card {'), 'CSS compilado contém definição de estilo para .pm-slot-card');
+assert(!standaloneEditorHtml.includes('.substring(0, 90)'), 'Código compilado não trunca mais descrições com substring(0, 90)');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

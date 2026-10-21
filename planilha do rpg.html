@@ -3974,6 +3974,143 @@
       scrollbar-color: rgba(245, 158, 11, 0.3) transparent;
     }
 
+    /* MODAL DE EDIÇÃO DE FICHA DE PERSONAGEM (ISSUE-115) */
+    .stat-box-editor {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 6px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    .stat-box-editor:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+      background: rgba(30, 41, 59, 0.85);
+    }
+    .stat-box-editor-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+    .stat-box-editor input {
+      width: 100%;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      padding: 3px 0;
+    }
+    .stat-box-editor input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .stat-mod-pill {
+      font-size: 11px;
+      font-weight: 800;
+      color: #fde047;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 4px;
+      padding: 1px 6px;
+      min-width: 30px;
+      text-align: center;
+      font-family: var(--font-mono);
+    }
+    .stat-mod-pill.neg {
+      color: #f87171;
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    /* CARDS DE HABILIDADES DESBLOQUEADAS NO MODAL DE EDIÇÃO (ISSUE-115) */
+    .pm-feature-item {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: all 0.2s ease;
+    }
+    .pm-feature-item:hover {
+      background: rgba(30, 41, 59, 0.85);
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+    .pm-feature-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .pm-feature-name {
+      font-weight: 700;
+      color: #f1f5f9;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pm-feature-badges {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .pm-feature-body {
+      font-size: 11.5px;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+
+    /* SLOTS DE MAGIA NO MODAL DE EDIÇÃO (ISSUE-115) */
+    .pm-slot-card {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 6px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      transition: all 0.2s ease;
+    }
+    .pm-slot-card.active {
+      border-color: rgba(168, 85, 247, 0.4);
+      background: rgba(88, 28, 135, 0.15);
+    }
+    .pm-slot-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .pm-slot-input {
+      width: 100%;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: #d8b4fe;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      padding: 2px 0;
+    }
+    .pm-slot-input:focus {
+      outline: none;
+      border-color: var(--accent-purple);
+    }
+
     /* MODAL PICKER DE MAGIAS */
     .picker-spells-container {
       flex: 1;
@@ -11627,7 +11764,7 @@
 
   <!-- MODAL: PLAYER SHEET (D&D 5E) -->
   <div id="modal-player" class="modal-overlay">
-    <div class="modal-body" style="max-width: 740px;">
+    <div class="modal-body" style="max-width: 880px; width: 92vw;">
       <div class="panel-header">
         <span id="player-modal-heading">Editar Ficha de Personagem</span>
         <button class="btn-secondary" onclick="closePlayerModal()">✕</button>
@@ -11756,38 +11893,69 @@
       </div>
 
       <div>
-        <label>6 Atributos D&D (Valores Brutos 1 a 20)</label>
-        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px;">
-          <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">FOR</span><input type="number" id="pm-str" value="16" style="text-align: center;"></div>
-          <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">DES</span><input type="number" id="pm-dex" value="12" style="text-align: center;" oninput="updateModalCalculatedAc()"></div>
-          <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">CON</span><input type="number" id="pm-con" value="14" style="text-align: center;" oninput="updateModalCalculatedAc()"></div>
-          <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">INT</span><input type="number" id="pm-int" value="10" style="text-align: center;"></div>
-          <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">SAB</span><input type="number" id="pm-wis" value="12" style="text-align: center;" oninput="updateModalCalculatedAc()"></div>
-          <div class="stat-box"><span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">CAR</span><input type="number" id="pm-cha" value="8" style="text-align: center;"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <label style="margin:0;">6 Atributos D&D (Valores Brutos 1 a 20 & Modificadores Calculados)</label>
+          <span style="font-size:10px; color:var(--text-muted);">Modificador oficial: (Valor - 10) / 2</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;">
+          <div class="stat-box-editor">
+            <span class="stat-box-editor-label">FOR</span>
+            <input type="number" id="pm-str" value="16" min="1" max="30" oninput="updateModalAttributeModifiers()">
+            <span class="stat-mod-pill" id="pm-mod-str">+3</span>
+          </div>
+          <div class="stat-box-editor">
+            <span class="stat-box-editor-label">DES</span>
+            <input type="number" id="pm-dex" value="12" min="1" max="30" oninput="updateModalCalculatedAc()">
+            <span class="stat-mod-pill" id="pm-mod-dex">+1</span>
+          </div>
+          <div class="stat-box-editor">
+            <span class="stat-box-editor-label">CON</span>
+            <input type="number" id="pm-con" value="14" min="1" max="30" oninput="updateModalCalculatedAc()">
+            <span class="stat-mod-pill" id="pm-mod-con">+2</span>
+          </div>
+          <div class="stat-box-editor">
+            <span class="stat-box-editor-label">INT</span>
+            <input type="number" id="pm-int" value="10" min="1" max="30" oninput="updateModalAttributeModifiers()">
+            <span class="stat-mod-pill" id="pm-mod-int">+0</span>
+          </div>
+          <div class="stat-box-editor">
+            <span class="stat-box-editor-label">SAB</span>
+            <input type="number" id="pm-wis" value="12" min="1" max="30" oninput="updateModalCalculatedAc()">
+            <span class="stat-mod-pill" id="pm-mod-wis">+1</span>
+          </div>
+          <div class="stat-box-editor">
+            <span class="stat-box-editor-label">CAR</span>
+            <input type="number" id="pm-cha" value="8" min="1" max="30" oninput="updateModalAttributeModifiers()">
+            <span class="stat-mod-pill neg" id="pm-mod-cha">-1</span>
+          </div>
         </div>
       </div>
 
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
           <label style="margin:0;">Espaços de Magia (Círculos 1º ao 9º - Calculados Automaticamente)</label>
+          <span style="font-size:10px; color:var(--accent-purple);">🔮 Slots Arcanos</span>
         </div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(58px, 1fr)); gap: 6px; background: #080c16; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color);">
-          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">1º CÍRC.</span><input type="number" id="pm-slot-1" value="0" min="0" max="9" style="text-align: center;"></div>
-          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">2º CÍRC.</span><input type="number" id="pm-slot-2" value="0" min="0" max="9" style="text-align: center;"></div>
-          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">3º CÍRC.</span><input type="number" id="pm-slot-3" value="0" min="0" max="9" style="text-align: center;"></div>
-          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">4º CÍRC.</span><input type="number" id="pm-slot-4" value="0" min="0" max="9" style="text-align: center;"></div>
-          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">5º CÍRC.</span><input type="number" id="pm-slot-5" value="0" min="0" max="9" style="text-align: center;"></div>
-          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">6º CÍRC.</span><input type="number" id="pm-slot-6" value="0" min="0" max="9" style="text-align: center;"></div>
-          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">7º CÍRC.</span><input type="number" id="pm-slot-7" value="0" min="0" max="9" style="text-align: center;"></div>
-          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">8º CÍRC.</span><input type="number" id="pm-slot-8" value="0" min="0" max="9" style="text-align: center;"></div>
-          <div><span style="font-size: 9px; color: var(--text-dim); font-weight: bold;">9º CÍRC.</span><input type="number" id="pm-slot-9" value="0" min="0" max="9" style="text-align: center;"></div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(62px, 1fr)); gap: 6px; background: #080c16; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color);">
+          <div class="pm-slot-card"><span class="pm-slot-label">1º Círc.</span><input type="number" id="pm-slot-1" class="pm-slot-input" value="0" min="0" max="9"></div>
+          <div class="pm-slot-card"><span class="pm-slot-label">2º Círc.</span><input type="number" id="pm-slot-2" class="pm-slot-input" value="0" min="0" max="9"></div>
+          <div class="pm-slot-card"><span class="pm-slot-label">3º Círc.</span><input type="number" id="pm-slot-3" class="pm-slot-input" value="0" min="0" max="9"></div>
+          <div class="pm-slot-card"><span class="pm-slot-label">4º Círc.</span><input type="number" id="pm-slot-4" class="pm-slot-input" value="0" min="0" max="9"></div>
+          <div class="pm-slot-card"><span class="pm-slot-label">5º Círc.</span><input type="number" id="pm-slot-5" class="pm-slot-input" value="0" min="0" max="9"></div>
+          <div class="pm-slot-card"><span class="pm-slot-label">6º Círc.</span><input type="number" id="pm-slot-6" class="pm-slot-input" value="0" min="0" max="9"></div>
+          <div class="pm-slot-card"><span class="pm-slot-label">7º Círc.</span><input type="number" id="pm-slot-7" class="pm-slot-input" value="0" min="0" max="9"></div>
+          <div class="pm-slot-card"><span class="pm-slot-label">8º Círc.</span><input type="number" id="pm-slot-8" class="pm-slot-input" value="0" min="0" max="9"></div>
+          <div class="pm-slot-card"><span class="pm-slot-label">9º Círc.</span><input type="number" id="pm-slot-9" class="pm-slot-input" value="0" min="0" max="9"></div>
         </div>
       </div>
 
       <!-- Preview de Habilidades Desbloqueadas -->
       <div>
-        <label>🌳 Habilidades Desbloqueadas da Classe (Automático pelo Nível)</label>
-        <div id="pm-features-preview" style="max-height: 110px; overflow-y: auto; background: #080c16; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 4px;"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <label style="margin:0;">🌳 Habilidades Desbloqueadas da Classe (Automático pelo Nível)</label>
+          <span style="font-size:10px; color:var(--primary-light);">Regras Completas & Tópicos</span>
+        </div>
+        <div id="pm-features-preview" style="max-height: 240px; overflow-y: auto; background: #080c16; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px; scrollbar-width: thin; scrollbar-color: rgba(245, 158, 11, 0.3) transparent;"></div>
       </div>
 
       <div>
@@ -42551,11 +42719,28 @@ function onPlayerModalClassOrLevelChange(preserveSlotsIfSet = false) {
   if (previewBox) {
     const unlocked = getUnlockedClassFeatures(selectedClassName, level, subIdx);
     if (unlocked.length > 0) {
-      previewBox.innerHTML = unlocked.map(f => `
-        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:6px 8px; border-radius:6px; font-size:11px;">
-          <b style="color:var(--primary-light);">${f.name} (Nv ${f.level}):</b> <span style="color:var(--text-muted);">${(f.desc || '').substring(0, 90)}...</span>
-        </div>
-      `).join('');
+      previewBox.innerHTML = unlocked.map(f => {
+        const actType = typeof getFeatureActionType === 'function' ? getFeatureActionType(f) : 'passive';
+        const actLabel = actType === 'bonus' ? 'Bônus' : (actType === 'reaction' ? 'Reação' : (actType === 'action' ? 'Ação' : 'Passiva'));
+        const formattedDesc = typeof formatFeatureSnippet === 'function' ? formatFeatureSnippet(f.desc) : (f.desc || '');
+        return `
+          <div class="pm-feature-item">
+            <div class="pm-feature-header">
+              <div class="pm-feature-name">
+                <span>✨</span>
+                <span>${f.name}</span>
+              </div>
+              <div class="pm-feature-badges">
+                <span class="badge ${f.isSubclass ? 'badge-sub' : 'badge-cls'}" style="font-size: 9px;">Nv ${f.level}</span>
+                <span class="action-economy-tag ${actType}" style="font-size: 8.5px;">${actLabel}</span>
+              </div>
+            </div>
+            <div class="pm-feature-body">
+              ${formattedDesc}
+            </div>
+          </div>
+        `;
+      }).join('');
     } else {
       previewBox.innerHTML = `<span style="color:var(--text-dim); font-size:11px;">Nenhuma habilidade de classe listada para este nível.</span>`;
     }
@@ -42599,7 +42784,36 @@ function updateModalCalculatedAc() {
   if (acInput) {
     acInput.value = calculated;
   }
+  if (typeof updateModalAttributeModifiers === 'function') {
+    updateModalAttributeModifiers();
+  }
   return calculated;
+}
+
+function updateModalAttributeModifiers() {
+  const stats = [
+    { id: 'pm-str', modId: 'pm-mod-str' },
+    { id: 'pm-dex', modId: 'pm-mod-dex' },
+    { id: 'pm-con', modId: 'pm-mod-con' },
+    { id: 'pm-int', modId: 'pm-mod-int' },
+    { id: 'pm-wis', modId: 'pm-mod-wis' },
+    { id: 'pm-cha', modId: 'pm-mod-cha' }
+  ];
+  stats.forEach(st => {
+    const inp = document.getElementById(st.id);
+    const pill = document.getElementById(st.modId);
+    if (inp && pill) {
+      const val = parseInt(inp.value) || 10;
+      const mod = Math.floor((val - 10) / 2);
+      const sign = mod >= 0 ? '+' : '';
+      pill.textContent = `${sign}${mod}`;
+      if (mod < 0) {
+        pill.classList.add('neg');
+      } else {
+        pill.classList.remove('neg');
+      }
+    }
+  });
 }
 
 function openPlayerModal(id) {
@@ -42774,6 +42988,9 @@ function openPlayerModal(id) {
   }
 
   onPlayerModalClassOrLevelChange(true);
+  if (typeof updateModalAttributeModifiers === 'function') {
+    updateModalAttributeModifiers();
+  }
   if (modal) modal.classList.add('open');
 }
 
@@ -46599,7 +46816,9 @@ if (typeof window !== 'undefined') {
   window.sharePlayerCalculatedAttackToFeed = sharePlayerCalculatedAttackToFeed;
   window.sharePlayerSpellToFeed = sharePlayerSpellToFeed;
   window.sharePlayerItemToFeed = sharePlayerItemToFeed;
-  window.sharePlayerTraitToFeed = sharePlayerTraitToFeed;
+  // ISSUE-114 & ISSUE-115: Formatação de Textos e Modal de Edição
+  window.formatFeatureSnippet = formatFeatureSnippet;
+  window.updateModalAttributeModifiers = updateModalAttributeModifiers;
 }
 
 

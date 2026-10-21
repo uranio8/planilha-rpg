@@ -6341,11 +6341,28 @@ function onPlayerModalClassOrLevelChange(preserveSlotsIfSet = false) {
   if (previewBox) {
     const unlocked = getUnlockedClassFeatures(selectedClassName, level, subIdx);
     if (unlocked.length > 0) {
-      previewBox.innerHTML = unlocked.map(f => `
-        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:6px 8px; border-radius:6px; font-size:11px;">
-          <b style="color:var(--primary-light);">${f.name} (Nv ${f.level}):</b> <span style="color:var(--text-muted);">${(f.desc || '').substring(0, 90)}...</span>
-        </div>
-      `).join('');
+      previewBox.innerHTML = unlocked.map(f => {
+        const actType = typeof getFeatureActionType === 'function' ? getFeatureActionType(f) : 'passive';
+        const actLabel = actType === 'bonus' ? 'Bônus' : (actType === 'reaction' ? 'Reação' : (actType === 'action' ? 'Ação' : 'Passiva'));
+        const formattedDesc = typeof formatFeatureSnippet === 'function' ? formatFeatureSnippet(f.desc) : (f.desc || '');
+        return `
+          <div class="pm-feature-item">
+            <div class="pm-feature-header">
+              <div class="pm-feature-name">
+                <span>✨</span>
+                <span>${f.name}</span>
+              </div>
+              <div class="pm-feature-badges">
+                <span class="badge ${f.isSubclass ? 'badge-sub' : 'badge-cls'}" style="font-size: 9px;">Nv ${f.level}</span>
+                <span class="action-economy-tag ${actType}" style="font-size: 8.5px;">${actLabel}</span>
+              </div>
+            </div>
+            <div class="pm-feature-body">
+              ${formattedDesc}
+            </div>
+          </div>
+        `;
+      }).join('');
     } else {
       previewBox.innerHTML = `<span style="color:var(--text-dim); font-size:11px;">Nenhuma habilidade de classe listada para este nível.</span>`;
     }
@@ -6389,7 +6406,36 @@ function updateModalCalculatedAc() {
   if (acInput) {
     acInput.value = calculated;
   }
+  if (typeof updateModalAttributeModifiers === 'function') {
+    updateModalAttributeModifiers();
+  }
   return calculated;
+}
+
+function updateModalAttributeModifiers() {
+  const stats = [
+    { id: 'pm-str', modId: 'pm-mod-str' },
+    { id: 'pm-dex', modId: 'pm-mod-dex' },
+    { id: 'pm-con', modId: 'pm-mod-con' },
+    { id: 'pm-int', modId: 'pm-mod-int' },
+    { id: 'pm-wis', modId: 'pm-mod-wis' },
+    { id: 'pm-cha', modId: 'pm-mod-cha' }
+  ];
+  stats.forEach(st => {
+    const inp = document.getElementById(st.id);
+    const pill = document.getElementById(st.modId);
+    if (inp && pill) {
+      const val = parseInt(inp.value) || 10;
+      const mod = Math.floor((val - 10) / 2);
+      const sign = mod >= 0 ? '+' : '';
+      pill.textContent = `${sign}${mod}`;
+      if (mod < 0) {
+        pill.classList.add('neg');
+      } else {
+        pill.classList.remove('neg');
+      }
+    }
+  });
 }
 
 function openPlayerModal(id) {
@@ -6564,6 +6610,9 @@ function openPlayerModal(id) {
   }
 
   onPlayerModalClassOrLevelChange(true);
+  if (typeof updateModalAttributeModifiers === 'function') {
+    updateModalAttributeModifiers();
+  }
   if (modal) modal.classList.add('open');
 }
 
@@ -10389,7 +10438,9 @@ if (typeof window !== 'undefined') {
   window.sharePlayerCalculatedAttackToFeed = sharePlayerCalculatedAttackToFeed;
   window.sharePlayerSpellToFeed = sharePlayerSpellToFeed;
   window.sharePlayerItemToFeed = sharePlayerItemToFeed;
-  window.sharePlayerTraitToFeed = sharePlayerTraitToFeed;
+  // ISSUE-114 & ISSUE-115: Formatação de Textos e Modal de Edição
+  window.formatFeatureSnippet = formatFeatureSnippet;
+  window.updateModalAttributeModifiers = updateModalAttributeModifiers;
 }
 
 
