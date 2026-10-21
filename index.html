@@ -3836,11 +3836,118 @@
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
     }
+    /* DESTAQUES SEMÂNTICOS DE TEXTO E REGRAS D&D (ISSUE-114) */
+    .hl-keyword {
+      color: #fef08a !important;
+      font-weight: 700;
+      text-shadow: 0 0 6px rgba(254, 240, 138, 0.2);
+    }
+    .hl-gold {
+      color: #fde047;
+      font-weight: 700;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      padding: 1px 5px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 11px;
+    }
+    .hl-dice {
+      background: rgba(6, 182, 212, 0.15);
+      border: 1px solid rgba(6, 182, 212, 0.35);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: #67e8f9;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .hl-time {
+      color: #38bdf8;
+      font-weight: 700;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 1px 5px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 11px;
+    }
+    .hl-dist {
+      color: #86efac;
+      font-weight: 700;
+      background: rgba(34, 197, 94, 0.12);
+      border: 1px solid rgba(34, 197, 94, 0.25);
+      padding: 1px 5px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 11px;
+    }
+    .hl-circle {
+      color: #d8b4fe;
+      font-weight: 700;
+      background: rgba(168, 85, 247, 0.15);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      padding: 1px 5px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 11px;
+    }
+
+    /* SNIPPET DE CARACTERÍSTICA ESTRUTURADO EM TÓPICOS (ISSUE-114) */
     .feature-snippet {
       font-size: 11.5px;
       color: #cbd5e1;
-      line-height: 1.5;
+      line-height: 1.55;
       margin-top: 6px;
+    }
+    .feature-snippet-intro {
+      font-size: 11.5px;
+      color: #e2e8f0;
+      line-height: 1.5;
+      margin-bottom: 6px;
+    }
+    .feature-bullets-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .feature-bullet-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      font-size: 11.5px;
+      line-height: 1.45;
+      color: #cbd5e1;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.02);
+      border-left: 2px solid rgba(245, 158, 11, 0.35);
+      transition: all 0.15s ease;
+    }
+    .feature-bullet-row:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-left-color: var(--primary);
+    }
+    .feature-bullet-dot {
+      color: #f59e0b;
+      font-size: 9px;
+      margin-top: 3px;
+      flex-shrink: 0;
+    }
+    .feature-bullet-text {
+      flex: 1;
     }
     .feature-class-group-header {
       font-size: 12px;
@@ -32388,8 +32495,10 @@ function highlightInlineRules(text) {
     // Remove marcadores markdown bold e aplica destaque
     .replace(/\*\*(.*?)\*\*/g, '<strong class="hl-keyword">$1</strong>')
     .replace(/\*(.*?)\*/g, '<em style="color:#e2e8f0;">$1</em>')
-    // Dados de dano/cura (ex: 1d6, 2d8+3, 1d20)
+    // Dados de dano/cura (ex: 1d6, 2d8+3, 1d20, dois d20, d20)
+    .replace(/\b((?:dois|duas|três|quatro|cinco)\s+d\d+)\b/gi, '<span class="hl-dice">🎲 $1</span>')
     .replace(/\b(\d+d\d+(?:\s*[\+\-]\s*\d+)?)\b/gi, '<span class="hl-dice">🎲 $1</span>')
+    .replace(/\b(d(?:4|6|8|10|12|20|100)(?:\s*[\+\-]\s*\d+)?)\b/gi, '<span class="hl-dice">🎲 $1</span>')
     // Moedas D&D (ex: 50 PO, 100 PL, 5 PC)
     .replace(/\b(\d+[\.,]?\d*\s*(?:PO|PP|PC|PE|PL))\b/g, '<span class="hl-gold">🪙 $1</span>')
     // Distâncias (ex: 9m, 18 metros, 30 ft, 6 quadrados)
@@ -32397,7 +32506,7 @@ function highlightInlineRules(text) {
     // Tempos e Ações (ex: 2 horas, 1 minuto, 1 ação bônus, descanso curto)
     .replace(/\b(\d+\s*(?:horas?|minutos?|segundos?|turnos?|rodadas?|dias?))\b/gi, '<span class="hl-time">⏱️ $1</span>')
     .replace(/\b(Ação Bônus|Ação bônus|Reação|Ação Padrão|Ação Livre|Descanso Curto|Descanso Longo|Ação de Movimento)\b/gi, '<span class="hl-time">⏱️ $1</span>')
-    // Círculos de magia (ex: 1º círculo, 2º círculo)
+    // Círculos de magia (ex: 1º círculo, 2º círculo, 6º círculo)
     .replace(/\b(\d+º\s*(?:círculo|circulo|nível|nivel))\b/gi, '<span class="hl-circle">🔮 $1</span>');
 }
 
@@ -38109,7 +38218,7 @@ function renderPlayers() {
                 <div class="roll20-traits-container">
                   ${renderPlayerUnlockedFeatures(p, actionFilter)}
                 </div>
-                ${p.features ? `<div style="font-size: 10px; color: var(--text-dim); margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;"><b>Outras Características:</b> ${p.features}</div>` : ''}
+                ${p.features ? `<div style="font-size: 11px; color: var(--text-dim); margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.07); padding-top: 6px;"><b>Outras Características:</b> ${typeof formatFeatureSnippet === 'function' ? formatFeatureSnippet(p.features) : p.features}</div>` : ''}
               </div>
 
               <!-- ABA 5: NOTAS PRIVADAS -->
@@ -41206,6 +41315,55 @@ function openPlayerFeatureModalByKey(key) {
   openPlayerFeatureModal(feat.name, feat.desc, feat.type, feat.source);
 }
 
+function formatFeatureSnippet(rawDesc) {
+  if (!rawDesc) return '';
+  const desc = String(rawDesc).trim();
+
+  // Divide por tópicos sinalizados por '•' ou quebras de linha
+  if (desc.includes('•') || desc.includes('\n')) {
+    let chunks = [];
+    if (desc.includes('•')) {
+      chunks = desc.split('•').map(c => c.trim()).filter(Boolean);
+    } else {
+      chunks = desc.split(/\r?\n+/).map(c => c.trim()).filter(Boolean);
+    }
+
+    if (chunks.length <= 1) {
+      return typeof highlightInlineRules === 'function' ? highlightInlineRules(chunks[0] || desc) : desc;
+    }
+
+    let html = '';
+    let startIndex = 0;
+
+    // Se o primeiro pedaço não começar como tópico rotulado (**X**:), tratamos como introdução conceitual
+    const firstChunk = chunks[0];
+    const isLabeledTopic = /^\*\*.*?\*\*:/.test(firstChunk);
+    if (!isLabeledTopic && firstChunk.length > 5) {
+      const formattedIntro = typeof highlightInlineRules === 'function' ? highlightInlineRules(firstChunk) : firstChunk;
+      html += `<div class="feature-snippet-intro">${formattedIntro}</div>`;
+      startIndex = 1;
+    }
+
+    html += '<div class="feature-bullets-list">';
+    for (let i = startIndex; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      if (!chunk) continue;
+      const formattedChunk = typeof highlightInlineRules === 'function' ? highlightInlineRules(chunk) : chunk;
+      html += `
+        <div class="feature-bullet-row">
+          <span class="feature-bullet-dot">✦</span>
+          <div class="feature-bullet-text">${formattedChunk}</div>
+        </div>
+      `;
+    }
+    html += '</div>';
+    return html;
+  }
+
+  // Caso seja texto contínuo, aplica highlightInlineRules
+  return typeof highlightInlineRules === 'function' ? highlightInlineRules(desc) : desc;
+}
+
 function renderPlayerUnlockedFeatures(p, actionFilter = 'all') {
   const classesList = getPlayerClassesList(p);
   let html = '';
@@ -41264,8 +41422,8 @@ function renderPlayerUnlockedFeatures(p, actionFilter = 'all') {
                 </div>
                 <span class="badge ${formatted.isSubclass ? 'badge-sub' : 'badge-cls'}" style="font-size:9px;">Nv ${formatted.level}</span>
               </div>
-              <div style="font-size:11px; color:var(--text-muted); line-height:1.3; margin-top:2px;" class="feature-snippet">
-                ${formatted.desc}
+              <div class="feature-snippet">
+                ${formatFeatureSnippet(formatted.desc)}
               </div>
               ${fightingStyleActionHtml}
             </div>

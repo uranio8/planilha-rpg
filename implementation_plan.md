@@ -1,55 +1,59 @@
-# 📋 Plano de Implementação: Espaçamento e Harmonização de Características & Traços da Ficha (ISSUE-113)
+# 📋 Plano de Implementação: Formatação Rica e Estruturação Visual dos Textos de Características (ISSUE-114)
 
 ## 📌 Contexto e Diagnóstico
-Na imagem enviada pelo usuário da aba **📜 Traços & Características**, foram identificados problemas críticos de layout e compressão:
-1. **Compressão Artificial Dupla e Espaço Vazio Sobrando**:
-   - A aba possuía `max-height: 280px; overflow-y: auto;` em `src/js/players.js` (linha ~2008).
-   - Internamente, cada lista de classe possuía outro limitador rígido `max-height: 220px; overflow-y: auto;` em `src/styles/head_css.html` (linha ~3819).
-   - Isso forçava scrollbars internas desnecessárias e comprimia os cards num bloco minúsculo, deixando uma enorme área vazia e escura na parte inferior da coluna central da ficha Roll20 (enquanto a coluna 1 de perícias possui ~700px de altura).
-2. **Corte Vertical de Textos e Descrições**:
-   - A classe `.feature-snippet` possuía `-webkit-line-clamp: 2` com `overflow: hidden`, cortando abruptamente frases no meio da linha (como visto em "Retomar o Fôlego").
-3. **Falta de Respiro e Espaçamento entre Cards**:
-   - Os cards de características (`.unlocked-feature-item`) utilizavam `gap: 4px` e `padding: 6px 8px`, gerando poluição visual e baixa legibilidade tátil.
-   - O seletor de Especialidade Marcial (`.feature-fighting-style-box`) ficava espremido dentro do card sem margens adequadas.
+Na imagem enviada pelo usuário da lista de características de Mago (*Grimório & Conjurador*, *Recuperação Arcana*, *Tradição Arcana*, *Portento*):
+1. **Markdown Cru e Ilegível**:
+   - Os textos estão sendo renderizados diretamente com marcadores markdown visíveis (`**Grimório**:`, `**Copiar Magias**:`, `**Descanso Curto**`, `*Escola de Evocação*`), sem conversão para HTML rico.
+2. **Sopa de Letrinhas em Bloco Único**:
+   - Múltiplas regras e tópicos separados por `•` estão colados no mesmo parágrafo corrido, dificultando a leitura rápida durante a sessão de jogo.
+3. **Ausência de Destaque Semântico**:
+   - Dados (`dois d20`), moedas (`50 PO`), tempos (`2 horas`, `Descanso Curto`), fórmulas de CD (`CD 8 + prof + mod INT`) e círculos mágicos (`1º círculo`) não possuem diferenciação cromática.
 
 ---
 
 ## 🎯 Objetivos da Melhoria
-1. **Remover as Travas Artificiais de Altura**:
-   - Substituir os `max-height: 280px` e `max-height: 220px` por um layout flexível e espaçado (`min-height: 480px; max-height: 680px; overflow-y: auto;`), preenchendo harmonicamente o espaço da coluna central e eliminando o vazio inferior.
-2. **Eliminar Cortes Bruscos de Texto (`-webkit-line-clamp`)**:
-   - Expandir a visualização do resumo para exibir o texto com clareza (`line-height: 1.5; font-size: 11.5px;`), permitindo leitura confortável sem cortes pela metade.
-3. **Design Espaçado e Confortável dos Cards de Habilidades**:
-   - Cards com `padding: 12px 14px; border-radius: 8px; margin-bottom: 8px; background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(255, 255, 255, 0.08);`.
-   - Efeito hover refinado com leve elevação e borda dourada suave (`border-color: rgba(245, 158, 11, 0.4)`).
-   - Cabeçalhos de classe (`🌲 Habilidades de Guerreiro (Nível 4):`) destacados com divisor visual sutil, espaçamento superior e tipografia ouro antigo.
-4. **Respiro no Seletor de Estilo de Luta e Subclasses**:
-   - `.feature-fighting-style-box` com padding de `10px 12px`, bordas arredondadas e select estilizado com altura confortável (34px) e espaçamento respirável.
+1. **Parser de Tópicos e Formatação Estruturada (`formatFeatureSnippet`)**:
+   - Se a descrição contiver múltiplos tópicos marcados por `•` ou quebras de linha:
+     - Separar o conceito introdutório da habilidade.
+     - Renderizar cada regra/tópico como um card de linha independente (`.feature-bullet-row`) com marcador dourado (`✦`), eliminando o bloco de texto massivo.
+   - Se for um texto narrativo/contínuo, aplicar quebras de parágrafo naturais e espaçamento entrelinhas generoso (`line-height: 1.6;`).
+2. **Processamento Universal de Markdown e Micro-Destaques**:
+   - Converter `**texto**` em negrito dourado brilhante (`<strong class="hl-keyword">...</strong>`).
+   - Converter `*texto*` em itálico com contraste suave (`<em>...</em>`).
+   - Destacar dados D&D com ícone e badge (`🎲 1d10`, `🎲 dois d20`).
+   - Destacar moedas D&D com badge dourada (`🪙 50 PO`).
+   - Destacar tempos e descansos com badge âmbar (`⏱️ 2 horas`, `⏱️ Descanso Curto`).
+   - Destacar círculos de magia com badge ciano/ametista (`🔮 1º círculo`).
+3. **Estilização Visual Dark Fantasy em `src/styles/head_css.html`**:
+   - `.feature-snippet-intro`: texto conceitual introdutório nítido com cor `#cbd5e1`.
+   - `.feature-bullets-list`: container em coluna com espaçamento vertical harmonioso (`gap: 6px; margin-top: 8px;`).
+   - `.feature-bullet-row`: card de tópico com borda lateral dourada (`border-left: 2px solid var(--accent-gold)`), fundo sutil e padding interno (`6px 10px`).
+   - `.hl-keyword`, `.hl-dice`, `.hl-gold`, `.hl-time`, `.hl-circle`: badges com alto contraste, legibilidade tátil e visual D&D moderno.
 
 ---
 
 ## 🏗️ Módulos e Arquivos Afetados
 1. **`src/styles/head_css.html`**:
-   - Atualização e expansão de `.unlocked-features-list`, `.unlocked-feature-item`, `.feature-snippet`, `.feature-fighting-style-box`, e `.feature-inline-select`.
+   - Definição dos estilos `.feature-snippet-intro`, `.feature-bullets-list`, `.feature-bullet-row`, `.feature-bullet-dot`, e refinamento das classes `.hl-*`.
 2. **`src/js/players.js`**:
-   - Ajuste do container da Aba 4 (`traits`) e harmonização do container de inventário/notas para aproveitar a altura natural da ficha Roll20.
+   - Implementação de `formatFeatureSnippet(desc)` e integração em `renderPlayerUnlockedFeatures(p, actionFilter)`.
 3. **`test_runner.js`**:
-   - Suíte 81 validando a integridade das regras de espaçamento e renderização da aba de características.
+   - Suíte 82 validando a formatação rica, parsing de markdown e geração de tópicos estruturados.
 4. **`builder.js`**:
    - Recompilação de `planilha do rpg.html` e `index.html`.
 5. **`issues/README.md`**:
-   - Registro da **ISSUE-113**.
+   - Registro da **ISSUE-114**.
 
 ---
 
 ## 🛡️ Impactos e Riscos
-- **Persistência (`localStorage`)**: Zero impacto (apenas visual e espaçamento).
-- **Mecânicas D&D 5E**: Zero impacto (habilidades e seletores continuam funcionando perfeitamente).
-- **Testes Existentes**: Preservação dos 1360 testes já aprovados.
+- **Persistência / localStorage**: Zero impacto.
+- **Sincronização / Firebase**: Zero impacto.
+- **Performance**: Funções regex leves e puramente síncronas durante a renderização da aba ativa.
 
 ---
 
 ## 🧪 Estratégia de Verificação
 - Compilação via `node builder.js`.
-- Execução de `node test_runner.js` garantindo 100% de sucesso.
-- Inspeção visual garantindo que o espaço foi preenchido de maneira elegante, legível e sem cortes.
+- Bateria de testes em `node test_runner.js` com 100% de sucesso.
+- Validação visual dos cards de Mago, Guerreiro e Bárbaro garantindo legibilidade imediata de cada tópico.

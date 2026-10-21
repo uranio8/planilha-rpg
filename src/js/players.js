@@ -2008,7 +2008,7 @@ function renderPlayers() {
                 <div class="roll20-traits-container">
                   ${renderPlayerUnlockedFeatures(p, actionFilter)}
                 </div>
-                ${p.features ? `<div style="font-size: 10px; color: var(--text-dim); margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;"><b>Outras Características:</b> ${p.features}</div>` : ''}
+                ${p.features ? `<div style="font-size: 11px; color: var(--text-dim); margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.07); padding-top: 6px;"><b>Outras Características:</b> ${typeof formatFeatureSnippet === 'function' ? formatFeatureSnippet(p.features) : p.features}</div>` : ''}
               </div>
 
               <!-- ABA 5: NOTAS PRIVADAS -->
@@ -5105,6 +5105,55 @@ function openPlayerFeatureModalByKey(key) {
   openPlayerFeatureModal(feat.name, feat.desc, feat.type, feat.source);
 }
 
+function formatFeatureSnippet(rawDesc) {
+  if (!rawDesc) return '';
+  const desc = String(rawDesc).trim();
+
+  // Divide por tópicos sinalizados por '•' ou quebras de linha
+  if (desc.includes('•') || desc.includes('\n')) {
+    let chunks = [];
+    if (desc.includes('•')) {
+      chunks = desc.split('•').map(c => c.trim()).filter(Boolean);
+    } else {
+      chunks = desc.split(/\r?\n+/).map(c => c.trim()).filter(Boolean);
+    }
+
+    if (chunks.length <= 1) {
+      return typeof highlightInlineRules === 'function' ? highlightInlineRules(chunks[0] || desc) : desc;
+    }
+
+    let html = '';
+    let startIndex = 0;
+
+    // Se o primeiro pedaço não começar como tópico rotulado (**X**:), tratamos como introdução conceitual
+    const firstChunk = chunks[0];
+    const isLabeledTopic = /^\*\*.*?\*\*:/.test(firstChunk);
+    if (!isLabeledTopic && firstChunk.length > 5) {
+      const formattedIntro = typeof highlightInlineRules === 'function' ? highlightInlineRules(firstChunk) : firstChunk;
+      html += `<div class="feature-snippet-intro">${formattedIntro}</div>`;
+      startIndex = 1;
+    }
+
+    html += '<div class="feature-bullets-list">';
+    for (let i = startIndex; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      if (!chunk) continue;
+      const formattedChunk = typeof highlightInlineRules === 'function' ? highlightInlineRules(chunk) : chunk;
+      html += `
+        <div class="feature-bullet-row">
+          <span class="feature-bullet-dot">✦</span>
+          <div class="feature-bullet-text">${formattedChunk}</div>
+        </div>
+      `;
+    }
+    html += '</div>';
+    return html;
+  }
+
+  // Caso seja texto contínuo, aplica highlightInlineRules
+  return typeof highlightInlineRules === 'function' ? highlightInlineRules(desc) : desc;
+}
+
 function renderPlayerUnlockedFeatures(p, actionFilter = 'all') {
   const classesList = getPlayerClassesList(p);
   let html = '';
@@ -5163,8 +5212,8 @@ function renderPlayerUnlockedFeatures(p, actionFilter = 'all') {
                 </div>
                 <span class="badge ${formatted.isSubclass ? 'badge-sub' : 'badge-cls'}" style="font-size:9px;">Nv ${formatted.level}</span>
               </div>
-              <div style="font-size:11px; color:var(--text-muted); line-height:1.3; margin-top:2px;" class="feature-snippet">
-                ${formatted.desc}
+              <div class="feature-snippet">
+                ${formatFeatureSnippet(formatted.desc)}
               </div>
               ${fightingStyleActionHtml}
             </div>

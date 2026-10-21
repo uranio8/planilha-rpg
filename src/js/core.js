@@ -2474,8 +2474,10 @@ function highlightInlineRules(text) {
     // Remove marcadores markdown bold e aplica destaque
     .replace(/\*\*(.*?)\*\*/g, '<strong class="hl-keyword">$1</strong>')
     .replace(/\*(.*?)\*/g, '<em style="color:#e2e8f0;">$1</em>')
-    // Dados de dano/cura (ex: 1d6, 2d8+3, 1d20)
+    // Dados de dano/cura (ex: 1d6, 2d8+3, 1d20, dois d20, d20)
+    .replace(/\b((?:dois|duas|três|quatro|cinco)\s+d\d+)\b/gi, '<span class="hl-dice">🎲 $1</span>')
     .replace(/\b(\d+d\d+(?:\s*[\+\-]\s*\d+)?)\b/gi, '<span class="hl-dice">🎲 $1</span>')
+    .replace(/\b(d(?:4|6|8|10|12|20|100)(?:\s*[\+\-]\s*\d+)?)\b/gi, '<span class="hl-dice">🎲 $1</span>')
     // Moedas D&D (ex: 50 PO, 100 PL, 5 PC)
     .replace(/\b(\d+[\.,]?\d*\s*(?:PO|PP|PC|PE|PL))\b/g, '<span class="hl-gold">🪙 $1</span>')
     // Distâncias (ex: 9m, 18 metros, 30 ft, 6 quadrados)
@@ -2483,7 +2485,7 @@ function highlightInlineRules(text) {
     // Tempos e Ações (ex: 2 horas, 1 minuto, 1 ação bônus, descanso curto)
     .replace(/\b(\d+\s*(?:horas?|minutos?|segundos?|turnos?|rodadas?|dias?))\b/gi, '<span class="hl-time">⏱️ $1</span>')
     .replace(/\b(Ação Bônus|Ação bônus|Reação|Ação Padrão|Ação Livre|Descanso Curto|Descanso Longo|Ação de Movimento)\b/gi, '<span class="hl-time">⏱️ $1</span>')
-    // Círculos de magia (ex: 1º círculo, 2º círculo)
+    // Círculos de magia (ex: 1º círculo, 2º círculo, 6º círculo)
     .replace(/\b(\d+º\s*(?:círculo|circulo|nível|nivel))\b/gi, '<span class="hl-circle">🔮 $1</span>');
 }
 

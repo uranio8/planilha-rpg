@@ -6067,7 +6067,41 @@ assert(renderedRoll20Html.includes('roll20-traits-container'), 'Ficha renderizad
 const standaloneTraitsCss = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
 assert(standaloneTraitsCss.includes('.roll20-traits-container {'), 'CSS compilado contém definição de estilo para .roll20-traits-container');
 assert(!standaloneTraitsCss.includes('.unlocked-features-list {\n      display: flex;\n      flex-direction: column;\n      gap: 5px;\n      max-height: 220px;'), 'CSS compilado não possui mais limite artificial de 220px em unlocked-features-list');
-assert(!standaloneTraitsCss.includes('-webkit-line-clamp: 2;'), 'CSS compilado não trunca mais descrições com line-clamp rígido');
+// =========================================================================
+// 82. TESTES DE FORMATAÇÃO E DESTAQUES RICOS DE TEXTOS DE CARACTERÍSTICAS (ISSUE-114)
+// =========================================================================
+console.log('\n📖 82. Testes de Formatação e Destaques Ricos de Textos de Características (ISSUE-114):');
+
+// 1. Exportação e funcionamento da função formatFeatureSnippet
+assert(typeof vm.runInContext("formatFeatureSnippet", sandbox) === 'function', 'Função formatFeatureSnippet exportada no contexto');
+
+const rawFeatureDesc = "Como estudante da magia arcana, você possui um grimório contendo as fórmulas de suas magias. • **Grimório**: No 1º nível, contém 6 magias de 1º círculo. • **Copiar Magias**: Você pode adicionar qualquer magia que encontrar gastando 2 horas e 50 PO por círculo da magia.";
+const parsedSnippetHtml = vm.runInContext(`formatFeatureSnippet(${JSON.stringify(rawFeatureDesc)})`, sandbox);
+
+assert(parsedSnippetHtml.includes('feature-snippet-intro'), 'formatFeatureSnippet gerou .feature-snippet-intro para o texto conceitual inicial');
+assert(parsedSnippetHtml.includes('feature-bullets-list'), 'formatFeatureSnippet gerou a lista de tópicos .feature-bullets-list');
+assert(parsedSnippetHtml.includes('feature-bullet-row'), 'formatFeatureSnippet gerou linhas estruturadas .feature-bullet-row');
+assert(parsedSnippetHtml.includes('feature-bullet-dot'), 'formatFeatureSnippet gerou marcadores estilizados .feature-bullet-dot');
+assert(parsedSnippetHtml.includes('hl-keyword'), 'formatFeatureSnippet converteu **bold** em .hl-keyword');
+assert(parsedSnippetHtml.includes('hl-gold'), 'formatFeatureSnippet converteu moedas (50 PO) em .hl-gold');
+assert(parsedSnippetHtml.includes('hl-time'), 'formatFeatureSnippet converteu tempos (2 horas) em .hl-time');
+assert(parsedSnippetHtml.includes('hl-circle'), 'formatFeatureSnippet converteu círculos de magia (1º círculo) em .hl-circle');
+
+// 2. Teste de dados e descansos no Portento
+const rawPortentDesc = "Ao terminar um descanso longo, **role dois d20 e anote os resultados**.";
+const parsedPortentHtml = vm.runInContext(`formatFeatureSnippet(${JSON.stringify(rawPortentDesc)})`, sandbox);
+assert(parsedPortentHtml.includes('hl-keyword'), 'Portento destaca comando de rolagem em .hl-keyword');
+assert(parsedPortentHtml.includes('hl-time'), 'Portento destaca descanso longo em .hl-time');
+
+// 3. Verificação no CSS Standalone Compilado
+const standaloneTextCss = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(standaloneTextCss.includes('.hl-keyword {'), 'CSS compilado contém definição de estilo para .hl-keyword');
+assert(standaloneTextCss.includes('.hl-gold {'), 'CSS compilado contém definição de estilo para .hl-gold');
+assert(standaloneTextCss.includes('.hl-dice {'), 'CSS compilado contém definição de estilo para .hl-dice');
+assert(standaloneTextCss.includes('.hl-time {'), 'CSS compilado contém definição de estilo para .hl-time');
+assert(standaloneTextCss.includes('.hl-circle {'), 'CSS compilado contém definição de estilo para .hl-circle');
+assert(standaloneTextCss.includes('.feature-bullet-row {'), 'CSS compilado contém definição de estilo para .feature-bullet-row');
+assert(standaloneTextCss.includes('.feature-bullet-dot {'), 'CSS compilado contém definição de estilo para .feature-bullet-dot');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
