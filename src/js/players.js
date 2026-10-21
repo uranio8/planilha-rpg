@@ -1968,7 +1968,7 @@ function renderPlayers() {
                 </div>
 
                 <!-- LISTA DE ITENS DO INVENTÁRIO -->
-                <div style="display: flex; flex-direction: column; gap: 4px; max-height: 280px; overflow-y: auto;">
+                <div style="display: flex; flex-direction: column; gap: 6px; min-height: 380px; max-height: 640px; overflow-y: auto; padding-right: 4px;">
                   ${(p.inventory && p.inventory.length > 0) ? p.inventory.map((it, idx) => {
                     const actionInfo = typeof getItemActionInfo === 'function' ? getItemActionInfo(it.name) : { icon: '⚡', label: 'Usar' };
                     const itemQty = parseInt(it.qty, 10) || 0;
@@ -2005,7 +2005,7 @@ function renderPlayers() {
                 <div class="roll20-panel-title" style="margin-bottom: 8px; border: none; padding: 0;">
                   <span>📜 CARACTERÍSTICAS DE CLASSE, RAÇA & TALENTOS</span>
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 4px; max-height: 280px; overflow-y: auto;">
+                <div class="roll20-traits-container">
                   ${renderPlayerUnlockedFeatures(p, actionFilter)}
                 </div>
                 ${p.features ? `<div style="font-size: 10px; color: var(--text-dim); margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;"><b>Outras Características:</b> ${p.features}</div>` : ''}
@@ -5127,7 +5127,7 @@ function renderPlayerUnlockedFeatures(p, actionFilter = 'all') {
       matchingFeaturesCount += matching.length;
 
       html += `
-        <div style="font-size: 11px; font-weight: 800; color: var(--primary-light); margin-top: 8px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+        <div class="feature-class-group-header">
           <span>🌳</span> <span>Habilidades de ${clsItem.className} (Nível ${clsItem.level}):</span>
         </div>
         <div class="unlocked-features-list">

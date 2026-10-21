@@ -6055,6 +6055,20 @@ assert(standaloneCss.includes('.roll20-btn-add-item {'), 'CSS compilado contém 
 assert(standaloneCss.includes('.roll20-btn-damage-only {'), 'CSS compilado contém definição de .roll20-btn-damage-only');
 assert(standaloneCss.includes('rgba(139, 92, 246'), 'CSS compilado contém paleta ametista para botão de chat (.btn-chat-feed)');
 
+// =========================================================================
+// 81. TESTES DE ESPAÇAMENTO E HARMONIZAÇÃO DE TRAÇOS & CARACTERÍSTICAS (ISSUE-113)
+// =========================================================================
+console.log('\n📜 81. Testes de Espaçamento e Harmonização de Traços & Características (ISSUE-113):');
+
+// 1. Verificação no HTML Renderizado
+assert(renderedRoll20Html.includes('roll20-traits-container'), 'Ficha renderizada contém container espaçado .roll20-traits-container');
+
+// 2. Verificação no CSS Standalone Compilado
+const standaloneTraitsCss = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(standaloneTraitsCss.includes('.roll20-traits-container {'), 'CSS compilado contém definição de estilo para .roll20-traits-container');
+assert(!standaloneTraitsCss.includes('.unlocked-features-list {\n      display: flex;\n      flex-direction: column;\n      gap: 5px;\n      max-height: 220px;'), 'CSS compilado não possui mais limite artificial de 220px em unlocked-features-list');
+assert(!standaloneTraitsCss.includes('-webkit-line-clamp: 2;'), 'CSS compilado não trunca mais descrições com line-clamp rígido');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

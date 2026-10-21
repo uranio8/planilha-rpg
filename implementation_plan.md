@@ -1,60 +1,55 @@
-# 📋 Plano de Implementação: Modernização Estética dos Botões da Ficha (ISSUE-112)
+# 📋 Plano de Implementação: Espaçamento e Harmonização de Características & Traços da Ficha (ISSUE-113)
 
 ## 📌 Contexto e Diagnóstico
-Nas imagens enviadas pelo usuário, três grupos de botões na ficha de personagem estão com aparência nativa do navegador (fundo cinza-claro/branco `#efefef`, bordas cinzas chanfradas duras e sem contraste temático):
-1. **Toolbar superior do herói** (Imagem 1):
-   - Botões `✏️` (Editar), `📱` (Compartilhar/QR), `📏` (Modo Compacto) e `🗑️` (Excluir).
-   - Estão renderizados como `<button class="btn-micro">`, porém a classe `.btn-micro` não possuía regras CSS explícitas, herdando os estilos nativos brancos do User-Agent.
-2. **Descanso Curto e Longo** (Imagem 2):
-   - Botões `🏕️ Curto` e `🌙 Longo` no cabeçalho do HP Card Roll20 e no painel de cargas de classe.
-   - Atualmente usam `.btn-micro` genérico sem identidade visual de descanso/acampamento.
-3. **Ações da Tabela de Ataques e Itens** (Imagem 3):
-   - Botões `⚔️ + Arma` e `➕ Item` no topo da aba de Combate.
-   - Botão de rolagem de apenas dano `💥` e botão de compartilhar no chat `💬` (`.btn-chat-feed`).
+Na imagem enviada pelo usuário da aba **📜 Traços & Características**, foram identificados problemas críticos de layout e compressão:
+1. **Compressão Artificial Dupla e Espaço Vazio Sobrando**:
+   - A aba possuía `max-height: 280px; overflow-y: auto;` em `src/js/players.js` (linha ~2008).
+   - Internamente, cada lista de classe possuía outro limitador rígido `max-height: 220px; overflow-y: auto;` em `src/styles/head_css.html` (linha ~3819).
+   - Isso forçava scrollbars internas desnecessárias e comprimia os cards num bloco minúsculo, deixando uma enorme área vazia e escura na parte inferior da coluna central da ficha Roll20 (enquanto a coluna 1 de perícias possui ~700px de altura).
+2. **Corte Vertical de Textos e Descrições**:
+   - A classe `.feature-snippet` possuía `-webkit-line-clamp: 2` com `overflow: hidden`, cortando abruptamente frases no meio da linha (como visto em "Retomar o Fôlego").
+3. **Falta de Respiro e Espaçamento entre Cards**:
+   - Os cards de características (`.unlocked-feature-item`) utilizavam `gap: 4px` e `padding: 6px 8px`, gerando poluição visual e baixa legibilidade tátil.
+   - O seletor de Especialidade Marcial (`.feature-fighting-style-box`) ficava espremido dentro do card sem margens adequadas.
 
 ---
 
-## 🎯 Objetivos
-- Eliminar completamente qualquer fundo branco nativo ou borda chanfrada estilo Windows 95 dos botões da ficha.
-- Implementar o padrão **Dark Fantasy Premium D&D 5E**:
-  - Superfícies translúcidas com efeito vidro (`backdrop-filter: blur`, `background: rgba(...)`).
-  - Bordas com brilho suave e cantos arredondados (`border-radius: 6px`).
-  - Estados `:hover` com elevação suave (`transform: translateY(-1px)`), micro-iluminação dourada/temática e feedback `:active` tátil.
-  - Variações semânticas de cores ricas:
-    - **Ações de Edição/Utilidade** (`✏️`, `📱`, `📏`): Ardósia escura translúcida com brilho ciano/ouro.
-    - **Ações de Exclusão** (`🗑️`): Destaque rubi carmesim no hover com borda avermelhada.
-    - **Descanso Curto (`🏕️ Curto`)**: Tons âmbar/dourado de fogueira (`rgba(245, 158, 11, ...)`).
-    - **Descanso Longo (`🌙 Longo`)**: Tons azul-noite estelar (`rgba(99, 102, 241, ...)`).
-    - **Adicionar Arma (`⚔️ + Arma`)**: Vermelho combate com micro-brilho carmesim.
-    - **Adicionar Item (`➕ Item`)**: Azul safira/mochila com micro-brilho ciano.
-    - **Dano Rápido (`💥`)**: Pílula de impacto com brilho vermelho-rosa.
-    - **Compartilhar no Chat (`💬`)**: Balão tátil ametista/púrpura com micro-animação.
+## 🎯 Objetivos da Melhoria
+1. **Remover as Travas Artificiais de Altura**:
+   - Substituir os `max-height: 280px` e `max-height: 220px` por um layout flexível e espaçado (`min-height: 480px; max-height: 680px; overflow-y: auto;`), preenchendo harmonicamente o espaço da coluna central e eliminando o vazio inferior.
+2. **Eliminar Cortes Bruscos de Texto (`-webkit-line-clamp`)**:
+   - Expandir a visualização do resumo para exibir o texto com clareza (`line-height: 1.5; font-size: 11.5px;`), permitindo leitura confortável sem cortes pela metade.
+3. **Design Espaçado e Confortável dos Cards de Habilidades**:
+   - Cards com `padding: 12px 14px; border-radius: 8px; margin-bottom: 8px; background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(255, 255, 255, 0.08);`.
+   - Efeito hover refinado com leve elevação e borda dourada suave (`border-color: rgba(245, 158, 11, 0.4)`).
+   - Cabeçalhos de classe (`🌲 Habilidades de Guerreiro (Nível 4):`) destacados com divisor visual sutil, espaçamento superior e tipografia ouro antigo.
+4. **Respiro no Seletor de Estilo de Luta e Subclasses**:
+   - `.feature-fighting-style-box` com padding de `10px 12px`, bordas arredondadas e select estilizado com altura confortável (34px) e espaçamento respirável.
 
 ---
 
 ## 🏗️ Módulos e Arquivos Afetados
 1. **`src/styles/head_css.html`**:
-   - Definição completa e padronizada de `.btn-micro`, `.player-actions-group .btn-micro`, `.roll20-btn-rest-short`, `.roll20-btn-rest-long`, `.roll20-btn-add-weapon`, `.roll20-btn-add-item`, `.btn-chat-feed`, e `.btn-damage-only`.
-   - Garantia de `appearance: none; -webkit-appearance: none;` para neutralizar estilos nativos do navegador.
+   - Atualização e expansão de `.unlocked-features-list`, `.unlocked-feature-item`, `.feature-snippet`, `.feature-fighting-style-box`, e `.feature-inline-select`.
 2. **`src/js/players.js`**:
-   - Atualização das tags HTML em `renderPlayers()` para atribuir as classes semânticas temáticas nos botões correspondentes, mantendo retrocompatibilidade total.
+   - Ajuste do container da Aba 4 (`traits`) e harmonização do container de inventário/notas para aproveitar a altura natural da ficha Roll20.
 3. **`test_runner.js`**:
-   - Adição da **Suíte 80** validando a presença e integridade das novas classes e estilos de botões compilados.
+   - Suíte 81 validando a integridade das regras de espaçamento e renderização da aba de características.
 4. **`builder.js`**:
-   - Recompilação dos arquivos standalone `planilha do rpg.html` e `index.html`.
+   - Recompilação de `planilha do rpg.html` e `index.html`.
 5. **`issues/README.md`**:
-   - Registro oficial da **ISSUE-112**.
+   - Registro da **ISSUE-113**.
 
 ---
 
 ## 🛡️ Impactos e Riscos
-- **Persistência (`localStorage`)**: Zero impacto (apenas apresentação visual e layout de botões).
-- **Sincronização / Firebase**: Zero impacto (as funções invocadas pelos cliques permanecem idênticas).
-- **Compatibilidade**: Zero regressão nos 1344 testes já aprovados.
+- **Persistência (`localStorage`)**: Zero impacto (apenas visual e espaçamento).
+- **Mecânicas D&D 5E**: Zero impacto (habilidades e seletores continuam funcionando perfeitamente).
+- **Testes Existentes**: Preservação dos 1360 testes já aprovados.
 
 ---
 
 ## 🧪 Estratégia de Verificação
-1. `node builder.js` — Compilação sem erros.
-2. `node test_runner.js` — 100% de testes aprovados em todas as suítes (80 suítes).
-3. Inspeção visual dos botões no navegador garantindo alto contraste e estética Dark Fantasy.
+- Compilação via `node builder.js`.
+- Execução de `node test_runner.js` garantindo 100% de sucesso.
+- Inspeção visual garantindo que o espaço foi preenchido de maneira elegante, legível e sem cortes.

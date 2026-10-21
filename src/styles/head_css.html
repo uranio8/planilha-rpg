@@ -3815,29 +3815,53 @@
     .unlocked-features-list {
       display: flex;
       flex-direction: column;
-      gap: 5px;
-      max-height: 220px;
-      overflow-y: auto;
-      padding-right: 4px;
+      gap: 8px;
+      padding-right: 2px;
     }
     .unlocked-feature-item {
-      background: rgba(15, 23, 42, 0.7);
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      border-radius: 6px;
-      padding: 6px 8px;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 10px 14px;
       cursor: pointer;
       transition: all 0.2s ease;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     }
     .unlocked-feature-item:hover {
-      background: rgba(30, 41, 59, 0.9);
-      border-color: var(--primary);
-      transform: translateX(2px);
+      background: rgba(30, 41, 59, 0.95);
+      border-color: rgba(245, 158, 11, 0.45);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
     }
     .feature-snippet {
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+      font-size: 11.5px;
+      color: #cbd5e1;
+      line-height: 1.5;
+      margin-top: 6px;
+    }
+    .feature-class-group-header {
+      font-size: 12px;
+      font-weight: 800;
+      color: #fde047;
+      margin-top: 14px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-bottom: 1px solid rgba(245, 158, 11, 0.15);
+      padding-bottom: 4px;
+      letter-spacing: 0.3px;
+    }
+    .roll20-traits-container {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 480px;
+      max-height: 720px;
+      overflow-y: auto;
+      padding-right: 6px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(245, 158, 11, 0.3) transparent;
     }
 
     /* MODAL PICKER DE MAGIAS */
