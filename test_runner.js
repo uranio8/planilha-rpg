@@ -6029,6 +6029,32 @@ assert(standaloneRoll20.includes('.roll20-columns-grid'), 'Standalone compilado 
 assert(standaloneRoll20.includes('.roll20-ability-box'), 'Standalone compilado contém estilos .roll20-ability-box');
 assert(standaloneRoll20.includes('getPlayerCalculatedAttacks'), 'Standalone compilado contém função getPlayerCalculatedAttacks');
 
+// =========================================================================
+// 80. TESTES DE DESIGN SYSTEM E HARMONIZAÇÃO DOS BOTÕES DA FICHA (ISSUE-112)
+// =========================================================================
+console.log('\n🎨 80. Testes de Design System e Harmonização dos Botões da Ficha (ISSUE-112):');
+
+// 1. Verificação no HTML Renderizado
+assert(renderedRoll20Html.includes('roll20-btn-tool'), 'Ficha renderizada contém botões de ferramentas (.roll20-btn-tool)');
+assert(renderedRoll20Html.includes('roll20-btn-tool-del'), 'Ficha renderizada contém botão de excluir estilizado (.roll20-btn-tool-del)');
+assert(renderedRoll20Html.includes('roll20-btn-rest-short'), 'Ficha renderizada contém botão de descanso curto (.roll20-btn-rest-short)');
+assert(renderedRoll20Html.includes('roll20-btn-rest-long'), 'Ficha renderizada contém botão de descanso longo (.roll20-btn-rest-long)');
+assert(renderedRoll20Html.includes('roll20-btn-hd-heal'), 'Ficha renderizada contém botão de curar com dado (.roll20-btn-hd-heal)');
+assert(renderedRoll20Html.includes('roll20-btn-add-weapon'), 'Ficha renderizada contém botão + Arma (.roll20-btn-add-weapon)');
+assert(renderedRoll20Html.includes('roll20-btn-add-item'), 'Ficha renderizada contém botão + Item (.roll20-btn-add-item)');
+assert(renderedRoll20Html.includes('roll20-btn-damage-only'), 'Ficha renderizada contém botão de dano rápido 💥 (.roll20-btn-damage-only)');
+
+// 2. Verificação no CSS Standalone Compilado
+const standaloneCss = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(standaloneCss.includes('.btn-micro {'), 'CSS compilado contém definição de estilo para .btn-micro');
+assert(standaloneCss.includes('.roll20-btn-tool {'), 'CSS compilado contém definição de .roll20-btn-tool');
+assert(standaloneCss.includes('.roll20-btn-rest-short {'), 'CSS compilado contém definição de .roll20-btn-rest-short');
+assert(standaloneCss.includes('.roll20-btn-rest-long {'), 'CSS compilado contém definição de .roll20-btn-rest-long');
+assert(standaloneCss.includes('.roll20-btn-add-weapon {'), 'CSS compilado contém definição de .roll20-btn-add-weapon');
+assert(standaloneCss.includes('.roll20-btn-add-item {'), 'CSS compilado contém definição de .roll20-btn-add-item');
+assert(standaloneCss.includes('.roll20-btn-damage-only {'), 'CSS compilado contém definição de .roll20-btn-damage-only');
+assert(standaloneCss.includes('rgba(139, 92, 246'), 'CSS compilado contém paleta ametista para botão de chat (.btn-chat-feed)');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

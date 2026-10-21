@@ -1569,10 +1569,10 @@ function renderPlayers() {
                 <div class="roll20-hero-name" title="${p.name}">${p.name}</div>
                 <div class="player-toolbar" onclick="event.stopPropagation();">
                   <div class="player-actions-group" onclick="event.stopPropagation();">
-                    <button class="btn-micro" onclick="openPlayerModal('${p.id}')" title="Editar Ficha Completa">✏️</button>
-                    <button class="btn-micro" onclick="openSharePlayerModal('${p.id}')" title="Compartilhar Link/QR Code">📱</button>
-                    <button class="btn-micro" onclick="togglePlayerCardCompact('${p.id}')" title="Alternar Modo Compacto">📏</button>
-                    <button class="btn-micro" style="color: #f87171;" onclick="deletePlayer('${p.id}')" title="Excluir Personagem">🗑️</button>
+                    <button type="button" class="btn-micro roll20-btn-tool" onclick="openPlayerModal('${p.id}')" title="Editar Ficha Completa">✏️</button>
+                    <button type="button" class="btn-micro roll20-btn-tool" onclick="openSharePlayerModal('${p.id}')" title="Compartilhar Link/QR Code">📱</button>
+                    <button type="button" class="btn-micro roll20-btn-tool" onclick="togglePlayerCardCompact('${p.id}')" title="Alternar Modo Compacto">📏</button>
+                    <button type="button" class="btn-micro roll20-btn-tool roll20-btn-tool-del" onclick="deletePlayer('${p.id}')" title="Excluir Personagem">🗑️</button>
                   </div>
                 </div>
               </div>
@@ -1608,8 +1608,8 @@ function renderPlayers() {
             <div class="roll20-hp-header">
               <span>HIT POINTS</span>
               <div style="display: flex; gap: 6px;">
-                <button class="btn-micro" onclick="playerShortRest('${p.id}')" title="Descanso Curto (1h)">🏕️ Curto</button>
-                <button class="btn-micro" onclick="playerLongRest('${p.id}')" title="Descanso Longo (8h)">🌙 Longo</button>
+                <button type="button" class="btn-micro roll20-btn-rest-short" onclick="playerShortRest('${p.id}')" title="Descanso Curto (1h)">🏕️ Curto</button>
+                <button type="button" class="btn-micro roll20-btn-rest-long" onclick="playerLongRest('${p.id}')" title="Descanso Longo (8h)">🌙 Longo</button>
               </div>
             </div>
 
@@ -1637,7 +1637,7 @@ function renderPlayers() {
             <!-- LINHA DE DADOS DE VIDA -->
             <div class="roll20-hitdice-row">
               <span>Hit Dice: <b>${hdPool.dieType}</b> (${hdPool.available}/${hdPool.total} disp.)</span>
-              <button class="btn-micro" onclick="openShortRestModal('${p.id}')" title="Gastar Dado de Vida para Curar">🎲 Curar c/ Dado</button>
+              <button type="button" class="btn-micro roll20-btn-hd-heal" onclick="openShortRestModal('${p.id}')" title="Gastar Dado de Vida para Curar">🎲 Curar c/ Dado</button>
             </div>
           </div>
         </div>
@@ -1768,8 +1768,8 @@ function renderPlayers() {
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                   <span class="roll20-panel-title" style="margin: 0; border: none; padding: 0;">⚔️ ATAQUES & ARMAS CALCULADAS</span>
                   <div style="display: flex; gap: 4px;">
-                    <button type="button" class="btn-micro" onclick="openWeaponPickerModal('${p.id}')" title="Adicionar arma rápida do acervo D&D">⚔️ + Arma</button>
-                    <button type="button" class="btn-micro" onclick="openAddPlayerItemModal('${p.id}')" title="Adicionar item ao inventário">➕ Item</button>
+                    <button type="button" class="btn-micro roll20-btn-add-weapon" onclick="openWeaponPickerModal('${p.id}')" title="Adicionar arma rápida do acervo D&D">⚔️ + Arma</button>
+                    <button type="button" class="btn-micro roll20-btn-add-item" onclick="openAddPlayerItemModal('${p.id}')" title="Adicionar item ao inventário">➕ Item</button>
                   </div>
                 </div>
 
@@ -1804,7 +1804,7 @@ function renderPlayers() {
                           <b style="color: #fbbf24;">${atk.damage}</b> <span style="font-size: 10px; color: #94a3b8;">${atk.damageType}</span>
                         </td>
                         <td style="text-align: right; white-space: nowrap;">
-                          <button type="button" class="btn-micro" onclick="rollWeaponDamageOnly('${p.id}', '${escapeAttr(atk.rawAttackText)}')" title="Rolar Apenas Dano">💥</button>
+                          <button type="button" class="btn-micro roll20-btn-damage-only" onclick="rollWeaponDamageOnly('${p.id}', '${escapeAttr(atk.rawAttackText)}')" title="Rolar Apenas Dano">💥</button>
                           <button type="button" class="btn-chat-feed" onclick="sharePlayerCalculatedAttackToFeed('${p.id}', ${aIdx})" title="Compartilhar ataque no chat da mesa">💬</button>
                         </td>
                       </tr>
