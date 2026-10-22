@@ -10595,6 +10595,216 @@
       color: #94a3b8;
     }
 
+    /* ==========================================================================
+       🏰 SISTEMA DE BASTIÕES COLETIVOS D&D 2024 / 5.5 EM PO (ISSUE-118)
+       ========================================================================== */
+    .bastion-panel-card {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 27, 75, 0.9) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+    .bastion-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-bottom: 1px solid rgba(245, 158, 11, 0.25);
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+    }
+    .bastion-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .bastion-title-text {
+      font-family: var(--font-title, serif);
+      font-size: 20px;
+      font-weight: 800;
+      color: #fef08a;
+      letter-spacing: 0.5px;
+    }
+    .bastion-badges-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .bastion-stat-pill {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .bastion-stat-pill-gold {
+      border-color: rgba(245, 158, 11, 0.5);
+      color: #fef08a;
+      background: rgba(245, 158, 11, 0.1);
+    }
+    .bastion-stat-pill-def {
+      border-color: rgba(56, 189, 248, 0.5);
+      color: #7dd3fc;
+      background: rgba(56, 189, 248, 0.1);
+    }
+    .bastion-stat-pill-lvl {
+      border-color: rgba(168, 85, 247, 0.5);
+      color: #d8b4fe;
+      background: rgba(168, 85, 247, 0.1);
+    }
+    .bastion-facilities-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .bastion-facility-card {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: all 0.2s ease-in-out;
+      position: relative;
+    }
+    .bastion-facility-card:hover {
+      border-color: rgba(245, 158, 11, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    }
+    .bastion-facility-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .bastion-facility-name {
+      font-weight: 800;
+      font-size: 14px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .bastion-facility-patron {
+      font-size: 11px;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .bastion-facility-patron strong {
+      color: #fef08a;
+    }
+    .bastion-order-box {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px dashed rgba(245, 158, 11, 0.3);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 11px;
+    }
+    .bastion-order-name {
+      font-weight: 700;
+      color: #6ee7b7;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .bastion-order-desc {
+      color: #cbd5e1;
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+    .bastion-order-progress {
+      font-size: 10px;
+      color: #fef08a;
+      margin-top: 4px;
+      font-weight: 700;
+    }
+    .bastion-actions-filter-bar {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .bastion-filter-chip {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #94a3b8;
+      border-radius: 16px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .bastion-filter-chip:hover {
+      border-color: rgba(245, 158, 11, 0.5);
+      color: #fff;
+    }
+    .bastion-filter-chip.active {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(180, 83, 9, 0.35) 100%);
+      border-color: #f59e0b;
+      color: #fef08a;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+    }
+    .bastion-action-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+    }
+    .bastion-action-card:hover {
+      border-color: rgba(245, 158, 11, 0.45);
+    }
+    .bastion-action-reward-box {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 11px;
+      color: #a7f3d0;
+      line-height: 1.4;
+    }
+    .bastion-event-banner {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(30, 58, 138, 0.25) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-top: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .bastion-event-title {
+      font-weight: 800;
+      font-size: 13px;
+      color: #7dd3fc;
+    }
+    .bastion-event-desc {
+      font-size: 11px;
+      color: #e2e8f0;
+      margin-top: 2px;
+      line-height: 1.4;
+    }
+
     @media (max-width: 900px) {
       .player-hp-btn, .btn-hp-adj, .btn-hp-dmg, .btn-hp-heal, .roll20-hp-btn {
         min-height: 44px;
@@ -12036,6 +12246,9 @@
 
         <!-- SEÇÃO DE NPCS CONTRATADOS & FOLHA DE PAGAMENTO DO GRUPO (OLD DRAGON 2 / 5E 100% PO) -->
         <div id="campaign-hirelings-container" style="margin-top: 14px;"></div>
+
+        <!-- 🏰 SEÇÃO DO BASTIÃO COLETIVO DO GRUPO (D&D 2024 / 5.5 EM PO - ISSUE-118) -->
+        <div id="campaign-bastion-container" style="margin-top: 16px;"></div>
       </div>
     </div>
 
@@ -14698,6 +14911,119 @@
 
   <!-- POPOVER: CONDIÇÕES RÁPIDAS NO COMBATE -->
   <div id="popover-combat-conditions" class="quick-cond-popover" style="display: none;" onclick="event.stopPropagation()"></div>
+
+  <!-- ===================================================
+       🏰 MODAIS DO SISTEMA DE BASTIÃO COLETIVO (ISSUE-118)
+       =================================================== -->
+
+  <!-- MODAL: EXECUTAR AÇÃO / ORDEM NO BASTIÃO -->
+  <div id="modal-bastion-action" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeBastionActionModal()">
+    <div class="modal-body" style="max-width: 820px; width: 95%;">
+      <div class="panel-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">🏰</span>
+          <span style="font-family: var(--font-title); font-size: 16px; font-weight: 800; color: #fef08a;">Emitir Ordem no Bastião</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span id="bastion-modal-gold-badge" class="badge badge-gold" style="font-size: 12px;">💰 Baú: 0 PO</span>
+          <button class="btn-secondary" onclick="closeBastionActionModal()">✕</button>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros por Nível -->
+      <div style="margin-top: 10px;">
+        <div style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px;">
+          Filtrar Ações por Nível de Desbloqueio:
+        </div>
+        <div class="bastion-actions-filter-bar">
+          <button type="button" class="bastion-filter-chip active" onclick="setBastionActionFilter('all', this)">⭐ Todas as Ações</button>
+          <button type="button" class="bastion-filter-chip" onclick="setBastionActionFilter(5, this)">🛡️ Nível 5 (Iniciais)</button>
+          <button type="button" class="bastion-filter-chip" onclick="setBastionActionFilter(9, this)">🔮 Nível 9 (Avançadas)</button>
+          <button type="button" class="bastion-filter-chip" onclick="setBastionActionFilter(13, this)">🏛️ Nível 13 (Heróicas)</button>
+          <button type="button" class="bastion-filter-chip" onclick="setBastionActionFilter(17, this)">👑 Nível 17 (Épicas)</button>
+        </div>
+      </div>
+
+      <!-- Seletor de Herói / Patrono Responsável -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: var(--primary-light);">Herói Atribuído à Ação:</label>
+          <select id="sel-bastion-action-hero" style="width: 100%; font-size: 12px;"></select>
+        </div>
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: var(--primary-light);">Instalação Vinculada:</label>
+          <select id="sel-bastion-action-facility" onchange="renderBastionActionsList()" style="width: 100%; font-size: 12px;"></select>
+        </div>
+      </div>
+
+      <!-- Lista de Ações Disponíveis -->
+      <div id="bastion-actions-list" style="max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px;"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+        <button type="button" class="btn-secondary" onclick="closeBastionActionModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADICIONAR INSTALAÇÃO ESPECIAL AO BASTIÃO -->
+  <div id="modal-bastion-add-facility" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeBastionAddFacilityModal()">
+    <div class="modal-body" style="max-width: 640px; width: 95%;">
+      <div class="panel-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">🏗️</span>
+          <span style="font-family: var(--font-title); font-size: 16px; font-weight: 800; color: #fef08a;">Adicionar Instalação Especial</span>
+        </div>
+        <button class="btn-secondary" onclick="closeBastionAddFacilityModal()">✕</button>
+      </div>
+
+      <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 10px;">
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: var(--primary-light);">Selecione a Instalação Especial (D&D 2024):</label>
+          <select id="sel-new-facility-key" onchange="updateNewFacilityPreview()" style="width: 100%; font-size: 13px;"></select>
+        </div>
+
+        <div id="new-facility-preview-card" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; font-size: 12px; color: #cbd5e1; line-height: 1.5;"></div>
+
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: var(--primary-light);">Herói Patrono / Gestor da Sala:</label>
+          <select id="sel-new-facility-patron" style="width: 100%; font-size: 13px;"></select>
+          <div style="font-size: 10px; color: #94a3b8; margin-top: 3px;">
+            Dica: O herói escolhido será o responsável pela sala e poderá usufruir de seus bônus exclusivos.
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+        <button type="button" class="btn-secondary" onclick="closeBastionAddFacilityModal()">Cancelar</button>
+        <button type="button" class="btn-action" onclick="confirmAddBastionFacility()" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 800;">➕ Adicionar Instalação</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EVENTO DE TURNO DO BASTIÃO (d100) -->
+  <div id="modal-bastion-event" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeBastionEventModal()">
+    <div class="modal-body" style="max-width: 520px; width: 95%;">
+      <div class="panel-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span id="bastion-event-icon" style="font-size: 24px;">🎲</span>
+          <span style="font-family: var(--font-title); font-size: 16px; font-weight: 800; color: #fef08a;">Evento de Turno do Bastião</span>
+        </div>
+        <button class="btn-secondary" onclick="closeBastionEventModal()">✕</button>
+      </div>
+
+      <div style="margin-top: 14px; text-align: center;">
+        <div id="bastion-event-roll-badge" style="font-size: 14px; font-weight: 800; color: #38bdf8; margin-bottom: 6px;">Resultado d100: [ - ]</div>
+        <div id="bastion-event-title-display" style="font-family: var(--font-title); font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px;">Título do Evento</div>
+        <div id="bastion-event-desc-display" style="font-size: 13px; color: #cbd5e1; line-height: 1.5; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); text-align: left;"></div>
+        <div id="bastion-event-resolution-display" style="margin-top: 10px; font-size: 12px; font-weight: 700; color: #6ee7b7; text-align: left;"></div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+        <button type="button" class="btn-action" onclick="closeBastionEventModal()">Entendido</button>
+      </div>
+    </div>
+  </div>
+
 
 
 <script>
@@ -30482,6 +30808,802 @@ if (typeof module !== 'undefined') {
   };
 }
 
+// src/data/bastions.js - Catálogo Oficial de Bastiões D&D 2024 / 5.5 adaptado em Peças de Ouro (PO)
+
+// 29 Instalações Especiais oficiais por nível de desbloqueio
+const BASTION_SPECIAL_FACILITIES_CATALOG = {
+  // === NÍVEL 5 (Instalações Iniciais) ===
+  workshop: {
+    key: "workshop",
+    name: "Oficina de Artesanato",
+    icon: "🔨",
+    levelReq: 5,
+    desc: "Bancadas de trabalho equipadas com ferramentas para confeccionar itens mundanos, ferramentas ou receber inspiração.",
+    orders: ["craft_mundane", "empower_inspiration"],
+    hirelingsCount: 1
+  },
+  smithy: {
+    key: "smithy",
+    name: "Ferraria do Bastião",
+    icon: "⚔️",
+    levelReq: 5,
+    desc: "Forjas e bigornas para produzir armaduras pesadas e armas de metal por 50% do valor de tabela em PO.",
+    orders: ["craft_metal", "equip_garrison", "craft_magic_arms"],
+    hirelingsCount: 1
+  },
+  garden: {
+    key: "garden",
+    name: "Jardim de Ervas",
+    icon: "🌿",
+    levelReq: 5,
+    desc: "Canteiros protegidos para cultivo de ervas medicinais, poções de cura e ingredientes de venenos.",
+    orders: ["harvest_healing", "harvest_poison"],
+    hirelingsCount: 1
+  },
+  arcane_study: {
+    key: "arcane_study",
+    name: "Estudo Arcano",
+    icon: "🔮",
+    levelReq: 5,
+    desc: "Aposento repleto de círculos arcanos para identificar artefatos e, em níveis avançados, criar itens mágicos.",
+    orders: ["identify_relics", "arcane_attunement", "craft_magic_arcana"],
+    hirelingsCount: 1
+  },
+  barrack: {
+    key: "barrack",
+    name: "Quartel da Guarnição",
+    icon: "🛡️",
+    levelReq: 5,
+    desc: "Alojamento militar para treinar e manter defensores da fortaleza (até 12 guardas).",
+    orders: ["recruit_defenders", "patrol_perimeter"],
+    hirelingsCount: 1
+  },
+  armory: {
+    key: "armory",
+    name: "Armaria & Arsenal",
+    icon: "🏹",
+    levelReq: 5,
+    desc: "Depósito reforçado de armas e escudos que aprimora o treinamento e sobrevivência dos defensores.",
+    orders: ["stock_armory"],
+    hirelingsCount: 1
+  },
+  library: {
+    key: "library",
+    name: "Biblioteca de Sabedoria",
+    icon: "📚",
+    levelReq: 5,
+    desc: "Estantes repletas de tomos históricos, bestiários e mapas de masmorras para pesquisas aprofundadas.",
+    orders: ["research_lore"],
+    hirelingsCount: 1
+  },
+  sanctuary: {
+    key: "sanctuary",
+    name: "Santuário Sagrado",
+    icon: "✨",
+    levelReq: 5,
+    desc: "Altar consagrado às divindades ou forças da natureza para abençoar aventureiros e consagrar água benta.",
+    orders: ["sanctuary_prayer", "craft_holy_water"],
+    hirelingsCount: 1
+  },
+  storehouse: {
+    key: "storehouse",
+    name: "Depósito Comercial",
+    icon: "📦",
+    levelReq: 5,
+    desc: "Galpão seguro para estocagem e comércio de grãos, especiarias e minérios com caravanas regionais.",
+    orders: ["trade_commodities"],
+    hirelingsCount: 1
+  },
+
+  // === NÍVEL 9 (Instalações Avançadas) ===
+  laboratory: {
+    key: "laboratory",
+    name: "Laboratório Alquímico",
+    icon: "🧪",
+    levelReq: 9,
+    desc: "Alambiques e retortas para destilar poções potentes, óleos mágicos e ácidos refinados.",
+    orders: ["distill_potion", "craft_alchemist_fire"],
+    hirelingsCount: 2
+  },
+  scriptorium: {
+    key: "scriptorium",
+    name: "Scriptorium de Pergaminhos",
+    icon: "📜",
+    levelReq: 9,
+    desc: "Mesas de copistas com tintas mágicas e pergaminhos para transcrever pergaminhos de magias.",
+    orders: ["scribe_scroll", "forge_documents"],
+    hirelingsCount: 2
+  },
+  teleportation_circle: {
+    key: "teleportation_circle",
+    name: "Círculo de Teletransporte",
+    icon: "🌀",
+    levelReq: 9,
+    desc: "Sigilos rúnicos gravados no piso de pedra permitindo viagens instantâneas para o Bastião de qualquer lugar.",
+    orders: ["tune_circle", "summon_guest_caster"],
+    hirelingsCount: 1
+  },
+  training_area: {
+    key: "training_area",
+    name: "Área de Treinamento",
+    icon: "🎯",
+    levelReq: 9,
+    desc: "Pátio tático com alvos, bonecos de palha e ringue para aperfeiçoar domínios de armas e defesas.",
+    orders: ["train_weapon_mastery", "train_resilience"],
+    hirelingsCount: 1
+  },
+  gaming_hall: {
+    key: "gaming_hall",
+    name: "Salão de Jogos & Cassino",
+    icon: "🎲",
+    levelReq: 9,
+    desc: "Mesas de cartas, dados e roleta que atraem nobres e viajantes, gerando renda contínua em PO.",
+    orders: ["run_gambling_night"],
+    hirelingsCount: 3
+  },
+  greenhouse: {
+    key: "greenhouse",
+    name: "Estufa Encantada",
+    icon: "🌱",
+    levelReq: 9,
+    desc: "Ambiente com controle térmico e luz solar mágica para plantas raras e flores exóticas.",
+    orders: ["grow_rare_herbs"],
+    hirelingsCount: 2
+  },
+  sacristy: {
+    key: "sacristy",
+    name: "Sacristia Relíquia",
+    icon: "🕯️",
+    levelReq: 9,
+    desc: "Câmara de preparação litúrgica para criar amuletos sagrados e focar energias celestiais.",
+    orders: ["craft_holy_relic"],
+    hirelingsCount: 1
+  },
+  stable: {
+    key: "stable",
+    name: "Estábulo Nobre",
+    icon: "🐎",
+    levelReq: 9,
+    desc: "Baias amplas para cavalos de guerra, grifos ou outras montarias leais com cuidadores especializados.",
+    orders: ["train_mounts"],
+    hirelingsCount: 2
+  },
+  theater: {
+    key: "theater",
+    name: "Teatro & Anfiteatro",
+    icon: "🎭",
+    levelReq: 9,
+    desc: "Palco com acústica refinada onde bardos e atores ensaiam peças que inspiram façanhas heróicas.",
+    orders: ["rehearse_epic"],
+    hirelingsCount: 3
+  },
+  trophy_room: {
+    key: "trophy_room",
+    name: "Sala de Troféus",
+    icon: "🏆",
+    levelReq: 9,
+    desc: "Galeria de cabeças de monstros empalhadas, estandartes de exércitos derrotados e armas lendárias.",
+    orders: ["display_trophies"],
+    hirelingsCount: 1
+  },
+
+  // === NÍVEL 13 (Instalações Heróicas) ===
+  pub: {
+    key: "pub",
+    name: "Taberna do Bastião",
+    icon: "🍺",
+    levelReq: 13,
+    desc: "Taverna aconchegante com barris de cervejas e elixires mágicos que concedem bravura e força inigualáveis.",
+    orders: ["brew_titan_ale", "brew_brave_ale"],
+    hirelingsCount: 3
+  },
+  meditation_chamber: {
+    key: "meditation_chamber",
+    name: "Câmara de Meditação",
+    icon: "🧘",
+    levelReq: 13,
+    desc: "Espaço silencioso cercado de incensos para alcançar paz mental absoluta e antecipar o destino.",
+    orders: ["meditate_harmony", "foresee_destiny"],
+    hirelingsCount: 1
+  },
+  observatory: {
+    key: "observatory",
+    name: "Observatório Astral",
+    icon: "🔭",
+    levelReq: 13,
+    desc: "Cúpula giratória com telescópio de lentes de cristal estelar para ler profecias e vidências dos cosmos.",
+    orders: ["astral_divination"],
+    hirelingsCount: 2
+  },
+  reliquary: {
+    key: "reliquary",
+    name: "Relicário dos Ancestrais",
+    icon: "🏺",
+    levelReq: 13,
+    desc: "Câmara protegida onde relíquias sagradas permitem milagres de ressurreição sem consumo de diamantes.",
+    orders: ["bless_restoration"],
+    hirelingsCount: 1
+  },
+  archive: {
+    key: "archive",
+    name: "Arquivo Ancestral",
+    icon: "📜",
+    levelReq: 13,
+    desc: "Abóbada subterrânea contendo segredos perdidos de impérios arcaicos e lendas de deuses antigos.",
+    orders: ["consult_lost_tomes"],
+    hirelingsCount: 2
+  },
+  menagerie: {
+    key: "menagerie",
+    name: "Menagerie (Zoológico Mágico)",
+    icon: "🦁",
+    levelReq: 13,
+    desc: "Jaulas mágicas e habitats adaptados para manter criaturas monstruosas sob contenção segura.",
+    orders: ["house_rare_beasts"],
+    hirelingsCount: 3
+  },
+
+  // === NÍVEL 17 (Instalações Épicas) ===
+  sanctum: {
+    key: "sanctum",
+    name: "Sanctum Divino",
+    icon: "⛩️",
+    levelReq: 17,
+    desc: "Câmara transcendental onde emanações de cura milagrosa e auras de proteção eterna envolvem os heróis.",
+    orders: ["sanctum_heal", "sanctum_aura"],
+    hirelingsCount: 2
+  },
+  demiplane: {
+    key: "demiplane",
+    name: "Semiplano Dimensional",
+    icon: "🌌",
+    levelReq: 17,
+    desc: "Refúgio extraplanar atemporal onde um descanso revigora a mente e fornece vitality transcendental.",
+    orders: ["demiplane_retreat"],
+    hirelingsCount: 1
+  },
+  guildhall: {
+    key: "guildhall",
+    name: "Sede de Guilda",
+    icon: "🏛️",
+    levelReq: 17,
+    desc: "Grande salão corporativo que sedia guildas regionais (Padeiros, Cervejeiros, Maçons ou Ladrões).",
+    orders: ["guild_trade_revenue", "guild_mason_walls"],
+    hirelingsCount: 5
+  },
+  war_room: {
+    key: "war_room",
+    name: "Sala de Guerra & Comando",
+    icon: "⚔️",
+    levelReq: 17,
+    desc: "Mesa tática com mapas em relevo encantados para comandar legiões de soldados e cerco.",
+    orders: ["mobilize_army"],
+    hirelingsCount: 4
+  }
+};
+
+// Catálogo de Ações / Ordens detalhadas com custo em PO, tempo em dias e benefícios
+const BASTION_ACTIONS_CATALOG = {
+  // --- Nível 5 ---
+  craft_mundane: {
+    key: "craft_mundane",
+    facilityKey: "workshop",
+    name: "Fabricar Item Mundano ou Ferramenta",
+    levelReq: 5,
+    costPO: 0, // variável pelo item selecionado
+    costType: "item_base",
+    durationDays: 7,
+    hasItemSelector: true,
+    category: "equipment",
+    rewardDesc: "O item escolhido é confeccionado e colocado diretamente no Baú Coletivo do Grupo."
+  },
+  empower_inspiration: {
+    key: "empower_inspiration",
+    facilityKey: "workshop",
+    name: "Inspirar Artesãos & Heróis",
+    levelReq: 5,
+    costPO: 0,
+    durationDays: 7,
+    rewardDesc: "O herói gestor e 1 aliado ganham Inspiração Heróica para usar na próxima sessão de jogo."
+  },
+  craft_metal: {
+    key: "craft_metal",
+    facilityKey: "smithy",
+    name: "Forjar Armas & Armaduras de Metal",
+    levelReq: 5,
+    costPO: 0, // 50% do valor do item selecionado
+    costType: "metal_half",
+    durationDays: 7,
+    hasItemSelector: true,
+    category: "metal_arms",
+    rewardDesc: "Forja o equipamento marcial escolhido por 50% do preço de tabela em PO e envia para o Baú."
+  },
+  equip_garrison: {
+    key: "equip_garrison",
+    facilityKey: "smithy",
+    name: "Equipar e Afiar Armas da Guarnição",
+    levelReq: 5,
+    costPO: 50,
+    durationDays: 7,
+    rewardDesc: "Melhora a defesa da fortaleza, concedendo bônus nos testes contra eventos de ataque invasor."
+  },
+  harvest_healing: {
+    key: "harvest_healing",
+    facilityKey: "garden",
+    name: "Cultivar Poção de Cura Básica",
+    levelReq: 5,
+    costPO: 25,
+    durationDays: 7,
+    rewardItem: { name: "Poção de Cura", type: "consumable", desc: "Recupera 2d4 + 2 Pontos de Vida." },
+    rewardDesc: "Produz 1x Poção de Cura (2d4+2) depositada automaticamente no Baú Coletivo."
+  },
+  harvest_poison: {
+    key: "harvest_poison",
+    facilityKey: "garden",
+    name: "Extrair Frasco de Veneno Básico",
+    levelReq: 5,
+    costPO: 20,
+    durationDays: 7,
+    rewardItem: { name: "Frasco de Veneno Básico", type: "consumable", desc: "Aplica em arma: +1d4 de dano de veneno (CD 10)." },
+    rewardDesc: "Produz 1x Frasco de Veneno Básico para revestir armas ou flechas."
+  },
+  identify_relics: {
+    key: "identify_relics",
+    facilityKey: "arcane_study",
+    name: "Identificar & Decifrar Artefatos",
+    levelReq: 5,
+    costPO: 0,
+    durationDays: 7,
+    rewardDesc: "Revela todas as propriedades mágicas, comandos e eventuais maldições de itens do Baú."
+  },
+  arcane_attunement: {
+    key: "arcane_attunement",
+    facilityKey: "arcane_study",
+    name: "Sintonização Arcana",
+    levelReq: 5,
+    costPO: 0,
+    durationDays: 7,
+    rewardDesc: "Concede Vantagem em testes de Inteligência (Arcanismo ou História) por 7 dias."
+  },
+  recruit_defenders: {
+    key: "recruit_defenders",
+    facilityKey: "barrack",
+    name: "Recrutar Defensores para a Fortaleza",
+    levelReq: 5,
+    costPO: 10,
+    durationDays: 7,
+    rewardDefenders: 4,
+    rewardDesc: "Recruta +4 guardas para a guarnição permanente do Bastião (máx. 12 defensores)."
+  },
+  patrol_perimeter: {
+    key: "patrol_perimeter",
+    facilityKey: "barrack",
+    name: "Patrulha dos Arredores",
+    levelReq: 5,
+    costPO: 0,
+    durationDays: 7,
+    rewardDesc: "Guarnição patrulha as estradas vizinhas, reduzindo riscos de invasões inimigas."
+  },
+  stock_armory: {
+    key: "stock_armory",
+    facilityKey: "armory",
+    name: "Guarnecer e Blindar o Arsenal",
+    levelReq: 5,
+    costPO: 50,
+    durationDays: 7,
+    rewardDesc: "Aumenta a resistência dos defensores contra ataques de criaturas e saqueadores."
+  },
+  research_lore: {
+    key: "research_lore",
+    facilityKey: "library",
+    name: "Pesquisa Histórica e Monstruosa",
+    levelReq: 5,
+    costPO: 10,
+    durationDays: 7,
+    rewardDesc: "Descobre lendas, fraquezas ou segredos de uma criatura ou masmorra da campanha."
+  },
+  sanctuary_prayer: {
+    key: "sanctuary_prayer",
+    facilityKey: "sanctuary",
+    name: "Prece dos Protetores",
+    levelReq: 5,
+    costPO: 0,
+    durationDays: 7,
+    rewardDesc: "Concede o feitiço Palavra de Cura (1d4+Mod) gratuito 1x para um herói na próxima aventura."
+  },
+  craft_holy_water: {
+    key: "craft_holy_water",
+    facilityKey: "sanctuary",
+    name: "Consagrar Água Benta",
+    levelReq: 5,
+    costPO: 25,
+    durationDays: 7,
+    rewardItem: { name: "Frasco de Água Benta", qty: 2, type: "consumable", desc: "2d6 de dano radiante contra mortos-vivos e ínferos." },
+    rewardDesc: "Produz 2x Frascos de Água Benta colocados no Baú Coletivo."
+  },
+  trade_commodities: {
+    key: "trade_commodities",
+    facilityKey: "storehouse",
+    name: "Comércio Regional de Mercadorias",
+    levelReq: 5,
+    costPO: 50,
+    durationDays: 7,
+    rewardDesc: "Investe em caravanas locais com retorno comercial de 50 a 150 PO creditados direto no Baú."
+  },
+
+  // --- Nível 9 ---
+  craft_magic_arms: {
+    key: "craft_magic_arms",
+    facilityKey: "smithy",
+    name: "Forjar Armamento Mágico (+1 / Mithral)",
+    levelReq: 9,
+    costPO: 200,
+    durationDays: 14,
+    hasItemSelector: true,
+    category: "magic_arms",
+    rewardDesc: "Forja a arma mágica +1, escudo +1 ou armadura de mithral selecionada para o Baú."
+  },
+  distill_potion: {
+    key: "distill_potion",
+    facilityKey: "laboratory",
+    name: "Destilar Poção ou Elixir Alquímico",
+    levelReq: 9,
+    costPO: 100,
+    durationDays: 7,
+    hasItemSelector: true,
+    category: "potions",
+    rewardDesc: "Destila a poção escolhida (Poção Maior de Cura, Força do Gigante, etc.) e envia para o Baú."
+  },
+  craft_alchemist_fire: {
+    key: "craft_alchemist_fire",
+    facilityKey: "laboratory",
+    name: "Fabricar Frascos de Fogo Alquímico",
+    levelReq: 9,
+    costPO: 40,
+    durationDays: 7,
+    rewardItem: { name: "Frasco de Fogo Alquímico", qty: 2, type: "consumable", desc: "1d4 de dano de fogo no início de cada turno do alvo até apagar." },
+    rewardDesc: "Produz 2x Frascos de Fogo Alquímico no Baú Coletivo."
+  },
+  scribe_scroll: {
+    key: "scribe_scroll",
+    facilityKey: "scriptorium",
+    name: "Copiar Pergaminho de Magia (Círculo 1 a 3)",
+    levelReq: 9,
+    costPO: 50, // 50 PO por círculo
+    costType: "spell_circle",
+    durationDays: 7,
+    hasItemSelector: true,
+    category: "spells",
+    rewardDesc: "Transcreve a magia selecionada em um Pergaminho de Magia colocado no Baú."
+  },
+  forge_documents: {
+    key: "forge_documents",
+    facilityKey: "scriptorium",
+    name: "Falsificar Documentos & Selos Reais",
+    levelReq: 9,
+    costPO: 20,
+    durationDays: 7,
+    rewardDesc: "Produz salvo-condutos ou decretos nobres autênticos para infiltrações do grupo."
+  },
+  tune_circle: {
+    key: "tune_circle",
+    facilityKey: "teleportation_circle",
+    name: "Sintonizar Ponto de Retorno de Teletransporte",
+    levelReq: 9,
+    costPO: 50,
+    durationDays: 0,
+    rewardDesc: "Registra os glifos do Bastião para que magias como Teletransporte e Círculo de Teletransporte cheguem sem desvios."
+  },
+  summon_guest_caster: {
+    key: "summon_guest_caster",
+    facilityKey: "teleportation_circle",
+    name: "Convocar Conjurador Visitante",
+    levelReq: 9,
+    costPO: 100,
+    durationDays: 7,
+    rewardDesc: "Um mago viajante visita a fortaleza e conjura um feitiço de utilidade (Adivinhação, Moldar Rocha, etc.)."
+  },
+  train_weapon_mastery: {
+    key: "train_weapon_mastery",
+    facilityKey: "training_area",
+    name: "Treino de Domínio de Arma (Weapon Mastery)",
+    levelReq: 9,
+    costPO: 0,
+    durationDays: 7,
+    rewardDesc: "Concede 1 Propriedade de Domínio de Arma temporária para um herói durante 7 dias."
+  },
+  train_resilience: {
+    key: "train_resilience",
+    facilityKey: "training_area",
+    name: "Treino de Resiliência Física",
+    levelReq: 9,
+    costPO: 0,
+    durationDays: 7,
+    rewardDesc: "O herói treinado pode usar sua Reação para reduzir dano sofrido em 1d4 durante 7 dias."
+  },
+  run_gambling_night: {
+    key: "run_gambling_night",
+    facilityKey: "gaming_hall",
+    name: "Noite de Jogatina & Apostas no Forte",
+    levelReq: 9,
+    costPO: 0,
+    durationDays: 7,
+    rewardDesc: "Fatura da casa: gera entre +30 e +120 PO depositados diretamente no Baú Coletivo."
+  },
+  grow_rare_herbs: {
+    key: "grow_rare_herbs",
+    facilityKey: "greenhouse",
+    name: "Cultivar Ervas Exóticas e Ingredientes de Veneno",
+    levelReq: 9,
+    costPO: 50,
+    durationDays: 7,
+    rewardItem: { name: "Poção Maior de Cura", type: "consumable", desc: "Recupera 4d4 + 4 Pontos de Vida." },
+    rewardDesc: "Produz 1x Poção Maior de Cura ou venenos exóticos no Baú."
+  },
+  craft_magic_arcana: {
+    key: "craft_magic_arcana",
+    facilityKey: "arcane_study",
+    name: "Criar Item Mágico Arcano Incomum",
+    levelReq: 9,
+    costPO: 200,
+    durationDays: 14,
+    hasItemSelector: true,
+    category: "magic_arcana",
+    rewardDesc: "Fabrica o artefato arcano selecionado (Varinha +1, Pérola do Poder, etc.) para o Baú."
+  },
+  craft_holy_relic: {
+    key: "craft_holy_relic",
+    facilityKey: "sacristy",
+    name: "Fabricar Símbolo Sagrado Encantado",
+    levelReq: 9,
+    costPO: 150,
+    durationDays: 7,
+    rewardDesc: "Cria um item de fé sagrado (ex: Amuleto de Devoção +1 ou Óleo Abençoado) no Baú."
+  },
+  train_mounts: {
+    key: "train_mounts",
+    facilityKey: "stable",
+    name: "Adestramento de Montarias de Guerra",
+    levelReq: 9,
+    costPO: 10,
+    durationDays: 14,
+    rewardDesc: "Montarias ganham Vantagem permanente em testes de adestramento e +5 Pontos de Vida."
+  },
+  rehearse_epic: {
+    key: "rehearse_epic",
+    facilityKey: "theater",
+    name: "Ensaiar Peça Heroica com os Aventureiros",
+    levelReq: 9,
+    costPO: 20,
+    durationDays: 14,
+    rewardDesc: "Concede 1 Dado de Teatro (1d6) para cada herói do grupo usar em qualquer teste d20 na próxima aventura."
+  },
+  display_trophies: {
+    key: "display_trophies",
+    facilityKey: "trophy_room",
+    name: "Exibir Despojos e Cabeças de Monstros",
+    levelReq: 9,
+    costPO: 0,
+    durationDays: 7,
+    rewardDesc: "Concede Vantagem em testes de Carisma (Intimidação ou Persuasão) com visitantes da fortaleza."
+  },
+
+  // --- Nível 13 ---
+  brew_titan_ale: {
+    key: "brew_titan_ale",
+    facilityKey: "pub",
+    name: "Servir Cerveja 'Força dos Titãs'",
+    levelReq: 13,
+    costPO: 25,
+    durationDays: 7,
+    rewardDesc: "Bebida mágica: concede Vantagem em testes de Força e dano corpo a corpo para o grupo por 24 horas."
+  },
+  brew_brave_ale: {
+    key: "brew_brave_ale",
+    facilityKey: "pub",
+    name: "Servir Cerveja 'Coração Valente'",
+    levelReq: 13,
+    costPO: 25,
+    durationDays: 7,
+    rewardDesc: "Bebida mágica: concede Imunidade à condição Amedrontado para o grupo por 24 horas."
+  },
+  meditate_harmony: {
+    key: "meditate_harmony",
+    facilityKey: "meditation_chamber",
+    name: "Harmonização Interior dos Sentidos",
+    levelReq: 13,
+    costPO: 0,
+    durationDays: 7,
+    rewardDesc: "O herói gestor ganha Vantagem em todos os Testes de Resistência durante o primeiro combate da aventura."
+  },
+  foresee_destiny: {
+    key: "foresee_destiny",
+    facilityKey: "meditation_chamber",
+    name: "Previsão do Destino do Bastião",
+    levelReq: 13,
+    costPO: 0,
+    durationDays: 7,
+    rewardDesc: "Permite rolar 2 vezes na Tabela de Eventos de Bastião e escolher o resultado mais favorável!"
+  },
+  astral_divination: {
+    key: "astral_divination",
+    facilityKey: "observatory",
+    name: "Adivinhação das Estrelas Celestiais",
+    levelReq: 13,
+    costPO: 100,
+    durationDays: 7,
+    rewardDesc: "Concede o efeito das magias Comunhão ou Vidência sem gastar espaços de magia."
+  },
+  bless_restoration: {
+    key: "bless_restoration",
+    facilityKey: "reliquary",
+    name: "Bênção de Restauração Maior e Reviver",
+    levelReq: 13,
+    costPO: 100,
+    durationDays: 7,
+    rewardDesc: "Concede o poder de conjurar Restauração Maior ou Reviver sem gastar diamantes da mochila!"
+  },
+  consult_lost_tomes: {
+    key: "consult_lost_tomes",
+    facilityKey: "archive",
+    name: "Consultar Tomos Arcanos Perdidos",
+    levelReq: 13,
+    costPO: 50,
+    durationDays: 7,
+    rewardDesc: "Revela segredos lendários com efeito da magia Lendas e Histórias sobre itens e vilões."
+  },
+  house_rare_beasts: {
+    key: "house_rare_beasts",
+    facilityKey: "menagerie",
+    name: "Acomodar Bestas Mágicas e Monstros",
+    levelReq: 13,
+    costPO: 100,
+    durationDays: 7,
+    rewardDesc: "Permite manter criaturas exóticas sob vigilância para defesa do forte ou extração de materiais."
+  },
+
+  // --- Nível 17 ---
+  sanctum_heal: {
+    key: "sanctum_heal",
+    facilityKey: "sanctum",
+    name: "Bênção da Cura Milagrosa (Heal)",
+    levelReq: 17,
+    costPO: 0,
+    durationDays: 7,
+    rewardDesc: "Concede 1 uso da magia Cura Completa (recupera 70 PV e cura todas as doenças) sem gastar slots."
+  },
+  sanctum_aura: {
+    key: "sanctum_aura",
+    facilityKey: "sanctum",
+    name: "Aura Protetora do Bastião",
+    levelReq: 17,
+    costPO: 0,
+    durationDays: 7,
+    rewardDesc: "Concede +25 Pontos de Vida Temporários que renovam após cada descanso longo durante 7 dias."
+  },
+  demiplane_retreat: {
+    key: "demiplane_retreat",
+    facilityKey: "demiplane",
+    name: "Retiro Dimensional Extraplanar",
+    levelReq: 17,
+    costPO: 0,
+    durationDays: 7,
+    rewardDesc: "Descanso atemporal: concede +35 Pontos de Vida Temporários que duram 7 dias consecutivos."
+  },
+  guild_trade_revenue: {
+    key: "guild_trade_revenue",
+    facilityKey: "guildhall",
+    name: "Operação Mercantil de Guilda Semanal",
+    levelReq: 17,
+    costPO: 0,
+    durationDays: 7,
+    rewardDesc: "Faturamento fixo semanal: +500 PO creditados diretamente no Baú Coletivo do Grupo."
+  },
+  guild_mason_walls: {
+    key: "guild_mason_walls",
+    facilityKey: "guildhall",
+    name: "Construção de Muralhas de Pedra Grátis (Maçons)",
+    levelReq: 17,
+    costPO: 0,
+    durationDays: 14,
+    rewardDesc: "A Guilda dos Maçons ergue muralhas de pedra permanentes ao redor da fortaleza sem custo em ouro!"
+  },
+  mobilize_army: {
+    key: "mobilize_army",
+    facilityKey: "war_room",
+    name: "Mobilizar Batalhão de Infantaria",
+    levelReq: 17,
+    costPO: 100,
+    durationDays: 7,
+    rewardDesc: "Convoca até 100 soldados e guardas armados para defender a fortaleza ou apoiar em cercos."
+  }
+};
+
+// Tabela de Eventos de Bastião (d100) adaptada do DMG 2024
+const BASTION_EVENTS_TABLE = [
+  {
+    range: [1, 50],
+    title: "Tudo em Paz",
+    icon: "🕊️",
+    desc: "A semana transcorre com total serenidade na fortaleza. Os serviçais cuidam das tarefas, os guardas mantêm a vigília e a comunidade local prospera.",
+    effect: "none"
+  },
+  {
+    range: [51, 60],
+    title: "Ataque Invasor / Criaturas Errantes!",
+    icon: "⚔️",
+    desc: "Um bando de monstros ou saqueadores ataca o perímetro do Bastião tentando invadir as instalações!",
+    effect: "attack"
+  },
+  {
+    range: [61, 68],
+    title: "Mercador Viajante & Itens Raros",
+    icon: "🐪",
+    desc: "Uma caravana exótica com tapeçarias, gemas e poções monta acampamento em frente aos portões.",
+    effect: "merchant"
+  },
+  {
+    range: [69, 75],
+    title: "Recrutas & Refugiados",
+    icon: "👥",
+    desc: "Trabalhadores e plebeus leais pedem abrigo na fortaleza oferecendo mão de obra dedicada.",
+    effect: "recruits"
+  },
+  {
+    range: [76, 82],
+    title: "Disputa Nobre / Enviado Oficial",
+    icon: "📜",
+    desc: "Um arauto de um barão ou magistrado local chega com uma petição diplomática ou proposta de aliança.",
+    effect: "diplomacy"
+  },
+  {
+    range: [83, 89],
+    title: "Descoberta Secreta nas Fundações",
+    icon: "🗝️",
+    desc: "Durante obras na fortaleza, os operários encontram uma passagem antiga contendo um baú esquecido (+150 PO no Baú).",
+    effect: "treasure"
+  },
+  {
+    range: [90, 95],
+    title: "Clima Severo / Tempestade Mágica",
+    icon: "⛈️",
+    desc: "Ventos uivantes e raios atingem a região. Se houver muralhas, a fortaleza não sofre qualquer impacto.",
+    effect: "weather"
+  },
+  {
+    range: [96, 100],
+    title: "Bonança & Bênção Extraordinária!",
+    icon: "🌟",
+    desc: "Um cometa dourado ou bênção divina ilumina o castelo. Todos os heróis recuperam energias e os lucros da semana dobram (+300 PO no Baú).",
+    effect: "blessing"
+  }
+];
+
+// Opções de Muralhas Defensivas em PO
+const BASTION_WALL_OPTIONS = {
+  none: {
+    key: "none",
+    name: "Sem Muralhas Externas",
+    costPO: 0,
+    desc: "A fortaleza fica aberta ao terreno natural. Ataques rolam 6d6 contra os defensores.",
+    defenseDice: 6
+  },
+  wood: {
+    key: "wood",
+    name: "Paliçada de Madeira Reforçada",
+    costPO: 250,
+    desc: "Paliçada de troncos pontiagudos com fossos que desaceleram invasores.",
+    defenseDice: 5
+  },
+  stone: {
+    key: "stone",
+    name: "Muralhas de Pedra com Ameias",
+    costPO: 1000,
+    desc: "Muralhas altas de alvenaria maciça e portão levadiço de ferro. Reduz o ataque inimigo de 6d6 para 4d6!",
+    defenseDice: 4
+  }
+};
+
 // src/js/audio_synth.js - Procedural Web Audio API Sound Effects & Ambient Soundscapes
 // 100% native, zero external dependencies, works offline and standalone.
 
@@ -38984,7 +40106,7 @@ function renderPlayers() {
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'combat' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'combat')">⚔️ Ações</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'spells' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'spells')">✨ Magias</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'inventory' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'inventory')">🎒 Inventário (${(p.inventory || []).length})</button>
-              <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'hirelings' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'hirelings')">👥 Lacaios (${(p.hirelings || []).length})</button>
+              <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'hirelings' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'hirelings')">👥 Lacaios & Bastião</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'traits' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'traits')">📜 Traços</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'notes' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'notes')">📝 Notas</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'about' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'about')">👤 Sobre</button>
@@ -39421,6 +40543,51 @@ function renderPlayers() {
                       </div>
                     `;
                   }).join('')}
+                </div>
+
+                <!-- 🏰 SALAS SOB GESTÃO DESTE HERÓI NO BASTIÃO DO GRUPO (D&D 2024 / 5.5) -->
+                <div style="margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span class="roll20-panel-title" style="margin: 0; border: none; padding: 0; font-size: 11px;">🏰 SALAS NO BASTIÃO COLETIVO</span>
+                    <button type="button" class="btn-secondary" style="font-size: 10px; padding: 2px 7px;" onclick="if(typeof openBastionActionModal==='function') openBastionActionModal()">⚡ Ações do Bastião</button>
+                  </div>
+
+                  ${(() => {
+                    const activeCamp = (typeof getActiveCampaign === 'function') ? getActiveCampaign() : null;
+                    const bastion = (activeCamp && typeof getCampaignBastion === 'function') ? getCampaignBastion(activeCamp) : null;
+                    if (!bastion) {
+                      return `<div style="font-size: 11px; color: var(--text-dim); font-style: italic;">Nenhum Bastião ativo na campanha vinculada.</div>`;
+                    }
+                    const myFacilities = (bastion.specialFacilities || []).filter(f => String(f.patronId) === String(p.id));
+                    if (myFacilities.length === 0) {
+                      return `
+                        <div style="font-size: 11px; color: var(--text-dim); background: rgba(0,0,0,0.25); padding: 8px 10px; border-radius: 6px; border: 1px dashed rgba(255,255,255,0.1);">
+                          📍 ${p.name} ainda não possui salas atribuídas no <b>${bastion.name}</b>.<br>
+                          Acesse a aba <b>Campanhas</b> para vincular uma sala especial a este herói!
+                        </div>
+                      `;
+                    }
+                    return `
+                      <div style="display: flex; flex-direction: column; gap: 6px;">
+                        ${myFacilities.map(f => {
+                          const cat = (typeof BASTION_SPECIAL_FACILITIES_CATALOG !== 'undefined') ? BASTION_SPECIAL_FACILITIES_CATALOG[f.key] : null;
+                          const icon = cat ? cat.icon : '🏛️';
+                          const order = f.currentOrder;
+                          return `
+                            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 6px; padding: 8px 10px; font-size: 11px;">
+                              <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: 800; color: #fff;">${icon} ${f.name}</span>
+                                <span class="badge badge-lvl" style="font-size: 9px;">Nv.${cat?.levelReq || 5}</span>
+                              </div>
+                              <div style="margin-top: 4px; color: ${order ? '#a7f3d0' : '#94a3b8'};">
+                                ${order ? `⚙️ <b>Ordem ativa:</b> ${order.name} (${order.daysLeft} dias restantes)` : 'Nenhuma ordem ativa.'}
+                              </div>
+                            </div>
+                          `;
+                        }).join('')}
+                      </div>
+                    `;
+                  })()}
                 </div>
               </div>
 
@@ -50320,6 +51487,9 @@ function renderCampaigns() {
 
   // 4. Renderiza NPCs Contratados & Folha de Pagamento do Grupo (Old Dragon 2 para 5E)
   renderCampaignHirelings(camp, campPlayers);
+
+  // 5. Renderiza Bastião Coletivo do Grupo (D&D 2024 / 5.5 em PO - ISSUE-118)
+  renderCampaignBastion(camp, campPlayers);
 }
 
 // --- DASHBOARD DE VISÃO GERAL DA CAMPANHA (DM3) ---
@@ -52289,6 +53459,834 @@ function renderChroniclesViewerContent() {
   `).join('');
 }
 
+// ==========================================================================
+// 🏰 SISTEMA DE BASTIÃO COLETIVO DO GRUPO (D&D 2024 / 5.5 EM PO - ISSUE-118)
+// ==========================================================================
+
+let currentBastionLevelFilter = 'all';
+
+function getCampaignBastion(camp) {
+  if (!camp) return null;
+  if (!camp.bastion) {
+    const defaultOwnerId = (camp.playerIds && camp.playerIds.length > 0) ? camp.playerIds[0] : "";
+    const secondOwnerId = (camp.playerIds && camp.playerIds.length > 1) ? camp.playerIds[1] : defaultOwnerId;
+    camp.bastion = {
+      name: "Fortaleza de " + (camp.name || "Aventureiros"),
+      location: "Fronteiras da Campanha",
+      level: 5,
+      turnCount: 1,
+      walls: "none",
+      defenders: 4,
+      specialFacilities: [
+        {
+          id: "fac_" + Date.now() + "_ws",
+          key: "workshop",
+          name: "Oficina de Artesanato",
+          patronId: defaultOwnerId,
+          currentOrder: null,
+          status: "active"
+        },
+        {
+          id: "fac_" + (Date.now() + 1) + "_gd",
+          key: "garden",
+          name: "Jardim de Ervas",
+          patronId: secondOwnerId,
+          currentOrder: null,
+          status: "active"
+        }
+      ],
+      activeBuffs: [],
+      history: [
+        {
+          turn: 1,
+          date: new Date().toISOString().split('T')[0],
+          title: "Fundação do Bastião",
+          desc: "O grupo adquiriu a posse da fortaleza conjunta como base permanente de operações."
+        }
+      ]
+    };
+    touchCampaign(camp);
+    saveCampaignsState();
+  }
+  return camp.bastion;
+}
+
+function renderCampaignBastion(camp, campPlayers) {
+  const container = document.getElementById('campaign-bastion-container');
+  if (!container || !camp) return;
+
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+
+  const wallOpt = (typeof BASTION_WALL_OPTIONS !== 'undefined') ? BASTION_WALL_OPTIONS[bastion.walls || 'none'] : { name: 'Sem Muralhas', defenseDice: 6 };
+  const goldAmount = camp.partyStash ? (camp.partyStash.gold || 0) : 0;
+  const lastEvent = bastion.history && bastion.history.length > 0 ? bastion.history[bastion.history.length - 1] : null;
+
+  let html = `
+    <div class="bastion-panel-card">
+      <div class="bastion-header-bar">
+        <div>
+          <div class="bastion-title-wrap">
+            <span style="font-size: 24px;">🏰</span>
+            <div>
+              <div class="bastion-title-text">${bastion.name}</div>
+              <div style="font-size: 11px; color: #cbd5e1; margin-top: 2px;">📍 ${bastion.location} • Base Conjunta da Campanha</div>
+            </div>
+          </div>
+        </div>
+        <div class="bastion-badges-row">
+          <span class="bastion-stat-pill bastion-stat-pill-lvl" title="Nível do Bastião desbloqueia novas instalações">⭐ Nível ${bastion.level || 5}</span>
+          <span class="bastion-stat-pill" style="border-color: #64748b; color: #e2e8f0;" title="Turno semanal de gestão">⏳ Semana ${bastion.turnCount || 1}</span>
+          <span class="bastion-stat-pill bastion-stat-pill-def" title="Defensores da guarnição permanente">🛡️ ${bastion.defenders || 0} Defensores</span>
+          <span class="bastion-stat-pill" style="border-color: #f59e0b; color: #fef08a;" title="Status das muralhas">🧱 ${wallOpt ? wallOpt.name : 'Muralhas'}</span>
+          <span class="bastion-stat-pill bastion-stat-pill-gold" title="Ouro total disponível no Baú do Grupo">💰 Baú: ${goldAmount} PO</span>
+        </div>
+      </div>
+
+      <!-- Barra de Ações Principais do Bastião -->
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; background: rgba(0,0,0,0.25); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button type="button" class="btn-action" style="font-size: 12px; font-weight: 800; background: linear-gradient(135deg, #10b981, #059669); color: #fff;" onclick="openBastionActionModal()">
+            ➕ Emitir Ordem no Bastião
+          </button>
+          <button type="button" class="btn-secondary" style="font-size: 11px;" onclick="openBastionAddFacilityModal()">
+            🏗️ Adicionar Instalação Especial
+          </button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" onclick="promptUpgradeBastionWalls()">
+            🧱 Aprimorar Muralhas
+          </button>
+        </div>
+        <div>
+          <button type="button" class="btn-action" style="font-size: 12px; font-weight: 800; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; box-shadow: 0 0 12px rgba(139, 92, 246, 0.4);" onclick="advanceBastionTurn()">
+            🎲 Avançar Turno do Bastião (7 Dias)
+          </button>
+        </div>
+      </div>
+
+      <!-- Grid de Instalações Especiais -->
+      <div style="margin-top: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 11px; font-weight: 800; color: var(--primary-light); text-transform: uppercase; letter-spacing: 0.5px;">
+            Salas & Instalações Especiais da Fortaleza (${(bastion.specialFacilities || []).length}):
+          </span>
+          <span style="font-size: 10px; color: #94a3b8;">Cada jogador pode ser gestor de suas salas</span>
+        </div>
+
+        <div class="bastion-facilities-grid">
+  `;
+
+  if (!bastion.specialFacilities || bastion.specialFacilities.length === 0) {
+    html += `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 24px; color: #94a3b8; font-size: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+        Nenhuma instalação especial construída. Clique em <b>"🏗️ Adicionar Instalação Especial"</b> para começar!
+      </div>
+    `;
+  } else {
+    bastion.specialFacilities.forEach(fac => {
+      const cat = (typeof BASTION_SPECIAL_FACILITIES_CATALOG !== 'undefined') ? BASTION_SPECIAL_FACILITIES_CATALOG[fac.key] : null;
+      const patronHero = campPlayers.find(p => String(p.id) === String(fac.patronId));
+      const patronName = patronHero ? patronHero.name : (fac.patronId ? 'Herói Vinculado' : 'Sem Patrono Definido');
+      const icon = cat ? cat.icon : '🏛️';
+      const order = fac.currentOrder;
+
+      html += `
+        <div class="bastion-facility-card">
+          <div class="bastion-facility-header">
+            <div>
+              <div class="bastion-facility-name">
+                <span>${icon}</span>
+                <span>${fac.name || (cat ? cat.name : 'Instalação')}</span>
+              </div>
+              <div class="bastion-facility-patron">
+                <span>👤 Patrono:</span>
+                <strong>${patronName}</strong>
+              </div>
+            </div>
+            <div style="display: flex; gap: 4px;">
+              <button type="button" class="btn-micro" style="color: #f87171;" onclick="removeBastionFacility('${fac.id}')" title="Desativar/Excluir esta sala">🗑️</button>
+            </div>
+          </div>
+
+          <div style="font-size: 11px; color: #94a3b8; line-height: 1.4;">
+            ${cat ? cat.desc : 'Instalação ativa da base coletiva.'}
+          </div>
+
+          <div class="bastion-order-box">
+            ${order ? `
+              <div class="bastion-order-name">
+                <span>⚙️ Ordem Ativa:</span>
+                <span>${order.name}</span>
+              </div>
+              <div class="bastion-order-desc">
+                ${order.selectedItem ? `<b>Item em confecção:</b> ${order.selectedItem.name}` : (order.rewardDesc || 'Em execução')}
+              </div>
+              <div class="bastion-order-progress">
+                ⏳ Restam ${order.daysLeft} dias para conclusão (avança a cada turno semanal)
+              </div>
+            ` : `
+              <div style="color: #94a3b8; font-style: italic; display: flex; justify-content: space-between; align-items: center;">
+                <span>Sem ordem em andamento.</span>
+                <button type="button" class="btn-secondary" style="font-size: 10px; padding: 2px 8px; color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);" onclick="openBastionActionModal('${fac.id}')">
+                  ⚡ Dar Ordem
+                </button>
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  html += `</div></div>`;
+
+  // Banner do Último Evento Semanal do Bastião
+  if (lastEvent) {
+    html += `
+      <div class="bastion-event-banner">
+        <span style="font-size: 20px;">📜</span>
+        <div style="flex: 1;">
+          <div class="bastion-event-title">Último Acontecimento (Semana ${lastEvent.turn}): ${lastEvent.title}</div>
+          <div class="bastion-event-desc">${lastEvent.desc}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+// Abre o Modal de Ações com Filtro por Nível e Seletores de Itens
+function openBastionActionModal(preselectedFacId = null) {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+
+  // Atualiza saldo de ouro no modal
+  const goldEl = document.getElementById('bastion-modal-gold-badge');
+  if (goldEl) goldEl.innerText = `💰 Baú: ${camp.partyStash?.gold || 0} PO`;
+
+  // Popula seletor de heróis
+  const selHero = document.getElementById('sel-bastion-action-hero');
+  if (selHero) {
+    const heroes = (camp.playerIds || []).map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p);
+    selHero.innerHTML = heroes.length > 0 ? heroes.map(h => `
+      <option value="${h.id}">${h.name} (${h.className || 'Herói'} Nv.${h.level || 1})</option>
+    `).join('') : '<option value="">Sem heróis na campanha</option>';
+  }
+
+  // Popula seletor de instalações
+  const selFac = document.getElementById('sel-bastion-action-facility');
+  if (selFac) {
+    selFac.innerHTML = (bastion.specialFacilities || []).map(f => {
+      const cat = (typeof BASTION_SPECIAL_FACILITIES_CATALOG !== 'undefined') ? BASTION_SPECIAL_FACILITIES_CATALOG[f.key] : null;
+      return `<option value="${f.id}" ${f.id === preselectedFacId ? 'selected' : ''}>${cat ? cat.icon : '🏛️'} ${f.name || cat?.name} (Nv.${cat?.levelReq || 5})</option>`;
+    }).join('');
+  }
+
+  renderBastionActionsList();
+
+  const modal = document.getElementById('modal-bastion-action');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeBastionActionModal() {
+  const modal = document.getElementById('modal-bastion-action');
+  if (modal) modal.style.display = 'none';
+}
+
+function setBastionActionFilter(lvl, btnEl) {
+  currentBastionLevelFilter = lvl;
+  const chips = document.querySelectorAll('.bastion-filter-chip');
+  chips.forEach(c => c.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+  renderBastionActionsList();
+}
+
+function renderBastionActionsList() {
+  const listContainer = document.getElementById('bastion-actions-list');
+  if (!listContainer) return;
+
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const bastion = getCampaignBastion(camp);
+  const selFac = document.getElementById('sel-bastion-action-facility');
+  const selectedFacId = selFac ? selFac.value : null;
+  const selectedFac = (bastion?.specialFacilities || []).find(f => f.id === selectedFacId);
+  const currentGold = camp.partyStash?.gold || 0;
+
+  if (typeof BASTION_ACTIONS_CATALOG === 'undefined') {
+    listContainer.innerHTML = '<div style="color:#94a3b8;">Catálogo de ações indisponível.</div>';
+    return;
+  }
+
+  let actions = Object.values(BASTION_ACTIONS_CATALOG);
+
+  // Se uma instalação estiver selecionada, prioriza as ordens permitidas dela
+  if (selectedFac) {
+    const cat = BASTION_SPECIAL_FACILITIES_CATALOG[selectedFac.key];
+    if (cat && cat.orders && cat.orders.length > 0) {
+      actions = actions.filter(act => cat.orders.includes(act.key) || act.facilityKey === selectedFac.key);
+    }
+  }
+
+  // Filtra por nível se selecionado
+  if (currentBastionLevelFilter !== 'all') {
+    const reqLvl = parseInt(currentBastionLevelFilter);
+    actions = actions.filter(act => act.levelReq === reqLvl);
+  }
+
+  if (actions.length === 0) {
+    listContainer.innerHTML = `
+      <div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+        Nenhuma ação disponível para os filtros selecionados ou para esta instalação.
+      </div>
+    `;
+    return;
+  }
+
+  listContainer.innerHTML = actions.map(act => {
+    let costDisplay = `${act.costPO} PO`;
+    if (act.costType === 'metal_half') costDisplay = '50% do valor da tabela em PO';
+    if (act.costType === 'spell_circle') costDisplay = '50 PO por círculo de magia';
+    if (act.costType === 'item_base') costDisplay = 'Valor base do item em PO';
+
+    const canAfford = currentGold >= (act.costPO || 0);
+
+    return `
+      <div class="bastion-action-card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; flex-wrap: wrap;">
+          <div>
+            <div style="font-weight: 800; font-size: 14px; color: #fff; display: flex; align-items: center; gap: 6px;">
+              <span>⚡</span>
+              <span>${act.name}</span>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center; margin-top: 4px;">
+              <span class="badge badge-lvl" style="font-size: 10px;">⭐ Requer Nível ${act.levelReq}</span>
+              <span class="badge badge-gold" style="font-size: 10px;">💰 Custo: ${costDisplay}</span>
+              <span class="badge" style="font-size: 10px; background: rgba(255,255,255,0.1); color: #cbd5e1;">⏳ Tempo: ${act.durationDays} dias</span>
+            </div>
+          </div>
+          <button type="button" class="btn-action" style="padding: 6px 14px; font-size: 11px; font-weight: 800; background: ${canAfford ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'rgba(100,116,139,0.4)'}; color: ${canAfford ? '#000' : '#94a3b8'};"
+            onclick="triggerActivateBastionAction('${act.key}')" ${!canAfford && act.costPO > 0 ? 'disabled' : ''}>
+            ${canAfford || act.costPO === 0 ? '✔️ Ativar Ordem' : '❌ Saldo Insuficiente no Baú'}
+          </button>
+        </div>
+
+        <!-- Seletor de Item Dinâmico se a ação permitir confecção de itens -->
+        ${act.hasItemSelector ? renderActionItemSelectorHtml(act) : ''}
+
+        <div class="bastion-action-reward-box">
+          <b>🎁 Recompensa / Benefício:</b> ${act.rewardDesc}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Renderiza o Seletor de Itens com opções inteligentes integradas ao banco de dados
+function renderActionItemSelectorHtml(act) {
+  let optionsHtml = '';
+
+  if (act.category === 'metal_arms') {
+    const metalWeapons = [
+      { name: 'Armadura de Placas Completa', cost: 750, orig: 1500 },
+      { name: 'Cota de Malha Pesada', cost: 37, orig: 75 },
+      { name: 'Couraça de Aço (Breastplate)', cost: 200, orig: 400 },
+      { name: 'Espada Longa de Aço', cost: 7, orig: 15 },
+      { name: 'Espadão de Duas Mãos', cost: 25, orig: 50 },
+      { name: 'Machado Grande Marcial', cost: 15, orig: 30 },
+      { name: 'Escudo Reforçado de Ferro', cost: 5, orig: 10 }
+    ];
+    optionsHtml = metalWeapons.map(w => `<option value="${w.name}|${w.cost}">${w.name} (Por ${w.cost} PO - 50% desc.)</option>`).join('');
+  } else if (act.category === 'magic_arms') {
+    const magicArms = [
+      { name: 'Espada Longa +1', cost: 200 },
+      { name: 'Machado Grande +1', cost: 200 },
+      { name: 'Arco Longo +1', cost: 200 },
+      { name: 'Escudo +1', cost: 200 },
+      { name: 'Armadura de Mithral', cost: 200 }
+    ];
+    optionsHtml = magicArms.map(m => `<option value="${m.name}|${m.cost}">${m.name} (${m.cost} PO - Incomum)</option>`).join('');
+  } else if (act.category === 'potions') {
+    const potions = [
+      { name: 'Poção Maior de Cura (4d4+4)', cost: 100 },
+      { name: 'Poção de Força do Gigante da Colina', cost: 100 },
+      { name: 'Poção de Invisibilidade Rápida', cost: 100 },
+      { name: 'Poção de Respiração Aquática', cost: 100 },
+      { name: 'Antídoto Refinado de Venenos', cost: 50 }
+    ];
+    optionsHtml = potions.map(p => `<option value="${p.name}|${p.cost}">${p.name} (${p.cost} PO)</option>`).join('');
+  } else if (act.category === 'spells') {
+    const scrolls = [
+      { name: 'Pergaminho de Mísseis Mágicos (1º Círculo)', cost: 50 },
+      { name: 'Pergaminho de Escudo Arcano (1º Círculo)', cost: 50 },
+      { name: 'Pergaminho de Invisibilidade (2º Círculo)', cost: 100 },
+      { name: 'Pergaminho de Passo Nebuloso (2º Círculo)', cost: 100 },
+      { name: 'Pergaminho de Bola de Fogo (3º Círculo)', cost: 150 },
+      { name: 'Pergaminho de Relâmpago (3º Círculo)', cost: 150 }
+    ];
+    optionsHtml = scrolls.map(s => `<option value="${s.name}|${s.cost}">${s.name} (${s.cost} PO)</option>`).join('');
+  } else if (act.category === 'magic_arcana') {
+    const arcanaItems = [
+      { name: 'Varinha do Mago de Guerra +1', cost: 200 },
+      { name: 'Pérola do Poder', cost: 200 },
+      { name: 'Mochila de Carga (Bag of Holding)', cost: 200 },
+      { name: 'Corda de Escalada Mágica', cost: 150 },
+      { name: 'Óculos Noturnos (Darkvision)', cost: 200 }
+    ];
+    optionsHtml = arcanaItems.map(a => `<option value="${a.name}|${a.cost}">${a.name} (${a.cost} PO)</option>`).join('');
+  } else {
+    optionsHtml = `
+      <option value="Mochila de Aventureiro Completa|10">Mochila de Aventureiro Completa (10 PO)</option>
+      <option value="Kit de Ferramentas de Ladrão|25">Kit de Ferramentas de Ladrão (25 PO)</option>
+      <option value="Corda de Seda (15m)|10">Corda de Seda 15m (10 PO)</option>
+      <option value="Tochas e Óleo (Kit)|5">Kit de Tochas e Óleo (5 PO)</option>
+    `;
+  }
+
+  return `
+    <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 10px;">
+      <label style="font-size: 11px; font-weight: 700; color: #fef08a;">📦 Selecione o Item a ser Fabricado:</label>
+      <select id="sel-item-for-${act.key}" style="width: 100%; font-size: 12px; margin-top: 4px;">
+        ${optionsHtml}
+        <option value="CUSTOM">➕ Item Personalizado / Sob Medida...</option>
+      </select>
+    </div>
+  `;
+}
+
+function triggerActivateBastionAction(actionKey) {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const bastion = getCampaignBastion(camp);
+  const selFac = document.getElementById('sel-bastion-action-facility');
+  const selHero = document.getElementById('sel-bastion-action-hero');
+  const facId = selFac ? selFac.value : null;
+  const heroId = selHero ? selHero.value : null;
+
+  const fac = (bastion?.specialFacilities || []).find(f => f.id === facId);
+  if (!fac) {
+    alert('Por favor, selecione uma instalação válida.');
+    return;
+  }
+
+  const act = (typeof BASTION_ACTIONS_CATALOG !== 'undefined') ? BASTION_ACTIONS_CATALOG[actionKey] : null;
+  if (!act) return;
+
+  let selectedItem = null;
+  let finalCost = act.costPO || 0;
+
+  if (act.hasItemSelector) {
+    const selItemEl = document.getElementById(`sel-item-for-${act.key}`);
+    const selVal = selItemEl ? selItemEl.value : '';
+    if (selVal === 'CUSTOM') {
+      const customName = prompt('Digite o nome do item personalizado que deseja fabricar:');
+      if (!customName) return;
+      const customCostStr = prompt('Digite o custo de materiais em PO acordado com o Mestre:', '50');
+      finalCost = parseInt(customCostStr) || 0;
+      selectedItem = { name: customName, costPO: finalCost, type: 'custom' };
+    } else if (selVal.includes('|')) {
+      const parts = selVal.split('|');
+      selectedItem = { name: parts[0], costPO: parseInt(parts[1]) || 0 };
+      finalCost = selectedItem.costPO;
+    }
+  }
+
+  const currentGold = camp.partyStash?.gold || 0;
+  if (finalCost > currentGold) {
+    alert(`Saldo insuficiente no Baú Coletivo! Custo: ${finalCost} PO. Saldo atual: ${currentGold} PO.`);
+    return;
+  }
+
+  // Deduz do Baú do Grupo se houver custo
+  if (finalCost > 0) {
+    camp.partyStash.gold -= finalCost;
+    camp.partyStash.history = camp.partyStash.history || [];
+    camp.partyStash.history.push({
+      date: new Date().toISOString().split('T')[0],
+      text: `🏰 Bastião: -${finalCost} PO para iniciar "${act.name}" na ${fac.name}`,
+      type: 'gold_out'
+    });
+  }
+
+  fac.currentOrder = {
+    actionKey: act.key,
+    name: act.name,
+    durationDays: act.durationDays || 7,
+    daysLeft: act.durationDays || 7,
+    heroId: heroId,
+    selectedItem: selectedItem,
+    rewardDesc: act.rewardDesc,
+    rewardItem: act.rewardItem,
+    costPO: finalCost
+  };
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+
+  closeBastionActionModal();
+  renderCampaigns();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+
+  if (typeof addLog === 'function') {
+    addLog(`🏰 <b>Bastião:</b> Ordem "${act.name}" iniciada na ${fac.name}. Custo: ${finalCost} PO debitados do Baú.`);
+  }
+}
+
+// Avança 7 dias no tempo do Bastião, processa ordens concluídas e rola na Tabela d100 de Eventos
+function advanceBastionTurn() {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+
+  bastion.turnCount = (bastion.turnCount || 1) + 1;
+  const completedOrders = [];
+
+  // 1. Processa as ordens das instalações especiais
+  (bastion.specialFacilities || []).forEach(fac => {
+    if (fac.currentOrder) {
+      fac.currentOrder.daysLeft -= 7;
+      if (fac.currentOrder.daysLeft <= 0) {
+        completedOrders.push({ fac, order: fac.currentOrder });
+
+        // Adiciona item concluído no Baú Coletivo
+        if (fac.currentOrder.selectedItem) {
+          camp.partyStash.items = camp.partyStash.items || [];
+          camp.partyStash.items.push({
+            id: 'it_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+            name: fac.currentOrder.selectedItem.name,
+            qty: 1,
+            category: 'Fabricação do Bastião',
+            carrier: 'Baú do Grupo',
+            desc: `Item fabricado no Bastião pela ordem "${fac.currentOrder.name}".`
+          });
+          camp.partyStash.history.push({
+            date: new Date().toISOString().split('T')[0],
+            text: `+1x ${fac.currentOrder.selectedItem.name} fabricado na ${fac.name}`,
+            type: 'item_in'
+          });
+        } else if (fac.currentOrder.rewardItem) {
+          const rItem = fac.currentOrder.rewardItem;
+          camp.partyStash.items = camp.partyStash.items || [];
+          camp.partyStash.items.push({
+            id: 'it_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+            name: rItem.name,
+            qty: rItem.qty || 1,
+            category: 'Produção do Bastião',
+            carrier: 'Baú do Grupo',
+            desc: rItem.desc || 'Produzido nas instalações da fortaleza.'
+          });
+          camp.partyStash.history.push({
+            date: new Date().toISOString().split('T')[0],
+            text: `+${rItem.qty || 1}x ${rItem.name} produzido no Bastião`,
+            type: 'item_in'
+          });
+        }
+
+        // Faturamento comercial direto para o Baú
+        if (fac.currentOrder.actionKey === 'run_gambling_night') {
+          const profit = Math.floor(Math.random() * 90) + 30; // 30 a 120 PO
+          camp.partyStash.gold = (camp.partyStash.gold || 0) + profit;
+          camp.partyStash.history.push({
+            date: new Date().toISOString().split('T')[0],
+            text: `+${profit} PO lucro da Noite de Jogatina no Bastião`,
+            type: 'gold_in'
+          });
+        } else if (fac.currentOrder.actionKey === 'trade_commodities') {
+          const profit = Math.floor(Math.random() * 100) + 50; // 50 a 150 PO
+          camp.partyStash.gold = (camp.partyStash.gold || 0) + profit;
+          camp.partyStash.history.push({
+            date: new Date().toISOString().split('T')[0],
+            text: `+${profit} PO lucro de caravanas no Depósito Comercial`,
+            type: 'gold_in'
+          });
+        } else if (fac.currentOrder.actionKey === 'guild_trade_revenue') {
+          camp.partyStash.gold = (camp.partyStash.gold || 0) + 500;
+          camp.partyStash.history.push({
+            date: new Date().toISOString().split('T')[0],
+            text: `+500 PO receita fixa semanal da Sede de Guilda`,
+            type: 'gold_in'
+          });
+        } else if (fac.currentOrder.actionKey === 'recruit_defenders') {
+          bastion.defenders = Math.min(12, (bastion.defenders || 0) + 4);
+        }
+
+        fac.currentOrder = null;
+      }
+    }
+  });
+
+  // 2. Rola na Tabela de Eventos Semanal de Bastião (d100)
+  const d100 = Math.floor(Math.random() * 100) + 1;
+  let eventEntry = null;
+  if (typeof BASTION_EVENTS_TABLE !== 'undefined') {
+    eventEntry = BASTION_EVENTS_TABLE.find(e => d100 >= e.range[0] && d100 <= e.range[1]);
+  }
+  if (!eventEntry) {
+    eventEntry = { title: "Tudo em Paz", icon: "🕊️", desc: "A semana transcorre normalmente no Bastião.", effect: "none" };
+  }
+
+  let resolutionText = "";
+
+  // Resolução mecânica do evento
+  if (eventEntry.effect === 'attack') {
+    const wallOpt = BASTION_WALL_OPTIONS[bastion.walls || 'none'];
+    const diceCount = wallOpt ? wallOpt.defenseDice : 6;
+    let onesRolled = 0;
+    const rolls = [];
+    for (let i = 0; i < diceCount; i++) {
+      const r = Math.floor(Math.random() * 6) + 1;
+      rolls.push(r);
+      if (r === 1) onesRolled++;
+    }
+
+    if (bastion.defenders > 0) {
+      const lost = Math.min(bastion.defenders, onesRolled);
+      bastion.defenders -= lost;
+      resolutionText = `Defensores resistiram ao ataque! Rolagem de invasão (${diceCount}d6): [${rolls.join(', ')}]. Perdas: ${lost} defensores. Restam: ${bastion.defenders}.`;
+    } else {
+      resolutionText = `Sem defensores! A fortaleza sofreu danos leves e uma das salas precisará de reparos.`;
+    }
+  } else if (eventEntry.effect === 'treasure') {
+    camp.partyStash.gold = (camp.partyStash.gold || 0) + 150;
+    camp.partyStash.history.push({
+      date: new Date().toISOString().split('T')[0],
+      text: `+150 PO tesouro escondido encontrado no Bastião`,
+      type: 'gold_in'
+    });
+    resolutionText = `Ouro antigo (+150 PO) adicionado diretamente ao Baú Coletivo do Grupo!`;
+  } else if (eventEntry.effect === 'blessing') {
+    camp.partyStash.gold = (camp.partyStash.gold || 0) + 300;
+    camp.partyStash.history.push({
+      date: new Date().toISOString().split('T')[0],
+      text: `+300 PO bênção divina no Bastião`,
+      type: 'gold_in'
+    });
+    resolutionText = `Bênção sagrada concedida! +300 PO creditados no Baú Coletivo e todos os heróis revigorados!`;
+  } else if (eventEntry.effect === 'recruits') {
+    bastion.defenders = Math.min(12, (bastion.defenders || 0) + 2);
+    resolutionText = `+2 guardas leais voluntários juntaram-se à guarnição da fortaleza!`;
+  } else {
+    resolutionText = `Nenhum dano sofrido. As atividades rotineiras prosseguem com tranquilidade.`;
+  }
+
+  // Grava histórico
+  bastion.history = bastion.history || [];
+  bastion.history.push({
+    turn: bastion.turnCount,
+    date: new Date().toISOString().split('T')[0],
+    roll: d100,
+    title: eventEntry.title,
+    desc: eventEntry.desc,
+    resolution: resolutionText
+  });
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+
+  renderCampaigns();
+  renderPartyStashViewer();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+
+  // Exibe o modal de Evento
+  const evIcon = document.getElementById('bastion-event-icon');
+  const evRoll = document.getElementById('bastion-event-roll-badge');
+  const evTitle = document.getElementById('bastion-event-title-display');
+  const evDesc = document.getElementById('bastion-event-desc-display');
+  const evRes = document.getElementById('bastion-event-resolution-display');
+
+  if (evIcon) evIcon.innerText = eventEntry.icon || '🎲';
+  if (evRoll) evRoll.innerText = `Resultado d100: [ ${d100} ] • Turno ${bastion.turnCount}`;
+  if (evTitle) evTitle.innerText = eventEntry.title;
+  if (evDesc) evDesc.innerText = eventEntry.desc;
+  if (evRes) evRes.innerHTML = `<b>Resolução:</b> ${resolutionText}`;
+
+  const evModal = document.getElementById('modal-bastion-event');
+  if (evModal) evModal.style.display = 'flex';
+
+  if (typeof addLog === 'function') {
+    addLog(`🏰 <b>Turno do Bastião (${bastion.turnCount}):</b> d100 = ${d100} (${eventEntry.title}). ${completedOrders.length} ordens concluídas.`);
+  }
+}
+
+function closeBastionEventModal() {
+  const modal = document.getElementById('modal-bastion-event');
+  if (modal) modal.style.display = 'none';
+}
+
+function openBastionAddFacilityModal() {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const bastion = getCampaignBastion(camp);
+  const selKey = document.getElementById('sel-new-facility-key');
+  const selPatron = document.getElementById('sel-new-facility-patron');
+
+  if (selKey && typeof BASTION_SPECIAL_FACILITIES_CATALOG !== 'undefined') {
+    selKey.innerHTML = Object.values(BASTION_SPECIAL_FACILITIES_CATALOG).map(f => `
+      <option value="${f.key}">Nv.${f.levelReq} • ${f.icon} ${f.name}</option>
+    `).join('');
+  }
+
+  if (selPatron) {
+    const heroes = (camp.playerIds || []).map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p);
+    selPatron.innerHTML = heroes.length > 0 ? heroes.map(h => `
+      <option value="${h.id}">${h.name} (${h.className || 'Herói'})</option>
+    `).join('') : '<option value="">Sem herói específico</option>';
+  }
+
+  updateNewFacilityPreview();
+
+  const modal = document.getElementById('modal-bastion-add-facility');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeBastionAddFacilityModal() {
+  const modal = document.getElementById('modal-bastion-add-facility');
+  if (modal) modal.style.display = 'none';
+}
+
+function updateNewFacilityPreview() {
+  const preview = document.getElementById('new-facility-preview-card');
+  const selKey = document.getElementById('sel-new-facility-key');
+  if (!preview || !selKey) return;
+
+  const cat = (typeof BASTION_SPECIAL_FACILITIES_CATALOG !== 'undefined') ? BASTION_SPECIAL_FACILITIES_CATALOG[selKey.value] : null;
+  if (!cat) {
+    preview.innerHTML = '';
+    return;
+  }
+
+  preview.innerHTML = `
+    <div style="font-weight: 800; font-size: 14px; color: #fef08a; display: flex; align-items: center; gap: 6px;">
+      <span>${cat.icon}</span>
+      <span>${cat.name} (Desbloqueio: Nível ${cat.levelReq})</span>
+    </div>
+    <div style="margin-top: 4px; color: #e2e8f0;">${cat.desc}</div>
+    <div style="margin-top: 6px; font-size: 11px; color: #6ee7b7;">
+      <b>Serviçais Dedicados:</b> ${cat.hirelingsCount || 1} contratado(s) mantendo a instalação.
+    </div>
+  `;
+}
+
+function confirmAddBastionFacility() {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const bastion = getCampaignBastion(camp);
+  const selKey = document.getElementById('sel-new-facility-key');
+  const selPatron = document.getElementById('sel-new-facility-patron');
+
+  const key = selKey ? selKey.value : '';
+  const patronId = selPatron ? selPatron.value : '';
+  const cat = (typeof BASTION_SPECIAL_FACILITIES_CATALOG !== 'undefined') ? BASTION_SPECIAL_FACILITIES_CATALOG[key] : null;
+
+  if (!cat) return;
+
+  bastion.specialFacilities = bastion.specialFacilities || [];
+  bastion.specialFacilities.push({
+    id: 'fac_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+    key: cat.key,
+    name: cat.name,
+    patronId: patronId,
+    currentOrder: null,
+    status: 'active'
+  });
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+
+  closeBastionAddFacilityModal();
+  renderCampaigns();
+  if (typeof addLog === 'function') addLog(`🏗️ <b>Bastião:</b> Nova instalação "${cat.name}" adicionada à fortaleza.`);
+}
+
+function removeBastionFacility(facId) {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const bastion = getCampaignBastion(camp);
+  if (!bastion || !bastion.specialFacilities) return;
+
+  const fac = bastion.specialFacilities.find(f => f.id === facId);
+  if (!fac) return;
+
+  if (confirm(`Deseja realmente desmantelar a instalação "${fac.name}" da fortaleza?`)) {
+    bastion.specialFacilities = bastion.specialFacilities.filter(f => f.id !== facId);
+    touchCampaign(camp);
+    saveCampaignsState();
+    if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+    renderCampaigns();
+    if (typeof addLog === 'function') addLog(`🗑️ <b>Bastião:</b> Instalação "${fac.name}" desmantelada.`);
+  }
+}
+
+function promptUpgradeBastionWalls() {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+
+  const currentGold = camp.partyStash?.gold || 0;
+  const choice = prompt(
+    `🏰 APRIMORAMENTO DE MURALHAS DO BASTIÃO\n` +
+    `Muralha Atual: ${bastion.walls === 'stone' ? 'Pedra Maciça' : (bastion.walls === 'wood' ? 'Paliçada de Madeira' : 'Nenhuma')}\n` +
+    `Saldo no Baú: ${currentGold} PO\n\n` +
+    `Escolha uma opção:\n` +
+    `1 - Paliçada de Madeira Reforçada (250 PO, Defesa 5d6)\n` +
+    `2 - Muralhas de Pedra Maciça (1000 PO, Reduz invasão para 4d6!)\n` +
+    `0 - Cancelar`
+  );
+
+  if (choice === '1') {
+    if (currentGold < 250) {
+      alert('Saldo insuficiente no Baú! Necessário 250 PO.');
+      return;
+    }
+    camp.partyStash.gold -= 250;
+    camp.partyStash.history.push({
+      date: new Date().toISOString().split('T')[0],
+      text: `-250 PO para erguer Paliçada de Madeira no Bastião`,
+      type: 'gold_out'
+    });
+    bastion.walls = 'wood';
+    touchCampaign(camp);
+    saveCampaignsState();
+    renderCampaigns();
+    if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+    alert('Paliçada de Madeira construída com sucesso ao redor do Bastião!');
+  } else if (choice === '2') {
+    if (currentGold < 1000) {
+      alert('Saldo insuficiente no Baú! Necessário 1000 PO.');
+      return;
+    }
+    camp.partyStash.gold -= 1000;
+    camp.partyStash.history.push({
+      date: new Date().toISOString().split('T')[0],
+      text: `-1000 PO para erguer Muralhas de Pedra no Bastião`,
+      type: 'gold_out'
+    });
+    bastion.walls = 'stone';
+    touchCampaign(camp);
+    saveCampaignsState();
+    renderCampaigns();
+    if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+    alert('Muralhas de Pedra Maciça e Portão de Ferro erguidos com sucesso!');
+  }
+}
+
+
 // Vincula em window para uso no browser
 if (typeof window !== 'undefined') {
   window.touchCampaign = touchCampaign;
@@ -52340,7 +54338,22 @@ if (typeof module !== 'undefined' && module.exports) {
     trackDeletedPartyItemId,
     getDeletedPartyItemIds,
     deleteCurrentCampaign,
-    saveCampaignForm
+    saveCampaignForm,
+    getCampaignBastion,
+    renderCampaignBastion,
+    openBastionActionModal,
+    closeBastionActionModal,
+    setBastionActionFilter,
+    renderBastionActionsList,
+    triggerActivateBastionAction,
+    advanceBastionTurn,
+    closeBastionEventModal,
+    openBastionAddFacilityModal,
+    closeBastionAddFacilityModal,
+    updateNewFacilityPreview,
+    confirmAddBastionFacility,
+    removeBastionFacility,
+    promptUpgradeBastionWalls
   };
 }
 
@@ -52358,6 +54371,21 @@ if (typeof window !== 'undefined') {
   window.closeAddCampaignHirelingModal = closeAddCampaignHirelingModal;
   window.saveNewCampaignHireling = saveNewCampaignHireling;
   window.onHirelingPresetChange = onHirelingPresetChange;
+  window.getCampaignBastion = getCampaignBastion;
+  window.renderCampaignBastion = renderCampaignBastion;
+  window.openBastionActionModal = openBastionActionModal;
+  window.closeBastionActionModal = closeBastionActionModal;
+  window.setBastionActionFilter = setBastionActionFilter;
+  window.renderBastionActionsList = renderBastionActionsList;
+  window.triggerActivateBastionAction = triggerActivateBastionAction;
+  window.advanceBastionTurn = advanceBastionTurn;
+  window.closeBastionEventModal = closeBastionEventModal;
+  window.openBastionAddFacilityModal = openBastionAddFacilityModal;
+  window.closeBastionAddFacilityModal = closeBastionAddFacilityModal;
+  window.updateNewFacilityPreview = updateNewFacilityPreview;
+  window.confirmAddBastionFacility = confirmAddBastionFacility;
+  window.removeBastionFacility = removeBastionFacility;
+  window.promptUpgradeBastionWalls = promptUpgradeBastionWalls;
 }
 
 // Auto-carregamento imediato na avaliação do módulo

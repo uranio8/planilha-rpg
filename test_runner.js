@@ -34,6 +34,7 @@ const requiredFiles = [
   'src/data/species.js',
   'src/data/campaigns.js',
   'src/data/hirelings.js',
+  'src/data/bastions.js',
   'src/js/core.js',
   'src/js/combat.js',
   'src/js/players.js',
@@ -210,6 +211,7 @@ const dataMonsters = fs.readFileSync(path.join(srcDir, 'data', 'monsters.js'), '
 const dataEquip = fs.readFileSync(path.join(srcDir, 'data', 'equipment.js'), 'utf8');
 const dataCampaigns = fs.readFileSync(path.join(srcDir, 'data', 'campaigns.js'), 'utf8');
 const dataHirelings = fs.readFileSync(path.join(srcDir, 'data', 'hirelings.js'), 'utf8');
+const dataBastions = fs.readFileSync(path.join(srcDir, 'data', 'bastions.js'), 'utf8');
 const jsAudioSynth = fs.readFileSync(path.join(srcDir, 'js', 'audio_synth.js'), 'utf8');
 const jsQrCode = fs.readFileSync(path.join(srcDir, 'js', 'qrcode_lib.js'), 'utf8');
 const jsCore = fs.readFileSync(path.join(srcDir, 'js', 'core.js'), 'utf8');
@@ -237,6 +239,7 @@ vm.runInContext(dataMonsters, sandbox);
 vm.runInContext(dataEquip, sandbox);
 vm.runInContext(dataCampaigns, sandbox);
 vm.runInContext(dataHirelings, sandbox);
+vm.runInContext(dataBastions, sandbox);
 vm.runInContext(jsAudioSynth, sandbox);
 vm.runInContext(jsQrCode, sandbox);
 vm.runInContext(jsCore, sandbox);
@@ -6315,6 +6318,131 @@ assert(standalone117Html.includes('campaign-hirelings-container'), 'HTML compila
 assert(standalone117Html.includes('modal-campaign-hireling'), 'HTML compilado contém #modal-campaign-hireling');
 assert(standalone117Html.includes('calculateHirelingCharismaLimit'), 'HTML compilado contém calculateHirelingCharismaLimit');
 assert(standalone117Html.includes('sendPlayerItemToPartyStash'), 'HTML compilado contém sendPlayerItemToPartyStash');
+
+// ========================================================
+// 86. TESTES DO SISTEMA DE BASTIÃO COLETIVO DO GRUPO (ISSUE-118)
+// ========================================================
+console.log('\n🏰 86. Testes do Sistema de Bastião Coletivo do Grupo (D&D 2024 / 5.5 em PO - ISSUE-118):');
+
+// 1. Validação de Catálogos Oficiais
+const facCatalog86 = vm.runInContext("BASTION_SPECIAL_FACILITIES_CATALOG", sandbox);
+assert(typeof facCatalog86 === 'object' && Object.keys(facCatalog86).length === 29, 'Catálogo oficial contém exatamente 29 instalações especiais');
+assert(facCatalog86.workshop && facCatalog86.workshop.levelReq === 5, 'Oficina disponível no Nível 5');
+assert(facCatalog86.smithy && facCatalog86.smithy.levelReq === 5, 'Ferraria disponível no Nível 5');
+assert(facCatalog86.garden && facCatalog86.garden.levelReq === 5, 'Jardim de Ervas disponível no Nível 5');
+assert(facCatalog86.laboratory && facCatalog86.laboratory.levelReq === 9, 'Laboratório Alquímico disponível no Nível 9');
+assert(facCatalog86.scriptorium && facCatalog86.scriptorium.levelReq === 9, 'Scriptorium disponível no Nível 9');
+assert(facCatalog86.pub && facCatalog86.pub.levelReq === 13, 'Taberna / Pub disponível no Nível 13');
+assert(facCatalog86.meditation_chamber && facCatalog86.meditation_chamber.levelReq === 13, 'Câmara de Meditação disponível no Nível 13');
+assert(facCatalog86.guildhall && facCatalog86.guildhall.levelReq === 17, 'Sede de Guilda disponível no Nível 17');
+assert(facCatalog86.war_room && facCatalog86.war_room.levelReq === 17, 'Sala de Guerra disponível no Nível 17');
+
+const actionsCatalog86 = vm.runInContext("BASTION_ACTIONS_CATALOG", sandbox);
+assert(typeof actionsCatalog86 === 'object' && Object.keys(actionsCatalog86).length >= 25, 'Catálogo de ações contém todas as ordens detalhadas');
+assert(actionsCatalog86.craft_metal && actionsCatalog86.craft_metal.hasItemSelector === true, 'Ordem de Ferraria possui seletor dinâmico de itens');
+assert(actionsCatalog86.scribe_scroll && actionsCatalog86.scribe_scroll.hasItemSelector === true, 'Ordem de Scriptorium possui seletor dinâmico de magias');
+assert(actionsCatalog86.distill_potion && actionsCatalog86.distill_potion.hasItemSelector === true, 'Ordem de Laboratório possui seletor dinâmico de poções');
+
+const eventsTable86 = vm.runInContext("BASTION_EVENTS_TABLE", sandbox);
+assert(Array.isArray(eventsTable86) && eventsTable86.length >= 8, 'Tabela de eventos d100 de bastião oficial configurada');
+
+// 2. Exportação de Funções
+assert(typeof vm.runInContext("getCampaignBastion", sandbox) === 'function', 'Função getCampaignBastion exportada');
+assert(typeof vm.runInContext("renderCampaignBastion", sandbox) === 'function', 'Função renderCampaignBastion exportada');
+assert(typeof vm.runInContext("advanceBastionTurn", sandbox) === 'function', 'Função advanceBastionTurn exportada');
+assert(typeof vm.runInContext("openBastionActionModal", sandbox) === 'function', 'Função openBastionActionModal exportada');
+
+// 3. Inicialização e Estado do Bastião da Campanha
+vm.runInContext(`
+  activePortalPlayerId = null;
+  const camp86 = {
+    id: 'camp_bastion_test',
+    name: 'Guardiões do Vale',
+    playerIds: ['p_hero_alyn', 'p_hero_borin'],
+    partyStash: {
+      gold: 500,
+      items: [],
+      history: []
+    }
+  };
+  CAMPAIGNS_STATE.campaigns.push(camp86);
+  CAMPAIGNS_STATE.activeCampaignId = 'camp_bastion_test';
+
+  const b86 = getCampaignBastion(camp86);
+`, sandbox);
+
+let bastionTest = vm.runInContext("b86", sandbox);
+assert(bastionTest !== null && typeof bastionTest === 'object', 'Bastião foi inicializado com sucesso na campanha');
+assert(bastionTest.level === 5, 'Bastião inicia no Nível 5');
+assert(bastionTest.turnCount === 1, 'Bastião inicia na Semana / Turno 1');
+assert(bastionTest.defenders === 4, 'Bastião possui 4 defensores iniciais');
+assert(bastionTest.specialFacilities.length >= 2, 'Bastião possui instalações iniciais atribuídas');
+
+// 4. Execução de Ordem de Fabricação de Item com Débito no Baú
+vm.runInContext(`
+  const smithyFac = b86.specialFacilities.find(f => f.key === 'smithy') || b86.specialFacilities[0];
+  smithyFac.currentOrder = {
+    actionKey: 'craft_metal',
+    name: 'Forjar Armas & Armaduras de Metal',
+    durationDays: 7,
+    daysLeft: 7,
+    heroId: 'p_hero_borin',
+    selectedItem: { name: 'Espada Longa de Aço', costPO: 7 },
+    costPO: 7
+  };
+  camp86.partyStash.gold -= 7;
+`, sandbox);
+
+let goldAfterOrder = vm.runInContext("camp86.partyStash.gold", sandbox);
+assert(goldAfterOrder === 493, 'Custo de 7 PO foi debitado do Baú Coletivo do Grupo');
+
+// 5. Avanço de Turno (7 Dias) Concluindo a Ordem e Depositando Item no Baú
+vm.runInContext(`
+  advanceBastionTurn();
+`, sandbox);
+
+let updatedBastion = vm.runInContext("camp86.bastion", sandbox);
+let stashItems = vm.runInContext("camp86.partyStash.items", sandbox);
+assert(updatedBastion.turnCount === 2, 'Contador de turnos avançou para Semana 2');
+assert(stashItems.some(i => i.name === 'Espada Longa de Aço'), 'Espada Longa forjada foi depositada automaticamente no Baú do Grupo');
+assert(updatedBastion.history.length >= 2, 'Evento d100 semanal foi registrado no histórico do Bastião');
+
+// 6. Ordem de Renda Comercial da Guilda (+500 PO direto no Baú)
+vm.runInContext(`
+  const facGuild = {
+    id: 'fac_guild_test',
+    key: 'guildhall',
+    name: 'Sede da Guilda dos Cervejeiros',
+    currentOrder: {
+      actionKey: 'guild_trade_revenue',
+      name: 'Operação Mercantil de Guilda Semanal',
+      daysLeft: 7,
+      costPO: 0
+    }
+  };
+  camp86.bastion.specialFacilities.push(facGuild);
+  const goldBeforeGuild = camp86.partyStash.gold;
+  advanceBastionTurn();
+`, sandbox);
+
+let goldAfterGuild = vm.runInContext("camp86.partyStash.gold", sandbox);
+assert(goldAfterGuild >= 493 + 500, 'Sede de Guilda faturou +500 PO adicionados diretamente ao Baú Coletivo');
+
+// 7. Validação de Defesas e Muralhas
+vm.runInContext(`
+  camp86.bastion.walls = 'stone';
+`, sandbox);
+assert(vm.runInContext("BASTION_WALL_OPTIONS.stone.defenseDice", sandbox) === 4, 'Muralhas de Pedra reduzem o ataque inimigo para 4d6');
+
+// 8. Elementos no HTML Compilado
+const standalone118Html = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(standalone118Html.includes('bastion-panel-card'), 'HTML compilado contém .bastion-panel-card');
+assert(standalone118Html.includes('campaign-bastion-container'), 'HTML compilado contém #campaign-bastion-container');
+assert(standalone118Html.includes('modal-bastion-action'), 'HTML compilado contém modal de ações do bastião (#modal-bastion-action)');
+assert(standalone118Html.includes('modal-bastion-add-facility'), 'HTML compilado contém modal de adicionar sala (#modal-bastion-add-facility)');
+assert(standalone118Html.includes('modal-bastion-event'), 'HTML compilado contém modal de evento d100 (#modal-bastion-event)');
+assert(standalone118Html.includes('advanceBastionTurn'), 'HTML compilado contém função advanceBastionTurn');
+assert(standalone118Html.includes('BASTION_SPECIAL_FACILITIES_CATALOG'), 'HTML compilado contém BASTION_SPECIAL_FACILITIES_CATALOG');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

@@ -10592,6 +10592,216 @@
       color: #94a3b8;
     }
 
+    /* ==========================================================================
+       🏰 SISTEMA DE BASTIÕES COLETIVOS D&D 2024 / 5.5 EM PO (ISSUE-118)
+       ========================================================================== */
+    .bastion-panel-card {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 27, 75, 0.9) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+    .bastion-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-bottom: 1px solid rgba(245, 158, 11, 0.25);
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+    }
+    .bastion-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .bastion-title-text {
+      font-family: var(--font-title, serif);
+      font-size: 20px;
+      font-weight: 800;
+      color: #fef08a;
+      letter-spacing: 0.5px;
+    }
+    .bastion-badges-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .bastion-stat-pill {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .bastion-stat-pill-gold {
+      border-color: rgba(245, 158, 11, 0.5);
+      color: #fef08a;
+      background: rgba(245, 158, 11, 0.1);
+    }
+    .bastion-stat-pill-def {
+      border-color: rgba(56, 189, 248, 0.5);
+      color: #7dd3fc;
+      background: rgba(56, 189, 248, 0.1);
+    }
+    .bastion-stat-pill-lvl {
+      border-color: rgba(168, 85, 247, 0.5);
+      color: #d8b4fe;
+      background: rgba(168, 85, 247, 0.1);
+    }
+    .bastion-facilities-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .bastion-facility-card {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: all 0.2s ease-in-out;
+      position: relative;
+    }
+    .bastion-facility-card:hover {
+      border-color: rgba(245, 158, 11, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    }
+    .bastion-facility-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .bastion-facility-name {
+      font-weight: 800;
+      font-size: 14px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .bastion-facility-patron {
+      font-size: 11px;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .bastion-facility-patron strong {
+      color: #fef08a;
+    }
+    .bastion-order-box {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px dashed rgba(245, 158, 11, 0.3);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 11px;
+    }
+    .bastion-order-name {
+      font-weight: 700;
+      color: #6ee7b7;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .bastion-order-desc {
+      color: #cbd5e1;
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+    .bastion-order-progress {
+      font-size: 10px;
+      color: #fef08a;
+      margin-top: 4px;
+      font-weight: 700;
+    }
+    .bastion-actions-filter-bar {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .bastion-filter-chip {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #94a3b8;
+      border-radius: 16px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .bastion-filter-chip:hover {
+      border-color: rgba(245, 158, 11, 0.5);
+      color: #fff;
+    }
+    .bastion-filter-chip.active {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(180, 83, 9, 0.35) 100%);
+      border-color: #f59e0b;
+      color: #fef08a;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+    }
+    .bastion-action-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+    }
+    .bastion-action-card:hover {
+      border-color: rgba(245, 158, 11, 0.45);
+    }
+    .bastion-action-reward-box {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 11px;
+      color: #a7f3d0;
+      line-height: 1.4;
+    }
+    .bastion-event-banner {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(30, 58, 138, 0.25) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-top: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .bastion-event-title {
+      font-weight: 800;
+      font-size: 13px;
+      color: #7dd3fc;
+    }
+    .bastion-event-desc {
+      font-size: 11px;
+      color: #e2e8f0;
+      margin-top: 2px;
+      line-height: 1.4;
+    }
+
     @media (max-width: 900px) {
       .player-hp-btn, .btn-hp-adj, .btn-hp-dmg, .btn-hp-heal, .roll20-hp-btn {
         min-height: 44px;

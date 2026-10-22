@@ -1424,6 +1424,9 @@
 
         <!-- SEÇÃO DE NPCS CONTRATADOS & FOLHA DE PAGAMENTO DO GRUPO (OLD DRAGON 2 / 5E 100% PO) -->
         <div id="campaign-hirelings-container" style="margin-top: 14px;"></div>
+
+        <!-- 🏰 SEÇÃO DO BASTIÃO COLETIVO DO GRUPO (D&D 2024 / 5.5 EM PO - ISSUE-118) -->
+        <div id="campaign-bastion-container" style="margin-top: 16px;"></div>
       </div>
     </div>
 
@@ -4086,4 +4089,117 @@
 
   <!-- POPOVER: CONDIÇÕES RÁPIDAS NO COMBATE -->
   <div id="popover-combat-conditions" class="quick-cond-popover" style="display: none;" onclick="event.stopPropagation()"></div>
+
+  <!-- ===================================================
+       🏰 MODAIS DO SISTEMA DE BASTIÃO COLETIVO (ISSUE-118)
+       =================================================== -->
+
+  <!-- MODAL: EXECUTAR AÇÃO / ORDEM NO BASTIÃO -->
+  <div id="modal-bastion-action" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeBastionActionModal()">
+    <div class="modal-body" style="max-width: 820px; width: 95%;">
+      <div class="panel-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">🏰</span>
+          <span style="font-family: var(--font-title); font-size: 16px; font-weight: 800; color: #fef08a;">Emitir Ordem no Bastião</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span id="bastion-modal-gold-badge" class="badge badge-gold" style="font-size: 12px;">💰 Baú: 0 PO</span>
+          <button class="btn-secondary" onclick="closeBastionActionModal()">✕</button>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros por Nível -->
+      <div style="margin-top: 10px;">
+        <div style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px;">
+          Filtrar Ações por Nível de Desbloqueio:
+        </div>
+        <div class="bastion-actions-filter-bar">
+          <button type="button" class="bastion-filter-chip active" onclick="setBastionActionFilter('all', this)">⭐ Todas as Ações</button>
+          <button type="button" class="bastion-filter-chip" onclick="setBastionActionFilter(5, this)">🛡️ Nível 5 (Iniciais)</button>
+          <button type="button" class="bastion-filter-chip" onclick="setBastionActionFilter(9, this)">🔮 Nível 9 (Avançadas)</button>
+          <button type="button" class="bastion-filter-chip" onclick="setBastionActionFilter(13, this)">🏛️ Nível 13 (Heróicas)</button>
+          <button type="button" class="bastion-filter-chip" onclick="setBastionActionFilter(17, this)">👑 Nível 17 (Épicas)</button>
+        </div>
+      </div>
+
+      <!-- Seletor de Herói / Patrono Responsável -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: var(--primary-light);">Herói Atribuído à Ação:</label>
+          <select id="sel-bastion-action-hero" style="width: 100%; font-size: 12px;"></select>
+        </div>
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: var(--primary-light);">Instalação Vinculada:</label>
+          <select id="sel-bastion-action-facility" onchange="renderBastionActionsList()" style="width: 100%; font-size: 12px;"></select>
+        </div>
+      </div>
+
+      <!-- Lista de Ações Disponíveis -->
+      <div id="bastion-actions-list" style="max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px;"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+        <button type="button" class="btn-secondary" onclick="closeBastionActionModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADICIONAR INSTALAÇÃO ESPECIAL AO BASTIÃO -->
+  <div id="modal-bastion-add-facility" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeBastionAddFacilityModal()">
+    <div class="modal-body" style="max-width: 640px; width: 95%;">
+      <div class="panel-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">🏗️</span>
+          <span style="font-family: var(--font-title); font-size: 16px; font-weight: 800; color: #fef08a;">Adicionar Instalação Especial</span>
+        </div>
+        <button class="btn-secondary" onclick="closeBastionAddFacilityModal()">✕</button>
+      </div>
+
+      <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 10px;">
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: var(--primary-light);">Selecione a Instalação Especial (D&D 2024):</label>
+          <select id="sel-new-facility-key" onchange="updateNewFacilityPreview()" style="width: 100%; font-size: 13px;"></select>
+        </div>
+
+        <div id="new-facility-preview-card" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; font-size: 12px; color: #cbd5e1; line-height: 1.5;"></div>
+
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: var(--primary-light);">Herói Patrono / Gestor da Sala:</label>
+          <select id="sel-new-facility-patron" style="width: 100%; font-size: 13px;"></select>
+          <div style="font-size: 10px; color: #94a3b8; margin-top: 3px;">
+            Dica: O herói escolhido será o responsável pela sala e poderá usufruir de seus bônus exclusivos.
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+        <button type="button" class="btn-secondary" onclick="closeBastionAddFacilityModal()">Cancelar</button>
+        <button type="button" class="btn-action" onclick="confirmAddBastionFacility()" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 800;">➕ Adicionar Instalação</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EVENTO DE TURNO DO BASTIÃO (d100) -->
+  <div id="modal-bastion-event" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeBastionEventModal()">
+    <div class="modal-body" style="max-width: 520px; width: 95%;">
+      <div class="panel-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span id="bastion-event-icon" style="font-size: 24px;">🎲</span>
+          <span style="font-family: var(--font-title); font-size: 16px; font-weight: 800; color: #fef08a;">Evento de Turno do Bastião</span>
+        </div>
+        <button class="btn-secondary" onclick="closeBastionEventModal()">✕</button>
+      </div>
+
+      <div style="margin-top: 14px; text-align: center;">
+        <div id="bastion-event-roll-badge" style="font-size: 14px; font-weight: 800; color: #38bdf8; margin-bottom: 6px;">Resultado d100: [ - ]</div>
+        <div id="bastion-event-title-display" style="font-family: var(--font-title); font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px;">Título do Evento</div>
+        <div id="bastion-event-desc-display" style="font-size: 13px; color: #cbd5e1; line-height: 1.5; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); text-align: left;"></div>
+        <div id="bastion-event-resolution-display" style="margin-top: 10px; font-size: 12px; font-weight: 700; color: #6ee7b7; text-align: left;"></div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+        <button type="button" class="btn-action" onclick="closeBastionEventModal()">Entendido</button>
+      </div>
+    </div>
+  </div>
+
 

@@ -248,6 +248,9 @@ function renderCampaigns() {
 
   // 4. Renderiza NPCs Contratados & Folha de Pagamento do Grupo (Old Dragon 2 para 5E)
   renderCampaignHirelings(camp, campPlayers);
+
+  // 5. Renderiza Bastião Coletivo do Grupo (D&D 2024 / 5.5 em PO - ISSUE-118)
+  renderCampaignBastion(camp, campPlayers);
 }
 
 // --- DASHBOARD DE VISÃO GERAL DA CAMPANHA (DM3) ---
@@ -2217,6 +2220,834 @@ function renderChroniclesViewerContent() {
   `).join('');
 }
 
+// ==========================================================================
+// 🏰 SISTEMA DE BASTIÃO COLETIVO DO GRUPO (D&D 2024 / 5.5 EM PO - ISSUE-118)
+// ==========================================================================
+
+let currentBastionLevelFilter = 'all';
+
+function getCampaignBastion(camp) {
+  if (!camp) return null;
+  if (!camp.bastion) {
+    const defaultOwnerId = (camp.playerIds && camp.playerIds.length > 0) ? camp.playerIds[0] : "";
+    const secondOwnerId = (camp.playerIds && camp.playerIds.length > 1) ? camp.playerIds[1] : defaultOwnerId;
+    camp.bastion = {
+      name: "Fortaleza de " + (camp.name || "Aventureiros"),
+      location: "Fronteiras da Campanha",
+      level: 5,
+      turnCount: 1,
+      walls: "none",
+      defenders: 4,
+      specialFacilities: [
+        {
+          id: "fac_" + Date.now() + "_ws",
+          key: "workshop",
+          name: "Oficina de Artesanato",
+          patronId: defaultOwnerId,
+          currentOrder: null,
+          status: "active"
+        },
+        {
+          id: "fac_" + (Date.now() + 1) + "_gd",
+          key: "garden",
+          name: "Jardim de Ervas",
+          patronId: secondOwnerId,
+          currentOrder: null,
+          status: "active"
+        }
+      ],
+      activeBuffs: [],
+      history: [
+        {
+          turn: 1,
+          date: new Date().toISOString().split('T')[0],
+          title: "Fundação do Bastião",
+          desc: "O grupo adquiriu a posse da fortaleza conjunta como base permanente de operações."
+        }
+      ]
+    };
+    touchCampaign(camp);
+    saveCampaignsState();
+  }
+  return camp.bastion;
+}
+
+function renderCampaignBastion(camp, campPlayers) {
+  const container = document.getElementById('campaign-bastion-container');
+  if (!container || !camp) return;
+
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+
+  const wallOpt = (typeof BASTION_WALL_OPTIONS !== 'undefined') ? BASTION_WALL_OPTIONS[bastion.walls || 'none'] : { name: 'Sem Muralhas', defenseDice: 6 };
+  const goldAmount = camp.partyStash ? (camp.partyStash.gold || 0) : 0;
+  const lastEvent = bastion.history && bastion.history.length > 0 ? bastion.history[bastion.history.length - 1] : null;
+
+  let html = `
+    <div class="bastion-panel-card">
+      <div class="bastion-header-bar">
+        <div>
+          <div class="bastion-title-wrap">
+            <span style="font-size: 24px;">🏰</span>
+            <div>
+              <div class="bastion-title-text">${bastion.name}</div>
+              <div style="font-size: 11px; color: #cbd5e1; margin-top: 2px;">📍 ${bastion.location} • Base Conjunta da Campanha</div>
+            </div>
+          </div>
+        </div>
+        <div class="bastion-badges-row">
+          <span class="bastion-stat-pill bastion-stat-pill-lvl" title="Nível do Bastião desbloqueia novas instalações">⭐ Nível ${bastion.level || 5}</span>
+          <span class="bastion-stat-pill" style="border-color: #64748b; color: #e2e8f0;" title="Turno semanal de gestão">⏳ Semana ${bastion.turnCount || 1}</span>
+          <span class="bastion-stat-pill bastion-stat-pill-def" title="Defensores da guarnição permanente">🛡️ ${bastion.defenders || 0} Defensores</span>
+          <span class="bastion-stat-pill" style="border-color: #f59e0b; color: #fef08a;" title="Status das muralhas">🧱 ${wallOpt ? wallOpt.name : 'Muralhas'}</span>
+          <span class="bastion-stat-pill bastion-stat-pill-gold" title="Ouro total disponível no Baú do Grupo">💰 Baú: ${goldAmount} PO</span>
+        </div>
+      </div>
+
+      <!-- Barra de Ações Principais do Bastião -->
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; background: rgba(0,0,0,0.25); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button type="button" class="btn-action" style="font-size: 12px; font-weight: 800; background: linear-gradient(135deg, #10b981, #059669); color: #fff;" onclick="openBastionActionModal()">
+            ➕ Emitir Ordem no Bastião
+          </button>
+          <button type="button" class="btn-secondary" style="font-size: 11px;" onclick="openBastionAddFacilityModal()">
+            🏗️ Adicionar Instalação Especial
+          </button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" onclick="promptUpgradeBastionWalls()">
+            🧱 Aprimorar Muralhas
+          </button>
+        </div>
+        <div>
+          <button type="button" class="btn-action" style="font-size: 12px; font-weight: 800; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; box-shadow: 0 0 12px rgba(139, 92, 246, 0.4);" onclick="advanceBastionTurn()">
+            🎲 Avançar Turno do Bastião (7 Dias)
+          </button>
+        </div>
+      </div>
+
+      <!-- Grid de Instalações Especiais -->
+      <div style="margin-top: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 11px; font-weight: 800; color: var(--primary-light); text-transform: uppercase; letter-spacing: 0.5px;">
+            Salas & Instalações Especiais da Fortaleza (${(bastion.specialFacilities || []).length}):
+          </span>
+          <span style="font-size: 10px; color: #94a3b8;">Cada jogador pode ser gestor de suas salas</span>
+        </div>
+
+        <div class="bastion-facilities-grid">
+  `;
+
+  if (!bastion.specialFacilities || bastion.specialFacilities.length === 0) {
+    html += `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 24px; color: #94a3b8; font-size: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+        Nenhuma instalação especial construída. Clique em <b>"🏗️ Adicionar Instalação Especial"</b> para começar!
+      </div>
+    `;
+  } else {
+    bastion.specialFacilities.forEach(fac => {
+      const cat = (typeof BASTION_SPECIAL_FACILITIES_CATALOG !== 'undefined') ? BASTION_SPECIAL_FACILITIES_CATALOG[fac.key] : null;
+      const patronHero = campPlayers.find(p => String(p.id) === String(fac.patronId));
+      const patronName = patronHero ? patronHero.name : (fac.patronId ? 'Herói Vinculado' : 'Sem Patrono Definido');
+      const icon = cat ? cat.icon : '🏛️';
+      const order = fac.currentOrder;
+
+      html += `
+        <div class="bastion-facility-card">
+          <div class="bastion-facility-header">
+            <div>
+              <div class="bastion-facility-name">
+                <span>${icon}</span>
+                <span>${fac.name || (cat ? cat.name : 'Instalação')}</span>
+              </div>
+              <div class="bastion-facility-patron">
+                <span>👤 Patrono:</span>
+                <strong>${patronName}</strong>
+              </div>
+            </div>
+            <div style="display: flex; gap: 4px;">
+              <button type="button" class="btn-micro" style="color: #f87171;" onclick="removeBastionFacility('${fac.id}')" title="Desativar/Excluir esta sala">🗑️</button>
+            </div>
+          </div>
+
+          <div style="font-size: 11px; color: #94a3b8; line-height: 1.4;">
+            ${cat ? cat.desc : 'Instalação ativa da base coletiva.'}
+          </div>
+
+          <div class="bastion-order-box">
+            ${order ? `
+              <div class="bastion-order-name">
+                <span>⚙️ Ordem Ativa:</span>
+                <span>${order.name}</span>
+              </div>
+              <div class="bastion-order-desc">
+                ${order.selectedItem ? `<b>Item em confecção:</b> ${order.selectedItem.name}` : (order.rewardDesc || 'Em execução')}
+              </div>
+              <div class="bastion-order-progress">
+                ⏳ Restam ${order.daysLeft} dias para conclusão (avança a cada turno semanal)
+              </div>
+            ` : `
+              <div style="color: #94a3b8; font-style: italic; display: flex; justify-content: space-between; align-items: center;">
+                <span>Sem ordem em andamento.</span>
+                <button type="button" class="btn-secondary" style="font-size: 10px; padding: 2px 8px; color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);" onclick="openBastionActionModal('${fac.id}')">
+                  ⚡ Dar Ordem
+                </button>
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  html += `</div></div>`;
+
+  // Banner do Último Evento Semanal do Bastião
+  if (lastEvent) {
+    html += `
+      <div class="bastion-event-banner">
+        <span style="font-size: 20px;">📜</span>
+        <div style="flex: 1;">
+          <div class="bastion-event-title">Último Acontecimento (Semana ${lastEvent.turn}): ${lastEvent.title}</div>
+          <div class="bastion-event-desc">${lastEvent.desc}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+// Abre o Modal de Ações com Filtro por Nível e Seletores de Itens
+function openBastionActionModal(preselectedFacId = null) {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+
+  // Atualiza saldo de ouro no modal
+  const goldEl = document.getElementById('bastion-modal-gold-badge');
+  if (goldEl) goldEl.innerText = `💰 Baú: ${camp.partyStash?.gold || 0} PO`;
+
+  // Popula seletor de heróis
+  const selHero = document.getElementById('sel-bastion-action-hero');
+  if (selHero) {
+    const heroes = (camp.playerIds || []).map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p);
+    selHero.innerHTML = heroes.length > 0 ? heroes.map(h => `
+      <option value="${h.id}">${h.name} (${h.className || 'Herói'} Nv.${h.level || 1})</option>
+    `).join('') : '<option value="">Sem heróis na campanha</option>';
+  }
+
+  // Popula seletor de instalações
+  const selFac = document.getElementById('sel-bastion-action-facility');
+  if (selFac) {
+    selFac.innerHTML = (bastion.specialFacilities || []).map(f => {
+      const cat = (typeof BASTION_SPECIAL_FACILITIES_CATALOG !== 'undefined') ? BASTION_SPECIAL_FACILITIES_CATALOG[f.key] : null;
+      return `<option value="${f.id}" ${f.id === preselectedFacId ? 'selected' : ''}>${cat ? cat.icon : '🏛️'} ${f.name || cat?.name} (Nv.${cat?.levelReq || 5})</option>`;
+    }).join('');
+  }
+
+  renderBastionActionsList();
+
+  const modal = document.getElementById('modal-bastion-action');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeBastionActionModal() {
+  const modal = document.getElementById('modal-bastion-action');
+  if (modal) modal.style.display = 'none';
+}
+
+function setBastionActionFilter(lvl, btnEl) {
+  currentBastionLevelFilter = lvl;
+  const chips = document.querySelectorAll('.bastion-filter-chip');
+  chips.forEach(c => c.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+  renderBastionActionsList();
+}
+
+function renderBastionActionsList() {
+  const listContainer = document.getElementById('bastion-actions-list');
+  if (!listContainer) return;
+
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const bastion = getCampaignBastion(camp);
+  const selFac = document.getElementById('sel-bastion-action-facility');
+  const selectedFacId = selFac ? selFac.value : null;
+  const selectedFac = (bastion?.specialFacilities || []).find(f => f.id === selectedFacId);
+  const currentGold = camp.partyStash?.gold || 0;
+
+  if (typeof BASTION_ACTIONS_CATALOG === 'undefined') {
+    listContainer.innerHTML = '<div style="color:#94a3b8;">Catálogo de ações indisponível.</div>';
+    return;
+  }
+
+  let actions = Object.values(BASTION_ACTIONS_CATALOG);
+
+  // Se uma instalação estiver selecionada, prioriza as ordens permitidas dela
+  if (selectedFac) {
+    const cat = BASTION_SPECIAL_FACILITIES_CATALOG[selectedFac.key];
+    if (cat && cat.orders && cat.orders.length > 0) {
+      actions = actions.filter(act => cat.orders.includes(act.key) || act.facilityKey === selectedFac.key);
+    }
+  }
+
+  // Filtra por nível se selecionado
+  if (currentBastionLevelFilter !== 'all') {
+    const reqLvl = parseInt(currentBastionLevelFilter);
+    actions = actions.filter(act => act.levelReq === reqLvl);
+  }
+
+  if (actions.length === 0) {
+    listContainer.innerHTML = `
+      <div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+        Nenhuma ação disponível para os filtros selecionados ou para esta instalação.
+      </div>
+    `;
+    return;
+  }
+
+  listContainer.innerHTML = actions.map(act => {
+    let costDisplay = `${act.costPO} PO`;
+    if (act.costType === 'metal_half') costDisplay = '50% do valor da tabela em PO';
+    if (act.costType === 'spell_circle') costDisplay = '50 PO por círculo de magia';
+    if (act.costType === 'item_base') costDisplay = 'Valor base do item em PO';
+
+    const canAfford = currentGold >= (act.costPO || 0);
+
+    return `
+      <div class="bastion-action-card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; flex-wrap: wrap;">
+          <div>
+            <div style="font-weight: 800; font-size: 14px; color: #fff; display: flex; align-items: center; gap: 6px;">
+              <span>⚡</span>
+              <span>${act.name}</span>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center; margin-top: 4px;">
+              <span class="badge badge-lvl" style="font-size: 10px;">⭐ Requer Nível ${act.levelReq}</span>
+              <span class="badge badge-gold" style="font-size: 10px;">💰 Custo: ${costDisplay}</span>
+              <span class="badge" style="font-size: 10px; background: rgba(255,255,255,0.1); color: #cbd5e1;">⏳ Tempo: ${act.durationDays} dias</span>
+            </div>
+          </div>
+          <button type="button" class="btn-action" style="padding: 6px 14px; font-size: 11px; font-weight: 800; background: ${canAfford ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'rgba(100,116,139,0.4)'}; color: ${canAfford ? '#000' : '#94a3b8'};"
+            onclick="triggerActivateBastionAction('${act.key}')" ${!canAfford && act.costPO > 0 ? 'disabled' : ''}>
+            ${canAfford || act.costPO === 0 ? '✔️ Ativar Ordem' : '❌ Saldo Insuficiente no Baú'}
+          </button>
+        </div>
+
+        <!-- Seletor de Item Dinâmico se a ação permitir confecção de itens -->
+        ${act.hasItemSelector ? renderActionItemSelectorHtml(act) : ''}
+
+        <div class="bastion-action-reward-box">
+          <b>🎁 Recompensa / Benefício:</b> ${act.rewardDesc}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Renderiza o Seletor de Itens com opções inteligentes integradas ao banco de dados
+function renderActionItemSelectorHtml(act) {
+  let optionsHtml = '';
+
+  if (act.category === 'metal_arms') {
+    const metalWeapons = [
+      { name: 'Armadura de Placas Completa', cost: 750, orig: 1500 },
+      { name: 'Cota de Malha Pesada', cost: 37, orig: 75 },
+      { name: 'Couraça de Aço (Breastplate)', cost: 200, orig: 400 },
+      { name: 'Espada Longa de Aço', cost: 7, orig: 15 },
+      { name: 'Espadão de Duas Mãos', cost: 25, orig: 50 },
+      { name: 'Machado Grande Marcial', cost: 15, orig: 30 },
+      { name: 'Escudo Reforçado de Ferro', cost: 5, orig: 10 }
+    ];
+    optionsHtml = metalWeapons.map(w => `<option value="${w.name}|${w.cost}">${w.name} (Por ${w.cost} PO - 50% desc.)</option>`).join('');
+  } else if (act.category === 'magic_arms') {
+    const magicArms = [
+      { name: 'Espada Longa +1', cost: 200 },
+      { name: 'Machado Grande +1', cost: 200 },
+      { name: 'Arco Longo +1', cost: 200 },
+      { name: 'Escudo +1', cost: 200 },
+      { name: 'Armadura de Mithral', cost: 200 }
+    ];
+    optionsHtml = magicArms.map(m => `<option value="${m.name}|${m.cost}">${m.name} (${m.cost} PO - Incomum)</option>`).join('');
+  } else if (act.category === 'potions') {
+    const potions = [
+      { name: 'Poção Maior de Cura (4d4+4)', cost: 100 },
+      { name: 'Poção de Força do Gigante da Colina', cost: 100 },
+      { name: 'Poção de Invisibilidade Rápida', cost: 100 },
+      { name: 'Poção de Respiração Aquática', cost: 100 },
+      { name: 'Antídoto Refinado de Venenos', cost: 50 }
+    ];
+    optionsHtml = potions.map(p => `<option value="${p.name}|${p.cost}">${p.name} (${p.cost} PO)</option>`).join('');
+  } else if (act.category === 'spells') {
+    const scrolls = [
+      { name: 'Pergaminho de Mísseis Mágicos (1º Círculo)', cost: 50 },
+      { name: 'Pergaminho de Escudo Arcano (1º Círculo)', cost: 50 },
+      { name: 'Pergaminho de Invisibilidade (2º Círculo)', cost: 100 },
+      { name: 'Pergaminho de Passo Nebuloso (2º Círculo)', cost: 100 },
+      { name: 'Pergaminho de Bola de Fogo (3º Círculo)', cost: 150 },
+      { name: 'Pergaminho de Relâmpago (3º Círculo)', cost: 150 }
+    ];
+    optionsHtml = scrolls.map(s => `<option value="${s.name}|${s.cost}">${s.name} (${s.cost} PO)</option>`).join('');
+  } else if (act.category === 'magic_arcana') {
+    const arcanaItems = [
+      { name: 'Varinha do Mago de Guerra +1', cost: 200 },
+      { name: 'Pérola do Poder', cost: 200 },
+      { name: 'Mochila de Carga (Bag of Holding)', cost: 200 },
+      { name: 'Corda de Escalada Mágica', cost: 150 },
+      { name: 'Óculos Noturnos (Darkvision)', cost: 200 }
+    ];
+    optionsHtml = arcanaItems.map(a => `<option value="${a.name}|${a.cost}">${a.name} (${a.cost} PO)</option>`).join('');
+  } else {
+    optionsHtml = `
+      <option value="Mochila de Aventureiro Completa|10">Mochila de Aventureiro Completa (10 PO)</option>
+      <option value="Kit de Ferramentas de Ladrão|25">Kit de Ferramentas de Ladrão (25 PO)</option>
+      <option value="Corda de Seda (15m)|10">Corda de Seda 15m (10 PO)</option>
+      <option value="Tochas e Óleo (Kit)|5">Kit de Tochas e Óleo (5 PO)</option>
+    `;
+  }
+
+  return `
+    <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 10px;">
+      <label style="font-size: 11px; font-weight: 700; color: #fef08a;">📦 Selecione o Item a ser Fabricado:</label>
+      <select id="sel-item-for-${act.key}" style="width: 100%; font-size: 12px; margin-top: 4px;">
+        ${optionsHtml}
+        <option value="CUSTOM">➕ Item Personalizado / Sob Medida...</option>
+      </select>
+    </div>
+  `;
+}
+
+function triggerActivateBastionAction(actionKey) {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const bastion = getCampaignBastion(camp);
+  const selFac = document.getElementById('sel-bastion-action-facility');
+  const selHero = document.getElementById('sel-bastion-action-hero');
+  const facId = selFac ? selFac.value : null;
+  const heroId = selHero ? selHero.value : null;
+
+  const fac = (bastion?.specialFacilities || []).find(f => f.id === facId);
+  if (!fac) {
+    alert('Por favor, selecione uma instalação válida.');
+    return;
+  }
+
+  const act = (typeof BASTION_ACTIONS_CATALOG !== 'undefined') ? BASTION_ACTIONS_CATALOG[actionKey] : null;
+  if (!act) return;
+
+  let selectedItem = null;
+  let finalCost = act.costPO || 0;
+
+  if (act.hasItemSelector) {
+    const selItemEl = document.getElementById(`sel-item-for-${act.key}`);
+    const selVal = selItemEl ? selItemEl.value : '';
+    if (selVal === 'CUSTOM') {
+      const customName = prompt('Digite o nome do item personalizado que deseja fabricar:');
+      if (!customName) return;
+      const customCostStr = prompt('Digite o custo de materiais em PO acordado com o Mestre:', '50');
+      finalCost = parseInt(customCostStr) || 0;
+      selectedItem = { name: customName, costPO: finalCost, type: 'custom' };
+    } else if (selVal.includes('|')) {
+      const parts = selVal.split('|');
+      selectedItem = { name: parts[0], costPO: parseInt(parts[1]) || 0 };
+      finalCost = selectedItem.costPO;
+    }
+  }
+
+  const currentGold = camp.partyStash?.gold || 0;
+  if (finalCost > currentGold) {
+    alert(`Saldo insuficiente no Baú Coletivo! Custo: ${finalCost} PO. Saldo atual: ${currentGold} PO.`);
+    return;
+  }
+
+  // Deduz do Baú do Grupo se houver custo
+  if (finalCost > 0) {
+    camp.partyStash.gold -= finalCost;
+    camp.partyStash.history = camp.partyStash.history || [];
+    camp.partyStash.history.push({
+      date: new Date().toISOString().split('T')[0],
+      text: `🏰 Bastião: -${finalCost} PO para iniciar "${act.name}" na ${fac.name}`,
+      type: 'gold_out'
+    });
+  }
+
+  fac.currentOrder = {
+    actionKey: act.key,
+    name: act.name,
+    durationDays: act.durationDays || 7,
+    daysLeft: act.durationDays || 7,
+    heroId: heroId,
+    selectedItem: selectedItem,
+    rewardDesc: act.rewardDesc,
+    rewardItem: act.rewardItem,
+    costPO: finalCost
+  };
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+
+  closeBastionActionModal();
+  renderCampaigns();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+
+  if (typeof addLog === 'function') {
+    addLog(`🏰 <b>Bastião:</b> Ordem "${act.name}" iniciada na ${fac.name}. Custo: ${finalCost} PO debitados do Baú.`);
+  }
+}
+
+// Avança 7 dias no tempo do Bastião, processa ordens concluídas e rola na Tabela d100 de Eventos
+function advanceBastionTurn() {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+
+  bastion.turnCount = (bastion.turnCount || 1) + 1;
+  const completedOrders = [];
+
+  // 1. Processa as ordens das instalações especiais
+  (bastion.specialFacilities || []).forEach(fac => {
+    if (fac.currentOrder) {
+      fac.currentOrder.daysLeft -= 7;
+      if (fac.currentOrder.daysLeft <= 0) {
+        completedOrders.push({ fac, order: fac.currentOrder });
+
+        // Adiciona item concluído no Baú Coletivo
+        if (fac.currentOrder.selectedItem) {
+          camp.partyStash.items = camp.partyStash.items || [];
+          camp.partyStash.items.push({
+            id: 'it_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+            name: fac.currentOrder.selectedItem.name,
+            qty: 1,
+            category: 'Fabricação do Bastião',
+            carrier: 'Baú do Grupo',
+            desc: `Item fabricado no Bastião pela ordem "${fac.currentOrder.name}".`
+          });
+          camp.partyStash.history.push({
+            date: new Date().toISOString().split('T')[0],
+            text: `+1x ${fac.currentOrder.selectedItem.name} fabricado na ${fac.name}`,
+            type: 'item_in'
+          });
+        } else if (fac.currentOrder.rewardItem) {
+          const rItem = fac.currentOrder.rewardItem;
+          camp.partyStash.items = camp.partyStash.items || [];
+          camp.partyStash.items.push({
+            id: 'it_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+            name: rItem.name,
+            qty: rItem.qty || 1,
+            category: 'Produção do Bastião',
+            carrier: 'Baú do Grupo',
+            desc: rItem.desc || 'Produzido nas instalações da fortaleza.'
+          });
+          camp.partyStash.history.push({
+            date: new Date().toISOString().split('T')[0],
+            text: `+${rItem.qty || 1}x ${rItem.name} produzido no Bastião`,
+            type: 'item_in'
+          });
+        }
+
+        // Faturamento comercial direto para o Baú
+        if (fac.currentOrder.actionKey === 'run_gambling_night') {
+          const profit = Math.floor(Math.random() * 90) + 30; // 30 a 120 PO
+          camp.partyStash.gold = (camp.partyStash.gold || 0) + profit;
+          camp.partyStash.history.push({
+            date: new Date().toISOString().split('T')[0],
+            text: `+${profit} PO lucro da Noite de Jogatina no Bastião`,
+            type: 'gold_in'
+          });
+        } else if (fac.currentOrder.actionKey === 'trade_commodities') {
+          const profit = Math.floor(Math.random() * 100) + 50; // 50 a 150 PO
+          camp.partyStash.gold = (camp.partyStash.gold || 0) + profit;
+          camp.partyStash.history.push({
+            date: new Date().toISOString().split('T')[0],
+            text: `+${profit} PO lucro de caravanas no Depósito Comercial`,
+            type: 'gold_in'
+          });
+        } else if (fac.currentOrder.actionKey === 'guild_trade_revenue') {
+          camp.partyStash.gold = (camp.partyStash.gold || 0) + 500;
+          camp.partyStash.history.push({
+            date: new Date().toISOString().split('T')[0],
+            text: `+500 PO receita fixa semanal da Sede de Guilda`,
+            type: 'gold_in'
+          });
+        } else if (fac.currentOrder.actionKey === 'recruit_defenders') {
+          bastion.defenders = Math.min(12, (bastion.defenders || 0) + 4);
+        }
+
+        fac.currentOrder = null;
+      }
+    }
+  });
+
+  // 2. Rola na Tabela de Eventos Semanal de Bastião (d100)
+  const d100 = Math.floor(Math.random() * 100) + 1;
+  let eventEntry = null;
+  if (typeof BASTION_EVENTS_TABLE !== 'undefined') {
+    eventEntry = BASTION_EVENTS_TABLE.find(e => d100 >= e.range[0] && d100 <= e.range[1]);
+  }
+  if (!eventEntry) {
+    eventEntry = { title: "Tudo em Paz", icon: "🕊️", desc: "A semana transcorre normalmente no Bastião.", effect: "none" };
+  }
+
+  let resolutionText = "";
+
+  // Resolução mecânica do evento
+  if (eventEntry.effect === 'attack') {
+    const wallOpt = BASTION_WALL_OPTIONS[bastion.walls || 'none'];
+    const diceCount = wallOpt ? wallOpt.defenseDice : 6;
+    let onesRolled = 0;
+    const rolls = [];
+    for (let i = 0; i < diceCount; i++) {
+      const r = Math.floor(Math.random() * 6) + 1;
+      rolls.push(r);
+      if (r === 1) onesRolled++;
+    }
+
+    if (bastion.defenders > 0) {
+      const lost = Math.min(bastion.defenders, onesRolled);
+      bastion.defenders -= lost;
+      resolutionText = `Defensores resistiram ao ataque! Rolagem de invasão (${diceCount}d6): [${rolls.join(', ')}]. Perdas: ${lost} defensores. Restam: ${bastion.defenders}.`;
+    } else {
+      resolutionText = `Sem defensores! A fortaleza sofreu danos leves e uma das salas precisará de reparos.`;
+    }
+  } else if (eventEntry.effect === 'treasure') {
+    camp.partyStash.gold = (camp.partyStash.gold || 0) + 150;
+    camp.partyStash.history.push({
+      date: new Date().toISOString().split('T')[0],
+      text: `+150 PO tesouro escondido encontrado no Bastião`,
+      type: 'gold_in'
+    });
+    resolutionText = `Ouro antigo (+150 PO) adicionado diretamente ao Baú Coletivo do Grupo!`;
+  } else if (eventEntry.effect === 'blessing') {
+    camp.partyStash.gold = (camp.partyStash.gold || 0) + 300;
+    camp.partyStash.history.push({
+      date: new Date().toISOString().split('T')[0],
+      text: `+300 PO bênção divina no Bastião`,
+      type: 'gold_in'
+    });
+    resolutionText = `Bênção sagrada concedida! +300 PO creditados no Baú Coletivo e todos os heróis revigorados!`;
+  } else if (eventEntry.effect === 'recruits') {
+    bastion.defenders = Math.min(12, (bastion.defenders || 0) + 2);
+    resolutionText = `+2 guardas leais voluntários juntaram-se à guarnição da fortaleza!`;
+  } else {
+    resolutionText = `Nenhum dano sofrido. As atividades rotineiras prosseguem com tranquilidade.`;
+  }
+
+  // Grava histórico
+  bastion.history = bastion.history || [];
+  bastion.history.push({
+    turn: bastion.turnCount,
+    date: new Date().toISOString().split('T')[0],
+    roll: d100,
+    title: eventEntry.title,
+    desc: eventEntry.desc,
+    resolution: resolutionText
+  });
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+
+  renderCampaigns();
+  renderPartyStashViewer();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+
+  // Exibe o modal de Evento
+  const evIcon = document.getElementById('bastion-event-icon');
+  const evRoll = document.getElementById('bastion-event-roll-badge');
+  const evTitle = document.getElementById('bastion-event-title-display');
+  const evDesc = document.getElementById('bastion-event-desc-display');
+  const evRes = document.getElementById('bastion-event-resolution-display');
+
+  if (evIcon) evIcon.innerText = eventEntry.icon || '🎲';
+  if (evRoll) evRoll.innerText = `Resultado d100: [ ${d100} ] • Turno ${bastion.turnCount}`;
+  if (evTitle) evTitle.innerText = eventEntry.title;
+  if (evDesc) evDesc.innerText = eventEntry.desc;
+  if (evRes) evRes.innerHTML = `<b>Resolução:</b> ${resolutionText}`;
+
+  const evModal = document.getElementById('modal-bastion-event');
+  if (evModal) evModal.style.display = 'flex';
+
+  if (typeof addLog === 'function') {
+    addLog(`🏰 <b>Turno do Bastião (${bastion.turnCount}):</b> d100 = ${d100} (${eventEntry.title}). ${completedOrders.length} ordens concluídas.`);
+  }
+}
+
+function closeBastionEventModal() {
+  const modal = document.getElementById('modal-bastion-event');
+  if (modal) modal.style.display = 'none';
+}
+
+function openBastionAddFacilityModal() {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const bastion = getCampaignBastion(camp);
+  const selKey = document.getElementById('sel-new-facility-key');
+  const selPatron = document.getElementById('sel-new-facility-patron');
+
+  if (selKey && typeof BASTION_SPECIAL_FACILITIES_CATALOG !== 'undefined') {
+    selKey.innerHTML = Object.values(BASTION_SPECIAL_FACILITIES_CATALOG).map(f => `
+      <option value="${f.key}">Nv.${f.levelReq} • ${f.icon} ${f.name}</option>
+    `).join('');
+  }
+
+  if (selPatron) {
+    const heroes = (camp.playerIds || []).map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p);
+    selPatron.innerHTML = heroes.length > 0 ? heroes.map(h => `
+      <option value="${h.id}">${h.name} (${h.className || 'Herói'})</option>
+    `).join('') : '<option value="">Sem herói específico</option>';
+  }
+
+  updateNewFacilityPreview();
+
+  const modal = document.getElementById('modal-bastion-add-facility');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeBastionAddFacilityModal() {
+  const modal = document.getElementById('modal-bastion-add-facility');
+  if (modal) modal.style.display = 'none';
+}
+
+function updateNewFacilityPreview() {
+  const preview = document.getElementById('new-facility-preview-card');
+  const selKey = document.getElementById('sel-new-facility-key');
+  if (!preview || !selKey) return;
+
+  const cat = (typeof BASTION_SPECIAL_FACILITIES_CATALOG !== 'undefined') ? BASTION_SPECIAL_FACILITIES_CATALOG[selKey.value] : null;
+  if (!cat) {
+    preview.innerHTML = '';
+    return;
+  }
+
+  preview.innerHTML = `
+    <div style="font-weight: 800; font-size: 14px; color: #fef08a; display: flex; align-items: center; gap: 6px;">
+      <span>${cat.icon}</span>
+      <span>${cat.name} (Desbloqueio: Nível ${cat.levelReq})</span>
+    </div>
+    <div style="margin-top: 4px; color: #e2e8f0;">${cat.desc}</div>
+    <div style="margin-top: 6px; font-size: 11px; color: #6ee7b7;">
+      <b>Serviçais Dedicados:</b> ${cat.hirelingsCount || 1} contratado(s) mantendo a instalação.
+    </div>
+  `;
+}
+
+function confirmAddBastionFacility() {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const bastion = getCampaignBastion(camp);
+  const selKey = document.getElementById('sel-new-facility-key');
+  const selPatron = document.getElementById('sel-new-facility-patron');
+
+  const key = selKey ? selKey.value : '';
+  const patronId = selPatron ? selPatron.value : '';
+  const cat = (typeof BASTION_SPECIAL_FACILITIES_CATALOG !== 'undefined') ? BASTION_SPECIAL_FACILITIES_CATALOG[key] : null;
+
+  if (!cat) return;
+
+  bastion.specialFacilities = bastion.specialFacilities || [];
+  bastion.specialFacilities.push({
+    id: 'fac_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+    key: cat.key,
+    name: cat.name,
+    patronId: patronId,
+    currentOrder: null,
+    status: 'active'
+  });
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+
+  closeBastionAddFacilityModal();
+  renderCampaigns();
+  if (typeof addLog === 'function') addLog(`🏗️ <b>Bastião:</b> Nova instalação "${cat.name}" adicionada à fortaleza.`);
+}
+
+function removeBastionFacility(facId) {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const bastion = getCampaignBastion(camp);
+  if (!bastion || !bastion.specialFacilities) return;
+
+  const fac = bastion.specialFacilities.find(f => f.id === facId);
+  if (!fac) return;
+
+  if (confirm(`Deseja realmente desmantelar a instalação "${fac.name}" da fortaleza?`)) {
+    bastion.specialFacilities = bastion.specialFacilities.filter(f => f.id !== facId);
+    touchCampaign(camp);
+    saveCampaignsState();
+    if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+    renderCampaigns();
+    if (typeof addLog === 'function') addLog(`🗑️ <b>Bastião:</b> Instalação "${fac.name}" desmantelada.`);
+  }
+}
+
+function promptUpgradeBastionWalls() {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+
+  const currentGold = camp.partyStash?.gold || 0;
+  const choice = prompt(
+    `🏰 APRIMORAMENTO DE MURALHAS DO BASTIÃO\n` +
+    `Muralha Atual: ${bastion.walls === 'stone' ? 'Pedra Maciça' : (bastion.walls === 'wood' ? 'Paliçada de Madeira' : 'Nenhuma')}\n` +
+    `Saldo no Baú: ${currentGold} PO\n\n` +
+    `Escolha uma opção:\n` +
+    `1 - Paliçada de Madeira Reforçada (250 PO, Defesa 5d6)\n` +
+    `2 - Muralhas de Pedra Maciça (1000 PO, Reduz invasão para 4d6!)\n` +
+    `0 - Cancelar`
+  );
+
+  if (choice === '1') {
+    if (currentGold < 250) {
+      alert('Saldo insuficiente no Baú! Necessário 250 PO.');
+      return;
+    }
+    camp.partyStash.gold -= 250;
+    camp.partyStash.history.push({
+      date: new Date().toISOString().split('T')[0],
+      text: `-250 PO para erguer Paliçada de Madeira no Bastião`,
+      type: 'gold_out'
+    });
+    bastion.walls = 'wood';
+    touchCampaign(camp);
+    saveCampaignsState();
+    renderCampaigns();
+    if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+    alert('Paliçada de Madeira construída com sucesso ao redor do Bastião!');
+  } else if (choice === '2') {
+    if (currentGold < 1000) {
+      alert('Saldo insuficiente no Baú! Necessário 1000 PO.');
+      return;
+    }
+    camp.partyStash.gold -= 1000;
+    camp.partyStash.history.push({
+      date: new Date().toISOString().split('T')[0],
+      text: `-1000 PO para erguer Muralhas de Pedra no Bastião`,
+      type: 'gold_out'
+    });
+    bastion.walls = 'stone';
+    touchCampaign(camp);
+    saveCampaignsState();
+    renderCampaigns();
+    if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+    alert('Muralhas de Pedra Maciça e Portão de Ferro erguidos com sucesso!');
+  }
+}
+
+
 // Vincula em window para uso no browser
 if (typeof window !== 'undefined') {
   window.touchCampaign = touchCampaign;
@@ -2268,7 +3099,22 @@ if (typeof module !== 'undefined' && module.exports) {
     trackDeletedPartyItemId,
     getDeletedPartyItemIds,
     deleteCurrentCampaign,
-    saveCampaignForm
+    saveCampaignForm,
+    getCampaignBastion,
+    renderCampaignBastion,
+    openBastionActionModal,
+    closeBastionActionModal,
+    setBastionActionFilter,
+    renderBastionActionsList,
+    triggerActivateBastionAction,
+    advanceBastionTurn,
+    closeBastionEventModal,
+    openBastionAddFacilityModal,
+    closeBastionAddFacilityModal,
+    updateNewFacilityPreview,
+    confirmAddBastionFacility,
+    removeBastionFacility,
+    promptUpgradeBastionWalls
   };
 }
 
@@ -2286,6 +3132,21 @@ if (typeof window !== 'undefined') {
   window.closeAddCampaignHirelingModal = closeAddCampaignHirelingModal;
   window.saveNewCampaignHireling = saveNewCampaignHireling;
   window.onHirelingPresetChange = onHirelingPresetChange;
+  window.getCampaignBastion = getCampaignBastion;
+  window.renderCampaignBastion = renderCampaignBastion;
+  window.openBastionActionModal = openBastionActionModal;
+  window.closeBastionActionModal = closeBastionActionModal;
+  window.setBastionActionFilter = setBastionActionFilter;
+  window.renderBastionActionsList = renderBastionActionsList;
+  window.triggerActivateBastionAction = triggerActivateBastionAction;
+  window.advanceBastionTurn = advanceBastionTurn;
+  window.closeBastionEventModal = closeBastionEventModal;
+  window.openBastionAddFacilityModal = openBastionAddFacilityModal;
+  window.closeBastionAddFacilityModal = closeBastionAddFacilityModal;
+  window.updateNewFacilityPreview = updateNewFacilityPreview;
+  window.confirmAddBastionFacility = confirmAddBastionFacility;
+  window.removeBastionFacility = removeBastionFacility;
+  window.promptUpgradeBastionWalls = promptUpgradeBastionWalls;
 }
 
 // Auto-carregamento imediato na avaliação do módulo

@@ -1758,7 +1758,7 @@ function renderPlayers() {
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'combat' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'combat')">⚔️ Ações</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'spells' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'spells')">✨ Magias</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'inventory' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'inventory')">🎒 Inventário (${(p.inventory || []).length})</button>
-              <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'hirelings' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'hirelings')">👥 Lacaios (${(p.hirelings || []).length})</button>
+              <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'hirelings' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'hirelings')">👥 Lacaios & Bastião</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'traits' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'traits')">📜 Traços</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'notes' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'notes')">📝 Notas</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'about' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'about')">👤 Sobre</button>
@@ -2195,6 +2195,51 @@ function renderPlayers() {
                       </div>
                     `;
                   }).join('')}
+                </div>
+
+                <!-- 🏰 SALAS SOB GESTÃO DESTE HERÓI NO BASTIÃO DO GRUPO (D&D 2024 / 5.5) -->
+                <div style="margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span class="roll20-panel-title" style="margin: 0; border: none; padding: 0; font-size: 11px;">🏰 SALAS NO BASTIÃO COLETIVO</span>
+                    <button type="button" class="btn-secondary" style="font-size: 10px; padding: 2px 7px;" onclick="if(typeof openBastionActionModal==='function') openBastionActionModal()">⚡ Ações do Bastião</button>
+                  </div>
+
+                  ${(() => {
+                    const activeCamp = (typeof getActiveCampaign === 'function') ? getActiveCampaign() : null;
+                    const bastion = (activeCamp && typeof getCampaignBastion === 'function') ? getCampaignBastion(activeCamp) : null;
+                    if (!bastion) {
+                      return `<div style="font-size: 11px; color: var(--text-dim); font-style: italic;">Nenhum Bastião ativo na campanha vinculada.</div>`;
+                    }
+                    const myFacilities = (bastion.specialFacilities || []).filter(f => String(f.patronId) === String(p.id));
+                    if (myFacilities.length === 0) {
+                      return `
+                        <div style="font-size: 11px; color: var(--text-dim); background: rgba(0,0,0,0.25); padding: 8px 10px; border-radius: 6px; border: 1px dashed rgba(255,255,255,0.1);">
+                          📍 ${p.name} ainda não possui salas atribuídas no <b>${bastion.name}</b>.<br>
+                          Acesse a aba <b>Campanhas</b> para vincular uma sala especial a este herói!
+                        </div>
+                      `;
+                    }
+                    return `
+                      <div style="display: flex; flex-direction: column; gap: 6px;">
+                        ${myFacilities.map(f => {
+                          const cat = (typeof BASTION_SPECIAL_FACILITIES_CATALOG !== 'undefined') ? BASTION_SPECIAL_FACILITIES_CATALOG[f.key] : null;
+                          const icon = cat ? cat.icon : '🏛️';
+                          const order = f.currentOrder;
+                          return `
+                            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 6px; padding: 8px 10px; font-size: 11px;">
+                              <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: 800; color: #fff;">${icon} ${f.name}</span>
+                                <span class="badge badge-lvl" style="font-size: 9px;">Nv.${cat?.levelReq || 5}</span>
+                              </div>
+                              <div style="margin-top: 4px; color: ${order ? '#a7f3d0' : '#94a3b8'};">
+                                ${order ? `⚙️ <b>Ordem ativa:</b> ${order.name} (${order.daysLeft} dias restantes)` : 'Nenhuma ordem ativa.'}
+                              </div>
+                            </div>
+                          `;
+                        }).join('')}
+                      </div>
+                    `;
+                  })()}
                 </div>
               </div>
 
