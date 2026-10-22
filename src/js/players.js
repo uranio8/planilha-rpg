@@ -1560,8 +1560,10 @@ function renderPlayers() {
           <!-- CARD DE PERFIL DO HERÓI -->
           <div class="roll20-hero-card">
             <div class="roll20-avatar-box" onclick="openAvatarModal('${p.id}')" title="Alterar Avatar / Foto">
-              ${avatarDisplay}
-              <div class="roll20-level-shield">${p.level}</div>
+              <div class="roll20-avatar-img-wrap">
+                ${avatarDisplay}
+              </div>
+              <div class="roll20-level-shield" title="Nível ${p.level}">Nv ${p.level}</div>
             </div>
 
             <div class="roll20-hero-info">
@@ -1572,6 +1574,7 @@ function renderPlayers() {
                     <button type="button" class="btn-micro roll20-btn-tool" onclick="openPlayerModal('${p.id}')" title="Editar Ficha Completa">✏️</button>
                     <button type="button" class="btn-micro roll20-btn-tool" onclick="openSharePlayerModal('${p.id}')" title="Compartilhar Link/QR Code">📱</button>
                     <button type="button" class="btn-micro roll20-btn-tool" onclick="togglePlayerCardCompact('${p.id}')" title="Alternar Modo Compacto">📏</button>
+                    <span class="roll20-tool-divider"></span>
                     <button type="button" class="btn-micro roll20-btn-tool roll20-btn-tool-del" onclick="deletePlayer('${p.id}')" title="Excluir Personagem">🗑️</button>
                   </div>
                 </div>
@@ -1591,7 +1594,7 @@ function renderPlayers() {
                   ⭐ Inspiração ${p.inspiration ? '✓' : ''}
                 </button>
                 <button type="button" class="roll20-btn-init" onclick="rollPlayerAttr('${p.id}', 'dex')" title="Rolar Teste de Iniciativa (d20 + ${dexMod})">
-                  INICIATIVA ${dexMod >= 0 ? '+' + dexMod : dexMod}
+                  <span>🎲</span> INICIATIVA ${dexMod >= 0 ? '+' + dexMod : dexMod}
                 </button>
                 <button type="button" class="btn-secondary" style="font-size: 10.5px; padding: 4px 8px;" onclick="openLevelUpWizard('${p.id}')" title="Subir de Nível e Multiclasse">
                   🔼 Nv
@@ -1835,11 +1838,11 @@ function renderPlayers() {
                 </div>
               </div>
 
-              <!-- ABA 2: MAGIAS & CONJURAÇÃO -->
+              <!-- ABA 2: MAGIAS & CONJURAÇÃO (ISSUE-116) -->
               <div class="roll20-tab-panel" style="display: ${activeRoll20Tab === 'spells' ? 'block' : 'none'};">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div class="roll20-spells-tab-header">
                   <span class="roll20-panel-title" style="margin: 0; border: none; padding: 0;">🔮 GRIMÓRIO & ESPAÇOS DE MAGIA</span>
-                  <button type="button" class="btn-secondary player-spell-picker-btn" style="font-size: 10px; padding: 2px 8px;" onclick="openSpellPickerModal('${p.id}')">📖 Gerenciar Magias</button>
+                  <button type="button" class="btn-secondary player-spell-picker-btn" onclick="openSpellPickerModal('${p.id}')">📖 Gerenciar Magias</button>
                 </div>
 
                 <!-- HUD DE CONJURAÇÃO -->
@@ -1869,25 +1872,77 @@ function renderPlayers() {
                 <!-- SLOTS DE MAGIA -->
                 ${slotsHtml}
 
-                <!-- MAGIAS PREPARADAS E TRUQUES -->
+                <!-- TODAS AS MAGIAS CONHECIDAS E SELETOR DE PREPARAÇÃO DA SESSÃO -->
                 <div style="margin-top: 8px;">
                   ${(() => {
-                    const isWizard = isWizardPlayer(p);
-                    if (isWizard) ensurePlayerSpellbook(p);
-                    const currentView = (isWizard && playerSpellbookViews[p.id] === 'spellbook') ? 'spellbook' : 'prepared';
-                    const prepInfo = typeof getMaxPreparedSpells === 'function' ? getMaxPreparedSpells(p) : { isKnownCaster: false };
-                    const rawList = currentView === 'spellbook' ? (p.spellbookSpells || []) : (p.preparedSpells || []);
-                    
+                    const allKnown = typeof getPlayerKnownSpells === 'function' ? getPlayerKnownSpells(p) : ((p.preparedSpells || []));
+                    const prepInfo = typeof getMaxPreparedSpells === 'function' ? getMaxPreparedSpells(p) : { isKnownCaster: false, maxLeveled: 0, formula: '' };
+                    const curFilter = (typeof sheetSpellFilters !== 'undefined' && sheetSpellFilters[p.id]) ? sheetSpellFilters[p.id] : 'all';
+
+                    const prepLeveledCount = allKnown.filter(sName => {
+                      const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+                      const isCantrip = sp ? sp.level === 0 : false;
+                      return !isCantrip && (p.preparedSpells || []).includes(sName);
+                    }).length;
+
+                    const prepTotalCount = allKnown.filter(sName => {
+                      const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+                      const isCantrip = sp ? sp.level === 0 : false;
+                      return isCantrip || (p.preparedSpells || []).includes(sName);
+                    }).length;
+
+                    let rawList = allKnown;
+                    if (curFilter === 'prepared') {
+                      rawList = allKnown.filter(sName => {
+                        const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+                        const isCantrip = sp ? sp.level === 0 : false;
+                        return isCantrip || (p.preparedSpells || []).includes(sName);
+                      });
+                    }
+
+                    let prepBarHtml = '';
+                    if (prepInfo.isPreparedCaster || (!prepInfo.isKnownCaster && prepInfo.maxLeveled > 0)) {
+                      const isOver = prepInfo.maxLeveled > 0 && prepLeveledCount > prepInfo.maxLeveled;
+                      prepBarHtml = `
+                        <div class="sheet-spells-prep-bar">
+                          <div class="sheet-spells-prep-info">
+                            <span>🔮 <b>Preparadas para a Sessão:</b> <b class="prep-count-num ${isOver ? 'over' : ''}">${prepLeveledCount} / ${prepInfo.maxLeveled}</b> <span style="color:#94a3b8; font-size:10.5px;">(${prepInfo.formula})</span></span>
+                          </div>
+                          <div class="sheet-spell-filter-chips">
+                            <button type="button" class="sheet-spell-filter-chip ${curFilter === 'all' ? 'active' : ''}" onclick="setSheetSpellFilter('${p.id}', 'all')">🌐 Todas as Conhecidas (${allKnown.length})</button>
+                            <button type="button" class="sheet-spell-filter-chip ${curFilter === 'prepared' ? 'active' : ''}" onclick="setSheetSpellFilter('${p.id}', 'prepared')">⭐ Apenas Preparadas (${prepTotalCount})</button>
+                          </div>
+                        </div>
+                      `;
+                    } else if (prepInfo.isKnownCaster) {
+                      prepBarHtml = `
+                        <div class="sheet-spells-prep-bar">
+                          <div class="sheet-spells-prep-info">
+                            <span>🔮 <b>Magias Conhecidas (${prepInfo.className}):</b> <b class="prep-count-num">${allKnown.length} ${prepInfo.maxLeveled ? '/ ' + prepInfo.maxLeveled : ''}</b></span>
+                          </div>
+                          <div class="sheet-spell-filter-chips">
+                            <span style="font-size:10.5px; color:#a7f3d0;">✨ Todas sempre ativas para a sessão</span>
+                          </div>
+                        </div>
+                      `;
+                    }
+
                     if (!rawList || rawList.length === 0) {
                       return `
-                        <div style="text-align: center; padding: 16px; background: rgba(0,0,0,0.25); border: 1px dashed var(--border-color); border-radius: 6px; font-size: 11px; color: var(--text-dim);">
-                          Nenhuma magia preparada no momento.<br>
-                          <button type="button" class="btn-action" style="font-size: 10px; margin-top: 6px; padding: 3px 8px;" onclick="openSpellPickerModal('${p.id}')">✨ Escolher Magias</button>
+                        ${prepBarHtml}
+                        <div style="text-align: center; padding: 20px; background: rgba(0,0,0,0.25); border: 1px dashed var(--border-color); border-radius: 8px; font-size: 11.5px; color: var(--text-dim); margin-top: 6px;">
+                          ${curFilter === 'prepared' 
+                            ? 'Nenhuma magia foi preparada ainda para esta sessão.<br><span style="font-size:10.5px; color:#cbd5e1;">Mude para <b>"🌐 Todas as Conhecidas"</b> acima para escolher as que deseja preparar.</span>' 
+                            : 'Nenhuma magia cadastrada ou conhecida no momento.<br><span style="font-size:10.5px; color:#cbd5e1;">Clique no botão abaixo para escolher do compêndio D&D 5E.</span>'}
+                          <div style="margin-top: 8px;">
+                            <button type="button" class="btn-action" style="font-size: 11px; padding: 4px 10px;" onclick="openSpellPickerModal('${p.id}')">✨ Escolher Magias</button>
+                          </div>
                         </div>
                       `;
                     }
 
                     return `
+                      ${prepBarHtml}
                       <div class="player-spells-chips-grid">
                         ${rawList.map(sName => {
                           const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
@@ -1896,10 +1951,10 @@ function renderPlayers() {
                           const school = sp ? sp.school : '';
                           const range = sp ? sp.range : '';
                           const diceInfo = typeof getSpellDiceInfo === 'function' ? getSpellDiceInfo(sp || sName, p) : null;
-                          const isPrep = (p.preparedSpells || []).includes(sName);
+                          const isPrep = isCantrip || (p.preparedSpells || []).includes(sName);
 
                           return `
-                            <div class="spell-action-chip player-spell-card-tactile" onclick="openSpellQuickView('${escapeAttr(sName)}', '${p.id}', event)">
+                            <div class="spell-action-chip player-spell-card-tactile ${isPrep ? 'is-prep' : 'is-unprep'}" onclick="openSpellQuickView('${escapeAttr(sName)}', '${p.id}', event)">
                               <div class="spell-chip-top">
                                 <div class="spell-chip-name" title="${escapeAttr(sName)}">${sName}</div>
                                 <div style="display:flex; align-items:center; gap:4px;">
@@ -1920,15 +1975,19 @@ function renderPlayers() {
                               ` : ''}
                               <div class="spell-chip-actions-bar" onclick="event.stopPropagation()">
                                 <button type="button" class="btn-spell-cast" onclick="event.stopPropagation(); castPlayerSpellPrompt('${p.id}', '${escapeAttr(sName)}')" title="Lançar Magia">⚡ Lançar</button>
-                                ${prepInfo.isKnownCaster ? `
-                                  <span class="badge badge-spell-known" style="font-size: 9.5px; padding: 2px 6px; cursor: default;" title="Magia Conhecida Fixa (D&D 5E)">
+                                ${isCantrip ? `
+                                  <span class="badge" style="background: rgba(16,185,129,0.2); color:#6ee7b7; border: 1px solid rgba(16,185,129,0.4); font-size: 9.5px; padding: 2px 6px;">
+                                    ✨ Truque
+                                  </span>
+                                ` : (prepInfo.isKnownCaster ? `
+                                  <span class="badge badge-spell-known" title="Magia Conhecida Fixa (D&D 5E)">
                                     🔮 Conhecida
                                   </span>
                                 ` : `
-                                  <button type="button" class="btn-spell-prep-toggle ${isPrep ? 'active' : ''}" onclick="event.stopPropagation(); togglePlayerSpellPrepared('${p.id}', '${escapeAttr(sName)}')">
-                                    ⭐ ${isCantrip ? 'Truque' : (isPrep ? 'Prep' : 'Não prep')}
+                                  <button type="button" class="btn-spell-prep-toggle ${isPrep ? 'active' : ''}" onclick="event.stopPropagation(); togglePlayerSpellPrepared('${p.id}', '${escapeAttr(sName)}')" title="Clique para ${isPrep ? 'desmarcar' : 'preparar para a sessão'}">
+                                    ${isPrep ? '⭐ Preparada' : '💤 Não prep'}
                                   </button>
-                                `}
+                                `)}
                               </div>
                             </div>
                           `;
@@ -4520,19 +4579,96 @@ function rollPlayerSpellAttack(playerId, customD20) {
   return { d20, total, isCrit, isFumble };
 }
 
+const sheetSpellFilters = {};
+function setSheetSpellFilter(playerId, filter) {
+  sheetSpellFilters[playerId] = filter || 'all';
+  if (typeof renderPlayers === 'function') renderPlayers();
+}
+
+function getPlayerKnownSpells(p) {
+  if (!p) return [];
+  const knownSet = new Set();
+
+  if (Array.isArray(p.preparedSpells)) {
+    p.preparedSpells.forEach(s => { if (s && typeof s === 'string') knownSet.add(s.trim()); });
+  }
+  if (Array.isArray(p.spellbookSpells)) {
+    p.spellbookSpells.forEach(s => { if (s && typeof s === 'string') knownSet.add(s.trim()); });
+  }
+  if (Array.isArray(p.knownSpells)) {
+    p.knownSpells.forEach(s => { if (s && typeof s === 'string') knownSet.add(s.trim()); });
+  }
+
+  // Reconciliação se p.spells tiver texto
+  if (p.spells && typeof p.spells === 'string' && typeof SPELLS_DATA !== 'undefined') {
+    const rawText = p.spells.toLowerCase();
+    SPELLS_DATA.forEach(sp => {
+      const spNameLower = sp.name.toLowerCase();
+      if (rawText.includes(spNameLower)) {
+        knownSet.add(sp.name);
+      } else if (typeof SPELL_PHRASE_ALIASES !== 'undefined') {
+        for (const [alias, ptName] of Object.entries(SPELL_PHRASE_ALIASES)) {
+          if (ptName === spNameLower && rawText.includes(alias)) {
+            knownSet.add(sp.name);
+            break;
+          }
+        }
+      }
+    });
+  }
+
+  const list = Array.from(knownSet);
+  // Persiste em p.spellbookSpells para segurança contra perdas
+  p.spellbookSpells = [...list];
+
+  // Ordenação por círculo e nome
+  list.sort((a, b) => {
+    const spA = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === a.toLowerCase()) : null;
+    const spB = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === b.toLowerCase()) : null;
+    const lvlA = spA ? spA.level : 99;
+    const lvlB = spB ? spB.level : 99;
+    if (lvlA !== lvlB) return lvlA - lvlB;
+    return a.localeCompare(b, 'pt-BR');
+  });
+
+  return list;
+}
+
 function togglePlayerSpellPrepared(playerId, spellName) {
   const p = PLAYERS.find(x => x.id === playerId);
   if (!p) return;
   p.preparedSpells = p.preparedSpells || [];
+  if (!p.spellbookSpells) p.spellbookSpells = [];
 
-  if (p.preparedSpells.includes(spellName)) {
+  // Garante que a magia continue em spellbookSpells (nunca some da ficha do herói!)
+  if (!p.spellbookSpells.includes(spellName)) {
+    p.spellbookSpells.push(spellName);
+  }
+
+  const isPrep = p.preparedSpells.includes(spellName);
+  if (isPrep) {
     p.preparedSpells = p.preparedSpells.filter(s => s !== spellName);
-    addLog(`💤 <b>${p.name}</b> desmarcou a magia <b>${spellName}</b> das preparadas.`);
+    if (typeof addLog === 'function') addLog(`💤 <b>${p.name}</b> desmarcou a magia <b>${spellName}</b> das preparadas da sessão.`);
+    if (typeof showToast === 'function') showToast(`💤 "${spellName}" desmarcada das preparadas`, 'info');
   } else {
     p.preparedSpells.push(spellName);
     if (typeof playFX === 'function') playFX('heal');
-    addLog(`🔮 <b>${p.name}</b> preparou a magia <b>${spellName}</b> para o dia.`);
+    if (typeof addLog === 'function') addLog(`⭐ <b>${p.name}</b> preparou a magia <b>${spellName}</b> para a sessão.`);
+    if (typeof showToast === 'function') showToast(`⭐ "${spellName}" preparada para a sessão!`, 'success');
   }
+
+  // Atualiza p.spells com resumo formatado
+  const cantrips = [];
+  const leveled = [];
+  p.preparedSpells.forEach(sName => {
+    const s = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(x => x.name.toLowerCase() === sName.toLowerCase()) : null;
+    if (s && s.level === 0) cantrips.push(sName);
+    else leveled.push(sName);
+  });
+  let summary = '';
+  if (cantrips.length > 0) summary += `Truques: ${cantrips.join(', ')}\n`;
+  if (leveled.length > 0) summary += `Preparadas: ${leveled.join(', ')}`;
+  if (summary) p.spells = summary.trim();
 
   if (typeof touchPlayer === 'function') touchPlayer(p);
   renderPlayers();
@@ -5546,15 +5682,32 @@ function copySpellToSpellbook(playerId, spellName, isFree = false) {
   }
 
   p.spellbookSpells.push(spellName);
+
+  // Auto-preparação: se o herói ainda tiver vagas livres de preparação diária, já inclui nas preparadas para a sessão!
+  if (!p.preparedSpells) p.preparedSpells = [];
+  const prepInfo = typeof getMaxPreparedSpells === 'function' ? getMaxPreparedSpells(p) : null;
+  const currentPrepLeveled = p.preparedSpells.filter(s => {
+    const spObj = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(x => x.name.toLowerCase() === s.toLowerCase()) : null;
+    return !spObj || spObj.level > 0;
+  }).length;
+  let autoPrepped = false;
+  if (prepInfo && prepInfo.maxLeveled && currentPrepLeveled < prepInfo.maxLeveled) {
+    if (!p.preparedSpells.includes(spellName)) {
+      p.preparedSpells.push(spellName);
+      autoPrepped = true;
+    }
+  }
+
   if (typeof touchPlayer === 'function') touchPlayer(p);
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
 
   const costMsg = isFree || costInfo.gold === 0 ? 'gratuitamente' : `gastando ${costInfo.gold} PO e ${costInfo.hours} horas`;
+  const prepMsg = autoPrepped ? ' e preparada para a sessão!' : '';
   if (typeof addLog === 'function') {
-    addLog(`📖 <b>${p.name}</b> transcreveu a magia <b>${spellName}</b> no seu Grimório (${costMsg}).`);
+    addLog(`📖 <b>${p.name}</b> transcreveu a magia <b>${spellName}</b> no seu Grimório (${costMsg})${prepMsg}.`);
   }
   if (typeof showToast === 'function') {
-    showToast(`✨ "${spellName}" transcrita no Grimório! (${costMsg})`, 'success');
+    showToast(`✨ "${spellName}" transcrita no Grimório! (${costMsg})${prepMsg}`, 'success');
   }
   if (typeof playFX === 'function') playFX('spell');
 
@@ -5686,6 +5839,7 @@ function openSpellPickerModal(playerId) {
     ensurePlayerSpellbook(p);
   }
   pickerMode = 'prep';
+  pickerHasChanges = false;
 
   // Se preparedSpells já existe, usa; senão tenta extrair de p.spells
   let initialSpells = Array.isArray(p.preparedSpells) ? [...p.preparedSpells] : [];
@@ -5714,11 +5868,17 @@ function openSpellPickerModal(playerId) {
   const btnOnlySelected = document.getElementById('btn-picker-only-selected');
   const wizardTabs = document.getElementById('picker-wizard-tabs');
   const copyBanner = document.getElementById('picker-copy-banner');
+  const saveBtn = document.getElementById('btn-save-spell-picker');
 
   if (classFilterSelect) classFilterSelect.value = 'auto';
   if (actionFilterSelect) actionFilterSelect.value = 'all';
   if (searchInput) searchInput.value = '';
   if (btnOnlySelected) btnOnlySelected.classList.remove('active');
+
+  const prepInfo = typeof getMaxPreparedSpells === 'function' ? getMaxPreparedSpells(p) : { isKnownCaster: false };
+  if (saveBtn) {
+    saveBtn.innerText = prepInfo.isKnownCaster ? 'Salvar Magias Conhecidas' : 'Salvar Magias da Sessão';
+  }
 
   if (wizardTabs) {
     wizardTabs.style.display = isWiz ? 'flex' : 'none';
@@ -6069,6 +6229,8 @@ function handlePickerSchoolFilter(school) {
   renderSpellPickerList();
 }
 
+let pickerHasChanges = false;
+
 function toggleSpellInPicker(spellName) {
   if (pickerSelectedSpells.has(spellName)) {
     pickerSelectedSpells.delete(spellName);
@@ -6076,17 +6238,23 @@ function toggleSpellInPicker(spellName) {
     pickerSelectedSpells.add(spellName);
     if (typeof playFX === 'function') playFX('heal');
   }
+  pickerHasChanges = true;
   renderSpellPickerList();
 }
 
-function saveSpellPickerSelection() {
+function saveSpellPickerSelection(isSilent = false) {
   const p = PLAYERS.find(x => x.id === currentPickerPlayerId);
   if (!p) return;
 
   p.preparedSpells = Array.from(pickerSelectedSpells);
-  if (isWizardPlayer(p)) {
-    ensurePlayerSpellbook(p);
-  }
+  
+  // Assegura que todas as magias escolhidas fiquem guardadas no repertório permanente (p.spellbookSpells)
+  if (!Array.isArray(p.spellbookSpells)) p.spellbookSpells = [];
+  p.preparedSpells.forEach(sName => {
+    if (!p.spellbookSpells.includes(sName)) {
+      p.spellbookSpells.push(sName);
+    }
+  });
 
   const cantrips = [];
   const leveled = [];
@@ -6101,20 +6269,33 @@ function saveSpellPickerSelection() {
   if (leveled.length > 0) summary += `Preparadas: ${leveled.join(', ')}`;
   if (summary) p.spells = summary.trim();
 
-  closeSpellPickerModal();
+  pickerHasChanges = false;
+  const modal = document.getElementById('modal-spell-picker');
+  if (modal) modal.classList.remove('open');
+
   if (typeof touchPlayer === 'function') touchPlayer(p);
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
   if (typeof broadcastStateSync === 'function') broadcastStateSync();
-  if (typeof playFX === 'function') playFX('heal');
-  addLog(`📖 <b>${p.name}</b> atualizou suas magias preparadas (${p.preparedSpells.length} magias salvas com sucesso).`);
+  if (!isSilent) {
+    if (typeof playFX === 'function') playFX('heal');
+    if (typeof showToast === 'function') showToast(`✨ Magias salvas com sucesso (${p.preparedSpells.length} preparadas)!`, 'success');
+  }
+  addLog(`📖 <b>${p.name}</b> atualizou suas magias (${p.preparedSpells.length} magias ativas salvas).`);
 }
 
 function closeSpellPickerModal() {
   const modal = document.getElementById('modal-spell-picker');
-  if (modal) modal.classList.remove('open');
+  if (modal && modal.classList.contains('open')) {
+    // Se houve alterações feitas pelo jogador, auto-salva para garantir que nada seja perdido!
+    if (pickerHasChanges && currentPickerPlayerId) {
+      saveSpellPickerSelection(true);
+      if (typeof showToast === 'function') showToast(`✨ Magias selecionadas foram salvas automaticamente!`, 'success');
+    }
+    modal.classList.remove('open');
+  }
 }
 
 let activeCastPlayerId = null;
@@ -10240,6 +10421,9 @@ if (typeof window !== 'undefined') {
   window.rollPlayerSavingThrow = rollPlayerSavingThrow;
   window.rollPlayerAttr = rollPlayerAttr;
   window.rollPlayerSpellAttack = rollPlayerSpellAttack;
+  window.getPlayerKnownSpells = getPlayerKnownSpells;
+  window.setSheetSpellFilter = setSheetSpellFilter;
+  window.sheetSpellFilters = sheetSpellFilters;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -10356,6 +10540,9 @@ if (typeof module !== 'undefined' && module.exports) {
     togglePlayerSpellbookView,
     switchPickerMode,
     playerSpellbookViews,
+    getPlayerKnownSpells,
+    setSheetSpellFilter,
+    sheetSpellFilters,
 
     // ISSUE-105: Experiência do Jogador, Concentração e Salvaguardas da Morte
     openDeathSavesModal,

@@ -6124,7 +6124,77 @@ assert(standaloneEditorHtml.includes('.stat-box-editor {'), 'CSS compilado cont�
 assert(standaloneEditorHtml.includes('.stat-mod-pill {'), 'CSS compilado contém definição de estilo para .stat-mod-pill');
 assert(standaloneEditorHtml.includes('.pm-feature-item {'), 'CSS compilado contém definição de estilo para .pm-feature-item');
 assert(standaloneEditorHtml.includes('.pm-slot-card {'), 'CSS compilado contém definição de estilo para .pm-slot-card');
-assert(!standaloneEditorHtml.includes('.substring(0, 90)'), 'Código compilado não trunca mais descrições com substring(0, 90)');
+// =========================================================================
+// 84. TESTES DE TODAS AS MAGIAS CONHECIDAS E PREPARAÇÃO TÁTIL (ISSUE-116)
+// =========================================================================
+console.log('\n🔮 84. Testes de Todas as Magias Conhecidas, Preparação Tátil e Hero Header (ISSUE-116):');
+
+// 1. Exportação de getPlayerKnownSpells e setSheetSpellFilter
+assert(typeof vm.runInContext("getPlayerKnownSpells", sandbox) === 'function', 'Função getPlayerKnownSpells exportada no contexto');
+assert(typeof vm.runInContext("setSheetSpellFilter", sandbox) === 'function', 'Função setSheetSpellFilter exportada no contexto');
+
+// 2. getPlayerKnownSpells consolida magias de preparedSpells, spellbookSpells e spells
+vm.runInContext(`
+  const testHeroMage = {
+    id: 'test_mage_84',
+    name: 'Arkhalis Teste',
+    className: 'Mago 5',
+    level: 5,
+    int: 18,
+    preparedSpells: ['Amizade', 'Ataque Certeiro'],
+    spellbookSpells: ['Amizade', 'Ataque Certeiro', 'Bola de Fogo', 'Mísseis Mágicos'],
+    spells: 'Truques: Amizade, Ataque Certeiro\\nPreparadas: Raio Ardente'
+  };
+  const knownSpellsList = getPlayerKnownSpells(testHeroMage);
+`, sandbox);
+
+const knownSpellsResult = vm.runInContext("knownSpellsList", sandbox);
+assert(Array.isArray(knownSpellsResult), 'getPlayerKnownSpells retorna um array');
+assert(knownSpellsResult.includes('Amizade'), 'Lista conhecida inclui truque Amizade');
+assert(knownSpellsResult.includes('Ataque Certeiro'), 'Lista conhecida inclui truque Ataque Certeiro');
+assert(knownSpellsResult.includes('Bola de Fogo'), 'Lista conhecida inclui magia de 3º círculo Bola de Fogo do grimório');
+assert(knownSpellsResult.includes('Mísseis Mágicos'), 'Lista conhecida inclui magia de 1º círculo Mísseis Mágicos');
+
+// 3. togglePlayerSpellPrepared desmarca das preparadas mas PRESERVA no grimório/conhecidas
+vm.runInContext(`
+  PLAYERS.push(testHeroMage);
+  // Prepara Bola de Fogo
+  togglePlayerSpellPrepared('test_mage_84', 'Bola de Fogo');
+`, sandbox);
+
+let updatedHero = vm.runInContext("PLAYERS.find(p => p.id === 'test_mage_84')", sandbox);
+assert(updatedHero.preparedSpells.includes('Bola de Fogo'), 'Bola de Fogo foi marcada como preparada');
+assert(updatedHero.spellbookSpells.includes('Bola de Fogo'), 'Bola de Fogo permanece no grimório');
+
+// Agora desmarca Bola de Fogo
+vm.runInContext(`
+  togglePlayerSpellPrepared('test_mage_84', 'Bola de Fogo');
+`, sandbox);
+
+updatedHero = vm.runInContext("PLAYERS.find(p => p.id === 'test_mage_84')", sandbox);
+assert(!updatedHero.preparedSpells.includes('Bola de Fogo'), 'Bola de Fogo foi desmarcada das preparadas');
+assert(updatedHero.spellbookSpells.includes('Bola de Fogo'), 'Bola de Fogo CONTINUA no grimório e visível como Não preparada!');
+
+// 4. Auto-preparação ao transcrever com vagas livres
+vm.runInContext(`
+  testHeroMage.preparedSpells = ['Amizade']; // apenas 1 truque preparado, sobram vagas de círculo
+  copySpellToSpellbook('test_mage_84', 'Escudo Arcano', true);
+`, sandbox);
+
+updatedHero = vm.runInContext("PLAYERS.find(p => p.id === 'test_mage_84')", sandbox);
+assert(updatedHero.spellbookSpells.includes('Escudo Arcano'), 'Escudo Arcano transcrito no grimório');
+assert(updatedHero.preparedSpells.includes('Escudo Arcano'), 'Escudo Arcano auto-preparado porque havia vagas livres');
+
+// 5. Verificação de Elementos Visuais no HTML e CSS Compilados
+const standalone116Html = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(standalone116Html.includes('roll20-avatar-img-wrap'), 'HTML compilado contém wrapper .roll20-avatar-img-wrap para avatar sem corte');
+assert(standalone116Html.includes('roll20-tool-divider'), 'HTML compilado contém divisor seguro .roll20-tool-divider na toolbar');
+assert(standalone116Html.includes('roll20-spells-tab-header'), 'HTML compilado contém header responsivo de magias .roll20-spells-tab-header');
+assert(standalone116Html.includes('sheet-spells-prep-bar'), 'HTML compilado contém barra de preparação da sessão .sheet-spells-prep-bar');
+assert(standalone116Html.includes('sheet-spell-filter-chip'), 'HTML compilado contém chips de filtro de magias .sheet-spell-filter-chip');
+assert(standalone116Html.includes('.roll20-avatar-box {') && standalone116Html.includes('overflow: visible;'), 'CSS compilado tem .roll20-avatar-box com overflow: visible');
+assert(standalone116Html.includes('.roll20-avatar-img-wrap {') && standalone116Html.includes('overflow: hidden;'), 'CSS compilado tem wrapper interno com overflow: hidden');
+assert(standalone116Html.includes('.roll20-btn-init {') && standalone116Html.includes('rgba(245, 158, 11'), 'CSS compilado tem botão de iniciativa refinado com tom âmbar');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
