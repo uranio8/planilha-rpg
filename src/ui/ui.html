@@ -1421,6 +1421,9 @@
             </div>
           </div>
         </div>
+
+        <!-- SEÇÃO DE NPCS CONTRATADOS & FOLHA DE PAGAMENTO DO GRUPO (OLD DRAGON 2 / 5E 100% PO) -->
+        <div id="campaign-hirelings-container" style="margin-top: 14px;"></div>
       </div>
     </div>
 
@@ -2687,6 +2690,65 @@
       <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
         <button class="btn-secondary" onclick="closePartyItemModal()">Cancelar</button>
         <button class="btn-action" onclick="savePartyItem()">Salvar Item no Baú</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CONTRATAR NPC (OLD DRAGON 2 / 5E 100% PO) -->
+  <div id="modal-campaign-hireling" class="modal-overlay" style="z-index: 2200;">
+    <div class="modal-body" style="max-width: 520px;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <span style="font-weight: 800; font-size: 16px; color: #fff;">👥 Contratar NPC (Ajudante / Mercenário / Aprendiz)</span>
+        <button class="btn-secondary" onclick="closeAddCampaignHirelingModal()">✕</button>
+      </div>
+
+      <div style="margin-top: 12px;">
+        <label>Selecione um Modelo do Livro de Regras:</label>
+        <select id="sel-hireling-preset" onchange="onHirelingPresetChange()" style="width: 100%; margin-bottom: 10px;"></select>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+        <div>
+          <label>Nome do Contratado</label>
+          <input type="text" id="inp-hireling-name" placeholder="Ex: Tobias, Guarda Barlok, Aprendiz Eric">
+        </div>
+        <div>
+          <label>Empregador / Vínculo</label>
+          <select id="sel-hireling-employer"></select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-top: 8px;">
+        <div>
+          <label>Custo (PO)</label>
+          <input type="number" id="inp-hireling-cost" value="1" min="0">
+        </div>
+        <div>
+          <label>Período</label>
+          <select id="sel-hireling-period">
+            <option value="semana">Por Semana</option>
+            <option value="mês">Por Mês</option>
+            <option value="aventura">Por Aventura</option>
+          </select>
+        </div>
+        <div>
+          <label>PV</label>
+          <input type="number" id="inp-hireling-hp" value="4" min="1">
+        </div>
+        <div>
+          <label>CA</label>
+          <input type="number" id="inp-hireling-ac" value="10" min="5">
+        </div>
+      </div>
+
+      <div style="margin-top: 8px;">
+        <label>Função / Missão Inicial</label>
+        <input type="text" id="inp-hireling-mission" placeholder="Ex: Carregar tochas e suprimentos na masmorra">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
+        <button class="btn-secondary" onclick="closeAddCampaignHirelingModal()">Cancelar</button>
+        <button class="btn-action" onclick="saveNewCampaignHireling()">Efetivar Contratação</button>
       </div>
     </div>
   </div>

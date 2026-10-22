@@ -71,6 +71,16 @@ function getActiveCampaign() {
     CAMPAIGNS_STATE.campaigns = (typeof INITIAL_CAMPAIGNS !== 'undefined') ? JSON.parse(JSON.stringify(INITIAL_CAMPAIGNS)) : [];
     CAMPAIGNS_STATE.activeCampaignId = CAMPAIGNS_STATE.campaigns[0]?.id || "camp_1";
   }
+
+  // Se estiver no portal do jogador ou cliente jogador, prioriza a campanha onde o herói ativo está alocado
+  if (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId) {
+    const heroCamp = CAMPAIGNS_STATE.campaigns.find(c => Array.isArray(c.playerIds) && c.playerIds.some(pid => String(pid) === String(activePortalPlayerId)));
+    if (heroCamp) {
+      CAMPAIGNS_STATE.activeCampaignId = heroCamp.id;
+      return heroCamp;
+    }
+  }
+
   let camp = CAMPAIGNS_STATE.campaigns.find(c => c.id === CAMPAIGNS_STATE.activeCampaignId);
   if (!camp && CAMPAIGNS_STATE.campaigns.length > 0) {
     camp = CAMPAIGNS_STATE.campaigns[0];
@@ -235,6 +245,9 @@ function renderCampaigns() {
 
   // 3. Renderiza Inventário & Tesouro Coletivo (Party Stash)
   renderCampaignPartyStash(camp, campPlayers);
+
+  // 4. Renderiza NPCs Contratados & Folha de Pagamento do Grupo (Old Dragon 2 para 5E)
+  renderCampaignHirelings(camp, campPlayers);
 }
 
 // --- DASHBOARD DE VISÃO GERAL DA CAMPANHA (DM3) ---
@@ -454,6 +467,571 @@ function renderCampaignPartyStash(camp, campPlayers) {
         </div>
       `).join('');
     }
+  }
+}
+
+// --- MÓDULO DE NPCS CONTRATADOS & FOLHA DE PAGAMENTO DO GRUPO (OLD DRAGON 2 / 5E 100% PO) ---
+
+function getAllCampaignHirelings(camp, campPlayers) {
+  const result = [];
+  // 1. Contratados diretos da campanha
+  (camp.hirelings || []).forEach(h => {
+    result.push({ ...h, isCampHireling: true, employerName: 'Campanha / Grupo', employerPlayerId: null });
+  });
+
+  // 2. Contratados agregados de cada herói vinculado
+  (campPlayers || []).forEach(p => {
+    (p.hirelings || []).forEach(h => {
+      result.push({ ...h, isCampHireling: false, employerName: p.name, employerPlayerId: p.id });
+    });
+  });
+
+  return result;
+}
+
+function renderCampaignHirelings(camp, campPlayers) {
+  const container = document.getElementById('campaign-hirelings-container');
+  if (!container) return;
+
+  const hirelings = getAllCampaignHirelings(camp, campPlayers);
+  const activeHirelings = hirelings.filter(h => h.status !== 'fled' && h.status !== 'dismissed');
+
+  // Cálculo da folha de pagamento 100% em PO
+  let weeklyCost = 0;
+  let monthlyCost = 0;
+  let mercenariesCount = 0;
+
+  activeHirelings.forEach(h => {
+    const cost = parseInt(h.cost, 10) || 0;
+    const food = parseInt(h.foodCost, 10) || 0;
+
+    if (h.type === 'helper' || h.costPeriod === 'semana') {
+      weeklyCost += cost;
+      monthlyCost += (cost * 4);
+    } else if (h.type === 'mercenary' || h.costPeriod === 'mês') {
+      mercenariesCount++;
+      monthlyCost += (cost + food);
+      weeklyCost += Math.ceil((cost + food) / 4);
+    } else if (h.type === 'specialist') {
+      weeklyCost += cost;
+      monthlyCost += (cost * 4);
+    }
+  });
+
+  // Regra do Sargento: mais de 6 mercenários exige sargento (+50% no soldo médio de 3 PO = +2 PO/mês)
+  let sargWarning = '';
+  if (mercenariesCount > 6) {
+    const sargAdd = Math.ceil(mercenariesCount * 0.5);
+    monthlyCost += sargAdd;
+    sargWarning = `<div style="font-size:10px; color:#facc15; margin-top:2px;">⚠️ +${sargAdd} PO/mês (Comando de Sargento para pelotão com >6 soldados)</div>`;
+  }
+
+  const goldInStash = camp.partyStash?.gold || 0;
+
+  container.innerHTML = `
+    <div class="campaign-hirelings-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 16px;">👥</span>
+          <div>
+            <span style="font-size: 14px; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 0.5px;">NPCs Contratados & Folha de Pagamento</span>
+            <div style="font-size: 10px; color: var(--text-dim);">Ajudantes, mercenários, aprendizes e especialistas a serviço do grupo</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button type="button" class="btn-action" style="font-size: 11px; padding: 4px 10px;" onclick="openAddCampaignHirelingModal()">➕ Contratar NPC</button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; color: #facc15; border-color: rgba(234, 179, 8, 0.4);" onclick="rollCampaignHirelingsMorale()" title="Rolar moral diário dos ajudantes/mercenários">🎲 Teste de Moral</button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; color: #34d399; border-color: rgba(52, 211, 153, 0.4);" onclick="payCampaignHirelingsPayroll('semana')" title="Pagar salários semanais debitando do baú coletivo">💳 Pagar Folha (Semanal)</button>
+        </div>
+      </div>
+
+      <!-- Resumo Financeiro da Folha em PO -->
+      <div class="camp-payroll-summary">
+        <div class="camp-payroll-card">
+          <div class="camp-payroll-val">${activeHirelings.length}</div>
+          <div class="camp-payroll-lbl">NPCs em Ação</div>
+        </div>
+        <div class="camp-payroll-card">
+          <div class="camp-payroll-val">${weeklyCost} <small style="font-size: 10px; color: var(--text-dim);">PO</small></div>
+          <div class="camp-payroll-lbl">Custo Semanal</div>
+        </div>
+        <div class="camp-payroll-card">
+          <div class="camp-payroll-val">${monthlyCost} <small style="font-size: 10px; color: var(--text-dim);">PO</small></div>
+          <div class="camp-payroll-lbl">Custo Mensal Estimado</div>
+          ${sargWarning}
+        </div>
+        <div class="camp-payroll-card">
+          <div class="camp-payroll-val" style="color: ${goldInStash >= weeklyCost ? '#34d399' : '#f87171'};">${goldInStash} <small style="font-size: 10px; color: var(--text-dim);">PO</small></div>
+          <div class="camp-payroll-lbl">Saldo no Baú</div>
+        </div>
+      </div>
+
+      <!-- Lista de NPCs e Missões -->
+      <div class="hirelings-container">
+        ${hirelings.length === 0 ? `
+          <div style="text-align: center; padding: 18px; color: var(--text-muted); font-size: 11.5px; font-style: italic; background: rgba(15, 23, 42, 0.4); border-radius: 8px;">
+            Nenhum ajudante ou mercenário contratado no momento. Clique em <b>➕ Contratar NPC</b> para admitir tocheiros, soldados, aprendizes ou especialistas!
+          </div>
+        ` : hirelings.map(h => {
+          const statusClass = h.status === 'fled' ? 'status-pill-fled' : (h.status === 'injured' ? 'status-pill-injured' : (h.status === 'away' ? 'status-pill-away' : 'status-pill-acting'));
+          const statusLabel = h.status === 'fled' ? '🏃 Fugiu / Desaparecido' : (h.status === 'injured' ? '🔴 Ferido / Repouso' : (h.status === 'away' ? '🟡 Missão Externa' : '🟢 Em Ação'));
+          return `
+            <div class="hireling-card ${h.status === 'fled' ? 'fled' : ''}" id="hireling-card-${h.id}">
+              <div class="hireling-header">
+                <div>
+                  <div class="hireling-name-badge">
+                    <span>${h.name}</span>
+                    <span class="hireling-cost-tag">💰 ${h.cost} PO / ${h.costPeriod || 'semana'}${h.foodCost ? ` (+${h.foodCost} PO com)` : ''}</span>
+                    <span class="status-pill ${statusClass}">${statusLabel}</span>
+                  </div>
+                  <div style="font-size: 10.5px; color: var(--text-dim); margin-top: 2px;">
+                    Vínculo: <b>${h.employerName}</b> • ${h.description || 'NPC contratado'}
+                  </div>
+                </div>
+                <div style="display: flex; gap: 4px;">
+                  <button type="button" class="btn-micro" onclick="sendHirelingToCombat('${h.id}', '${h.employerPlayerId || ''}')" title="Enviar para o combate / VTT como aliado" style="color: #38bdf8; padding: 2px 6px;">⚔️ Combate</button>
+                  <button type="button" class="btn-micro" onclick="rollSingleHirelingMorale('${h.id}', '${h.employerPlayerId || ''}')" title="Testar moral deste NPC" style="color: #facc15; padding: 2px 6px;">🎲 Moral</button>
+                  <button type="button" class="btn-micro" onclick="dismissCampaignHireling('${h.id}', '${h.employerPlayerId || ''}')" title="Dispensar contratado" style="color: #f87171; padding: 2px 6px;">🗑️</button>
+                </div>
+              </div>
+
+              <!-- Atributos D&D 5E -->
+              <div class="hireling-stats-row">
+                <span class="hireling-stat-pill">❤️ PV: <b>${h.hp || 4}/${h.maxHp || 4}</b></span>
+                <span class="hireling-stat-pill">🛡️ CA: <b>${h.ac || 10}</b></span>
+                <span class="hireling-stat-pill">🏃 Desl: <b>${h.speed || '9m'}</b></span>
+                <span class="hireling-stat-pill">🦁 Moral: <b>${h.morale || 7} (CD ${h.moraleDc || 10})</b></span>
+                ${(h.attacks || []).map(a => `<span class="hireling-stat-pill" style="color: #fed7aa;">⚔️ ${a.name} (+${a.bonus}, ${a.damage})</span>`).join('')}
+                ${h.specialFeature ? `<span class="hireling-stat-pill" style="color: #c4b5fd;">${h.specialFeature}</span>` : ''}
+              </div>
+
+              <!-- Campo de Função / Missão Ativa -->
+              <div class="hireling-mission-box">
+                <span style="font-size: 12px;" title="Missão em andamento">🎯</span>
+                <input type="text" class="hireling-mission-input" value="${h.mission || h.defaultMission || 'Ajudar nas tarefas do grupo'}" 
+                  placeholder="Defina a função / missão atual deste NPC..."
+                  onchange="updateHirelingMission('${h.id}', this.value, '${h.employerPlayerId || ''}')">
+                <select style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); color: #cbd5e1; font-size: 10px; border-radius: 4px; padding: 1px 4px;"
+                  onchange="updateHirelingStatus('${h.id}', this.value, '${h.employerPlayerId || ''}')">
+                  <option value="acting" ${h.status === 'acting' || !h.status ? 'selected' : ''}>🟢 Em Ação</option>
+                  <option value="away" ${h.status === 'away' ? 'selected' : ''}>🟡 Missão Externa</option>
+                  <option value="injured" ${h.status === 'injured' ? 'selected' : ''}>🔴 Ferido</option>
+                  <option value="fled" ${h.status === 'fled' ? 'selected' : ''}>🏃 Fugiu</option>
+                </select>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// Atualização de missão e status
+function updateHirelingMission(hirelingId, newMission, playerId = null) {
+  const camp = getActiveCampaign();
+  let found = false;
+
+  if (playerId && typeof PLAYERS !== 'undefined') {
+    const p = PLAYERS.find(x => x.id === playerId);
+    if (p && Array.isArray(p.hirelings)) {
+      const h = p.hirelings.find(x => x.id === hirelingId);
+      if (h) {
+        h.mission = newMission;
+        touchPlayer(p);
+        found = true;
+      }
+    }
+  }
+
+  if (!found && camp && Array.isArray(camp.hirelings)) {
+    const h = camp.hirelings.find(x => x.id === hirelingId);
+    if (h) {
+      h.mission = newMission;
+      touchCampaign(camp);
+      found = true;
+    }
+  }
+
+  if (found) {
+    saveCampaignsState();
+    if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+    if (typeof showSaveStatus === 'function') showSaveStatus();
+  }
+}
+
+function updateHirelingStatus(hirelingId, newStatus, playerId = null) {
+  const camp = getActiveCampaign();
+  let found = false;
+
+  if (playerId && typeof PLAYERS !== 'undefined') {
+    const p = PLAYERS.find(x => x.id === playerId);
+    if (p && Array.isArray(p.hirelings)) {
+      const h = p.hirelings.find(x => x.id === hirelingId);
+      if (h) {
+        h.status = newStatus;
+        touchPlayer(p);
+        found = true;
+      }
+    }
+  }
+
+  if (!found && camp && Array.isArray(camp.hirelings)) {
+    const h = camp.hirelings.find(x => x.id === hirelingId);
+    if (h) {
+      h.status = newStatus;
+      touchCampaign(camp);
+      found = true;
+    }
+  }
+
+  if (found) {
+    saveCampaignsState();
+    if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+    renderCampaigns();
+    if (typeof renderPlayers === 'function') renderPlayers();
+  }
+}
+
+function dismissCampaignHireling(hirelingId, playerId = null) {
+  const camp = getActiveCampaign();
+  if (!confirm('Deseja realmente dispensar este contratado do grupo?')) return;
+
+  if (playerId && typeof PLAYERS !== 'undefined') {
+    const p = PLAYERS.find(x => x.id === playerId);
+    if (p && Array.isArray(p.hirelings)) {
+      p.hirelings = p.hirelings.filter(x => x.id !== hirelingId);
+      touchPlayer(p);
+    }
+  }
+
+  if (camp && Array.isArray(camp.hirelings)) {
+    camp.hirelings = camp.hirelings.filter(x => x.id !== hirelingId);
+    touchCampaign(camp);
+  }
+
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderCampaigns();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof addLog === 'function') addLog('👥 <b>Contratados:</b> Lacaio/Mercenário dispensado do serviço.');
+}
+
+// Pagamento da folha com débito direto no baú em PO
+function payCampaignHirelingsPayroll(period = 'semana') {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const campPlayers = (camp.playerIds || []).map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p);
+  const hirelings = getAllCampaignHirelings(camp, campPlayers).filter(h => h.status !== 'fled' && h.status !== 'dismissed');
+
+  if (hirelings.length === 0) {
+    alert('Nenhum contratado ativo no momento.');
+    return;
+  }
+
+  let totalCost = 0;
+  hirelings.forEach(h => {
+    const cost = parseInt(h.cost, 10) || 0;
+    const food = parseInt(h.foodCost, 10) || 0;
+    if (period === 'semana') {
+      totalCost += (h.type === 'mercenary' ? Math.ceil((cost + food) / 4) : cost);
+    } else {
+      totalCost += (h.type === 'helper' ? cost * 4 : cost + food);
+    }
+  });
+
+  const currentGold = camp.partyStash?.gold || 0;
+  if (currentGold < totalCost) {
+    alert(`Ouro insuficiente no Baú Coletivo!\nCusto da folha: ${totalCost} PO\nSaldo no Baú: ${currentGold} PO\n\nAdicione ouro ao baú antes de pagar.`);
+    return;
+  }
+
+  if (!confirm(`Confirmar pagamento da folha de salários (${period})?\nValor Total: ${totalCost} PO para ${hirelings.length} contratados.\nSaldo Restante: ${currentGold - totalCost} PO.`)) {
+    return;
+  }
+
+  camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+  camp.partyStash.gold -= totalCost;
+  camp.partyStash.history = camp.partyStash.history || [];
+  camp.partyStash.history.push({
+    date: new Date().toISOString().split('T')[0],
+    text: `💳 Folha de salários paga: -${totalCost} PO (${hirelings.length} NPCs)`,
+    type: 'gold_out'
+  });
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderCampaigns();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+
+  if (typeof addLog === 'function') {
+    addLog(`💰 <b>Folha de Pagamento:</b> ${totalCost} PO debitados do Baú Coletivo para pagamento de ${hirelings.length} contratados.`);
+  }
+}
+
+// Teste de Moral Diário (Old Dragon 2: Moral 7 a 9 / CD 9 a 10 no d20)
+function rollCampaignHirelingsMorale() {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const campPlayers = (camp.playerIds || []).map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p);
+  const hirelings = getAllCampaignHirelings(camp, campPlayers).filter(h => h.status === 'acting' || h.status === 'away');
+
+  if (hirelings.length === 0) {
+    alert('Nenhum ajudante ou mercenário em serviço ativo para testar moral.');
+    return;
+  }
+
+  let logReport = '🎲 <b>Teste de Moral Diário dos Contratados:</b><br>';
+  let anyFled = false;
+
+  hirelings.forEach(h => {
+    const d20 = Math.floor(Math.random() * 20) + 1;
+    const dc = h.moraleDc || 10;
+    // Bônus bondoso/cruel
+    const employerBonus = (h.employerTrait === 'kind') ? 1 : (h.employerTrait === 'cruel' ? -1 : 0);
+    const total = d20 + employerBonus;
+    const passed = total >= dc;
+
+    if (passed) {
+      logReport += `• <b>${h.name}</b> (${h.employerName}): d20(${d20})${employerBonus ? (employerBonus > 0 ? '+1' : '-1') : ''} = <b>${total}</b> vs CD ${dc} — <span style="color:#34d399;">Permanece leal ✅</span><br>`;
+    } else {
+      anyFled = true;
+      h.status = 'fled';
+      updateHirelingStatus(h.id, 'fled', h.employerPlayerId);
+      logReport += `• <b>${h.name}</b> (${h.employerName}): d20(${d20})${employerBonus ? (employerBonus > 0 ? '+1' : '-1') : ''} = <b>${total}</b> vs CD ${dc} — <span style="color:#f87171;">FALHOU e fugiu durante a noite! 🏃💨</span><br>`;
+    }
+  });
+
+  if (typeof addLog === 'function') addLog(logReport);
+  renderCampaigns();
+  if (typeof renderPlayers === 'function') renderPlayers();
+
+  if (anyFled) {
+    alert('Atenção! Um ou mais contratados falharam no teste de moral e desertaram durante a noite. Verifique o feed de combate/mensagens.');
+  } else {
+    alert('Todos os contratados passaram no teste de moral e continuam cumprindo suas tarefas bravamente!');
+  }
+}
+
+function rollSingleHirelingMorale(hirelingId, playerId = null) {
+  const camp = getActiveCampaign();
+  const campPlayers = (camp.playerIds || []).map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p);
+  const h = getAllCampaignHirelings(camp, campPlayers).find(x => x.id === hirelingId);
+  if (!h) return;
+
+  const d20 = Math.floor(Math.random() * 20) + 1;
+  const dc = h.moraleDc || 10;
+  const employerBonus = (h.employerTrait === 'kind') ? 1 : (h.employerTrait === 'cruel' ? -1 : 0);
+  const total = d20 + employerBonus;
+  const passed = total >= dc;
+
+  const resultMsg = passed
+    ? `🦁 <b>${h.name} (Moral):</b> d20(${d20})${employerBonus ? (employerBonus > 0 ? '+1' : '-1') : ''} = <b>${total}</b> vs CD ${dc}. <span style="color:#34d399;">Passou! Firme em seu posto.</span>`
+    : `🏃 <b>${h.name} (Moral):</b> d20(${d20})${employerBonus ? (employerBonus > 0 ? '+1' : '-1') : ''} = <b>${total}</b> vs CD ${dc}. <span style="color:#f87171;">Falhou! O medo o domina.</span>`;
+
+  if (typeof addLog === 'function') addLog(resultMsg);
+  if (!passed && confirm(`${h.name} falhou no teste de moral (Rolou ${total} vs CD ${dc}). Marcar como que fugiu?`)) {
+    updateHirelingStatus(hirelingId, 'fled', playerId);
+  }
+}
+
+// Envia NPC contratado para o Combat Tracker como aliado
+function sendHirelingToCombat(hirelingId, playerId = null) {
+  const camp = getActiveCampaign();
+  const campPlayers = (camp.playerIds || []).map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p);
+  const h = getAllCampaignHirelings(camp, campPlayers).find(x => x.id === hirelingId);
+  if (!h) return;
+
+  if (typeof state === 'undefined' || !Array.isArray(state.combatants)) {
+    alert('Gerenciador de combate não inicializado.');
+    return;
+  }
+
+  const existingCombatant = state.combatants.find(c => c.hirelingId === hirelingId);
+  if (existingCombatant) {
+    alert(`"${h.name}" já está presente no combate (Iniciativa: ${existingCombatant.init})!`);
+    return;
+  }
+
+  const initRoll = Math.floor(Math.random() * 20) + 1;
+  const combatant = {
+    id: 'cbt_h_' + Date.now() + '_' + Math.random().toString(36).substring(2, 5),
+    hirelingId: h.id,
+    name: `${h.name} (${h.employerName})`,
+    hp: h.hp || 4,
+    maxHp: h.maxHp || 4,
+    ac: h.ac || 10,
+    init: initRoll,
+    type: 'ally',
+    actions: (h.attacks || []).map(a => `${a.name} (+${a.bonus}, ${a.damage})`).join(' | ') || 'Ataque improvisado (+0, 1d4)',
+    active: false,
+    color: '#38bdf8'
+  };
+
+  state.combatants.push(combatant);
+  state.combatants.sort((a, b) => (b.init || 0) - (a.init || 0));
+
+  if (typeof saveState === 'function') saveState();
+  if (typeof renderCombat === 'function') renderCombat();
+  if (typeof switchTab === 'function') switchTab('combat');
+
+  if (typeof addLog === 'function') {
+    addLog(`⚔️ <b>Contratado no Combate:</b> "${combatant.name}" entrou na batalha com Iniciativa <b>${initRoll}</b>.`);
+  }
+}
+
+// Modais de Adicionar Contratado
+let activeHirelingTargetPlayerId = null;
+
+function openAddCampaignHirelingModal(forPlayerId = null) {
+  activeHirelingTargetPlayerId = forPlayerId;
+  const modal = document.getElementById('modal-campaign-hireling');
+  if (!modal) return;
+
+  const selPreset = document.getElementById('sel-hireling-preset');
+  if (selPreset && typeof HIRELINGS_CATALOG !== 'undefined') {
+    let opts = '<option value="">-- Escolha um NPC do Catálogo OD2 / 5E --</option>';
+    Object.keys(HIRELINGS_CATALOG.categories).forEach(catKey => {
+      const cat = HIRELINGS_CATALOG.categories[catKey];
+      opts += `<optgroup label="${cat.name}">`;
+      cat.items.forEach(it => {
+        opts += `<option value="${it.id}">${it.name} (${it.cost} PO/${it.costPeriod}${it.foodCost ? ` +${it.foodCost} PO comida` : ''})</option>`;
+      });
+      opts += `</optgroup>`;
+    });
+    selPreset.innerHTML = opts;
+  }
+
+  // Preenche empregadores disponíveis
+  const selEmployer = document.getElementById('sel-hireling-employer');
+  if (selEmployer) {
+    const camp = getActiveCampaign();
+    const campPlayers = (camp && camp.playerIds ? camp.playerIds.map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p) : PLAYERS) || [];
+    let empOpts = '<option value="camp">🏛️ Campanha / Grupo Todo</option>';
+    campPlayers.forEach(p => {
+      empOpts += `<option value="${p.id}" ${forPlayerId === p.id ? 'selected' : ''}>👤 ${p.name} (Carisma: ${p.cha || 10})</option>`;
+    });
+    selEmployer.innerHTML = empOpts;
+  }
+
+  modal.classList.add('open');
+}
+
+function closeAddCampaignHirelingModal() {
+  const modal = document.getElementById('modal-campaign-hireling');
+  if (modal) modal.classList.remove('open');
+  activeHirelingTargetPlayerId = null;
+}
+
+function onHirelingPresetChange() {
+  const selPreset = document.getElementById('sel-hireling-preset');
+  if (!selPreset || !selPreset.value || typeof HIRELINGS_CATALOG === 'undefined') return;
+
+  const presetId = selPreset.value;
+  let found = null;
+  Object.values(HIRELINGS_CATALOG.categories).forEach(cat => {
+    const it = cat.items.find(x => x.id === presetId);
+    if (it) found = it;
+  });
+
+  if (!found) return;
+
+  const nameInput = document.getElementById('inp-hireling-name');
+  const costInput = document.getElementById('inp-hireling-cost');
+  const periodSelect = document.getElementById('sel-hireling-period');
+  const hpInput = document.getElementById('inp-hireling-hp');
+  const acInput = document.getElementById('inp-hireling-ac');
+  const missionInput = document.getElementById('inp-hireling-mission');
+
+  if (nameInput) nameInput.value = found.name;
+  if (costInput) costInput.value = found.cost;
+  if (periodSelect) periodSelect.value = found.costPeriod || 'semana';
+  if (hpInput) hpInput.value = found.hp || 4;
+  if (acInput) acInput.value = found.ac || 10;
+  if (missionInput) missionInput.value = found.defaultMission || '';
+}
+
+function saveNewCampaignHireling() {
+  const name = document.getElementById('inp-hireling-name')?.value.trim();
+  if (!name) {
+    alert('Informe o nome do contratado.');
+    return;
+  }
+
+  const cost = parseInt(document.getElementById('inp-hireling-cost')?.value, 10) || 1;
+  const costPeriod = document.getElementById('sel-hireling-period')?.value || 'semana';
+  const hp = parseInt(document.getElementById('inp-hireling-hp')?.value, 10) || 4;
+  const ac = parseInt(document.getElementById('inp-hireling-ac')?.value, 10) || 10;
+  const mission = document.getElementById('inp-hireling-mission')?.value.trim() || 'Ajudar nas tarefas do grupo';
+  const employerVal = document.getElementById('sel-hireling-employer')?.value || 'camp';
+
+  // Localiza dados do preset se houver
+  const presetId = document.getElementById('sel-hireling-preset')?.value || '';
+  let presetData = null;
+  if (presetId && typeof HIRELINGS_CATALOG !== 'undefined') {
+    Object.values(HIRELINGS_CATALOG.categories).forEach(cat => {
+      const it = cat.items.find(x => x.id === presetId);
+      if (it) presetData = it;
+    });
+  }
+
+  const hirelingObj = {
+    id: 'hir_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+    name: name,
+    type: presetData ? presetData.type : 'helper',
+    cost: cost,
+    costPeriod: costPeriod,
+    foodCost: presetData ? (presetData.foodCost || 0) : 0,
+    hp: hp,
+    maxHp: hp,
+    ac: ac,
+    speed: presetData ? (presetData.speed || '9m') : '9m',
+    attacks: presetData ? (presetData.attacks || []) : [{ name: 'Arma Simples', bonus: 0, damage: '1d4' }],
+    morale: presetData ? (presetData.morale || 7) : 7,
+    moraleDc: presetData ? (presetData.moraleDc || 10) : 10,
+    specialFeature: presetData ? (presetData.specialFeature || '') : '',
+    description: presetData ? (presetData.description || '') : 'NPC contratado',
+    mission: mission,
+    status: 'acting',
+    createdAt: Date.now()
+  };
+
+  if (employerVal === 'camp') {
+    const camp = getActiveCampaign();
+    if (!camp) return;
+    camp.hirelings = camp.hirelings || [];
+    camp.hirelings.push(hirelingObj);
+    touchCampaign(camp);
+  } else {
+    const p = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(x => x.id === employerVal) : null;
+    if (p) {
+      p.hirelings = p.hirelings || [];
+      // Validação de limite por Carisma para Ajudantes
+      if (hirelingObj.type === 'helper' && typeof calculateHirelingCharismaLimit === 'function') {
+        const limit = calculateHirelingCharismaLimit(p.cha);
+        const currentHelpers = p.hirelings.filter(h => h.type === 'helper').length;
+        if (currentHelpers >= limit) {
+          if (!confirm(`${p.name} possui Carisma ${p.cha || 10} (Limite: ${limit} ajudantes).\nAtualmente já possui ${currentHelpers} ajudantes.\nDeseja contratar mesmo assim ignorando o limite?`)) {
+            return;
+          }
+        }
+      }
+      p.hirelings.push(hirelingObj);
+      touchPlayer(p);
+    }
+  }
+
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  closeAddCampaignHirelingModal();
+  renderCampaigns();
+  if (typeof renderPlayers === 'function') renderPlayers();
+
+  if (typeof addLog === 'function') {
+    addLog(`👥 <b>Novo Contratado:</b> "${name}" (${cost} PO/${costPeriod}) contratado pelo grupo.`);
   }
 }
 
@@ -1035,13 +1613,73 @@ function savePartyItem() {
     });
   }
 
+  // Sincronização direta com a mochila do herói se um portador for indicado
+  if (carrier && carrier !== 'Baú do Grupo' && carrier !== 'Mochila Coletiva' && typeof PLAYERS !== 'undefined') {
+    const hero = PLAYERS.find(p => p.name.toLowerCase() === carrier.toLowerCase() || p.id === carrier);
+    if (hero) {
+      hero.inventory = hero.inventory || [];
+      const existingHeroItem = hero.inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
+      if (existingHeroItem) {
+        existingHeroItem.qty = Math.max(1, qty);
+      } else {
+        hero.inventory.push({
+          name: name,
+          qty: qty,
+          equipped: false,
+          weight: 0.5,
+          desc: desc
+        });
+      }
+      if (typeof touchPlayer === 'function') touchPlayer(hero);
+      if (typeof renderPlayers === 'function') renderPlayers();
+    }
+  }
+
   touchCampaign(camp);
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   closePartyItemModal();
   renderCampaigns();
   renderPartyStashViewer();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
   if (typeof addLog === 'function') addLog(`🎒 <b>Baú do Grupo:</b> Item "${name}" (${qty}x) salvo com sucesso.`);
+}
+
+// Transferência direta da mochila do jogador para o Baú do Grupo
+function sendPlayerItemToPartyStash(playerId, itemIdx, qty = null) {
+  const p = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(x => x.id === playerId) : null;
+  if (!p || !p.inventory || !p.inventory[itemIdx]) return false;
+
+  const item = p.inventory[itemIdx];
+  const itemQty = parseInt(item.qty, 10) || 1;
+  let transferQty = qty !== null ? parseInt(qty, 10) : 1;
+
+  if (isNaN(transferQty) || transferQty <= 0) transferQty = 1;
+  if (transferQty > itemQty) transferQty = itemQty;
+
+  // Remove ou subtrai da mochila do jogador
+  if (itemQty <= transferQty) {
+    p.inventory.splice(itemIdx, 1);
+  } else {
+    item.qty = itemQty - transferQty;
+  }
+  if (typeof touchPlayer === 'function') touchPlayer(p);
+
+  // Adiciona ao Baú do Grupo da campanha ativa
+  const camp = (typeof getActiveCampaign === 'function') ? getActiveCampaign() : null;
+  if (camp) {
+    addItemToPartyStash(item.name, transferQty, item.category || 'Equipamento de Aventura', item.desc || '', 'Baú do Grupo');
+  }
+
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+
+  if (typeof addLog === 'function') {
+    addLog(`🎒 <b>${p.name}:</b> guardou ${transferQty}x "${item.name}" no Baú do Grupo.`);
+  }
+  return true;
 }
 
 function deletePartyItem(itemId) {
@@ -1610,6 +2248,20 @@ if (typeof module !== 'undefined' && module.exports) {
     promptAdjustPartyGold,
     splitPartyGold,
     takePartyItemToPlayer,
+    sendPlayerItemToPartyStash,
+    getAllCampaignHirelings,
+    renderCampaignHirelings,
+    updateHirelingMission,
+    updateHirelingStatus,
+    dismissCampaignHireling,
+    payCampaignHirelingsPayroll,
+    rollCampaignHirelingsMorale,
+    rollSingleHirelingMorale,
+    sendHirelingToCombat,
+    openAddCampaignHirelingModal,
+    closeAddCampaignHirelingModal,
+    saveNewCampaignHireling,
+    onHirelingPresetChange,
     touchCampaign,
     trackDeletedCampaignId,
     getDeletedCampaignIds,
@@ -1618,6 +2270,22 @@ if (typeof module !== 'undefined' && module.exports) {
     deleteCurrentCampaign,
     saveCampaignForm
   };
+}
+
+if (typeof window !== 'undefined') {
+  window.sendPlayerItemToPartyStash = sendPlayerItemToPartyStash;
+  window.renderCampaignHirelings = renderCampaignHirelings;
+  window.updateHirelingMission = updateHirelingMission;
+  window.updateHirelingStatus = updateHirelingStatus;
+  window.dismissCampaignHireling = dismissCampaignHireling;
+  window.payCampaignHirelingsPayroll = payCampaignHirelingsPayroll;
+  window.rollCampaignHirelingsMorale = rollCampaignHirelingsMorale;
+  window.rollSingleHirelingMorale = rollSingleHirelingMorale;
+  window.sendHirelingToCombat = sendHirelingToCombat;
+  window.openAddCampaignHirelingModal = openAddCampaignHirelingModal;
+  window.closeAddCampaignHirelingModal = closeAddCampaignHirelingModal;
+  window.saveNewCampaignHireling = saveNewCampaignHireling;
+  window.onHirelingPresetChange = onHirelingPresetChange;
 }
 
 // Auto-carregamento imediato na avaliação do módulo

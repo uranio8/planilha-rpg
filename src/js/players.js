@@ -1758,6 +1758,7 @@ function renderPlayers() {
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'combat' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'combat')">⚔️ Ações</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'spells' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'spells')">✨ Magias</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'inventory' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'inventory')">🎒 Inventário (${(p.inventory || []).length})</button>
+              <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'hirelings' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'hirelings')">👥 Lacaios (${(p.hirelings || []).length})</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'traits' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'traits')">📜 Traços</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'notes' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'notes')">📝 Notas</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'about' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'about')">👤 Sobre</button>
@@ -2017,6 +2018,18 @@ function renderPlayers() {
                   <div class="roll20-coin-box"><span class="roll20-coin-val">${(p.coins && p.coins.pp) || 0}</span><span>PL</span></div>
                 </div>
 
+                <!-- BARRA RÁPIDA DO BAÚ DO GRUPO -->
+                <div class="party-stash-quickbar">
+                  <div class="stash-info">
+                    <span>🎒 Baú Coletivo:</span>
+                    <span class="stash-gold-pill">${((typeof getActiveCampaign === 'function' ? getActiveCampaign()?.partyStash?.gold : 0) || 0)} PO</span>
+                  </div>
+                  <div style="display: flex; gap: 4px;">
+                    <button type="button" class="btn-micro" onclick="openPartyStashModal()" title="Abrir Baú Coletivo & Suprimentos do Grupo" style="color: #facc15; padding: 2px 7px;">🎒 Ver Baú</button>
+                    <button type="button" class="btn-micro" onclick="openPartyItemModal()" title="Adicionar item diretamente ao Baú do Grupo" style="color: #38bdf8; padding: 2px 7px;">➕ No Baú</button>
+                  </div>
+                </div>
+
                 <!-- STATUS DE PESO E CARGA ROLL20 -->
                 <div class="roll20-weight-status-bar" style="margin-bottom: 8px;">
                   <span>⚖️ Carga (FOR ${p.str || 10}): <b style="color: ${carry.isOverloaded ? '#f87171' : (carry.isEncumbered ? '#facc15' : '#34d399')};">${carry.totalWeight} kg</b> / ${carry.maxKg} kg</span>
@@ -2046,6 +2059,7 @@ function renderPlayers() {
                           <button type="button" class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, -1)" title="Diminuir" style="padding: 1px 4px; font-size: 9px;">−</button>
                           <span style="font-weight: 800; min-width: 14px; text-align: center; color: ${itemQty > 0 ? 'var(--primary-light)' : 'var(--text-dim)'}; font-size: 10px;">${itemQty}x</span>
                           <button type="button" class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, 1)" title="Aumentar" style="padding: 1px 4px; font-size: 9px;">+</button>
+                          <button type="button" class="btn-stash-send" onclick="sendPlayerItemToPartyStash('${p.id}', ${idx})" title="Guardar 1x no Baú do Grupo">📦 Baú</button>
                           <button type="button" class="btn-chat-feed" onclick="sharePlayerItemToFeed('${p.id}', ${idx})" title="Compartilhar no Chat">💬</button>
                           <button type="button" class="btn-micro" style="color: #f87171; padding: 1px 4px; font-size: 9px;" onclick="removePlayerItem('${p.id}', ${idx})" title="Remover item">🗑️</button>
                         </div>
@@ -2106,6 +2120,81 @@ function renderPlayers() {
                     <span class="origin-label">📜 História & Biografia:</span>
                     <div class="origin-text" style="white-space: pre-wrap; line-height: 1.5; color: #cbd5e1;">${p.backstory || 'Nenhum histórico biográfico registrado.'}</div>
                   </div>
+                </div>
+              </div>
+
+              <!-- ABA 7: LACAIOS & CONTRATADOS DO HERÓI (OLD DRAGON 2 / 5E 100% PO) -->
+              <div class="roll20-tab-panel" style="display: ${activeRoll20Tab === 'hirelings' ? 'block' : 'none'};">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span class="roll20-panel-title" style="margin: 0; border: none; padding: 0;">👥 LACAIOS & AJUDANTES CONTRATADOS</span>
+                  <button type="button" class="btn-action" style="font-size: 10px; padding: 3px 8px;" onclick="openAddCampaignHirelingModal('${p.id}')">➕ Contratar Lacaio</button>
+                </div>
+
+                <!-- CARD DE LIMITE POR CARISMA DO HERÓI -->
+                <div class="party-stash-quickbar" style="margin-bottom: 10px;">
+                  <div class="stash-info">
+                    <span>👑 <b>Liderança (Carisma ${p.cha || 10}):</b> Limite de Ajudantes: <b style="color: #fef08a;">${(typeof calculateHirelingCharismaLimit === 'function' ? calculateHirelingCharismaLimit(p.cha) : (p.cha > 8 ? Math.max(0, Math.floor((p.cha - 10)/2) + 1) : 0))}</b></span>
+                    <span style="font-size: 10.5px; color: var(--text-dim);">(Atual: ${(p.hirelings || []).filter(h => h.type === 'helper').length} ajudantes)</span>
+                  </div>
+                  <div style="font-size: 10px; color: ${(p.cha || 10) <= 8 ? '#f87171' : '#34d399'};">
+                    ${(p.cha || 10) <= 8 ? '⚠️ CAR ≤ 8: Não pode contratar ajudantes' : '✅ Autorizado a contratar'}
+                  </div>
+                </div>
+
+                <!-- LISTA DE LACAIOS DO HERÓI -->
+                <div style="display: flex; flex-direction: column; gap: 8px; min-height: 200px;">
+                  ${(!p.hirelings || p.hirelings.length === 0) ? `
+                    <div style="text-align: center; padding: 24px; color: var(--text-dim); font-size: 11px; font-style: italic; background: rgba(15, 23, 42, 0.4); border-radius: 8px;">
+                      ${p.name} não possui nenhum ajudante, mercenário ou aprendiz contratado.<br>
+                      Clique em <b>➕ Contratar Lacaio</b> para admitir tocheiros, escolta militar ou aprendizes de classe!
+                    </div>
+                  ` : p.hirelings.map(h => {
+                    const statusClass = h.status === 'fled' ? 'status-pill-fled' : (h.status === 'injured' ? 'status-pill-injured' : (h.status === 'away' ? 'status-pill-away' : 'status-pill-acting'));
+                    const statusLabel = h.status === 'fled' ? '🏃 Fugiu' : (h.status === 'injured' ? '🔴 Ferido' : (h.status === 'away' ? '🟡 Missão' : '🟢 Ativo'));
+                    return `
+                      <div class="hireling-card ${h.status === 'fled' ? 'fled' : ''}" style="margin-bottom: 4px;">
+                        <div class="hireling-header">
+                          <div>
+                            <div class="hireling-name-badge">
+                              <span>${h.name}</span>
+                              <span class="hireling-cost-tag">💰 ${h.cost} PO / ${h.costPeriod || 'semana'}${h.foodCost ? ` (+${h.foodCost} PO comida)` : ''}</span>
+                              <span class="status-pill ${statusClass}">${statusLabel}</span>
+                            </div>
+                            <div style="font-size: 10px; color: var(--text-dim); margin-top: 2px;">
+                              ${h.description || 'Lacaio a serviço de ' + p.name}
+                            </div>
+                          </div>
+                          <div style="display: flex; gap: 3px;">
+                            <button type="button" class="btn-micro" onclick="sendHirelingToCombat('${h.id}', '${p.id}')" title="Enviar para o combate / VTT como aliado" style="color: #38bdf8; padding: 2px 5px;">⚔️ Combate</button>
+                            <button type="button" class="btn-micro" onclick="rollSingleHirelingMorale('${h.id}', '${p.id}')" title="Rolar teste de moral" style="color: #facc15; padding: 2px 5px;">🎲 Moral</button>
+                            <button type="button" class="btn-micro" onclick="dismissCampaignHireling('${h.id}', '${p.id}')" title="Dispensar lacaio" style="color: #f87171; padding: 2px 5px;">🗑️</button>
+                          </div>
+                        </div>
+
+                        <div class="hireling-stats-row">
+                          <span class="hireling-stat-pill">❤️ PV: <b>${h.hp || 4}/${h.maxHp || 4}</b></span>
+                          <span class="hireling-stat-pill">🛡️ CA: <b>${h.ac || 10}</b></span>
+                          <span class="hireling-stat-pill">🦁 Moral: <b>${h.morale || 7} (CD ${h.moraleDc || 10})</b></span>
+                          ${(h.attacks || []).map(a => `<span class="hireling-stat-pill" style="color: #fed7aa;">⚔️ ${a.name} (+${a.bonus}, ${a.damage})</span>`).join('')}
+                          ${h.specialFeature ? `<span class="hireling-stat-pill" style="color: #c4b5fd;">${h.specialFeature}</span>` : ''}
+                        </div>
+
+                        <div class="hireling-mission-box">
+                          <span style="font-size: 12px;">🎯</span>
+                          <input type="text" class="hireling-mission-input" value="${h.mission || h.defaultMission || 'Ajudar nas tarefas do herói'}"
+                            placeholder="Defina a função / ordem atual para este lacaio..."
+                            onchange="updateHirelingMission('${h.id}', this.value, '${p.id}')">
+                          <select style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); color: #cbd5e1; font-size: 10px; border-radius: 4px; padding: 1px 4px;"
+                            onchange="updateHirelingStatus('${h.id}', this.value, '${p.id}')">
+                            <option value="acting" ${h.status === 'acting' || !h.status ? 'selected' : ''}>🟢 Ativo</option>
+                            <option value="away" ${h.status === 'away' ? 'selected' : ''}>🟡 Missão</option>
+                            <option value="injured" ${h.status === 'injured' ? 'selected' : ''}>🔴 Ferido</option>
+                            <option value="fled" ${h.status === 'fled' ? 'selected' : ''}>🏃 Fugiu</option>
+                          </select>
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
                 </div>
               </div>
 
@@ -9678,16 +9767,14 @@ function openTradeItemModal(donorId, itemIdx) {
     inpQty.max = maxQty;
   }
 
-  // Preenche destinatários disponíveis (todos os outros heróis)
+  // Preenche destinatários disponíveis (Baú Coletivo + todos os outros heróis)
   if (selReceiver) {
     const otherHeroes = (typeof PLAYERS !== 'undefined') ? PLAYERS.filter(p => p.id !== donorId) : [];
-    if (otherHeroes.length === 0) {
-      selReceiver.innerHTML = '<option value="">Nenhum outro herói na mesa</option>';
-    } else {
-      selReceiver.innerHTML = otherHeroes.map(h => `
-        <option value="${h.id}">${h.name} (${h.student || 'Aluno'}) - ${h.className || ''}</option>
-      `).join('');
-    }
+    let opts = '<option value="PARTY_STASH">🎒 Baú Coletivo do Grupo</option>';
+    otherHeroes.forEach(h => {
+      opts += `<option value="${h.id}">${h.name} (${h.student || 'Aluno'}) - ${h.className || ''}</option>`;
+    });
+    selReceiver.innerHTML = opts;
   }
 
   if (modal) modal.classList.add('open');
@@ -9720,7 +9807,15 @@ function confirmTradeItem() {
   const qty = inpQty ? Math.max(1, Math.min(activeTradeContext.maxQty, parseInt(inpQty.value, 10) || 1)) : 1;
 
   if (!receiverId) {
-    alert('Por favor, selecione um herói para receber o item.');
+    alert('Por favor, selecione um destinatário para o item.');
+    return;
+  }
+
+  if (receiverId === 'PARTY_STASH') {
+    if (typeof sendPlayerItemToPartyStash === 'function') {
+      sendPlayerItemToPartyStash(activeTradeContext.donorId, activeTradeContext.itemIdx, qty);
+    }
+    closeTradeItemModal();
     return;
   }
 

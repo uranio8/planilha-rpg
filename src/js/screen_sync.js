@@ -308,6 +308,8 @@ if (syncChannel) {
           } catch(e) {}
           if (typeof renderCampaigns === 'function') renderCampaigns();
           if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
+          if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+          if (typeof renderPlayers === 'function') renderPlayers();
         }
       } else if (event.data.type === 'GLOBAL_DICE_ROLL' && event.data.roll) {
         if (typeof updateDiceResultUI === 'function') {

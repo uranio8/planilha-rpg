@@ -33,6 +33,7 @@ const requiredFiles = [
   'src/data/classes.js',
   'src/data/species.js',
   'src/data/campaigns.js',
+  'src/data/hirelings.js',
   'src/js/core.js',
   'src/js/combat.js',
   'src/js/players.js',
@@ -208,6 +209,7 @@ const dataSpells = fs.readFileSync(path.join(srcDir, 'data', 'spells.js'), 'utf8
 const dataMonsters = fs.readFileSync(path.join(srcDir, 'data', 'monsters.js'), 'utf8');
 const dataEquip = fs.readFileSync(path.join(srcDir, 'data', 'equipment.js'), 'utf8');
 const dataCampaigns = fs.readFileSync(path.join(srcDir, 'data', 'campaigns.js'), 'utf8');
+const dataHirelings = fs.readFileSync(path.join(srcDir, 'data', 'hirelings.js'), 'utf8');
 const jsAudioSynth = fs.readFileSync(path.join(srcDir, 'js', 'audio_synth.js'), 'utf8');
 const jsQrCode = fs.readFileSync(path.join(srcDir, 'js', 'qrcode_lib.js'), 'utf8');
 const jsCore = fs.readFileSync(path.join(srcDir, 'js', 'core.js'), 'utf8');
@@ -234,6 +236,7 @@ vm.runInContext(dataSpells, sandbox);
 vm.runInContext(dataMonsters, sandbox);
 vm.runInContext(dataEquip, sandbox);
 vm.runInContext(dataCampaigns, sandbox);
+vm.runInContext(dataHirelings, sandbox);
 vm.runInContext(jsAudioSynth, sandbox);
 vm.runInContext(jsQrCode, sandbox);
 vm.runInContext(jsCore, sandbox);
@@ -6195,6 +6198,123 @@ assert(standalone116Html.includes('sheet-spell-filter-chip'), 'HTML compilado co
 assert(standalone116Html.includes('.roll20-avatar-box {') && standalone116Html.includes('overflow: visible;'), 'CSS compilado tem .roll20-avatar-box com overflow: visible');
 assert(standalone116Html.includes('.roll20-avatar-img-wrap {') && standalone116Html.includes('overflow: hidden;'), 'CSS compilado tem wrapper interno com overflow: hidden');
 assert(standalone116Html.includes('.roll20-btn-init {') && standalone116Html.includes('rgba(245, 158, 11'), 'CSS compilado tem botão de iniciativa refinado com tom âmbar');
+
+// 👥 85. Testes de Sincronização do Bag do Grupo & Sistema de Contratação em Ouro (ISSUE-117):
+console.log('\n👥 85. Testes de Sincronização do Bag do Grupo & Sistema de Contratação em Ouro (ISSUE-117):');
+
+// 1. Exportação das funções
+assert(typeof vm.runInContext("calculateHirelingCharismaLimit", sandbox) === 'function', 'Função calculateHirelingCharismaLimit exportada');
+assert(typeof vm.runInContext("sendPlayerItemToPartyStash", sandbox) === 'function', 'Função sendPlayerItemToPartyStash exportada');
+assert(typeof vm.runInContext("getAllCampaignHirelings", sandbox) === 'function', 'Função getAllCampaignHirelings exportada');
+assert(typeof vm.runInContext("renderCampaignHirelings", sandbox) === 'function', 'Função renderCampaignHirelings exportada');
+assert(typeof vm.runInContext("payCampaignHirelingsPayroll", sandbox) === 'function', 'Função payCampaignHirelingsPayroll exportada');
+assert(typeof vm.runInContext("rollCampaignHirelingsMorale", sandbox) === 'function', 'Função rollCampaignHirelingsMorale exportada');
+assert(typeof vm.runInContext("sendHirelingToCombat", sandbox) === 'function', 'Função sendHirelingToCombat exportada');
+
+// 2. Validação da regra estrita de Carisma do livro (Old Dragon 2)
+assert(vm.runInContext("calculateHirelingCharismaLimit(8)", sandbox) === 0, 'Carisma 8 resulta em 0 ajudantes (proibido)');
+assert(vm.runInContext("calculateHirelingCharismaLimit(7)", sandbox) === 0, 'Carisma 7 resulta em 0 ajudantes');
+assert(vm.runInContext("calculateHirelingCharismaLimit(10)", sandbox) === 1, 'Carisma 10 (mod 0) resulta em 1 ajudante (0+1)');
+assert(vm.runInContext("calculateHirelingCharismaLimit(13)", sandbox) === 2, 'Carisma 13 (mod +1) resulta em 2 ajudantes (1+1)');
+assert(vm.runInContext("calculateHirelingCharismaLimit(16)", sandbox) === 4, 'Carisma 16 (mod +3) resulta em 4 ajudantes (3+1)');
+
+// 3. Transferência de item da mochila do herói para o Baú do Grupo
+vm.runInContext(`
+  const testHero85 = {
+    id: 'hero_stash_test_85',
+    name: 'Kaelen',
+    student: 'Lucas',
+    cha: 14,
+    inventory: [
+      { name: 'Poção de Invisibilidade', qty: 3, equipped: false, weight: 0.5 }
+    ],
+    hirelings: []
+  };
+  PLAYERS.push(testHero85);
+
+  const activeCamp85 = getActiveCampaign();
+  activeCamp85.partyStash = activeCamp85.partyStash || { gold: 100, items: [], history: [] };
+  activeCamp85.playerIds = [testHero85.id];
+
+  // Transfere 1x da mochila para o baú coletivo
+  sendPlayerItemToPartyStash('hero_stash_test_85', 0, 1);
+`, sandbox);
+
+let hero85 = vm.runInContext("PLAYERS.find(p => p.id === 'hero_stash_test_85')", sandbox);
+let stash85 = vm.runInContext("getActiveCampaign().partyStash", sandbox);
+assert(hero85.inventory[0].qty === 2, 'Mochila do jogador foi decrementada para 2x Poções');
+assert(stash85.items.some(i => i.name === 'Poção de Invisibilidade' && i.qty === 1), 'Baú do Grupo recebeu 1x Poção de Invisibilidade');
+
+// 4. Resolução de Campanha Ativa no Modo Portal
+vm.runInContext(`
+  activePortalPlayerId = 'hero_stash_test_85';
+  const resolvedCamp = getActiveCampaign();
+`, sandbox);
+assert(vm.runInContext("getActiveCampaign().playerIds.includes('hero_stash_test_85')", sandbox), 'getActiveCampaign resolveu campanha que contém o herói logado');
+
+// 5. Contratação de NPC com Função/Missão e Folha de Pagamento em PO
+vm.runInContext(`
+  const camp85 = getActiveCampaign();
+  camp85.hirelings = [
+    {
+      id: 'hir_test_1',
+      name: 'Tobias',
+      type: 'helper',
+      cost: 1, // 1 PO por semana
+      costPeriod: 'semana',
+      foodCost: 0,
+      hp: 4,
+      maxHp: 4,
+      ac: 10,
+      attacks: [{ name: 'Porrete', bonus: 0, damage: '1d4' }],
+      morale: 7,
+      moraleDc: 10,
+      status: 'acting',
+      mission: 'Carregar tochas e espólios na masmorra'
+    },
+    {
+      id: 'hir_test_2',
+      name: 'Guarda Barlok',
+      type: 'mercenary',
+      cost: 3, // 3 PO por mês
+      costPeriod: 'mês',
+      foodCost: 1, // +1 PO comida
+      hp: 12,
+      maxHp: 12,
+      ac: 16,
+      attacks: [{ name: 'Espada Longa', bonus: 3, damage: '1d8+1' }],
+      morale: 8,
+      moraleDc: 10,
+      status: 'acting',
+      mission: 'Vigiar o acampamento'
+    }
+  ];
+  camp85.partyStash.gold = 50; // 50 PO de saldo
+`, sandbox);
+
+let allHirelings85 = vm.runInContext("getAllCampaignHirelings(getActiveCampaign(), [testHero85])", sandbox);
+assert(allHirelings85.length >= 2, 'getAllCampaignHirelings retornou os contratados');
+assert(allHirelings85.some(h => h.name === 'Tobias' && h.mission.includes('tochas')), 'NPC Tobias possui missão de carregar tochas');
+
+// 6. Envio de contratado para o combate (Combat Tracker)
+vm.runInContext(`
+  state = { combatants: [], round: 1, current: 0 };
+  sendHirelingToCombat('hir_test_1');
+`, sandbox);
+
+let cbt85 = vm.runInContext("state.combatants.find(c => c.hirelingId === 'hir_test_1')", sandbox);
+assert(cbt85 !== undefined, 'Tobias foi inserido no Combat Tracker');
+assert(cbt85.type === 'ally', 'Tobias entrou como aliado (type: ally)');
+assert(cbt85.ac === 10, 'Tobias possui CA 10 no combate');
+
+// 7. Elementos de Interface e Estilos no Standalone
+const standalone117Html = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(standalone117Html.includes('party-stash-quickbar'), 'HTML compilado contém .party-stash-quickbar no inventário');
+assert(standalone117Html.includes('btn-stash-send'), 'HTML compilado contém botão .btn-stash-send nos itens');
+assert(standalone117Html.includes('campaign-hirelings-container'), 'HTML compilado contém #campaign-hirelings-container');
+assert(standalone117Html.includes('modal-campaign-hireling'), 'HTML compilado contém #modal-campaign-hireling');
+assert(standalone117Html.includes('calculateHirelingCharismaLimit'), 'HTML compilado contém calculateHirelingCharismaLimit');
+assert(standalone117Html.includes('sendPlayerItemToPartyStash'), 'HTML compilado contém sendPlayerItemToPartyStash');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

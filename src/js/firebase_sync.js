@@ -749,6 +749,7 @@ function applyCloudDataToLocal(cloudData) {
       if (typeof renderCampaigns === 'function') renderCampaigns();
       if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
       if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+      if (typeof renderPlayers === 'function') renderPlayers();
     }
 
     // 5. Atualiza Notas Rápidas do Mestre (respeitando foco de digitação local)

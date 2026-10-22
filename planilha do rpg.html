@@ -10386,6 +10386,215 @@
       font-weight: 700;
     }
 
+    /* Estilos do Sistema de Contratação (Old Dragon 2 para 5E 100% PO) e Baú do Grupo */
+    .party-stash-quickbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(135deg, rgba(20, 26, 38, 0.9), rgba(15, 23, 42, 0.95));
+      border: 1px solid rgba(234, 179, 8, 0.35);
+      border-radius: 8px;
+      padding: 6px 12px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+    .party-stash-quickbar .stash-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11.5px;
+      color: #e2e8f0;
+    }
+    .party-stash-quickbar .stash-gold-pill {
+      font-family: var(--font-mono, monospace);
+      font-weight: 800;
+      color: #fef08a;
+      background: rgba(234, 179, 8, 0.15);
+      border: 1px solid rgba(234, 179, 8, 0.35);
+      padding: 2px 7px;
+      border-radius: 5px;
+    }
+    .btn-stash-send {
+      background: rgba(14, 165, 233, 0.15);
+      border: 1px solid rgba(14, 165, 233, 0.35);
+      color: #38bdf8;
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .btn-stash-send:hover {
+      background: rgba(14, 165, 233, 0.3);
+      color: #e0f2fe;
+      transform: translateY(-1px);
+    }
+
+    /* Cards e painel de NPCs Contratados */
+    .hirelings-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .hireling-card {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 8px;
+      padding: 10px 12px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .hireling-card:hover {
+      border-color: rgba(234, 179, 8, 0.4);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    }
+    .hireling-card.fled {
+      opacity: 0.6;
+      border-color: rgba(239, 68, 68, 0.4);
+      background: rgba(30, 15, 15, 0.6);
+    }
+    .hireling-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 6px;
+    }
+    .hireling-name-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 800;
+      font-size: 13px;
+      color: #fff;
+    }
+    .hireling-cost-tag {
+      background: rgba(234, 179, 8, 0.12);
+      border: 1px solid rgba(234, 179, 8, 0.3);
+      color: #fef08a;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono, monospace);
+    }
+    .hireling-stats-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      font-size: 11px;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+    .hireling-stat-pill {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      padding: 1px 5px;
+      border-radius: 4px;
+      color: #cbd5e1;
+      font-size: 10px;
+    }
+    .hireling-mission-box {
+      background: rgba(2, 6, 23, 0.5);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 5px;
+      padding: 5px 8px;
+      font-size: 11px;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hireling-mission-input {
+      background: transparent;
+      border: none;
+      color: #f8fafc;
+      font-size: 11px;
+      width: 100%;
+      outline: none;
+    }
+    .hireling-mission-input:focus {
+      border-bottom: 1px solid var(--accent-gold);
+    }
+    .hireling-actions-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 4px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(148, 163, 184, 0.1);
+    }
+
+    /* Painel da Campanha - Folha de Pagamento */
+    .campaign-hirelings-box {
+      background: linear-gradient(135deg, rgba(20, 26, 38, 0.85), rgba(15, 23, 42, 0.9));
+      border: 1px solid rgba(234, 179, 8, 0.25);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-top: 14px;
+    }
+    .camp-payroll-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .camp-payroll-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: center;
+    }
+    .camp-payroll-val {
+      font-size: 18px;
+      font-weight: 900;
+      color: #fef08a;
+      font-family: var(--font-mono, monospace);
+    }
+    .camp-payroll-lbl {
+      font-size: 10px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Status Pills */
+    .status-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .status-pill-acting {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
+    }
+    .status-pill-away {
+      background: rgba(234, 179, 8, 0.2);
+      border: 1px solid rgba(234, 179, 8, 0.4);
+      color: #fef08a;
+    }
+    .status-pill-injured {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+    .status-pill-fled {
+      background: rgba(100, 116, 139, 0.3);
+      border: 1px solid rgba(100, 116, 139, 0.4);
+      color: #94a3b8;
+    }
+
     @media (max-width: 900px) {
       .player-hp-btn, .btn-hp-adj, .btn-hp-dmg, .btn-hp-heal, .roll20-hp-btn {
         min-height: 44px;
@@ -11824,6 +12033,9 @@
             </div>
           </div>
         </div>
+
+        <!-- SEÇÃO DE NPCS CONTRATADOS & FOLHA DE PAGAMENTO DO GRUPO (OLD DRAGON 2 / 5E 100% PO) -->
+        <div id="campaign-hirelings-container" style="margin-top: 14px;"></div>
       </div>
     </div>
 
@@ -13090,6 +13302,65 @@
       <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
         <button class="btn-secondary" onclick="closePartyItemModal()">Cancelar</button>
         <button class="btn-action" onclick="savePartyItem()">Salvar Item no Baú</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CONTRATAR NPC (OLD DRAGON 2 / 5E 100% PO) -->
+  <div id="modal-campaign-hireling" class="modal-overlay" style="z-index: 2200;">
+    <div class="modal-body" style="max-width: 520px;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <span style="font-weight: 800; font-size: 16px; color: #fff;">👥 Contratar NPC (Ajudante / Mercenário / Aprendiz)</span>
+        <button class="btn-secondary" onclick="closeAddCampaignHirelingModal()">✕</button>
+      </div>
+
+      <div style="margin-top: 12px;">
+        <label>Selecione um Modelo do Livro de Regras:</label>
+        <select id="sel-hireling-preset" onchange="onHirelingPresetChange()" style="width: 100%; margin-bottom: 10px;"></select>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+        <div>
+          <label>Nome do Contratado</label>
+          <input type="text" id="inp-hireling-name" placeholder="Ex: Tobias, Guarda Barlok, Aprendiz Eric">
+        </div>
+        <div>
+          <label>Empregador / Vínculo</label>
+          <select id="sel-hireling-employer"></select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-top: 8px;">
+        <div>
+          <label>Custo (PO)</label>
+          <input type="number" id="inp-hireling-cost" value="1" min="0">
+        </div>
+        <div>
+          <label>Período</label>
+          <select id="sel-hireling-period">
+            <option value="semana">Por Semana</option>
+            <option value="mês">Por Mês</option>
+            <option value="aventura">Por Aventura</option>
+          </select>
+        </div>
+        <div>
+          <label>PV</label>
+          <input type="number" id="inp-hireling-hp" value="4" min="1">
+        </div>
+        <div>
+          <label>CA</label>
+          <input type="number" id="inp-hireling-ac" value="10" min="5">
+        </div>
+      </div>
+
+      <div style="margin-top: 8px;">
+        <label>Função / Missão Inicial</label>
+        <input type="text" id="inp-hireling-mission" placeholder="Ex: Carregar tochas e suprimentos na masmorra">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px;">
+        <button class="btn-secondary" onclick="closeAddCampaignHirelingModal()">Cancelar</button>
+        <button class="btn-action" onclick="saveNewCampaignHireling()">Efetivar Contratação</button>
       </div>
     </div>
   </div>
@@ -29795,6 +30066,422 @@ function calculateEncounterDifficulty(playerLevels, monsterList) {
   };
 }
 
+// src/data/hirelings.js - Catálogo de Contratação D&D 5E adaptado do Old Dragon 2 (100% em Ouro / PO)
+
+const HIRELINGS_CATALOG = {
+  currency: "PO",
+  categories: {
+    helpers: {
+      name: "Ajudantes & Braçais",
+      description: "Mão de obra barata para serviços braçais, carregar tochas e transportar cargas. Não entram em combate por vontade própria e fogem se o moral falhar.",
+      periodUnit: "semana",
+      items: [
+        {
+          id: "helper_torchbearer",
+          name: "Carregador de Tocha & Braçal",
+          type: "helper",
+          cost: 1, // 1 PO por semana
+          costPeriod: "semana",
+          foodCost: 0,
+          hp: 4,
+          maxHp: 4,
+          ac: 10,
+          speed: "9m (30ft)",
+          attacks: [
+            { name: "Porrete / Adaga Improvizada", bonus: 0, damage: "1d4", type: "impacto" }
+          ],
+          morale: 7, // CD 10 no d20
+          moraleDc: 10,
+          defaultMission: "Carregar tochas na frente e carregar espólios",
+          description: "Camponês ou carregador contratado para iluminar masmorras e transportar peso."
+        },
+        {
+          id: "helper_porter",
+          name: "Estivador / Carregador de Cargas",
+          type: "helper",
+          cost: 1,
+          costPeriod: "semana",
+          foodCost: 0,
+          hp: 5,
+          maxHp: 5,
+          ac: 10,
+          speed: "9m (30ft)",
+          attacks: [
+            { name: "Pancada com Caixa / Barra", bonus: +1, damage: "1d4+1", type: "impacto" }
+          ],
+          morale: 7,
+          moraleDc: 10,
+          defaultMission: "Cuidar das montarias e transportar a carga pesada",
+          description: "Homem forte para carregar baús, caixas e suprimentos do grupo."
+        }
+      ]
+    },
+
+    mercenaries: {
+      name: "Mercenários Militares",
+      description: "Combatentes armados contratados para segurança, patrulha e apoio bélico. Menor prazo de contratação é 1 mês. Grupos com mais de 6 homens requerem um Sargento (+50% no soldo).",
+      periodUnit: "mês",
+      foodCostMonthly: 1, // +1 PO por mês por homem para alimentação e estadia
+      items: [
+        {
+          id: "merc_soldier_light",
+          name: "Soldado Leve",
+          type: "mercenary",
+          cost: 2, // 2 PO / mês (+ 1 PO comida)
+          costPeriod: "mês",
+          foodCost: 1,
+          hp: 11,
+          maxHp: 11,
+          ac: 13, // Couro + Escudo
+          speed: "9m (30ft)",
+          attacks: [
+            { name: "Espada Curta", bonus: 3, damage: "1d6+1", type: "perfurante" }
+          ],
+          morale: 8,
+          moraleDc: 10,
+          defaultMission: "Vigiar o acampamento e patrulhar o perímetro",
+          description: "Guarda treinado com espada curta, escudo e armadura de couro."
+        },
+        {
+          id: "merc_soldier_heavy",
+          name: "Soldado Pesado",
+          type: "mercenary",
+          cost: 3,
+          costPeriod: "mês",
+          foodCost: 1,
+          hp: 12,
+          maxHp: 12,
+          ac: 16, // Cota de Malha
+          speed: "9m (30ft)",
+          attacks: [
+            { name: "Espada Longa", bonus: 3, damage: "1d8+1", type: "cortante" }
+          ],
+          morale: 8,
+          moraleDc: 10,
+          defaultMission: "Linha de frente defensiva e guarda de honra",
+          description: "Veterano com cota de malha pesada e espada longa."
+        },
+        {
+          id: "merc_pikeman",
+          name: "Piqueiro",
+          type: "mercenary",
+          cost: 3,
+          costPeriod: "mês",
+          foodCost: 1,
+          hp: 10,
+          maxHp: 10,
+          ac: 12,
+          speed: "9m (30ft)",
+          attacks: [
+            { name: "Pique", bonus: 3, damage: "1d10+1", type: "perfurante" },
+            { name: "Espada Curta", bonus: 3, damage: "1d6+1", type: "perfurante" }
+          ],
+          morale: 8,
+          moraleDc: 10,
+          defaultMission: "Formação defensiva anti-carga em corredores estreitos",
+          description: "Especialista em lanças longas para barrar criaturas grandes e cavalaria."
+        },
+        {
+          id: "merc_archer",
+          name: "Arqueiro",
+          type: "mercenary",
+          cost: 4,
+          costPeriod: "mês",
+          foodCost: 1,
+          hp: 9,
+          maxHp: 9,
+          ac: 12,
+          speed: "9m (30ft)",
+          attacks: [
+            { name: "Arco Curto", bonus: 3, damage: "1d6+1", type: "perfurante" },
+            { name: "Espada Curta", bonus: 3, damage: "1d6+1", type: "perfurante" }
+          ],
+          morale: 8,
+          moraleDc: 10,
+          defaultMission: "Vigia em postos elevados e suporte com flechas",
+          description: "Arqueiro experiente com arco curto e flechas afiadas."
+        },
+        {
+          id: "merc_crossbowman",
+          name: "Besteiro",
+          type: "mercenary",
+          cost: 5,
+          costPeriod: "mês",
+          foodCost: 1,
+          hp: 9,
+          maxHp: 9,
+          ac: 13,
+          speed: "9m (30ft)",
+          attacks: [
+            { name: "Besta Leve", bonus: 3, damage: "1d8+1", type: "perfurante" },
+            { name: "Espada Curta", bonus: 3, damage: "1d6+1", type: "perfurante" }
+          ],
+          morale: 8,
+          moraleDc: 10,
+          defaultMission: "Tiroteio de cobertura e perfuração de armaduras",
+          description: "Atirador com besta pesada e armadura de couro batido."
+        },
+        {
+          id: "merc_cavalry_light",
+          name: "Cavaleiro Leve (Montado)",
+          type: "mercenary",
+          cost: 10,
+          costPeriod: "mês",
+          foodCost: 1,
+          hp: 11,
+          maxHp: 11,
+          ac: 14,
+          speed: "18m (60ft) montado",
+          attacks: [
+            { name: "Lança Longa de Montaria", bonus: 3, damage: "1d8+1", type: "perfurante" },
+            { name: "Espada Longa", bonus: 3, damage: "1d8+1", type: "cortante" }
+          ],
+          morale: 9,
+          moraleDc: 9,
+          defaultMission: "Batedor rápido, patrulha de estradas e escolta",
+          description: "Cavaleiro veloz com cavalo de montaria e armas de cavaleiro."
+        },
+        {
+          id: "merc_cavalry_heavy",
+          name: "Cavaleiro de Guerra (Cavalaria Pesada)",
+          type: "mercenary",
+          cost: 20,
+          costPeriod: "mês",
+          foodCost: 1,
+          hp: 18,
+          maxHp: 18,
+          ac: 17,
+          speed: "16m (50ft) montado",
+          attacks: [
+            { name: "Lança de Justa", bonus: 4, damage: "1d8+2", type: "perfurante" },
+            { name: "Espada Bastarda", bonus: 4, damage: "1d10+2", type: "cortante" }
+          ],
+          morale: 9,
+          moraleDc: 9,
+          defaultMission: "Investida de choque e escolta de honra",
+          description: "Elite montada com armadura de placas e cavalo de guerra blindado."
+        }
+      ]
+    },
+
+    apprentices: {
+      name: "Aprendizes (Estagiários de Aventureiro)",
+      description: "Futuros heróis que acompanham veteranos para aprender o ofício. Não cobram salário fixo, mas recebem uma parte dos tesouros (normalmente 3d6×10 PO ao final da aventura) e entram na cota de divisão de XP (sem acumular para si). São leais e não fogem facilmente.",
+      periodUnit: "aventura",
+      items: [
+        {
+          id: "appr_fighter",
+          name: "Aprendiz de Guerreiro",
+          type: "apprentice",
+          cost: 0,
+          treasureShareFormula: "3d6*10 PO",
+          costPeriod: "aventura",
+          foodCost: 0,
+          hp: 6,
+          maxHp: 6,
+          ac: 11,
+          speed: "9m (30ft)",
+          attacks: [
+            { name: "Espada Curta de Treino", bonus: 1, damage: "1d6", type: "cortante" }
+          ],
+          specialFeature: "⚔️ Foco Marcial: +1 no acerto no seu primeiro ataque em cada combate.",
+          morale: 10,
+          moraleDc: 8,
+          defaultMission: "Apoiar a infantaria e aprender táticas de combate",
+          description: "Jovem espadachim focado em aprender a disciplina e a força das armas."
+        },
+        {
+          id: "appr_cleric",
+          name: "Aprendiz de Clérigo",
+          type: "apprentice",
+          cost: 0,
+          treasureShareFormula: "3d6*10 PO",
+          costPeriod: "aventura",
+          foodCost: 0,
+          hp: 5,
+          maxHp: 5,
+          ac: 11,
+          speed: "9m (30ft)",
+          attacks: [
+            { name: "Maça Simples", bonus: 0, damage: "1d4", type: "impacto" }
+          ],
+          specialFeature: "✨ Toque Restaurador: 1x ao dia, toca um aliado e cura 1 PV.",
+          morale: 10,
+          moraleDc: 8,
+          defaultMission: "Primeiros socorros, preces de proteção e carregar pergaminhos",
+          description: "Noviço devoto que estuda os dogmas sagrados e os primeiros milagres divinos."
+        },
+        {
+          id: "appr_rogue",
+          name: "Aprendiz de Ladino",
+          type: "apprentice",
+          cost: 0,
+          treasureShareFormula: "3d6*10 PO",
+          costPeriod: "aventura",
+          foodCost: 0,
+          hp: 5,
+          maxHp: 5,
+          ac: 11,
+          speed: "9m (30ft)",
+          attacks: [
+            { name: "Adaga Rápida", bonus: 1, damage: "1d4", type: "perfurante" }
+          ],
+          specialFeature: "🗝️ Olhar de Gatuno: Ajuda a encontrar armadilhas e abrir fechaduras (concede auxílio).",
+          morale: 10,
+          moraleDc: 8,
+          defaultMission: "Batedor silencioso e detecção de fechaduras",
+          description: "Ágil pungista de taverna que busca se tornar um batedor profissional."
+        },
+        {
+          id: "appr_wizard",
+          name: "Aprendiz de Mago",
+          type: "apprentice",
+          cost: 0,
+          treasureShareFormula: "3d6*10 PO",
+          costPeriod: "aventura",
+          foodCost: 0,
+          hp: 4,
+          maxHp: 4,
+          ac: 10,
+          speed: "9m (30ft)",
+          attacks: [
+            { name: "Bordão de Madeira", bonus: 0, damage: "1d4", type: "impacto" }
+          ],
+          specialFeature: "🔮 Faísca Arcana: 1x ao dia realiza um truque menor inofensivo emulando efeito de 1º círculo por 1 rodada.",
+          morale: 10,
+          moraleDc: 8,
+          defaultMission: "Auxiliar na transcrição de pergaminhos e segurar o grimório",
+          description: "Estudante da academia de magia que decifra alfabetos arcanos básicos."
+        }
+      ]
+    },
+
+    specialists: {
+      name: "Especialistas Civis",
+      description: "Profissionais técnicos e eruditos com conhecimento aprofundado em uma área específica. Não lutam em combate.",
+      periodUnit: "semana",
+      items: [
+        {
+          id: "spec_alchemist",
+          name: "Alquimista",
+          type: "specialist",
+          cost: 250, // 250 PO por semana
+          costPeriod: "semana",
+          foodCost: 0,
+          hp: 4,
+          maxHp: 4,
+          ac: 10,
+          speed: "9m (30ft)",
+          morale: 7,
+          moraleDc: 10,
+          specialFeature: "🧪 Produção: Réplicas de poções não-mágicas e venenos pela metade do preço.",
+          defaultMission: "Fabricar antídotos e estudar amostras coletadas na masmorra",
+          description: "Especialista em destilação, óleos, ácidos e substâncias alquímicas."
+        },
+        {
+          id: "spec_engineer",
+          name: "Engenheiro & Arquiteto",
+          type: "specialist",
+          cost: 185,
+          costPeriod: "semana",
+          foodCost: 0,
+          hp: 4,
+          maxHp: 4,
+          ac: 10,
+          speed: "9m (30ft)",
+          morale: 7,
+          moraleDc: 10,
+          specialFeature: "🏰 Alvenaria: Projetos de fortificações, pontes, torres e escavações.",
+          defaultMission: "Analisar a estabilidade de ruínas e fortificar o acampamento",
+          description: "Mestre de obras e desenhista de plantas arquitetônicas e defensivas."
+        },
+        {
+          id: "spec_spy",
+          name: "Espião & Informante",
+          type: "specialist",
+          cost: 125,
+          costPeriod: "semana",
+          foodCost: 0,
+          hp: 6,
+          maxHp: 6,
+          ac: 12,
+          speed: "9m (30ft)",
+          morale: 6,
+          moraleDc: 11,
+          specialFeature: "🕵️ Infiltração: Intercepta correspondências, vigia alvos e coleta boatos.",
+          defaultMission: "Infiltrar-se na taverna local e mapear as tropas do barão rival",
+          description: "Agente disfarçado que atua nas sombras em troca de ouro vivo."
+        },
+        {
+          id: "spec_sage",
+          name: "Sábio & Erudito",
+          type: "specialist",
+          cost: 100, // Custo base de referência por dia de pesquisa
+          costPeriod: "semana",
+          foodCost: 0,
+          hp: 4,
+          maxHp: 4,
+          ac: 10,
+          speed: "9m (30ft)",
+          morale: 7,
+          moraleDc: 10,
+          specialFeature: "📜 Pesquisa: Responde perguntas simples (50 PO/hora), gerais (100 PO/dia) ou específicas (500 PO/semana).",
+          defaultMission: "Pesquisar o nome do lich antigo na biblioteca arcana",
+          description: "Pesquisador histórico, linguista e mestre em geografia antiga."
+        },
+        {
+          id: "spec_captain",
+          name: "Capitão de Navio / Navegador",
+          type: "specialist",
+          cost: 70,
+          costPeriod: "semana",
+          foodCost: 0,
+          hp: 12,
+          maxHp: 12,
+          ac: 13,
+          speed: "9m (30ft)",
+          morale: 8,
+          moraleDc: 10,
+          specialFeature: "⛵ Navegação: Comanda embarcações por rios e mares conhecendo todas as rotas.",
+          defaultMission: "Manter a embarcação pronta para fuga rápida no porto",
+          description: "Comandante experiente com conhecimento de correntes marítimas e portos."
+        },
+        {
+          id: "spec_sailor",
+          name: "Marinheiro",
+          type: "specialist",
+          cost: 1,
+          costPeriod: "semana",
+          foodCost: 0,
+          hp: 6,
+          maxHp: 6,
+          ac: 11,
+          speed: "9m (30ft)",
+          morale: 7,
+          moraleDc: 10,
+          defaultMission: "Operar as velas e vigiar o convés",
+          description: "Membro da tripulação capacitado para manusear cordas e velas."
+        }
+      ]
+    }
+  }
+};
+
+// Funções utilitárias de regras D&D 5E
+function calculateHirelingCharismaLimit(chaScore) {
+  const score = parseInt(chaScore, 10) || 10;
+  if (score <= 8) return 0; // Regra expressa do livro: CAR 8 ou menor não pode contratar ajudantes
+  const mod = Math.floor((score - 10) / 2);
+  return Math.max(0, mod + 1);
+}
+
+if (typeof module !== 'undefined') {
+  module.exports = {
+    HIRELINGS_CATALOG,
+    calculateHirelingCharismaLimit
+  };
+}
+
 // src/js/audio_synth.js - Procedural Web Audio API Sound Effects & Ambient Soundscapes
 // 100% native, zero external dependencies, works offline and standalone.
 
@@ -34511,6 +35198,7 @@ function applyCloudDataToLocal(cloudData) {
       if (typeof renderCampaigns === 'function') renderCampaigns();
       if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
       if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+      if (typeof renderPlayers === 'function') renderPlayers();
     }
 
     // 5. Atualiza Notas Rápidas do Mestre (respeitando foco de digitação local)
@@ -38296,6 +38984,7 @@ function renderPlayers() {
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'combat' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'combat')">⚔️ Ações</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'spells' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'spells')">✨ Magias</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'inventory' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'inventory')">🎒 Inventário (${(p.inventory || []).length})</button>
+              <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'hirelings' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'hirelings')">👥 Lacaios (${(p.hirelings || []).length})</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'traits' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'traits')">📜 Traços</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'notes' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'notes')">📝 Notas</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'about' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'about')">👤 Sobre</button>
@@ -38555,6 +39244,18 @@ function renderPlayers() {
                   <div class="roll20-coin-box"><span class="roll20-coin-val">${(p.coins && p.coins.pp) || 0}</span><span>PL</span></div>
                 </div>
 
+                <!-- BARRA RÁPIDA DO BAÚ DO GRUPO -->
+                <div class="party-stash-quickbar">
+                  <div class="stash-info">
+                    <span>🎒 Baú Coletivo:</span>
+                    <span class="stash-gold-pill">${((typeof getActiveCampaign === 'function' ? getActiveCampaign()?.partyStash?.gold : 0) || 0)} PO</span>
+                  </div>
+                  <div style="display: flex; gap: 4px;">
+                    <button type="button" class="btn-micro" onclick="openPartyStashModal()" title="Abrir Baú Coletivo & Suprimentos do Grupo" style="color: #facc15; padding: 2px 7px;">🎒 Ver Baú</button>
+                    <button type="button" class="btn-micro" onclick="openPartyItemModal()" title="Adicionar item diretamente ao Baú do Grupo" style="color: #38bdf8; padding: 2px 7px;">➕ No Baú</button>
+                  </div>
+                </div>
+
                 <!-- STATUS DE PESO E CARGA ROLL20 -->
                 <div class="roll20-weight-status-bar" style="margin-bottom: 8px;">
                   <span>⚖️ Carga (FOR ${p.str || 10}): <b style="color: ${carry.isOverloaded ? '#f87171' : (carry.isEncumbered ? '#facc15' : '#34d399')};">${carry.totalWeight} kg</b> / ${carry.maxKg} kg</span>
@@ -38584,6 +39285,7 @@ function renderPlayers() {
                           <button type="button" class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, -1)" title="Diminuir" style="padding: 1px 4px; font-size: 9px;">−</button>
                           <span style="font-weight: 800; min-width: 14px; text-align: center; color: ${itemQty > 0 ? 'var(--primary-light)' : 'var(--text-dim)'}; font-size: 10px;">${itemQty}x</span>
                           <button type="button" class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, 1)" title="Aumentar" style="padding: 1px 4px; font-size: 9px;">+</button>
+                          <button type="button" class="btn-stash-send" onclick="sendPlayerItemToPartyStash('${p.id}', ${idx})" title="Guardar 1x no Baú do Grupo">📦 Baú</button>
                           <button type="button" class="btn-chat-feed" onclick="sharePlayerItemToFeed('${p.id}', ${idx})" title="Compartilhar no Chat">💬</button>
                           <button type="button" class="btn-micro" style="color: #f87171; padding: 1px 4px; font-size: 9px;" onclick="removePlayerItem('${p.id}', ${idx})" title="Remover item">🗑️</button>
                         </div>
@@ -38644,6 +39346,81 @@ function renderPlayers() {
                     <span class="origin-label">📜 História & Biografia:</span>
                     <div class="origin-text" style="white-space: pre-wrap; line-height: 1.5; color: #cbd5e1;">${p.backstory || 'Nenhum histórico biográfico registrado.'}</div>
                   </div>
+                </div>
+              </div>
+
+              <!-- ABA 7: LACAIOS & CONTRATADOS DO HERÓI (OLD DRAGON 2 / 5E 100% PO) -->
+              <div class="roll20-tab-panel" style="display: ${activeRoll20Tab === 'hirelings' ? 'block' : 'none'};">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span class="roll20-panel-title" style="margin: 0; border: none; padding: 0;">👥 LACAIOS & AJUDANTES CONTRATADOS</span>
+                  <button type="button" class="btn-action" style="font-size: 10px; padding: 3px 8px;" onclick="openAddCampaignHirelingModal('${p.id}')">➕ Contratar Lacaio</button>
+                </div>
+
+                <!-- CARD DE LIMITE POR CARISMA DO HERÓI -->
+                <div class="party-stash-quickbar" style="margin-bottom: 10px;">
+                  <div class="stash-info">
+                    <span>👑 <b>Liderança (Carisma ${p.cha || 10}):</b> Limite de Ajudantes: <b style="color: #fef08a;">${(typeof calculateHirelingCharismaLimit === 'function' ? calculateHirelingCharismaLimit(p.cha) : (p.cha > 8 ? Math.max(0, Math.floor((p.cha - 10)/2) + 1) : 0))}</b></span>
+                    <span style="font-size: 10.5px; color: var(--text-dim);">(Atual: ${(p.hirelings || []).filter(h => h.type === 'helper').length} ajudantes)</span>
+                  </div>
+                  <div style="font-size: 10px; color: ${(p.cha || 10) <= 8 ? '#f87171' : '#34d399'};">
+                    ${(p.cha || 10) <= 8 ? '⚠️ CAR ≤ 8: Não pode contratar ajudantes' : '✅ Autorizado a contratar'}
+                  </div>
+                </div>
+
+                <!-- LISTA DE LACAIOS DO HERÓI -->
+                <div style="display: flex; flex-direction: column; gap: 8px; min-height: 200px;">
+                  ${(!p.hirelings || p.hirelings.length === 0) ? `
+                    <div style="text-align: center; padding: 24px; color: var(--text-dim); font-size: 11px; font-style: italic; background: rgba(15, 23, 42, 0.4); border-radius: 8px;">
+                      ${p.name} não possui nenhum ajudante, mercenário ou aprendiz contratado.<br>
+                      Clique em <b>➕ Contratar Lacaio</b> para admitir tocheiros, escolta militar ou aprendizes de classe!
+                    </div>
+                  ` : p.hirelings.map(h => {
+                    const statusClass = h.status === 'fled' ? 'status-pill-fled' : (h.status === 'injured' ? 'status-pill-injured' : (h.status === 'away' ? 'status-pill-away' : 'status-pill-acting'));
+                    const statusLabel = h.status === 'fled' ? '🏃 Fugiu' : (h.status === 'injured' ? '🔴 Ferido' : (h.status === 'away' ? '🟡 Missão' : '🟢 Ativo'));
+                    return `
+                      <div class="hireling-card ${h.status === 'fled' ? 'fled' : ''}" style="margin-bottom: 4px;">
+                        <div class="hireling-header">
+                          <div>
+                            <div class="hireling-name-badge">
+                              <span>${h.name}</span>
+                              <span class="hireling-cost-tag">💰 ${h.cost} PO / ${h.costPeriod || 'semana'}${h.foodCost ? ` (+${h.foodCost} PO comida)` : ''}</span>
+                              <span class="status-pill ${statusClass}">${statusLabel}</span>
+                            </div>
+                            <div style="font-size: 10px; color: var(--text-dim); margin-top: 2px;">
+                              ${h.description || 'Lacaio a serviço de ' + p.name}
+                            </div>
+                          </div>
+                          <div style="display: flex; gap: 3px;">
+                            <button type="button" class="btn-micro" onclick="sendHirelingToCombat('${h.id}', '${p.id}')" title="Enviar para o combate / VTT como aliado" style="color: #38bdf8; padding: 2px 5px;">⚔️ Combate</button>
+                            <button type="button" class="btn-micro" onclick="rollSingleHirelingMorale('${h.id}', '${p.id}')" title="Rolar teste de moral" style="color: #facc15; padding: 2px 5px;">🎲 Moral</button>
+                            <button type="button" class="btn-micro" onclick="dismissCampaignHireling('${h.id}', '${p.id}')" title="Dispensar lacaio" style="color: #f87171; padding: 2px 5px;">🗑️</button>
+                          </div>
+                        </div>
+
+                        <div class="hireling-stats-row">
+                          <span class="hireling-stat-pill">❤️ PV: <b>${h.hp || 4}/${h.maxHp || 4}</b></span>
+                          <span class="hireling-stat-pill">🛡️ CA: <b>${h.ac || 10}</b></span>
+                          <span class="hireling-stat-pill">🦁 Moral: <b>${h.morale || 7} (CD ${h.moraleDc || 10})</b></span>
+                          ${(h.attacks || []).map(a => `<span class="hireling-stat-pill" style="color: #fed7aa;">⚔️ ${a.name} (+${a.bonus}, ${a.damage})</span>`).join('')}
+                          ${h.specialFeature ? `<span class="hireling-stat-pill" style="color: #c4b5fd;">${h.specialFeature}</span>` : ''}
+                        </div>
+
+                        <div class="hireling-mission-box">
+                          <span style="font-size: 12px;">🎯</span>
+                          <input type="text" class="hireling-mission-input" value="${h.mission || h.defaultMission || 'Ajudar nas tarefas do herói'}"
+                            placeholder="Defina a função / ordem atual para este lacaio..."
+                            onchange="updateHirelingMission('${h.id}', this.value, '${p.id}')">
+                          <select style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); color: #cbd5e1; font-size: 10px; border-radius: 4px; padding: 1px 4px;"
+                            onchange="updateHirelingStatus('${h.id}', this.value, '${p.id}')">
+                            <option value="acting" ${h.status === 'acting' || !h.status ? 'selected' : ''}>🟢 Ativo</option>
+                            <option value="away" ${h.status === 'away' ? 'selected' : ''}>🟡 Missão</option>
+                            <option value="injured" ${h.status === 'injured' ? 'selected' : ''}>🔴 Ferido</option>
+                            <option value="fled" ${h.status === 'fled' ? 'selected' : ''}>🏃 Fugiu</option>
+                          </select>
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
                 </div>
               </div>
 
@@ -46216,16 +46993,14 @@ function openTradeItemModal(donorId, itemIdx) {
     inpQty.max = maxQty;
   }
 
-  // Preenche destinatários disponíveis (todos os outros heróis)
+  // Preenche destinatários disponíveis (Baú Coletivo + todos os outros heróis)
   if (selReceiver) {
     const otherHeroes = (typeof PLAYERS !== 'undefined') ? PLAYERS.filter(p => p.id !== donorId) : [];
-    if (otherHeroes.length === 0) {
-      selReceiver.innerHTML = '<option value="">Nenhum outro herói na mesa</option>';
-    } else {
-      selReceiver.innerHTML = otherHeroes.map(h => `
-        <option value="${h.id}">${h.name} (${h.student || 'Aluno'}) - ${h.className || ''}</option>
-      `).join('');
-    }
+    let opts = '<option value="PARTY_STASH">🎒 Baú Coletivo do Grupo</option>';
+    otherHeroes.forEach(h => {
+      opts += `<option value="${h.id}">${h.name} (${h.student || 'Aluno'}) - ${h.className || ''}</option>`;
+    });
+    selReceiver.innerHTML = opts;
   }
 
   if (modal) modal.classList.add('open');
@@ -46258,7 +47033,15 @@ function confirmTradeItem() {
   const qty = inpQty ? Math.max(1, Math.min(activeTradeContext.maxQty, parseInt(inpQty.value, 10) || 1)) : 1;
 
   if (!receiverId) {
-    alert('Por favor, selecione um herói para receber o item.');
+    alert('Por favor, selecione um destinatário para o item.');
+    return;
+  }
+
+  if (receiverId === 'PARTY_STASH') {
+    if (typeof sendPlayerItemToPartyStash === 'function') {
+      sendPlayerItemToPartyStash(activeTradeContext.donorId, activeTradeContext.itemIdx, qty);
+    }
+    closeTradeItemModal();
     return;
   }
 
@@ -49360,6 +50143,16 @@ function getActiveCampaign() {
     CAMPAIGNS_STATE.campaigns = (typeof INITIAL_CAMPAIGNS !== 'undefined') ? JSON.parse(JSON.stringify(INITIAL_CAMPAIGNS)) : [];
     CAMPAIGNS_STATE.activeCampaignId = CAMPAIGNS_STATE.campaigns[0]?.id || "camp_1";
   }
+
+  // Se estiver no portal do jogador ou cliente jogador, prioriza a campanha onde o herói ativo está alocado
+  if (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId) {
+    const heroCamp = CAMPAIGNS_STATE.campaigns.find(c => Array.isArray(c.playerIds) && c.playerIds.some(pid => String(pid) === String(activePortalPlayerId)));
+    if (heroCamp) {
+      CAMPAIGNS_STATE.activeCampaignId = heroCamp.id;
+      return heroCamp;
+    }
+  }
+
   let camp = CAMPAIGNS_STATE.campaigns.find(c => c.id === CAMPAIGNS_STATE.activeCampaignId);
   if (!camp && CAMPAIGNS_STATE.campaigns.length > 0) {
     camp = CAMPAIGNS_STATE.campaigns[0];
@@ -49524,6 +50317,9 @@ function renderCampaigns() {
 
   // 3. Renderiza Inventário & Tesouro Coletivo (Party Stash)
   renderCampaignPartyStash(camp, campPlayers);
+
+  // 4. Renderiza NPCs Contratados & Folha de Pagamento do Grupo (Old Dragon 2 para 5E)
+  renderCampaignHirelings(camp, campPlayers);
 }
 
 // --- DASHBOARD DE VISÃO GERAL DA CAMPANHA (DM3) ---
@@ -49743,6 +50539,571 @@ function renderCampaignPartyStash(camp, campPlayers) {
         </div>
       `).join('');
     }
+  }
+}
+
+// --- MÓDULO DE NPCS CONTRATADOS & FOLHA DE PAGAMENTO DO GRUPO (OLD DRAGON 2 / 5E 100% PO) ---
+
+function getAllCampaignHirelings(camp, campPlayers) {
+  const result = [];
+  // 1. Contratados diretos da campanha
+  (camp.hirelings || []).forEach(h => {
+    result.push({ ...h, isCampHireling: true, employerName: 'Campanha / Grupo', employerPlayerId: null });
+  });
+
+  // 2. Contratados agregados de cada herói vinculado
+  (campPlayers || []).forEach(p => {
+    (p.hirelings || []).forEach(h => {
+      result.push({ ...h, isCampHireling: false, employerName: p.name, employerPlayerId: p.id });
+    });
+  });
+
+  return result;
+}
+
+function renderCampaignHirelings(camp, campPlayers) {
+  const container = document.getElementById('campaign-hirelings-container');
+  if (!container) return;
+
+  const hirelings = getAllCampaignHirelings(camp, campPlayers);
+  const activeHirelings = hirelings.filter(h => h.status !== 'fled' && h.status !== 'dismissed');
+
+  // Cálculo da folha de pagamento 100% em PO
+  let weeklyCost = 0;
+  let monthlyCost = 0;
+  let mercenariesCount = 0;
+
+  activeHirelings.forEach(h => {
+    const cost = parseInt(h.cost, 10) || 0;
+    const food = parseInt(h.foodCost, 10) || 0;
+
+    if (h.type === 'helper' || h.costPeriod === 'semana') {
+      weeklyCost += cost;
+      monthlyCost += (cost * 4);
+    } else if (h.type === 'mercenary' || h.costPeriod === 'mês') {
+      mercenariesCount++;
+      monthlyCost += (cost + food);
+      weeklyCost += Math.ceil((cost + food) / 4);
+    } else if (h.type === 'specialist') {
+      weeklyCost += cost;
+      monthlyCost += (cost * 4);
+    }
+  });
+
+  // Regra do Sargento: mais de 6 mercenários exige sargento (+50% no soldo médio de 3 PO = +2 PO/mês)
+  let sargWarning = '';
+  if (mercenariesCount > 6) {
+    const sargAdd = Math.ceil(mercenariesCount * 0.5);
+    monthlyCost += sargAdd;
+    sargWarning = `<div style="font-size:10px; color:#facc15; margin-top:2px;">⚠️ +${sargAdd} PO/mês (Comando de Sargento para pelotão com >6 soldados)</div>`;
+  }
+
+  const goldInStash = camp.partyStash?.gold || 0;
+
+  container.innerHTML = `
+    <div class="campaign-hirelings-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 16px;">👥</span>
+          <div>
+            <span style="font-size: 14px; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 0.5px;">NPCs Contratados & Folha de Pagamento</span>
+            <div style="font-size: 10px; color: var(--text-dim);">Ajudantes, mercenários, aprendizes e especialistas a serviço do grupo</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button type="button" class="btn-action" style="font-size: 11px; padding: 4px 10px;" onclick="openAddCampaignHirelingModal()">➕ Contratar NPC</button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; color: #facc15; border-color: rgba(234, 179, 8, 0.4);" onclick="rollCampaignHirelingsMorale()" title="Rolar moral diário dos ajudantes/mercenários">🎲 Teste de Moral</button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; color: #34d399; border-color: rgba(52, 211, 153, 0.4);" onclick="payCampaignHirelingsPayroll('semana')" title="Pagar salários semanais debitando do baú coletivo">💳 Pagar Folha (Semanal)</button>
+        </div>
+      </div>
+
+      <!-- Resumo Financeiro da Folha em PO -->
+      <div class="camp-payroll-summary">
+        <div class="camp-payroll-card">
+          <div class="camp-payroll-val">${activeHirelings.length}</div>
+          <div class="camp-payroll-lbl">NPCs em Ação</div>
+        </div>
+        <div class="camp-payroll-card">
+          <div class="camp-payroll-val">${weeklyCost} <small style="font-size: 10px; color: var(--text-dim);">PO</small></div>
+          <div class="camp-payroll-lbl">Custo Semanal</div>
+        </div>
+        <div class="camp-payroll-card">
+          <div class="camp-payroll-val">${monthlyCost} <small style="font-size: 10px; color: var(--text-dim);">PO</small></div>
+          <div class="camp-payroll-lbl">Custo Mensal Estimado</div>
+          ${sargWarning}
+        </div>
+        <div class="camp-payroll-card">
+          <div class="camp-payroll-val" style="color: ${goldInStash >= weeklyCost ? '#34d399' : '#f87171'};">${goldInStash} <small style="font-size: 10px; color: var(--text-dim);">PO</small></div>
+          <div class="camp-payroll-lbl">Saldo no Baú</div>
+        </div>
+      </div>
+
+      <!-- Lista de NPCs e Missões -->
+      <div class="hirelings-container">
+        ${hirelings.length === 0 ? `
+          <div style="text-align: center; padding: 18px; color: var(--text-muted); font-size: 11.5px; font-style: italic; background: rgba(15, 23, 42, 0.4); border-radius: 8px;">
+            Nenhum ajudante ou mercenário contratado no momento. Clique em <b>➕ Contratar NPC</b> para admitir tocheiros, soldados, aprendizes ou especialistas!
+          </div>
+        ` : hirelings.map(h => {
+          const statusClass = h.status === 'fled' ? 'status-pill-fled' : (h.status === 'injured' ? 'status-pill-injured' : (h.status === 'away' ? 'status-pill-away' : 'status-pill-acting'));
+          const statusLabel = h.status === 'fled' ? '🏃 Fugiu / Desaparecido' : (h.status === 'injured' ? '🔴 Ferido / Repouso' : (h.status === 'away' ? '🟡 Missão Externa' : '🟢 Em Ação'));
+          return `
+            <div class="hireling-card ${h.status === 'fled' ? 'fled' : ''}" id="hireling-card-${h.id}">
+              <div class="hireling-header">
+                <div>
+                  <div class="hireling-name-badge">
+                    <span>${h.name}</span>
+                    <span class="hireling-cost-tag">💰 ${h.cost} PO / ${h.costPeriod || 'semana'}${h.foodCost ? ` (+${h.foodCost} PO com)` : ''}</span>
+                    <span class="status-pill ${statusClass}">${statusLabel}</span>
+                  </div>
+                  <div style="font-size: 10.5px; color: var(--text-dim); margin-top: 2px;">
+                    Vínculo: <b>${h.employerName}</b> • ${h.description || 'NPC contratado'}
+                  </div>
+                </div>
+                <div style="display: flex; gap: 4px;">
+                  <button type="button" class="btn-micro" onclick="sendHirelingToCombat('${h.id}', '${h.employerPlayerId || ''}')" title="Enviar para o combate / VTT como aliado" style="color: #38bdf8; padding: 2px 6px;">⚔️ Combate</button>
+                  <button type="button" class="btn-micro" onclick="rollSingleHirelingMorale('${h.id}', '${h.employerPlayerId || ''}')" title="Testar moral deste NPC" style="color: #facc15; padding: 2px 6px;">🎲 Moral</button>
+                  <button type="button" class="btn-micro" onclick="dismissCampaignHireling('${h.id}', '${h.employerPlayerId || ''}')" title="Dispensar contratado" style="color: #f87171; padding: 2px 6px;">🗑️</button>
+                </div>
+              </div>
+
+              <!-- Atributos D&D 5E -->
+              <div class="hireling-stats-row">
+                <span class="hireling-stat-pill">❤️ PV: <b>${h.hp || 4}/${h.maxHp || 4}</b></span>
+                <span class="hireling-stat-pill">🛡️ CA: <b>${h.ac || 10}</b></span>
+                <span class="hireling-stat-pill">🏃 Desl: <b>${h.speed || '9m'}</b></span>
+                <span class="hireling-stat-pill">🦁 Moral: <b>${h.morale || 7} (CD ${h.moraleDc || 10})</b></span>
+                ${(h.attacks || []).map(a => `<span class="hireling-stat-pill" style="color: #fed7aa;">⚔️ ${a.name} (+${a.bonus}, ${a.damage})</span>`).join('')}
+                ${h.specialFeature ? `<span class="hireling-stat-pill" style="color: #c4b5fd;">${h.specialFeature}</span>` : ''}
+              </div>
+
+              <!-- Campo de Função / Missão Ativa -->
+              <div class="hireling-mission-box">
+                <span style="font-size: 12px;" title="Missão em andamento">🎯</span>
+                <input type="text" class="hireling-mission-input" value="${h.mission || h.defaultMission || 'Ajudar nas tarefas do grupo'}" 
+                  placeholder="Defina a função / missão atual deste NPC..."
+                  onchange="updateHirelingMission('${h.id}', this.value, '${h.employerPlayerId || ''}')">
+                <select style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); color: #cbd5e1; font-size: 10px; border-radius: 4px; padding: 1px 4px;"
+                  onchange="updateHirelingStatus('${h.id}', this.value, '${h.employerPlayerId || ''}')">
+                  <option value="acting" ${h.status === 'acting' || !h.status ? 'selected' : ''}>🟢 Em Ação</option>
+                  <option value="away" ${h.status === 'away' ? 'selected' : ''}>🟡 Missão Externa</option>
+                  <option value="injured" ${h.status === 'injured' ? 'selected' : ''}>🔴 Ferido</option>
+                  <option value="fled" ${h.status === 'fled' ? 'selected' : ''}>🏃 Fugiu</option>
+                </select>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// Atualização de missão e status
+function updateHirelingMission(hirelingId, newMission, playerId = null) {
+  const camp = getActiveCampaign();
+  let found = false;
+
+  if (playerId && typeof PLAYERS !== 'undefined') {
+    const p = PLAYERS.find(x => x.id === playerId);
+    if (p && Array.isArray(p.hirelings)) {
+      const h = p.hirelings.find(x => x.id === hirelingId);
+      if (h) {
+        h.mission = newMission;
+        touchPlayer(p);
+        found = true;
+      }
+    }
+  }
+
+  if (!found && camp && Array.isArray(camp.hirelings)) {
+    const h = camp.hirelings.find(x => x.id === hirelingId);
+    if (h) {
+      h.mission = newMission;
+      touchCampaign(camp);
+      found = true;
+    }
+  }
+
+  if (found) {
+    saveCampaignsState();
+    if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+    if (typeof showSaveStatus === 'function') showSaveStatus();
+  }
+}
+
+function updateHirelingStatus(hirelingId, newStatus, playerId = null) {
+  const camp = getActiveCampaign();
+  let found = false;
+
+  if (playerId && typeof PLAYERS !== 'undefined') {
+    const p = PLAYERS.find(x => x.id === playerId);
+    if (p && Array.isArray(p.hirelings)) {
+      const h = p.hirelings.find(x => x.id === hirelingId);
+      if (h) {
+        h.status = newStatus;
+        touchPlayer(p);
+        found = true;
+      }
+    }
+  }
+
+  if (!found && camp && Array.isArray(camp.hirelings)) {
+    const h = camp.hirelings.find(x => x.id === hirelingId);
+    if (h) {
+      h.status = newStatus;
+      touchCampaign(camp);
+      found = true;
+    }
+  }
+
+  if (found) {
+    saveCampaignsState();
+    if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+    renderCampaigns();
+    if (typeof renderPlayers === 'function') renderPlayers();
+  }
+}
+
+function dismissCampaignHireling(hirelingId, playerId = null) {
+  const camp = getActiveCampaign();
+  if (!confirm('Deseja realmente dispensar este contratado do grupo?')) return;
+
+  if (playerId && typeof PLAYERS !== 'undefined') {
+    const p = PLAYERS.find(x => x.id === playerId);
+    if (p && Array.isArray(p.hirelings)) {
+      p.hirelings = p.hirelings.filter(x => x.id !== hirelingId);
+      touchPlayer(p);
+    }
+  }
+
+  if (camp && Array.isArray(camp.hirelings)) {
+    camp.hirelings = camp.hirelings.filter(x => x.id !== hirelingId);
+    touchCampaign(camp);
+  }
+
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderCampaigns();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof addLog === 'function') addLog('👥 <b>Contratados:</b> Lacaio/Mercenário dispensado do serviço.');
+}
+
+// Pagamento da folha com débito direto no baú em PO
+function payCampaignHirelingsPayroll(period = 'semana') {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const campPlayers = (camp.playerIds || []).map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p);
+  const hirelings = getAllCampaignHirelings(camp, campPlayers).filter(h => h.status !== 'fled' && h.status !== 'dismissed');
+
+  if (hirelings.length === 0) {
+    alert('Nenhum contratado ativo no momento.');
+    return;
+  }
+
+  let totalCost = 0;
+  hirelings.forEach(h => {
+    const cost = parseInt(h.cost, 10) || 0;
+    const food = parseInt(h.foodCost, 10) || 0;
+    if (period === 'semana') {
+      totalCost += (h.type === 'mercenary' ? Math.ceil((cost + food) / 4) : cost);
+    } else {
+      totalCost += (h.type === 'helper' ? cost * 4 : cost + food);
+    }
+  });
+
+  const currentGold = camp.partyStash?.gold || 0;
+  if (currentGold < totalCost) {
+    alert(`Ouro insuficiente no Baú Coletivo!\nCusto da folha: ${totalCost} PO\nSaldo no Baú: ${currentGold} PO\n\nAdicione ouro ao baú antes de pagar.`);
+    return;
+  }
+
+  if (!confirm(`Confirmar pagamento da folha de salários (${period})?\nValor Total: ${totalCost} PO para ${hirelings.length} contratados.\nSaldo Restante: ${currentGold - totalCost} PO.`)) {
+    return;
+  }
+
+  camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+  camp.partyStash.gold -= totalCost;
+  camp.partyStash.history = camp.partyStash.history || [];
+  camp.partyStash.history.push({
+    date: new Date().toISOString().split('T')[0],
+    text: `💳 Folha de salários paga: -${totalCost} PO (${hirelings.length} NPCs)`,
+    type: 'gold_out'
+  });
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderCampaigns();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+
+  if (typeof addLog === 'function') {
+    addLog(`💰 <b>Folha de Pagamento:</b> ${totalCost} PO debitados do Baú Coletivo para pagamento de ${hirelings.length} contratados.`);
+  }
+}
+
+// Teste de Moral Diário (Old Dragon 2: Moral 7 a 9 / CD 9 a 10 no d20)
+function rollCampaignHirelingsMorale() {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+
+  const campPlayers = (camp.playerIds || []).map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p);
+  const hirelings = getAllCampaignHirelings(camp, campPlayers).filter(h => h.status === 'acting' || h.status === 'away');
+
+  if (hirelings.length === 0) {
+    alert('Nenhum ajudante ou mercenário em serviço ativo para testar moral.');
+    return;
+  }
+
+  let logReport = '🎲 <b>Teste de Moral Diário dos Contratados:</b><br>';
+  let anyFled = false;
+
+  hirelings.forEach(h => {
+    const d20 = Math.floor(Math.random() * 20) + 1;
+    const dc = h.moraleDc || 10;
+    // Bônus bondoso/cruel
+    const employerBonus = (h.employerTrait === 'kind') ? 1 : (h.employerTrait === 'cruel' ? -1 : 0);
+    const total = d20 + employerBonus;
+    const passed = total >= dc;
+
+    if (passed) {
+      logReport += `• <b>${h.name}</b> (${h.employerName}): d20(${d20})${employerBonus ? (employerBonus > 0 ? '+1' : '-1') : ''} = <b>${total}</b> vs CD ${dc} — <span style="color:#34d399;">Permanece leal ✅</span><br>`;
+    } else {
+      anyFled = true;
+      h.status = 'fled';
+      updateHirelingStatus(h.id, 'fled', h.employerPlayerId);
+      logReport += `• <b>${h.name}</b> (${h.employerName}): d20(${d20})${employerBonus ? (employerBonus > 0 ? '+1' : '-1') : ''} = <b>${total}</b> vs CD ${dc} — <span style="color:#f87171;">FALHOU e fugiu durante a noite! 🏃💨</span><br>`;
+    }
+  });
+
+  if (typeof addLog === 'function') addLog(logReport);
+  renderCampaigns();
+  if (typeof renderPlayers === 'function') renderPlayers();
+
+  if (anyFled) {
+    alert('Atenção! Um ou mais contratados falharam no teste de moral e desertaram durante a noite. Verifique o feed de combate/mensagens.');
+  } else {
+    alert('Todos os contratados passaram no teste de moral e continuam cumprindo suas tarefas bravamente!');
+  }
+}
+
+function rollSingleHirelingMorale(hirelingId, playerId = null) {
+  const camp = getActiveCampaign();
+  const campPlayers = (camp.playerIds || []).map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p);
+  const h = getAllCampaignHirelings(camp, campPlayers).find(x => x.id === hirelingId);
+  if (!h) return;
+
+  const d20 = Math.floor(Math.random() * 20) + 1;
+  const dc = h.moraleDc || 10;
+  const employerBonus = (h.employerTrait === 'kind') ? 1 : (h.employerTrait === 'cruel' ? -1 : 0);
+  const total = d20 + employerBonus;
+  const passed = total >= dc;
+
+  const resultMsg = passed
+    ? `🦁 <b>${h.name} (Moral):</b> d20(${d20})${employerBonus ? (employerBonus > 0 ? '+1' : '-1') : ''} = <b>${total}</b> vs CD ${dc}. <span style="color:#34d399;">Passou! Firme em seu posto.</span>`
+    : `🏃 <b>${h.name} (Moral):</b> d20(${d20})${employerBonus ? (employerBonus > 0 ? '+1' : '-1') : ''} = <b>${total}</b> vs CD ${dc}. <span style="color:#f87171;">Falhou! O medo o domina.</span>`;
+
+  if (typeof addLog === 'function') addLog(resultMsg);
+  if (!passed && confirm(`${h.name} falhou no teste de moral (Rolou ${total} vs CD ${dc}). Marcar como que fugiu?`)) {
+    updateHirelingStatus(hirelingId, 'fled', playerId);
+  }
+}
+
+// Envia NPC contratado para o Combat Tracker como aliado
+function sendHirelingToCombat(hirelingId, playerId = null) {
+  const camp = getActiveCampaign();
+  const campPlayers = (camp.playerIds || []).map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p);
+  const h = getAllCampaignHirelings(camp, campPlayers).find(x => x.id === hirelingId);
+  if (!h) return;
+
+  if (typeof state === 'undefined' || !Array.isArray(state.combatants)) {
+    alert('Gerenciador de combate não inicializado.');
+    return;
+  }
+
+  const existingCombatant = state.combatants.find(c => c.hirelingId === hirelingId);
+  if (existingCombatant) {
+    alert(`"${h.name}" já está presente no combate (Iniciativa: ${existingCombatant.init})!`);
+    return;
+  }
+
+  const initRoll = Math.floor(Math.random() * 20) + 1;
+  const combatant = {
+    id: 'cbt_h_' + Date.now() + '_' + Math.random().toString(36).substring(2, 5),
+    hirelingId: h.id,
+    name: `${h.name} (${h.employerName})`,
+    hp: h.hp || 4,
+    maxHp: h.maxHp || 4,
+    ac: h.ac || 10,
+    init: initRoll,
+    type: 'ally',
+    actions: (h.attacks || []).map(a => `${a.name} (+${a.bonus}, ${a.damage})`).join(' | ') || 'Ataque improvisado (+0, 1d4)',
+    active: false,
+    color: '#38bdf8'
+  };
+
+  state.combatants.push(combatant);
+  state.combatants.sort((a, b) => (b.init || 0) - (a.init || 0));
+
+  if (typeof saveState === 'function') saveState();
+  if (typeof renderCombat === 'function') renderCombat();
+  if (typeof switchTab === 'function') switchTab('combat');
+
+  if (typeof addLog === 'function') {
+    addLog(`⚔️ <b>Contratado no Combate:</b> "${combatant.name}" entrou na batalha com Iniciativa <b>${initRoll}</b>.`);
+  }
+}
+
+// Modais de Adicionar Contratado
+let activeHirelingTargetPlayerId = null;
+
+function openAddCampaignHirelingModal(forPlayerId = null) {
+  activeHirelingTargetPlayerId = forPlayerId;
+  const modal = document.getElementById('modal-campaign-hireling');
+  if (!modal) return;
+
+  const selPreset = document.getElementById('sel-hireling-preset');
+  if (selPreset && typeof HIRELINGS_CATALOG !== 'undefined') {
+    let opts = '<option value="">-- Escolha um NPC do Catálogo OD2 / 5E --</option>';
+    Object.keys(HIRELINGS_CATALOG.categories).forEach(catKey => {
+      const cat = HIRELINGS_CATALOG.categories[catKey];
+      opts += `<optgroup label="${cat.name}">`;
+      cat.items.forEach(it => {
+        opts += `<option value="${it.id}">${it.name} (${it.cost} PO/${it.costPeriod}${it.foodCost ? ` +${it.foodCost} PO comida` : ''})</option>`;
+      });
+      opts += `</optgroup>`;
+    });
+    selPreset.innerHTML = opts;
+  }
+
+  // Preenche empregadores disponíveis
+  const selEmployer = document.getElementById('sel-hireling-employer');
+  if (selEmployer) {
+    const camp = getActiveCampaign();
+    const campPlayers = (camp && camp.playerIds ? camp.playerIds.map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p) : PLAYERS) || [];
+    let empOpts = '<option value="camp">🏛️ Campanha / Grupo Todo</option>';
+    campPlayers.forEach(p => {
+      empOpts += `<option value="${p.id}" ${forPlayerId === p.id ? 'selected' : ''}>👤 ${p.name} (Carisma: ${p.cha || 10})</option>`;
+    });
+    selEmployer.innerHTML = empOpts;
+  }
+
+  modal.classList.add('open');
+}
+
+function closeAddCampaignHirelingModal() {
+  const modal = document.getElementById('modal-campaign-hireling');
+  if (modal) modal.classList.remove('open');
+  activeHirelingTargetPlayerId = null;
+}
+
+function onHirelingPresetChange() {
+  const selPreset = document.getElementById('sel-hireling-preset');
+  if (!selPreset || !selPreset.value || typeof HIRELINGS_CATALOG === 'undefined') return;
+
+  const presetId = selPreset.value;
+  let found = null;
+  Object.values(HIRELINGS_CATALOG.categories).forEach(cat => {
+    const it = cat.items.find(x => x.id === presetId);
+    if (it) found = it;
+  });
+
+  if (!found) return;
+
+  const nameInput = document.getElementById('inp-hireling-name');
+  const costInput = document.getElementById('inp-hireling-cost');
+  const periodSelect = document.getElementById('sel-hireling-period');
+  const hpInput = document.getElementById('inp-hireling-hp');
+  const acInput = document.getElementById('inp-hireling-ac');
+  const missionInput = document.getElementById('inp-hireling-mission');
+
+  if (nameInput) nameInput.value = found.name;
+  if (costInput) costInput.value = found.cost;
+  if (periodSelect) periodSelect.value = found.costPeriod || 'semana';
+  if (hpInput) hpInput.value = found.hp || 4;
+  if (acInput) acInput.value = found.ac || 10;
+  if (missionInput) missionInput.value = found.defaultMission || '';
+}
+
+function saveNewCampaignHireling() {
+  const name = document.getElementById('inp-hireling-name')?.value.trim();
+  if (!name) {
+    alert('Informe o nome do contratado.');
+    return;
+  }
+
+  const cost = parseInt(document.getElementById('inp-hireling-cost')?.value, 10) || 1;
+  const costPeriod = document.getElementById('sel-hireling-period')?.value || 'semana';
+  const hp = parseInt(document.getElementById('inp-hireling-hp')?.value, 10) || 4;
+  const ac = parseInt(document.getElementById('inp-hireling-ac')?.value, 10) || 10;
+  const mission = document.getElementById('inp-hireling-mission')?.value.trim() || 'Ajudar nas tarefas do grupo';
+  const employerVal = document.getElementById('sel-hireling-employer')?.value || 'camp';
+
+  // Localiza dados do preset se houver
+  const presetId = document.getElementById('sel-hireling-preset')?.value || '';
+  let presetData = null;
+  if (presetId && typeof HIRELINGS_CATALOG !== 'undefined') {
+    Object.values(HIRELINGS_CATALOG.categories).forEach(cat => {
+      const it = cat.items.find(x => x.id === presetId);
+      if (it) presetData = it;
+    });
+  }
+
+  const hirelingObj = {
+    id: 'hir_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+    name: name,
+    type: presetData ? presetData.type : 'helper',
+    cost: cost,
+    costPeriod: costPeriod,
+    foodCost: presetData ? (presetData.foodCost || 0) : 0,
+    hp: hp,
+    maxHp: hp,
+    ac: ac,
+    speed: presetData ? (presetData.speed || '9m') : '9m',
+    attacks: presetData ? (presetData.attacks || []) : [{ name: 'Arma Simples', bonus: 0, damage: '1d4' }],
+    morale: presetData ? (presetData.morale || 7) : 7,
+    moraleDc: presetData ? (presetData.moraleDc || 10) : 10,
+    specialFeature: presetData ? (presetData.specialFeature || '') : '',
+    description: presetData ? (presetData.description || '') : 'NPC contratado',
+    mission: mission,
+    status: 'acting',
+    createdAt: Date.now()
+  };
+
+  if (employerVal === 'camp') {
+    const camp = getActiveCampaign();
+    if (!camp) return;
+    camp.hirelings = camp.hirelings || [];
+    camp.hirelings.push(hirelingObj);
+    touchCampaign(camp);
+  } else {
+    const p = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(x => x.id === employerVal) : null;
+    if (p) {
+      p.hirelings = p.hirelings || [];
+      // Validação de limite por Carisma para Ajudantes
+      if (hirelingObj.type === 'helper' && typeof calculateHirelingCharismaLimit === 'function') {
+        const limit = calculateHirelingCharismaLimit(p.cha);
+        const currentHelpers = p.hirelings.filter(h => h.type === 'helper').length;
+        if (currentHelpers >= limit) {
+          if (!confirm(`${p.name} possui Carisma ${p.cha || 10} (Limite: ${limit} ajudantes).\nAtualmente já possui ${currentHelpers} ajudantes.\nDeseja contratar mesmo assim ignorando o limite?`)) {
+            return;
+          }
+        }
+      }
+      p.hirelings.push(hirelingObj);
+      touchPlayer(p);
+    }
+  }
+
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  closeAddCampaignHirelingModal();
+  renderCampaigns();
+  if (typeof renderPlayers === 'function') renderPlayers();
+
+  if (typeof addLog === 'function') {
+    addLog(`👥 <b>Novo Contratado:</b> "${name}" (${cost} PO/${costPeriod}) contratado pelo grupo.`);
   }
 }
 
@@ -50324,13 +51685,73 @@ function savePartyItem() {
     });
   }
 
+  // Sincronização direta com a mochila do herói se um portador for indicado
+  if (carrier && carrier !== 'Baú do Grupo' && carrier !== 'Mochila Coletiva' && typeof PLAYERS !== 'undefined') {
+    const hero = PLAYERS.find(p => p.name.toLowerCase() === carrier.toLowerCase() || p.id === carrier);
+    if (hero) {
+      hero.inventory = hero.inventory || [];
+      const existingHeroItem = hero.inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
+      if (existingHeroItem) {
+        existingHeroItem.qty = Math.max(1, qty);
+      } else {
+        hero.inventory.push({
+          name: name,
+          qty: qty,
+          equipped: false,
+          weight: 0.5,
+          desc: desc
+        });
+      }
+      if (typeof touchPlayer === 'function') touchPlayer(hero);
+      if (typeof renderPlayers === 'function') renderPlayers();
+    }
+  }
+
   touchCampaign(camp);
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   closePartyItemModal();
   renderCampaigns();
   renderPartyStashViewer();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
   if (typeof addLog === 'function') addLog(`🎒 <b>Baú do Grupo:</b> Item "${name}" (${qty}x) salvo com sucesso.`);
+}
+
+// Transferência direta da mochila do jogador para o Baú do Grupo
+function sendPlayerItemToPartyStash(playerId, itemIdx, qty = null) {
+  const p = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(x => x.id === playerId) : null;
+  if (!p || !p.inventory || !p.inventory[itemIdx]) return false;
+
+  const item = p.inventory[itemIdx];
+  const itemQty = parseInt(item.qty, 10) || 1;
+  let transferQty = qty !== null ? parseInt(qty, 10) : 1;
+
+  if (isNaN(transferQty) || transferQty <= 0) transferQty = 1;
+  if (transferQty > itemQty) transferQty = itemQty;
+
+  // Remove ou subtrai da mochila do jogador
+  if (itemQty <= transferQty) {
+    p.inventory.splice(itemIdx, 1);
+  } else {
+    item.qty = itemQty - transferQty;
+  }
+  if (typeof touchPlayer === 'function') touchPlayer(p);
+
+  // Adiciona ao Baú do Grupo da campanha ativa
+  const camp = (typeof getActiveCampaign === 'function') ? getActiveCampaign() : null;
+  if (camp) {
+    addItemToPartyStash(item.name, transferQty, item.category || 'Equipamento de Aventura', item.desc || '', 'Baú do Grupo');
+  }
+
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+
+  if (typeof addLog === 'function') {
+    addLog(`🎒 <b>${p.name}:</b> guardou ${transferQty}x "${item.name}" no Baú do Grupo.`);
+  }
+  return true;
 }
 
 function deletePartyItem(itemId) {
@@ -50899,6 +52320,20 @@ if (typeof module !== 'undefined' && module.exports) {
     promptAdjustPartyGold,
     splitPartyGold,
     takePartyItemToPlayer,
+    sendPlayerItemToPartyStash,
+    getAllCampaignHirelings,
+    renderCampaignHirelings,
+    updateHirelingMission,
+    updateHirelingStatus,
+    dismissCampaignHireling,
+    payCampaignHirelingsPayroll,
+    rollCampaignHirelingsMorale,
+    rollSingleHirelingMorale,
+    sendHirelingToCombat,
+    openAddCampaignHirelingModal,
+    closeAddCampaignHirelingModal,
+    saveNewCampaignHireling,
+    onHirelingPresetChange,
     touchCampaign,
     trackDeletedCampaignId,
     getDeletedCampaignIds,
@@ -50907,6 +52342,22 @@ if (typeof module !== 'undefined' && module.exports) {
     deleteCurrentCampaign,
     saveCampaignForm
   };
+}
+
+if (typeof window !== 'undefined') {
+  window.sendPlayerItemToPartyStash = sendPlayerItemToPartyStash;
+  window.renderCampaignHirelings = renderCampaignHirelings;
+  window.updateHirelingMission = updateHirelingMission;
+  window.updateHirelingStatus = updateHirelingStatus;
+  window.dismissCampaignHireling = dismissCampaignHireling;
+  window.payCampaignHirelingsPayroll = payCampaignHirelingsPayroll;
+  window.rollCampaignHirelingsMorale = rollCampaignHirelingsMorale;
+  window.rollSingleHirelingMorale = rollSingleHirelingMorale;
+  window.sendHirelingToCombat = sendHirelingToCombat;
+  window.openAddCampaignHirelingModal = openAddCampaignHirelingModal;
+  window.closeAddCampaignHirelingModal = closeAddCampaignHirelingModal;
+  window.saveNewCampaignHireling = saveNewCampaignHireling;
+  window.onHirelingPresetChange = onHirelingPresetChange;
 }
 
 // Auto-carregamento imediato na avaliação do módulo
@@ -54388,6 +55839,8 @@ if (syncChannel) {
           } catch(e) {}
           if (typeof renderCampaigns === 'function') renderCampaigns();
           if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
+          if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+          if (typeof renderPlayers === 'function') renderPlayers();
         }
       } else if (event.data.type === 'GLOBAL_DICE_ROLL' && event.data.roll) {
         if (typeof updateDiceResultUI === 'function') {

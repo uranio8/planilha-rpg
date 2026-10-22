@@ -10383,6 +10383,215 @@
       font-weight: 700;
     }
 
+    /* Estilos do Sistema de Contratação (Old Dragon 2 para 5E 100% PO) e Baú do Grupo */
+    .party-stash-quickbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(135deg, rgba(20, 26, 38, 0.9), rgba(15, 23, 42, 0.95));
+      border: 1px solid rgba(234, 179, 8, 0.35);
+      border-radius: 8px;
+      padding: 6px 12px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+    .party-stash-quickbar .stash-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11.5px;
+      color: #e2e8f0;
+    }
+    .party-stash-quickbar .stash-gold-pill {
+      font-family: var(--font-mono, monospace);
+      font-weight: 800;
+      color: #fef08a;
+      background: rgba(234, 179, 8, 0.15);
+      border: 1px solid rgba(234, 179, 8, 0.35);
+      padding: 2px 7px;
+      border-radius: 5px;
+    }
+    .btn-stash-send {
+      background: rgba(14, 165, 233, 0.15);
+      border: 1px solid rgba(14, 165, 233, 0.35);
+      color: #38bdf8;
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .btn-stash-send:hover {
+      background: rgba(14, 165, 233, 0.3);
+      color: #e0f2fe;
+      transform: translateY(-1px);
+    }
+
+    /* Cards e painel de NPCs Contratados */
+    .hirelings-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .hireling-card {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 8px;
+      padding: 10px 12px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .hireling-card:hover {
+      border-color: rgba(234, 179, 8, 0.4);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    }
+    .hireling-card.fled {
+      opacity: 0.6;
+      border-color: rgba(239, 68, 68, 0.4);
+      background: rgba(30, 15, 15, 0.6);
+    }
+    .hireling-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 6px;
+    }
+    .hireling-name-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 800;
+      font-size: 13px;
+      color: #fff;
+    }
+    .hireling-cost-tag {
+      background: rgba(234, 179, 8, 0.12);
+      border: 1px solid rgba(234, 179, 8, 0.3);
+      color: #fef08a;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono, monospace);
+    }
+    .hireling-stats-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      font-size: 11px;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+    .hireling-stat-pill {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      padding: 1px 5px;
+      border-radius: 4px;
+      color: #cbd5e1;
+      font-size: 10px;
+    }
+    .hireling-mission-box {
+      background: rgba(2, 6, 23, 0.5);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 5px;
+      padding: 5px 8px;
+      font-size: 11px;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hireling-mission-input {
+      background: transparent;
+      border: none;
+      color: #f8fafc;
+      font-size: 11px;
+      width: 100%;
+      outline: none;
+    }
+    .hireling-mission-input:focus {
+      border-bottom: 1px solid var(--accent-gold);
+    }
+    .hireling-actions-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 4px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(148, 163, 184, 0.1);
+    }
+
+    /* Painel da Campanha - Folha de Pagamento */
+    .campaign-hirelings-box {
+      background: linear-gradient(135deg, rgba(20, 26, 38, 0.85), rgba(15, 23, 42, 0.9));
+      border: 1px solid rgba(234, 179, 8, 0.25);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-top: 14px;
+    }
+    .camp-payroll-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .camp-payroll-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: center;
+    }
+    .camp-payroll-val {
+      font-size: 18px;
+      font-weight: 900;
+      color: #fef08a;
+      font-family: var(--font-mono, monospace);
+    }
+    .camp-payroll-lbl {
+      font-size: 10px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Status Pills */
+    .status-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .status-pill-acting {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
+    }
+    .status-pill-away {
+      background: rgba(234, 179, 8, 0.2);
+      border: 1px solid rgba(234, 179, 8, 0.4);
+      color: #fef08a;
+    }
+    .status-pill-injured {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+    .status-pill-fled {
+      background: rgba(100, 116, 139, 0.3);
+      border: 1px solid rgba(100, 116, 139, 0.4);
+      color: #94a3b8;
+    }
+
     @media (max-width: 900px) {
       .player-hp-btn, .btn-hp-adj, .btn-hp-dmg, .btn-hp-heal, .roll20-hp-btn {
         min-height: 44px;
