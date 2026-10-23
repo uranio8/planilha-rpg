@@ -1161,19 +1161,19 @@ function setPlayerCardRoll20Tab(playerId, tabName) {
 }
 
 function applyRoll20QuickDamage(playerId) {
-  const input = document.getElementById(`roll20-hp-input-${playerId}`);
+  const input = document.getElementById(`roll20-hp-input-${playerId}`) || document.getElementById(`roll20-hp-in-${playerId}`);
   const val = input ? parseInt(input.value, 10) : 0;
   if (!val || val <= 0) return;
   adjustPlayerHp(playerId, -val);
-  if (input) input.value = '';
+  if (input) input.value = '1';
 }
 
 function applyRoll20QuickHeal(playerId) {
-  const input = document.getElementById(`roll20-hp-input-${playerId}`);
+  const input = document.getElementById(`roll20-hp-input-${playerId}`) || document.getElementById(`roll20-hp-in-${playerId}`);
   const val = input ? parseInt(input.value, 10) : 0;
   if (!val || val <= 0) return;
   adjustPlayerHp(playerId, val);
-  if (input) input.value = '';
+  if (input) input.value = '1';
 }
 
 function sharePlayerCalculatedAttackToFeed(playerId, atkIndex) {
@@ -1627,7 +1627,7 @@ function renderPlayers() {
               <!-- STEPPER DE DANO / CURA INSTANTÂNEO -->
               <div class="roll20-hp-stepper-box">
                 <button type="button" class="roll20-btn-hp-dmg" onclick="applyRoll20QuickDamage('${p.id}')" title="Aplicar Dano">💔 Dano</button>
-                <input type="number" id="roll20-hp-in-${p.id}" class="roll20-hp-input" value="1" min="1" max="999">
+                <input type="number" id="roll20-hp-input-${p.id}" class="roll20-hp-input" value="1" min="1" max="999" onkeydown="if(event.key==='Enter'){event.preventDefault();applyRoll20QuickDamage('${p.id}');}">
                 <button type="button" class="roll20-btn-hp-heal" onclick="applyRoll20QuickHeal('${p.id}')" title="Aplicar Cura">💚 Cura</button>
               </div>
             </div>
@@ -6592,6 +6592,188 @@ function closeCastSpellModal() {
   if (modal) modal.classList.remove('open');
 }
 
+// ============================================================================
+// 🎲 ISSUE-122: CRIAÇÃO & EDIÇÃO AVANÇADA DE PERSONAGENS D&D 5E
+// 4d6 Drop Lowest, Array Padrão, Otimização por Classe e Cálculo de PV Nível 1
+// ============================================================================
+
+function getClassAttributePriority(className) {
+  const norm = (className || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (norm.includes('barbar')) return ['str', 'con', 'dex', 'wis', 'cha', 'int'];
+  if (norm.includes('bardo') || norm.includes('bard')) return ['cha', 'dex', 'con', 'int', 'wis', 'str'];
+  if (norm.includes('cleric') || norm.includes('clerigo')) return ['wis', 'con', 'str', 'dex', 'cha', 'int'];
+  if (norm.includes('druid') || norm.includes('druida')) return ['wis', 'con', 'dex', 'int', 'cha', 'str'];
+  if (norm.includes('fighter') || norm.includes('guerreiro')) return ['str', 'con', 'dex', 'wis', 'cha', 'int'];
+  if (norm.includes('monk') || norm.includes('monge')) return ['dex', 'wis', 'con', 'str', 'cha', 'int'];
+  if (norm.includes('paladin') || norm.includes('paladino')) return ['str', 'cha', 'con', 'wis', 'dex', 'int'];
+  if (norm.includes('ranger') || norm.includes('patrulheiro') || norm.includes('guardiao')) return ['dex', 'wis', 'con', 'str', 'cha', 'int'];
+  if (norm.includes('rogue') || norm.includes('ladino')) return ['dex', 'con', 'int', 'wis', 'cha', 'str'];
+  if (norm.includes('sorcerer') || norm.includes('feiticeiro')) return ['cha', 'con', 'dex', 'wis', 'int', 'str'];
+  if (norm.includes('warlock') || norm.includes('bruxo')) return ['cha', 'con', 'dex', 'wis', 'int', 'str'];
+  if (norm.includes('wizard') || norm.includes('mago')) return ['int', 'con', 'dex', 'wis', 'cha', 'str'];
+  if (norm.includes('artificer') || norm.includes('artifice')) return ['int', 'con', 'dex', 'wis', 'str', 'cha'];
+  return ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+}
+
+function calculateLevel1Hp(className, conValue) {
+  const norm = (className || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const conMod = Math.floor(((conValue || 10) - 10) / 2);
+  let baseHitDie = 8;
+  if (norm.includes('barbar')) baseHitDie = 12;
+  else if (norm.includes('fighter') || norm.includes('guerreiro') || norm.includes('paladin') || norm.includes('paladino') || norm.includes('ranger') || norm.includes('patrulheiro') || norm.includes('guardiao')) baseHitDie = 10;
+  else if (norm.includes('wizard') || norm.includes('mago') || norm.includes('sorcerer') || norm.includes('feiticeiro')) baseHitDie = 6;
+  else baseHitDie = 8;
+  return Math.max(1, baseHitDie + conMod);
+}
+
+function getSuggestedClassAttacks(className, strMod = 2, dexMod = 2) {
+  const norm = (className || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const prof = 2;
+  const strAtk = prof + strMod;
+  const dexAtk = prof + dexMod;
+  const signStr = strAtk >= 0 ? `+${strAtk}` : `${strAtk}`;
+  const signDex = dexAtk >= 0 ? `+${dexAtk}` : `${dexAtk}`;
+  const strDmgSign = strMod >= 0 ? `+${strMod}` : `${strMod}`;
+  const dexDmgSign = dexMod >= 0 ? `+${dexMod}` : `${dexMod}`;
+
+  if (norm.includes('barbar')) return `Machado Grande (${signStr}, 1d12${strDmgSign} cortante), Azagaia (${signStr}, 1d6${strDmgSign} perfurante)`;
+  if (norm.includes('guerreiro') || norm.includes('fighter')) return `Espada Longa (${signStr}, 1d8${strDmgSign} cortante), Arco Longo (${signDex}, 1d8${dexDmgSign} perfurante)`;
+  if (norm.includes('paladino') || norm.includes('paladin')) return `Espada Longa (${signStr}, 1d8${strDmgSign} cortante), Azagaia (${signStr}, 1d6${strDmgSign} perfurante)`;
+  if (norm.includes('patrulheiro') || norm.includes('ranger') || norm.includes('guardiao')) return `Espada Curta (${signDex}, 1d6${dexDmgSign} perfurante), Arco Longo (${signDex}, 1d8${dexDmgSign} perfurante)`;
+  if (norm.includes('ladino') || norm.includes('rogue')) return `Rapieira (${signDex}, 1d8${dexDmgSign} perfurante), Arco Curto (${signDex}, 1d6${dexDmgSign} perfurante)`;
+  if (norm.includes('monge') || norm.includes('monk')) return `Bordão (${signDex}, 1d8${dexDmgSign} contundente), Ataque Desarmado (${signDex}, 1d4${dexDmgSign} contundente)`;
+  if (norm.includes('clerigo') || norm.includes('cleric')) return `Maça (${signStr}, 1d6${strDmgSign} contundente), Chama Sagrada (CD 13 SAB, 1d8 radiante)`;
+  if (norm.includes('druida') || norm.includes('druid')) return `Cimitarra (${signDex}, 1d6${dexDmgSign} cortante), Bordão (${signStr}, 1d6${strDmgSign} contundente)`;
+  if (norm.includes('bardo') || norm.includes('bard')) return `Florete (${signDex}, 1d8${dexDmgSign} perfurante), Zombaria Viciosa (CD 13 CAR, 1d4 psíquico)`;
+  if (norm.includes('bruxo') || norm.includes('warlock')) return `Adaga (${signDex}, 1d4${dexDmgSign} perfurante), Raio Místico (${signDex}, 1d10 energia)`;
+  if (norm.includes('mago') || norm.includes('wizard')) return `Adaga (${signDex}, 1d4${dexDmgSign} perfurante), Raio de Fogo (${signDex}, 1d10 fogo)`;
+  if (norm.includes('feiticeiro') || norm.includes('sorcerer')) return `Besta Leve (${signDex}, 1d8${dexDmgSign} perfurante), Raio de Fogo (${signDex}, 1d10 fogo)`;
+  return `Espada Longa (${signStr}, 1d8${strDmgSign} cortante)`;
+}
+
+function roll4d6DropLowest() {
+  const rolls = [
+    Math.floor(Math.random() * 6) + 1,
+    Math.floor(Math.random() * 6) + 1,
+    Math.floor(Math.random() * 6) + 1,
+    Math.floor(Math.random() * 6) + 1
+  ];
+  rolls.sort((a, b) => a - b);
+  const dropped = rolls[0];
+  const total = rolls[1] + rolls[2] + rolls[3];
+  return { total, rolls, dropped };
+}
+
+function rollAttributes4d6Modal() {
+  const classSel = document.getElementById('pm-class-select');
+  const classInput = document.getElementById('pm-class');
+  const className = classSel ? (classSel.value === 'custom' ? (classInput ? classInput.value : 'Guerreiro') : classSel.value) : 'Guerreiro';
+
+  const rolledScores = [];
+  for (let i = 0; i < 6; i++) {
+    const res = roll4d6DropLowest();
+    rolledScores.push(res.total);
+  }
+
+  rolledScores.sort((a, b) => b - a);
+  const priority = getClassAttributePriority(className);
+  const assigned = {};
+  priority.forEach((attrKey, idx) => {
+    assigned[attrKey] = rolledScores[idx];
+    const el = document.getElementById(`pm-${attrKey}`);
+    if (el) el.value = rolledScores[idx];
+  });
+
+  if (typeof updateModalAttributeModifiers === 'function') updateModalAttributeModifiers();
+  if (typeof updateModalCalculatedAc === 'function') updateModalCalculatedAc();
+
+  const lvl = parseInt(document.getElementById('pm-level')?.value) || 1;
+  const isNew = !document.getElementById('pm-id')?.value;
+  if (isNew || lvl === 1) {
+    const conVal = assigned['con'] || 14;
+    const hpVal = calculateLevel1Hp(className, conVal);
+    const hpEl = document.getElementById('pm-maxhp');
+    if (hpEl) hpEl.value = hpVal;
+  }
+
+  if (typeof playFX === 'function') playFX('dice');
+  const msg = `🎲 <b>4d6 Drop Lowest Rolado com Sucesso!</b><br>Valores obtidos: <b>${rolledScores.join(', ')}</b><br>Distribuídos estrategicamente para <b>${className}</b>:<br>FOR: ${assigned.str} | DES: ${assigned.dex} | CON: ${assigned.con} | INT: ${assigned.int} | SAB: ${assigned.wis} | CAR: ${assigned.cha}`;
+  if (typeof showToast === 'function') showToast(msg, 'success');
+  else alert(`🎲 4d6 Drop Lowest: ${rolledScores.join(', ')} distribuídos para ${className}!`);
+}
+
+function applyStandardArrayModal() {
+  const classSel = document.getElementById('pm-class-select');
+  const classInput = document.getElementById('pm-class');
+  const className = classSel ? (classSel.value === 'custom' ? (classInput ? classInput.value : 'Guerreiro') : classSel.value) : 'Guerreiro';
+
+  const standardScores = [15, 14, 13, 12, 10, 8];
+  const priority = getClassAttributePriority(className);
+  const assigned = {};
+  priority.forEach((attrKey, idx) => {
+    assigned[attrKey] = standardScores[idx];
+    const el = document.getElementById(`pm-${attrKey}`);
+    if (el) el.value = standardScores[idx];
+  });
+
+  if (typeof updateModalAttributeModifiers === 'function') updateModalAttributeModifiers();
+  if (typeof updateModalCalculatedAc === 'function') updateModalCalculatedAc();
+
+  const lvl = parseInt(document.getElementById('pm-level')?.value) || 1;
+  const isNew = !document.getElementById('pm-id')?.value;
+  if (isNew || lvl === 1) {
+    const conVal = assigned['con'] || 14;
+    const hpVal = calculateLevel1Hp(className, conVal);
+    const hpEl = document.getElementById('pm-maxhp');
+    if (hpEl) hpEl.value = hpVal;
+  }
+
+  if (typeof playFX === 'function') playFX('heal');
+  const msg = `📊 <b>Array Padrão Aplicado (15, 14, 13, 12, 10, 8)</b><br>Otimizado para <b>${className}</b>:<br>FOR: ${assigned.str} | DES: ${assigned.dex} | CON: ${assigned.con} | INT: ${assigned.int} | SAB: ${assigned.wis} | CAR: ${assigned.cha}`;
+  if (typeof showToast === 'function') showToast(msg, 'info');
+  else alert(`📊 Array Padrão aplicado para ${className}!`);
+}
+
+function optimizeAttributesForClassModal() {
+  const classSel = document.getElementById('pm-class-select');
+  const classInput = document.getElementById('pm-class');
+  const className = classSel ? (classSel.value === 'custom' ? (classInput ? classInput.value : 'Guerreiro') : classSel.value) : 'Guerreiro';
+
+  const currentScores = [
+    parseInt(document.getElementById('pm-str')?.value) || 10,
+    parseInt(document.getElementById('pm-dex')?.value) || 10,
+    parseInt(document.getElementById('pm-con')?.value) || 10,
+    parseInt(document.getElementById('pm-int')?.value) || 10,
+    parseInt(document.getElementById('pm-wis')?.value) || 10,
+    parseInt(document.getElementById('pm-cha')?.value) || 10
+  ];
+
+  currentScores.sort((a, b) => b - a);
+  const priority = getClassAttributePriority(className);
+  const assigned = {};
+  priority.forEach((attrKey, idx) => {
+    assigned[attrKey] = currentScores[idx];
+    const el = document.getElementById(`pm-${attrKey}`);
+    if (el) el.value = currentScores[idx];
+  });
+
+  if (typeof updateModalAttributeModifiers === 'function') updateModalAttributeModifiers();
+  if (typeof updateModalCalculatedAc === 'function') updateModalCalculatedAc();
+
+  const lvl = parseInt(document.getElementById('pm-level')?.value) || 1;
+  const isNew = !document.getElementById('pm-id')?.value;
+  if (isNew || lvl === 1) {
+    const conVal = assigned['con'] || 14;
+    const hpVal = calculateLevel1Hp(className, conVal);
+    const hpEl = document.getElementById('pm-maxhp');
+    if (hpEl) hpEl.value = hpVal;
+  }
+
+  const msg = `⚡ <b>Atributos Reordenados p/ ${className}!</b><br>Valores organizados por prioridade da classe:<br>FOR: ${assigned.str} | DES: ${assigned.dex} | CON: ${assigned.con} | INT: ${assigned.int} | SAB: ${assigned.wis} | CAR: ${assigned.cha}`;
+  if (typeof showToast === 'function') showToast(msg, 'info');
+  else alert(`⚡ Atributos reordenados para ${className}!`);
+}
+
 function onPlayerModalClassOrLevelChange(preserveSlotsIfSet = false) {
   const classSel = document.getElementById('pm-class-select');
   const classInput = document.getElementById('pm-class');
@@ -6609,6 +6791,24 @@ function onPlayerModalClassOrLevelChange(preserveSlotsIfSet = false) {
   if (hitDiceInput) {
     const hd = getHitDieForClass(selectedClassName);
     hitDiceInput.value = `${level}${hd.replace(/^[0-9]+/, '')}`;
+  }
+
+  // Se for criação de novo personagem ou nível 1, sugere PV e armas iniciais adequadas
+  const isNewChar = !document.getElementById('pm-id')?.value;
+  if (isNewChar && level === 1) {
+    const conVal = parseInt(document.getElementById('pm-con')?.value) || 10;
+    const hpInput = document.getElementById('pm-maxhp');
+    if (hpInput) {
+      hpInput.value = calculateLevel1Hp(selectedClassName, conVal);
+    }
+    const atkInput = document.getElementById('pm-attacks');
+    if (atkInput && (!atkInput.value || atkInput.value === 'Espada Longa (+4, 1d8+2 cortante)')) {
+      const strVal = parseInt(document.getElementById('pm-str')?.value) || 10;
+      const dexVal = parseInt(document.getElementById('pm-dex')?.value) || 10;
+      const strMod = Math.floor((strVal - 10) / 2);
+      const dexMod = Math.floor((dexVal - 10) / 2);
+      atkInput.value = getSuggestedClassAttacks(selectedClassName, strMod, dexMod);
+    }
   }
 
   if (subclassSel && typeof CLASSES_DATA !== 'undefined') {
@@ -7205,6 +7405,19 @@ function savePlayerSheet() {
     }
   } else {
     PLAYERS.push(data);
+    // ISSUE-122: Vincula automaticamente o novo personagem à campanha ativa
+    if (typeof CAMPAIGNS_STATE !== 'undefined' && CAMPAIGNS_STATE.campaigns && CAMPAIGNS_STATE.campaigns.length > 0) {
+      const activeCamp = CAMPAIGNS_STATE.campaigns.find(c => c.id === CAMPAIGNS_STATE.activeCampaignId) || CAMPAIGNS_STATE.campaigns[0];
+      if (activeCamp) {
+        if (!Array.isArray(activeCamp.playerIds)) activeCamp.playerIds = [];
+        if (!activeCamp.playerIds.includes(data.id)) {
+          activeCamp.playerIds.push(data.id);
+          if (typeof touchCampaign === 'function') touchCampaign(activeCamp);
+          if (typeof saveCampaignsState === 'function') saveCampaignsState();
+          if (typeof renderCampaigns === 'function') renderCampaigns();
+        }
+      }
+    }
   }
 
   closePlayerModal();
@@ -10712,7 +10925,16 @@ if (typeof module !== 'undefined' && module.exports) {
     sharePlayerCalculatedAttackToFeed,
     sharePlayerSpellToFeed,
     sharePlayerItemToFeed,
-    sharePlayerTraitToFeed
+    sharePlayerTraitToFeed,
+
+    // ISSUE-122: Criação & Edição Avançada de Personagens
+    getClassAttributePriority,
+    calculateLevel1Hp,
+    getSuggestedClassAttacks,
+    roll4d6DropLowest,
+    rollAttributes4d6Modal,
+    applyStandardArrayModal,
+    optimizeAttributesForClassModal
   };
 }
 
@@ -10768,6 +10990,15 @@ if (typeof window !== 'undefined') {
   // ISSUE-114 & ISSUE-115: Formatação de Textos e Modal de Edição
   window.formatFeatureSnippet = formatFeatureSnippet;
   window.updateModalAttributeModifiers = updateModalAttributeModifiers;
+
+  // ISSUE-122: Criação & Edição Avançada de Personagens
+  window.getClassAttributePriority = getClassAttributePriority;
+  window.calculateLevel1Hp = calculateLevel1Hp;
+  window.getSuggestedClassAttacks = getSuggestedClassAttacks;
+  window.roll4d6DropLowest = roll4d6DropLowest;
+  window.rollAttributes4d6Modal = rollAttributes4d6Modal;
+  window.applyStandardArrayModal = applyStandardArrayModal;
+  window.optimizeAttributesForClassModal = optimizeAttributesForClassModal;
 }
 
 

@@ -1660,6 +1660,11 @@
           <label style="margin:0;">6 Atributos D&D (Valores Brutos 1 a 20 & Modificadores Calculados)</label>
           <span style="font-size:10px; color:var(--text-muted);">Modificador oficial: (Valor - 10) / 2</span>
         </div>
+        <div style="display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap;">
+          <button type="button" class="btn-action" style="padding: 4px 9px; font-size: 11px; background: linear-gradient(135deg, #7c3aed, #6d28d9);" onclick="rollAttributes4d6Modal()" title="Rolar 4d6 e descartar o menor para cada atributo">🎲 Rolar 4d6 (Drop Lowest)</button>
+          <button type="button" class="btn-secondary" style="padding: 4px 9px; font-size: 11px; border-color: rgba(59, 130, 246, 0.4); color: #93c5fd;" onclick="applyStandardArrayModal()" title="Aplicar array padrão oficial (15, 14, 13, 12, 10, 8)">📊 Array Padrão (15, 14, 13, 12, 10, 8)</button>
+          <button type="button" class="btn-secondary" style="padding: 4px 9px; font-size: 11px; border-color: rgba(245, 158, 11, 0.4); color: #fde68a;" onclick="optimizeAttributesForClassModal()" title="Reordenar os atributos atuais priorizando os atributos principais da classe">⚡ Otimizar p/ Classe</button>
+        </div>
         <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;">
           <div class="stat-box-editor">
             <span class="stat-box-editor-label">FOR</span>

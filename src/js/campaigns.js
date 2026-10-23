@@ -5,6 +5,10 @@ var CAMPAIGNS_STATE = (typeof CAMPAIGNS_STATE !== 'undefined' && CAMPAIGNS_STATE
 if (typeof window !== 'undefined') {
   window.CAMPAIGNS_STATE = CAMPAIGNS_STATE;
 }
+var hasPendingPlayerStashSync = false;
+if (typeof window !== 'undefined') {
+  window.hasPendingPlayerStashSync = hasPendingPlayerStashSync;
+}
 
 
 function touchCampaign(campaignOrId) {
@@ -14,6 +18,16 @@ function touchCampaign(campaignOrId) {
     : campaignOrId;
   if (camp) {
     camp.updatedAt = Date.now();
+    if (camp.partyStash) {
+      camp.partyStash.updatedAt = Date.now();
+    }
+  }
+  return camp;
+}
+
+function touchPartyStash(campaignOrId) {
+  const camp = touchCampaign(campaignOrId);
+  if (camp) {
     if (!camp.partyStash) camp.partyStash = { gold: 0, items: [], history: [] };
     camp.partyStash.updatedAt = Date.now();
   }
@@ -1451,11 +1465,14 @@ function promptAdjustPartyGold(type) {
     });
   }
 
-  touchCampaign(camp);
+  touchPartyStash(camp);
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   renderCampaigns();
   renderPartyStashViewer();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
   if (typeof addLog === 'function') addLog(`💰 <b>Baú do Grupo:</b> ${type === 'add' ? '+' : '-'}${val} PO (${reason}). Saldo: ${camp.partyStash.gold} PO.`);
 }
 
@@ -1638,13 +1655,15 @@ function savePartyItem() {
     }
   }
 
-  touchCampaign(camp);
+  touchPartyStash(camp);
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   closePartyItemModal();
   renderCampaigns();
   renderPartyStashViewer();
   if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
   if (typeof addLog === 'function') addLog(`🎒 <b>Baú do Grupo:</b> Item "${name}" (${qty}x) salvo com sucesso.`);
 }
 
@@ -1678,6 +1697,8 @@ function sendPlayerItemToPartyStash(playerId, itemIdx, qty = null) {
   if (typeof renderPlayers === 'function') renderPlayers();
   if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
   if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+  hasPendingPlayerStashSync = true;
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 
   if (typeof addLog === 'function') {
     addLog(`🎒 <b>${p.name}:</b> guardou ${transferQty}x "${item.name}" no Baú do Grupo.`);
@@ -1698,7 +1719,7 @@ function deletePartyItem(itemId) {
   const removedItemId = it.id;
   trackDeletedPartyItemId(removedItemId);
   camp.partyStash.items = camp.partyStash.items.filter(x => x.id !== removedItemId);
-  touchCampaign(camp);
+  touchPartyStash(camp);
   camp.partyStash.history.push({
     date: new Date().toISOString().split('T')[0],
     text: `-${it.qty}x ${it.name} removido do grupo`,
@@ -1709,6 +1730,9 @@ function deletePartyItem(itemId) {
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   renderCampaigns();
   renderPartyStashViewer();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
   if (typeof addLog === 'function') addLog(`🗑️ <b>Baú do Grupo:</b> "${it.name}" removido.`);
 }
 
@@ -1740,11 +1764,14 @@ function addItemToPartyStash(name, qty = 1, category = 'Equipamento de Aventura'
     type: 'item_in'
   });
 
-  touchCampaign(camp);
+  touchPartyStash(camp);
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   renderCampaigns();
   renderPartyStashViewer();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
   if (typeof addLog === 'function') addLog(`🎒 <b>Baú do Grupo:</b> +${qty}x "${name}" guardado no baú coletivo.`);
   return true;
 }
@@ -1762,16 +1789,16 @@ function updateAllPartyStashElements() {
   const masterGold = document.getElementById('stash-gold-amount');
   if (masterGold) masterGold.innerText = `${gold} PO`;
 
-  // 3. Barra rápida do baú em todas as fichas dos jogadores
+  // 3. Barra rápida do baú em todas as fichas dos jogadores (.stash-gold-pill)
   if (typeof document !== 'undefined') {
-    document.querySelectorAll('.party-stash-quickbar b').forEach(el => {
+    document.querySelectorAll('.party-stash-quickbar .stash-gold-pill, .stash-gold-pill, .party-stash-quickbar b').forEach(el => {
       el.innerText = `${gold} PO`;
     });
   }
 
-  // 4. Se o modal do baú estiver visível, atualiza a lista de itens e histórico
+  // 4. Se o modal do baú estiver visível, atualiza a lista de itens e histórico reativamente
   const modal = (typeof document !== 'undefined') ? document.getElementById('modal-party-stash-view') : null;
-  if (modal && modal.classList.contains('open') && typeof renderPartyStashViewer === 'function') {
+  if (modal && (modal.classList.contains('open') || modal.classList.contains('active')) && typeof renderPartyStashViewer === 'function') {
     renderPartyStashViewer();
   }
 }

@@ -26,9 +26,30 @@ let firebaseCloudDebounceTimer = null;
 let hasPendingCloudSync = false;
 let cloudSaveStatusTimeout = null;
 let localClientId = 'client_' + Math.random().toString(36).substring(2, 9);
-var clientRole = (typeof window !== 'undefined' && window.location && (window.location.search.includes('view=player') || window.location.search.includes('player=') || window.location.search.includes('lobby=true') || window.location.search.includes('login=player'))) 
-  ? 'player' 
-  : ((typeof isMasterAuthorized === 'function' && isMasterAuthorized()) ? 'master' : 'player');
+function resolveClientRole() {
+  if (typeof window !== 'undefined' && window.location) {
+    if (window.location.search.includes('view=player') || window.location.search.includes('player=') || window.location.search.includes('lobby=true') || window.location.search.includes('login=player')) {
+      return 'player';
+    }
+  }
+  if (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId) {
+    return 'player';
+  }
+  if (typeof document !== 'undefined' && document.body && document.body.classList.contains('mode-player-portal')) {
+    return 'player';
+  }
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const storedRole = localStorage.getItem('dnd5e_session_role');
+      if (storedRole === 'player' && typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId) {
+        return 'player';
+      }
+    }
+  } catch (e) {}
+  return 'master';
+}
+
+var clientRole = resolveClientRole();
 
 function setClientRole(role) {
   clientRole = role;
@@ -36,10 +57,11 @@ function setClientRole(role) {
 }
 
 function getClientRole() {
-  return clientRole;
+  return clientRole || resolveClientRole();
 }
 
 if (typeof window !== 'undefined') {
+  window.resolveClientRole = resolveClientRole;
   window.setClientRole = setClientRole;
   window.getClientRole = getClientRole;
   window.clientRole = clientRole;
@@ -390,8 +412,12 @@ function mergeCloudCampaignsState(cloudCampaignsState) {
           const remoteStashUpdated = (remoteCamp.partyStash && remoteCamp.partyStash.updatedAt) || 0;
 
           // Mescla Baú do Grupo e Tesouro com controle de timestamps, tombstones e autoridade do Mestre
-          const isPlayerClient = (typeof clientRole !== 'undefined' && clientRole === 'player');
-          if (isPlayerClient || remoteStashUpdated >= localStashUpdated) {
+          const isPlayerClient = (typeof clientRole !== 'undefined' && clientRole === 'player') ||
+            (typeof activePortalPlayerId !== 'undefined' && Boolean(activePortalPlayerId)) ||
+            (typeof document !== 'undefined' && document.body && document.body.classList.contains('mode-player-portal'));
+          const isMasterPublished = (cloudCampaignsState.publishedBy === 'master');
+
+          if (remoteStashUpdated >= localStashUpdated || (isPlayerClient && isMasterPublished)) {
             // Nuvem do Mestre é autoridade máxima ou é mais recente
             if (remoteCamp.partyStash.gold !== undefined) {
               localCamp.partyStash.gold = remoteCamp.partyStash.gold;
@@ -416,6 +442,21 @@ function mergeCloudCampaignsState(cloudCampaignsState) {
             }
           });
           localCamp.partyStash.history = mergedHist;
+        }
+      }
+
+      // Mescla Bastião Coletivo (D&D 2024 / 5.5 em PO)
+      if (remoteCamp.bastion) {
+        if (!localCamp.bastion) {
+          localCamp.bastion = JSON.parse(JSON.stringify(remoteCamp.bastion));
+        } else {
+          const localBastionUpdated = (localCamp.bastion && localCamp.bastion.updatedAt) || 0;
+          const remoteBastionUpdated = (remoteCamp.bastion && remoteCamp.bastion.updatedAt) || 0;
+          const isPlayerClient = (typeof clientRole !== 'undefined' && clientRole === 'player') || (typeof activePortalPlayerId !== 'undefined' && Boolean(activePortalPlayerId));
+          const isMasterPublished = (cloudCampaignsState.publishedBy === 'master');
+          if (isPlayerClient || isMasterPublished || remoteBastionUpdated >= localBastionUpdated) {
+            localCamp.bastion = JSON.parse(JSON.stringify(remoteCamp.bastion));
+          }
         }
       }
     }
@@ -959,8 +1000,9 @@ function executePlayerCloudSave() {
           authorPlayerName: myPlayer.name || ''
         };
 
-        if (typeof CAMPAIGNS_STATE !== 'undefined' && CAMPAIGNS_STATE) {
+        if (typeof hasPendingPlayerStashSync !== 'undefined' && hasPendingPlayerStashSync && typeof CAMPAIGNS_STATE !== 'undefined' && CAMPAIGNS_STATE) {
           updates.campaigns = CAMPAIGNS_STATE;
+          hasPendingPlayerStashSync = false;
         }
 
         return roomRef.update(updates);

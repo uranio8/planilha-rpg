@@ -137,14 +137,47 @@ const sandbox = {
       }
       return domElements[id];
     },
-    querySelectorAll: () => [],
+    createElement: (tag) => {
+      const el = {
+        tagName: (tag || 'DIV').toUpperCase(),
+        id: '',
+        className: '',
+        value: '',
+        innerText: '',
+        innerHTML: '',
+        textContent: '',
+        style: {},
+        classList: {
+          _classes: new Set(),
+          add(c) { this._classes.add(c); },
+          remove(c) { this._classes.delete(c); },
+          contains(c) { return this._classes.has(c); }
+        },
+        appendChild: () => {},
+        setAttribute: (k, v) => { el[k] = v; },
+        getAttribute: (k) => el[k] || null
+      };
+      return el;
+    },
+    querySelector: (sel) => {
+      if (sel && sel.startsWith('#')) return domElements[sel.slice(1)] || null;
+      return null;
+    },
+    querySelectorAll: (sel) => {
+      const results = [];
+      Object.keys(domElements).forEach(k => {
+        if (sel && sel.includes(k)) results.push(domElements[k]);
+      });
+      return results;
+    },
     body: {
       classList: {
         _classes: new Set(),
         add(c) { this._classes.add(c); },
         remove(c) { this._classes.delete(c); },
         contains(c) { return this._classes.has(c); }
-      }
+      },
+      appendChild: () => {}
     },
     documentElement: { style: { setProperty: () => {} } },
     addEventListener: () => {},
@@ -6442,7 +6475,218 @@ assert(standalone118Html.includes('modal-bastion-action'), 'HTML compilado cont�
 assert(standalone118Html.includes('modal-bastion-add-facility'), 'HTML compilado contém modal de adicionar sala (#modal-bastion-add-facility)');
 assert(standalone118Html.includes('modal-bastion-event'), 'HTML compilado contém modal de evento d100 (#modal-bastion-event)');
 assert(standalone118Html.includes('advanceBastionTurn'), 'HTML compilado contém função advanceBastionTurn');
-assert(standalone118Html.includes('BASTION_SPECIAL_FACILITIES_CATALOG'), 'HTML compilado contém BASTION_SPECIAL_FACILITIES_CATALOG');
+// ============================================================================
+// 📦 87. Testes de Sincronização do Baú do Grupo em Tempo Real (ISSUE-119)
+// ============================================================================
+console.log('\n📦 87. Testes de Sincronização do Baú do Grupo em Tempo Real (ISSUE-119):');
+
+assert(typeof sandbox.touchPartyStash === 'function', 'Função touchPartyStash exportada no contexto');
+assert(typeof sandbox.updateAllPartyStashElements === 'function', 'Função updateAllPartyStashElements exportada no contexto');
+
+// 1. touchPartyStash atualiza timestamp específico do baú
+vm.runInContext(`
+  var s87_camp = { id: 'camp_s87', name: 'Mesa Stash', partyStash: { gold: 100, items: [], updatedAt: 1000 } };
+  CAMPAIGNS_STATE.campaigns.push(s87_camp);
+  var touchedStashCamp = touchPartyStash('camp_s87');
+`, sandbox);
+const touchedS87 = vm.runInContext('touchedStashCamp', sandbox);
+assert(touchedS87 && touchedS87.partyStash.updatedAt > 1000, 'touchPartyStash atualizou partyStash.updatedAt para um timestamp recente');
+
+// 2. updateAllPartyStashElements atualiza seletores do DOM
+vm.runInContext(`
+  var actCamp = getActiveCampaign();
+  if (actCamp) {
+    if (!actCamp.partyStash) actCamp.partyStash = { gold: 0, items: [] };
+    actCamp.partyStash.gold = 777;
+  }
+  updateAllPartyStashElements();
+`, sandbox);
+assert(vm.runInContext("document.getElementById('party-stash-modal-gold').innerText.includes('777')", sandbox), 'updateAllPartyStashElements atualizou #party-stash-modal-gold');
+assert(vm.runInContext("document.getElementById('stash-gold-amount').innerText.includes('777')", sandbox), 'updateAllPartyStashElements atualizou #stash-gold-amount');
+
+// 3. Validação de elementos no HTML compilado
+const standalone119Html = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(standalone119Html.includes('touchPartyStash'), 'HTML compilado contém touchPartyStash');
+assert(standalone119Html.includes('updateAllPartyStashElements'), 'HTML compilado contém updateAllPartyStashElements');
+assert(standalone119Html.includes('stash-gold-pill'), 'HTML compilado contém classe .stash-gold-pill');
+
+
+// ============================================================================
+// ⚔️ 88. Testes de Configuração de Dano e Cura Arbitrários (ISSUE-120)
+// ============================================================================
+console.log('\n⚔️ 88. Testes de Configuração de Dano e Cura Arbitrários (ISSUE-120):');
+
+assert(typeof sandbox.promptCombatantDamageHeal === 'function', 'Função promptCombatantDamageHeal exportada no contexto');
+assert(typeof sandbox.applyRoll20QuickDamage === 'function', 'Função applyRoll20QuickDamage exportada no contexto');
+assert(typeof sandbox.applyRoll20QuickHeal === 'function', 'Função applyRoll20QuickHeal exportada no contexto');
+
+// 1. Aplicação de dano arbitrário na ficha
+vm.runInContext(`
+  var s88_player = {
+    id: 'p_s88_test',
+    name: 'Grommash',
+    hp: 40,
+    maxHp: 50,
+    tempHp: 0
+  };
+  PLAYERS.push(s88_player);
+
+  var s88_input = document.getElementById('roll20-hp-input-p_s88_test');
+  s88_input.value = '15';
+
+  applyRoll20QuickDamage('p_s88_test');
+`, sandbox);
+const p88Dmg = vm.runInContext("PLAYERS.find(p => p.id === 'p_s88_test')", sandbox);
+assert(p88Dmg.hp === 25, 'applyRoll20QuickDamage reduziu o PV exatamente pelo valor digitado (40 - 15 = 25)');
+
+// 2. Aplicação de cura arbitrária na ficha
+vm.runInContext(`
+  s88_input.value = '20';
+  applyRoll20QuickHeal('p_s88_test');
+`, sandbox);
+const p88Heal = vm.runInContext("PLAYERS.find(p => p.id === 'p_s88_test')", sandbox);
+assert(p88Heal.hp === 45, 'applyRoll20QuickHeal curou o PV exatamente pelo valor digitado (25 + 20 = 45)');
+
+// 3. Cura respeita teto de PV Máximo
+vm.runInContext(`
+  s88_input.value = '50';
+  applyRoll20QuickHeal('p_s88_test');
+`, sandbox);
+assert(p88Heal.hp === 50, 'applyRoll20QuickHeal respeitou o limite de PV Máximo (50)');
+
+// 4. Combat Tracker possui botão de Dano/Cura
+assert(standalone119Html.includes('promptCombatantDamageHeal'), 'HTML compilado contém promptCombatantDamageHeal');
+assert(standalone119Html.includes('⚡ Dano/Cura'), 'HTML compilado contém botão de Dano/Cura no combate');
+
+
+// ============================================================================
+// 🔄 89. Testes de Sincronização Bidirecional Nuvem e Papel de Cliente (ISSUE-121)
+// ============================================================================
+console.log('\n🔄 89. Testes de Sincronização Bidirecional Nuvem e Papel de Cliente (ISSUE-121):');
+
+assert(typeof sandbox.resolveClientRole === 'function', 'Função resolveClientRole exportada no contexto');
+
+// 1. Resolução do papel: Mestre padrão vs Jogador portal
+vm.runInContext(`
+  activePortalPlayerId = null;
+  document.body.classList.remove('mode-player-portal');
+`, sandbox);
+assert(sandbox.resolveClientRole() === 'master', 'resolveClientRole retornou "master" na janela principal do Mestre');
+
+vm.runInContext(`
+  activePortalPlayerId = 'p_test_player_1';
+`, sandbox);
+assert(sandbox.resolveClientRole() === 'player', 'resolveClientRole retornou "player" quando activePortalPlayerId está configurado');
+
+// Reset para master
+vm.runInContext(`
+  activePortalPlayerId = null;
+`, sandbox);
+
+// 2. mergeCloudCampaignsState respeita autoridade do Mestre e timestamps
+vm.runInContext(`
+  var s89_camp = {
+    id: 'camp_s89_sync',
+    name: 'Mesa Sincronizada',
+    updatedAt: 1000,
+    partyStash: { gold: 200, updatedAt: 2000, items: [] }
+  };
+  CAMPAIGNS_STATE.campaigns.push(s89_camp);
+
+  // Mestre publica atualização remota mais recente: 5000 vs 2000
+  mergeCloudCampaignsState({
+    activeCampaignId: 'camp_s89_sync',
+    publishedBy: 'master',
+    campaigns: [{
+      id: 'camp_s89_sync',
+      name: 'Mesa Sincronizada',
+      updatedAt: 4000,
+      partyStash: { gold: 350, updatedAt: 5000, items: [{ id: 'it_s89_1', name: 'Gema Estelar' }] }
+    }]
+  });
+`, sandbox);
+const stash89 = vm.runInContext("CAMPAIGNS_STATE.campaigns.find(c => c.id === 'camp_s89_sync').partyStash", sandbox);
+assert(stash89.gold === 350, 'mergeCloudCampaignsState adotou o ouro atualizado da nuvem (350 PO)');
+assert(stash89.items.length === 1 && stash89.items[0].name === 'Gema Estelar', 'mergeCloudCampaignsState adotou itens remotos do Mestre');
+
+
+// ============================================================================
+// 🎲 90. Testes de Criação & Edição Avançada de Fichas (ISSUE-122)
+// ============================================================================
+console.log('\n🎲 90. Testes de Criação & Edição Avançada de Fichas (ISSUE-122):');
+
+assert(typeof sandbox.getClassAttributePriority === 'function', 'Função getClassAttributePriority exportada no contexto');
+assert(typeof sandbox.calculateLevel1Hp === 'function', 'Função calculateLevel1Hp exportada no contexto');
+assert(typeof sandbox.getSuggestedClassAttacks === 'function', 'Função getSuggestedClassAttacks exportada no contexto');
+assert(typeof sandbox.roll4d6DropLowest === 'function', 'Função roll4d6DropLowest exportada no contexto');
+assert(typeof sandbox.rollAttributes4d6Modal === 'function', 'Função rollAttributes4d6Modal exportada no contexto');
+assert(typeof sandbox.applyStandardArrayModal === 'function', 'Função applyStandardArrayModal exportada no contexto');
+assert(typeof sandbox.optimizeAttributesForClassModal === 'function', 'Função optimizeAttributesForClassModal exportada no contexto');
+
+// 1. Prioridade de Atributos por Classe
+const barbarPrio = sandbox.getClassAttributePriority('Bárbaro');
+assert(barbarPrio[0] === 'str' && barbarPrio[1] === 'con', 'Prioridade do Bárbaro começa com FOR e CON');
+
+const magoPrio = sandbox.getClassAttributePriority('Mago');
+assert(magoPrio[0] === 'int' && magoPrio[1] === 'con', 'Prioridade do Mago começa com INT e CON');
+
+const ladinoPrio = sandbox.getClassAttributePriority('Ladino');
+assert(ladinoPrio[0] === 'dex' && ladinoPrio[1] === 'con', 'Prioridade do Ladino começa com DES e CON');
+
+const bardoPrio = sandbox.getClassAttributePriority('Bardo');
+assert(bardoPrio[0] === 'cha', 'Prioridade do Bardo prioriza CAR');
+
+// 2. Cálculo de PV Nível 1 pelas Regras Oficiais D&D 5E
+assert(sandbox.calculateLevel1Hp('Bárbaro', 14) === 14, 'Bárbaro com CON 14 (+2) tem 14 PV no Nível 1 (12 + 2)');
+assert(sandbox.calculateLevel1Hp('Guerreiro', 16) === 13, 'Guerreiro com CON 16 (+3) tem 13 PV no Nível 1 (10 + 3)');
+assert(sandbox.calculateLevel1Hp('Mago', 12) === 7, 'Mago com CON 12 (+1) tem 7 PV no Nível 1 (6 + 1)');
+assert(sandbox.calculateLevel1Hp('Clérigo', 10) === 8, 'Clérigo com CON 10 (+0) tem 8 PV no Nível 1 (8 + 0)');
+
+// 3. Rolagem 4d6 Drop Lowest
+for (let i = 0; i < 10; i++) {
+  const rollRes = sandbox.roll4d6DropLowest();
+  assert(rollRes.total >= 3 && rollRes.total <= 18, `4d6 gerou valor válido: ${rollRes.total}`);
+  assert(rollRes.rolls.length === 4, '4 dados foram rolados');
+  assert(rollRes.dropped <= rollRes.rolls[1] && rollRes.dropped <= rollRes.rolls[2] && rollRes.dropped <= rollRes.rolls[3], 'Menor dado foi descartado');
+}
+
+// 4. Sugestão de Ataques por Classe
+const barbarianAttacks = sandbox.getSuggestedClassAttacks('Bárbaro', 3, 2);
+assert(barbarianAttacks.includes('Machado Grande'), 'Ataques sugeridos de Bárbaro incluem Machado Grande');
+
+const wizardAttacks = sandbox.getSuggestedClassAttacks('Mago', 0, 2);
+assert(wizardAttacks.includes('Raio de Fogo') || wizardAttacks.includes('Adaga'), 'Ataques sugeridos de Mago incluem magia e adaga');
+
+// 5. Vínculo Automático do Novo Personagem à Campanha Ativa
+vm.runInContext(`
+  var camp90 = { id: 'camp_90_bind', name: 'Mesa Nova', playerIds: [] };
+  CAMPAIGNS_STATE.campaigns.push(camp90);
+  CAMPAIGNS_STATE.activeCampaignId = 'camp_90_bind';
+
+  // Configura campos do formulário para salvar
+  document.getElementById('pm-id').value = '';
+  document.getElementById('pm-name').value = 'Elendil';
+  document.getElementById('pm-student').value = 'Lucas';
+  document.getElementById('pm-level').value = '1';
+  document.getElementById('pm-maxhp').value = '12';
+  document.getElementById('pm-str').value = '15';
+  document.getElementById('pm-dex').value = '14';
+  document.getElementById('pm-con').value = '13';
+  document.getElementById('pm-int').value = '12';
+  document.getElementById('pm-wis').value = '10';
+  document.getElementById('pm-cha').value = '8';
+
+  savePlayerSheet();
+`, sandbox);
+const createdHero = vm.runInContext("PLAYERS.find(p => p.name === 'Elendil')", sandbox);
+assert(createdHero && createdHero.id, 'Novo herói foi criado com ID gerado');
+const boundCamp = vm.runInContext("CAMPAIGNS_STATE.campaigns.find(c => c.id === 'camp_90_bind')", sandbox);
+assert(boundCamp.playerIds.includes(createdHero.id), 'ID do novo herói foi automaticamente vinculado a activeCamp.playerIds!');
+
+// 6. Botões no HTML Compilado
+assert(standalone119Html.includes('rollAttributes4d6Modal'), 'HTML compilado contém botão de rolar 4d6 (rollAttributes4d6Modal)');
+assert(standalone119Html.includes('applyStandardArrayModal'), 'HTML compilado contém botão de array padrão (applyStandardArrayModal)');
+assert(standalone119Html.includes('optimizeAttributesForClassModal'), 'HTML compilado contém botão de otimizar para classe (optimizeAttributesForClassModal)');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

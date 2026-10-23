@@ -77,11 +77,12 @@ function renderCombat() {
             <span class="combatant-hp-inline" onclick="enableInlineHpEdit('${c.id}', event)" title="Clique para editar PV diretamente">
               PV: <b style="color: ${hpColor};" id="hp-val-${c.id}">${c.hp}</b> / ${c.maxHp} <span style="font-size: 10px; opacity: 0.7;">✏️</span>
             </span>
-            <div style="display: flex; gap: 2px;">
+            <div style="display: flex; gap: 2px; align-items: center;">
               <button class="btn-hp-adj minus" style="width: 20px; height: 20px; font-size: 10px; padding: 0;" onclick="quickAdjustCombatantHp('${c.id}', -5)" title="Subtrair 5 PV">-5</button>
               <button class="btn-hp-adj minus" style="width: 20px; height: 20px; font-size: 10px; padding: 0;" onclick="quickAdjustCombatantHp('${c.id}', -1)" title="Subtrair 1 PV">-1</button>
               <button class="btn-hp-adj plus" style="width: 20px; height: 20px; font-size: 10px; padding: 0;" onclick="quickAdjustCombatantHp('${c.id}', 1)" title="Adicionar 1 PV">+1</button>
               <button class="btn-hp-adj plus" style="width: 20px; height: 20px; font-size: 10px; padding: 0;" onclick="quickAdjustCombatantHp('${c.id}', 5)" title="Adicionar 5 PV">+5</button>
+              <button class="btn-secondary" style="padding: 1px 5px; font-size: 9.5px; font-weight: 800; color: #facc15; border-color: rgba(245,158,11,0.4); line-height: 1.2; margin-left: 2px;" onclick="promptCombatantDamageHeal('${c.id}')" title="Digitar valor exato de Dano ou Cura">⚡ Dano/Cura</button>
             </div>
           </div>
         </div>
@@ -948,6 +949,24 @@ function quickAdjustCombatantHp(id, delta) {
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
 
+function promptCombatantDamageHeal(id) {
+  const c = state.combatants.find(x => x.id === id);
+  if (!c) return;
+
+  const rawVal = prompt(`⚡ Ajuste de Vida: ${c.name} (Atual: ${c.hp}/${c.maxHp} PV)\n\nDigite a quantidade de PV:\n(Ex: 12)`, '5');
+  if (rawVal === null) return;
+  const num = parseInt(rawVal, 10);
+  if (isNaN(num) || num === 0) return;
+
+  if (num < 0) {
+    quickAdjustCombatantHp(id, num);
+    return;
+  }
+
+  const isDamage = confirm(`Aplicar ${num} PV em ${c.name} como:\n\n• Clique [OK] para DANO (-${num} PV)\n• Clique [Cancelar] para CURA (+${num} PV)`);
+  quickAdjustCombatantHp(id, isDamage ? -num : num);
+}
+
 function openAddModal() { document.getElementById('modal-add').classList.add('open'); }
 function closeAddModal() { document.getElementById('modal-add').classList.remove('open'); }
 
@@ -1271,6 +1290,7 @@ function announceActiveTurn(combatantId) {
 }
 
 if (typeof window !== 'undefined') {
+  window.promptCombatantDamageHeal = promptCombatantDamageHeal;
   window.enableInlineHpEdit = enableInlineHpEdit;
   window.saveInlineHpEdit = saveInlineHpEdit;
   window.updateCombatantNotes = updateCombatantNotes;
@@ -1292,6 +1312,7 @@ if (typeof module !== 'undefined' && module.exports) {
     removeCombatant,
     editCombatantInit,
     quickAdjustCombatantHp,
+    promptCombatantDamageHeal,
     saveNewCombatant,
     enableInlineHpEdit,
     saveInlineHpEdit,

@@ -1671,7 +1671,6 @@ function saveToLocalStorage() {
       }
     } catch (e) {}
 
-    if (typeof saveCampaignsState === 'function') saveCampaignsState();
     if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
     if (typeof broadcastStateSync === 'function') broadcastStateSync();
 
