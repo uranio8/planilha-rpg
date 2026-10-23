@@ -1616,8 +1616,15 @@
         <div style="flex: 1;">
           <label>CA Resultante <span style="font-size:10px; color:var(--accent-gold); font-weight:normal;">(Auto 5E)</span></label>
           <input type="number" id="pm-ac" value="16" title="Classe de Armadura calculada automaticamente pelas regras do D&D 5E">
+          <div id="pm-ca-formula" class="modal-ca-formula-pill" title="Fórmula de CA">🛡️ 10 + DES</div>
         </div>
-        <div style="flex: 1;"><label>PV Máximo</label><input type="number" id="pm-maxhp" value="12"></div>
+        <div style="flex: 1;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label style="margin:0;">PV Máximo</label>
+            <button type="button" class="modal-hp-suggest-btn" id="btn-suggest-hp" onclick="applySuggestedHpModal()" title="Aplicar PV sugerido pelas regras oficiais 5E">💡 Sugerir</button>
+          </div>
+          <input type="number" id="pm-maxhp" value="12">
+        </div>
         <div style="flex: 1;"><label>Deslocamento</label><input type="text" id="pm-speed" value="9m"></div>
         <div style="flex: 1;"><label>Ouro (PO)</label><input type="number" id="pm-gold" value="15"></div>
         <div style="flex: 1;"><label>XP</label><input type="number" id="pm-xp" value="0"></div>
@@ -1704,7 +1711,11 @@
           <label style="margin:0;">Espaços de Magia (Círculos 1º ao 9º - Calculados Automaticamente)</label>
           <span style="font-size:10px; color:var(--accent-purple);">🔮 Slots Arcanos</span>
         </div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(62px, 1fr)); gap: 6px; background: #080c16; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color);">
+        <div id="pm-non-caster-box" class="modal-non-caster-notice" style="display: none;">
+          <span>⚔️ Esta classe não utiliza espaços de magia arcanos/divinos.</span>
+          <button type="button" class="btn-secondary" style="font-size:10px; padding:2px 7px;" onclick="toggleManualSlotsModal()">Mostrar Slots</button>
+        </div>
+        <div id="pm-slots-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(62px, 1fr)); gap: 6px; background: #080c16; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color);">
           <div class="pm-slot-card"><span class="pm-slot-label">1º Círc.</span><input type="number" id="pm-slot-1" class="pm-slot-input" value="0" min="0" max="9"></div>
           <div class="pm-slot-card"><span class="pm-slot-label">2º Círc.</span><input type="number" id="pm-slot-2" class="pm-slot-input" value="0" min="0" max="9"></div>
           <div class="pm-slot-card"><span class="pm-slot-label">3º Círc.</span><input type="number" id="pm-slot-3" class="pm-slot-input" value="0" min="0" max="9"></div>
@@ -1726,12 +1737,34 @@
         <div id="pm-features-preview" style="max-height: 240px; overflow-y: auto; background: #080c16; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px; scrollbar-width: thin; scrollbar-color: rgba(245, 158, 11, 0.3) transparent;"></div>
       </div>
 
-      <div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-          <label style="margin: 0;">Ataques & Armas Principais</label>
-          <button type="button" class="btn-action" style="padding: 3px 8px; font-size: 11px; background: linear-gradient(135deg, #0284c7, #0369a1);" onclick="openWeaponPickerModal(null, 'modal')" title="Adicionar arma calculada do catálogo D&D Beyond">⚔️ + Arma (D&D Beyond)</button>
+      <!-- SEÇÃO DINÂMICA DE ARMAS & ATAQUES (D&D 5E) -->
+      <div class="modal-weapons-section">
+        <div class="modal-weapons-header">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <label style="margin: 0; font-weight: 800; color: #fff;">⚔️ Ataques & Armas Equipadas</label>
+            <span style="font-size: 10px; color: var(--accent-gold); font-weight: normal;">(Auto 5E: Acerto & Dano vinculados)</span>
+          </div>
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <button type="button" class="btn-secondary" style="padding: 2px 7px; font-size: 10.5px;" onclick="toggleManualAttacksInputModal()" title="Alternar edição manual de texto">✏️ Modo Texto</button>
+            <button type="button" class="btn-action" style="padding: 3px 8px; font-size: 11px; background: linear-gradient(135deg, #0284c7, #0369a1);" onclick="openWeaponPickerModal(null, 'modal')" title="Explorar catálogo completo de armas D&D 5E">🔍 Catálogo</button>
+          </div>
         </div>
-        <input type="text" id="pm-attacks" placeholder="Ex: Machado de Guerra (+5, 1d8+3 cortante), Azagaia (+5, 1d6+3)">
+
+        <!-- BARRA DE ADIÇÃO RÁPIDA DE ARMAS -->
+        <div class="modal-weapon-picker-bar">
+          <span style="font-size: 11px; font-weight: 700; color: var(--text-dim); white-space: nowrap;">Equipar Arma:</span>
+          <select id="pm-quick-weapon-select" style="flex: 1; min-width: 170px; font-size: 11px; padding: 4px 6px;"></select>
+          <button type="button" class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="addModalEquippedWeaponFromSelect()">➕ Equipar</button>
+        </div>
+
+        <!-- CARDS DE ARMAS EQUIPADAS COM ACERTO E DANO CALCULADOS -->
+        <div id="pm-weapons-grid" class="modal-weapon-cards-grid"></div>
+
+        <!-- CAMPO DE TEXTO SINCRONIZADO / MODO MANUAL -->
+        <div id="pm-attacks-text-wrapper" style="margin-top: 4px; display: none;">
+          <label style="font-size: 10px; color: var(--text-muted); margin-bottom: 2px; display: block;">Texto Formatado de Ataques (Sincronizado automaticamente):</label>
+          <input type="text" id="pm-attacks" placeholder="Ex: Machado Grande (+4, 1d12+2 cortante)" oninput="onModalAttacksManualInput()">
+        </div>
       </div>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">

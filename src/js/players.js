@@ -3125,6 +3125,7 @@ function calculateWeaponAttackStats(player, weaponOrName) {
     attrMod,
     isProficient: prof,
     pb,
+    hit: hitBonus,
     hitBonus,
     hitStr,
     damageDie: die,
@@ -3223,7 +3224,9 @@ function openWeaponPickerModal(playerId = null, target = 'player') {
   const modal = document.getElementById('modal-weapon-picker');
   if (!modal) return;
 
-  const p = PLAYERS ? PLAYERS.find(x => x.id === activeWeaponPickerPlayerId) : null;
+  const p = target === 'modal'
+    ? (typeof getModalSimulatedPlayer === 'function' ? getModalSimulatedPlayer() : null)
+    : (PLAYERS ? PLAYERS.find(x => x.id === activeWeaponPickerPlayerId) : null);
   const heroInfo = document.getElementById('weapon-picker-hero-info');
   const subTitle = document.getElementById('weapon-picker-subtitle');
 
@@ -3231,10 +3234,10 @@ function openWeaponPickerModal(playerId = null, target = 'player') {
     const pb = typeof getProfBonus === 'function' ? getProfBonus(p.level || 1) : 2;
     const strMod = Math.floor(((p.str || 10) - 10) / 2);
     const dexMod = Math.floor(((p.dex || 10) - 10) / 2);
-    if (subTitle) subTitle.innerText = `Calculando estatísticas para ${p.name} (${p.className} Nv ${p.level || 1})`;
+    if (subTitle) subTitle.innerText = `Calculando estatísticas para ${p.name || 'Personagem'} (${p.className} Nv ${p.level || 1})`;
     if (heroInfo) {
       heroInfo.innerHTML = `
-        👤 <b>${p.name}</b> • FOR: ${p.str || 10} (${strMod >= 0 ? '+' : ''}${strMod}) | DES: ${p.dex || 10} (${dexMod >= 0 ? '+' : ''}${dexMod}) | Bônus de Proficiência: <b>+${pb}</b>
+        👤 <b>${p.name || 'Personagem'}</b> • FOR: ${p.str || 10} (${strMod >= 0 ? '+' : ''}${strMod}) | DES: ${p.dex || 10} (${dexMod >= 0 ? '+' : ''}${dexMod}) | Bônus de Proficiência: <b>+${pb}</b>
       `;
     }
   }
@@ -3269,7 +3272,9 @@ function renderWeaponPickerList(filterText = '', categoryFilter = '') {
     return;
   }
 
-  const p = PLAYERS ? PLAYERS.find(x => x.id === activeWeaponPickerPlayerId) : null;
+  const p = activeWeaponPickerTarget === 'modal'
+    ? (typeof getModalSimulatedPlayer === 'function' ? getModalSimulatedPlayer() : null)
+    : (PLAYERS ? PLAYERS.find(x => x.id === activeWeaponPickerPlayerId) : null);
   const normFilter = (filterText || '').toLowerCase().trim();
   const normCat = (categoryFilter || '').toLowerCase().trim();
 
@@ -3329,8 +3334,16 @@ function renderWeaponPickerList(filterText = '', categoryFilter = '') {
 }
 
 function selectWeaponForPlayer(weaponName) {
+  if (activeWeaponPickerTarget === 'modal') {
+    if (typeof addModalWeapon === 'function') {
+      addModalWeapon(weaponName);
+    }
+    closeWeaponPickerModal();
+    return;
+  }
+
   const p = PLAYERS ? PLAYERS.find(x => x.id === activeWeaponPickerPlayerId) : null;
-  if (!p && activeWeaponPickerTarget !== 'modal') return;
+  if (!p) return;
 
   const weaponObj = typeof EQUIPMENT_DATA !== 'undefined'
     ? EQUIPMENT_DATA.find(w => w.name.toLowerCase() === weaponName.toLowerCase() || w.name.toLowerCase().includes(weaponName.toLowerCase()))
@@ -3339,30 +3352,19 @@ function selectWeaponForPlayer(weaponName) {
   const stats = p ? calculateWeaponAttackStats(p, weaponObj || weaponName) : null;
   const attackText = stats ? stats.formattedText : `${weaponName} (+0, 1d6)`;
 
-  if (activeWeaponPickerTarget === 'modal') {
-    const input = document.getElementById('pm-attacks');
-    if (input) {
-      const current = input.value.trim();
-      input.value = current ? `${current} | ${attackText}` : attackText;
-      if (typeof showToast === 'function') {
-        showToast(`⚔️ ${stats ? stats.name : weaponName} adicionada com cálculo automático!`, 'success');
-      }
-    }
-  } else if (p) {
-    const current = (p.attacks || '').trim();
-    p.attacks = current ? `${current} | ${attackText}` : attackText;
+  const current = (p.attacks || '').trim();
+  p.attacks = current ? `${current} | ${attackText}` : attackText;
 
-    if (typeof touchPlayer === 'function') touchPlayer(p);
-    renderPlayers();
-    saveToLocalStorage();
-    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
-    if (typeof broadcastStateSync === 'function') broadcastStateSync();
+  if (typeof touchPlayer === 'function') touchPlayer(p);
+  renderPlayers();
+  saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 
-    if (typeof showToast === 'function') {
-      showToast(`⚔️ ${stats ? stats.name : weaponName} adicionada ao arsenal de ${p.name}! Acerto: ${stats.hitStr} | Dano: ${stats.damageFormula}`, 'success');
-    }
-    if (typeof playFX === 'function') playFX('sword');
+  if (typeof showToast === 'function') {
+    showToast(`⚔️ ${stats ? stats.name : weaponName} adicionada ao arsenal de ${p.name}! Acerto: ${stats.hitStr} | Dano: ${stats.damageFormula}`, 'success');
   }
+  if (typeof playFX === 'function') playFX('sword');
 
   closeWeaponPickerModal();
 }
@@ -6778,18 +6780,293 @@ function optimizeAttributesForClassModal() {
   else alert(`⚡ Atributos reordenados para ${className}!`);
 }
 
+// ===================================================
+// ⚔️ MODAL PLAYER: ARMAS, ACERTO, DANO E AUTOMAÇÃO
+// ===================================================
+
+let modalEquippedWeapons = [];
+
+function getModalSimulatedPlayer() {
+  const pId = document.getElementById('pm-id')?.value;
+  const existing = pId ? (typeof PLAYERS !== 'undefined' ? PLAYERS.find(x => String(x.id) === String(pId)) : null) : null;
+  const classSel = document.getElementById('pm-class-select');
+  const classInput = document.getElementById('pm-class');
+  const className = classSel ? (classSel.value === 'custom' ? (classInput ? classInput.value : 'Guerreiro') : classSel.value) : (classInput ? classInput.value : 'Guerreiro');
+  const subclassSel = document.getElementById('pm-subclass-select');
+  const subclassIdx = subclassSel ? parseInt(subclassSel.value) || 0 : 0;
+  const level = parseInt(document.getElementById('pm-level')?.value) || 1;
+  const raceSel = document.getElementById('pm-race-select');
+  const raceInput = document.getElementById('pm-race');
+  const race = raceSel ? (raceSel.value === 'custom' ? (raceInput ? raceInput.value : 'Humano') : raceSel.value) : (raceInput ? raceInput.value : 'Humano');
+  const fightingStyle = document.getElementById('pm-fighting-style')?.value || (existing ? existing.fightingStyle : '') || '';
+
+  return {
+    id: pId || 'temp_modal_player',
+    name: document.getElementById('pm-name')?.value || 'Herói',
+    className,
+    subclassIdx,
+    subclass: (subclassSel && subclassSel.options && subclassSel.options[subclassSel.selectedIndex]?.text) || (existing ? existing.subclass : '') || '',
+    level,
+    race,
+    fightingStyle,
+    str: parseInt(document.getElementById('pm-str')?.value) || 10,
+    dex: parseInt(document.getElementById('pm-dex')?.value) || 10,
+    con: parseInt(document.getElementById('pm-con')?.value) || 10,
+    int: parseInt(document.getElementById('pm-int')?.value) || 10,
+    wis: parseInt(document.getElementById('pm-wis')?.value) || 10,
+    cha: parseInt(document.getElementById('pm-cha')?.value) || 10
+  };
+}
+
+function getRacialAndClassSpeed(raceName, className, level, armorKey = 'none') {
+  const normRace = (raceName || '').toLowerCase().trim();
+  const normClass = (className || '').toLowerCase().trim();
+  const lvl = parseInt(level) || 1;
+  const normArmor = (armorKey || '').toLowerCase().trim();
+
+  let baseSpeed = 9; // metros (padrão 30ft)
+
+  // Pequenas raças ou lentas oficiais 5E
+  if (normRace.includes('anão') || normRace.includes('anao') || normRace.includes('dwarf') ||
+      normRace.includes('halfling') || normRace.includes('gnomo') || normRace.includes('gnome')) {
+    baseSpeed = 7.5;
+  } else if (normRace.includes('floresta') || normRace.includes('bosque') || normRace.includes('wood elf')) {
+    baseSpeed = 10.5;
+  } else if (normRace.includes('centauro')) {
+    baseSpeed = 12;
+  }
+
+  // Bônus de classe: Bárbaro (Movimento Rápido Nv 5+: +3m se não usar armadura pesada)
+  const isHeavyArmor = ['cota de aneis', 'cota de malha', 'cota de talas', 'armadura de placas'].includes(normArmor);
+  if (normClass.includes('bárbaro') || normClass.includes('barbaro')) {
+    if (lvl >= 5 && !isHeavyArmor) {
+      baseSpeed += 3;
+    }
+  }
+
+  // Bônus de classe: Monge (Movimento sem Armadura Nv 2+: sem armadura e sem escudo)
+  const hasShield = document.getElementById('pm-shield-check')?.checked;
+  if (normClass.includes('monge') && (normArmor === 'none' || !normArmor) && !hasShield) {
+    if (lvl >= 18) baseSpeed += 9;
+    else if (lvl >= 14) baseSpeed += 7.5;
+    else if (lvl >= 10) baseSpeed += 6;
+    else if (lvl >= 6) baseSpeed += 4.5;
+    else if (lvl >= 2) baseSpeed += 3;
+  }
+
+  return `${String(baseSpeed).replace('.', ',')}m`;
+}
+
+function getRecommendedMaxHp(className, conVal, level) {
+  const lvl = Math.max(1, parseInt(level) || 1);
+  const con = parseInt(conVal) || 10;
+  const conMod = Math.floor((con - 10) / 2);
+  const hd = typeof getHitDieForClass === 'function' ? getHitDieForClass(className) : '1d8';
+  const dieNumMatch = hd.match(/d(\d+)/i);
+  const dieMax = dieNumMatch ? parseInt(dieNumMatch[1]) : 8;
+  const dieAvg = Math.floor(dieMax / 2) + 1; // d6=4, d8=5, d10=6, d12=7
+
+  const lv1Hp = Math.max(1, dieMax + conMod);
+  if (lvl === 1) return lv1Hp;
+
+  const perLevelGain = Math.max(1, dieAvg + conMod);
+  return lv1Hp + (perLevelGain * (lvl - 1));
+}
+
+function updateSuggestedHpLabelModal() {
+  const btn = document.getElementById('btn-suggest-hp');
+  if (!btn) return;
+  const classSel = document.getElementById('pm-class-select');
+  const classInput = document.getElementById('pm-class');
+  const className = classSel ? (classSel.value === 'custom' ? (classInput ? classInput.value : 'Guerreiro') : classSel.value) : 'Guerreiro';
+  const conVal = parseInt(document.getElementById('pm-con')?.value) || 10;
+  const lvl = parseInt(document.getElementById('pm-level')?.value) || 1;
+  const suggested = getRecommendedMaxHp(className, conVal, lvl);
+  btn.innerHTML = `💡 Sugerir (${suggested} PV)`;
+  btn.dataset.suggestedHp = suggested;
+}
+
+function applySuggestedHpModal() {
+  const btn = document.getElementById('btn-suggest-hp');
+  const suggested = btn && btn.dataset.suggestedHp ? parseInt(btn.dataset.suggestedHp) : null;
+  const hpInp = document.getElementById('pm-maxhp');
+  if (hpInp && suggested) {
+    hpInp.value = suggested;
+    if (typeof showToast === 'function') {
+      showToast(`💚 PV Máximo ajustado para ${suggested} PV (Cálculo Oficial 5E)!`, 'success');
+    }
+    if (typeof playFX === 'function') playFX('heal');
+  }
+}
+
+function toggleManualSlotsModal() {
+  const container = document.getElementById('pm-slots-container');
+  if (container) {
+    container.style.display = container.style.display === 'none' ? 'grid' : 'none';
+  }
+}
+
+function toggleManualAttacksInputModal() {
+  const wrapper = document.getElementById('pm-attacks-text-wrapper');
+  if (wrapper) {
+    wrapper.style.display = wrapper.style.display === 'none' ? 'block' : 'none';
+  }
+}
+
+function populateModalQuickWeaponSelect() {
+  const sel = document.getElementById('pm-quick-weapon-select');
+  if (!sel) return;
+
+  if (typeof EQUIPMENT_DATA === 'undefined' || !Array.isArray(EQUIPMENT_DATA)) {
+    sel.innerHTML = '<option value="">(Equipamentos não carregados)</option>';
+    return;
+  }
+
+  const weapons = EQUIPMENT_DATA.filter(it => (it.category || '').toLowerCase().includes('armas'));
+  const simpleMelee = [];
+  const martialMelee = [];
+  const ranged = [];
+
+  weapons.forEach(w => {
+    const cat = (w.category || '').toLowerCase();
+    const prop = (w.prop || '').toLowerCase();
+    if (cat.includes('distância') || cat.includes('distancia') || prop.includes('distância') || prop.includes('distancia')) {
+      ranged.push(w);
+    } else if (cat.includes('marciais')) {
+      martialMelee.push(w);
+    } else {
+      simpleMelee.push(w);
+    }
+  });
+
+  sel.innerHTML = `
+    <option value="">-- Selecione uma arma do catálogo --</option>
+    <optgroup label="Armas Simples Corpo a Corpo">
+      ${simpleMelee.map(w => `<option value="${w.name}">${w.name} (${w.damage})</option>`).join('')}
+    </optgroup>
+    <optgroup label="Armas Marciais Corpo a Corpo">
+      ${martialMelee.map(w => `<option value="${w.name}">${w.name} (${w.damage})</option>`).join('')}
+    </optgroup>
+    <optgroup label="Armas à Distância">
+      ${ranged.map(w => `<option value="${w.name}">${w.name} (${w.damage})</option>`).join('')}
+    </optgroup>
+  `;
+}
+
+function addModalEquippedWeaponFromSelect() {
+  const sel = document.getElementById('pm-quick-weapon-select');
+  if (!sel || !sel.value) return;
+  addModalWeapon(sel.value);
+  sel.value = '';
+}
+
+function addModalWeapon(weaponName) {
+  if (!weaponName) return;
+  if (!modalEquippedWeapons.includes(weaponName)) {
+    modalEquippedWeapons.push(weaponName);
+  }
+  renderModalEquippedWeapons();
+  if (typeof showToast === 'function') {
+    showToast(`⚔️ ${weaponName} equipada com acerto e dano calculados!`, 'success');
+  }
+  if (typeof playFX === 'function') playFX('sword');
+}
+
+function removeModalWeapon(index) {
+  if (index >= 0 && index < modalEquippedWeapons.length) {
+    const removed = modalEquippedWeapons.splice(index, 1);
+    renderModalEquippedWeapons();
+    if (typeof showToast === 'function') {
+      showToast(`🗑️ ${removed[0]} removida dos ataques equipados.`, 'info');
+    }
+  }
+}
+
+function renderModalEquippedWeapons() {
+  const grid = document.getElementById('pm-weapons-grid');
+  const atkInput = document.getElementById('pm-attacks');
+  if (!grid) return;
+
+  const simPlayer = getModalSimulatedPlayer();
+
+  if (modalEquippedWeapons.length === 0) {
+    grid.innerHTML = `
+      <div style="grid-column: 1 / -1; padding: 10px; text-align: center; color: var(--text-muted); font-size: 11px; background: rgba(0,0,0,0.2); border-radius: 6px; border: 1px dashed rgba(255,255,255,0.08);">
+        Nenhuma arma equipada no momento. Selecione uma arma acima ou adicione pelo catálogo para calcular o acerto e dano automaticamente!
+      </div>
+    `;
+    if (atkInput && !atkInput.dataset.manualEdited) {
+      atkInput.value = '';
+    }
+    return;
+  }
+
+  const formattedAttacks = [];
+
+  grid.innerHTML = modalEquippedWeapons.map((wpnName, idx) => {
+    const stats = calculateWeaponAttackStats(simPlayer, wpnName);
+    if (!stats) return '';
+
+    formattedAttacks.push(stats.formattedText);
+    const isProf = stats.isProficient;
+    const keyAttrLabel = stats.keyAttr === 'dex' ? 'DES' : 'FOR';
+
+    return `
+      <div class="modal-weapon-card ${isProf ? 'proficient' : 'non-proficient'}">
+        <div class="modal-weapon-top">
+          <div class="modal-weapon-name">⚔️ ${stats.name}</div>
+          <button type="button" class="modal-weapon-del-btn" onclick="removeModalWeapon(${idx})" title="Desequipar arma">✕</button>
+        </div>
+        <div class="modal-weapon-stats-row">
+          <span class="modal-weapon-badge-hit" title="Acerto baseado em ${keyAttrLabel} (${stats.attrMod >= 0 ? '+' : ''}${stats.attrMod}) ${isProf ? '+ Proficiência (+'+stats.pb+')' : ''}">
+            🎯 Acerto: <b>${stats.hitStr}</b>
+          </span>
+          <span class="modal-weapon-badge-dmg" title="Fórmula oficial de dano 5E">
+            💥 Dano: <b>${stats.damageFormula} ${stats.damageType}</b>
+          </span>
+        </div>
+        ${stats.properties ? `<div class="modal-weapon-prop">${stats.properties}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  if (atkInput && !atkInput.dataset.manualEdited) {
+    atkInput.value = formattedAttacks.join(', ');
+  }
+}
+
+function onModalAttacksManualInput() {
+  const atkInput = document.getElementById('pm-attacks');
+  if (atkInput) {
+    atkInput.dataset.manualEdited = 'true';
+  }
+}
+
+function onModalStatChange() {
+  if (typeof updateModalAttributeModifiers === 'function') updateModalAttributeModifiers();
+  if (typeof updateModalCalculatedAc === 'function') updateModalCalculatedAc();
+  if (typeof updateSuggestedHpLabelModal === 'function') updateSuggestedHpLabelModal();
+  if (typeof renderModalEquippedWeapons === 'function') renderModalEquippedWeapons();
+}
+
 function onPlayerModalClassOrLevelChange(preserveSlotsIfSet = false) {
   const classSel = document.getElementById('pm-class-select');
   const classInput = document.getElementById('pm-class');
   const subclassSel = document.getElementById('pm-subclass-select');
   const levelInput = document.getElementById('pm-level');
   const hitDiceInput = document.getElementById('pm-hitdice');
+  const raceSel = document.getElementById('pm-race-select');
+  const raceInput = document.getElementById('pm-race');
 
   const selectedClassName = classSel ? (classSel.value === 'custom' ? (classInput ? classInput.value : 'Guerreiro') : classSel.value) : (classInput ? classInput.value : 'Guerreiro');
+  const selectedRace = raceSel ? (raceSel.value === 'custom' ? (raceInput ? raceInput.value : 'Humano') : raceSel.value) : (raceInput ? raceInput.value : 'Humano');
   const level = parseInt(levelInput ? levelInput.value : 1) || 1;
 
   if (classInput && classSel && classSel.value !== 'custom') {
     classInput.value = selectedClassName;
+  }
+  if (raceInput && raceSel && raceSel.value !== 'custom') {
+    raceInput.value = selectedRace;
   }
 
   if (hitDiceInput) {
@@ -6805,13 +7082,15 @@ function onPlayerModalClassOrLevelChange(preserveSlotsIfSet = false) {
     if (hpInput) {
       hpInput.value = calculateLevel1Hp(selectedClassName, conVal);
     }
-    const atkInput = document.getElementById('pm-attacks');
-    if (atkInput && (!atkInput.value || atkInput.value === 'Espada Longa (+4, 1d8+2 cortante)')) {
-      const strVal = parseInt(document.getElementById('pm-str')?.value) || 10;
-      const dexVal = parseInt(document.getElementById('pm-dex')?.value) || 10;
-      const strMod = Math.floor((strVal - 10) / 2);
-      const dexMod = Math.floor((dexVal - 10) / 2);
-      atkInput.value = getSuggestedClassAttacks(selectedClassName, strMod, dexMod);
+  }
+
+  // Atualiza Deslocamento vinculado à Raça e Bônus de Classe (Bárbaro/Monge)
+  const speedInp = document.getElementById('pm-speed');
+  if (speedInp) {
+    const armorSel = document.getElementById('pm-armor-select');
+    const autoSpeed = getRacialAndClassSpeed(selectedRace, selectedClassName, level, armorSel ? armorSel.value : 'none');
+    if (isNewChar || speedInp.value === '9m' || speedInp.value === '7.5m' || speedInp.value === '7,5m' || !speedInp.value) {
+      speedInp.value = autoSpeed;
     }
   }
 
@@ -6836,6 +7115,7 @@ function onPlayerModalClassOrLevelChange(preserveSlotsIfSet = false) {
   }
 
   const subIdx = subclassSel ? parseInt(subclassSel.value) || 0 : 0;
+  const isCaster = typeof isSpellcasterClass === 'function' ? isSpellcasterClass(selectedClassName, subIdx) : false;
 
   // Verifica se deve preservar slots existentes (se não estiverem zerados)
   const currentSlots = [];
@@ -6851,10 +7131,29 @@ function onPlayerModalClassOrLevelChange(preserveSlotsIfSet = false) {
     if (slotInput) slotInput.value = slots[i - 1] || 0;
   }
 
+  // Alterna exibição de slots para classes não-conjuradoras
+  const nonCasterNotice = document.getElementById('pm-non-caster-box');
+  const slotsContainer = document.getElementById('pm-slots-container');
+  if (nonCasterNotice && slotsContainer) {
+    if (!isCaster && !hasCustomSlots) {
+      nonCasterNotice.style.display = 'flex';
+      slotsContainer.style.display = 'none';
+    } else {
+      nonCasterNotice.style.display = 'none';
+      slotsContainer.style.display = 'grid';
+    }
+  }
+
   // Atualiza CA calculada automaticamente para a classe e atributos
   if (typeof updateModalCalculatedAc === 'function') {
     updateModalCalculatedAc();
   }
+
+  // Atualiza chip de sugestão de PV
+  updateSuggestedHpLabelModal();
+
+  // Recalcula cards de armas equipadas
+  renderModalEquippedWeapons();
 
   const previewBox = document.getElementById('pm-features-preview');
   if (previewBox) {
@@ -6925,9 +7224,34 @@ function updateModalCalculatedAc() {
   if (acInput) {
     acInput.value = calculated;
   }
-  if (typeof updateModalAttributeModifiers === 'function') {
-    updateModalAttributeModifiers();
+
+  // Atualiza badge de fórmula explicativa de CA
+  const formulaEl = document.getElementById('pm-ca-formula');
+  if (formulaEl) {
+    const dexMod = Math.floor(((tempPlayer.dex || 10) - 10) / 2);
+    const conMod = Math.floor(((tempPlayer.con || 10) - 10) / 2);
+    const wisMod = Math.floor(((tempPlayer.wis || 10) - 10) / 2);
+    const normClass = (selectedClassName || '').toLowerCase();
+
+    if (selectedArmorKey === 'none' || !selectedArmorKey) {
+      if (normClass.includes('bárbaro') || normClass.includes('barbaro')) {
+        formulaEl.innerHTML = `🛡️ Defesa Bárbaro: 10 + DES (${dexMod >= 0 ? '+' : ''}${dexMod}) + CON (${conMod >= 0 ? '+' : ''}${conMod})${hasShield ? ' + Escudo (+2)' : ''} = <b>${calculated}</b>`;
+      } else if (normClass.includes('monge') && !hasShield) {
+        formulaEl.innerHTML = `🛡️ Defesa Monge: 10 + DES (${dexMod >= 0 ? '+' : ''}${dexMod}) + SAB (${wisMod >= 0 ? '+' : ''}${wisMod}) = <b>${calculated}</b>`;
+      } else {
+        formulaEl.innerHTML = `🛡️ Sem Armadura: 10 + DES (${dexMod >= 0 ? '+' : ''}${dexMod})${hasShield ? ' + Escudo (+2)' : ''} = <b>${calculated}</b>`;
+      }
+    } else {
+      const armData = typeof getArmorItemStats === 'function' ? getArmorItemStats(selectedArmorKey) : null;
+      const armName = armData ? armData.name : selectedArmorKey;
+      formulaEl.innerHTML = `🛡️ ${armName}${hasShield ? ' + Escudo (+2)' : ''} = <b>${calculated}</b>`;
+    }
   }
+
+  if (typeof updateModalAttributeModifiers === 'function') updateModalAttributeModifiers();
+  if (typeof updateSuggestedHpLabelModal === 'function') updateSuggestedHpLabelModal();
+  if (typeof renderModalEquippedWeapons === 'function') renderModalEquippedWeapons();
+
   return calculated;
 }
 
@@ -6955,6 +7279,9 @@ function updateModalAttributeModifiers() {
       }
     }
   });
+
+  if (typeof updateSuggestedHpLabelModal === 'function') updateSuggestedHpLabelModal();
+  if (typeof renderModalEquippedWeapons === 'function') renderModalEquippedWeapons();
 }
 
 function openPlayerModal(id) {
@@ -6970,6 +7297,10 @@ function openPlayerModal(id) {
   if (raceSel && raceSel.options.length <= 1 && typeof SPECIES_DATA !== 'undefined') {
     raceSel.innerHTML = SPECIES_DATA.map(s => `<option value="${s.name}">${s.icon} ${s.name}</option>`).join('') + `<option value="custom">✏️ Personalizada / Outra</option>`;
   }
+
+  modalEquippedWeapons = [];
+  const atkInput = document.getElementById('pm-attacks');
+  if (atkInput) delete atkInput.dataset.manualEdited;
 
   if (id) {
     const p = PLAYERS.find(x => x.id === id);
@@ -7026,7 +7357,7 @@ function openPlayerModal(id) {
 
     document.getElementById('pm-ac').value = calculatePlayerAcFromEquipment(p) || p.ac || 10;
     document.getElementById('pm-maxhp').value = p.maxHp;
-    document.getElementById('pm-speed').value = p.speed;
+    document.getElementById('pm-speed').value = p.speed || '9m';
     document.getElementById('pm-gold').value = (p.coins && p.coins.gp !== undefined) ? p.coins.gp : (p.gold || 15);
     document.getElementById('pm-str').value = p.str;
     document.getElementById('pm-dex').value = p.dex;
@@ -7037,6 +7368,33 @@ function openPlayerModal(id) {
     document.getElementById('pm-attacks').value = p.attacks || '';
     document.getElementById('pm-features').value = p.features || '';
     document.getElementById('pm-spells').value = p.spells || '';
+
+    // Sincroniza armas equipadas para o modal
+    if (p && Array.isArray(p.inventory)) {
+      p.inventory.forEach(item => {
+        if (item.equipped) {
+          const found = typeof EQUIPMENT_DATA !== 'undefined'
+            ? EQUIPMENT_DATA.find(w => (w.category || '').toLowerCase().includes('armas') && (w.name.toLowerCase() === item.name.toLowerCase() || item.name.toLowerCase().includes(w.name.toLowerCase())))
+            : null;
+          if (found && !modalEquippedWeapons.includes(found.name)) {
+            modalEquippedWeapons.push(found.name);
+          }
+        }
+      });
+    }
+
+    if (modalEquippedWeapons.length === 0 && p && p.attacks) {
+      const rawAttacks = p.attacks.split(/[,|;]+/).map(s => s.trim()).filter(s => s);
+      rawAttacks.forEach(raw => {
+        const wNameMatch = raw.split('(')[0].trim();
+        if (wNameMatch && typeof EQUIPMENT_DATA !== 'undefined') {
+          const found = EQUIPMENT_DATA.find(w => (w.category || '').toLowerCase().includes('armas') && (w.name.toLowerCase().includes(wNameMatch.toLowerCase()) || wNameMatch.toLowerCase().includes(w.name.toLowerCase())));
+          if (found && !modalEquippedWeapons.includes(found.name)) {
+            modalEquippedWeapons.push(found.name);
+          }
+        }
+      });
+    }
 
     // Novos campos de Origem & Background (P3)
     const bgInp = document.getElementById('pm-background');
@@ -7064,7 +7422,6 @@ function openPlayerModal(id) {
     }
 
     document.getElementById('pm-badges').value = (p.badges || []).join(', ');
-
 
     const subclassSel = document.getElementById('pm-subclass-select');
     if (subclassSel) {
@@ -7102,6 +7459,9 @@ function openPlayerModal(id) {
     document.getElementById('pm-features').value = '';
     document.getElementById('pm-spells').value = '';
 
+    // Armas padrão de Guerreiro inicial
+    modalEquippedWeapons = ['Espada Longa', 'Besta Pesada'];
+
     // Novos campos de Origem & Background (P3)
     const bgInp = document.getElementById('pm-background');
     if (bgInp) bgInp.value = 'Aventureiro';
@@ -7128,10 +7488,13 @@ function openPlayerModal(id) {
     if (delBtn) delBtn.style.display = 'none';
   }
 
+  populateModalQuickWeaponSelect();
   onPlayerModalClassOrLevelChange(true);
-  if (typeof updateModalAttributeModifiers === 'function') {
-    updateModalAttributeModifiers();
-  }
+  updateModalAttributeModifiers();
+  updateModalCalculatedAc();
+  updateSuggestedHpLabelModal();
+  renderModalEquippedWeapons();
+
   if (modal) modal.classList.add('open');
 }
 
@@ -7296,6 +7659,31 @@ function savePlayerSheet() {
     }
   }
 
+  // Sincroniza armas equipadas do modal no inventário
+  if (Array.isArray(modalEquippedWeapons)) {
+    modalEquippedWeapons.forEach((wName, i) => {
+      const normW = (wName || '').toLowerCase().trim();
+      if (!normW) return;
+      const existingWpn = currentInv.find(it => {
+        const itNorm = (it.name || '').toLowerCase().trim();
+        return itNorm === normW || itNorm.includes(normW) || normW.includes(itNorm);
+      });
+      if (existingWpn) {
+        existingWpn.equipped = true;
+      } else {
+        const eqObj = typeof EQUIPMENT_DATA !== 'undefined' ? EQUIPMENT_DATA.find(w => w.name.toLowerCase().trim() === normW) : null;
+        currentInv.push({
+          id: 'item_wpn_' + Date.now() + '_' + i,
+          name: eqObj ? eqObj.name : wName,
+          category: 'Armas',
+          qty: 1,
+          weight: eqObj && eqObj.weight ? eqObj.weight : 3,
+          cost: eqObj && eqObj.cost ? eqObj.cost : '10 PO',
+          equipped: true
+        });
+      }
+    });
+  }
 
   let currentPrepared = existing && Array.isArray(existing.preparedSpells) ? [...existing.preparedSpells] : [];
   let currentBook = existing && Array.isArray(existing.spellbookSpells) ? [...existing.spellbookSpells] : [...currentPrepared];

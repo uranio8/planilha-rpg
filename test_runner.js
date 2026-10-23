@@ -6688,6 +6688,73 @@ assert(standalone119Html.includes('rollAttributes4d6Modal'), 'HTML compilado con
 assert(standalone119Html.includes('applyStandardArrayModal'), 'HTML compilado contém botão de array padrão (applyStandardArrayModal)');
 assert(standalone119Html.includes('optimizeAttributesForClassModal'), 'HTML compilado contém botão de otimizar para classe (optimizeAttributesForClassModal)');
 
+// ============================================================================
+// ⚔️ 91. Testes de Interligação Dinâmica & Automação de Armas no Modal (ISSUE-123)
+// ============================================================================
+console.log('\n⚔️ 91. Testes de Interligação Dinâmica & Automação de Armas no Modal (ISSUE-123):');
+
+assert(typeof sandbox.getRacialAndClassSpeed === 'function', 'Função getRacialAndClassSpeed exportada no contexto');
+assert(typeof sandbox.getRecommendedMaxHp === 'function', 'Função getRecommendedMaxHp exportada no contexto');
+assert(typeof sandbox.calculateWeaponAttackStats === 'function', 'Função calculateWeaponAttackStats exportada no contexto');
+assert(typeof sandbox.addModalWeapon === 'function', 'Função addModalWeapon exportada no contexto');
+assert(typeof sandbox.removeModalWeapon === 'function', 'Função removeModalWeapon exportada no contexto');
+assert(typeof sandbox.renderModalEquippedWeapons === 'function', 'Função renderModalEquippedWeapons exportada no contexto');
+
+// 1. Deslocamento por Raça e Bônus de Classe (5E)
+assert(sandbox.getRacialAndClassSpeed('Anão da Colina', 'Guerreiro', 1) === '7,5m', 'Anão possui deslocamento base de 7,5m');
+assert(sandbox.getRacialAndClassSpeed('Halfling Pés-Leves', 'Ladino', 1) === '7,5m', 'Halfling possui deslocamento base de 7,5m');
+assert(sandbox.getRacialAndClassSpeed('Gnomo da Floresta', 'Mago', 1) === '7,5m', 'Gnomo possui deslocamento base de 7,5m');
+assert(sandbox.getRacialAndClassSpeed('Humano', 'Guerreiro', 1) === '9m', 'Humano possui deslocamento base de 9m');
+assert(sandbox.getRacialAndClassSpeed('Elfo da Floresta', 'Patrulheiro', 1) === '10,5m', 'Elfo da Floresta possui deslocamento base de 10,5m');
+assert(sandbox.getRacialAndClassSpeed('Humano', 'Bárbaro', 5, 'none') === '12m', 'Bárbaro Nv 5 sem armadura pesada ganha +3m (12m total)');
+assert(sandbox.getRacialAndClassSpeed('Humano', 'Bárbaro', 5, 'cota de malha') === '9m', 'Bárbaro Nv 5 com armadura pesada não recebe bônus de movimento');
+assert(sandbox.getRacialAndClassSpeed('Humano', 'Monge', 2, 'none') === '12m', 'Monge Nv 2 sem armadura recebe +3m (12m total)');
+assert(sandbox.getRacialAndClassSpeed('Humano', 'Monge', 6, 'none') === '13,5m', 'Monge Nv 6 sem armadura recebe +4,5m (13,5m total)');
+
+// 2. Recomendação Oficial de PV Máximo (5E)
+assert(sandbox.getRecommendedMaxHp('Bárbaro', 16, 1) === 15, 'Bárbaro Nv 1 com CON 16 (+3) tem 12 + 3 = 15 PV');
+assert(sandbox.getRecommendedMaxHp('Bárbaro', 16, 5) === 55, 'Bárbaro Nv 5 com CON 16 (+3) tem 15 + 4 * (7 + 3) = 55 PV');
+assert(sandbox.getRecommendedMaxHp('Guerreiro', 14, 1) === 12, 'Guerreiro Nv 1 com CON 14 (+2) tem 10 + 2 = 12 PV');
+assert(sandbox.getRecommendedMaxHp('Guerreiro', 14, 3) === 28, 'Guerreiro Nv 3 com CON 14 (+2) tem 12 + 2 * (6 + 2) = 28 PV');
+assert(sandbox.getRecommendedMaxHp('Mago', 12, 1) === 7, 'Mago Nv 1 com CON 12 (+1) tem 6 + 1 = 7 PV');
+assert(sandbox.getRecommendedMaxHp('Mago', 12, 4) === 22, 'Mago Nv 4 com CON 12 (+1) tem 7 + 3 * (4 + 1) = 22 PV');
+
+// 3. Cálculo Automático de Acerto e Dano de Armas
+const b91WarriorChar = {
+  name: 'Krag',
+  className: 'Guerreiro',
+  level: 1,
+  str: 16, // +3
+  dex: 12, // +1
+  fightingStyle: ''
+};
+const b91LongswordStats = sandbox.calculateWeaponAttackStats(b91WarriorChar, 'Espada Longa');
+assert(b91LongswordStats.hit === 5, 'Espada Longa: Bônus de acerto é +5 (FOR +3 + PB +2)');
+assert(b91LongswordStats.hitStr === '+5', 'Espada Longa: String de acerto formatada como +5');
+assert(b91LongswordStats.damageFormula === '1d8+3', 'Espada Longa: Dano é 1d8+3');
+assert(b91LongswordStats.isProficient === true, 'Guerreiro é proficiente com Espada Longa');
+
+const b91RogueChar = {
+  name: 'Vax',
+  className: 'Ladino',
+  level: 1,
+  str: 10, // +0
+  dex: 16, // +3
+  fightingStyle: ''
+};
+const b91DaggerStats = sandbox.calculateWeaponAttackStats(b91RogueChar, 'Adaga');
+assert(b91DaggerStats.hit === 5, 'Adaga (Acuidade): Bônus de acerto usa DES (+3) + PB (+2) = +5');
+assert(b91DaggerStats.damageFormula === '1d4+3', 'Adaga: Dano usa modificador de DES (+3) = 1d4+3');
+assert(b91DaggerStats.keyAttr === 'dex', 'Adaga com Acuidade escolhe automaticamente DES');
+
+// 4. Elementos HTML do Modal Compilados
+assert(standalone119Html.includes('id="pm-weapons-grid"'), 'HTML compilado contém container de armas dinâmicas (#pm-weapons-grid)');
+assert(standalone119Html.includes('id="pm-quick-weapon-select"'), 'HTML compilado contém seletor rápido de armas (#pm-quick-weapon-select)');
+assert(standalone119Html.includes('id="pm-ca-formula"'), 'HTML compilado contém badge de fórmula explicativa de CA (#pm-ca-formula)');
+assert(standalone119Html.includes('id="btn-suggest-hp"'), 'HTML compilado contém botão de sugestão de PV (#btn-suggest-hp)');
+assert(standalone119Html.includes('id="pm-non-caster-box"'), 'HTML compilado contém aviso inteligente para classes sem magias (#pm-non-caster-box)');
+assert(standalone119Html.includes('openWeaponPickerModal(null, \'modal\')'), 'HTML compilado permite abrir o catálogo completo de armas para o modal');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

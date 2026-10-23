@@ -10802,6 +10802,156 @@
       line-height: 1.4;
     }
 
+    /* =====================================================================
+       ⚔️ MODAL PLAYER: ARMAS EQUIPADAS & AUTOMAÇÃO DINÂMICA
+       ===================================================================== */
+    .modal-weapons-section {
+      background: #080c16;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .modal-weapons-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .modal-weapon-picker-bar {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px dashed rgba(245, 158, 11, 0.3);
+    }
+    .modal-weapon-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .modal-weapon-card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: relative;
+      transition: all 0.15s ease;
+    }
+    .modal-weapon-card:hover {
+      border-color: rgba(245, 158, 11, 0.4);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+    .modal-weapon-card.proficient {
+      border-left: 3px solid #10b981;
+    }
+    .modal-weapon-card.non-proficient {
+      border-left: 3px solid #94a3b8;
+    }
+    .modal-weapon-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-weapon-name {
+      font-weight: 800;
+      font-size: 12px;
+      color: #fff;
+    }
+    .modal-weapon-del-btn {
+      background: transparent;
+      border: none;
+      color: #f87171;
+      cursor: pointer;
+      font-size: 13px;
+      padding: 0 4px;
+      line-height: 1;
+      transition: transform 0.15s;
+    }
+    .modal-weapon-del-btn:hover {
+      transform: scale(1.2);
+    }
+    .modal-weapon-stats-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .modal-weapon-badge-hit {
+      font-size: 11px;
+      font-weight: 800;
+      background: rgba(14, 165, 233, 0.2);
+      color: #38bdf8;
+      border: 1px solid rgba(14, 165, 233, 0.4);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .modal-weapon-badge-dmg {
+      font-size: 11px;
+      font-weight: 800;
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .modal-weapon-prop {
+      font-size: 9.5px;
+      color: var(--text-muted);
+      line-height: 1.2;
+    }
+    .modal-ca-formula-pill {
+      font-size: 10px;
+      color: #94a3b8;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-top: 3px;
+      display: inline-block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .modal-hp-suggest-btn {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-left: 4px;
+      transition: all 0.15s;
+    }
+    .modal-hp-suggest-btn:hover {
+      background: rgba(16, 185, 129, 0.3);
+      color: #fff;
+    }
+    .modal-non-caster-notice {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
     @media (max-width: 900px) {
       .player-hp-btn, .btn-hp-adj, .btn-hp-dmg, .btn-hp-heal, .roll20-hp-btn {
         min-height: 44px;

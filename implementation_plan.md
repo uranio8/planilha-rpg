@@ -1,46 +1,84 @@
-# Plano de Implementação - ISSUE-115
+# Plano de Implementação - ISSUE-123: Automação e Interligação Dinâmica na Ficha de Personagem
 
 ## 🎯 Objetivo e Contexto
-O modal de edição de ficha de personagem (**`#modal-player`** - "EDITAR FICHA: ARKHALLIS") apresenta problemas críticos de ergonomia visual, legibilidade e aproveitamento de espaço:
-1. **Truncamento agressivo e ilegível de Habilidades Desbloqueadas**: a seção `#pm-features-preview` trunca o texto arbitrariamente com `substring(0, 90) + '...'` em um container minúsculo de `max-height: 110px`, gerando linhas espremidas onde o mestre/jogador não consegue ler as regras das características (ex: *Portento*, *Tradição Arcana*).
-2. **Atributos sem Modificadores**: a seção de 6 Atributos D&D (FOR, DES, CON, INT, SAB, CAR) exibe apenas inputs numéricos brutos sem os modificadores calculados (ex: INT 18 -> `+4`, FOR 7 -> `-2`), dificultando a visualização de bônus em mesa.
-3. **Largura Restrita e Espaço Desperdiçado**: o modal tem largura fixa estreita (`max-width: 740px`), deixando grande margem vazia nas laterais em monitores modernos.
-4. **Espaços de Magia e Seções Homogêneas**: os 9 círculos de magia e os campos de combate carecem de hierarquia visual e acabamento Dark Fantasy no padrão Roll20/D&D 5E.
+O usuário solicitou melhorias no modal de criação e edição de fichas de personagens (`#modal-player`) para interligar informações que se repetem ou dependem umas das outras:
+> *"vamos aplicar melhorias nessa aba, e linkar informações que se repetem ou são interligadas com outras, como por exemplo as armas ali, o jogador deve escolher apenas o equipamento, e o proprio sistema configura o ataque e acerto"*
+
+Atualmente, o modal possui várias desconexões mecânicas:
+1. **Ataques & Armas Principais**: O campo `#pm-attacks` é um campo de texto bruto ou depende de um modal externo que não recalcula dinamicamente se o jogador alterar seus atributos (FOR/DES), nível ou classe.
+2. **Raça vs. Deslocamento (Speed)**: Ao selecionar a Raça (ex: Anão, Halfling, Elfo), o deslocamento permanece estático em `9m`, ignorando o padrão D&D 5E (ex: Anão e Pequeninos = 7,5m, Elfo dos Bosques = 10,5m, etc.) e bônus de classe (Bárbaro Nv 5+ ou Monge Nv 2+).
+3. **Classe / Nível / CON vs. PV Máximo**: Ao criar o personagem ou alterar classe/CON/nível, o PV não oferece cálculo assistido de 1º nível (`Dado de Vida Máximo + CON`) nem cálculo por progressão de níveis.
+4. **Fórmula de CA (Classe de Armadura)**: Embora a CA seja calculada, não há indicação visual de qual regra está ativa (ex: Defesa sem Armadura do Bárbaro `10 + DES + CON`, Armadura Leve `12 + DES`, Armadura Pesada, etc.).
+5. **Espaços de Magia para Classes Não-Conjuradoras**: Classes como Bárbaro, Guerreiro (não-místico) e Ladino exibem uma grade de 9 círculos zerados sem distinção de classes conjuradoras.
 
 ---
 
-## 🛠️ Módulos e Arquivos Afetados
-- **`src/ui/ui.html`**:
-  - Ampliação da largura do modal para `max-width: 880px`.
-  - Inclusão dos badges visuais de modificadores nos 6 blocos de atributos D&D (`#pm-mod-str`, `#pm-mod-dex`, etc.).
-  - Aprimoramento da hierarquia com seções visualmente consolidadas e títulos dourados expressivos.
-  - Expansão do container `#pm-features-preview` com altura confortável (`max-height: 240px`) e rolagem suave.
-- **`src/styles/head_css.html`**:
-  - Estilos modernos para os cards de preview de habilidades (`.pm-feature-card`, `.pm-feature-title`, `.pm-feature-desc`, `.pm-feature-badge`).
-  - Estilização refinada das caixas de atributos no modal (`.stat-box-editor`, `.stat-mod-pill`).
-  - Estilização dos slots de magia no modal (`.pm-slot-box`, `.pm-slot-active`).
-- **`src/js/players.js`**:
-  - Em `onPlayerModalClassOrLevelChange`: eliminação do truncamento `substring(0, 90)` e adoção de formatação rica via `formatFeatureSnippet` com badges de nível e subclasse.
-  - Implementação de `updateModalAttributeModifiers()` para recalcular os modificadores dinamicamente conforme o usuário digita nos inputs de atributos.
-  - Chamada automática de `updateModalAttributeModifiers()` em `openPlayerModal`.
-- **`test_runner.js`**:
-  - Criação da **Suíte 83** validando a renderização dos modificadores dinâmicos, a ausência de truncamentos artificiais e a presença das novas classes do modal de edição no standalone compilado.
-- **`issues/README.md`**:
-  - Registro detalhado da **ISSUE-115**.
+## 🛠️ Detalhamento das Melhorias e Módulos Afetados
+
+### 1. Seletor Integrado de Armas com Cálculo Automático de Acerto e Dano
+- **UI (`src/ui/ui.html`)**:
+  - Na seção **Ataques & Armas Principais**, adicionar um seletor rápido com dropdown categorizado das armas do compêndio D&D 5E (`EQUIPMENT_DATA`) e botão `➕ Equipar Arma`.
+  - Exibição de cards visuais interativos para cada arma equipada contendo:
+    - Nome da arma e propriedades (ex: *Versátil, Acuidade, Pesada*).
+    - **Bônus de Acerto calculado em tempo real** (ex: `🎯 +4`, combinando atributo chave FOR/DES + Bônus de Proficiência da classe).
+    - **Fórmula de Dano calculada em tempo real** (ex: `💥 1d12+2 cortante`).
+    - Botão de remoção rápida (`🗑️`).
+  - Sincronização bidirecional com o campo `#pm-attacks` e inclusão de um botão sutil `✏️ Editar Texto Livre` para mestres que desejam armas customizadas/homebrew.
+  - Ao salvar a ficha (`savePlayerSheet`), as armas selecionadas são salvas automaticamente no inventário do jogador com `equipped: true` e `category: 'Armas'`.
+
+### 2. Recálculo Reativo em Tempo Real de Atributos e Bônus
+- **Lógica (`src/js/players.js`)**:
+  - Função auxiliar `getModalSimulatedPlayer()`: reconstrói um objeto de jogador virtual com base nos valores instantâneos do formulário (`#pm-str`, `#pm-dex`, `#pm-con`, `#pm-class-select`, `#pm-level`, `#pm-armor-select`, etc.).
+  - Ao alterar qualquer atributo (FOR, DES, CON, INT, SAB, CAR), nível ou classe:
+    - Todos os ataques equipados recalculam imediatamente acerto e dano.
+    - A CA Resultante é recalculada e atualizada.
+    - Os modificadores de atributo (`#pm-mod-str`, etc.) são atualizados.
+
+### 3. Vínculo Automático: Raça & Bônus de Classe ➔ Deslocamento
+- **Lógica (`src/js/players.js`)**:
+  - Função `getRacialAndClassSpeed(raceName, className, level, armorKey)`:
+    - Identifica a velocidade base a partir de `SPECIES_DATA` (Anão = 7,5m; Halfling = 7,5m; Gnomo = 7,5m; Elfo da Floresta = 10,5m; demais = 9m).
+    - Aplica bônus de Bárbaro (*Movimento Rápido* +3m no Nível 5+ se não usar armadura pesada).
+    - Aplica bônus de Monge (*Movimento sem Armadura* +3m no Nível 2+, progressivo, sem armadura/escudo).
+  - Atualiza o campo `#pm-speed` automaticamente quando a Raça ou Classe/Nível muda, respeitando caso o usuário insira um valor customizado.
+
+### 4. Vínculo Automático: Classe, CON e Nível ➔ Sugestão de PV Máximo
+- **Lógica (`src/js/players.js`)**:
+  - Ao alterar Constituição, Classe ou Nível, exibe um botão/chip de ajuda rápida ao lado de `#pm-maxhp`: `Sugerido: X PV (Aplicar)`.
+  - Fórmula oficial 5E:
+    - Nível 1: `Dado de Vida Máximo + Modificador de CON` (mínimo 1).
+    - Nível N: `Nível 1 + ((Dado Médio + Modificador de CON) * (Nível - 1))`.
+  - Para novas fichas, preenche automaticamente o PV inicial de Nível 1 correto com base na classe e CON.
+
+### 5. Indicador Visual da Fórmula de CA
+- **UI & Lógica (`src/ui/ui.html` e `src/js/players.js`)**:
+  - Adicionar um subtítulo/badge dinâmico abaixo de CA Resultante:
+    - Ex: `Defesa sem Armadura (Bárbaro): 10 + DES (+1) + CON (+2) = 13`
+    - Ex: `Cota de Malha: 16 (Pesada, sem mod DES)`
+    - Ex: `Couro Batido + Escudo: 12 + DES (+2) + Escudo (+2) = 16`
+
+### 6. Tratamento de Espaços de Magia para Não-Conjuradores
+- **UI (`src/ui/ui.html`)**:
+  - Para classes sem conjuração (Bárbaro, Guerreiro sem Cavaleiro Arcano, Ladino sem Trapaceiro Arcano, Monge sem subclasse mágica):
+    - Exibir uma mensagem discreta: `⚔️ Esta classe não utiliza espaços de magia.` com opção de expansão se desejado.
+    - Para conjuradores, destaca os círculos que possuem slots disponíveis (> 0).
 
 ---
 
 ## 🔒 Garantias de Segurança e Não-Regressão
-- **Compatibilidade Total**: Nenhuma alteração de schema nos campos de persistência de `PLAYERS` ou `localStorage`.
-- **Preservação de Dados**: Todas as funções de salvamento (`savePlayerSheet`), exclusão e recálculo de CA/PV/Slots continuam 100% íntegras.
-- **100% Testes Aprovados**: Todos os 1381 testes atuais devem permanecer passando, com a adição de novos testes para a Suíte 83.
+- **Compatibilidade com Dados Existentes**: Fichas já salvas mantêm seus valores intactos sem perda de informações.
+- **Respeito às Regras Oficiais D&D 5E**: Cálculo rigoroso de proficiência em armas (marciais vs. simples, acuidade, alcance, etc.).
+- **Zero Frameworks**: Mantém CSS Vanilla puro com variáveis de design do sistema.
+- **Suíte de Testes Automatizada**: Criação da **Bateria 91** em `test_runner.js` cobrindo o cálculo dinâmico de armas no modal, velocidade racial e sugestão de PV.
 
 ---
 
 ## 📋 Checklist de Validação
-- [ ] Modal de edição expandido para 880px, proporcionando visual arejado e confortável.
-- [ ] Atributos FOR, DES, CON, INT, SAB, CAR exibem seus modificadores calculados (ex: `+4`, `-2`) que se atualizam em tempo real.
-- [ ] Seção de Habilidades Desbloqueadas sem texto cortado com `...`, exibindo nome, nível, subclasse e regras completas com quebras e destaques.
-- [ ] Compilação com `node builder.js` bem-sucedida.
-- [ ] Bateria completa de testes automatizados com 100% de sucesso (`node test_runner.js`).
-- [ ] Commit e push seguros no Git.
+- [ ] Criação do seletor de armas e cards interativos no modal.
+- [ ] Recálculo reativo em tempo real de bônus de acerto e fórmula de dano ao alterar atributos/nível/classe.
+- [ ] Sincronização de armas equipadas com `#pm-attacks` e com o inventário da ficha.
+- [ ] Vínculo de Raça e Classe ao Deslocamento (`#pm-speed`).
+- [ ] Sugestão automática de PV com cálculo oficial 5E.
+- [ ] Badge explicativo da fórmula de CA ativa.
+- [ ] Compilação via `node builder.js`.
+- [ ] Execução da suíte completa de testes automatizados (`node test_runner.js`) com 100% de sucesso.

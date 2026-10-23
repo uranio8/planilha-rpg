@@ -105,3 +105,33 @@ node test_runner.js
 🎉 TODOS OS TESTES PASSARAM COM SUCESSO! 🚀
 ========================================
 ```
+
+---
+
+# Walkthrough - Interligação Dinâmica de Armas, Automação de Ataques & Acerto, Fórmula de CA, Deslocamento por Raça/Classe e Sugestão de PV no Modal da Ficha (ISSUE-123)
+
+## 🎯 Objetivo
+Atender ao pedido do usuário de automatizar dados repetidos ou interligados no modal de criação e edição da ficha (`#modal-player`):
+- O jogador seleciona o equipamento/arma diretamente e o próprio sistema configura e calcula em tempo real o **Bônus de Acerto (+X)** e o **Dano (YdZ + mod)**.
+- Deslocamento recalculado automaticamente baseado na Raça selecionada e bônus de Classe (Bárbaro Nv 5, Monge).
+- Exibição dinâmica da fórmula de Classe de Armadura (CA) com explicação dos modificadores (Bárbaro, Monge, Armadura + Destreza + Escudo).
+- Botão inteligente de sugestão de PV Máximo balanceado com a média oficial 5E.
+- Tratamento limpo de Espaços de Magia para classes não-conjuradoras.
+
+## 🛠️ Alterações Realizadas
+1. **Seletor Dinâmico de Armas & Grid de Equipamentos no Modal**:
+   - Criado container `#pm-weapons-grid` com chips dinâmicos mostrando Nome, Bônus de Acerto (`+X`), Fórmula de Dano (`YdZ + mod`), Tipo de Dano e propriedades.
+   - Dropdown de seleção rápida `#pm-quick-weapon-select` e botão de catálogo completo `📚 Catálogo de Armas` (`openWeaponPickerModal`).
+   - Sincronização automática com a área de texto `#pm-attacks` e gravação com `equipped: true` no inventário do herói (`savePlayerSheet`).
+2. **Deslocamento Dinâmico por Raça & Classe**:
+   - Implementada função `getRacialAndClassSpeed(raceName, className, level, armorKey)` com dados oficiais de `SPECIES_DATA` (Anão/Halfling/Gnomo: 7,5m; outros: 9m; Elfo da Floresta: 10,5m; Bárbaro nv 5 sem armadura pesada: +3m; Monge sem armadura: +3m a +9m).
+3. **Explicação de CA e Sugestão de PV**:
+   - Badge `#pm-ca-formula` exibindo em tempo real a fórmula exata aplicada (ex: *🛡️ Defesa Bárbaro: 10 + DES (+1) + CON (+2) + Escudo (+2) = 15*).
+   - Botão `#btn-suggest-hp` calculando `getRecommendedMaxHp(className, conVal, level)` com a média padrão oficial D&D 5E.
+4. **Espaços de Magia Inteligentes**:
+   - Para classes sem conjuração (Bárbaro, Guerreiro ou Ladino não-conjuradores), um card informativo elegante substitui a grade de 9 espaços vazios, mantendo botão `👁️ Mostrar / Configurar Slots` se o mestre ou jogador desejar.
+
+## 🧪 Validação
+- Compilação realizada com sucesso: `node builder.js`.
+- Bateria 91 implementada em `test_runner.js` com 34 novos testes cobrindo todas as fórmulas e elementos de interface.
+- **1586/1586 testes aprovados com 100% de sucesso**.
