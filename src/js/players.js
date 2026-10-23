@@ -1,6 +1,10 @@
 
-let activePortalPlayerId = null;
-let pendingPortalPlayerId = null;
+var activePortalPlayerId = (typeof activePortalPlayerId !== 'undefined') ? activePortalPlayerId : null;
+var pendingPortalPlayerId = (typeof pendingPortalPlayerId !== 'undefined') ? pendingPortalPlayerId : null;
+if (typeof window !== 'undefined') {
+  window.activePortalPlayerId = activePortalPlayerId;
+  window.pendingPortalPlayerId = pendingPortalPlayerId;
+}
 
 function touchPlayer(playerOrId) {
   if (!playerOrId) return null;

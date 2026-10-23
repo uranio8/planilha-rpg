@@ -28,11 +28,13 @@ let cloudSaveStatusTimeout = null;
 let localClientId = 'client_' + Math.random().toString(36).substring(2, 9);
 function resolveClientRole() {
   if (typeof window !== 'undefined' && window.location) {
-    if (window.location.search.includes('view=player') || window.location.search.includes('player=') || window.location.search.includes('lobby=true') || window.location.search.includes('login=player')) {
+    const s = window.location.search || '';
+    if (s.includes('view=player') || s.includes('player=') || s.includes('lobby=true') || s.includes('login=player')) {
       return 'player';
     }
   }
-  if (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId) {
+  const portalId = (typeof window !== 'undefined' && window.activePortalPlayerId) || (typeof activePortalPlayerId !== 'undefined' ? activePortalPlayerId : null);
+  if (portalId) {
     return 'player';
   }
   if (typeof document !== 'undefined' && document.body && document.body.classList.contains('mode-player-portal')) {
@@ -41,7 +43,7 @@ function resolveClientRole() {
   try {
     if (typeof localStorage !== 'undefined') {
       const storedRole = localStorage.getItem('dnd5e_session_role');
-      if (storedRole === 'player' && typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId) {
+      if (storedRole === 'player' && portalId) {
         return 'player';
       }
     }

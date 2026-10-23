@@ -3,6 +3,14 @@ if (typeof playFX === 'undefined') {
   var playFX = function(type) {};
 }
 
+// Variáveis de portal globalmente acessíveis (evita Temporal Dead Zone em bundles compilados)
+var activePortalPlayerId = (typeof activePortalPlayerId !== 'undefined') ? activePortalPlayerId : null;
+var pendingPortalPlayerId = (typeof pendingPortalPlayerId !== 'undefined') ? pendingPortalPlayerId : null;
+if (typeof window !== 'undefined') {
+  window.activePortalPlayerId = activePortalPlayerId;
+  window.pendingPortalPlayerId = pendingPortalPlayerId;
+}
+
 // src_js_core.js - State, Constants, Storage and Core Utilities
 
 const CONDITIONS_LIST = [
