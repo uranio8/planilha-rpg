@@ -10952,6 +10952,200 @@
       align-items: center;
     }
 
+    /* ============================================================== */
+    /* ⭐ ESTILOS D&D 5E: CATÁLOGO DE TALENTOS & MODAIS DE ASI (ISSUE-124) */
+    /* ============================================================== */
+    .feats-catalog-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .feat-catalog-card {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(250, 204, 21, 0.2);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    }
+    .feat-catalog-card:hover {
+      border-color: rgba(250, 204, 21, 0.5);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+    }
+    .feat-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .feat-card-header {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .feat-card-icon {
+      font-size: 26px;
+      line-height: 1;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+    }
+    .feat-card-name-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .feat-card-title {
+      font-family: var(--font-title);
+      font-weight: 800;
+      font-size: 15px;
+      color: #fff;
+    }
+    .feat-card-category-badge {
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: rgba(148, 163, 184, 0.15);
+      color: #cbd5e1;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      text-transform: uppercase;
+    }
+    .feat-card-en-name {
+      font-size: 11px;
+      color: #94a3b8;
+      font-style: italic;
+    }
+    .feat-prereq-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .feat-prereq-badge.no-prereq {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .feat-prereq-badge.has-prereq {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .feat-card-summary {
+      font-size: 12px;
+      color: #cbd5e1;
+      line-height: 1.45;
+      margin: 4px 0 10px 0;
+    }
+    .feat-benefits-list {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 11.5px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+    .feat-benefits-list li {
+      margin-bottom: 4px;
+    }
+    .feat-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      gap: 8px;
+    }
+    .feat-card-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .feat-badge-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    .feat-badge-pill.gold {
+      background: rgba(250, 204, 21, 0.2);
+      color: #facc15;
+      border: 1px solid rgba(250, 204, 21, 0.4);
+    }
+    .feat-badge-pill.green {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+    .feat-badge-pill.cyan {
+      background: rgba(6, 182, 212, 0.2);
+      color: #22d3ee;
+      border: 1px solid rgba(6, 182, 212, 0.4);
+    }
+    .feat-badge-pill.purple {
+      background: rgba(168, 85, 247, 0.2);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+    }
+    .feats-category-chips-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .feats-category-chip {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .feats-category-chip:hover {
+      background: rgba(250, 204, 21, 0.15);
+      border-color: rgba(250, 204, 21, 0.3);
+      color: #fff;
+    }
+    .feats-category-chip.active {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      border-color: #f59e0b;
+      color: #000;
+      font-weight: 800;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    }
+    .asi-mode-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .asi-mode-card:hover {
+      border-color: rgba(250, 204, 21, 0.4);
+      background: rgba(15, 23, 42, 0.85);
+    }
+    .asi-mode-card.active {
+      background: rgba(250, 204, 21, 0.15);
+      border: 1px solid #facc15;
+      box-shadow: 0 0 10px rgba(250, 204, 21, 0.2);
+    }
+    .player-feats-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 8px;
+    }
+
     @media (max-width: 900px) {
       .player-hp-btn, .btn-hp-adj, .btn-hp-dmg, .btn-hp-heal, .roll20-hp-btn {
         min-height: 44px;

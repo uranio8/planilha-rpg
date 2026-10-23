@@ -2054,10 +2054,31 @@ const CLASSES_DATA = [
   }
 ];
 
+// ============================================================================
+// 🎯 NÍVEIS OFICIAIS DE AUMENTO DE ATRIBUTO / TALENTO (ASI) POR CLASSE
+// ============================================================================
+const CLASS_ASI_LEVELS = {
+  guerreiro: [4, 6, 8, 12, 14, 16, 19],
+  fighter: [4, 6, 8, 12, 14, 16, 19],
+  ladino: [4, 8, 10, 12, 16, 19],
+  rogue: [4, 8, 10, 12, 16, 19],
+  default: [4, 8, 12, 16, 19]
+};
+
+function getClassAsiLevels(className) {
+  const norm = (className || '').toLowerCase().trim();
+  if (norm.includes('guerreiro') || norm.includes('fighter')) return CLASS_ASI_LEVELS.guerreiro;
+  if (norm.includes('ladino') || norm.includes('rogue')) return CLASS_ASI_LEVELS.ladino;
+  return CLASS_ASI_LEVELS.default;
+}
+
 // Exportação universal para compatibilidade com o sistema
 if (typeof window !== 'undefined') {
   window.CLASSES_DATA = CLASSES_DATA;
+  window.CLASS_ASI_LEVELS = CLASS_ASI_LEVELS;
+  window.getClassAsiLevels = getClassAsiLevels;
 }
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { CLASSES_DATA };
+  module.exports = { CLASSES_DATA, CLASS_ASI_LEVELS, getClassAsiLevels };
 }
+

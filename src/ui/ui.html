@@ -56,6 +56,10 @@
             <span>🛡️ Itens & Equipamentos</span>
             <span class="tab-count" id="cnt-equip">0</span>
           </button>
+          <button class="dropdown-item" onclick="switchTab('feats')">
+            <span>⭐ Talentos (Feats 5E)</span>
+            <span class="tab-count" id="cnt-feats">42</span>
+          </button>
           <div class="dropdown-sep"></div>
           <button class="dropdown-item" onclick="switchTab('classes')">🌳 Classes & Subclasses</button>
           <button class="dropdown-item" onclick="switchTab('species')">🧬 Raças & Sub-raças (D&D 5E)</button>
@@ -1318,6 +1322,52 @@
       <div id="species-container"></div>
     </div>
 
+    <!-- TAB: COMPÊNDIO OFICIAL DE TALENTOS (FEATS D&D 5E) -->
+    <div id="tab-feats" class="tab-pane">
+      <div class="compendium-hero-banner" style="margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 26px;">⭐</span>
+              <h2 style="margin: 0; font-family: var(--font-title); font-size: 22px; color: #fff;">Catálogo Oficial de Talentos (Feats D&D 5E)</h2>
+              <span class="badge badge-gold" id="cnt-feats-badge">42 Talentos</span>
+            </div>
+            <p style="margin: 6px 0 0 0; font-size: 13px; color: #94a3b8; max-width: 780px;">
+              Baseado no Livro do Jogador (PHB 5E) com traduções canônicas, tópicos objetivos de leitura rápida, pré-requisitos automáticos e integração com as fichas da mesa.
+            </p>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-secondary" onclick="renderFeatsTab(true)">🔄 Redefinir Filtros</button>
+          </div>
+        </div>
+
+        <!-- FILTROS & PESQUISA DE TALENTOS -->
+        <div class="compendium-filters-row" style="margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+          <div style="flex: 1; min-width: 240px; position: relative;">
+            <input type="text" id="filter-feats-q" class="search-input" placeholder="🔍 Pesquisar por nome do talento, bônus, pré-requisito ou efeito..." oninput="handleFeatSearch(this.value)">
+          </div>
+
+          <div class="feats-category-chips-group">
+            <button class="feats-category-chip active" data-cat="all" onclick="setFeatsCategoryFilter('all')">Todos</button>
+            <button class="feats-category-chip" data-cat="combat" onclick="setFeatsCategoryFilter('combat')">⚔️ Combate</button>
+            <button class="feats-category-chip" data-cat="magic" onclick="setFeatsCategoryFilter('magic')">🔮 Magia</button>
+            <button class="feats-category-chip" data-cat="physical" onclick="setFeatsCategoryFilter('physical')">❤️ Físico</button>
+            <button class="feats-category-chip" data-cat="stealth" onclick="setFeatsCategoryFilter('stealth')">👁️ Percepção & Furtividade</button>
+            <button class="feats-category-chip" data-cat="special" onclick="setFeatsCategoryFilter('special')">✨ Especiais</button>
+          </div>
+        </div>
+
+        <div style="margin-top: 8px; font-size: 11px; color: #64748b;" id="feats-result-count">
+          Carregando catálogo de talentos...
+        </div>
+      </div>
+
+      <!-- GRADE DOS CARDS DE TALENTOS -->
+      <div id="feats-catalog-grid" class="feats-catalog-grid">
+        <!-- Renderizado dinamicamente por renderFeatsTab() -->
+      </div>
+    </div>
+
     <!-- TAB 8: CAMPANHAS, DIÁRIO E INVENTÁRIO DO GRUPO -->
     <div id="tab-campaigns" class="tab-pane">
       <div class="controls-bar">
@@ -1789,6 +1839,182 @@
           <button class="btn-secondary" onclick="closePlayerModal()">Cancelar</button>
           <button class="btn-action" onclick="savePlayerSheet()">Salvar Ficha</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- 🧙 MODAL EXCLUSIVO DO MESTRE: CONCESSÃO DIRETA DE TALENTOS     -->
+  <!-- ============================================================== -->
+  <div id="modal-master-grant-feat" class="modal-overlay">
+    <div class="modal-body" style="max-width: 720px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="panel-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">⭐</span>
+          <div>
+            <span id="master-grant-feat-title" style="font-weight: 800; color: #fff; font-size: 15px;">Conceder Talento Oficial (D&D 5E)</span>
+            <div id="master-grant-feat-subtitle" style="font-size: 11px; color: var(--primary-light);">Ferramenta do Mestre para bênçãos narrativas, recompensas e talentos extras</div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeMasterGrantFeatModal()">✕</button>
+      </div>
+
+      <div style="flex: 1; overflow-y: auto; padding: 12px 4px;">
+        <!-- SEÇÃO 1: TALENTOS JÁ CONCEDIDOS AO HERÓI -->
+        <div style="margin-bottom: 14px;">
+          <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px;">
+            📜 Talentos Ativos Deste Personagem:
+          </div>
+          <div id="master-grant-current-feats" class="master-current-feats-row">
+            <!-- Populado dinamicamente -->
+          </div>
+        </div>
+
+        <!-- SEÇÃO 2: BUSCA E FILTROS DO ACERVO DE TALENTOS -->
+        <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+          <input type="text" id="master-feat-search-input" class="search-input" style="flex: 1; min-width: 200px; padding: 6px 10px; font-size: 12px;" placeholder="🔍 Buscar talento por nome, requisito ou efeito..." oninput="renderMasterGrantFeatList()">
+          <select id="master-feat-cat-select" class="select-field" style="padding: 6px 10px; font-size: 12px; max-width: 160px;" onchange="renderMasterGrantFeatList()">
+            <option value="all">Todas Categorias</option>
+            <option value="combat">Combate</option>
+            <option value="magic">Magia</option>
+            <option value="physical">Físico</option>
+            <option value="stealth">Percepção</option>
+            <option value="special">Outros</option>
+          </select>
+        </div>
+
+        <!-- SEÇÃO 3: LISTA COMPLETA DOS 42 TALENTOS COM AÇÃO RÁPIDA -->
+        <div id="master-grant-feats-list" class="master-feats-scroll-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 440px; overflow-y: auto; padding-right: 4px;">
+          <!-- Populado dinamicamente -->
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08);">
+        <button type="button" class="btn-secondary" onclick="closeMasterGrantFeatModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- 📈 MODAL DE ESCOLHA DE ASI (ATRIBUTOS OU TALENTO) DO JOGADOR   -->
+  <!-- ============================================================== -->
+  <div id="modal-player-asi" class="modal-overlay">
+    <div class="modal-body" style="max-width: 720px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="panel-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">📈</span>
+          <div>
+            <span id="player-asi-modal-title" style="font-weight: 800; color: #fff; font-size: 15px;">Aumento de Atributo ou Escolha de Talento (ASI)</span>
+            <div id="player-asi-modal-subtitle" style="font-size: 11px; color: var(--primary-light);">Evolução oficial D&D 5E por classe e nível</div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeAsiChoiceModal()">✕</button>
+      </div>
+
+      <div style="flex: 1; overflow-y: auto; padding: 12px 4px;">
+        <!-- CARDS DE MODO DE ESCOLHA -->
+        <div class="asi-mode-selector-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+          <div class="asi-mode-card active" id="card-asi-mode-stats" onclick="selectAsiModalMode('stats')">
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <span style="font-size: 24px;">💪</span>
+              <div>
+                <b style="color: #fff; font-size: 13px; display: block;">Aumentar Atributos</b>
+                <div style="font-size: 11px; color: #94a3b8;">+2 em 1 atributo ou +1 em 2 atributos (máx. 20)</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="asi-mode-card" id="card-asi-mode-feat" onclick="selectAsiModalMode('feat')">
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <span style="font-size: 24px;">📜</span>
+              <div>
+                <b style="color: #fff; font-size: 13px; display: block;">Escolher um Talento</b>
+                <div style="font-size: 11px; color: #94a3b8;">42 talentos oficiais com bônus e benefícios exclusivos</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTAINER DA OPÇÃO 1: ATRIBUTOS -->
+        <div id="asi-stats-options-container" class="asi-subview" style="display: block;">
+          <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+            <div style="font-size: 12px; font-weight: 700; color: #facc15; margin-bottom: 8px;">Como deseja distribuir os pontos?</div>
+            <div style="display: flex; gap: 20px;">
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+                <input type="radio" name="asi_stat_dist_type" value="single" checked onchange="updateAsiStatsDistributionView()">
+                <span><b>+2</b> em um único atributo</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+                <input type="radio" name="asi_stat_dist_type" value="dual" onchange="updateAsiStatsDistributionView()">
+                <span><b>+1</b> em dois atributos distintos</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- MODO SINGLE: +2 EM 1 -->
+          <div id="asi-stat-single-box" style="display: block; margin-bottom: 12px;">
+            <label style="font-size: 11px; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 4px;">Selecione o atributo para receber +2:</label>
+            <select id="asi-stat-single-select" class="select-field" style="width: 100%; padding: 8px;" onchange="updateAsiStatsPreview()">
+              <!-- Populado via JS com valores atuais -->
+            </select>
+          </div>
+
+          <!-- MODO DUAL: +1 EM 2 -->
+          <div id="asi-stat-dual-box" style="display: none; margin-bottom: 12px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div>
+                <label style="font-size: 11px; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 4px;">Primeiro atributo (+1):</label>
+                <select id="asi-stat-dual-1-select" class="select-field" style="width: 100%; padding: 8px;" onchange="updateAsiStatsPreview()">
+                  <!-- Populado via JS -->
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 4px;">Segundo atributo (+1):</label>
+                <select id="asi-stat-dual-2-select" class="select-field" style="width: 100%; padding: 8px;" onchange="updateAsiStatsPreview()">
+                  <!-- Populado via JS -->
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- PREVIEW DOS ATRIBUTOS APÓS A ESCOLHA -->
+          <div id="asi-stats-preview-panel" class="asi-stats-preview-grid">
+            <!-- Mostra FOR, DES, CON, INT, SAB, CAR com antes e depois -->
+          </div>
+        </div>
+
+        <!-- CONTAINER DA OPÇÃO 2: TALENTO -->
+        <div id="asi-feat-options-container" class="asi-subview" style="display: none;">
+          <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+            <input type="text" id="asi-feat-search-input" class="search-input" style="flex: 1; min-width: 200px; padding: 6px 10px; font-size: 12px;" placeholder="🔍 Filtrar talento por nome..." oninput="filterAsiModalFeats()">
+            <select id="asi-feat-cat-select" class="select-field" style="padding: 6px 10px; font-size: 12px; max-width: 150px;" onchange="filterAsiModalFeats()">
+              <option value="all">Todas Categorias</option>
+              <option value="combat">Combate</option>
+              <option value="magic">Magia</option>
+              <option value="physical">Físico</option>
+              <option value="stealth">Percepção</option>
+              <option value="special">Outros</option>
+            </select>
+          </div>
+
+          <!-- SELETOR DE TALENTOS -->
+          <div id="asi-feats-list-container" class="asi-feats-list-scroll" style="display: flex; flex-direction: column; gap: 8px; max-height: 380px; overflow-y: auto; padding-right: 4px;">
+            <!-- Populado via JS com cards de escolha -->
+          </div>
+
+          <!-- SELETOR ADICIONAL CASO SEJA HALF-FEAT COM ESCOLHA -->
+          <div id="asi-feat-half-choice-box" style="display: none; margin-top: 10px; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 8px; padding: 10px;">
+            <label style="font-size: 11px; font-weight: 700; color: #d8b4fe; display: block; margin-bottom: 4px;">⚡ Este talento concede +1 em atributo. Escolha:</label>
+            <select id="asi-feat-stat-choice-select" class="select-field" style="width: 100%; padding: 6px;">
+              <!-- Populado dinamicamente -->
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08);">
+        <button type="button" class="btn-secondary" onclick="closeAsiChoiceModal()">Cancelar</button>
+        <button type="button" class="btn-action" onclick="saveAsiChoiceModal()" style="font-weight: 700; padding: 6px 16px;">💾 Confirmar Escolha de ASI</button>
       </div>
     </div>
   </div>

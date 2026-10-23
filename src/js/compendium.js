@@ -1507,3 +1507,173 @@ function applyWeatherToGrid() {
   alert(`✅ Clima "${lastGeneratedWeather.name}" aplicado ao Grid de Batalha e sincronizado no Telão!`);
 }
 
+// ============================================================================
+// ⭐ COMPÊNDIO D&D 5E: CATÁLOGO OFICIAL DE TALENTOS (FEATS)
+// ============================================================================
+
+let activeFeatsCategory = 'all';
+let featsSearchQuery = '';
+
+function setFeatsCategoryFilter(category) {
+  activeFeatsCategory = category || 'all';
+  document.querySelectorAll('.feats-category-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.getAttribute('data-cat') === activeFeatsCategory);
+  });
+  renderFeatsTab();
+}
+
+function handleFeatSearch(val) {
+  featsSearchQuery = (val || '').toLowerCase().trim();
+  renderFeatsTab();
+}
+
+function promptGrantFeatToHero(featId) {
+  const feat = typeof findFeatById === 'function' ? findFeatById(featId) : null;
+  if (!feat) return;
+  const players = (typeof PLAYERS !== 'undefined' ? PLAYERS : []);
+  if (players.length === 0) {
+    alert('Nenhum personagem cadastrado na mesa. Crie um personagem na aba Fichas primeiro.');
+    return;
+  }
+
+  const options = players.map((p, idx) => `${idx + 1}. ${p.name} (${p.className || 'Herói'} Nv ${p.level || 1})`).join('\n');
+  const choice = prompt(`⭐ Conceder Talento: "${feat.name}"\n\nDigite o número do personagem que receberá o talento:\n\n${options}`);
+  if (!choice) return;
+
+  const num = parseInt(choice.trim(), 10);
+  if (isNaN(num) || num < 1 || num > players.length) {
+    alert('Opção inválida.');
+    return;
+  }
+
+  const selectedHero = players[num - 1];
+  if (typeof grantFeatToPlayer === 'function') {
+    grantFeatToPlayer(selectedHero.id, feat.id, { source: 'master' });
+  } else {
+    alert('Função grantFeatToPlayer não encontrada.');
+  }
+}
+
+function renderFeatsTab(resetFilter = false) {
+  if (resetFilter) {
+    activeFeatsCategory = 'all';
+    featsSearchQuery = '';
+    const qInput = document.getElementById('filter-feats-q');
+    if (qInput) qInput.value = '';
+    document.querySelectorAll('.feats-category-chip').forEach(chip => {
+      chip.classList.toggle('active', chip.getAttribute('data-cat') === 'all');
+    });
+  }
+
+  const featsList = typeof FEATS_DATA !== 'undefined' ? FEATS_DATA : [];
+  const cntBadge = document.getElementById('cnt-feats');
+  if (cntBadge) cntBadge.innerText = featsList.length;
+
+  const grid = document.getElementById('feats-catalog-grid');
+  if (!grid) return;
+
+  const filtered = featsList.filter(f => {
+    // 1. Filtro de Categoria
+    if (activeFeatsCategory !== 'all') {
+      const cat = (f.category || '').toLowerCase();
+      if (activeFeatsCategory === 'combat' && !cat.includes('combate') && !cat.includes('controle')) return false;
+      if (activeFeatsCategory === 'magic' && !cat.includes('magia')) return false;
+      if (activeFeatsCategory === 'physical' && !cat.includes('físico') && !cat.includes('sobrevivência')) return false;
+      if (activeFeatsCategory === 'stealth' && !cat.includes('percepção') && !cat.includes('furtividade')) return false;
+      if (activeFeatsCategory === 'special' && (cat.includes('combate') || cat.includes('magia') || cat.includes('físico') || cat.includes('percepção') || cat.includes('furtividade'))) return false;
+    }
+
+    // 2. Filtro de Busca
+    if (featsSearchQuery) {
+      const q = featsSearchQuery;
+      const matchName = (f.name || '').toLowerCase().includes(q);
+      const matchEn = (f.nameEn || '').toLowerCase().includes(q);
+      const matchPrereq = (f.prereq || '').toLowerCase().includes(q);
+      const matchSumm = (f.summary || '').toLowerCase().includes(q);
+      const matchBenefits = (f.benefits || []).some(b => b.toLowerCase().includes(q));
+      if (!matchName && !matchEn && !matchPrereq && !matchSumm && !matchBenefits) return false;
+    }
+
+    return true;
+  });
+
+  const countDisplay = document.getElementById('feats-result-count');
+  if (countDisplay) {
+    countDisplay.innerText = `${filtered.length} de ${featsList.length} talentos encontrados`;
+  }
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; background: rgba(15, 23, 42, 0.4); border: 1px dashed rgba(255,255,255,0.1); border-radius: 12px; color: #94a3b8;">
+        <span style="font-size: 32px; display: block; margin-bottom: 8px;">🔍</span>
+        <b style="color: #fff; font-size: 15px;">Nenhum talento encontrado</b>
+        <p style="margin: 6px 0 0 0; font-size: 12px;">Tente alterar os termos da busca ou selecionar a categoria "Todos".</p>
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(f => {
+    const hasPrereq = f.prereq && f.prereq.toLowerCase() !== 'nenhum';
+    const prereqClass = hasPrereq ? 'has-prereq' : 'no-prereq';
+    const prereqLabel = hasPrereq ? `⚠️ Exige: ${f.prereq}` : '✅ Sem pré-requisitos';
+
+    let bonusBadge = '';
+    if (f.initiativeBonus) bonusBadge = `<span class="feat-badge-pill gold">+${f.initiativeBonus} Iniciativa</span>`;
+    else if (f.hpPerLevel) bonusBadge = `<span class="feat-badge-pill green">+${f.hpPerLevel} PV por Nível</span>`;
+    else if (f.luckPoints) bonusBadge = `<span class="feat-badge-pill cyan">3 Pontos de Sorte</span>`;
+    else if (f.statBonus) {
+      const stats = f.statBonus.choice ? f.statBonus.choice.join('/').toUpperCase() : 'ATRIBUTO';
+      bonusBadge = `<span class="feat-badge-pill purple">+${f.statBonus.amount || 1} em ${stats}</span>`;
+    }
+
+    return `
+      <div class="feat-catalog-card">
+        <div class="feat-card-top">
+          <div class="feat-card-header">
+            <span class="feat-card-icon">${f.icon || '📜'}</span>
+            <div>
+              <div class="feat-card-name-row">
+                <span class="feat-card-title">${f.name}</span>
+                <span class="feat-card-category-badge">${f.category}</span>
+              </div>
+              <div class="feat-card-en-name">${f.nameEn || ''}</div>
+            </div>
+          </div>
+          <span class="feat-prereq-badge ${prereqClass}">${prereqLabel}</span>
+        </div>
+
+        <p class="feat-card-summary">${f.summary}</p>
+
+        <div class="feat-card-benefits">
+          <ul class="feat-benefits-list">
+            ${(f.benefits || []).slice(0, 3).map(b => `<li>${typeof highlightInlineRules === 'function' ? highlightInlineRules(b) : b}</li>`).join('')}
+            ${(f.benefits || []).length > 3 ? `<li style="list-style: none; font-size: 10.5px; color: var(--accent-gold); font-style: italic;">+ mais ${(f.benefits.length - 3)} benefício(s)...</li>` : ''}
+          </ul>
+        </div>
+
+        <div class="feat-card-footer">
+          <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+            ${bonusBadge}
+          </div>
+          <div class="feat-card-actions">
+            <button type="button" class="btn-secondary" style="font-size: 11px; padding: 5px 9px;" onclick="openFeatDetailModal('${f.id}')" title="Ver regras completas">
+              📖 Detalhes
+            </button>
+            <button type="button" class="btn-action" style="font-size: 11px; padding: 5px 9px;" onclick="promptGrantFeatToHero('${f.id}')" title="Conceder a um herói da mesa">
+              ⭐ Conceder
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+if (typeof window !== 'undefined') {
+  window.renderFeatsTab = renderFeatsTab;
+  window.setFeatsCategoryFilter = setFeatsCategoryFilter;
+  window.handleFeatSearch = handleFeatSearch;
+  window.promptGrantFeatToHero = promptGrantFeatToHero;
+}
+

@@ -1372,7 +1372,8 @@ function renderPlayers() {
     const dexMod = Math.floor((p.dex - 10) / 2);
     const isWisProf = (p.skillProficiencies || []).includes('percepcao') || (p.skillProficiencies || []).includes('perception');
     const isWisExpert = (p.skillExpertises || []).includes('percepcao') || (p.skillExpertises || []).includes('perception');
-    const passPerc = 10 + wisMod + (isWisExpert ? (prof * 2) : (isWisProf ? prof : 0));
+    const hasObservant = (typeof hasPlayerFeat === 'function') && (hasPlayerFeat(p, 'observador') || hasPlayerFeat(p, 'observant'));
+    const passPerc = 10 + wisMod + (isWisExpert ? (prof * 2) : (isWisProf ? prof : 0)) + (hasObservant ? 5 : 0);
     const activeTab = p.activeCardTab || 'skills';
 
     // Normaliza slots e dados
@@ -1547,7 +1548,7 @@ function renderPlayers() {
     const chaMod = Math.floor(((p.cha || 10) - 10) / 2);
     const isInvestProf = (p.skillProficiencies || []).includes('investigacao') || (p.skillProficiencies || []).includes('investigation');
     const isInvestExp = (p.skillExpertises || []).includes('investigacao') || (p.skillExpertises || []).includes('investigation');
-    const passInv = 10 + intMod + (isInvestExp ? (prof * 2) : (isInvestProf ? prof : 0));
+    const passInv = 10 + intMod + (isInvestExp ? (prof * 2) : (isInvestProf ? prof : 0)) + (hasObservant ? 5 : 0);
 
     const isInsightProf = (p.skillProficiencies || []).includes('intuicao') || (p.skillProficiencies || []).includes('insight');
     const isInsightExp = (p.skillExpertises || []).includes('intuicao') || (p.skillExpertises || []).includes('insight');
@@ -1597,14 +1598,17 @@ function renderPlayers() {
                 <button type="button" class="btn-insp ${p.inspiration ? 'active' : ''}" onclick="togglePlayerInspiration('${p.id}')" title="Inspiração Heroica (D&D 5E)">
                   ⭐ Inspiração ${p.inspiration ? '✓' : ''}
                 </button>
-                <button type="button" class="roll20-btn-init" onclick="rollPlayerAttr('${p.id}', 'dex')" title="Rolar Teste de Iniciativa (d20 + ${dexMod})">
-                  <span>🎲</span> INICIATIVA ${dexMod >= 0 ? '+' + dexMod : dexMod}
+                <button type="button" class="roll20-btn-init" onclick="rollPlayerInit('${p.id}')" title="Rolar Teste de Iniciativa (d20 ${typeof getPlayerInitiativeBonus === 'function' ? (getPlayerInitiativeBonus(p) >= 0 ? '+' + getPlayerInitiativeBonus(p) : getPlayerInitiativeBonus(p)) : (dexMod >= 0 ? '+' + dexMod : dexMod)})">
+                  <span>🎲</span> INICIATIVA ${typeof getPlayerInitiativeBonus === 'function' ? (getPlayerInitiativeBonus(p) >= 0 ? '+' + getPlayerInitiativeBonus(p) : getPlayerInitiativeBonus(p)) : (dexMod >= 0 ? '+' + dexMod : dexMod)}
                 </button>
                 <button type="button" class="btn-secondary" style="font-size: 10.5px; padding: 4px 8px;" onclick="openLevelUpWizard('${p.id}')" title="Subir de Nível e Multiclasse">
                   🔼 Nv
                 </button>
                 <button type="button" class="btn-secondary" style="font-size: 10.5px; padding: 4px 8px;" onclick="openPlayerClassesModal('${p.id}')" title="Gerenciar Classes">
                   🔀 Classes
+                </button>
+                <button type="button" class="btn-secondary" style="font-size: 10.5px; padding: 4px 8px; color: #facc15;" onclick="openMasterGrantFeatModal('${p.id}')" title="Conceder ou Gerenciar Talentos">
+                  ⭐ Talentos
                 </button>
               </div>
             </div>
@@ -2079,10 +2083,19 @@ function renderPlayers() {
 
               <!-- ABA 4: TRAÇOS & CARACTERÍSTICAS -->
               <div class="roll20-tab-panel" style="display: ${activeRoll20Tab === 'traits' ? 'block' : 'none'};">
-                <div class="roll20-panel-title" style="margin-bottom: 8px; border: none; padding: 0;">
-                  <span>📜 CARACTERÍSTICAS DE CLASSE, RAÇA & TALENTOS</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span class="roll20-panel-title" style="margin: 0; border: none; padding: 0;">📜 CARACTERÍSTICAS & TALENTOS D&D 5E</span>
+                  <div style="display: flex; gap: 4px;">
+                    <button type="button" class="btn-micro" style="color: #facc15; font-size: 10px; padding: 2px 7px;" onclick="openMasterGrantFeatModal('${p.id}')" title="Conceder Talento pelo Mestre">⭐ + Talento</button>
+                    <button type="button" class="btn-micro" style="color: #38bdf8; font-size: 10px; padding: 2px 7px;" onclick="openAsiChoiceModal('${p.id}')" title="Aumento no Valor de Atributo ou Escolha de Talento">📈 ASI</button>
+                  </div>
                 </div>
-                <div class="roll20-traits-container">
+
+                <!-- SEÇÃO DE TALENTOS ADQUIRIDOS -->
+                ${typeof renderPlayerFeatsSection === 'function' ? renderPlayerFeatsSection(p) : ''}
+
+                <!-- CARACTERÍSTICAS DE CLASSE E RAÇA -->
+                <div class="roll20-traits-container" style="margin-top: 10px;">
                   ${renderPlayerUnlockedFeatures(p, actionFilter)}
                 </div>
                 ${p.features ? `<div style="font-size: 11px; color: var(--text-dim); margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.07); padding-top: 6px;"><b>Outras Características:</b> ${typeof formatFeatureSnippet === 'function' ? formatFeatureSnippet(p.features) : p.features}</div>` : ''}
@@ -3170,10 +3183,11 @@ function getPlayerBonusHpPerLevel(player, className) {
     reasons.push('Linhagem Dracônica');
   }
 
-  // 3. Talento Robustez (Tough Feat): +2 PV por nível
-  if (features.includes('robustez') || features.includes('tough') || (player.feats && player.feats.some(f => f.toLowerCase().includes('tough') || f.toLowerCase().includes('robustez')))) {
+  // 3. Talento Robusto (Tough Feat): +2 PV por nível
+  const hasRobusto = features.includes('robusto') || features.includes('robustez') || features.includes('tough') || (player.feats && player.feats.some(f => (typeof f === 'string' ? f.toLowerCase().includes('robust') || f.toLowerCase().includes('tough') : f.id === 'robusto' || (f.name && f.name.toLowerCase().includes('robust')))));
+  if (hasRobusto) {
     bonus += 2;
-    reasons.push('Robustez');
+    reasons.push('Talento Robusto');
   }
 
   return {
@@ -11081,6 +11095,817 @@ function savePlayerClassesModal() {
   if (typeof showToast === 'function') showToast(`Classes de ${p.name} salvas com sucesso!`, 'success');
 }
 
+// ============================================================================
+// ⭐ D&D 5E FEATS (TALENTOS) & SISTEMA OFICIAL DE ASI (ISSUE-124)
+// ============================================================================
+
+function getPlayerFeats(p) {
+  if (!p) return [];
+  if (!Array.isArray(p.feats)) {
+    p.feats = [];
+  }
+  return p.feats.map(entry => {
+    if (typeof entry === 'string') {
+      const f = (typeof findFeatByName === 'function') ? findFeatByName(entry) : null;
+      return f ? {
+        id: f.id,
+        name: f.name,
+        nameEn: f.nameEn,
+        icon: f.icon,
+        category: f.category,
+        summary: f.summary,
+        benefits: f.benefits,
+        prereq: f.prereq,
+        statBonus: f.statBonus,
+        initiativeBonus: f.initiativeBonus,
+        hpPerLevel: f.hpPerLevel,
+        source: 'master'
+      } : {
+        id: entry.toLowerCase().replace(/\s+/g, '_'),
+        name: entry,
+        nameEn: '',
+        icon: '📜',
+        category: 'Geral',
+        summary: '',
+        benefits: [],
+        prereq: 'Nenhum',
+        source: 'master'
+      };
+    }
+    const f = (typeof findFeatById === 'function') ? findFeatById(entry.id) : null;
+    return {
+      id: entry.id,
+      name: entry.name || (f ? f.name : entry.id),
+      nameEn: entry.nameEn || (f ? f.nameEn : ''),
+      icon: (f ? f.icon : '📜') || '📜',
+      category: (f ? f.category : 'Geral') || 'Geral',
+      summary: (f ? f.summary : '') || '',
+      benefits: (f ? f.benefits : []) || [],
+      prereq: (f ? f.prereq : 'Nenhum') || 'Nenhum',
+      statBonus: (f ? f.statBonus : null),
+      initiativeBonus: (f ? f.initiativeBonus : null),
+      hpPerLevel: (f ? f.hpPerLevel : null),
+      source: entry.source || 'master',
+      level: entry.level || 1,
+      chosenStat: entry.chosenStat || null,
+      grantedAt: entry.grantedAt || null
+    };
+  });
+}
+
+function hasPlayerFeat(p, featIdOrName) {
+  if (!p) return false;
+  const target = String(featIdOrName || '').toLowerCase().trim();
+  const feats = getPlayerFeats(p);
+  const found = feats.some(f => 
+    f.id.toLowerCase() === target || 
+    f.name.toLowerCase() === target || 
+    (f.nameEn && f.nameEn.toLowerCase() === target)
+  );
+  if (found) return true;
+
+  // Checagem em features legadas caso exista formato texto "Talento: Alerta"
+  if (Array.isArray(p.features)) {
+    return p.features.some(ft => typeof ft === 'string' && ft.toLowerCase().includes(target));
+  } else if (typeof p.features === 'string') {
+    return p.features.toLowerCase().includes(target);
+  }
+  return false;
+}
+
+function getPlayerInitiativeBonus(p) {
+  if (!p) return 0;
+  const dexMod = Math.floor(((p.dex !== undefined ? p.dex : 10) - 10) / 2);
+  const hasAlert = hasPlayerFeat(p, 'alerta') || hasPlayerFeat(p, 'alert');
+  return dexMod + (hasAlert ? 5 : 0);
+}
+
+function rollPlayerInit(id, customD20) {
+  const p = PLAYERS.find(x => x.id === id);
+  if (!p) return null;
+
+  if (customD20 === undefined && p.diceMode === 'physical') {
+    if (typeof openPhysicalD20Modal === 'function') {
+      openPhysicalD20Modal({
+        playerId: id,
+        type: 'init',
+        title: `🎲 Iniciativa Física: ${p.name}`,
+        subtitle: `Rolagem de Iniciativa (d20 real)`
+      });
+      return null;
+    }
+  }
+
+  const dexMod = Math.floor(((p.dex !== undefined ? p.dex : 10) - 10) / 2);
+  const hasAlert = hasPlayerFeat(p, 'alerta') || hasPlayerFeat(p, 'alert');
+  const totalMod = dexMod + (hasAlert ? 5 : 0);
+
+  const r = (customD20 !== null && customD20 !== undefined) ? parseInt(customD20, 10) : (Math.floor(Math.random() * 20) + 1);
+  const total = r + totalMod;
+
+  const physicalTag = (customD20 !== null && customD20 !== undefined) ? ' 🎲(Mesa)' : '';
+  const breakdown = `d20 [${r}${physicalTag}] ${dexMod >= 0 ? '+' : ''}${dexMod}${hasAlert ? ' +5 [Alerta]' : ''}`;
+
+  const banner = document.getElementById('dice-banner');
+  if (banner) {
+    banner.style.display = 'block';
+    const totalEl = document.getElementById('dice-total-number');
+    const bkdEl = document.getElementById('dice-breakdown-text');
+    if (totalEl) totalEl.innerText = total;
+    if (bkdEl) bkdEl.innerText = `${p.name} - Iniciativa: ${breakdown}`;
+  }
+
+  if (typeof playFX === 'function') {
+    if (r === 20) playFX('crit');
+    else if (r === 1) playFX('fumble');
+    else playFX('dice');
+  }
+
+  // Sincroniza diretamente na tabela de combate caso exista o combatente
+  if (typeof state !== 'undefined' && Array.isArray(state.combatants)) {
+    const comb = state.combatants.find(c => (c.playerId && c.playerId === p.id) || (c.type === 'player' && c.name.includes(p.name)));
+    if (comb) {
+      comb.init = total;
+      if (typeof sortCombatantsByInit === 'function') sortCombatantsByInit();
+      if (typeof renderCombat === 'function') renderCombat();
+    }
+  }
+
+  if (typeof addLog === 'function') {
+    addLog(`🎲 <b>${p.name}</b> rolou <b>Iniciativa</b>${physicalTag}: <b>${total}</b> (${breakdown})`);
+  }
+  if (typeof addPlayerActionLog === 'function') {
+    addPlayerActionLog(p.id, '⚡', `Iniciativa${physicalTag}: Total ${total} (${breakdown})`, 'check');
+  }
+
+  renderPlayers();
+  return { d20: r, total, totalMod, dexMod, hasAlert };
+}
+
+function grantFeatToPlayer(playerId, featId, options = {}) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) {
+    alert('Personagem não encontrado.');
+    return false;
+  }
+  const f = typeof findFeatById === 'function' ? findFeatById(featId) : null;
+  if (!f) {
+    alert('Talento não encontrado no acervo oficial.');
+    return false;
+  }
+
+  p.feats = p.feats || [];
+
+  // Checa se já possui
+  const existing = p.feats.find(item => (typeof item === 'string' ? item.toLowerCase() === f.id.toLowerCase() : item.id === f.id));
+  if (existing && f.id !== 'adepto_elemental') {
+    alert(`O personagem ${p.name} já possui o talento "${f.name}".`);
+    return false;
+  }
+
+  // Aplicação mecânica de bônus imediatos
+  // 1. Half-Feat: aumento de atributo
+  let chosenStat = options.chosenStat || null;
+  if (f.statBonus && f.statBonus.choice && f.statBonus.choice.length > 0) {
+    if (!chosenStat) {
+      if (f.statBonus.choice.length === 1) {
+        chosenStat = f.statBonus.choice[0];
+      } else {
+        const choiceLabels = f.statBonus.choice.map(s => s.toUpperCase()).join(' ou ');
+        const promptChoice = prompt(`Este talento concede +${f.statBonus.amount || 1} em um atributo (${choiceLabels}).\nDigite o atributo desejado:`, f.statBonus.choice[0]);
+        if (promptChoice && f.statBonus.choice.includes(promptChoice.toLowerCase().trim())) {
+          chosenStat = promptChoice.toLowerCase().trim();
+        } else {
+          chosenStat = f.statBonus.choice[0];
+        }
+      }
+    }
+
+    if (chosenStat && p[chosenStat] !== undefined) {
+      const oldVal = p[chosenStat];
+      const newVal = Math.min(20, oldVal + (f.statBonus.amount || 1));
+      p[chosenStat] = newVal;
+      
+      // Se Constituição aumentou, concede PV retroativo
+      if (chosenStat === 'con') {
+        const oldMod = Math.floor((oldVal - 10) / 2);
+        const newMod = Math.floor((newVal - 10) / 2);
+        if (newMod > oldMod) {
+          const retroHp = (newMod - oldMod) * (p.level || 1);
+          p.maxHp = (p.maxHp || 10) + retroHp;
+          p.hp = (p.hp || p.maxHp) + retroHp;
+        }
+      }
+      if (chosenStat === 'dex' || chosenStat === 'con') {
+        if (typeof ensurePlayerCalculatedAc === 'function') ensurePlayerCalculatedAc(p);
+      }
+    }
+  }
+
+  // 2. Robusto (+2 PV por nível)
+  if (f.id === 'robusto') {
+    const extraHp = (p.level || 1) * 2;
+    p.maxHp = (p.maxHp || 10) + extraHp;
+    p.hp = (p.hp || p.maxHp) + extraHp;
+  }
+
+  // Registra no histórico do herói
+  p.feats.push({
+    id: f.id,
+    name: f.name,
+    nameEn: f.nameEn,
+    source: options.source || 'master',
+    level: options.level || p.level || 1,
+    chosenStat: chosenStat,
+    grantedAt: new Date().toISOString()
+  });
+
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+
+  if (typeof addLog === 'function') {
+    addLog(`⭐ <b>${p.name}</b> adquiriu o talento <b>${f.name}</b> (${f.nameEn})!`);
+  }
+  if (typeof addPlayerActionLog === 'function') {
+    addPlayerActionLog(p.id, '⭐', `Talento adquirido: ${f.name}`, 'level');
+  }
+  if (typeof playFX === 'function') playFX('level');
+
+  renderPlayers();
+  if (typeof renderCombat === 'function') renderCombat();
+  return true;
+}
+
+function removeFeatFromPlayer(playerId, featId) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p || !Array.isArray(p.feats)) return false;
+
+  const idx = p.feats.findIndex(item => (typeof item === 'string' ? item.toLowerCase() === featId.toLowerCase() : item.id === featId));
+  if (idx < 0) return false;
+
+  const item = p.feats[idx];
+  const featName = typeof item === 'string' ? item : item.name;
+
+  // Reverte bônus mecânicos
+  if (featId === 'robusto') {
+    const extraHp = (p.level || 1) * 2;
+    p.maxHp = Math.max(1, (p.maxHp || 10) - extraHp);
+    p.hp = Math.min(p.maxHp, p.hp);
+  }
+  if (typeof item === 'object' && item.chosenStat && p[item.chosenStat] !== undefined) {
+    p[item.chosenStat] = Math.max(1, p[item.chosenStat] - 1);
+    if (item.chosenStat === 'dex' || item.chosenStat === 'con') {
+      if (typeof ensurePlayerCalculatedAc === 'function') ensurePlayerCalculatedAc(p);
+    }
+  }
+
+  p.feats.splice(idx, 1);
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+
+  if (typeof addLog === 'function') {
+    addLog(`🗑️ O talento <b>${featName}</b> foi removido de <b>${p.name}</b>.`);
+  }
+
+  renderPlayers();
+  return true;
+}
+
+function openFeatDetailModal(featId) {
+  const f = (typeof findFeatById === 'function') ? findFeatById(featId) : ((typeof findFeatByName === 'function') ? findFeatByName(featId) : null);
+  if (!f) return;
+
+  const modal = document.getElementById('modal-skill-detail');
+  if (!modal) return;
+
+  const iconEl = document.getElementById('skill-modal-icon');
+  if (iconEl) iconEl.innerText = f.icon || '⭐';
+
+  const titleEl = document.getElementById('skill-modal-title');
+  if (titleEl) titleEl.innerText = f.name;
+
+  const metaEl = document.getElementById('skill-modal-meta');
+  if (metaEl) {
+    metaEl.innerHTML = `
+      <span>⭐ Talento Oficial D&D 5E</span>
+      <span>•</span>
+      <span>${f.nameEn || ''}</span>
+      <span>•</span>
+      <span style="color: var(--accent-gold);">${f.category}</span>
+    `;
+  }
+
+  const typeEl = document.getElementById('skill-modal-type');
+  if (typeEl) {
+    typeEl.className = 'skill-tag-pill gold';
+    typeEl.innerText = f.prereq && f.prereq.toLowerCase() !== 'nenhum' ? `⚠️ Pré-requisito: ${f.prereq}` : '✅ Sem pré-requisito';
+  }
+
+  const descContainer = document.getElementById('skill-modal-desc');
+  if (descContainer) {
+    let topicsHtml = (f.benefits || []).map(b => `<li style="margin-bottom: 6px;">${typeof highlightInlineRules === 'function' ? highlightInlineRules(b) : b}</li>`).join('');
+    descContainer.innerHTML = `
+      <div class="skill-concept-box" style="margin-bottom: 12px; font-size: 13px; line-height: 1.5; color: #f1f5f9;">
+        ${f.summary}
+      </div>
+      <div style="font-weight: 700; color: #facc15; font-size: 12px; margin-bottom: 6px; text-transform: uppercase;">
+        ⚡ Benefícios & Regras Oficiais:
+      </div>
+      <ul style="padding-left: 20px; font-size: 12px; color: #cbd5e1; line-height: 1.6;">
+        ${topicsHtml}
+      </ul>
+    `;
+  }
+
+  modal.classList.add('open');
+}
+
+function renderPlayerFeatsSection(p) {
+  const feats = getPlayerFeats(p);
+  if (feats.length === 0) {
+    return `
+      <div class="player-no-feats-box" style="background: rgba(15, 23, 42, 0.4); border: 1px dashed rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <span style="font-size: 20px;">⭐</span>
+        <div>
+          <b style="color: #cbd5e1; font-size: 12px;">Nenhum talento adquirido</b>
+          <p style="margin: 2px 0 0 0; font-size: 10.5px; color: #64748b;">
+            Adquira talentos ao evoluir níveis de classe (ASI) ou receba bênçãos narrativas concedidas pelo Mestre da mesa.
+          </p>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="player-feats-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; margin-bottom: 12px;">
+      ${feats.map(f => {
+        let tag = '';
+        if (f.chosenStat) tag = `<span class="feat-badge-pill purple">+1 ${f.chosenStat.toUpperCase()}</span>`;
+        else if (f.initiativeBonus) tag = `<span class="feat-badge-pill gold">+${f.initiativeBonus} Init</span>`;
+        else if (f.hpPerLevel) tag = `<span class="feat-badge-pill green">+2 PV/nv</span>`;
+
+        return `
+          <div class="player-feat-card" onclick="openFeatDetailModal('${f.id}')" title="Clique para ler regras completas" style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(250, 204, 21, 0.25); border-radius: 8px; padding: 8px 10px; cursor: pointer; transition: all 0.2s;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">${f.icon}</span>
+                <div>
+                  <b style="color: #fff; font-size: 12px;">${f.name}</b>
+                  <div style="font-size: 9.5px; color: #94a3b8;">${f.category} ${tag}</div>
+                </div>
+              </div>
+              <button type="button" class="btn-micro" style="color: #f87171; font-size: 10px; padding: 1px 5px;" onclick="event.stopPropagation(); if(confirm('Remover o talento ${f.name} de ${p.name}?')) removeFeatFromPlayer('${p.id}', '${f.id}')" title="Remover Talento">🗑️</button>
+            </div>
+            <div style="font-size: 10.5px; color: #cbd5e1; margin-top: 5px; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+              ${f.summary || (f.benefits && f.benefits[0]) || ''}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+// --- MODAL DO MESTRE: CONCESSÃO DIRETA DE TALENTOS ---
+let activeMasterGrantPlayerId = null;
+
+function openMasterGrantFeatModal(playerId) {
+  activeMasterGrantPlayerId = playerId;
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+
+  const modal = document.getElementById('modal-master-grant-feat');
+  if (!modal) return;
+
+  const titleEl = document.getElementById('master-grant-feat-title');
+  const subEl = document.getElementById('master-grant-feat-subtitle');
+  if (titleEl) titleEl.innerText = `⭐ Conceder Talento Oficial: ${p.name}`;
+  if (subEl) subEl.innerText = `${p.className || 'Herói'} Nível ${p.level || 1} • Concessão direta pelo Mestre`;
+
+  const sInp = document.getElementById('master-feat-search-input');
+  if (sInp) sInp.value = '';
+
+  const catSel = document.getElementById('master-feat-cat-select');
+  if (catSel) catSel.value = 'all';
+
+  renderMasterGrantFeatList();
+  modal.classList.add('open');
+}
+
+function closeMasterGrantFeatModal() {
+  const modal = document.getElementById('modal-master-grant-feat');
+  if (modal) modal.classList.remove('open');
+  activeMasterGrantPlayerId = null;
+}
+
+function renderMasterGrantFeatList() {
+  if (!activeMasterGrantPlayerId) return;
+  const p = PLAYERS.find(x => x.id === activeMasterGrantPlayerId);
+  if (!p) return;
+
+  // 1. Renderiza lista de talentos ativos atuais do herói
+  const currentContainer = document.getElementById('master-grant-current-feats');
+  if (currentContainer) {
+    const pFeats = getPlayerFeats(p);
+    if (pFeats.length === 0) {
+      currentContainer.innerHTML = '<span style="font-size: 11px; color: var(--text-dim); font-style: italic;">Nenhum talento concedido até o momento.</span>';
+    } else {
+      currentContainer.innerHTML = pFeats.map(f => `
+        <span class="feat-active-pill" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(250, 204, 21, 0.3); border-radius: 6px; padding: 3px 8px; font-size: 11px; color: #fff; margin: 2px 4px 2px 0;">
+          <span>${f.icon} ${f.name}</span>
+          <button type="button" onclick="removeFeatFromPlayer('${p.id}', '${f.id}'); renderMasterGrantFeatList();" style="background: none; border: none; color: #f87171; cursor: pointer; font-size: 10px; padding: 0 2px;" title="Revogar Talento">✕</button>
+        </span>
+      `).join('');
+    }
+  }
+
+  // 2. Renderiza acervo completo com filtro
+  const listContainer = document.getElementById('master-grant-feats-list');
+  if (!listContainer) return;
+
+  const rawQ = document.getElementById('master-feat-search-input')?.value || '';
+  const q = rawQ.toLowerCase().trim();
+  const catFilter = document.getElementById('master-feat-cat-select')?.value || 'all';
+
+  const allFeats = typeof FEATS_DATA !== 'undefined' ? FEATS_DATA : [];
+  const filtered = allFeats.filter(f => {
+    if (catFilter !== 'all') {
+      const cat = (f.category || '').toLowerCase();
+      if (catFilter === 'combat' && !cat.includes('combate') && !cat.includes('controle')) return false;
+      if (catFilter === 'magic' && !cat.includes('magia')) return false;
+      if (catFilter === 'physical' && !cat.includes('físico') && !cat.includes('sobrevivência')) return false;
+      if (catFilter === 'stealth' && !cat.includes('percepção') && !cat.includes('furtividade')) return false;
+      if (catFilter === 'special' && (cat.includes('combate') || cat.includes('magia') || cat.includes('físico') || cat.includes('percepção') || cat.includes('furtividade'))) return false;
+    }
+    if (q) {
+      const matchName = f.name.toLowerCase().includes(q);
+      const matchEn = (f.nameEn || '').toLowerCase().includes(q);
+      const matchPrereq = (f.prereq || '').toLowerCase().includes(q);
+      const matchSumm = (f.summary || '').toLowerCase().includes(q);
+      if (!matchName && !matchEn && !matchPrereq && !matchSumm) return false;
+    }
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    listContainer.innerHTML = '<div style="text-align: center; color: var(--text-dim); font-size: 11px; padding: 20px;">Nenhum talento correspondente ao filtro.</div>';
+    return;
+  }
+
+  listContainer.innerHTML = filtered.map(f => {
+    const alreadyHas = hasPlayerFeat(p, f.id);
+    const prereqCheck = typeof checkFeatPrerequisites === 'function' ? checkFeatPrerequisites(p, f) : { met: true, reason: 'Nenhum' };
+    const prereqBadge = !prereqCheck.met 
+      ? `<span style="color: #f87171; font-size: 10px; font-weight: 700;">⚠️ ${prereqCheck.reason}</span>` 
+      : (f.prereq && f.prereq.toLowerCase() !== 'nenhum' ? `<span style="color: #38bdf8; font-size: 10px;">Requisito: ${f.prereq}</span>` : '<span style="color: #34d399; font-size: 10px;">Sem pré-requisitos</span>');
+
+    return `
+      <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+        <div style="flex: 1; overflow: hidden;">
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <span style="font-size: 16px;">${f.icon}</span>
+            <b style="color: #fff; font-size: 12.5px;">${f.name}</b>
+            <span style="font-size: 10px; color: #94a3b8;">(${f.nameEn})</span>
+            <span class="badge badge-cls" style="font-size: 9px;">${f.category}</span>
+          </div>
+          <div style="font-size: 10.5px; color: #cbd5e1; margin-top: 3px; line-height: 1.3;">${f.summary}</div>
+          <div style="margin-top: 4px;">${prereqBadge}</div>
+        </div>
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <button type="button" class="btn-secondary" style="font-size: 10px; padding: 4px 8px;" onclick="openFeatDetailModal('${f.id}')">📖 Regras</button>
+          ${alreadyHas ? `
+            <span style="font-size: 10.5px; color: #a7f3d0; font-weight: 700; padding: 4px 8px;">✅ Concedido</span>
+          ` : `
+            <button type="button" class="btn-action" style="font-size: 10.5px; padding: 4px 10px; background: linear-gradient(135deg, #10b981, #059669);" onclick="grantFeatToPlayer('${p.id}', '${f.id}', { source: 'master' }); renderMasterGrantFeatList();">
+              ➕ Conceder
+            </button>
+          `}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// --- MODAL DE ESCOLHA DE ASI (ATRIBUTOS OU TALENTO) DO JOGADOR ---
+let activeAsiPlayerId = null;
+let activeAsiTargetLevel = null;
+let activeAsiClassKey = '';
+let activeAsiModalMode = 'stats'; // 'stats' ou 'feat'
+let selectedAsiFeatId = null;
+
+function openAsiChoiceModal(playerId, targetLevel = null, classKey = '') {
+  activeAsiPlayerId = playerId;
+  activeAsiTargetLevel = targetLevel;
+  activeAsiClassKey = classKey;
+  activeAsiModalMode = 'stats';
+  selectedAsiFeatId = null;
+
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+
+  const modal = document.getElementById('modal-player-asi');
+  if (!modal) return;
+
+  const titleEl = document.getElementById('player-asi-modal-title');
+  const subEl = document.getElementById('player-asi-modal-subtitle');
+  if (titleEl) titleEl.innerText = `📈 Escolha de ASI: ${p.name}`;
+  if (subEl) subEl.innerText = `${p.className} • Escolha oficial entre Aumento de Atributo ou Talento D&D 5E`;
+
+  // Preenche select single
+  const singleSel = document.getElementById('asi-stat-single-select');
+  const dual1Sel = document.getElementById('asi-stat-dual-1-select');
+  const dual2Sel = document.getElementById('asi-stat-dual-2-select');
+  const attrs = [
+    { key: 'str', label: 'Força' },
+    { key: 'dex', label: 'Destreza' },
+    { key: 'con', label: 'Constituição' },
+    { key: 'int', label: 'Inteligência' },
+    { key: 'wis', label: 'Sabedoria' },
+    { key: 'cha', label: 'Carisma' }
+  ];
+
+  if (singleSel) {
+    singleSel.innerHTML = attrs.map(a => {
+      const cur = p[a.key] || 10;
+      const next = Math.min(20, cur + 2);
+      const isMax = cur >= 20;
+      return `<option value="${a.key}" ${isMax ? 'disabled' : ''}>${a.label} (${cur} ➔ ${next}) ${isMax ? '[Teto 20 Atingido]' : ''}</option>`;
+    }).join('');
+  }
+
+  if (dual1Sel) {
+    dual1Sel.innerHTML = attrs.map((a, idx) => {
+      const cur = p[a.key] || 10;
+      const next = Math.min(20, cur + 1);
+      const isMax = cur >= 20;
+      return `<option value="${a.key}" ${idx === 0 ? 'selected' : ''} ${isMax ? 'disabled' : ''}>${a.label} (${cur} ➔ ${next})</option>`;
+    }).join('');
+  }
+
+  if (dual2Sel) {
+    dual2Sel.innerHTML = attrs.map((a, idx) => {
+      const cur = p[a.key] || 10;
+      const next = Math.min(20, cur + 1);
+      const isMax = cur >= 20;
+      return `<option value="${a.key}" ${idx === 1 ? 'selected' : ''} ${isMax ? 'disabled' : ''}>${a.label} (${cur} ➔ ${next})</option>`;
+    }).join('');
+  }
+
+  selectAsiModalMode('stats');
+  updateAsiStatsDistributionView();
+  updateAsiStatsPreview();
+  filterAsiModalFeats();
+
+  modal.classList.add('open');
+}
+
+function closeAsiChoiceModal() {
+  const modal = document.getElementById('modal-player-asi');
+  if (modal) modal.classList.remove('open');
+  activeAsiPlayerId = null;
+}
+
+function selectAsiModalMode(mode) {
+  activeAsiModalMode = mode;
+  const statsCard = document.getElementById('card-asi-mode-stats');
+  const featCard = document.getElementById('card-asi-mode-feat');
+  const statsView = document.getElementById('asi-stats-options-container');
+  const featView = document.getElementById('asi-feat-options-container');
+
+  if (statsCard) statsCard.classList.toggle('active', mode === 'stats');
+  if (featCard) featCard.classList.toggle('active', mode === 'feat');
+  if (statsView) statsView.style.display = mode === 'stats' ? 'block' : 'none';
+  if (featView) featView.style.display = mode === 'feat' ? 'block' : 'none';
+}
+
+function updateAsiStatsDistributionView() {
+  const radios = document.getElementsByName('asi_stat_dist_type');
+  let type = 'single';
+  for (const r of radios) {
+    if (r.checked) { type = r.value; break; }
+  }
+  const sBox = document.getElementById('asi-stat-single-box');
+  const dBox = document.getElementById('asi-stat-dual-box');
+  if (sBox) sBox.style.display = type === 'single' ? 'block' : 'none';
+  if (dBox) dBox.style.display = type === 'dual' ? 'block' : 'none';
+  updateAsiStatsPreview();
+}
+
+function updateAsiStatsPreview() {
+  if (!activeAsiPlayerId) return;
+  const p = PLAYERS.find(x => x.id === activeAsiPlayerId);
+  if (!p) return;
+
+  const previewPanel = document.getElementById('asi-stats-preview-panel');
+  if (!previewPanel) return;
+
+  const radios = document.getElementsByName('asi_stat_dist_type');
+  let distType = 'single';
+  for (const r of radios) {
+    if (r.checked) { distType = r.value; break; }
+  }
+
+  const gains = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 };
+  if (distType === 'single') {
+    const stat = document.getElementById('asi-stat-single-select')?.value || 'str';
+    gains[stat] = 2;
+  } else {
+    const s1 = document.getElementById('asi-stat-dual-1-select')?.value || 'str';
+    const s2 = document.getElementById('asi-stat-dual-2-select')?.value || 'dex';
+    gains[s1] += 1;
+    gains[s2] += 1;
+  }
+
+  const attrs = [
+    { key: 'str', label: 'FOR' },
+    { key: 'dex', label: 'DES' },
+    { key: 'con', label: 'CON' },
+    { key: 'int', label: 'INT' },
+    { key: 'wis', label: 'SAB' },
+    { key: 'cha', label: 'CAR' }
+  ];
+
+  previewPanel.innerHTML = `
+    <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px;">
+      📊 Prévia dos Atributos & Modificadores Finais:
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; text-align: center;">
+      ${attrs.map(a => {
+        const cur = p[a.key] || 10;
+        const gain = gains[a.key] || 0;
+        const next = Math.min(20, cur + gain);
+        const curMod = Math.floor((cur - 10) / 2);
+        const nextMod = Math.floor((next - 10) / 2);
+        const changed = gain > 0;
+        return `
+          <div style="background: ${changed ? 'rgba(250, 204, 21, 0.15)' : 'rgba(15, 23, 42, 0.6)'}; border: 1px solid ${changed ? 'rgba(250, 204, 21, 0.4)' : 'rgba(255,255,255,0.08)'}; border-radius: 6px; padding: 6px 2px;">
+            <div style="font-size: 10px; font-weight: 800; color: #94a3b8;">${a.label}</div>
+            <div style="font-size: 14px; font-weight: 800; color: ${changed ? '#facc15' : '#fff'};">${next}</div>
+            <div style="font-size: 9.5px; color: ${changed && nextMod > curMod ? '#34d399' : '#64748b'};">
+              ${nextMod >= 0 ? '+' + nextMod : nextMod} ${changed ? `(+${gain})` : ''}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function filterAsiModalFeats() {
+  const container = document.getElementById('asi-feats-list-container');
+  if (!container) return;
+
+  const p = PLAYERS.find(x => x.id === activeAsiPlayerId);
+  const q = (document.getElementById('asi-feat-search-input')?.value || '').toLowerCase().trim();
+  const catFilter = document.getElementById('asi-feat-cat-select')?.value || 'all';
+
+  const featsList = typeof FEATS_DATA !== 'undefined' ? FEATS_DATA : [];
+  const filtered = featsList.filter(f => {
+    if (catFilter !== 'all') {
+      const cat = (f.category || '').toLowerCase();
+      if (catFilter === 'combat' && !cat.includes('combate') && !cat.includes('controle')) return false;
+      if (catFilter === 'magic' && !cat.includes('magia')) return false;
+      if (catFilter === 'physical' && !cat.includes('físico') && !cat.includes('sobrevivência')) return false;
+      if (catFilter === 'stealth' && !cat.includes('percepção') && !cat.includes('furtividade')) return false;
+      if (catFilter === 'special' && (cat.includes('combate') || cat.includes('magia') || cat.includes('físico') || cat.includes('percepção') || cat.includes('furtividade'))) return false;
+    }
+    if (q) {
+      const matchName = f.name.toLowerCase().includes(q);
+      const matchEn = (f.nameEn || '').toLowerCase().includes(q);
+      const matchPrereq = (f.prereq || '').toLowerCase().includes(q);
+      const matchSumm = (f.summary || '').toLowerCase().includes(q);
+      if (!matchName && !matchEn && !matchPrereq && !matchSumm) return false;
+    }
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--text-dim); font-size: 11px;">Nenhum talento encontrado.</div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map(f => {
+    const isSelected = selectedAsiFeatId === f.id;
+    const prereqCheck = (p && typeof checkFeatPrerequisites === 'function') ? checkFeatPrerequisites(p, f) : { met: true, reason: 'Nenhum' };
+    const hasPrereq = f.prereq && f.prereq.toLowerCase() !== 'nenhum';
+
+    return `
+      <div class="asi-feat-select-card ${isSelected ? 'selected' : ''}" onclick="selectAsiModalFeat('${f.id}')" style="background: ${isSelected ? 'rgba(250, 204, 21, 0.15)' : 'rgba(15, 23, 42, 0.6)'}; border: 1px solid ${isSelected ? '#facc15' : 'rgba(255,255,255,0.08)'}; border-radius: 8px; padding: 8px 12px; cursor: pointer; transition: all 0.2s;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">${f.icon}</span>
+            <div>
+              <b style="color: ${isSelected ? '#facc15' : '#fff'}; font-size: 12.5px;">${f.name}</b>
+              <span style="font-size: 10px; color: #94a3b8;">(${f.nameEn}) • ${f.category}</span>
+            </div>
+          </div>
+          <button type="button" class="btn-micro" style="font-size: 10px; padding: 2px 6px;" onclick="event.stopPropagation(); openFeatDetailModal('${f.id}')">📖 Regras</button>
+        </div>
+        <div style="font-size: 11px; color: #cbd5e1; margin-top: 4px; line-height: 1.35;">${f.summary}</div>
+        <div style="margin-top: 4px;">
+          ${!prereqCheck.met 
+            ? `<span style="font-size: 10px; color: #f87171; font-weight: 700;">⚠️ ${prereqCheck.reason}</span>` 
+            : (hasPrereq ? `<span style="font-size: 10px; color: #38bdf8;">Requisito: ${f.prereq}</span>` : '<span style="font-size: 10px; color: #34d399;">Sem pré-requisitos</span>')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectAsiModalFeat(featId) {
+  selectedAsiFeatId = featId;
+  const f = typeof findFeatById === 'function' ? findFeatById(featId) : null;
+  const halfChoiceBox = document.getElementById('asi-feat-half-choice-box');
+  const halfChoiceSel = document.getElementById('asi-feat-stat-choice-select');
+
+  if (f && f.statBonus && f.statBonus.choice && f.statBonus.choice.length > 0) {
+    if (halfChoiceBox && halfChoiceSel) {
+      halfChoiceBox.style.display = 'block';
+      const labels = { str: 'Força (+1)', dex: 'Destreza (+1)', con: 'Constituição (+1)', int: 'Inteligência (+1)', wis: 'Sabedoria (+1)', cha: 'Carisma (+1)' };
+      halfChoiceSel.innerHTML = f.statBonus.choice.map(s => `<option value="${s}">${labels[s] || s.toUpperCase()}</option>`).join('');
+    }
+  } else {
+    if (halfChoiceBox) halfChoiceBox.style.display = 'none';
+  }
+
+  filterAsiModalFeats();
+}
+
+function saveAsiChoiceModal() {
+  if (!activeAsiPlayerId) return;
+  const p = PLAYERS.find(x => x.id === activeAsiPlayerId);
+  if (!p) return;
+
+  if (activeAsiModalMode === 'stats') {
+    const radios = document.getElementsByName('asi_stat_dist_type');
+    let distType = 'single';
+    for (const r of radios) {
+      if (r.checked) { distType = r.value; break; }
+    }
+
+    const oldCon = p.con || 10;
+    const oldConMod = Math.floor((oldCon - 10) / 2);
+
+    if (distType === 'single') {
+      const stat = document.getElementById('asi-stat-single-select')?.value || 'str';
+      const cur = p[stat] || 10;
+      const next = Math.min(20, cur + 2);
+      p[stat] = next;
+      const lbl = { str: 'Força', dex: 'Destreza', con: 'Constituição', int: 'Inteligência', wis: 'Sabedoria', cha: 'Carisma' }[stat] || stat;
+      addLog(`📈 <b>${p.name}</b> aplicou ASI: <b>+2 em ${lbl}</b> (${cur} ➔ ${next})`);
+      addPlayerActionLog(p.id, '📈', `ASI: +2 em ${lbl} (${cur} ➔ ${next})`, 'level');
+    } else {
+      const s1 = document.getElementById('asi-stat-dual-1-select')?.value || 'str';
+      const s2 = document.getElementById('asi-stat-dual-2-select')?.value || 'dex';
+      if (s1 === s2) {
+        alert('Selecione dois atributos distintos para a opção de +1 e +1.');
+        return;
+      }
+      const c1 = p[s1] || 10;
+      const c2 = p[s2] || 10;
+      const n1 = Math.min(20, c1 + 1);
+      const n2 = Math.min(20, c2 + 1);
+      p[s1] = n1;
+      p[s2] = n2;
+      const lbl = key => ({ str: 'Força', dex: 'Destreza', con: 'Constituição', int: 'Inteligência', wis: 'Sabedoria', cha: 'Carisma' }[key] || key);
+      addLog(`📈 <b>${p.name}</b> aplicou ASI: <b>+1 em ${lbl(s1)}</b> (${c1} ➔ ${n1}) e <b>+1 em ${lbl(s2)}</b> (${c2} ➔ ${n2})`);
+      addPlayerActionLog(p.id, '📈', `ASI: +1 em ${lbl(s1)} e +1 em ${lbl(s2)}`, 'level');
+    }
+
+    // Regra oficial D&D 5E: Aumento retroativo de PV caso Constituição suba
+    const newCon = p.con || 10;
+    const newConMod = Math.floor((newCon - 10) / 2);
+    if (newConMod > oldConMod) {
+      const retroGain = (newConMod - oldConMod) * (p.level || 1);
+      p.maxHp = (p.maxHp || 10) + retroGain;
+      p.hp = (p.hp || p.maxHp) + retroGain;
+      addLog(`🛡️ <b>${p.name}</b> ganhou <b>+${retroGain} PV Retroativos</b> pelo aumento de Modificador de Constituição!`);
+    }
+
+    if (typeof ensurePlayerCalculatedAc === 'function') ensurePlayerCalculatedAc(p);
+  } else {
+    // Escolha de Talento
+    if (!selectedAsiFeatId) {
+      alert('Por favor, selecione um talento na lista para confirmar a evolução.');
+      return;
+    }
+    const chosenStat = document.getElementById('asi-feat-stat-choice-select')?.value || null;
+    const success = grantFeatToPlayer(p.id, selectedAsiFeatId, { source: 'asi', chosenStat });
+    if (!success) return;
+  }
+
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+
+  renderPlayers();
+  if (typeof renderCombat === 'function') renderCombat();
+  closeAsiChoiceModal();
+  if (typeof showToast === 'function') showToast(`Evolução de ASI de ${p.name} salva com sucesso!`, 'success');
+}
+
 // Vincula no window para navegadores
 if (typeof window !== 'undefined') {
   window.openPlayerClassesModal = openPlayerClassesModal;
@@ -11326,7 +12151,28 @@ if (typeof module !== 'undefined' && module.exports) {
     roll4d6DropLowest,
     rollAttributes4d6Modal,
     applyStandardArrayModal,
-    optimizeAttributesForClassModal
+    optimizeAttributesForClassModal,
+
+    // ISSUE-124: Talentos Oficiais D&D 5E e Progressão ASI
+    getPlayerFeats,
+    hasPlayerFeat,
+    getPlayerInitiativeBonus,
+    rollPlayerInit,
+    grantFeatToPlayer,
+    removeFeatFromPlayer,
+    openFeatDetailModal,
+    renderPlayerFeatsSection,
+    openMasterGrantFeatModal,
+    closeMasterGrantFeatModal,
+    renderMasterGrantFeatList,
+    openAsiChoiceModal,
+    closeAsiChoiceModal,
+    selectAsiModalMode,
+    updateAsiStatsDistributionView,
+    updateAsiStatsPreview,
+    filterAsiModalFeats,
+    selectAsiModalFeat,
+    saveAsiChoiceModal
   };
 }
 
@@ -11391,6 +12237,27 @@ if (typeof window !== 'undefined') {
   window.rollAttributes4d6Modal = rollAttributes4d6Modal;
   window.applyStandardArrayModal = applyStandardArrayModal;
   window.optimizeAttributesForClassModal = optimizeAttributesForClassModal;
+
+  // ISSUE-124: Talentos Oficiais D&D 5E e Progressão ASI
+  window.getPlayerFeats = getPlayerFeats;
+  window.hasPlayerFeat = hasPlayerFeat;
+  window.getPlayerInitiativeBonus = getPlayerInitiativeBonus;
+  window.rollPlayerInit = rollPlayerInit;
+  window.grantFeatToPlayer = grantFeatToPlayer;
+  window.removeFeatFromPlayer = removeFeatFromPlayer;
+  window.openFeatDetailModal = openFeatDetailModal;
+  window.renderPlayerFeatsSection = renderPlayerFeatsSection;
+  window.openMasterGrantFeatModal = openMasterGrantFeatModal;
+  window.closeMasterGrantFeatModal = closeMasterGrantFeatModal;
+  window.renderMasterGrantFeatList = renderMasterGrantFeatList;
+  window.openAsiChoiceModal = openAsiChoiceModal;
+  window.closeAsiChoiceModal = closeAsiChoiceModal;
+  window.selectAsiModalMode = selectAsiModalMode;
+  window.updateAsiStatsDistributionView = updateAsiStatsDistributionView;
+  window.updateAsiStatsPreview = updateAsiStatsPreview;
+  window.filterAsiModalFeats = filterAsiModalFeats;
+  window.selectAsiModalFeat = selectAsiModalFeat;
+  window.saveAsiChoiceModal = saveAsiChoiceModal;
 }
 
 

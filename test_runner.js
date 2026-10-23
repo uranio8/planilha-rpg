@@ -35,6 +35,7 @@ const requiredFiles = [
   'src/data/campaigns.js',
   'src/data/hirelings.js',
   'src/data/bastions.js',
+  'src/data/feats.js',
   'src/js/core.js',
   'src/js/combat.js',
   'src/js/players.js',
@@ -239,6 +240,7 @@ vm.createContext(sandbox);
 // Carrega data e logic na VM a partir de src/
 const srcDir = path.join(__dirname, 'src');
 const dataRulesXp = fs.readFileSync(path.join(srcDir, 'data', 'rules_xp.js'), 'utf8');
+const dataFeats = fs.readFileSync(path.join(srcDir, 'data', 'feats.js'), 'utf8');
 const dataSpells = fs.readFileSync(path.join(srcDir, 'data', 'spells.js'), 'utf8');
 const dataMonsters = fs.readFileSync(path.join(srcDir, 'data', 'monsters.js'), 'utf8');
 const dataEquip = fs.readFileSync(path.join(srcDir, 'data', 'equipment.js'), 'utf8');
@@ -267,6 +269,7 @@ sandbox.BroadcastChannel = function(name) {
 };
 
 vm.runInContext(dataRulesXp, sandbox);
+vm.runInContext(dataFeats, sandbox);
 vm.runInContext(dataSpells, sandbox);
 vm.runInContext(dataMonsters, sandbox);
 vm.runInContext(dataEquip, sandbox);
@@ -6754,6 +6757,123 @@ assert(standalone119Html.includes('id="pm-ca-formula"'), 'HTML compilado contém
 assert(standalone119Html.includes('id="btn-suggest-hp"'), 'HTML compilado contém botão de sugestão de PV (#btn-suggest-hp)');
 assert(standalone119Html.includes('id="pm-non-caster-box"'), 'HTML compilado contém aviso inteligente para classes sem magias (#pm-non-caster-box)');
 assert(standalone119Html.includes('openWeaponPickerModal(null, \'modal\')'), 'HTML compilado permite abrir o catálogo completo de armas para o modal');
+
+// ========================================
+// 92. Testes de Talentos (Feats) D&D 5E, Progressão por Nível (ASI) e Concessão pelo Mestre (ISSUE-124):
+// ========================================
+console.log('\n⭐ 92. Testes de Talentos (Feats) D&D 5E, Progressão por Nível (ASI) e Concessão pelo Mestre (ISSUE-124):');
+
+const featsModule = require('./src/data/feats.js');
+assert(Array.isArray(featsModule.FEATS_DATA), 'FEATS_DATA exportado como array');
+assert(featsModule.FEATS_DATA.length === 42, `FEATS_DATA possui exatamente 42 talentos oficiais do PHB 5E (possui ${featsModule.FEATS_DATA.length})`);
+assert(typeof featsModule.findFeatById === 'function', 'Função findFeatById exportada');
+assert(typeof featsModule.findFeatByName === 'function', 'Função findFeatByName exportada');
+assert(typeof featsModule.checkFeatPrerequisites === 'function', 'Função checkFeatPrerequisites exportada');
+
+// 1. Busca e Integridade de Dados
+const alertFeat = featsModule.findFeatById('alerta');
+assert(alertFeat && alertFeat.name === 'Alerta', 'findFeatById encontra talento Alerta');
+assert(alertFeat.initiativeBonus === 5, 'Talento Alerta possui initiativeBonus de 5');
+
+const toughFeat = featsModule.findFeatById('robusto');
+assert(toughFeat && toughFeat.name === 'Robusto', 'findFeatById encontra talento Robusto');
+assert(toughFeat.hpPerLevel === 2, 'Talento Robusto possui hpPerLevel de 2');
+
+const athleteFeat = featsModule.findFeatByName('Atleta');
+assert(athleteFeat && athleteFeat.id === 'atleta', 'findFeatByName encontra talento Atleta por nome');
+
+// 2. Níveis de ASI por Classe
+const classesDataModule = require('./src/data/classes.js');
+assert(typeof classesDataModule.getClassAsiLevels === 'function', 'Função getClassAsiLevels exportada');
+const fighterAsi = classesDataModule.getClassAsiLevels('Guerreiro');
+assert(fighterAsi.length === 7 && fighterAsi.includes(6) && fighterAsi.includes(14), 'Guerreiro possui 7 níveis de ASI incluindo 6 e 14');
+const rogueAsi = classesDataModule.getClassAsiLevels('Ladino');
+assert(rogueAsi.length === 6 && rogueAsi.includes(10), 'Ladino possui 6 níveis de ASI incluindo 10');
+const wizardAsi = classesDataModule.getClassAsiLevels('Mago');
+assert(wizardAsi.length === 5 && !wizardAsi.includes(6), 'Mago possui 5 níveis de ASI padrão');
+
+// 3. Validação de Pré-requisitos
+const strongChar = { str: 15, dex: 10, int: 10, wis: 10, cha: 10, className: 'Guerreiro' };
+const weakChar = { str: 10, dex: 10, int: 10, wis: 10, cha: 10, className: 'Mago' };
+const athletePrereq = featsModule.checkFeatPrerequisites(strongChar, athleteFeat);
+assert(athletePrereq.met === true, 'Personagem com FOR 15 cumpre pré-requisito de Atleta (FOR ou DES 13)');
+const athletePrereqFail = featsModule.checkFeatPrerequisites(weakChar, athleteFeat);
+assert(athletePrereqFail.met === false, 'Personagem com FOR 10 e DES 10 falha em Atleta');
+
+const casterChar = { className: 'Mago', preparedSpells: ['Mísseis Mágicos'] };
+const nonCasterChar = { className: 'Bárbaro', preparedSpells: [] };
+const warCasterFeat = featsModule.findFeatById('conjurador_de_guerra');
+assert(featsModule.checkFeatPrerequisites(casterChar, warCasterFeat).met === true, 'Mago cumpre requisito de Conjurador de Guerra');
+assert(featsModule.checkFeatPrerequisites(nonCasterChar, warCasterFeat).met === false, 'Bárbaro sem magias falha em Conjurador de Guerra');
+
+// 4. Mecânicas no Sandbox de Jogadores
+assert(typeof sandbox.getPlayerFeats === 'function', 'Função getPlayerFeats exportada no contexto');
+assert(typeof sandbox.hasPlayerFeat === 'function', 'Função hasPlayerFeat exportada no contexto');
+assert(typeof sandbox.getPlayerInitiativeBonus === 'function', 'Função getPlayerInitiativeBonus exportada no contexto');
+assert(typeof sandbox.rollPlayerInit === 'function', 'Função rollPlayerInit exportada no contexto');
+assert(typeof sandbox.grantFeatToPlayer === 'function', 'Função grantFeatToPlayer exportada no contexto');
+assert(typeof sandbox.removeFeatFromPlayer === 'function', 'Função removeFeatFromPlayer exportada no contexto');
+
+// Teste de herói com Alerta
+vm.runInContext(`
+  var heroValerius = {
+    id: 'p_test_valerius',
+    name: 'Valerius',
+    className: 'Guerreiro',
+    level: 4,
+    dex: 14, // mod +2
+    con: 14,
+    maxHp: 32,
+    hp: 32,
+    feats: []
+  };
+  PLAYERS.push(heroValerius);
+`, sandbox);
+
+const initBonusSemAlerta = vm.runInContext("getPlayerInitiativeBonus(PLAYERS.find(p => p.id === 'p_test_valerius'))", sandbox);
+assert(initBonusSemAlerta === 2, 'Iniciativa sem Alerta é apenas DES (+2)');
+
+vm.runInContext("grantFeatToPlayer('p_test_valerius', 'alerta', { source: 'master' });", sandbox);
+const hasAlerta = vm.runInContext("hasPlayerFeat(PLAYERS.find(p => p.id === 'p_test_valerius'), 'alerta')", sandbox);
+assert(hasAlerta === true, 'Herói agora possui o talento Alerta');
+
+const initBonusComAlerta = vm.runInContext("getPlayerInitiativeBonus(PLAYERS.find(p => p.id === 'p_test_valerius'))", sandbox);
+assert(initBonusComAlerta === 7, 'Iniciativa com Alerta computa DES (+2) + 5 = +7');
+
+const initRoll = vm.runInContext("rollPlayerInit('p_test_valerius', 10);", sandbox);
+assert(initRoll && initRoll.total === 17, 'Rolagem com d20 [10] + mod [+7] resulta em total 17');
+assert(initRoll && initRoll.hasAlert === true, 'Rolagem detectou bônus de Alerta ativo');
+
+// Teste de herói com Robusto (+2 PV/nível)
+const prevMaxHp = vm.runInContext("PLAYERS.find(p => p.id === 'p_test_valerius').maxHp", sandbox);
+vm.runInContext("grantFeatToPlayer('p_test_valerius', 'robusto', { source: 'master' });", sandbox);
+const hasRobusto = vm.runInContext("hasPlayerFeat(PLAYERS.find(p => p.id === 'p_test_valerius'), 'robusto')", sandbox);
+assert(hasRobusto === true, 'Herói agora possui o talento Robusto');
+
+const currentMaxHp = vm.runInContext("PLAYERS.find(p => p.id === 'p_test_valerius').maxHp", sandbox);
+assert(currentMaxHp === prevMaxHp + 8, `PV Máximo aumentou em +8 pelo talento Robusto (novo PV: ${currentMaxHp})`);
+
+// Teste de herói com Observador
+vm.runInContext("grantFeatToPlayer('p_test_valerius', 'observador', { source: 'master', chosenStat: 'wis' });", sandbox);
+const hasObservador = vm.runInContext("hasPlayerFeat(PLAYERS.find(p => p.id === 'p_test_valerius'), 'observador')", sandbox);
+assert(hasObservador === true, 'Herói possui o talento Observador');
+
+// Teste de Remoção de Talento
+vm.runInContext("removeFeatFromPlayer('p_test_valerius', 'robusto');", sandbox);
+const hasRobustoAposRemover = vm.runInContext("hasPlayerFeat(PLAYERS.find(p => p.id === 'p_test_valerius'), 'robusto')", sandbox);
+assert(hasRobustoAposRemover === false, 'Talento Robusto removido com sucesso');
+
+const revertedMaxHp = vm.runInContext("PLAYERS.find(p => p.id === 'p_test_valerius').maxHp", sandbox);
+assert(revertedMaxHp === prevMaxHp, `PV Máximo foi revertido após remoção de Robusto (${revertedMaxHp})`);
+
+// 5. Presença dos Elementos na Build Standalone Compilada
+const finalStandaloneHtml = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(finalStandaloneHtml.includes('id="tab-feats"'), 'HTML compilado contém a aba oficial de talentos (#tab-feats)');
+assert(finalStandaloneHtml.includes('id="modal-master-grant-feat"'), 'HTML compilado contém o modal do Mestre (#modal-master-grant-feat)');
+assert(finalStandaloneHtml.includes('id="modal-player-asi"'), 'HTML compilado contém o modal de ASI (#modal-player-asi)');
+assert(finalStandaloneHtml.includes('renderFeatsTab'), 'HTML compilado contém a função renderFeatsTab');
+assert(finalStandaloneHtml.includes('openMasterGrantFeatModal'), 'HTML compilado contém a função openMasterGrantFeatModal');
+assert(finalStandaloneHtml.includes('openAsiChoiceModal'), 'HTML compilado contém a função openAsiChoiceModal');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

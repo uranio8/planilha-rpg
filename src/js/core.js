@@ -1935,7 +1935,7 @@ function normalizeStr(str) {
 }
 
 // --- NAVEGAÇÃO ENTRE ABAS ---
-const PLAYER_ALLOWED_TABS = ['players', 'spells', 'equipment', 'classes', 'species'];
+const PLAYER_ALLOWED_TABS = ['players', 'spells', 'equipment', 'classes', 'species', 'feats'];
 
 function switchTab(tabId) {
   const isPortalMode = (typeof document !== 'undefined' && document.body && document.body.classList.contains('mode-player-portal')) || (typeof activePortalPlayerId !== 'undefined' && !!activePortalPlayerId);
@@ -2034,6 +2034,12 @@ function switchTab(tabId) {
     if (!renderedTabs['species']) {
       renderSpecies();
       renderedTabs['species'] = true;
+    }
+  }
+  else if (tabId === 'feats' && typeof renderFeatsTab === 'function') {
+    if (!renderedTabs['feats']) {
+      renderFeatsTab();
+      renderedTabs['feats'] = true;
     }
   }
   else if (tabId === 'campaigns' && typeof renderCampaigns === 'function') renderCampaigns();
