@@ -6932,10 +6932,156 @@ vm.runInContext("grantFeatToPlayer('p_hero_save_test', 'robusto', { source: 'mas
 const updatedTime = vm.runInContext("PLAYERS.find(p => p.id === 'p_hero_save_test').updatedAt", sandbox);
 assert(updatedTime >= prevTime, 'Concessão de talento acionou touchPlayer atualizando updatedAt');
 
+// ==========================================
+// 94. TESTES DE BLINDAGEM E RESILIÊNCIA DO LOCALSTORAGE (ISSUE-126)
+// ==========================================
+console.log('\n💾 94. Testes de Blindagem & Resiliência do LocalStorage (ISSUE-126):');
+
+// 1. Exportação de safeLocalStorageSet
+assert(vm.runInContext("typeof safeLocalStorageSet === 'function'", sandbox), 'Função safeLocalStorageSet exportada e disponível no sandbox');
+
+// 2. Gravação unificada e atômica das 4 chaves canônicas oficiais + envelope STORAGE_KEY
+vm.runInContext(`
+  localStorage.clear();
+  // Configura estado mock
+  PLAYERS = [
+    { id: 'p_storage_1', name: 'Herói Storage', level: 3, hp: 18, maxHp: 24, gold: 350, coins: { cp: 0, sp: 0, ep: 0, gp: 350, pp: 0 }, feats: [{ id: 'alerta' }], inventory: [{ name: 'Espada Curta' }] }
+  ];
+  state = {
+    round: 2,
+    turnIndex: 0,
+    combatants: [
+      { id: 'c_hero_1', playerId: 'p_storage_1', name: 'Herói Storage', type: 'player', hp: 18, maxHp: 24, init: 15 }
+    ],
+    logs: []
+  };
+  CAMPAIGNS_STATE = {
+    activeCampaignId: 'camp_storage_test',
+    campaigns: [
+      { id: 'camp_storage_test', name: 'Campanha Storage', sessions: [], partyStash: { gold: 500, items: [] } }
+    ]
+  };
+  gridState = {
+    gridSize: 40,
+    tokens: [{ id: 'tok_1', x: 100, y: 100, name: 'Herói Storage' }]
+  };
+
+  saveToLocalStorage();
+`, sandbox);
+
+const storedEnvelope = vm.runInContext("localStorage.getItem('dnd5e_prisco_sheet_state_v2')", sandbox);
+const storedPlayersV3 = vm.runInContext("localStorage.getItem('dnd_tracker_players_v3')", sandbox);
+const storedStateV3 = vm.runInContext("localStorage.getItem('dnd_tracker_state_v3')", sandbox);
+const storedCampV1 = vm.runInContext("localStorage.getItem('dnd_tracker_campaigns_v1')", sandbox);
+const storedGridV3 = vm.runInContext("localStorage.getItem('dnd_tracker_grid_v3')", sandbox);
+
+assert(storedEnvelope !== null, 'Envelope STORAGE_KEY gravado com sucesso');
+assert(storedPlayersV3 !== null, 'Chave canônica dnd_tracker_players_v3 gravada de forma atômica');
+assert(storedStateV3 !== null, 'Chave canônica dnd_tracker_state_v3 gravada de forma atômica');
+assert(storedCampV1 !== null, 'Chave canônica dnd_tracker_campaigns_v1 gravada de forma atômica');
+assert(storedGridV3 !== null, 'Chave canônica dnd_tracker_grid_v3 gravada de forma atômica');
+
+// Valida integridade do envelope
+const parsedEnv = JSON.parse(storedEnvelope);
+assert(parsedEnv && parsedEnv.campaignsState && parsedEnv.campaignsState.activeCampaignId === 'camp_storage_test', 'Envelope preservou campaignsState');
+assert(parsedEnv && parsedEnv.gridState && parsedEnv.gridState.gridSize === 40, 'Envelope preservou gridState');
+
+// 3. Simulação de QuotaExceededError e recuperação com expurgo automático
+vm.runInContext(`
+  // Adiciona chaves legadas obsoletas no storage
+  localStorage.setItem('dnd5e_prisco_sheet_state_v1', 'dados_legados_pesados');
+  localStorage.setItem('dnd5e_campaigns_backup_safety', 'backup_antigo_pesado');
+  localStorage.setItem('dnd5e_session_draft', 'rascunho_antigo');
+  localStorage.setItem('dnd5e_safety_snapshots_history_v1', JSON.stringify([
+    { id: 's1' }, { id: 's2' }, { id: 's3' }, { id: 's4' }, { id: 's5' }
+  ]));
+
+  var quotaThrown = false;
+  var origSetItem = localStorage.setItem;
+  // Simula erro de cota na primeira tentativa da chave teste
+  localStorage.setItem = function(k, v) {
+    if (k === 'chave_teste_cota' && !quotaThrown) {
+      quotaThrown = true;
+      var err = new Error('QuotaExceededError');
+      err.name = 'QuotaExceededError';
+      throw err;
+    }
+    return origSetItem.call(localStorage, k, v);
+  };
+
+  var quotaRecovered = safeLocalStorageSet('chave_teste_cota', 'dados_novos_salvos_com_sucesso');
+  localStorage.setItem = origSetItem;
+`, sandbox);
+
+const quotaRecovered = vm.runInContext("quotaRecovered", sandbox);
+const testVal = vm.runInContext("localStorage.getItem('chave_teste_cota')", sandbox);
+const legacyCleaned = vm.runInContext("localStorage.getItem('dnd5e_prisco_sheet_state_v1')", sandbox);
+
+assert(quotaRecovered === true, 'safeLocalStorageSet recuperou de QuotaExceededError com sucesso');
+assert(testVal === 'dados_novos_salvos_com_sucesso', 'Dado foi gravado com sucesso após limpeza de cota');
+assert(legacyCleaned === null, 'Cache legado dnd5e_prisco_sheet_state_v1 foi expurgado para liberar espaço');
+
+// 4. Teste de preservação de PV ferido e campos do herói no loadFromLocalStorage
+vm.runInContext(`
+  // Simula herói ferido e com ouro personalizado salvo
+  var rawHeroState = {
+    players: [
+      {
+        id: 'p_hero_wounded',
+        name: 'Guerreiro Machucado',
+        level: 5,
+        hp: 15, // Ferido: 15 de 45 PV
+        maxHp: 45,
+        gold: 777,
+        coins: { cp: 0, sp: 0, ep: 0, gp: 777, pp: 0 },
+        feats: [{ id: 'robusto' }],
+        inventory: [{ name: 'Armadura de Placas', equipped: true }],
+        updatedAt: Date.now()
+      }
+    ],
+    state: {
+      round: 3,
+      turnIndex: 0,
+      combatants: [
+        { id: 'c_hero_w', playerId: 'p_hero_wounded', name: 'Guerreiro Machucado', type: 'player', hp: 15, maxHp: 45 }
+      ],
+      logs: []
+    }
+  };
+  localStorage.setItem('dnd5e_prisco_sheet_state_v2', JSON.stringify(rawHeroState));
+  
+  // Limpa variáveis na memória e executa loadFromLocalStorage()
+  PLAYERS = [];
+  state = { combatants: [], round: 1, turnIndex: 0, logs: [] };
+  loadFromLocalStorage();
+`, sandbox);
+
+const loadedWoundedHero = vm.runInContext("PLAYERS.find(p => p.id === 'p_hero_wounded')", sandbox);
+const loadedCombatant = vm.runInContext("state.combatants.find(c => c.playerId === 'p_hero_wounded')", sandbox);
+
+assert(loadedWoundedHero && loadedWoundedHero.hp === 15, 'loadFromLocalStorage preservou PV ferido do herói (15/45) sem resetar para vida cheia');
+assert(loadedWoundedHero && loadedWoundedHero.gold === 777, 'loadFromLocalStorage preservou ouro personalizado do herói (777 PO)');
+assert(loadedWoundedHero && Array.isArray(loadedWoundedHero.feats) && loadedWoundedHero.feats.length === 1, 'loadFromLocalStorage preservou talentos do herói');
+assert(loadedCombatant && loadedCombatant.hp === 15, 'loadFromLocalStorage preservou PV do combatente no combate sem resetar para vida cheia');
+
+// 5. Teste de saveSafetySnapshot: limitação de imagens gigantes do grid
+vm.runInContext(`
+  gridState = {
+    gridSize: 50,
+    bgImage: 'data:image/png;base64,' + 'A'.repeat(5000), // Imagem pesada simulada de 5KB
+    tokens: []
+  };
+  saveSafetySnapshot('Teste Quota Grid');
+`, sandbox);
+
+const snapHistory = vm.runInContext("JSON.parse(localStorage.getItem('dnd5e_safety_snapshots_history_v1') || '[]')", sandbox);
+assert(Array.isArray(snapHistory) && snapHistory.length > 0, 'saveSafetySnapshot gravou histórico de snapshots');
+assert(snapHistory[0].gridState && snapHistory[0].gridState._omittedBgInSnapshot === true, 'saveSafetySnapshot omitiu imagem base64 gigante do grid para economizar quota');
+assert(snapHistory.length <= 4, 'saveSafetySnapshot limitou histórico a no máximo 4 snapshots no localStorage');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
-
   console.log('🎉 TODOS OS TESTES PASSARAM COM SUCESSO! 🚀');
   console.log('========================================\n');
   process.exit(0);

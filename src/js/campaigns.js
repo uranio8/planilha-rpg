@@ -108,8 +108,9 @@ function saveCampaignsState() {
     const camp = getActiveCampaign();
     if (camp) touchCampaign(camp);
     const serialized = JSON.stringify(CAMPAIGNS_STATE);
-    localStorage.setItem('dnd5e_prisco_campaigns_v1', serialized);
-    localStorage.setItem('dnd_tracker_campaigns_v1', serialized);
+    const setStorage = (k, v) => (typeof safeLocalStorageSet === 'function' ? safeLocalStorageSet(k, v) : localStorage.setItem(k, v));
+    setStorage('dnd5e_prisco_campaigns_v1', serialized);
+    setStorage('dnd_tracker_campaigns_v1', serialized);
 
     // Atualiza dentro do payload STORAGE_KEY do core se existir
     try {
@@ -118,7 +119,7 @@ function saveCampaignsState() {
         if (fullRaw) {
           const fullParsed = JSON.parse(fullRaw);
           fullParsed.campaignsState = CAMPAIGNS_STATE;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(fullParsed));
+          setStorage(STORAGE_KEY, JSON.stringify(fullParsed));
         }
       }
     } catch(e) {}

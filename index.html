@@ -35145,6 +35145,40 @@ const STORAGE_KEY = 'dnd5e_prisco_sheet_state_v2';
 let lastSafetySnapshotTime = 0;
 let isStorageLoaded = false;
 
+function safeLocalStorageSet(key, value) {
+  try {
+    if (typeof localStorage === 'undefined') return false;
+    localStorage.setItem(key, value);
+    return true;
+  } catch (err) {
+    if (err && (err.name === 'QuotaExceededError' || err.name === 'NS_ERROR_DOM_QUOTA_REACHED' || err.code === 22 || err.code === 1014)) {
+      console.warn(`[LocalStorage] Cota excedida ao gravar chave "${key}". Executando expurgo automático de caches secundários...`);
+      try {
+        localStorage.removeItem('dnd5e_prisco_sheet_state_v1');
+        localStorage.removeItem('dnd5e_campaigns_backup_safety');
+        localStorage.removeItem('dnd5e_session_draft');
+
+        const rawHistory = localStorage.getItem('dnd5e_safety_snapshots_history_v1');
+        if (rawHistory) {
+          try {
+            const h = JSON.parse(rawHistory);
+            if (Array.isArray(h) && h.length > 2) {
+              localStorage.setItem('dnd5e_safety_snapshots_history_v1', JSON.stringify(h.slice(0, 2)));
+            }
+          } catch(e){}
+        }
+        localStorage.setItem(key, value);
+        return true;
+      } catch (retryErr) {
+        console.error(`[LocalStorage] Cota persistente ao salvar "${key}":`, retryErr);
+        return false;
+      }
+    }
+    console.warn(`[LocalStorage] Erro ao gravar chave "${key}":`, err);
+    return false;
+  }
+}
+
 function saveToLocalStorage() {
   try {
     // Proteção essencial: Nunca sobrescreva o localStorage com valores default da memória
@@ -35157,45 +35191,75 @@ function saveToLocalStorage() {
       (typeof document !== 'undefined' && document.body && document.body.classList.contains('mode-player-portal')) ||
       (typeof activePortalPlayerId !== 'undefined' && !!activePortalPlayerId);
 
+    // Recupera dados existentes para resolução não-destrutiva de campos
+    let existingParsed = null;
+    try {
+      const existingRaw = (typeof localStorage !== 'undefined') ? localStorage.getItem(STORAGE_KEY) : null;
+      if (existingRaw) existingParsed = JSON.parse(existingRaw);
+    } catch(e) {}
+
+    // Resolução resiliente de Campanhas (nunca permite gravar null se já houver dados no storage)
+    let resolvedCampaigns = (typeof CAMPAIGNS_STATE !== 'undefined' && CAMPAIGNS_STATE && Array.isArray(CAMPAIGNS_STATE.campaigns) && CAMPAIGNS_STATE.campaigns.length > 0)
+      ? CAMPAIGNS_STATE
+      : (existingParsed && existingParsed.campaignsState ? existingParsed.campaignsState : null);
+    if (!resolvedCampaigns && typeof localStorage !== 'undefined') {
+      try {
+        const rawCamp = localStorage.getItem('dnd_tracker_campaigns_v1') || localStorage.getItem('dnd5e_prisco_campaigns_v1');
+        if (rawCamp) resolvedCampaigns = JSON.parse(rawCamp);
+      } catch(e) {}
+    }
+
+    // Resolução resiliente de Grid
+    let resolvedGrid = (typeof gridState !== 'undefined' && gridState)
+      ? gridState
+      : (existingParsed && existingParsed.gridState ? existingParsed.gridState : null);
+    if (!resolvedGrid && typeof localStorage !== 'undefined') {
+      try {
+        const rawGrid = localStorage.getItem('dnd_tracker_grid_v3') || localStorage.getItem('dnd5e_prisco_live_grid');
+        if (rawGrid) resolvedGrid = JSON.parse(rawGrid);
+      } catch(e) {}
+    }
+
     let payload;
     if (isPlayer) {
       // Cliente jogador: preserva o combate e grid existentes para não corromper a mesa do Mestre
-      try {
-        const existingRaw = localStorage.getItem(STORAGE_KEY);
-        const existingParsed = existingRaw ? JSON.parse(existingRaw) : {};
-        payload = {
-          state: (existingParsed.state && Array.isArray(existingParsed.state.combatants) && existingParsed.state.combatants.length > 0) ? existingParsed.state : state,
-          players: PLAYERS,
-          gridState: existingParsed.gridState || (typeof gridState !== 'undefined' ? gridState : null),
-          campaignsState: existingParsed.campaignsState || (typeof CAMPAIGNS_STATE !== 'undefined' ? CAMPAIGNS_STATE : null)
-        };
-      } catch(e) {
-        payload = {
-          state,
-          players: PLAYERS,
-          gridState: (typeof gridState !== 'undefined' ? gridState : null),
-          campaignsState: (typeof CAMPAIGNS_STATE !== 'undefined' ? CAMPAIGNS_STATE : null)
-        };
-      }
+      payload = {
+        state: (existingParsed && existingParsed.state && Array.isArray(existingParsed.state.combatants) && existingParsed.state.combatants.length > 0) ? existingParsed.state : state,
+        players: PLAYERS,
+        gridState: resolvedGrid,
+        campaignsState: resolvedCampaigns
+      };
     } else {
       payload = {
         state,
         players: PLAYERS,
-        gridState: (typeof gridState !== 'undefined' ? gridState : null),
-        campaignsState: (typeof CAMPAIGNS_STATE !== 'undefined' ? CAMPAIGNS_STATE : null)
+        gridState: resolvedGrid,
+        campaignsState: resolvedCampaigns
       };
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 
-    // Sincroniza chaves de compatibilidade v3
+    // 1. Grava no envelope principal
+    safeLocalStorageSet(STORAGE_KEY, JSON.stringify(payload));
+
+    // 2. Sincroniza todas as 4 chaves oficiais canônicas D&D Tracker de forma atômica
     try {
-      localStorage.setItem('dnd_tracker_players_v3', JSON.stringify(PLAYERS));
+      safeLocalStorageSet('dnd_tracker_players_v3', JSON.stringify(PLAYERS));
       if (!isPlayer) {
-        localStorage.setItem('dnd_tracker_state_v3', JSON.stringify(state));
+        safeLocalStorageSet('dnd_tracker_state_v3', JSON.stringify(state));
+        if (resolvedCampaigns) {
+          const serializedCamp = JSON.stringify(resolvedCampaigns);
+          safeLocalStorageSet('dnd_tracker_campaigns_v1', serializedCamp);
+          safeLocalStorageSet('dnd5e_prisco_campaigns_v1', serializedCamp);
+        }
+        if (resolvedGrid) {
+          const serializedGrid = JSON.stringify(resolvedGrid);
+          safeLocalStorageSet('dnd_tracker_grid_v3', serializedGrid);
+          safeLocalStorageSet('dnd5e_prisco_live_grid', serializedGrid);
+        }
       }
     } catch (e) {}
 
-    // Espelhamento assíncrono redundante no Cofre IndexedDB
+    // 3. Espelhamento redundante no Cofre IndexedDB
     try {
       if (typeof idbSet === 'function') {
         idbSet(STORAGE_KEY, payload);
@@ -35203,9 +35267,13 @@ function saveToLocalStorage() {
         if (!isPlayer) {
           idbSet('dnd_tracker_state_v3', state);
         }
-        if (typeof CAMPAIGNS_STATE !== 'undefined') {
-          idbSet('dnd5e_prisco_campaigns_v1', CAMPAIGNS_STATE);
-          idbSet('dnd_tracker_campaigns_v1', CAMPAIGNS_STATE);
+        if (resolvedCampaigns) {
+          idbSet('dnd5e_prisco_campaigns_v1', resolvedCampaigns);
+          idbSet('dnd_tracker_campaigns_v1', resolvedCampaigns);
+        }
+        if (resolvedGrid) {
+          idbSet('dnd_tracker_grid_v3', resolvedGrid);
+          idbSet('dnd5e_prisco_live_grid', resolvedGrid);
         }
       }
     } catch (e) {}
@@ -35232,8 +35300,8 @@ function saveGridStatePermanently() {
   saveToLocalStorage();
   try {
     if (typeof gridState !== 'undefined') {
-      localStorage.setItem('dnd5e_prisco_live_grid', JSON.stringify(gridState));
-      localStorage.setItem('dnd_tracker_grid_v3', JSON.stringify(gridState));
+      safeLocalStorageSet('dnd5e_prisco_live_grid', JSON.stringify(gridState));
+      safeLocalStorageSet('dnd_tracker_grid_v3', JSON.stringify(gridState));
     }
   } catch (e) {}
   if (typeof broadcastGridState === 'function') broadcastGridState();
@@ -35358,11 +35426,11 @@ function loadFromLocalStorage() {
 
         // Se o cache local estiver defasado no Nível 1 e canonicamente o herói já evoluiu para Nível superior
         const canonical = canonicalList.find(c => c.id === p.id || (c.name && p.name && c.name.toLowerCase() === p.name.toLowerCase()));
-        if (canonical && (canonical.level || 1) > (p.level || 1)) {
-          return Object.assign({}, canonical, p, {
+        if (canonical && (canonical.level || 1) > (p.level || 1) && !p.updatedAt) {
+          p = Object.assign({}, canonical, p, {
             level: canonical.level,
             maxHp: Math.max(canonical.maxHp || 1, p.maxHp || 1),
-            hp: (p.hp && p.hp > 0) ? Math.min(canonical.maxHp, Math.max(p.hp, canonical.maxHp)) : canonical.maxHp,
+            hp: (p.hp !== undefined && p.hp > 0) ? Math.min(Math.max(canonical.maxHp || 1, p.maxHp || 1), p.hp) : canonical.maxHp,
             className: canonical.className,
             slots: canonical.slots || p.slots,
             spells: canonical.spells || p.spells,
@@ -35372,7 +35440,6 @@ function loadFromLocalStorage() {
         }
 
         // Se for o Deraravely e estiver sem a estrutura de multiclasse canônica
-
         if (p.name && p.name.toLowerCase().includes('deraravely') && (!p.multiclass || p.multiclass.length <= 1)) {
           p.multiclass = [
             { className: 'Guerreiro', level: 4, subclassIdx: 0, subclass: 'Campeão (Champion)' },
@@ -35388,9 +35455,29 @@ function loadFromLocalStorage() {
             ];
           }
         }
+
+        // Sincroniza bidirecionalmente gold e coins.gp da ficha
+        if (p.coins && p.coins.gp !== undefined) {
+          if (p.gold !== undefined && p.gold !== p.coins.gp) {
+            p.coins.gp = p.gold;
+          } else {
+            p.gold = p.coins.gp;
+          }
+        } else if (p.gold !== undefined) {
+          p.coins = { cp: 0, sp: 0, ep: 0, gp: p.gold, pp: 0 };
+        } else {
+          p.gold = 0;
+          p.coins = { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
+        }
+        if (!p.feats || !Array.isArray(p.feats)) p.feats = [];
+        if (!p.inventory || !Array.isArray(p.inventory)) p.inventory = [];
+        if (!p.customSpells || !Array.isArray(p.customSpells)) p.customSpells = [];
+        if (!p.customAttacks || !Array.isArray(p.customAttacks)) p.customAttacks = [];
+        if (!p.preparedSpells || !Array.isArray(p.preparedSpells)) p.preparedSpells = [];
+        if (!p.spellbookSpells || !Array.isArray(p.spellbookSpells)) p.spellbookSpells = [];
+
         return p;
       });
-
 
       if (typeof calculatePlayerAcFromEquipment === 'function') {
         PLAYERS.forEach(p => {
@@ -35419,14 +35506,16 @@ function loadFromLocalStorage() {
       });
     }
 
-    // Garante que combatentes de jogadores no state reflitam o PV e maxHp reais
+    // Garante que combatentes de jogadores no state reflitam o PV e maxHp reais sem resetar dano
     if (state && Array.isArray(state.combatants)) {
       state.combatants.forEach(comb => {
         if (comb.type === 'player') {
           const matched = PLAYERS.find(p => (comb.playerId && comb.playerId === p.id) || p.id === comb.id || (comb.name && p.name && comb.name.includes(p.name)));
           if (matched && matched.maxHp && (comb.maxHp || 0) < matched.maxHp) {
             comb.maxHp = matched.maxHp;
-            comb.hp = matched.maxHp;
+            if (comb.hp === undefined || comb.hp > comb.maxHp) {
+              comb.hp = matched.maxHp;
+            }
           }
         }
       });
@@ -36136,6 +36225,17 @@ function saveSafetySnapshot(reason = 'Backup Automático') {
   try {
     const now = new Date();
     const dateStr = now.toLocaleDateString('pt-BR') + ' ' + now.toLocaleTimeString('pt-BR');
+
+    // Clona o gridState podando imagens base64 gigantes no snapshot para poupar quota
+    let lightweightGrid = null;
+    if (typeof gridState !== 'undefined' && gridState) {
+      lightweightGrid = JSON.parse(JSON.stringify(gridState));
+      if (lightweightGrid.bgImage && lightweightGrid.bgImage.length > 500) {
+        lightweightGrid.bgImage = null; // Mapa completo é persistido em gridState principal e IndexedDB
+        lightweightGrid._omittedBgInSnapshot = true;
+      }
+    }
+
     const snapshot = {
       id: 'snap_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
       timestamp: Date.now(),
@@ -36144,7 +36244,7 @@ function saveSafetySnapshot(reason = 'Backup Automático') {
       playersCount: (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS)) ? PLAYERS.length : 0,
       players: (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS)) ? JSON.parse(JSON.stringify(PLAYERS)) : [],
       state: (typeof state !== 'undefined') ? JSON.parse(JSON.stringify(state)) : null,
-      gridState: (typeof gridState !== 'undefined') ? JSON.parse(JSON.stringify(gridState)) : null,
+      gridState: lightweightGrid,
       campaignsState: (typeof CAMPAIGNS_STATE !== 'undefined') ? JSON.parse(JSON.stringify(CAMPAIGNS_STATE)) : null,
       dmNotes: (typeof localStorage !== 'undefined') ? (localStorage.getItem('dnd_tracker_dm_notes_v3') || '') : ''
     };
@@ -36155,12 +36255,12 @@ function saveSafetySnapshot(reason = 'Backup Automático') {
       if (raw) history = JSON.parse(raw);
     } catch (e) {}
 
-    // Mantém os últimos 15 snapshots
+    // Mantém os 4 snapshots mais recentes no localStorage para poupar cota
     history.unshift(snapshot);
-    if (history.length > 15) history = history.slice(0, 15);
+    if (history.length > 4) history = history.slice(0, 4);
 
-    localStorage.setItem(SAFETY_SNAPSHOTS_KEY, JSON.stringify(history));
-    localStorage.setItem('dnd5e_prisco_safety_snapshot_latest', JSON.stringify(snapshot));
+    safeLocalStorageSet(SAFETY_SNAPSHOTS_KEY, JSON.stringify(history));
+    safeLocalStorageSet('dnd5e_prisco_safety_snapshot_latest', JSON.stringify(snapshot));
 
     // Espelhamento no Cofre IndexedDB
     try {
@@ -36923,9 +37023,13 @@ if (typeof module !== 'undefined' && module.exports) {
     checkAndRestoreFromIndexedDB,
     computeSimplePinHash,
     getMasterPinHash,
-    toggleNavDropdown
+    toggleNavDropdown,
+    safeLocalStorageSet
   };
 } else {
+  if (typeof window !== 'undefined') {
+    window.safeLocalStorageSet = safeLocalStorageSet;
+  }
   // Execução síncrona imediata no navegador para garantir que PLAYERS e state sejam carregados antes de qualquer render
   try {
     if (typeof localStorage !== 'undefined') {
@@ -54468,8 +54572,9 @@ function saveCampaignsState() {
     const camp = getActiveCampaign();
     if (camp) touchCampaign(camp);
     const serialized = JSON.stringify(CAMPAIGNS_STATE);
-    localStorage.setItem('dnd5e_prisco_campaigns_v1', serialized);
-    localStorage.setItem('dnd_tracker_campaigns_v1', serialized);
+    const setStorage = (k, v) => (typeof safeLocalStorageSet === 'function' ? safeLocalStorageSet(k, v) : localStorage.setItem(k, v));
+    setStorage('dnd5e_prisco_campaigns_v1', serialized);
+    setStorage('dnd_tracker_campaigns_v1', serialized);
 
     // Atualiza dentro do payload STORAGE_KEY do core se existir
     try {
@@ -54478,7 +54583,7 @@ function saveCampaignsState() {
         if (fullRaw) {
           const fullParsed = JSON.parse(fullRaw);
           fullParsed.campaignsState = CAMPAIGNS_STATE;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(fullParsed));
+          setStorage(STORAGE_KEY, JSON.stringify(fullParsed));
         }
       }
     } catch(e) {}

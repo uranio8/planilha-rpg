@@ -1,66 +1,65 @@
-# Plano de Implementação - Correção Visual dos Cards de Talentos (Overflow) & Blindagem de Sincronização (ISSUE-125)
+# Plano de Implementação - Blindagem & Otimização Definitiva do LocalStorage (ISSUE-126)
 
 ## 📌 Contexto e Diagnóstico
 
-### 1. 🐛 Bug Visual nos Cards de Talentos (`.feat-catalog-card`)
-- **Problema Relatado e Identificado**: Na aba do Compêndio de Talentos, o badge de pré-requisitos (`.feat-prereq-badge`, ex: `⚠️ Exige: Capacidade de conjurar pelo menos uma magia`) transborda e vaza para fora do card, invadindo o card adjacente.
-- **Causa Raiz**:
-  - Em `src/styles/head_css.html`, `.feat-prereq-badge` possui `white-space: nowrap;` sem `max-width`.
-  - Em `src/js/compendium.js`, `.feat-prereq-badge` está dentro de `.feat-card-top` em layout flex horizontal lado a lado com `.feat-card-header`.
-  - Como textos de pré-requisito podem ter mais de 50 caracteres (ex: *Adepto Elemental* exige 52 caracteres), a largura combinada com o título ultrapassa a largura do card (~320px), forçando o badge para fora da borda.
-- **Solução Visual**:
-  - Reestruturar o topo do card em `src/js/compendium.js`: o cabeçalho (ícone + nome + categoria) ocupa a primeira linha e o badge de pré-requisito é posicionado em um container dedicado `.feat-card-prereq-box`.
-  - Em `src/styles/head_css.html`:
-    - Adicionar `overflow: hidden; min-width: 0;` a `.feat-catalog-card`.
-    - Ajustar `.feat-prereq-badge` com `white-space: normal; line-height: 1.35; max-width: 100%; word-break: break-word; display: inline-flex; align-items: center; gap: 4px;`.
-    - Criar `.feat-card-prereq-box` com margem adequada para visualização limpa e integrada.
+O sistema de persistência local da aplicação depende do `localStorage` e do espelhamento secundário no `IndexedDB`. Identificamos vulnerabilidades críticas que causam perda de dados ou comportamento errático:
 
-### 2. 🛡️ Blindagem de Sincronização e Anti-Perda de Talentos
-- **`src/js/players.js`**:
-  - Em `savePlayerSheet()`: Adicionar `feats: (existing && Array.isArray(existing.feats)) ? existing.feats : []` no objeto `data` salvo, impedindo que edições gerais no modal da ficha apaguem os talentos do herói.
-  - Em `grantFeatToPlayer()`, `removeFeatFromPlayer()` e `saveAsiChoiceModal()`: Adicionar `if (typeof touchPlayer === 'function') touchPlayer(p);` para carimbar `p.updatedAt = Date.now()`, garantindo que o snapshot seja reconhecido como mais recente e adotado nos clientes dos jogadores.
-- **`src/js/firebase_sync.js`**:
-  - Em `applyCloudDataToLocal()` (seção do jogador, linhas ~560-605): Garantir explicitamente a resolução e adoção de `feats` na ficha do jogador ao receber dados remotos do mestre:
-    ```javascript
-    feats: (isLocalNewer && localChar.feats && localChar.feats.length > 0)
-      ? localChar.feats
-      : (remoteP.feats || localChar.feats || [])
-    ```
+### 1. ⚠️ Fragmentação e Descompasso de Chaves
+- `saveToLocalStorage()` em `src/js/core.js` gravava apenas no envelope `dnd5e_prisco_sheet_state_v2` e em `dnd_tracker_players_v3` / `dnd_tracker_state_v3`.
+- As chaves oficiais canônicas definidas nas diretrizes do projeto (`dnd_tracker_campaigns_v1` e `dnd_tracker_grid_v3`) eram gravadas separadamente em outros arquivos (`campaigns.js`, `vtt_grid.js`), gerando descompassos onde campanhas e grid ficavam dessincronizados do estado principal.
+
+### 2. 💥 Risco de `QuotaExceededError` (Limite de 5MB do Navegador)
+- O navegador impõe limite rígido de ~5MB para o `localStorage` por origem.
+- O salvamento de imagens base64 de mapas no grid somado aos múltiplos snapshots de segurança (`dnd5e_safety_snapshots_history_v1`) acumulava centenas de kilobytes a megabytes, podendo estourar a cota silenciosamente.
+- Quando ocorria `QuotaExceededError`, o salvamento falhava em silêncio dentro do `catch (e)`, e o usuário continuava usando a planilha acreditando que estava salvando.
+
+### 3. 🔄 Sobrescrita de Modificações no `loadFromLocalStorage()`
+- No boot (`core.js`), `loadFromLocalStorage()` é invocado antes de `campaigns.js` ser avaliado no bundle concatenado, podendo gravar `campaignsState: null` no envelope `STORAGE_KEY`.
+- Durante a sanitização e migração de heróis no carregamento, propriedades legítimas modificadas pelo usuário (como ouro, PV e campos personalizados) podiam ser revertidas para valores padrão de `CANONICAL_INITIAL_PLAYERS`.
+- Faltava sanitização proativa contra dados corrompidos ou chaves legadas inúteis (`v1`, drafts antigos) que ocupam espaço desnecessário.
 
 ---
 
 ## 🏗️ Módulos e Arquivos Afetados
 
-1. **`src/styles/head_css.html`**:
-   - Ajuste em `.feat-catalog-card`, `.feat-card-top`, `.feat-card-header`, `.feat-prereq-badge` e adição de `.feat-card-prereq-box`.
-2. **`src/js/compendium.js`**:
-   - Atualização do template HTML dos cards em `renderFeatsTab()`.
-3. **`src/js/players.js`**:
-   - Preservação de `feats` em `savePlayerSheet()`.
-   - Adição de `touchPlayer(p)` em `grantFeatToPlayer()`, `removeFeatFromPlayer()` e `saveAsiChoiceModal()`.
-4. **`src/js/firebase_sync.js`**:
-   - Resolução explícita de `feats` no merge do jogador em `applyCloudDataToLocal()`.
+1. **`src/js/core.js`**:
+   - **`saveToLocalStorage()`**:
+     - Gravação unificada e atômica de todas as chaves canônicas: `STORAGE_KEY`, `dnd_tracker_players_v3`, `dnd_tracker_state_v3`, `dnd_tracker_grid_v3` e `dnd_tracker_campaigns_v1`.
+     - Tratamento defensivo de `QuotaExceededError`: expurgo automático de caches legados (`v1`, backups antigos de snapshots, logs muito longos) e re-tentativa imediata.
+     - Preservação estrita de `campaignsState` existente mesmo se `CAMPAIGNS_STATE` ainda não estiver no escopo no momento da chamada.
+   - **`loadFromLocalStorage()`**:
+     - Priorização e unificação resiliente: lê do envelope `STORAGE_KEY` e das chaves canônicas `v3` com fallback ordenado.
+     - Proteção contra reversão de dados: preservar incondicionalmente alterações de PV, moedas/ouro, notas, magias, talentos e inventário, sem que `CANONICAL_INITIAL_PLAYERS` reverta dados mais recentes.
+   - **`saveSafetySnapshot()`**:
+     - Limitar o histórico a no máximo 3 snapshots e excluir cópias redundantes de mapas pesados do VTT no payload do localStorage (delegando o mapa ao IndexedDB).
+2. **`src/js/campaigns.js`**:
+   - Garantir sincronização bidirecional entre `CAMPAIGNS_STATE`, `dnd5e_prisco_campaigns_v1` e `dnd_tracker_campaigns_v1` em `saveCampaignsState()` e `loadCampaignsState()`.
+3. **`src/js/vtt_grid.js`**:
+   - Compactação e guarda contra estouro de quota em `saveGridStatePermanently()`.
+4. **`builder.js`**:
+   - Recompilação do arquivo standalone `planilha do rpg.html` e `index.html`.
 5. **`test_runner.js`**:
-   - Atualização e adição de asserções da Bateria 93 cobrindo a formatação sem overflow dos cards e a blindagem de persistência.
+   - Criação da **Bateria 94** com testes específicos para:
+     - Persistência e integridade das 4 chaves canônicas no `saveToLocalStorage()`;
+     - Recuperação automática em caso de `QuotaExceededError`;
+     - Preservação de moedas, anotações, PV e itens após reload;
+     - Retenção do histórico de campanhas e grid.
+6. **`issues/README.md`**:
+   - Registro detalhado da **ISSUE-126**.
 
 ---
 
 ## 🧪 Estratégia de Verificação
 
-1. Executar `node builder.js` para compilar o HTML final.
-2. Executar `node test_runner.js` garantindo 100% de aprovação na suíte de testes.
-3. Testar a renderização dos cards com Chrome CDP / subagent para validar visualmente que o badge não corta nem ultrapassa a borda do card.
-4. Testar a sincronização Mestre ➔ Jogador confirmando que talentos persistem após edições da ficha.
+1. **Testes Automatizados**:
+   - Executar `node test_runner.js` garantindo que todos os 1634+ testes existentes e os novos da Bateria 94 passem com 100% de sucesso.
+2. **Teste em Navegador Real com Simulação de Quota e F5**:
+   - Executar script em Chrome Headless via CDP simulando modificações reais (PV, ouro, combate, baú e grid), forçando reload da página e conferindo se 100% das alterações são mantidas sem perdas.
+3. **Compilação**:
+   - Executar `node builder.js`.
 
 ---
 
-## 📌 Status de Implementação
+## 📋 Protocolo de Governança (AGENTS.md)
 
-- [x] **Ajuste de CSS em `src/styles/head_css.html`**: `.feat-catalog-card` com `overflow: hidden`, `.feat-prereq-badge` com `white-space: normal; line-height: 1.35; max-width: 100%; word-break: break-word` e nova classe `.feat-card-prereq-box`.
-- [x] **Template em `src/js/compendium.js`**: Badge de pré-requisitos posicionado em container dedicado abaixo do título.
-- [x] **Preservação de Talentos em `src/js/players.js`**: `savePlayerSheet()` agora copia `existing.feats` incondicionalmente no objeto salvo.
-- [x] **Carimbos de Tempo em `src/js/players.js`**: `touchPlayer(p)` adicionado em `grantFeatToPlayer`, `removeFeatFromPlayer` e `saveAsiChoiceModal`.
-- [x] **Merge Inteligente em `src/js/firebase_sync.js`**: Resolução e adoção explícita de `feats` na ficha do jogador ao sincronizar com o mestre.
-- [x] **Bateria 93 de Testes Automatizados (`test_runner.js`)**: 1634/1634 testes aprovados com 100% de sucesso.
-- [x] **Compilação (`builder.js`)**: HTML standalone gerado com sucesso.
-- [x] **Validação Visual**: Captura de tela confirmou alinhamento impecável sem overflow.
+Conforme a Regra 1 de governança do projeto, solicitamos a aprovação prévia deste plano antes de iniciar a alteração dos arquivos fonte sob `src/`.
