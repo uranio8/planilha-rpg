@@ -1632,7 +1632,7 @@ function renderFeatsTab(resetFilter = false) {
         <div class="feat-card-top">
           <div class="feat-card-header">
             <span class="feat-card-icon">${f.icon || '📜'}</span>
-            <div>
+            <div style="flex: 1; min-width: 0;">
               <div class="feat-card-name-row">
                 <span class="feat-card-title">${f.name}</span>
                 <span class="feat-card-category-badge">${f.category}</span>
@@ -1640,6 +1640,9 @@ function renderFeatsTab(resetFilter = false) {
               <div class="feat-card-en-name">${f.nameEn || ''}</div>
             </div>
           </div>
+        </div>
+
+        <div class="feat-card-prereq-box">
           <span class="feat-prereq-badge ${prereqClass}">${prereqLabel}</span>
         </div>
 

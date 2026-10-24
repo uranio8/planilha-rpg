@@ -7771,6 +7771,7 @@ function savePlayerSheet() {
     skillExpertises: existing && existing.skillExpertises ? existing.skillExpertises : [],
     saveProficiencies: existing && existing.saveProficiencies ? existing.saveProficiencies : defaultSaves,
     featureCharges: existing && existing.featureCharges ? existing.featureCharges : [],
+    feats: existing && Array.isArray(existing.feats) ? existing.feats : [],
     actionLogs: existing && existing.actionLogs ? existing.actionLogs : [],
     playerNotes: existing && existing.playerNotes !== undefined ? existing.playerNotes : '',
     background: bgVal,
@@ -11320,6 +11321,7 @@ function grantFeatToPlayer(playerId, featId, options = {}) {
     grantedAt: new Date().toISOString()
   });
 
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
   if (typeof broadcastStateSync === 'function') broadcastStateSync();
@@ -11361,6 +11363,7 @@ function removeFeatFromPlayer(playerId, featId) {
   }
 
   p.feats.splice(idx, 1);
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
   if (typeof broadcastStateSync === 'function') broadcastStateSync();
@@ -11896,6 +11899,7 @@ function saveAsiChoiceModal() {
     if (!success) return;
   }
 
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
   if (typeof broadcastStateSync === 'function') broadcastStateSync();

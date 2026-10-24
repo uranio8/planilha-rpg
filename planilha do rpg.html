@@ -10975,6 +10975,9 @@
       justify-content: space-between;
       transition: all 0.2s ease;
       box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      min-width: 0;
+      box-sizing: border-box;
     }
     .feat-catalog-card:hover {
       border-color: rgba(250, 204, 21, 0.5);
@@ -10983,32 +10986,36 @@
     }
     .feat-card-top {
       display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 8px;
-      margin-bottom: 8px;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 6px;
     }
     .feat-card-header {
       display: flex;
       gap: 10px;
       align-items: flex-start;
+      width: 100%;
+      min-width: 0;
     }
     .feat-card-icon {
       font-size: 26px;
       line-height: 1;
       filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+      flex-shrink: 0;
     }
     .feat-card-name-row {
       display: flex;
       align-items: center;
       gap: 6px;
       flex-wrap: wrap;
+      min-width: 0;
     }
     .feat-card-title {
       font-family: var(--font-title);
       font-weight: 800;
       font-size: 15px;
       color: #fff;
+      word-break: break-word;
     }
     .feat-card-category-badge {
       font-size: 9.5px;
@@ -11019,18 +11026,33 @@
       color: #cbd5e1;
       border: 1px solid rgba(148, 163, 184, 0.25);
       text-transform: uppercase;
+      flex-shrink: 0;
     }
     .feat-card-en-name {
       font-size: 11px;
       color: #94a3b8;
       font-style: italic;
     }
+    .feat-card-prereq-box {
+      margin: 2px 0 6px 0;
+      display: flex;
+      flex-wrap: wrap;
+      width: 100%;
+      min-width: 0;
+    }
     .feat-prereq-badge {
       font-size: 10px;
       font-weight: 700;
       padding: 3px 8px;
       border-radius: 6px;
-      white-space: nowrap;
+      white-space: normal;
+      line-height: 1.35;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      max-width: 100%;
+      word-break: break-word;
+      box-sizing: border-box;
     }
     .feat-prereq-badge.no-prereq {
       background: rgba(16, 185, 129, 0.15);
@@ -37534,6 +37556,9 @@ function applyCloudDataToLocal(cloudData) {
               inventory: (localChar.inventory && localChar.inventory.length > 0) ? localChar.inventory : (remoteP.inventory || []),
               // Preserva moedas do jogador local
               coins: localChar.coins !== undefined ? localChar.coins : (remoteP.coins || { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }),
+              feats: (isLocalNewer && localChar.feats && localChar.feats.length > 0)
+                ? localChar.feats
+                : (remoteP.feats || localChar.feats || []),
               updatedAt: Math.max(localPlayerUpdated, remotePlayerUpdated)
             });
           }
@@ -47548,6 +47573,7 @@ function savePlayerSheet() {
     skillExpertises: existing && existing.skillExpertises ? existing.skillExpertises : [],
     saveProficiencies: existing && existing.saveProficiencies ? existing.saveProficiencies : defaultSaves,
     featureCharges: existing && existing.featureCharges ? existing.featureCharges : [],
+    feats: existing && Array.isArray(existing.feats) ? existing.feats : [],
     actionLogs: existing && existing.actionLogs ? existing.actionLogs : [],
     playerNotes: existing && existing.playerNotes !== undefined ? existing.playerNotes : '',
     background: bgVal,
@@ -51097,6 +51123,7 @@ function grantFeatToPlayer(playerId, featId, options = {}) {
     grantedAt: new Date().toISOString()
   });
 
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
   if (typeof broadcastStateSync === 'function') broadcastStateSync();
@@ -51138,6 +51165,7 @@ function removeFeatFromPlayer(playerId, featId) {
   }
 
   p.feats.splice(idx, 1);
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
   if (typeof broadcastStateSync === 'function') broadcastStateSync();
@@ -51673,6 +51701,7 @@ function saveAsiChoiceModal() {
     if (!success) return;
   }
 
+  if (typeof touchPlayer === 'function') touchPlayer(p);
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
   if (typeof broadcastStateSync === 'function') broadcastStateSync();
@@ -53674,7 +53703,7 @@ function renderFeatsTab(resetFilter = false) {
         <div class="feat-card-top">
           <div class="feat-card-header">
             <span class="feat-card-icon">${f.icon || '📜'}</span>
-            <div>
+            <div style="flex: 1; min-width: 0;">
               <div class="feat-card-name-row">
                 <span class="feat-card-title">${f.name}</span>
                 <span class="feat-card-category-badge">${f.category}</span>
@@ -53682,6 +53711,9 @@ function renderFeatsTab(resetFilter = false) {
               <div class="feat-card-en-name">${f.nameEn || ''}</div>
             </div>
           </div>
+        </div>
+
+        <div class="feat-card-prereq-box">
           <span class="feat-prereq-badge ${prereqClass}">${prereqLabel}</span>
         </div>
 

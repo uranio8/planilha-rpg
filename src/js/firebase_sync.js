@@ -599,6 +599,9 @@ function applyCloudDataToLocal(cloudData) {
               inventory: (localChar.inventory && localChar.inventory.length > 0) ? localChar.inventory : (remoteP.inventory || []),
               // Preserva moedas do jogador local
               coins: localChar.coins !== undefined ? localChar.coins : (remoteP.coins || { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }),
+              feats: (isLocalNewer && localChar.feats && localChar.feats.length > 0)
+                ? localChar.feats
+                : (remoteP.feats || localChar.feats || []),
               updatedAt: Math.max(localPlayerUpdated, remotePlayerUpdated)
             });
           }

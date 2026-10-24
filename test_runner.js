@@ -6875,6 +6875,63 @@ assert(finalStandaloneHtml.includes('renderFeatsTab'), 'HTML compilado contém a
 assert(finalStandaloneHtml.includes('openMasterGrantFeatModal'), 'HTML compilado contém a função openMasterGrantFeatModal');
 assert(finalStandaloneHtml.includes('openAsiChoiceModal'), 'HTML compilado contém a função openAsiChoiceModal');
 
+// ⭐ 93. Testes de Correção Visual de Talentos & Blindagem de Sincronização (ISSUE-125):
+console.log('\n⭐ 93. Testes de Correção Visual de Talentos & Blindagem de Sincronização (ISSUE-125):');
+
+// 1. CSS anti-overflow e quebra de badge
+const cssContent = fs.readFileSync(path.join(__dirname, 'src/styles/head_css.html'), 'utf8');
+assert(cssContent.includes('.feat-catalog-card') && cssContent.includes('overflow: hidden'), 'CSS de .feat-catalog-card possui overflow: hidden contra vazamento visual');
+assert(cssContent.includes('.feat-prereq-badge') && cssContent.includes('white-space: normal'), 'CSS de .feat-prereq-badge permite quebra harmoniosa com white-space: normal');
+assert(cssContent.includes('.feat-card-prereq-box'), 'CSS contém classe .feat-card-prereq-box para posicionamento isolado do badge');
+
+// 2. Preservação de feats em savePlayerSheet
+vm.runInContext(`
+  var testHeroFeats = {
+    id: 'p_hero_save_test',
+    student: 'Aluno Teste',
+    name: 'Herói Teste',
+    className: 'Guerreiro',
+    level: 5,
+    str: 16, dex: 14, con: 14, int: 10, wis: 12, cha: 8,
+    hp: 40, maxHp: 40,
+    feats: [{ id: 'alerta', name: 'Alerta' }]
+  };
+  PLAYERS.push(testHeroFeats);
+
+  // Simula formulário do modal
+  document.getElementById('pm-id').value = 'p_hero_save_test';
+  document.getElementById('pm-student').value = 'Aluno Teste';
+  document.getElementById('pm-name').value = 'Herói Teste Editado';
+  document.getElementById('pm-class').value = 'Guerreiro';
+  document.getElementById('pm-level').value = '5';
+  document.getElementById('pm-str').value = '16';
+  document.getElementById('pm-dex').value = '14';
+  document.getElementById('pm-con').value = '14';
+  document.getElementById('pm-int').value = '10';
+  document.getElementById('pm-wis').value = '12';
+  document.getElementById('pm-cha').value = '8';
+  document.getElementById('pm-hp').value = '40';
+  document.getElementById('pm-maxhp').value = '40';
+  document.getElementById('pm-speed').value = '9m';
+  document.getElementById('pm-gold').value = '100';
+  document.getElementById('pm-badges').value = '';
+  document.getElementById('pm-attacks').value = '';
+  document.getElementById('pm-features').value = '';
+  document.getElementById('pm-spells').value = '';
+
+  savePlayerSheet();
+`, sandbox);
+
+const savedHero = vm.runInContext("PLAYERS.find(p => p.id === 'p_hero_save_test')", sandbox);
+assert(savedHero && savedHero.name === 'Herói Teste Editado', 'Ficha do herói salva com sucesso');
+assert(savedHero && Array.isArray(savedHero.feats) && savedHero.feats.length === 1 && savedHero.feats[0].id === 'alerta', 'Talento Alerta foi preservado intacto após savePlayerSheet()');
+
+// 3. Atualização de updatedAt via touchPlayer em grantFeatToPlayer
+const prevTime = savedHero.updatedAt || 0;
+vm.runInContext("grantFeatToPlayer('p_hero_save_test', 'robusto', { source: 'master' });", sandbox);
+const updatedTime = vm.runInContext("PLAYERS.find(p => p.id === 'p_hero_save_test').updatedAt", sandbox);
+assert(updatedTime >= prevTime, 'Concessão de talento acionou touchPlayer atualizando updatedAt');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
