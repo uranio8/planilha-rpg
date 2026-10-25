@@ -1,101 +1,125 @@
-# Plano de Implementação - Correção do Balão de Magia/Item, Exclusão de Fichas e Ergonomia Intuitiva do Inventário (ISSUE-134)
+# Plano de Implementação - Correção da Sobreposição de Ícones no Inventário, Duplicação de Unidades ('kgkg') e Blindagem de Layout Flexível (ISSUE-135)
 
 ## 📌 Contexto e Diagnóstico
 
-O usuário reportou três problemas críticos na experiência com as fichas de personagens (com capturas de tela anexadas):
-1. **Balão da Magia (💬) não diz o que a magia faz**:
-   - No card da magia (ex: *Passo Nebuloso*), o botão do balão `💬` disparava `sharePlayerSpellToFeed()`, que apenas enviava um trecho truncado de 140 caracteres para o log de combate em segundo plano, sem abrir nada na tela da ficha do jogador.
-   - O usuário espera que ao clicar no balão (ou no card), a aplicação explique e exiba claramente **o que a magia faz** (tempo de conjuração, alcance, duração, componentes e descrição completa dos efeitos D&D 5E).
-2. **Exclusão de Ficha não apaga**:
-   - No cabeçalho da ficha (barra de ferramentas superior do card), o botão de lixeira chamava `deletePlayer('${p.id}')`.
-   - No entanto, a função implementada em `src/js/players.js` chamava-se `deletePlayerDirect(id)`. Como `deletePlayer` não existia nem estava exportada em `window`, o navegador disparava um erro silencioso (`ReferenceError: deletePlayer is not defined`) e a ficha nunca era excluída.
-   - Além disso, a função não disparava a sincronização com o Firebase (`syncLocalChangesToFirebase`), o que permitia que o banco de dados em tempo real restaurasse a ficha.
-3. **Itens do Inventário pouco intuitivos**:
-   - O indicador de "Equipado" era uma bolinha vermelha estática `🔴` (`.roll20-item-equipped-toggle.active`), que parecia um botão de gravação ou erro, sem nenhum texto ou ícone explicativo.
-   - O botão `⚡ Usar` aparecia inclusive para armaduras e armas, e ao ser clicado diminuía a quantidade do item permanente, "consumindo" o equipamento.
-   - O balão `💬` no item apenas postava o nome e quantidade no chat, sem exibir as propriedades, dano, classe de armadura ou descrição do item.
+O usuário enviou uma captura de tela evidenciando um bug visual no inventário da ficha do personagem:
+1. **Sobreposição de Ícones e Botões no Inventário**:
+   - Na linha do item (ex: *Espada Longa (Longsword)*), o botão de status de equipamento (`🛡️ Equipado`), os botões de quantidade (`−`, `1x`, `+`), o botão de baú (`📦 Baú`), o balão (`💬`) e a lixeira (`🗑️`) aparecem amassados e colidindo uns por cima dos outros.
+   - **Causa Raiz**:
+     Em `src/styles/head_css.html` (linhas 10352-10362), a classe `.roll20-item-equipped-toggle` possuía regras legadas:
+     ```css
+     .roll20-item-equipped-toggle {
+       width: 14px;
+       height: 14px;
+       border-radius: 50%;
+       ...
+     }
+     ```
+     Como o botão em `src/js/players.js` combinava as classes:
+     `class="btn-item-equip-badge roll20-item-equipped-toggle equipped active"`
+     o elemento foi forçado a uma largura fixa de apenas **14px**. O texto `"🛡️ Equipado"` (que necessita de ~80px) extravasou a caixa, e os elementos seguintes no flex container (`−`, `1x`, `+`) foram desenhados a partir da posição de 14px, **sobrepondo diretamente o texto e o ícone do botão de equipar**.
+
+2. **Unidade Duplicada de Peso (`1,5 kgkg`)**:
+   - Na mesma captura de tela, o texto exibe `1,5 kgkg`.
+   - **Causa Raiz**: Em `src/js/players.js`, a linha de renderização continha:
+     `${it.weight ? ' • ' + it.weight + 'kg' : ''}`.
+     Quando `it.weight` vindo do compêndio de equipamentos já possui a unidade (ex.: `"1.5 kg"`), a concatenação resultava na unidade duplicada `"1,5 kgkg"`.
 
 ---
 
-## 🎯 Proposta de Solução
+## 🔍 Varredura de Outras Funcionalidades com Risco de Sobreposição / Colisão
 
-### 1. 📖 Balão e Visualização Completa de Magias ("O que a magia faz")
-- **Comportamento do Balão `💬`**:
-  - Configurar o botão para abrir o Modal Tátil de Resumo da Magia (`openSpellQuickView(sName, p.id)`).
-  - Atualizar o tooltip para: `"Ver o que a magia faz (Descrição completa)"`.
-  - No modal `modal-spell-quick-view`, adicionar o botão `💬 Compartilhar no Chat` para permitir enviar a descrição completa ao feed quando desejado.
-- **Enriquecimento no Chat (`sharePlayerSpellToFeed`)**:
-  - Exibir a descrição integral da magia (sem truncar em 140 caracteres).
-  - Exibir um toast ou notificação visual na tela para que o usuário receba feedback imediato mesmo na aba de Fichas.
+Realizamos uma análise completa no layout das fichas e módulos adjacentes e identificamos 4 pontos adicionais com vulnerabilidade semelhante de sobreposição ou esmagamento:
 
-### 2. 🗑️ Correção Definitiva da Exclusão de Fichas
-- **Criação do Alias e Exportação**:
-  - Criar `function deletePlayer(id) { deletePlayerDirect(id); }`.
-  - Exportar no `window`: `window.deletePlayer = deletePlayer;` e `window.deletePlayerDirect = deletePlayerDirect;`.
-- **Sincronização Total**:
-  - Adicionar `if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);` dentro de `deletePlayerDirect(id)`.
-  - Garantir limpeza em cascata: `PLAYERS`, `state.combatants`, tokens do VTT no grid tático e persistência no `localStorage`.
+1. **Ataques & Conjuração na Ficha (`table.roll20-attacks-table td`)**:
+   - Os botões de ataque (`💥`) e balão explicativo (`💬`) são renderizados na célula com `display: inline` sem flex container e sem gap explícito. Em colunas estreitas ou telas menores, eles sofrem quebra de linha desordenada ou colidem com o texto do alcance.
+   - **Solução**: Envolver as ações da tabela de ataques em um container `.attack-actions-cell` com `display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;`.
 
-### 3. ✨ Ergonomia Intuitiva para Itens do Inventário
-- **Botão de Equipar Claro e Elegante**:
-  - Substituir a bolinha vermelha `🔴` por um botão de status intuitivo:
-    - **Equipado**: Badge/botão verde-esmeralda com ícone e texto `🛡️ Equipado` ou `⚔️ Equipado` (com brilho sutil).
-    - **Não Equipado**: Botão neutro com texto `Equipar` e tooltip explicativo.
-- **Filtro Inteligente no Botão `⚡ Usar`**:
-  - Ocultar o botão `⚡` para armaduras, escudos e itens que não sejam consumíveis, impedindo que o jogador perca equipamentos por engano.
-  - Para consumíveis (poções, rações, pergaminhos, tochas), manter o botão com o ícone contextual (`🧪 Beber`, `📜 Usar`, `🍖 Comer`, etc.).
-- **Visualizador Rápido de Itens (`openItemQuickView(playerId, itemIndex)`)**:
-  - Ao clicar no balão `💬` do item (ou no nome do item), abrir o modal de detalhes do item.
-  - O modal exibirá: Nome, Categoria, Custo, Peso, Dano / CA, e as **Propriedades / O que o item faz** (buscado de `EQUIPMENT_DATA` ou da descrição personalizada `it.desc`).
-  - No modal, incluir botões: `Equipar / Desequipar`, `Usar` (se consumível) e `💬 Compartilhar no Chat`.
+2. **Chips e Cards de Magia (`player-spell-card-tactile`)**:
+   - No cabeçalho da magia, o título não possuía `min-width: 0; flex: 1;`. Magias com nomes longos (como *"Proteção contra o Bem e o Mal"* ou *"Restauração Menor"*) empurravam o balão `💬`, a tag do nível da magia e o botão de conjurar para fora do card ou provocavam quebra de linha indesejada.
+   - **Solução**: Adicionar `min-width: 0; flex: 1;` com truncamento elegante (`overflow: hidden; text-overflow: ellipsis; white-space: nowrap;`) no título da magia e atribuir `flex-shrink: 0;` a todos os botões de ação adjacentes.
+
+3. **Controles de Quantidade e Ações do Inventário**:
+   - A coluna de ações do item no inventário não tinha `flex-shrink: 0;` explícito, permitindo que os botões `−`, `+`, `📦` e `🗑️` fossem espremidos quando o nome do item ou suas propriedades fossem muito extensos.
+   - **Solução**: Garantir que a área de ações tenha `flex-shrink: 0; display: inline-flex; gap: 6px; align-items: center;` e a área do nome do item tenha `min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis;`.
+
+4. **Barra de Capacidade de Carga (`roll20-encumbrance-bar`)**:
+   - Em telas estreitas, o texto da carga e o badge de porcentagem (`2% ✅`) podiam colidir com a barra de progresso.
+   - **Solução**: Ajustar o container para `display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;` garantindo respiro em qualquer largura de tela.
 
 ---
 
-## 🏗️ Módulos e Arquivos Afetados
+## 🎯 Proposta de Modificações Detalhada
 
-1. **`src/ui/ui.html`**:
-   - Criação da estrutura do modal de visualização rápida de itens (`#modal-item-quick-view`).
-   - Adição do botão de compartilhamento no `#modal-spell-quick-view`.
-2. **`src/styles/head_css.html`**:
-   - Estilização moderna dos novos botões de equipar (`.btn-item-equip-badge.equipped` e `.btn-item-equip-badge.unequipped`).
-   - Estilos para o `#modal-item-quick-view` compatíveis com o design system Roll20/D&D 5E.
-3. **`src/js/players.js`**:
-   - Ajustar o clique do balão de magia para abrir `openSpellQuickView` diretamente.
-   - Implementar `deletePlayer(id)` e vinculá-lo à `window.deletePlayer`.
-   - Adicionar sincronização do Firebase em `deletePlayerDirect(id)`.
-   - Implementar `openItemQuickView(playerId, itemIndex)` e `closeItemQuickView()`.
-   - Atualizar a renderização da linha de inventário (`inventory-item-row`) com o novo botão de equipar e balão explicativo.
-   - Atualizar `sharePlayerItemToFeed` para incluir a descrição/propriedades completas do item.
-   - Exportações atualizadas no final do arquivo.
-4. **`test_runner.js`**:
-   - Adição da **Bateria 102** testando:
-     - Exclusão de ficha via `deletePlayer(id)`.
-     - Abertura da descrição de magia e item via balão.
-     - Toggle de equipar com novos seletores sem quebrar o cálculo de CA.
-     - Proteção contra consumo acidental de armas/armaduras.
-5. **`issues/README.md`**:
-   - Registro da **ISSUE-134**.
+### 1. `src/styles/head_css.html`
+- **Isolar e Corrigir o Botão de Equipar**:
+  ```css
+  .btn-item-equip-badge {
+    width: auto !important;
+    min-width: fit-content;
+    height: auto !important;
+    min-height: 24px;
+    padding: 2px 8px !important;
+    border-radius: 4px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+  ```
+- **Desacoplar `.roll20-item-equipped-toggle`**:
+  Garantir que regras legadas de `width: 14px; height: 14px;` não sobrescrevam `.btn-item-equip-badge`.
+- **Blindagem de Layout Flexível em Itens e Magias**:
+  - Adicionar `.inventory-item-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; }`.
+  - Adicionar `.inventory-item-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; overflow: hidden; }`.
+  - Adicionar `.inventory-item-actions { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }`.
+  - Adicionar `.attack-actions-cell { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }`.
+
+### 2. `src/js/players.js`
+- **Sanitização de Peso**:
+  - Utilizar formatação de peso limpa:
+    ```javascript
+    const cleanWeight = String(it.weight || '').replace(/\s*kg/gi, '').trim();
+    const weightDisplay = cleanWeight ? ` • ${cleanWeight} kg` : '';
+    ```
+    Elimina definitivamente a duplicação `1,5 kgkg`.
+- **Estruturação Robusta do HTML do Inventário**:
+  - Atualizar o botão de equipar para usar estritamente `.btn-item-equip-badge` e as classes de estado `.equipped` e `.unequipped`.
+  - Garantir que o grupo de botões `−`, `1x`, `+` fique agrupado em um container `.item-qty-control` sem invadir a área do botão de equipar.
+- **Tabela de Ataques e Magias**:
+  - Envolver os botões `💥` e `💬` em `.attack-actions-cell`.
+  - Adicionar classes e proteções de `flex-shrink: 0` nos botões de magia.
 
 ---
 
 ## 🧪 Estratégia de Verificação
 
 1. **Compilação**: `node builder.js`.
-2. **Suíte Completa**: `node test_runner.js` (todas as baterias aprovadas com 100% de sucesso).
-3. **Verificação Visual**: Conferir se o balão abre a descrição, se o botão de lixeira apaga a ficha e se os itens estão intuitivos.
+2. **Nova Bateria de Testes Automatizados (Bateria 103 em `test_runner.js`)**:
+   - Validação da ausência da unidade duplicada `kgkg` em itens com peso formatado.
+   - Verificação de que `.btn-item-equip-badge` possui `width: auto` / `min-width` adequado e não herda `14px`.
+   - Verificação de estrutura de layout flexível sem sobreposição nas linhas de inventário, ataques e magias.
+   - Teste de regressão para garantir que todas as 102 baterias anteriores continuem 100% aprovadas.
+3. **Registro**: Registrar a **ISSUE-135** em `issues/README.md`.
 
 ---
 
 ## ✅ Status de Execução e Checklist de Entrega
 
-- [x] **Balão de Magia 💬**: Ao clicar no balão, abre diretamente o modal tátil de resumo de magia (`openSpellQuickView`), permitindo ver o que a magia faz, tempo, alcance, duração e componentes D&D 5E, com opção de envio ao chat.
-- [x] **Exclusão de Ficha 🗑️**: Criado o alias canônico `deletePlayer(id)` vinculado a `deletePlayerDirect(id)` e exposto em `window`, com limpeza completa em `PLAYERS`, `state.combatants`, tokens VTT, salvamento local e sincronização com o Firebase (`syncLocalChangesToFirebase`).
-- [x] **Ergonomia do Inventário**:
-  - [x] Bolinha vermelha `🔴` substituída pelo badge intuitivo `.btn-item-equip-badge` (`🛡️ Equipado` em verde esmeralda vs `Equipar` neutro).
-  - [x] Proteção contra consumo acidental de armas e armaduras (ocultando o botão de consumir `⚡`).
-  - [x] Modal tátil de resumo de item (`#modal-item-quick-view`) aberto pelo balão `💬` ou pelo clique no nome do item, exibindo categoria, peso, dano/CA e propriedades detalhadas do compêndio.
-  - [x] Envio enriquecido de magias e itens ao chat feed com descrição completa e feedback tátil por toast.
-- [x] **Compilador**: `node builder.js` executado e arquivos `planilha do rpg.html` e `index.html` atualizados.
-- [x] **Testes**: Bateria 102 adicionada ao `test_runner.js` com 1807/1807 testes aprovados (100% de sucesso).
-- [x] **Documentação**: ISSUE-134 registrada em `issues/README.md`.
-
+- [x] **Diagnóstico da Causa Raiz**: Identificado que `.roll20-item-equipped-toggle` impunha `width: 14px; height: 14px;`, forçando o botão de texto a 14px e fazendo os botões vizinhos colidirem por cima do texto `🛡️ Equipado`.
+- [x] **Isolamento de Estilos no CSS (`head_css.html`)**:
+  - [x] `.roll20-item-equipped-toggle` desacoplado com seletor `:not(.btn-item-equip-badge)`.
+  - [x] `.btn-item-equip-badge` blindado com `width: auto !important`, `min-width: fit-content` e `flex-shrink: 0 !important`.
+  - [x] `.attack-actions-cell` e `.inventory-item-actions` criadas com `display: inline-flex` e `flex-shrink: 0`.
+  - [x] `.spell-chip-name` atualizado com `min-width: 0; flex: 1; text-overflow: ellipsis;` para evitar empurrão de botões em títulos longos.
+  - [x] `.roll20-weight-status-bar` com `flex-wrap: wrap; gap: 6px;`.
+- [x] **Eliminação de "kgkg" e Layout no JS (`players.js`)**:
+  - [x] Sanitização de peso `cleanWeight` removendo `kg` residual antes da formatação.
+  - [x] Criação de `.inventory-item-info` e agrupador visual para os botões de quantidade (`−`, `x`, `+`).
+  - [x] Ações da tabela de ataques envolvidas em `.attack-actions-cell`.
+- [x] **Compilação**: `node builder.js` executado com sucesso (HTML standalone gerado).
+- [x] **Bateria de Testes Automatizados**: Bateria 103 adicionada a `test_runner.js` e aprovada com **1822/1822 testes passando (100% de sucesso)**.
+- [x] **Documentação**: ISSUE-135 documentada no Quadro Geral em `issues/README.md`.

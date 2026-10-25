@@ -1957,8 +1957,10 @@ function renderPlayers() {
                           <b style="color: #fbbf24;">${atk.damage}</b> <span style="font-size: 10px; color: #94a3b8;">${atk.damageType}</span>
                         </td>
                         <td style="text-align: right; white-space: nowrap;">
-                          <button type="button" class="btn-micro roll20-btn-damage-only" onclick="rollWeaponDamageOnly('${p.id}', '${escapeAttr(atk.rawAttackText)}')" title="Rolar Apenas Dano">💥</button>
-                          <button type="button" class="btn-chat-feed" onclick="sharePlayerCalculatedAttackToFeed('${p.id}', ${aIdx})" title="Compartilhar ataque no chat da mesa">💬</button>
+                          <div class="attack-actions-cell">
+                            <button type="button" class="btn-micro roll20-btn-damage-only" onclick="rollWeaponDamageOnly('${p.id}', '${escapeAttr(atk.rawAttackText)}')" title="Rolar Apenas Dano">💥</button>
+                            <button type="button" class="btn-chat-feed" onclick="sharePlayerCalculatedAttackToFeed('${p.id}', ${aIdx})" title="Compartilhar ataque no chat da mesa">💬</button>
+                          </div>
                         </td>
                       </tr>
                     `).join('') : `
@@ -2198,13 +2200,15 @@ function renderPlayers() {
                     const isArmorOrShield = catLower.includes('armadura') || catLower.includes('escudo') || nameLower.includes('armadura') || nameLower.includes('escudo');
                     const isWeapon = catLower.includes('arma') || catLower.includes('weapon') || (typeof isPlayerWeaponItem === 'function' && isPlayerWeaponItem(it.name));
                     const isConsumable = actionInfo.isConsumable && !isArmorOrShield && !isWeapon;
+                    const cleanWeight = String(it.weight || '').replace(/\s*kg/gi, '').trim();
+                    const weightDisplay = cleanWeight ? ` • ${cleanWeight} kg` : '';
                     return `
                       <div class="inventory-item-row ${it.equipped ? 'equipped' : ''}">
-                        <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 4px; cursor: pointer;" onclick="openItemQuickView('${p.id}', ${idx})" title="Clique para ver o que este item faz">
+                        <div class="inventory-item-info" style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 6px; cursor: pointer;" onclick="openItemQuickView('${p.id}', ${idx})" title="Clique para ver o que este item faz">
                           <span style="font-weight: 700; color: #fff;">${it.equipped ? '⚔️ ' : ''}${it.name}${it.attuned ? ' <span title="Item Mágico Sintonizado" style="color:#38bdf8; font-size:10px;">💎</span>' : ''}</span>
-                          <span style="font-size: 9px; color: var(--text-dim);">${it.weight ? ' • ' + it.weight + 'kg' : ''}</span>
+                          <span style="font-size: 9px; color: var(--text-dim);">${weightDisplay}</span>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 3px;">
+                        <div class="inventory-item-actions" style="display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; white-space: nowrap;">
                           ${isConsumable ? `
                             <button type="button" class="btn-item-use ${itemQty <= 0 ? 'empty' : ''}" onclick="usePlayerInventoryItem('${p.id}', ${idx})" title="${itemQty > 0 ? `${actionInfo.label} 1x ${it.name}` : 'Item esgotado'}" ${itemQty <= 0 ? 'disabled' : ''}>
                               ${actionInfo.icon}
@@ -2213,12 +2217,14 @@ function renderPlayers() {
                           <button type="button" class="btn-item-equip-badge roll20-item-equipped-toggle ${it.equipped ? 'equipped active' : 'unequipped'}" onclick="togglePlayerItemEquipped('${p.id}', ${idx})" title="${it.equipped ? 'Equipado! Clique para desequipar' : 'Guardado na mochila. Clique para equipar e calcular CA/Ataques'}">
                             ${it.equipped ? '🛡️ Equipado' : 'Equipar'}
                           </button>
-                          <button type="button" class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, -1)" title="Diminuir" style="padding: 1px 4px; font-size: 9px;">−</button>
-                          <span style="font-weight: 800; min-width: 14px; text-align: center; color: ${itemQty > 0 ? 'var(--primary-light)' : 'var(--text-dim)'}; font-size: 10px;">${itemQty}x</span>
-                          <button type="button" class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, 1)" title="Aumentar" style="padding: 1px 4px; font-size: 9px;">+</button>
-                          <button type="button" class="btn-stash-send" onclick="sendPlayerItemToPartyStash('${p.id}', ${idx})" title="Guardar 1x no Baú do Grupo">📦 Baú</button>
-                          <button type="button" class="btn-chat-feed" onclick="openItemQuickView('${p.id}', ${idx})" title="Ver o que este item faz (Descrição completa)">💬</button>
-                          <button type="button" class="btn-micro" style="color: #f87171; padding: 1px 4px; font-size: 9px;" onclick="removePlayerItem('${p.id}', ${idx})" title="Remover item">🗑️</button>
+                          <div style="display: inline-flex; align-items: center; gap: 2px; background: rgba(0,0,0,0.25); padding: 1px 3px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.06); flex-shrink: 0;">
+                            <button type="button" class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, -1)" title="Diminuir" style="padding: 1px 4px; font-size: 9px;">−</button>
+                            <span style="font-weight: 800; min-width: 14px; text-align: center; color: ${itemQty > 0 ? 'var(--primary-light)' : 'var(--text-dim)'}; font-size: 10px;">${itemQty}x</span>
+                            <button type="button" class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, 1)" title="Aumentar" style="padding: 1px 4px; font-size: 9px;">+</button>
+                          </div>
+                          <button type="button" class="btn-stash-send" onclick="sendPlayerItemToPartyStash('${p.id}', ${idx})" title="Guardar 1x no Baú do Grupo" style="flex-shrink: 0;">📦 Baú</button>
+                          <button type="button" class="btn-chat-feed" onclick="openItemQuickView('${p.id}', ${idx})" title="Ver o que este item faz (Descrição completa)" style="flex-shrink: 0;">💬</button>
+                          <button type="button" class="btn-micro" style="color: #f87171; padding: 1px 4px; font-size: 9px; flex-shrink: 0;" onclick="removePlayerItem('${p.id}', ${idx})" title="Remover item">🗑️</button>
                         </div>
                       </div>
                     `;

@@ -7904,6 +7904,66 @@ vm.runInContext(`
 const capturedItemLog = vm.runInContext("lastItemLogEntry", sandbox);
 assert(capturedItemLog.includes('Cota de Malha'), 'sharePlayerItemToFeed registrou Cota de Malha no log');
 
+// ========================================================
+// 🛡️ BATERIA 103: TESTES DE PREVENÇÃO DE SOBREPOSIÇÃO DE ÍCONES, ELIMINAÇÃO DE 'kgkg' E LAYOUT ROBUSTO (ISSUE-135)
+// ========================================================
+console.log('\n🛡️ 103. Testes de Prevenção de Sobreposição de Ícones, Eliminação de "kgkg" e Layout Robusto (ISSUE-135):');
+
+// 1. Verificação de integridade no CSS compilado
+const builtHtmlContent = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+assert(builtHtmlContent.includes('.btn-item-equip-badge'), 'HTML compilado inclui a classe .btn-item-equip-badge');
+assert(builtHtmlContent.includes('.attack-actions-cell'), 'HTML compilado inclui a classe .attack-actions-cell');
+assert(builtHtmlContent.includes('.inventory-item-actions'), 'HTML compilado inclui a classe .inventory-item-actions');
+assert(builtHtmlContent.includes('.roll20-item-equipped-toggle:not(.btn-item-equip-badge)'), 'Classe .roll20-item-equipped-toggle isolada para não forçar 14px em botões com badge');
+
+// 2. Teste de Eliminação de "kgkg" e Renderização do Inventário
+vm.runInContext(`
+  var p135 = {
+    id: 'p_layout_135',
+    name: 'Guerreiro de Ferro',
+    className: 'Guerreiro',
+    level: 3,
+    str: 16,
+    dex: 14,
+    con: 14,
+    int: 10,
+    wis: 12,
+    cha: 8,
+    inventory: [
+      { name: 'Espada Longa (Longsword)', qty: 1, weight: '1.5 kg', equipped: true, category: 'Armas Marciais' },
+      { name: 'Escudo de Madeira', qty: 1, weight: '2.5kg', equipped: false, category: 'Armaduras e Escudos' },
+      { name: 'Tocha', qty: 5, weight: '0.5', equipped: false, category: 'Aventuras' }
+    ],
+    spells: ['Proteção contra o Bem e o Mal'],
+    preparedSpells: ['Proteção contra o Bem e o Mal']
+  };
+  PLAYERS.push(p135);
+  activePortalPlayerId = null;
+  if (document.getElementById('filter-player-q')) document.getElementById('filter-player-q').value = '';
+  renderPlayers();
+`, sandbox);
+
+const p135Html = vm.runInContext("document.getElementById('grid-players')?.innerHTML || ''", sandbox);
+
+// Validação de que NÃO existe 'kgkg' em nenhum lugar do HTML gerado
+assert(!p135Html.includes('kgkg'), 'Nenhum item exibiu peso duplicado "kgkg" (Espada Longa e Escudo formatados com "kg" limpo)');
+assert(p135Html.includes('1.5 kg'), 'Espada Longa exibiu "1.5 kg" corretamente');
+assert(p135Html.includes('2.5 kg'), 'Escudo de Madeira exibiu "2.5 kg" corretamente');
+assert(p135Html.includes('0.5 kg'), 'Tocha exibiu "0.5 kg" corretamente');
+
+// 3. Validação de Estrutura de Layout do Inventário (sem colisão)
+assert(p135Html.includes('inventory-item-actions'), 'Linha do item possui o container .inventory-item-actions');
+assert(p135Html.includes('inventory-item-info'), 'Linha do item possui o container .inventory-item-info');
+assert(p135Html.includes('🛡️ Equipado'), 'Item equipado exibe o badge "🛡️ Equipado"');
+assert(p135Html.includes('Equipar'), 'Item não-equipado exibe o botão neutro "Equipar"');
+
+// 4. Validação da Tabela de Ataques (com container flex .attack-actions-cell)
+assert(p135Html.includes('attack-actions-cell'), 'Tabela de ataques envolve botões em .attack-actions-cell para prevenir quebra de linha desordenada');
+
+// 5. Validação de Chips de Magia (com flex e min-width: 0 para evitar estouro em nomes longos)
+assert(p135Html.includes('spell-chip-name'), 'Cards de magia contêm a classe .spell-chip-name');
+assert(builtHtmlContent.includes('min-width: 0;') || builtHtmlContent.includes('min-width:0;'), 'CSS inclui min-width: 0 para proteger cards com textos extensos');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
