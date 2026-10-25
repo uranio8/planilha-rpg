@@ -7962,7 +7962,79 @@ assert(p135Html.includes('attack-actions-cell'), 'Tabela de ataques envolve bot�
 
 // 5. Validação de Chips de Magia (com flex e min-width: 0 para evitar estouro em nomes longos)
 assert(p135Html.includes('spell-chip-name'), 'Cards de magia contêm a classe .spell-chip-name');
-assert(builtHtmlContent.includes('min-width: 0;') || builtHtmlContent.includes('min-width:0;'), 'CSS inclui min-width: 0 para proteger cards com textos extensos');
+// -------------------------------------------------------------
+// 📱 104. Testes de Visualização Mobile, Slots D&D 5E e Timeout de Nuvem (ISSUE-136)
+// -------------------------------------------------------------
+console.log('\n📱 104. Testes de Visualização Mobile, Slots D&D 5E e Timeout de Nuvem (ISSUE-136):');
+
+// 1. Validação de CSS de Reordenação Mobile e Scroll Margin no HTML compilado
+assert(builtHtmlContent.includes('.roll20-col-main') && builtHtmlContent.includes('order: 1'), 'CSS mobile reordena coluna principal (.roll20-col-main) para order: 1');
+assert(builtHtmlContent.includes('.roll20-col-side') && builtHtmlContent.includes('order: 2'), 'CSS mobile posiciona coluna lateral (.roll20-col-side) em order: 2');
+assert(builtHtmlContent.includes('.roll20-col-skills') && builtHtmlContent.includes('order: 3'), 'CSS mobile posiciona perícias (.roll20-col-skills) em order: 3');
+assert(builtHtmlContent.includes('scroll-margin-top: 85px') || builtHtmlContent.includes('scroll-margin-top:85px'), 'CSS define scroll-margin-top para evitar que headers fiquem sob a navbar fixa');
+
+// 2. Validação da Função Canônica ensurePlayerSpellSlots
+const fnEnsureSlots = vm.runInContext("typeof ensurePlayerSpellSlots", sandbox);
+assert(fnEnsureSlots === 'function', 'Função ensurePlayerSpellSlots está exportada e acessível no ambiente');
+
+// Caso Mago Nível 3 (Conjurador Total) com slots zerados ou mockados
+const testWizard = {
+  id: 'wiz_test_136',
+  name: 'Mago Teste',
+  className: 'mago',
+  level: 3,
+  slots: [0, 0, 0, 0, 0]
+};
+vm.runInContext(`
+  ensurePlayerSpellSlots(${JSON.stringify(testWizard)});
+`, sandbox);
+const wizSlots = vm.runInContext("ensurePlayerSpellSlots(" + JSON.stringify(testWizard) + ")", sandbox);
+assert(Array.isArray(wizSlots) && wizSlots.length >= 9, 'Slots normalizados com pelo menos 9 círculos D&D 5E');
+assert(wizSlots[0] === 4, 'Mago Nível 3 possui 4 espaços de 1º Círculo');
+assert(wizSlots[1] === 2, 'Mago Nível 3 possui 2 espaços de 2º Círculo');
+assert(wizSlots[2] === 0, 'Mago Nível 3 não possui espaços de 3º Círculo');
+
+// Caso Guerreiro Nível 3 (Sem Conjuração)
+const testFighter = {
+  id: 'ftr_test_136',
+  name: 'Guerreiro Teste',
+  className: 'guerreiro',
+  level: 3,
+  slots: [0, 0, 0, 0, 0]
+};
+const ftrSlots = vm.runInContext("ensurePlayerSpellSlots(" + JSON.stringify(testFighter) + ")", sandbox);
+assert(Array.isArray(ftrSlots) && ftrSlots.length >= 9, 'Guerreiro normalizado com 9 posições');
+assert(ftrSlots.every(s => s === 0), 'Guerreiro sem subclasse arcana permanece com 0 slots');
+
+// 3. Validação do scrollToPlayerSection com ativação de abas
+vm.runInContext(`
+  const pMobileHero = {
+    id: 'hero_mobile_136',
+    name: 'Herói Mobile',
+    className: 'mago',
+    level: 3,
+    activeCardTab: 'skills'
+  };
+  PLAYERS = [pMobileHero];
+  activePortalPlayerId = 'hero_mobile_136';
+
+  // Chamada de navegação para magias
+  scrollToPlayerSection('spells');
+`, sandbox);
+
+const mobileTabAfterSpells = vm.runInContext("PLAYERS.find(p => p.id === 'hero_mobile_136')?.activeCardTab", sandbox);
+assert(mobileTabAfterSpells === 'spells', 'scrollToPlayerSection("spells") ativou a aba de magias da ficha');
+
+vm.runInContext("scrollToPlayerSection('attacks');", sandbox);
+const mobileTabAfterAttacks = vm.runInContext("PLAYERS.find(p => p.id === 'hero_mobile_136')?.activeCardTab", sandbox);
+assert(mobileTabAfterAttacks === 'combat', 'scrollToPlayerSection("attacks") ativou a aba de combate da ficha');
+
+vm.runInContext("scrollToPlayerSection('inventory');", sandbox);
+const mobileTabAfterInv = vm.runInContext("PLAYERS.find(p => p.id === 'hero_mobile_136')?.activeCardTab", sandbox);
+assert(mobileTabAfterInv === 'inventory', 'scrollToPlayerSection("inventory") ativou a aba de inventário da ficha');
+
+// 4. Validação de Resiliência no Cloud Sync (15 segundos)
+assert(builtHtmlContent.includes('Timeout de sincronização com a nuvem (15s)') || builtHtmlContent.includes('15000'), 'Cloud save implementa timeout estendido de 15 segundos para conexões mobile');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

@@ -56,6 +56,9 @@ function renderCombat() {
     let slotsMiniHtml = '';
     if (c.type === 'player' && typeof PLAYERS !== 'undefined') {
       const pObj = PLAYERS.find(p => p.id === c.id || (p.name && c.name && (c.name.startsWith(p.name) || p.name.startsWith(c.name))));
+      if (pObj && typeof ensurePlayerSpellSlots === 'function') {
+        ensurePlayerSpellSlots(pObj);
+      }
       if (pObj && Array.isArray(pObj.slots) && pObj.slots.some(s => s > 0)) {
         const usedArr = Array.isArray(pObj.slotsUsed) ? pObj.slotsUsed : [];
         const pips = pObj.slots.map((max, sIdx) => {

@@ -9943,7 +9943,7 @@
       text-align: center;
     }
 
-    /* Layout Principal de 3 Colunas Roll20 */
+    /* Layout Principal de 3 Colunas Roll20 (ISSUE-136: Mobile Reordered) */
     .roll20-columns-grid {
       display: grid;
       grid-template-columns: 240px 1fr 240px;
@@ -9954,6 +9954,22 @@
       .roll20-columns-grid {
         grid-template-columns: 1fr;
       }
+      .roll20-col-main {
+        order: 1;
+      }
+      .roll20-col-side {
+        order: 2;
+      }
+      .roll20-col-skills {
+        order: 3;
+      }
+    }
+
+    .roll20-hp-card,
+    .roll20-tabs-header,
+    .roll20-spells-tab-header,
+    .roll20-panel {
+      scroll-margin-top: 85px;
     }
 
     /* Coluna Esquerda: Skills & Tools */
@@ -38324,7 +38340,9 @@ function applyCloudDataToLocal(cloudData) {
               multiclass: isLocalLevelHigher ? (localChar.multiclass || remoteP.multiclass) : (remoteP.multiclass || localChar.multiclass),
               hitDice: isLocalLevelHigher ? (localChar.hitDice || remoteP.hitDice) : (remoteP.hitDice || localChar.hitDice),
               hitDiceCurrent: isLocalLevelHigher ? (localChar.hitDiceCurrent !== undefined ? localChar.hitDiceCurrent : remoteP.hitDiceCurrent) : (remoteP.hitDiceCurrent !== undefined ? remoteP.hitDiceCurrent : localChar.hitDiceCurrent),
-              slots: isLocalLevelHigher ? (localChar.slots || remoteP.slots) : (remoteP.slots || localChar.slots),
+              slots: (Array.isArray(localChar.slots) && localChar.slots.some(s => s > 0))
+                ? localChar.slots
+                : ((Array.isArray(remoteP.slots) && remoteP.slots.some(s => s > 0)) ? remoteP.slots : ((typeof ensurePlayerSpellSlots === 'function') ? ensurePlayerSpellSlots(localChar || remoteP) : (localChar.slots || remoteP.slots))),
               slotsUsed: keepLocalSlots ? localChar.slotsUsed : (remoteP.slotsUsed || localChar.slotsUsed || [0, 0, 0, 0, 0, 0, 0, 0, 0]),
               preparedSpells: isLocalNewer
                 ? ((localChar.preparedSpells && localChar.preparedSpells.length > 0) ? localChar.preparedSpells : (remoteP.preparedSpells || []))
@@ -38483,6 +38501,9 @@ function applyCloudDataToLocal(cloudData) {
           if (!p.saveProficiencies) p.saveProficiencies = [];
           if (!p.actionLogs) p.actionLogs = [];
           if (p.playerNotes === undefined) p.playerNotes = '';
+          if (typeof ensurePlayerSpellSlots === 'function') {
+            ensurePlayerSpellSlots(p);
+          }
           return p;
         });
 
@@ -38714,6 +38735,11 @@ function executePlayerCloudSave() {
   const myPlayer = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(p => p.id === activePortalPlayerId) : null;
   if (!myPlayer) return;
 
+  // ISSUE-136: Garante que os slots de magia do herói estejam calculados e persistidos antes de subir para a nuvem
+  if (typeof ensurePlayerSpellSlots === 'function') {
+    ensurePlayerSpellSlots(myPlayer);
+  }
+
   // Carimba o timestamp de atualização e identificador de cliente no próprio herói
   myPlayer.updatedAt = Date.now();
   myPlayer.updatedBy = localClientId;
@@ -38802,9 +38828,9 @@ function executePlayerCloudSave() {
     }
   }
 
-  // Timeout de resiliência de 5 segundos
+  // ISSUE-136: Timeout resiliente de 15 segundos para conexões móveis (3G/4G/5G)
   const safetyTimeout = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('Timeout de sincronização com a nuvem')), 5000);
+    setTimeout(() => reject(new Error('Timeout de sincronização com a nuvem (15s)')), 15000);
   });
 
   Promise.race([rtdbPromise, safetyTimeout])
@@ -38815,11 +38841,17 @@ function executePlayerCloudSave() {
       }
     })
     .catch(err => {
-      console.warn('Erro ao sincronizar ficha do jogador no Realtime DB:', err);
+      console.warn('Erro ao sincronizar ficha do jogador no Firebase:', err);
       if (syncBadge) {
         syncBadge.className = 'portal-sync-badge sync-offline';
         syncBadge.innerText = '🔴 Erro de Sync';
       }
+      // Re-tentativa automática transparente após 4 segundos em caso de perda temporária de pacote no 4G
+      setTimeout(() => {
+        if (isFirebaseConnected && activePortalPlayerId) {
+          executePlayerCloudSave();
+        }
+      }, 4000);
     });
 }
 
@@ -39325,6 +39357,9 @@ function renderCombat() {
     let slotsMiniHtml = '';
     if (c.type === 'player' && typeof PLAYERS !== 'undefined') {
       const pObj = PLAYERS.find(p => p.id === c.id || (p.name && c.name && (c.name.startsWith(p.name) || p.name.startsWith(c.name))));
+      if (pObj && typeof ensurePlayerSpellSlots === 'function') {
+        ensurePlayerSpellSlots(pObj);
+      }
       if (pObj && Array.isArray(pObj.slots) && pObj.slots.some(s => s > 0)) {
         const usedArr = Array.isArray(pObj.slotsUsed) ? pObj.slotsUsed : [];
         const pips = pObj.slots.map((max, sIdx) => {
@@ -41964,6 +41999,7 @@ function setPlayerCardRoll20Tab(playerId, tabName) {
   const p = PLAYERS.find(x => x.id === playerId);
   if (!p) return;
   p.activeRoll20Tab = tabName;
+  p.activeCardTab = tabName;
   renderPlayers();
   saveToLocalStorage();
 }
@@ -42198,9 +42234,13 @@ function renderPlayers() {
     const passPerc = 10 + wisMod + (isWisExpert ? (prof * 2) : (isWisProf ? prof : 0)) + (hasObservant ? 5 : 0);
     const activeTab = p.activeCardTab || 'skills';
 
-    // Normaliza slots e dados
-    p.slots = p.slots || [0, 0, 0, 0, 0];
-    p.slotsUsed = p.slotsUsed || [0, 0, 0, 0, 0];
+    // Normaliza slots e dados (ISSUE-136: Auto-cálculo de slots para conjuradores)
+    if (typeof ensurePlayerSpellSlots === 'function') {
+      ensurePlayerSpellSlots(p);
+    } else {
+      p.slots = p.slots || [0, 0, 0, 0, 0, 0, 0, 0, 0];
+      p.slotsUsed = p.slotsUsed || [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    }
     p.deathSaves = p.deathSaves || { success: 0, fail: 0 };
     p.tempHp = p.tempHp || 0;
     p.gold = p.gold || 0;
@@ -45068,22 +45108,59 @@ function submitConcentrationRoll(type) {
 // 📱 DOCK FLUTUANTE DE AÇÕES RÁPIDAS MOBILE
 // =========================================================
 function scrollToPlayerSection(section) {
-  let target = null;
+  const activeId = activePortalPlayerId || (typeof PLAYERS !== 'undefined' && PLAYERS[0] ? PLAYERS[0].id : null);
+  const p = PLAYERS ? PLAYERS.find(x => x.id === activeId) : null;
+
   if (section === 'hp') {
-    target = document.querySelector('.player-card-hero, .hp-display-box, .player-hp-section, .player-card, .player-stats-grid');
-  } else if (section === 'spells') {
-    target = document.querySelector('.player-spells-section, .slots-grid, #player-prepared-spells-list, .spells-grid');
-  } else if (section === 'attacks') {
-    target = document.querySelector('.player-attacks-section, .player-weapons-grid, .attack-item-row, .attacks-box');
-  } else if (section === 'inventory') {
-    target = document.querySelector('.player-inventory-section, .inventory-container, .inventory-list, .backpack-box');
+    const hpCard = document.querySelector('.roll20-hp-card, .roll20-top-grid, .player-card');
+    if (hpCard) {
+      hpCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    return;
   }
 
-  if (target) {
-    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  } else {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (section === 'spells') {
+    if (activeId && typeof setPlayerCardRoll20Tab === 'function') {
+      setPlayerCardRoll20Tab(activeId, 'spells');
+    }
+    setTimeout(() => {
+      const spellsHeader = document.querySelector('.roll20-spells-tab-header, .spellcasting-hud-bar, .slots-grid');
+      if (spellsHeader) {
+        spellsHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 50);
+    return;
   }
+
+  if (section === 'attacks') {
+    if (activeId && typeof setPlayerCardRoll20Tab === 'function') {
+      setPlayerCardRoll20Tab(activeId, 'combat');
+    }
+    setTimeout(() => {
+      const atkTable = document.querySelector('.roll20-attacks-table, .action-economy-nav');
+      if (atkTable) {
+        atkTable.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 50);
+    return;
+  }
+
+  if (section === 'inventory') {
+    if (activeId && typeof setPlayerCardRoll20Tab === 'function') {
+      setPlayerCardRoll20Tab(activeId, 'inventory');
+    }
+    setTimeout(() => {
+      const invHeader = document.querySelector('.roll20-weight-status-bar, .inventory-item-row');
+      if (invHeader) {
+        invHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 50);
+    return;
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function openQuickD20Modal() {
@@ -50544,6 +50621,39 @@ function calculateMulticlassSpellSlots(player) {
   return finalSlots;
 }
 
+// ============================================================================
+// 🔮 ISSUE-136: CÁLCULO E NORMALIZAÇÃO CANÔNICA DE ESPAÇOS DE MAGIA (SLOTS D&D 5E)
+// Garante que conjuradores tenham sempre seus slots calculados tanto no Mestre quanto no Jogador
+// ============================================================================
+function ensurePlayerSpellSlots(player) {
+  if (!player) return null;
+
+  // Se não possuir slots ou se todos os círculos estiverem zerados, auto-calcula para conjuradores
+  const hasNonZeroSlots = Array.isArray(player.slots) && player.slots.some(s => s > 0);
+  if (!hasNonZeroSlots && typeof calculateMulticlassSpellSlots === 'function') {
+    const calc = calculateMulticlassSpellSlots(player);
+    if (calc && calc.some(s => s > 0)) {
+      player.slots = [...calc];
+      if (!Array.isArray(player.slotsUsed) || player.slotsUsed.length < player.slots.length) {
+        player.slotsUsed = player.slots.map(() => 0);
+      }
+    }
+  }
+
+  // Normalização defensiva para 9 círculos D&D 5E
+  if (!Array.isArray(player.slots)) {
+    player.slots = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+  }
+  while (player.slots.length < 9) player.slots.push(0);
+
+  if (!Array.isArray(player.slotsUsed)) {
+    player.slotsUsed = player.slots.map(() => 0);
+  }
+  while (player.slotsUsed.length < player.slots.length) player.slotsUsed.push(0);
+
+  return player.slots;
+}
+
 let levelUpWizardState = {
   playerId: null,
   targetPlayerId: null,
@@ -53012,6 +53122,7 @@ if (typeof module !== 'undefined' && module.exports) {
     deletePlayerDirect,
     openItemQuickView,
     closeItemQuickView,
+    ensurePlayerSpellSlots,
     savePlayerSheet,
     trackDeletedPlayerId,
     getDeletedPlayerIds,
@@ -53269,6 +53380,9 @@ if (typeof window !== 'undefined') {
   window.deletePlayerDirect = deletePlayerDirect;
   window.openItemQuickView = openItemQuickView;
   window.closeItemQuickView = closeItemQuickView;
+
+  // ISSUE-136: Espaços de Magia Universal
+  window.ensurePlayerSpellSlots = ensurePlayerSpellSlots;
 }
 
 

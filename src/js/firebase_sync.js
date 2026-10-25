@@ -580,7 +580,9 @@ function applyCloudDataToLocal(cloudData) {
               multiclass: isLocalLevelHigher ? (localChar.multiclass || remoteP.multiclass) : (remoteP.multiclass || localChar.multiclass),
               hitDice: isLocalLevelHigher ? (localChar.hitDice || remoteP.hitDice) : (remoteP.hitDice || localChar.hitDice),
               hitDiceCurrent: isLocalLevelHigher ? (localChar.hitDiceCurrent !== undefined ? localChar.hitDiceCurrent : remoteP.hitDiceCurrent) : (remoteP.hitDiceCurrent !== undefined ? remoteP.hitDiceCurrent : localChar.hitDiceCurrent),
-              slots: isLocalLevelHigher ? (localChar.slots || remoteP.slots) : (remoteP.slots || localChar.slots),
+              slots: (Array.isArray(localChar.slots) && localChar.slots.some(s => s > 0))
+                ? localChar.slots
+                : ((Array.isArray(remoteP.slots) && remoteP.slots.some(s => s > 0)) ? remoteP.slots : ((typeof ensurePlayerSpellSlots === 'function') ? ensurePlayerSpellSlots(localChar || remoteP) : (localChar.slots || remoteP.slots))),
               slotsUsed: keepLocalSlots ? localChar.slotsUsed : (remoteP.slotsUsed || localChar.slotsUsed || [0, 0, 0, 0, 0, 0, 0, 0, 0]),
               preparedSpells: isLocalNewer
                 ? ((localChar.preparedSpells && localChar.preparedSpells.length > 0) ? localChar.preparedSpells : (remoteP.preparedSpells || []))
@@ -739,6 +741,9 @@ function applyCloudDataToLocal(cloudData) {
           if (!p.saveProficiencies) p.saveProficiencies = [];
           if (!p.actionLogs) p.actionLogs = [];
           if (p.playerNotes === undefined) p.playerNotes = '';
+          if (typeof ensurePlayerSpellSlots === 'function') {
+            ensurePlayerSpellSlots(p);
+          }
           return p;
         });
 
@@ -970,6 +975,11 @@ function executePlayerCloudSave() {
   const myPlayer = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(p => p.id === activePortalPlayerId) : null;
   if (!myPlayer) return;
 
+  // ISSUE-136: Garante que os slots de magia do herói estejam calculados e persistidos antes de subir para a nuvem
+  if (typeof ensurePlayerSpellSlots === 'function') {
+    ensurePlayerSpellSlots(myPlayer);
+  }
+
   // Carimba o timestamp de atualização e identificador de cliente no próprio herói
   myPlayer.updatedAt = Date.now();
   myPlayer.updatedBy = localClientId;
@@ -1058,9 +1068,9 @@ function executePlayerCloudSave() {
     }
   }
 
-  // Timeout de resiliência de 5 segundos
+  // ISSUE-136: Timeout resiliente de 15 segundos para conexões móveis (3G/4G/5G)
   const safetyTimeout = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('Timeout de sincronização com a nuvem')), 5000);
+    setTimeout(() => reject(new Error('Timeout de sincronização com a nuvem (15s)')), 15000);
   });
 
   Promise.race([rtdbPromise, safetyTimeout])
@@ -1071,11 +1081,17 @@ function executePlayerCloudSave() {
       }
     })
     .catch(err => {
-      console.warn('Erro ao sincronizar ficha do jogador no Realtime DB:', err);
+      console.warn('Erro ao sincronizar ficha do jogador no Firebase:', err);
       if (syncBadge) {
         syncBadge.className = 'portal-sync-badge sync-offline';
         syncBadge.innerText = '🔴 Erro de Sync';
       }
+      // Re-tentativa automática transparente após 4 segundos em caso de perda temporária de pacote no 4G
+      setTimeout(() => {
+        if (isFirebaseConnected && activePortalPlayerId) {
+          executePlayerCloudSave();
+        }
+      }, 4000);
     });
 }
 

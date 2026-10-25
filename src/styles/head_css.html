@@ -9940,7 +9940,7 @@
       text-align: center;
     }
 
-    /* Layout Principal de 3 Colunas Roll20 */
+    /* Layout Principal de 3 Colunas Roll20 (ISSUE-136: Mobile Reordered) */
     .roll20-columns-grid {
       display: grid;
       grid-template-columns: 240px 1fr 240px;
@@ -9951,6 +9951,22 @@
       .roll20-columns-grid {
         grid-template-columns: 1fr;
       }
+      .roll20-col-main {
+        order: 1;
+      }
+      .roll20-col-side {
+        order: 2;
+      }
+      .roll20-col-skills {
+        order: 3;
+      }
+    }
+
+    .roll20-hp-card,
+    .roll20-tabs-header,
+    .roll20-spells-tab-header,
+    .roll20-panel {
+      scroll-margin-top: 85px;
     }
 
     /* Coluna Esquerda: Skills & Tools */

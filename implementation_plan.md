@@ -1,125 +1,87 @@
-# Plano de Implementação - Correção da Sobreposição de Ícones no Inventário, Duplicação de Unidades ('kgkg') e Blindagem de Layout Flexível (ISSUE-135)
+# Plano de Implementação - Correção da Visualização Mobile, Sincronização de Espaços de Magia (Slots) e Resiliência de Nuvem (ISSUE-136)
 
 ## 📌 Contexto e Diagnóstico
 
-O usuário enviou uma captura de tela evidenciando um bug visual no inventário da ficha do personagem:
-1. **Sobreposição de Ícones e Botões no Inventário**:
-   - Na linha do item (ex: *Espada Longa (Longsword)*), o botão de status de equipamento (`🛡️ Equipado`), os botões de quantidade (`−`, `1x`, `+`), o botão de baú (`📦 Baú`), o balão (`💬`) e a lixeira (`🗑️`) aparecem amassados e colidindo uns por cima dos outros.
-   - **Causa Raiz**:
-     Em `src/styles/head_css.html` (linhas 10352-10362), a classe `.roll20-item-equipped-toggle` possuía regras legadas:
-     ```css
-     .roll20-item-equipped-toggle {
-       width: 14px;
-       height: 14px;
-       border-radius: 50%;
-       ...
-     }
-     ```
-     Como o botão em `src/js/players.js` combinava as classes:
-     `class="btn-item-equip-badge roll20-item-equipped-toggle equipped active"`
-     o elemento foi forçado a uma largura fixa de apenas **14px**. O texto `"🛡️ Equipado"` (que necessita de ~80px) extravasou a caixa, e os elementos seguintes no flex container (`−`, `1x`, `+`) foram desenhados a partir da posição de 14px, **sobrepondo diretamente o texto e o ícone do botão de equipar**.
+O usuário enviou duas capturas de tela demonstrando dois problemas críticos no portal mobile de jogadores:
+1. **Visualização nos Dispositivos Móveis Comprometida (Espaço Vazio & Rolagem Desgovernada)**:
+   - Na captura enviada, a tela do celular exibe um enorme espaço vazio escuro no topo, saltando direto para *"CONDIÇÕES & STATUS"* e *"SENTIDOS PASSIVOS"*, enquanto a barra de vida, dados de combate e atributos sumiram para fora da área visível.
+   - **Causa Raiz 1 (Dock Mobile `scrollToPlayerSection`)**:
+     A dock inferior fixa possui os botões `Vida`, `Magias`, `Ataques`, `d20`, `Mochila`.
+     Ao clicar em `Vida`, a função `scrollToPlayerSection('hp')` não encontrava as classes novas e caía no fallback `.player-card` (um elemento de mais de 3.000 pixels de altura), invocando `.scrollIntoView({ block: 'center' })`. O navegador então centralizava o elemento inteiro, rolando a página para a **metade do card** (exatamente onde começam as Condições & Status), escondendo toda a vida e o cabeçalho no topo.
+     Além disso, clicar em `Magias`, `Ataques` ou `Mochila` não alternava a aba ativa do card (`activeRoll20Tab`), fazendo com que o scroll falhasse porque a seção desejada estava com `display: none`.
+   - **Causa Raiz 2 (Ordem das 3 Colunas no Mobile)**:
+     Em telas estreitas (≤ 1079px), `.roll20-columns-grid` empilhava as colunas na ordem original do DOM:
+     *Coluna 1 (18 Perícias - 480px)* ➔ *Coluna 2 (Abas Centrais: Ações, Magias, Inventário)* ➔ *Coluna 3 (Condições e Defesas)*.
+     O jogador era obrigado a rolar mais de 500px de perícias antes de visualizar suas magias e ataques.
 
-2. **Unidade Duplicada de Peso (`1,5 kgkg`)**:
-   - Na mesma captura de tela, o texto exibe `1,5 kgkg`.
-   - **Causa Raiz**: Em `src/js/players.js`, a linha de renderização continha:
-     `${it.weight ? ' • ' + it.weight + 'kg' : ''}`.
-     Quando `it.weight` vindo do compêndio de equipamentos já possui a unidade (ex.: `"1.5 kg"`), a concatenação resultava na unidade duplicada `"1,5 kgkg"`.
+2. **Espaços de Magia (Spell Slots) Desincronizados entre Mestre e Jogadores**:
+   - Conforme reportado: *"há jogadores que conjuraram magias e pro mestre mostra que não tem espaços de magia, mas para os jogadores tem"*.
+   - **Causa Raiz A (Slots não auto-calculados de forma universal)**:
+     A função `calculateMulticlassSpellSlots(p)` só era disparada no level up ou no clique de lançar magia. Para classes conjuradoras (Mago, Clérigo, Druida, Feiticeiro, Bruxo, Bardo, Paladino, Guardião), se `p.slots` iniciasse zerado `[0, 0, 0, 0, 0]`, o mestre nunca via nenhum slot (0/0) na lista de combate ou na ficha, enquanto o jogador calculava os slots localmente ao conjurar.
+   - **Causa Raiz B (Sincronização de Slots e `slotsUsed` no Merge)**:
+     No merge de `applyCloudDataToLocal()`, quando o Mestre recebia o herói ou quando o jogador recebia um snapshot da nuvem com slots zerados, os slots podiam ser sobrescritos.
+   - **Causa Raiz C (`🔴 Erro de Sync` no Mobile por Timeout Baixo de 5s)**:
+     Na primeira captura de tela, o badge superior exibe `🔴 Erro de Sync`. Em `executePlayerCloudSave()`, havia um `safetyTimeout` rígido de apenas 5 segundos (5000ms). Em redes móveis 3G/4G, a latência de SSL e handshake do Firebase frequentemente ultrapassa 5 segundos, fazendo o `Promise.race` abortar com erro e impedir que o gasto de magias chegue à mesa do Mestre.
 
 ---
 
-## 🔍 Varredura de Outras Funcionalidades com Risco de Sobreposição / Colisão
+## 🎯 Proposta de Solução Detalhada
 
-Realizamos uma análise completa no layout das fichas e módulos adjacentes e identificamos 4 pontos adicionais com vulnerabilidade semelhante de sobreposição ou esmagamento:
+### 1. 📱 Correção da Visualização Mobile e Ergonomia da Dock
+- **Refatoração Completa de `scrollToPlayerSection(section)`**:
+  - Detectar o herói ativo (`activePortalPlayerId` ou primeiro jogador).
+  - Ao clicar em `Vida` (`hp`): rolar suavemente até `.roll20-hp-card` com alinhamento `block: 'start'` e compensação do banner fixo.
+  - Ao clicar em `Magias` (`spells`): disparar `setPlayerCardRoll20Tab(activeId, 'spells')` para exibir a aba de magias e rolar suavemente até `.roll20-spells-tab-header`.
+  - Ao clicar em `Ataques` (`attacks`): disparar `setPlayerCardRoll20Tab(activeId, 'combat')` e rolar até a tabela de ataques.
+  - Ao clicar em `Mochila` (`inventory`): disparar `setPlayerCardRoll20Tab(activeId, 'inventory')` e rolar até o inventário.
+- **Reorganização de Ordem no Mobile (`src/styles/head_css.html`)**:
+  - Em telas mobile/tablet (`@media (max-width: 1079px)`):
+    - `.roll20-col-main { order: 1; }`: Abas centrais (Ações, Magias, Inventário) no topo logo abaixo do HP e Atributos.
+    - `.roll20-col-side { order: 2; }`: Condições, Sentidos e Defesas.
+    - `.roll20-col-skills { order: 3; }`: Perícias e Proficiências no final para consulta.
+  - Adicionar `scroll-margin-top: 80px;` em `.roll20-hp-card`, `.roll20-tabs-header` e `.roll20-panel` para que nada fique oculto sob o banner sticky do portal.
 
-1. **Ataques & Conjuração na Ficha (`table.roll20-attacks-table td`)**:
-   - Os botões de ataque (`💥`) e balão explicativo (`💬`) são renderizados na célula com `display: inline` sem flex container e sem gap explícito. Em colunas estreitas ou telas menores, eles sofrem quebra de linha desordenada ou colidem com o texto do alcance.
-   - **Solução**: Envolver as ações da tabela de ataques em um container `.attack-actions-cell` com `display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;`.
+### 2. 🔮 Sincronização Universal de Espaços de Magia (Slots D&D 5E)
+- **Cálculo Reativo Universal de Espaços de Magia (`ensurePlayerSpellSlots(p)`)**:
+  - Em `src/js/players.js`, criar a rotina canônica `ensurePlayerSpellSlots(p)` chamada em `renderPlayers()`, `loadFromLocalStorage()` e `applyCloudDataToLocal()`.
+  - Se o herói tiver classe conjuradora e `(!p.slots || p.slots.every(s => s === 0))`, calcula automaticamente os espaços de magia oficiais D&D 5E via `calculateMulticlassSpellSlots(p)`.
+  - Garante que `p.slotsUsed` seja sempre um array de 9 posições compatível com `p.slots`.
+- **Exibição Confiável no Combate e Ficha do Mestre (`combat.js` e `players.js`)**:
+  - No card de combatentes de `combat.js`, se o combatente for do tipo aluno (`c.type === 'player'`), invoca `ensurePlayerSpellSlots(pObj)` para garantir que a mini-barra `combatant-slots-mini` (ex: `1º: 4/4 | 2º: 3/3`) seja sempre renderizada para o Mestre.
 
-2. **Chips e Cards de Magia (`player-spell-card-tactile`)**:
-   - No cabeçalho da magia, o título não possuía `min-width: 0; flex: 1;`. Magias com nomes longos (como *"Proteção contra o Bem e o Mal"* ou *"Restauração Menor"*) empurravam o balão `💬`, a tag do nível da magia e o botão de conjurar para fora do card ou provocavam quebra de linha indesejada.
-   - **Solução**: Adicionar `min-width: 0; flex: 1;` com truncamento elegante (`overflow: hidden; text-overflow: ellipsis; white-space: nowrap;`) no título da magia e atribuir `flex-shrink: 0;` a todos os botões de ação adjacentes.
-
-3. **Controles de Quantidade e Ações do Inventário**:
-   - A coluna de ações do item no inventário não tinha `flex-shrink: 0;` explícito, permitindo que os botões `−`, `+`, `📦` e `🗑️` fossem espremidos quando o nome do item ou suas propriedades fossem muito extensos.
-   - **Solução**: Garantir que a área de ações tenha `flex-shrink: 0; display: inline-flex; gap: 6px; align-items: center;` e a área do nome do item tenha `min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis;`.
-
-4. **Barra de Capacidade de Carga (`roll20-encumbrance-bar`)**:
-   - Em telas estreitas, o texto da carga e o badge de porcentagem (`2% ✅`) podiam colidir com a barra de progresso.
-   - **Solução**: Ajustar o container para `display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;` garantindo respiro em qualquer largura de tela.
+### 3. ☁️ Resiliência da Conexão Nuvem e Eliminação de `🔴 Erro de Sync`
+- **Timeout Resiliente e Tratamento de Rede Móvel (`firebase_sync.js`)**:
+  - Aumentar o `safetyTimeout` de 5s para **15 segundos**, compatível com variações de conexões móveis.
+  - No `executePlayerCloudSave()`, unificar o salvamento com fallback transparente: se Realtime DB ou Firestore gravarem com sucesso, marca `🟢 Sincronizado`.
+  - Preservar `slots` e `slotsUsed` no merge de `applyCloudDataToLocal()`, garantindo que atualizações do aluno sobre consumo de magia sejam aceitas pelo Mestre e transmitidas ao combate.
 
 ---
 
-## 🎯 Proposta de Modificações Detalhada
+## 🏗️ Módulos e Arquivos Afetados
 
-### 1. `src/styles/head_css.html`
-- **Isolar e Corrigir o Botão de Equipar**:
-  ```css
-  .btn-item-equip-badge {
-    width: auto !important;
-    min-width: fit-content;
-    height: auto !important;
-    min-height: 24px;
-    padding: 2px 8px !important;
-    border-radius: 4px !important;
-    font-size: 11px !important;
-    font-weight: 700 !important;
-    display: inline-flex !important;
-    align-items: center;
-    gap: 4px;
-    flex-shrink: 0 !important;
-    white-space: nowrap !important;
-  }
-  ```
-- **Desacoplar `.roll20-item-equipped-toggle`**:
-  Garantir que regras legadas de `width: 14px; height: 14px;` não sobrescrevam `.btn-item-equip-badge`.
-- **Blindagem de Layout Flexível em Itens e Magias**:
-  - Adicionar `.inventory-item-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; }`.
-  - Adicionar `.inventory-item-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; overflow: hidden; }`.
-  - Adicionar `.inventory-item-actions { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }`.
-  - Adicionar `.attack-actions-cell { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }`.
-
-### 2. `src/js/players.js`
-- **Sanitização de Peso**:
-  - Utilizar formatação de peso limpa:
-    ```javascript
-    const cleanWeight = String(it.weight || '').replace(/\s*kg/gi, '').trim();
-    const weightDisplay = cleanWeight ? ` • ${cleanWeight} kg` : '';
-    ```
-    Elimina definitivamente a duplicação `1,5 kgkg`.
-- **Estruturação Robusta do HTML do Inventário**:
-  - Atualizar o botão de equipar para usar estritamente `.btn-item-equip-badge` e as classes de estado `.equipped` e `.unequipped`.
-  - Garantir que o grupo de botões `−`, `1x`, `+` fique agrupado em um container `.item-qty-control` sem invadir a área do botão de equipar.
-- **Tabela de Ataques e Magias**:
-  - Envolver os botões `💥` e `💬` em `.attack-actions-cell`.
-  - Adicionar classes e proteções de `flex-shrink: 0` nos botões de magia.
+1. **`src/styles/head_css.html`**:
+   - Reordenação das colunas em `@media (max-width: 1079px)` (`.roll20-col-main` order 1).
+   - Ajustes de `scroll-margin-top` para rolagem com banner sticky.
+2. **`src/js/players.js`**:
+   - Criação de `ensurePlayerSpellSlots(p)` e auto-cálculo de slots para conjuradores em `renderPlayers()`.
+   - Refatoração de `scrollToPlayerSection(section)` para alternar abas (`setPlayerCardRoll20Tab`) e rolar com `block: 'start'`.
+3. **`src/js/combat.js`**:
+   - Garantir resolução de slots de magia no mini-painel de combatentes da fila de iniciativa.
+4. **`src/js/firebase_sync.js`**:
+   - Aumento do timeout para 15s e resiliência de sync no Realtime DB e Firestore.
+   - Blindagem do merge de `slots` e `slotsUsed` no Mestre e Jogadores.
+5. **`test_runner.js`**:
+   - Adição da **Bateria 104** validando auto-cálculo de slots para conjuradores, persistência de `slotsUsed`, navegação por abas da dock mobile e reordenação responsiva.
+6. **`issues/README.md`**:
+   - Registro da **ISSUE-136**.
 
 ---
 
 ## 🧪 Estratégia de Verificação
 
 1. **Compilação**: `node builder.js`.
-2. **Nova Bateria de Testes Automatizados (Bateria 103 em `test_runner.js`)**:
-   - Validação da ausência da unidade duplicada `kgkg` em itens com peso formatado.
-   - Verificação de que `.btn-item-equip-badge` possui `width: auto` / `min-width` adequado e não herda `14px`.
-   - Verificação de estrutura de layout flexível sem sobreposição nas linhas de inventário, ataques e magias.
-   - Teste de regressão para garantir que todas as 102 baterias anteriores continuem 100% aprovadas.
-3. **Registro**: Registrar a **ISSUE-135** em `issues/README.md`.
-
----
-
-## ✅ Status de Execução e Checklist de Entrega
-
-- [x] **Diagnóstico da Causa Raiz**: Identificado que `.roll20-item-equipped-toggle` impunha `width: 14px; height: 14px;`, forçando o botão de texto a 14px e fazendo os botões vizinhos colidirem por cima do texto `🛡️ Equipado`.
-- [x] **Isolamento de Estilos no CSS (`head_css.html`)**:
-  - [x] `.roll20-item-equipped-toggle` desacoplado com seletor `:not(.btn-item-equip-badge)`.
-  - [x] `.btn-item-equip-badge` blindado com `width: auto !important`, `min-width: fit-content` e `flex-shrink: 0 !important`.
-  - [x] `.attack-actions-cell` e `.inventory-item-actions` criadas com `display: inline-flex` e `flex-shrink: 0`.
-  - [x] `.spell-chip-name` atualizado com `min-width: 0; flex: 1; text-overflow: ellipsis;` para evitar empurrão de botões em títulos longos.
-  - [x] `.roll20-weight-status-bar` com `flex-wrap: wrap; gap: 6px;`.
-- [x] **Eliminação de "kgkg" e Layout no JS (`players.js`)**:
-  - [x] Sanitização de peso `cleanWeight` removendo `kg` residual antes da formatação.
-  - [x] Criação de `.inventory-item-info` e agrupador visual para os botões de quantidade (`−`, `x`, `+`).
-  - [x] Ações da tabela de ataques envolvidas em `.attack-actions-cell`.
-- [x] **Compilação**: `node builder.js` executado com sucesso (HTML standalone gerado).
-- [x] **Bateria de Testes Automatizados**: Bateria 103 adicionada a `test_runner.js` e aprovada com **1822/1822 testes passando (100% de sucesso)**.
-- [x] **Documentação**: ISSUE-135 documentada no Quadro Geral em `issues/README.md`.
+2. **Suíte Automatizada**: `node test_runner.js` (todas as 104 baterias aprovadas com 100% de sucesso).
+3. **Simulação de Dispositivos Móveis**:
+   - Validação da alternância de abas pela dock mobile.
+   - Verificação de cálculo de slots para Mago Nv 5 (Arkhalis: 4 de 1º, 3 de 2º, 2 de 3º) no Mestre e Jogador.
+   - Verificação da sincronização de gastos de slots sem erro de sync.

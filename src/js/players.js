@@ -1283,6 +1283,7 @@ function setPlayerCardRoll20Tab(playerId, tabName) {
   const p = PLAYERS.find(x => x.id === playerId);
   if (!p) return;
   p.activeRoll20Tab = tabName;
+  p.activeCardTab = tabName;
   renderPlayers();
   saveToLocalStorage();
 }
@@ -1517,9 +1518,13 @@ function renderPlayers() {
     const passPerc = 10 + wisMod + (isWisExpert ? (prof * 2) : (isWisProf ? prof : 0)) + (hasObservant ? 5 : 0);
     const activeTab = p.activeCardTab || 'skills';
 
-    // Normaliza slots e dados
-    p.slots = p.slots || [0, 0, 0, 0, 0];
-    p.slotsUsed = p.slotsUsed || [0, 0, 0, 0, 0];
+    // Normaliza slots e dados (ISSUE-136: Auto-cálculo de slots para conjuradores)
+    if (typeof ensurePlayerSpellSlots === 'function') {
+      ensurePlayerSpellSlots(p);
+    } else {
+      p.slots = p.slots || [0, 0, 0, 0, 0, 0, 0, 0, 0];
+      p.slotsUsed = p.slotsUsed || [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    }
     p.deathSaves = p.deathSaves || { success: 0, fail: 0 };
     p.tempHp = p.tempHp || 0;
     p.gold = p.gold || 0;
@@ -4387,22 +4392,59 @@ function submitConcentrationRoll(type) {
 // 📱 DOCK FLUTUANTE DE AÇÕES RÁPIDAS MOBILE
 // =========================================================
 function scrollToPlayerSection(section) {
-  let target = null;
+  const activeId = activePortalPlayerId || (typeof PLAYERS !== 'undefined' && PLAYERS[0] ? PLAYERS[0].id : null);
+  const p = PLAYERS ? PLAYERS.find(x => x.id === activeId) : null;
+
   if (section === 'hp') {
-    target = document.querySelector('.player-card-hero, .hp-display-box, .player-hp-section, .player-card, .player-stats-grid');
-  } else if (section === 'spells') {
-    target = document.querySelector('.player-spells-section, .slots-grid, #player-prepared-spells-list, .spells-grid');
-  } else if (section === 'attacks') {
-    target = document.querySelector('.player-attacks-section, .player-weapons-grid, .attack-item-row, .attacks-box');
-  } else if (section === 'inventory') {
-    target = document.querySelector('.player-inventory-section, .inventory-container, .inventory-list, .backpack-box');
+    const hpCard = document.querySelector('.roll20-hp-card, .roll20-top-grid, .player-card');
+    if (hpCard) {
+      hpCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    return;
   }
 
-  if (target) {
-    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  } else {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (section === 'spells') {
+    if (activeId && typeof setPlayerCardRoll20Tab === 'function') {
+      setPlayerCardRoll20Tab(activeId, 'spells');
+    }
+    setTimeout(() => {
+      const spellsHeader = document.querySelector('.roll20-spells-tab-header, .spellcasting-hud-bar, .slots-grid');
+      if (spellsHeader) {
+        spellsHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 50);
+    return;
   }
+
+  if (section === 'attacks') {
+    if (activeId && typeof setPlayerCardRoll20Tab === 'function') {
+      setPlayerCardRoll20Tab(activeId, 'combat');
+    }
+    setTimeout(() => {
+      const atkTable = document.querySelector('.roll20-attacks-table, .action-economy-nav');
+      if (atkTable) {
+        atkTable.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 50);
+    return;
+  }
+
+  if (section === 'inventory') {
+    if (activeId && typeof setPlayerCardRoll20Tab === 'function') {
+      setPlayerCardRoll20Tab(activeId, 'inventory');
+    }
+    setTimeout(() => {
+      const invHeader = document.querySelector('.roll20-weight-status-bar, .inventory-item-row');
+      if (invHeader) {
+        invHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 50);
+    return;
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function openQuickD20Modal() {
@@ -9863,6 +9905,39 @@ function calculateMulticlassSpellSlots(player) {
   return finalSlots;
 }
 
+// ============================================================================
+// 🔮 ISSUE-136: CÁLCULO E NORMALIZAÇÃO CANÔNICA DE ESPAÇOS DE MAGIA (SLOTS D&D 5E)
+// Garante que conjuradores tenham sempre seus slots calculados tanto no Mestre quanto no Jogador
+// ============================================================================
+function ensurePlayerSpellSlots(player) {
+  if (!player) return null;
+
+  // Se não possuir slots ou se todos os círculos estiverem zerados, auto-calcula para conjuradores
+  const hasNonZeroSlots = Array.isArray(player.slots) && player.slots.some(s => s > 0);
+  if (!hasNonZeroSlots && typeof calculateMulticlassSpellSlots === 'function') {
+    const calc = calculateMulticlassSpellSlots(player);
+    if (calc && calc.some(s => s > 0)) {
+      player.slots = [...calc];
+      if (!Array.isArray(player.slotsUsed) || player.slotsUsed.length < player.slots.length) {
+        player.slotsUsed = player.slots.map(() => 0);
+      }
+    }
+  }
+
+  // Normalização defensiva para 9 círculos D&D 5E
+  if (!Array.isArray(player.slots)) {
+    player.slots = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+  }
+  while (player.slots.length < 9) player.slots.push(0);
+
+  if (!Array.isArray(player.slotsUsed)) {
+    player.slotsUsed = player.slots.map(() => 0);
+  }
+  while (player.slotsUsed.length < player.slots.length) player.slotsUsed.push(0);
+
+  return player.slots;
+}
+
 let levelUpWizardState = {
   playerId: null,
   targetPlayerId: null,
@@ -12331,6 +12406,7 @@ if (typeof module !== 'undefined' && module.exports) {
     deletePlayerDirect,
     openItemQuickView,
     closeItemQuickView,
+    ensurePlayerSpellSlots,
     savePlayerSheet,
     trackDeletedPlayerId,
     getDeletedPlayerIds,
@@ -12588,6 +12664,9 @@ if (typeof window !== 'undefined') {
   window.deletePlayerDirect = deletePlayerDirect;
   window.openItemQuickView = openItemQuickView;
   window.closeItemQuickView = closeItemQuickView;
+
+  // ISSUE-136: Espaços de Magia Universal
+  window.ensurePlayerSpellSlots = ensurePlayerSpellSlots;
 }
 
 
