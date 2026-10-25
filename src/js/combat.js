@@ -53,6 +53,30 @@ function renderCombat() {
       return `<span class="cond-tag" onclick="removeCond('${c.id}', '${condId}')" title="${found ? found.desc : ''}">${found ? found.name : condId} ✕</span>`;
     }).join('');
 
+    let slotsMiniHtml = '';
+    if (c.type === 'player' && typeof PLAYERS !== 'undefined') {
+      const pObj = PLAYERS.find(p => p.id === c.id || (p.name && c.name && (c.name.startsWith(p.name) || p.name.startsWith(c.name))));
+      if (pObj && Array.isArray(pObj.slots) && pObj.slots.some(s => s > 0)) {
+        const usedArr = Array.isArray(pObj.slotsUsed) ? pObj.slotsUsed : [];
+        const pips = pObj.slots.map((max, sIdx) => {
+          if (!max || max <= 0) return '';
+          const used = usedArr[sIdx] || 0;
+          const left = Math.max(0, max - used);
+          const isDepleted = left === 0;
+          return `<span class="slot-mini-pip ${isDepleted ? 'depleted' : ''}" title="Círculo ${sIdx + 1}: ${left} de ${max} slots restantes">${sIdx + 1}º: <b>${left}/${max}</b></span>`;
+        }).filter(Boolean).join('');
+
+        if (pips) {
+          slotsMiniHtml = `
+            <div class="combatant-slots-mini">
+              <span class="slots-label">🔮 Magias:</span>
+              <div class="slots-pips-group">${pips}</div>
+            </div>
+          `;
+        }
+      }
+    }
+
     return `
       <div class="combatant-item ${isActive ? 'glow' : ''} ${isOnDeck ? 'combatant-on-deck' : ''} ${isDying ? 'dying' : (isBloodied ? 'bloodied' : '')} ${isCritical ? 'hp-critical' : ''}">
         <div class="combatant-header">
@@ -63,7 +87,7 @@ function renderCombat() {
             ${c.type === 'player' ? '<span class="badge badge-cls">Aluno</span>' : '<span class="badge badge-cr">Monstro</span>'}
             ${isDying ? '<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border-color: #ef4444; font-size: 10px;">💀 0 PV</span>' : (isBloodied ? '<span class="badge" style="background: rgba(234, 179, 8, 0.2); color: #eab308; border-color: #eab308; font-size: 10px;">🩸 Sangrando</span>' : '')}
           </div>
-          <div style="display: flex; gap: 4px; align-items: center;">
+          <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
             <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px;" onclick="openCombatQuickConditions(event, '${c.id}')" title="Condições Rápidas (Caído, Cego, etc.)">⚡ Status</button>
             <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px;" onclick="editCombatantInit('${c.id}')" title="Editar Iniciativa">🎲</button>
             <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px;" onclick="openCondModal('${c.id}')" title="Adicionar Condições / Status">🏷️</button>
@@ -71,21 +95,25 @@ function renderCombat() {
           </div>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-          <span>CA: <b style="color: #fff;">${c.ac}</b></span>
-          <div style="display: flex; align-items: center; gap: 6px;">
+        <div class="combatant-stats-row">
+          <div class="combatant-stats-meta">
+            <span>CA: <b style="color: #fff;">${c.ac}</b></span>
+            <span>•</span>
             <span class="combatant-hp-inline" onclick="enableInlineHpEdit('${c.id}', event)" title="Clique para editar PV diretamente">
               PV: <b style="color: ${hpColor};" id="hp-val-${c.id}">${c.hp}</b> / ${c.maxHp} <span style="font-size: 10px; opacity: 0.7;">✏️</span>
             </span>
-            <div style="display: flex; gap: 2px; align-items: center;">
-              <button class="btn-hp-adj minus" style="width: 20px; height: 20px; font-size: 10px; padding: 0;" onclick="quickAdjustCombatantHp('${c.id}', -5)" title="Subtrair 5 PV">-5</button>
-              <button class="btn-hp-adj minus" style="width: 20px; height: 20px; font-size: 10px; padding: 0;" onclick="quickAdjustCombatantHp('${c.id}', -1)" title="Subtrair 1 PV">-1</button>
-              <button class="btn-hp-adj plus" style="width: 20px; height: 20px; font-size: 10px; padding: 0;" onclick="quickAdjustCombatantHp('${c.id}', 1)" title="Adicionar 1 PV">+1</button>
-              <button class="btn-hp-adj plus" style="width: 20px; height: 20px; font-size: 10px; padding: 0;" onclick="quickAdjustCombatantHp('${c.id}', 5)" title="Adicionar 5 PV">+5</button>
-              <button class="btn-secondary" style="padding: 1px 5px; font-size: 9.5px; font-weight: 800; color: #facc15; border-color: rgba(245,158,11,0.4); line-height: 1.2; margin-left: 2px;" onclick="promptCombatantDamageHeal('${c.id}')" title="Digitar valor exato de Dano ou Cura">⚡ Dano/Cura</button>
-            </div>
+          </div>
+
+          <div class="combatant-actions-pill">
+            <button class="btn-hp-adj minus" style="width: 22px; height: 22px; font-size: 10px; padding: 0;" onclick="quickAdjustCombatantHp('${c.id}', -5)" title="Subtrair 5 PV">-5</button>
+            <button class="btn-hp-adj minus" style="width: 22px; height: 22px; font-size: 10px; padding: 0;" onclick="quickAdjustCombatantHp('${c.id}', -1)" title="Subtrair 1 PV">-1</button>
+            <button class="btn-hp-adj plus" style="width: 22px; height: 22px; font-size: 10px; padding: 0;" onclick="quickAdjustCombatantHp('${c.id}', 1)" title="Adicionar 1 PV">+1</button>
+            <button class="btn-hp-adj plus" style="width: 22px; height: 22px; font-size: 10px; padding: 0;" onclick="quickAdjustCombatantHp('${c.id}', 5)" title="Adicionar 5 PV">+5</button>
+            <button class="btn-dmg-heal-trigger" onclick="promptCombatantDamageHeal('${c.id}')" title="Digitar valor de Dano ou Cura">⚡ Dano/Cura</button>
           </div>
         </div>
+
+        ${slotsMiniHtml}
 
         <div class="hp-bar-bg" style="margin-top: 4px;">
           <div class="hp-bar-fill" style="width: ${hpPct}%; background-color: ${hpColor};"></div>
@@ -953,6 +981,34 @@ function promptCombatantDamageHeal(id) {
   const c = state.combatants.find(x => x.id === id);
   if (!c) return;
 
+  const modal = document.getElementById('modal-combat-damage-heal');
+  if (modal) {
+    const elId = document.getElementById('cdh-combatant-id');
+    const elName = document.getElementById('cdh-combatant-name');
+    const elSub = document.getElementById('cdh-combatant-sub');
+    const elHp = document.getElementById('cdh-combatant-hp');
+    const elInput = document.getElementById('cdh-hp-val');
+
+    if (elId) elId.value = c.id;
+    if (elName) elName.innerText = c.name;
+    if (elSub) elSub.innerText = `${c.type === 'player' ? 'Aluno (Jogador)' : 'Monstro / Inimigo'} • CA: ${c.ac}`;
+    if (elHp) {
+      const pct = Math.max(0, Math.min(100, Math.round((c.hp / c.maxHp) * 100)));
+      const color = pct > 50 ? 'var(--accent-green)' : (pct > 25 ? '#eab308' : 'var(--accent-red)');
+      elHp.style.color = color;
+      elHp.innerText = `${c.hp} / ${c.maxHp} PV`;
+    }
+    if (elInput) {
+      elInput.value = '5';
+      setTimeout(() => { if (typeof elInput.focus === 'function') elInput.focus(); }, 50);
+    }
+
+    modal.style.display = 'flex';
+    modal.classList.add('open');
+    return;
+  }
+
+  // Fallback se modal não estiver no DOM
   const rawVal = prompt(`⚡ Ajuste de Vida: ${c.name} (Atual: ${c.hp}/${c.maxHp} PV)\n\nDigite a quantidade de PV:\n(Ex: 12)`, '5');
   if (rawVal === null) return;
   const num = parseInt(rawVal, 10);
@@ -965,6 +1021,31 @@ function promptCombatantDamageHeal(id) {
 
   const isDamage = confirm(`Aplicar ${num} PV em ${c.name} como:\n\n• Clique [OK] para DANO (-${num} PV)\n• Clique [Cancelar] para CURA (+${num} PV)`);
   quickAdjustCombatantHp(id, isDamage ? -num : num);
+}
+
+function closeCombatDamageHealModal() {
+  const modal = document.getElementById('modal-combat-damage-heal');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.classList.remove('open');
+  }
+}
+
+function submitCombatDamageHeal(type) {
+  const elId = document.getElementById('cdh-combatant-id');
+  const elInput = document.getElementById('cdh-hp-val');
+  if (!elId || !elInput) return;
+
+  const id = elId.value;
+  const num = Math.abs(parseInt(elInput.value, 10)) || 0;
+  if (!id || num === 0) {
+    closeCombatDamageHealModal();
+    return;
+  }
+
+  const delta = type === 'damage' ? -num : num;
+  quickAdjustCombatantHp(id, delta);
+  closeCombatDamageHealModal();
 }
 
 function openAddModal() { document.getElementById('modal-add').classList.add('open'); }
@@ -1291,6 +1372,8 @@ function announceActiveTurn(combatantId) {
 
 if (typeof window !== 'undefined') {
   window.promptCombatantDamageHeal = promptCombatantDamageHeal;
+  window.closeCombatDamageHealModal = closeCombatDamageHealModal;
+  window.submitCombatDamageHeal = submitCombatDamageHeal;
   window.enableInlineHpEdit = enableInlineHpEdit;
   window.saveInlineHpEdit = saveInlineHpEdit;
   window.updateCombatantNotes = updateCombatantNotes;
@@ -1313,6 +1396,8 @@ if (typeof module !== 'undefined' && module.exports) {
     editCombatantInit,
     quickAdjustCombatantHp,
     promptCombatantDamageHeal,
+    closeCombatDamageHealModal,
+    submitCombatDamageHeal,
     saveNewCombatant,
     enableInlineHpEdit,
     saveInlineHpEdit,

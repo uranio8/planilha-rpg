@@ -652,9 +652,106 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
     }
-    .combatant-name { font-size: 13.5px; font-weight: 800; color: #fff; letter-spacing: 0.3px; }
+    .combatant-name { font-size: 13.5px; font-weight: 800; color: #fff; letter-spacing: 0.3px; word-break: break-word; }
     .combatant-sub { font-size: 11px; color: var(--text-muted); }
+
+    /* LINHA DE VIDA E AÇÕES DO COMBATENTE RESPONSIVA (ISSUE-130) */
+    .combatant-stats-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .combatant-stats-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .combatant-actions-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 2px 4px;
+      flex-wrap: wrap;
+    }
+    .btn-dmg-heal-trigger {
+      padding: 3px 8px !important;
+      font-size: 10px !important;
+      font-weight: 800 !important;
+      color: #facc15 !important;
+      border: 1px solid rgba(245, 158, 11, 0.45) !important;
+      border-radius: 12px !important;
+      line-height: 1.2 !important;
+      background: rgba(245, 158, 11, 0.12) !important;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      transition: all 0.18s ease;
+      white-space: nowrap;
+    }
+    .btn-dmg-heal-trigger:hover {
+      background: rgba(245, 158, 11, 0.25) !important;
+      border-color: #f59e0b !important;
+      color: #fff !important;
+      transform: translateY(-1px);
+    }
+
+    /* MINI BARRA DE SLOTS DE MAGIA NA INICIATIVA (ISSUE-130) */
+    .combatant-slots-mini {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+      background: rgba(147, 51, 234, 0.1);
+      border: 1px solid rgba(168, 85, 247, 0.25);
+      border-radius: 6px;
+      padding: 3px 6px;
+      margin-top: 3px;
+      font-size: 10px;
+    }
+    .combatant-slots-mini .slots-label {
+      font-weight: 700;
+      color: #c084fc;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .combatant-slots-mini .slots-pips-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .slot-mini-pip {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 1px 4px;
+      border-radius: 4px;
+      border: 1px solid rgba(192, 132, 252, 0.2);
+      color: #e9d5ff;
+    }
+    .slot-mini-pip.depleted {
+      opacity: 0.45;
+      border-color: rgba(255, 255, 255, 0.1);
+      color: #94a3b8;
+      text-decoration: line-through;
+    }
 
     .hp-wrapper { display: flex; align-items: center; gap: 8px; }
     .hp-bar-bg {
@@ -9227,7 +9324,7 @@
       display: flex;
     }
     @media (max-width: 900px) {
-      .player-mobile-dock {
+      body.mode-player-portal .player-mobile-dock {
         display: flex;
       }
       body.mode-player-portal {
@@ -11187,9 +11284,18 @@
     }
 
     @media (max-width: 900px) {
-      .player-hp-btn, .btn-hp-adj, .btn-hp-dmg, .btn-hp-heal, .roll20-hp-btn {
+      .player-hp-btn, .btn-hp-dmg, .btn-hp-heal, .roll20-hp-btn {
         min-height: 44px;
         min-width: 44px;
+      }
+      .btn-hp-adj {
+        min-height: 28px;
+        min-width: 28px;
+      }
+      .combatant-item .btn-hp-adj {
+        min-height: 24px !important;
+        min-width: 24px !important;
+        padding: 2px 4px !important;
       }
     }
 

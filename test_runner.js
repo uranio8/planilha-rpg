@@ -7269,6 +7269,89 @@ vm.runInContext(`
 const pInPlayerAfterMasterToggle = vm.runInContext("PLAYERS.find(p => p.id === 'p_wizard_sync_97')", sandbox);
 assert(pInPlayerAfterMasterToggle.slotsUsed[1] === 1, 'Dispositivo do Jogador recebeu gasto de 2º Círculo aplicado pelo Mestre');
 
+// --- SUÍTE 98: Responsividade Mobile do Combate, Correção de Overflow e Slots de Magia na Iniciativa (ISSUE-130) ---
+console.log('\n📱 98. Testes de Responsividade do Combate, Botões sem Corte e Slots de Magia na Iniciativa (ISSUE-130):');
+
+// 1. Validar elementos no HTML compilado
+assert(compiledHtml.includes('combatant-stats-row'), 'HTML compilado contém container responsivo .combatant-stats-row');
+assert(compiledHtml.includes('combatant-actions-pill'), 'HTML compilado contém pílula de ações .combatant-actions-pill');
+assert(compiledHtml.includes('btn-dmg-heal-trigger'), 'HTML compilado contém botão de disparo de dano/cura com estilo dedicado');
+assert(compiledHtml.includes('combatant-slots-mini'), 'HTML compilado contém mini barra de slots .combatant-slots-mini');
+assert(compiledHtml.includes('modal-combat-damage-heal'), 'HTML compilado contém o modal dedicado #modal-combat-damage-heal');
+assert(compiledHtml.includes('submitCombatDamageHeal'), 'HTML compilado contém a função submitCombatDamageHeal');
+
+// 2. Validar renderização de slots de magia no card de iniciativa
+vm.runInContext(`
+  PLAYERS = [{
+    id: 'p_caster_combat_test',
+    name: 'Deraravely',
+    className: 'Mago',
+    level: 3,
+    ca: 15,
+    hp: 24,
+    maxHp: 24,
+    slots: [4, 2, 0, 0, 0, 0, 0, 0, 0],
+    slotsUsed: [1, 0, 0, 0, 0, 0, 0, 0, 0],
+    preparedSpells: ['Alarme', 'Mísseis Mágicos']
+  }];
+
+  state.combatants = [{
+    id: 'p_caster_combat_test',
+    name: 'Deraravely (Samuel)',
+    type: 'player',
+    init: 19,
+    ac: 15,
+    hp: 24,
+    maxHp: 24,
+    conditions: []
+  }];
+
+  renderCombat();
+`, sandbox);
+
+const combatHtmlOutput = vm.runInContext("document.getElementById('list-combatants').innerHTML", sandbox);
+assert(combatHtmlOutput.includes('combatant-slots-mini'), 'Card de combatente na iniciativa renderizou a barra de slots de magia');
+assert(combatHtmlOutput.includes('1º: <b>3/4</b>'), 'Slots de 1º círculo exibem corretamente 3/4 restantes no card de iniciativa');
+assert(combatHtmlOutput.includes('2º: <b>2/2</b>'), 'Slots de 2º círculo exibem corretamente 2/2 restantes no card de iniciativa');
+assert(combatHtmlOutput.includes('btn-dmg-heal-trigger'), 'Card renderizou o botão de Dano/Cura responsivo');
+
+// 3. Testar abertura do modal tátil de dano/cura
+vm.runInContext(`
+  promptCombatantDamageHeal('p_caster_combat_test');
+`, sandbox);
+
+const modalState = vm.runInContext(`
+  ({
+    isOpen: document.getElementById('modal-combat-damage-heal').classList.contains('open'),
+    name: document.getElementById('cdh-combatant-name').innerText,
+    val: document.getElementById('cdh-hp-val').value
+  })
+`, sandbox);
+
+assert(modalState.isOpen === true, 'promptCombatantDamageHeal abre o modal #modal-combat-damage-heal com classe open');
+assert(modalState.name === 'Deraravely (Samuel)', 'Modal foi populado com o nome do combatente selecionado');
+
+// 4. Testar aplicação de dano via modal
+vm.runInContext(`
+  document.getElementById('cdh-hp-val').value = '7';
+  submitCombatDamageHeal('damage');
+`, sandbox);
+
+const cAfterDamage = vm.runInContext("state.combatants.find(c => c.id === 'p_caster_combat_test')", sandbox);
+const pAfterDamage = vm.runInContext("PLAYERS.find(p => p.id === 'p_caster_combat_test')", sandbox);
+assert(cAfterDamage.hp === 17, 'submitCombatDamageHeal reduziu o PV do combatente em 7 (de 24 para 17)');
+assert(pAfterDamage.hp === 17, 'submitCombatDamageHeal sincronizou a perda de PV na ficha do jogador PLAYERS');
+
+// 5. Testar aplicação de cura via modal
+vm.runInContext(`
+  document.getElementById('cdh-combatant-id').value = 'p_caster_combat_test';
+  document.getElementById('cdh-hp-val').value = '4';
+  submitCombatDamageHeal('heal');
+`, sandbox);
+
+const cAfterHeal = vm.runInContext("state.combatants.find(c => c.id === 'p_caster_combat_test')", sandbox);
+assert(cAfterHeal.hp === 21, 'submitCombatDamageHeal curou 4 PV do combatente (de 17 para 21)');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

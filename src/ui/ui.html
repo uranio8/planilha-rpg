@@ -4466,4 +4466,50 @@
     </div>
   </div>
 
+  <!-- MODAL: AJUSTE RÁPIDO DE DANO E CURA (ISSUE-130) -->
+  <div id="modal-combat-damage-heal" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeCombatDamageHealModal()">
+    <div class="modal-body" style="max-width: 380px; width: 92%; border: 1.5px solid var(--accent-gold); box-shadow: 0 0 24px rgba(245,158,11,0.25);">
+      <div class="panel-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">⚡</span>
+          <span style="font-family: var(--font-title); font-size: 15px; font-weight: 800; color: #fef08a;">Dano / Cura de Combatente</span>
+        </div>
+        <button class="btn-secondary" onclick="closeCombatDamageHealModal()">✕</button>
+      </div>
+
+      <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+        <input type="hidden" id="cdh-combatant-id" value="">
+        <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div id="cdh-combatant-name" style="font-size: 14px; font-weight: 800; color: #fff;">Combatente</div>
+            <div id="cdh-combatant-sub" style="font-size: 11px; color: var(--text-muted);">PV Atual</div>
+          </div>
+          <div id="cdh-combatant-hp" style="font-size: 16px; font-weight: 800; font-family: var(--font-mono); color: var(--accent-green);">-- / --</div>
+        </div>
+
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Quantidade de Pontos de Vida (PV):</label>
+          <input type="number" id="cdh-hp-val" placeholder="Ex: 8" min="1" step="1" value="5" style="width: 100%; font-size: 18px; font-weight: 800; text-align: center; padding: 8px; font-family: var(--font-mono);">
+        </div>
+
+        <div style="display: flex; gap: 4px; justify-content: center;">
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; min-height: 32px;" onclick="document.getElementById('cdh-hp-val').value = '1'">1</button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; min-height: 32px;" onclick="document.getElementById('cdh-hp-val').value = '5'">5</button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; min-height: 32px;" onclick="document.getElementById('cdh-hp-val').value = '10'">10</button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; min-height: 32px;" onclick="document.getElementById('cdh-hp-val').value = '15'">15</button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; min-height: 32px;" onclick="document.getElementById('cdh-hp-val').value = '20'">20</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;">
+          <button type="button" class="btn-action" style="background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; font-weight: 800; min-height: 42px; font-size: 13px;" onclick="submitCombatDamageHeal('damage')">
+            ⚔️ Aplicar Dano
+          </button>
+          <button type="button" class="btn-action" style="background: linear-gradient(135deg, #10b981, #047857); color: #fff; font-weight: 800; min-height: 42px; font-size: 13px;" onclick="submitCombatDamageHeal('heal')">
+            💚 Aplicar Cura
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 
