@@ -7791,6 +7791,119 @@ const labItemEntry = vm.runInContext("getSelectedBastionCampaign().partyStash.it
 assert(labItemEntry !== undefined, 'Poção Maior de Cura fabricada e entregue no Baú');
 assert(labItemEntry.qty === 2, 'Quantidade duplicada (2x) graças ao especialista Nível 5 (Lenda Viva)!');
 
+// ========================================================
+// 102. TESTES DE RESUMO DE MAGIA/ITEM, EXCLUSÃO DE FICHA E INVENTÁRIO INTUITIVO (ISSUE-134)
+// ========================================================
+console.log('\n🎒 102. Testes de Resumo de Magia/Item, Exclusão de Ficha e Inventário Intuitivo (ISSUE-134):');
+
+// 1. Verificação de elementos no bundle HTML
+assert(distHtml.includes('id="modal-item-quick-view"'), 'HTML compilado contém o modal de resumo tátil de item (#modal-item-quick-view)');
+assert(distHtml.includes('id="sqv-btn-share"'), 'HTML compilado contém o botão de compartilhar magia no chat (#sqv-btn-share)');
+assert(distHtml.includes('id="iqv-btn-share"'), 'HTML compilado contém o botão de compartilhar item no chat (#iqv-btn-share)');
+assert(distHtml.includes('btn-item-equip-badge'), 'HTML compilado contém a classe de estilo .btn-item-equip-badge');
+
+// 2. Exportação de funções
+assert(typeof vm.runInContext('deletePlayer', sandbox) === 'function', 'Função deletePlayer exportada (alias para deletePlayerDirect)');
+assert(typeof vm.runInContext('deletePlayerDirect', sandbox) === 'function', 'Função deletePlayerDirect exportada');
+assert(typeof vm.runInContext('openItemQuickView', sandbox) === 'function', 'Função openItemQuickView exportada');
+assert(typeof vm.runInContext('closeItemQuickView', sandbox) === 'function', 'Função closeItemQuickView exportada');
+
+// 3. Teste de Exclusão de Ficha via deletePlayer(id)
+vm.runInContext(`
+  // Cria jogador de teste para exclusão
+  const dummyPlayer = {
+    id: 'p_to_delete_134',
+    name: 'Herói a Deletar',
+    student: 'Aluno Teste',
+    className: 'Guerreiro',
+    level: 1,
+    hp: 10,
+    maxHp: 10
+  };
+  PLAYERS.push(dummyPlayer);
+  if (!state.combatants) state.combatants = [];
+  state.combatants.push({
+    id: 'c_to_delete_134',
+    playerId: 'p_to_delete_134',
+    name: 'Herói a Deletar',
+    hp: 10,
+    maxHp: 10
+  });
+  deletePlayer('p_to_delete_134');
+`, sandbox);
+
+const deletedExists = vm.runInContext("PLAYERS.some(p => p.id === 'p_to_delete_134')", sandbox);
+assert(deletedExists === false, 'deletePlayer(id) removeu com sucesso a ficha da lista PLAYERS');
+const combatantDeletedExists = vm.runInContext("state.combatants.some(c => c.playerId === 'p_to_delete_134')", sandbox);
+assert(combatantDeletedExists === false, 'deletePlayer(id) removeu em cascata o combatente do combate ativo');
+
+// 4. Teste de Abertura do Resumo Rápido de Item (openItemQuickView)
+vm.runInContext(`
+  // Jogador de teste com itens no inventário
+  const testHero = {
+    id: 'p_item_test_134',
+    name: 'Eldrin',
+    student: 'Player 1',
+    className: 'Mago',
+    level: 3,
+    inventory: [
+      { name: 'Cota de Malha', category: 'Armaduras e Escudos', qty: 1, equipped: false, weight: '18 kg' },
+      { name: 'Poção de Cura', category: 'Poções', qty: 2, weight: '0.5 kg' },
+      { name: 'Espada Longa', category: 'Armas Marciais', qty: 1, equipped: true, weight: '1.5 kg' }
+    ]
+  };
+  PLAYERS.push(testHero);
+  
+  // Abre o quick view da Cota de Malha (idx 0)
+  openItemQuickView('p_item_test_134', 0);
+`, sandbox);
+
+const iqvName = vm.runInContext("document.getElementById('iqv-name')?.textContent", sandbox);
+assert(iqvName === 'Cota de Malha', 'openItemQuickView preencheu o nome do item (#iqv-name) com "Cota de Malha"');
+const iqvDesc = vm.runInContext("document.getElementById('iqv-desc')?.innerHTML", sandbox);
+assert(iqvDesc && iqvDesc.length > 5, 'openItemQuickView buscou e exibiu as propriedades do item a partir do catálogo');
+
+// 5. Teste de Toggle de Equipar Item através do modal e botão
+vm.runInContext(`
+  // Equipar a Cota de Malha
+  togglePlayerItemEquipped('p_item_test_134', 0);
+`, sandbox);
+const isChainEquipped = vm.runInContext("PLAYERS.find(p => p.id === 'p_item_test_134').inventory[0].equipped", sandbox);
+assert(isChainEquipped === true, 'Cota de Malha foi equipada com sucesso');
+
+// 6. Teste de Proteção contra Consumo Acidental de Armas e Armaduras
+vm.runInContext(`
+  activePortalPlayerId = null;
+  if (document.getElementById('filter-player-q')) document.getElementById('filter-player-q').value = '';
+  renderPlayers();
+`, sandbox);
+const playersHtml = vm.runInContext("document.getElementById('grid-players')?.innerHTML || ''", sandbox);
+assert(playersHtml.includes('btn-item-equip-badge'), 'Renderização da ficha inclui o novo botão .btn-item-equip-badge');
+assert(playersHtml.includes('🛡️ Equipado'), 'Item equipado exibe o badge claro "🛡️ Equipado" em vez de bolinha vermelha');
+
+// 7. Teste de Envio de Magia Enriquecida ao Chat (sharePlayerSpellToFeed)
+vm.runInContext(`
+  let lastLogEntry = '';
+  const origAddLog = addLog;
+  addLog = function(msg) { lastLogEntry = msg; origAddLog(msg); };
+  sharePlayerSpellToFeed('p_item_test_134', 'Passo Nebuloso');
+  addLog = origAddLog;
+`, sandbox);
+const capturedSpellLog = vm.runInContext("lastLogEntry", sandbox);
+assert(capturedSpellLog.includes('Passo Nebuloso'), 'sharePlayerSpellToFeed registrou Passo Nebuloso no log');
+assert(capturedSpellLog.includes('teletransporta'), 'sharePlayerSpellToFeed incluiu o efeito descritivo integral da magia (sem truncar em 140 chars)');
+
+// 8. Teste de Envio de Item com Propriedades ao Chat (sharePlayerItemToFeed)
+vm.runInContext(`
+  let lastItemLogEntry = '';
+  const origAddLogItem = addLog;
+  addLog = function(msg) { lastItemLogEntry = msg; origAddLogItem(msg); };
+  sharePlayerItemToFeed('p_item_test_134', 0);
+  addLog = origAddLogItem;
+`, sandbox);
+const capturedItemLog = vm.runInContext("lastItemLogEntry", sandbox);
+assert(capturedItemLog.includes('Cota de Malha'), 'sharePlayerItemToFeed registrou Cota de Malha no log');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

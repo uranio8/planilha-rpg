@@ -1324,10 +1324,13 @@ function sharePlayerSpellToFeed(playerId, spellName) {
   const desc = sp ? (sp.desc || sp.description || '') : 'Sem descrição detalhada.';
   const lvl = sp ? (sp.level === 0 ? 'Truque' : `${sp.level}º Círculo`) : 'Magia';
   const range = sp ? (sp.range || '18m') : '';
-  const msg = `✨ <b>${p.name}</b> conjura / compartilha: <b>${spellName}</b> (${lvl}) | Alcance: ${range} <br><small style="color:#94a3b8;">${desc.substring(0, 140)}...</small>`;
+  const time = sp ? (sp.time || '1 Ação') : '';
+  const dur = sp ? (sp.duration || 'Instantâneo') : '';
+  const msg = `✨ <b>${p.name}</b> conjura / compartilha: <b>${spellName}</b> (${lvl}) | Alcance: ${range}${time ? ' • Tempo: ' + time : ''}${dur ? ' • Dur: ' + dur : ''} <br><div style="margin-top:3px; color:#cbd5e1; font-size:11px; line-height:1.4;">${desc}</div>`;
   addLog(msg);
   addPlayerActionLog(p.id, '✨', `Compartilhou magia: ${spellName}`, 'spell');
   if (typeof playFX === 'function') playFX('spell');
+  if (typeof showToast === 'function') showToast(`Magia "${spellName}" compartilhada no chat da mesa!`, 'info');
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
 
@@ -1335,9 +1338,18 @@ function sharePlayerItemToFeed(playerId, itemIndex) {
   const p = PLAYERS.find(x => x.id === playerId);
   if (!p || !p.inventory || !p.inventory[itemIndex]) return;
   const it = p.inventory[itemIndex];
-  const msg = `🎒 <b>${p.name}</b> exibe o item: <b>${it.name}</b> (Qtd: ${it.qty || 1} ${it.weight ? '• ' + it.weight + 'kg' : ''})`;
+  let eq = null;
+  if (typeof EQUIPMENT_DATA !== 'undefined' && Array.isArray(EQUIPMENT_DATA)) {
+    const clean = (it.name || '').toLowerCase().trim();
+    eq = EQUIPMENT_DATA.find(e => e.name.toLowerCase() === clean || clean.includes(e.name.toLowerCase()) || e.name.toLowerCase().includes(clean));
+  }
+  const desc = it.desc || it.prop || (eq ? eq.prop : '') || 'Item padrão de aventura.';
+  const damageOrAc = it.damage || (eq ? eq.damage : '') || '';
+  const cat = it.category || (eq ? eq.category : '') || 'Item';
+  const msg = `🎒 <b>${p.name}</b> exibe o item: <b>${it.name}</b> (${cat}${damageOrAc ? ' • ' + damageOrAc : ''}) • Qtd: ${it.qty || 1} ${it.weight ? '• ' + it.weight + 'kg' : ''}<br><div style="margin-top:3px; color:#cbd5e1; font-size:11px; line-height:1.4;">${desc}</div>`;
   addLog(msg);
   addPlayerActionLog(p.id, '🎒', `Exibiu item: ${it.name}`, 'inventory');
+  if (typeof showToast === 'function') showToast(`Item "${it.name}" compartilhado no chat da mesa!`, 'info');
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
 
@@ -2096,7 +2108,7 @@ function renderPlayers() {
                               <div class="spell-chip-top">
                                 <div class="spell-chip-name" title="${escapeAttr(sName)}">${sName}</div>
                                 <div style="display:flex; align-items:center; gap:4px;">
-                                  <button type="button" class="btn-chat-feed" onclick="event.stopPropagation(); sharePlayerSpellToFeed('${p.id}', '${escapeAttr(sName)}')" title="Compartilhar magia no chat">💬</button>
+                                  <button type="button" class="btn-chat-feed" onclick="event.stopPropagation(); openSpellQuickView('${escapeAttr(sName)}', '${p.id}', event)" title="Ver o que a magia faz (Descrição completa)">💬</button>
                                   <span class="spell-chip-lvl ${isCantrip ? 'cantrip' : 'leveled'}">${lvlBadge}</span>
                                 </div>
                               </div>
@@ -2179,25 +2191,33 @@ function renderPlayers() {
                 <!-- LISTA DE ITENS DO INVENTÁRIO -->
                 <div style="display: flex; flex-direction: column; gap: 6px; min-height: 380px; max-height: 640px; overflow-y: auto; padding-right: 4px;">
                   ${(p.inventory && p.inventory.length > 0) ? p.inventory.map((it, idx) => {
-                    const actionInfo = typeof getItemActionInfo === 'function' ? getItemActionInfo(it.name) : { icon: '⚡', label: 'Usar' };
+                    const actionInfo = typeof getItemActionInfo === 'function' ? getItemActionInfo(it.name) : { icon: '⚡', label: 'Usar', isConsumable: false };
                     const itemQty = parseInt(it.qty, 10) || 0;
+                    const catLower = (it.category || '').toLowerCase();
+                    const nameLower = (it.name || '').toLowerCase();
+                    const isArmorOrShield = catLower.includes('armadura') || catLower.includes('escudo') || nameLower.includes('armadura') || nameLower.includes('escudo');
+                    const isWeapon = catLower.includes('arma') || catLower.includes('weapon') || (typeof isPlayerWeaponItem === 'function' && isPlayerWeaponItem(it.name));
+                    const isConsumable = actionInfo.isConsumable && !isArmorOrShield && !isWeapon;
                     return `
                       <div class="inventory-item-row ${it.equipped ? 'equipped' : ''}">
-                        <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 4px;">
+                        <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 4px; cursor: pointer;" onclick="openItemQuickView('${p.id}', ${idx})" title="Clique para ver o que este item faz">
                           <span style="font-weight: 700; color: #fff;">${it.equipped ? '⚔️ ' : ''}${it.name}${it.attuned ? ' <span title="Item Mágico Sintonizado" style="color:#38bdf8; font-size:10px;">💎</span>' : ''}</span>
                           <span style="font-size: 9px; color: var(--text-dim);">${it.weight ? ' • ' + it.weight + 'kg' : ''}</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 3px;">
-                          <button type="button" class="btn-item-use ${itemQty <= 0 ? 'empty' : ''}" onclick="usePlayerInventoryItem('${p.id}', ${idx})" title="${itemQty > 0 ? `${actionInfo.label} 1x ${it.name}` : 'Item esgotado'}" ${itemQty <= 0 ? 'disabled' : ''}>
-                            ${actionInfo.icon}
-                          </button>
-                          <button type="button" class="roll20-item-equipped-toggle ${it.equipped ? 'active' : ''}" onclick="togglePlayerItemEquipped('${p.id}', ${idx})" title="${it.equipped ? 'Equipado! Clique para Desequipar' : 'Guardado na mochila. Clique para Equipar e calcular ataque/armadura'}">
+                          ${isConsumable ? `
+                            <button type="button" class="btn-item-use ${itemQty <= 0 ? 'empty' : ''}" onclick="usePlayerInventoryItem('${p.id}', ${idx})" title="${itemQty > 0 ? `${actionInfo.label} 1x ${it.name}` : 'Item esgotado'}" ${itemQty <= 0 ? 'disabled' : ''}>
+                              ${actionInfo.icon}
+                            </button>
+                          ` : ''}
+                          <button type="button" class="btn-item-equip-badge roll20-item-equipped-toggle ${it.equipped ? 'equipped active' : 'unequipped'}" onclick="togglePlayerItemEquipped('${p.id}', ${idx})" title="${it.equipped ? 'Equipado! Clique para desequipar' : 'Guardado na mochila. Clique para equipar e calcular CA/Ataques'}">
+                            ${it.equipped ? '🛡️ Equipado' : 'Equipar'}
                           </button>
                           <button type="button" class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, -1)" title="Diminuir" style="padding: 1px 4px; font-size: 9px;">−</button>
                           <span style="font-weight: 800; min-width: 14px; text-align: center; color: ${itemQty > 0 ? 'var(--primary-light)' : 'var(--text-dim)'}; font-size: 10px;">${itemQty}x</span>
                           <button type="button" class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, 1)" title="Aumentar" style="padding: 1px 4px; font-size: 9px;">+</button>
                           <button type="button" class="btn-stash-send" onclick="sendPlayerItemToPartyStash('${p.id}', ${idx})" title="Guardar 1x no Baú do Grupo">📦 Baú</button>
-                          <button type="button" class="btn-chat-feed" onclick="sharePlayerItemToFeed('${p.id}', ${idx})" title="Compartilhar no Chat">💬</button>
+                          <button type="button" class="btn-chat-feed" onclick="openItemQuickView('${p.id}', ${idx})" title="Ver o que este item faz (Descrição completa)">💬</button>
                           <button type="button" class="btn-micro" style="color: #f87171; padding: 1px 4px; font-size: 9px;" onclick="removePlayerItem('${p.id}', ${idx})" title="Remover item">🗑️</button>
                         </div>
                       </div>
@@ -5894,6 +5914,16 @@ function openSpellQuickView(spellName, playerId = null, event = null) {
   if (durEl) durEl.textContent = duration;
   if (descEl) descEl.innerHTML = desc;
 
+  const btnShare = document.getElementById('sqv-btn-share');
+  if (btnShare) {
+    btnShare.onclick = () => {
+      closeSpellQuickView();
+      if (playerId && typeof sharePlayerSpellToFeed === 'function') {
+        sharePlayerSpellToFeed(playerId, spellName);
+      }
+    };
+  }
+
   if (btnCast) {
     btnCast.onclick = () => {
       closeSpellQuickView();
@@ -5909,6 +5939,104 @@ function openSpellQuickView(spellName, playerId = null, event = null) {
 
 function closeSpellQuickView() {
   const modal = document.getElementById('modal-spell-quick-view');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.style.display = 'none';
+  }
+}
+
+// ISSUE-134: Resumo Rápido de Itens (O que o item faz)
+function openItemQuickView(playerId, itemIndex, event = null) {
+  if (event) event.stopPropagation();
+  const modal = document.getElementById('modal-item-quick-view');
+  if (!modal) return;
+
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p || !p.inventory || !p.inventory[itemIndex]) return;
+  const it = p.inventory[itemIndex];
+
+  let eq = null;
+  if (typeof EQUIPMENT_DATA !== 'undefined' && Array.isArray(EQUIPMENT_DATA)) {
+    const clean = (it.name || '').toLowerCase().trim();
+    eq = EQUIPMENT_DATA.find(e => e.name.toLowerCase() === clean || clean.includes(e.name.toLowerCase()) || e.name.toLowerCase().includes(clean));
+  }
+
+  const cat = it.category || (eq ? eq.category : '') || 'Equipamento Geral';
+  const cost = it.cost || (eq ? eq.cost : '') || '-';
+  const damage = it.damage || (eq ? eq.damage : '') || '-';
+  const weight = it.weight ? `${it.weight} kg` : (eq ? eq.weight : '-');
+  const qty = parseInt(it.qty, 10) || 1;
+  const desc = it.desc || it.prop || (eq ? eq.prop : '') || 'Item padrão de aventura. Não possui regras adicionais cadastradas.';
+
+  let icon = '🎒';
+  const catLower = cat.toLowerCase();
+  const nameLower = (it.name || '').toLowerCase();
+  if (catLower.includes('armadura') || catLower.includes('escudo') || nameLower.includes('escudo')) icon = '🛡️';
+  else if (catLower.includes('arma') || nameLower.includes('espada') || nameLower.includes('arco') || nameLower.includes('machado')) icon = '⚔️';
+  else if (catLower.includes('poção') || nameLower.includes('poção') || nameLower.includes('pocao')) icon = '🧪';
+  else if (catLower.includes('pergaminho') || nameLower.includes('pergaminho')) icon = '📜';
+  else if (nameLower.includes('tocha') || nameLower.includes('fogo')) icon = '🔥';
+  else if (it.attuned) icon = '💎';
+
+  const iconEl = document.getElementById('iqv-icon');
+  const nameEl = document.getElementById('iqv-name');
+  const typeEl = document.getElementById('iqv-type');
+  const dmgEl = document.getElementById('iqv-damage');
+  const weightEl = document.getElementById('iqv-weight');
+  const qtyEl = document.getElementById('iqv-qty');
+  const descEl = document.getElementById('iqv-desc');
+  const btnShare = document.getElementById('iqv-btn-share');
+  const btnEquip = document.getElementById('iqv-btn-equip');
+  const btnUse = document.getElementById('iqv-btn-use');
+
+  if (iconEl) iconEl.textContent = icon;
+  if (nameEl) nameEl.textContent = it.name;
+  if (typeEl) typeEl.textContent = `${cat} • ${cost}`;
+  if (dmgEl) dmgEl.textContent = damage;
+  if (weightEl) weightEl.textContent = weight;
+  if (qtyEl) qtyEl.textContent = `${qty}x`;
+  if (descEl) descEl.innerHTML = desc;
+
+  if (btnShare) {
+    btnShare.onclick = () => {
+      closeItemQuickView();
+      sharePlayerItemToFeed(playerId, itemIndex);
+    };
+  }
+
+  if (btnEquip) {
+    btnEquip.textContent = it.equipped ? '❌ Desequipar' : '🛡️ Equipar';
+    btnEquip.style.background = it.equipped ? 'rgba(239, 68, 68, 0.8)' : '#10b981';
+    btnEquip.onclick = () => {
+      closeItemQuickView();
+      togglePlayerItemEquipped(playerId, itemIndex);
+    };
+  }
+
+  const actionInfo = typeof getItemActionInfo === 'function' ? getItemActionInfo(it.name) : { isConsumable: false };
+  const isArmorOrShield = catLower.includes('armadura') || catLower.includes('escudo');
+  const isWeapon = catLower.includes('arma');
+  const isConsumable = actionInfo.isConsumable && !isArmorOrShield && !isWeapon;
+
+  if (btnUse) {
+    if (isConsumable) {
+      btnUse.style.display = 'inline-block';
+      btnUse.textContent = `${actionInfo.icon || '⚡'} ${actionInfo.label || 'Usar'}`;
+      btnUse.onclick = () => {
+        closeItemQuickView();
+        usePlayerInventoryItem(playerId, itemIndex);
+      };
+    } else {
+      btnUse.style.display = 'none';
+    }
+  }
+
+  modal.classList.add('open');
+  modal.style.display = 'flex';
+}
+
+function closeItemQuickView() {
+  const modal = document.getElementById('modal-item-quick-view');
   if (modal) {
     modal.classList.remove('open');
     modal.style.display = 'none';
@@ -8059,8 +8187,14 @@ function deletePlayerDirect(id) {
     if (typeof renderVTT === 'function') renderVTT();
     if (typeof renderPlayerView === 'function') renderPlayerView();
     saveToLocalStorage();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
     addLog(`🗑️ Ficha de <b>${p.name}</b> (${p.student}) foi excluída permanentemente.`);
   }
+}
+
+// ISSUE-134: Alias canônico para exclusão de fichas chamada pelos botões de toolbar
+function deletePlayer(id) {
+  return deletePlayerDirect(id);
 }
 
 function deletePlayerSheet() {
@@ -12187,6 +12321,10 @@ if (typeof module !== 'undefined' && module.exports) {
     removePlayerItem,
     adjustPlayerHp,
     renderPlayers,
+    deletePlayer,
+    deletePlayerDirect,
+    openItemQuickView,
+    closeItemQuickView,
     savePlayerSheet,
     trackDeletedPlayerId,
     getDeletedPlayerIds,
@@ -12438,6 +12576,12 @@ if (typeof window !== 'undefined') {
   window.filterAsiModalFeats = filterAsiModalFeats;
   window.selectAsiModalFeat = selectAsiModalFeat;
   window.saveAsiChoiceModal = saveAsiChoiceModal;
+
+  // ISSUE-134: Resumo de Itens e Exclusão de Ficha
+  window.deletePlayer = deletePlayer;
+  window.deletePlayerDirect = deletePlayerDirect;
+  window.openItemQuickView = openItemQuickView;
+  window.closeItemQuickView = closeItemQuickView;
 }
 
 

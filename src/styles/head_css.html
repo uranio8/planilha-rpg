@@ -10361,9 +10361,42 @@
       transition: all 0.15s ease;
     }
     .roll20-item-equipped-toggle.active {
-      background: #ef4444;
-      border-color: #f87171;
-      box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+      background: #10b981;
+      border-color: #34d399;
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+    }
+
+    /* ISSUE-134: Botão Intuitivo de Equipar Item com Ícone e Texto Claro */
+    .btn-item-equip-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.05);
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-item-equip-badge:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.25);
+      color: #fff;
+    }
+    .btn-item-equip-badge.equipped {
+      background: rgba(16, 185, 129, 0.18);
+      border-color: #10b981;
+      color: #6ee7b7;
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.35);
+    }
+    .btn-item-equip-badge.equipped:hover {
+      background: rgba(16, 185, 129, 0.3);
+      border-color: #34d399;
+      color: #a7f3d0;
     }
 
     /* ISSUE-116: Toolbar Divider Seguro */

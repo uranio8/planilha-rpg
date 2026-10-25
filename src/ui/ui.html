@@ -4393,9 +4393,41 @@
         <div><b style="color: #94a3b8;">Duração:</b> <span id="sqv-duration">-</span></div>
       </div>
       <div id="sqv-desc" style="font-size: 13px; line-height: 1.5; color: #cbd5e1; max-height: 220px; overflow-y: auto; margin-bottom: 16px; padding-right: 4px;"></div>
-      <div style="display: flex; gap: 8px; justify-content: flex-end;">
+      <div style="display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
         <button type="button" class="btn-secondary" onclick="closeSpellQuickView()">Fechar</button>
-        <button type="button" id="sqv-btn-cast" class="btn-action" style="min-height: 44px; padding: 8px 18px; font-weight: 800; font-size: 13px; background: linear-gradient(135deg, #06b6d4, #2563eb); color: #fff;">✨ Conjurar Esta Magia</button>
+        <button type="button" id="sqv-btn-share" class="btn-secondary" style="border-color: rgba(56,189,248,0.4); color: #38bdf8;">💬 Enviar ao Chat</button>
+        <button type="button" id="sqv-btn-cast" class="btn-action" style="min-height: 40px; padding: 8px 18px; font-weight: 800; font-size: 13px; background: linear-gradient(135deg, #06b6d4, #2563eb); color: #fff;">✨ Conjurar Esta Magia</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================
+       🎒 MODAL: RESUMO RÁPIDO DE ITEM (TACTILE PREVIEW)
+       =================================================== -->
+  <div id="modal-item-quick-view" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeItemQuickView()">
+    <div class="spell-quick-view-box">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 12px;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span id="iqv-icon" style="font-size: 24px;">🎒</span>
+            <h3 id="iqv-name" style="margin: 0; font-family: var(--font-title); color: var(--primary-light); font-size: 18px;">Nome do Item</h3>
+          </div>
+          <div id="iqv-type" style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Categoria • Preço</div>
+        </div>
+        <button class="modal-close-btn" onclick="closeItemQuickView()" style="background: none; border: none; font-size: 20px; color: #94a3b8; cursor: pointer;">✕</button>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; font-size: 11px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px;">
+        <div><b style="color: #94a3b8;">Dano / CA:</b> <span id="iqv-damage">-</span></div>
+        <div><b style="color: #94a3b8;">Peso:</b> <span id="iqv-weight">-</span></div>
+        <div><b style="color: #94a3b8;">Qtd:</b> <span id="iqv-qty">1x</span></div>
+      </div>
+      <div style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px;">📜 O QUE ESTE ITEM FAZ / PROPRIEDADES:</div>
+      <div id="iqv-desc" style="font-size: 13px; line-height: 1.5; color: #cbd5e1; max-height: 220px; overflow-y: auto; margin-bottom: 16px; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); padding-right: 4px;"></div>
+      <div style="display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
+        <button type="button" class="btn-secondary" onclick="closeItemQuickView()">Fechar</button>
+        <button type="button" id="iqv-btn-share" class="btn-secondary" style="border-color: rgba(56,189,248,0.4); color: #38bdf8;">💬 Enviar ao Chat</button>
+        <button type="button" id="iqv-btn-equip" class="btn-action" style="min-height: 40px; padding: 6px 14px; font-size: 12px; background: #10b981; color: #fff;">🛡️ Equipar</button>
+        <button type="button" id="iqv-btn-use" class="btn-action" style="min-height: 40px; padding: 6px 14px; font-size: 12px; display: none; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff;">⚡ Usar</button>
       </div>
     </div>
   </div>
