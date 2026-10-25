@@ -1,64 +1,66 @@
-# Plano de Implementação - Responsividade Mobile no Combate, Correção de Overflow e Slots de Magia Visíveis (ISSUE-130)
+# Plano de Implementação - Aba Própria de Bastiões com Gestão Multi-Campanha (ISSUE-131)
 
-## 📌 Diagnóstico da Imagem Enviada pelo Usuário
+## 📌 Contexto e Objetivos
 
-Na captura de tela enviada pelo usuário da lista de **ORDEM DE INICIATIVA** no combate móvel, identificamos problemas críticos de ergonomia e layout:
+Atualmente, o sistema de Bastiões Coletivos (D&D 2024 / 5.5 adaptado em PO - ISSUE-118) fica embutido no final da aba de **Campanhas** (`#tab-campaigns`), abaixo do Dashboard, Diário de Sessões, Baú Coletivo e Lacaios Contratados. 
 
-1. **Corte e Overflow Horizontal do Botão `⚡ Dano/Cura`**:
-   - A linha de atributos do combatente (`CA: 19`, `PV: 43/43 ✏️`, `-5`, `-1`, `+1`, `+5` e `⚡ Dano/Cura`) está configurada com `display: flex; justify-content: space-between; align-items: center;` sem `flex-wrap: wrap`.
-   - Em telas de smartphones (360px a 412px de largura útil), a soma dos elementos (~330px) ultrapassa a largura interna do card (~315px).
-   - O botão `⚡ Dano/Cura` vaza pela margem direita do card e fica cortado pela borda/scrollbar.
-
-2. **Ausência de Visualização dos Slots de Magia na Ordem de Iniciativa**:
-   - Na lista de iniciativa, os cards de combatentes não exibiam o status de espaços de magia de heróis conjuradores.
-   - O Mestre não conseguia ver quantos slots o aluno tinha ou se ele havia acabado de gastar um slot em outro dispositivo, a não ser quando chegava a vez dele como Combatente Ativo.
-
-3. **Espremimento no Cabeçalho do Card em Telas Estreitas**:
-   - O nome do herói (`Deraravely (Samuel)`) concorre em uma linha rígida com a iniciativa, badge de classe e quatro botões de ação à direita (`⚡ Status`, `🎲`, `🏷️`, `✕`), quebrando em duas linhas e esmagando os botões.
-
-4. **Alvos Táteis Excessivamente Pequenos nos Ajustadores de PV**:
-   - Botões de ajuste rápido `-5`, `-1`, `+1`, `+5` tinham tamanho minúsculo (`20px x 20px`), dificultando o toque no celular e causando cliques acidentais.
+O usuário solicitou:
+1. **Aba própria dedicada para os Bastiões**: Uma nova aba no menu principal (`#tab-bastions`), proporcionando foco total à administração da fortaleza.
+2. **Seletor de Bastião por Campanha**: O Mestre poderá alternar rapidamente entre os bastiões de cada campanha cadastrada (ex: Mesa 1, Mesa 2) para administrá-los de forma individual e independente, sem misturar instalações, ordens, histórico ou defensores.
 
 ---
 
-## 🏗️ Proposta de Solução
+## 🏗️ Módulos Afetados e Proposta de Solução
 
-### 1. Refatoração Responsiva do Card de Combatente (`src/js/combat.js` e `src/styles/head_css.html`)
-- **Linha de Vida e Dano Flexível com Quebra Harmoniosa**:
-  - Transformar o container de status em grid/flex responsivo com `flex-wrap: wrap; gap: 6px;`.
-  - Agrupar `CA` e `PV` em um bloco de leitura com alto contraste (`🛡️ CA: 19 • ❤️ PV: 43/43`).
-  - Agrupar os botões de ajuste de PV (`-5`, `-1`, `+1`, `+5`, `⚡ Dano/Cura`) em uma pílula de ações rápidas alinhada com quebra automática, garantindo que o botão `⚡ Dano/Cura` nunca seja cortado.
-  - Aumentar a ergonomia dos botões rápidos para dimensões táteis confortáveis (`24px` a `28px` com espaçamento).
-- **Cabeçalho com Distribuição Inteligente**:
-  - Permitir que o nome e badges do combatente ocupem o espaço flexível sem esmagamento, agrupando os botões de ação em container tátil limpo.
+### 1. Estrutura HTML da Nova Aba (`src/ui/ui.html`)
+- **Adição da Aba na Navegação Principal**:
+  - Inserir botão de navegação `🏰 Bastião` na navbar (`.main-navbar` ou no menu dropdown `🛡️ Mestre` / Drawer móvel).
+  - Incluir no drawer móvel `#drawer-menu` o item `drawer-btn-bastions`.
+- **Criação do Painel `#tab-bastions` (`.tab-pane`)**:
+  - Cabeçalho com barra de controles (`.controls-bar`):
+    - Seletor de Campanha/Bastião (`#sel-bastion-active-campaign`), permitindo ao Mestre selecionar qual campanha deseja inspecionar/gerenciar.
+    - Badges de resumo (Nível, Semana, Defensores, Muralhas, Ouro do Baú).
+    - Botões rápidos: `➕ Emitir Ordem`, `🏗️ Nova Instalação`, `🧱 Aprimorar Muralhas`, `🎲 Avançar Turno (7 Dias)`, `✏️ Renomear/Editar Bastião`.
+  - Área principal de visualização:
+    - Container `#bastion-view-container` onde a fortaleza da campanha selecionada será renderizada de forma rica e limpa.
+    - Suporte a empty state elegante caso a campanha selecionada ainda não possua bastião fundado (com botão `🏰 Fundar Bastião da Campanha`).
 
-### 2. Indicador em Tempo Real de Slots de Magia no Card de Iniciativa (`src/js/combat.js`)
-- Para combatentes que são jogadores e possuem slots de magia (`playerObj.slots.some(s => s > 0)`):
-  - Adicionar uma barra compacta e elegante de slots no card:
-    `🔮 Magias: 1º: 3/4 | 2º: 1/2 ...`
-  - Com gemas visuais ou pílulas coloridas destacando slots disponíveis vs gastos.
-  - Quando o aluno conjurar uma magia no celular, o Mestre verá instantaneamente a atualização visual do slot no próprio card de iniciativa!
+### 2. Lógica de Gestão e Renderização (`src/js/campaigns.js` e `src/js/core.js`)
+- **Gerenciamento do Bastião Ativo na Aba**:
+  - Variável de estado `selectedBastionCampaignId`: rastreia a campanha selecionada na aba de Bastiões (inicializada com `CAMPAIGNS_STATE.activeCampaignId`).
+  - Função `renderBastionsTab(targetCampId)`:
+    - Popula o select `#sel-bastion-active-campaign` com todas as campanhas cadastradas.
+    - Resolve a campanha alvo e obtém seu bastião via `getCampaignBastion(camp)`.
+    - Renderiza a fortaleza, instalações especiais, patronos e ordens em andamento daquela campanha específica.
+  - Função `switchBastionCampaign(campId)`:
+    - Atualiza a visualização instantaneamente ao trocar o select, garantindo total isolamento entre campanhas.
+  - Atualização dos modais (`openBastionActionModal`, `openBastionAddFacilityModal`, `advanceBastionTurn`):
+    - Devem operar sobre a campanha atualmente selecionada na aba (`selectedBastionCampaignId`), permitindo avançar turno, emitir ordens e adicionar instalações na campanha escolhida pelo Mestre.
+- **Integração com `switchTab` em `src/js/core.js`**:
+  - Tratar `tabId === 'bastions'` chamando `renderBastionsTab()`.
+  - Adicionar `'bastions'` à navegação do Mestre e configurar permissão segura para o Portal do Jogador (apenas leitura do bastião de sua própria campanha).
 
-### 3. Modal Tátil Elegante de Dano/Cura Rápida (`src/js/combat.js` e `src/ui/ui.html`)
-- Substituir o diálogo nativo `prompt()` e `confirm()` por um modal dark fantasy dedicado `#modal-combat-damage-heal` com botões rápidos de Dano e Cura diretos, eliminando travamentos de teclado virtual no celular.
-
-### 4. Responsividade Global de Controles do Combate (`src/styles/head_css.html`)
-- Ajustar `.controls-bar` do combate em telas `< 600px`:
-  - Botão `Próximo Turno` em destaque central de fácil alcance com o polegar.
-  - Dropdowns e opções organizados sem cortes.
-
----
-
-## 🧪 Estratégia de Testes e Validação
-1. **Compilação**: Executar `node builder.js`.
-2. **Suíte Automatizada**: Adicionar a **Bateria 98** em `test_runner.js`:
-   - Validar que o HTML compilado contém a estrutura responsiva sem overflow nos cards de combate;
-   - Validar que combatentes conjuradores exibem seus slots de magia no card de iniciativa;
-   - Validar que o recálculo e sincronização de slots refletem na lista de combatentes.
-3. **Validação Visual Headless (CDP)**:
-   - Capturar screenshot no Chrome Headless em viewport mobile (375x667 e 390x844) verificando que o botão `⚡ Dano/Cura` e os slots de magia estão 100% visíveis, alinhados e sem cortes.
+### 3. Estilização Dark Fantasy e Responsividade (`src/styles/head_css.html`)
+- Layout panorâmico para a nova aba `#tab-bastions`.
+- Adaptação responsiva no mobile: controles em flex-wrap, botões confortáveis e cards táteis de instalações.
 
 ---
 
-## 📋 Governança (AGENTS.md)
-Solicitamos a aprovação prévia deste plano antes de iniciar as alterações no código fonte sob `src/`.
+## 🧪 Estratégia de Testes Automatizados (`test_runner.js`)
+
+Criar a **Bateria 99** em `test_runner.js`:
+1. Validar que o HTML compilado contém a nova aba `#tab-bastions` e o seletor `#sel-bastion-active-campaign`.
+2. Validar que a função `renderBastionsTab` é exportada e renderiza o bastião da campanha ativa.
+3. Validar a alternância entre Campanhas no Bastião (`switchBastionCampaign`):
+   - Criar Campanha A com Bastião "Fortaleza da Colina" e Campanha B com Bastião "Torre Arcana".
+   - Ao alternar para Campanha B, a interface exibe as instalações e nome da "Torre Arcana" sem interferir na Campanha A.
+4. Validar que o avanço de turno e emissão de ordens na aba de Bastiões afetam estritamente a campanha selecionada.
+
+---
+
+## 📋 Status de Conclusão e Governança (AGENTS.md)
+- [x] Plano aprovado pelo usuário.
+- [x] Código fonte implementado sob `src/ui/ui.html`, `src/styles/head_css.html`, `src/js/core.js` e `src/js/campaigns.js`.
+- [x] Compilação realizada com sucesso via `node builder.js`.
+- [x] Bateria 99 implementada e 100% aprovada (1717/1717 testes passando).
+- [x] Registro efetuado em `issues/README.md`.

@@ -218,6 +218,12 @@ function broadcastCampaignState() {
   }
 }
 
+function getCampaignPlayers(camp) {
+  if (!camp || !camp.playerIds) return [];
+  if (typeof PLAYERS === 'undefined' || !Array.isArray(PLAYERS)) return [];
+  return camp.playerIds.map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(Boolean);
+}
+
 // --- RENDERIZAÇÃO DA ABA DE CAMPANHAS ---
 function renderCampaigns() {
   const camp = getActiveCampaign();
@@ -245,7 +251,7 @@ function renderCampaigns() {
     statusBadge.innerText = camp.status === 'active' ? '🟢 Em Andamento' : (camp.status === 'paused' ? '🟡 Pausada' : '🏁 Concluída');
   }
 
-  const campPlayers = (camp.playerIds || []).map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p);
+  const campPlayers = getCampaignPlayers(camp);
   if (heroesCountBadge) heroesCountBadge.innerText = `${campPlayers.length} Heróis`;
   if (sessionsCountBadge) sessionsCountBadge.innerText = `${(camp.sessions || []).length} Sessões`;
 
@@ -2253,6 +2259,86 @@ function renderChroniclesViewerContent() {
 // ==========================================================================
 
 let currentBastionLevelFilter = 'all';
+let selectedBastionCampaignId = null;
+
+function getSelectedBastionCampaign() {
+  if (selectedBastionCampaignId && CAMPAIGNS_STATE && Array.isArray(CAMPAIGNS_STATE.campaigns)) {
+    const found = CAMPAIGNS_STATE.campaigns.find(c => c.id === selectedBastionCampaignId);
+    if (found) return found;
+  }
+  return getActiveCampaign();
+}
+
+function switchBastionCampaign(campId) {
+  if (campId) {
+    selectedBastionCampaignId = campId;
+  }
+  renderBastionsTab(selectedBastionCampaignId);
+}
+
+function renderBastionsTab(targetCampId = null) {
+  if (targetCampId) {
+    selectedBastionCampaignId = targetCampId;
+  }
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+
+  selectedBastionCampaignId = camp.id;
+
+  // Atualiza seletor de campanhas na aba de Bastiões
+  const selCamp = document.getElementById('sel-bastion-active-campaign');
+  if (selCamp && CAMPAIGNS_STATE && Array.isArray(CAMPAIGNS_STATE.campaigns)) {
+    selCamp.innerHTML = CAMPAIGNS_STATE.campaigns.map(c => `
+      <option value="${c.id}" ${c.id === camp.id ? 'selected' : ''}>${c.name} (${c.bastion?.name || 'Bastião'})</option>
+    `).join('');
+  }
+
+  const bastion = getCampaignBastion(camp);
+  const wallOpt = (typeof BASTION_WALL_OPTIONS !== 'undefined') ? BASTION_WALL_OPTIONS[bastion.walls || 'none'] : { name: 'Sem Muralhas', defenseDice: 6 };
+  const goldAmount = camp.partyStash ? (camp.partyStash.gold || 0) : 0;
+
+  // Atualiza badges do topo da aba
+  const lvlBadge = document.getElementById('bastion-tab-lvl-badge');
+  const turnBadge = document.getElementById('bastion-tab-turn-badge');
+  const defBadge = document.getElementById('bastion-tab-def-badge');
+  const wallBadge = document.getElementById('bastion-tab-wall-badge');
+  const goldBadge = document.getElementById('bastion-tab-gold-badge');
+
+  if (lvlBadge) lvlBadge.innerText = `⭐ Nível ${bastion.level || 5}`;
+  if (turnBadge) turnBadge.innerText = `⏳ Semana ${bastion.turnCount || 1}`;
+  if (defBadge) defBadge.innerText = `🛡️ ${bastion.defenders || 0} Defensores`;
+  if (wallBadge) wallBadge.innerText = `🧱 ${wallOpt ? wallOpt.name : 'Muralhas'}`;
+  if (goldBadge) goldBadge.innerText = `💰 Baú: ${goldAmount} PO`;
+
+  // Renderiza corpo da fortaleza no container principal da aba #bastion-view-container
+  const campPlayers = getCampaignPlayers(camp);
+  renderCampaignBastion(camp, campPlayers, 'bastion-view-container');
+}
+
+function promptEditBastionInfo() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+
+  const newName = prompt(`Nome da Fortaleza / Bastião (${camp.name}):`, bastion.name || '');
+  if (newName === null) return;
+  const trimmedName = newName.trim();
+  if (trimmedName) bastion.name = trimmedName;
+
+  const newLoc = prompt(`Localização geográfica do Bastião:`, bastion.location || '');
+  if (newLoc !== null) {
+    bastion.location = newLoc.trim() || 'Fronteiras da Campanha';
+  }
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+
+  renderBastionsTab(camp.id);
+  renderCampaigns();
+  if (typeof addLog === 'function') addLog(`🏰 <b>Bastião:</b> Informações da fortaleza atualizadas para "${bastion.name}".`);
+}
 
 function getCampaignBastion(camp) {
   if (!camp) return null;
@@ -2300,8 +2386,9 @@ function getCampaignBastion(camp) {
   return camp.bastion;
 }
 
-function renderCampaignBastion(camp, campPlayers) {
-  const container = document.getElementById('campaign-bastion-container');
+function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
+  const containerId = targetContainerId || 'campaign-bastion-container';
+  const container = document.getElementById(containerId);
   if (!container || !camp) return;
 
   const bastion = getCampaignBastion(camp);
@@ -2447,7 +2534,7 @@ function renderCampaignBastion(camp, campPlayers) {
 
 // Abre o Modal de Ações com Filtro por Nível e Seletores de Itens
 function openBastionActionModal(preselectedFacId = null) {
-  const camp = getActiveCampaign();
+  const camp = getSelectedBastionCampaign();
   if (!camp) return;
 
   const bastion = getCampaignBastion(camp);
@@ -2498,7 +2585,7 @@ function renderBastionActionsList() {
   const listContainer = document.getElementById('bastion-actions-list');
   if (!listContainer) return;
 
-  const camp = getActiveCampaign();
+  const camp = getSelectedBastionCampaign();
   if (!camp) return;
 
   const bastion = getCampaignBastion(camp);
@@ -2649,7 +2736,7 @@ function renderActionItemSelectorHtml(act) {
 }
 
 function triggerActivateBastionAction(actionKey) {
-  const camp = getActiveCampaign();
+  const camp = getSelectedBastionCampaign();
   if (!camp) return;
 
   const bastion = getCampaignBastion(camp);
@@ -2720,6 +2807,7 @@ function triggerActivateBastionAction(actionKey) {
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
 
   closeBastionActionModal();
+  renderBastionsTab(camp.id);
   renderCampaigns();
   if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
 
@@ -2730,7 +2818,7 @@ function triggerActivateBastionAction(actionKey) {
 
 // Avança 7 dias no tempo do Bastião, processa ordens concluídas e rola na Tabela d100 de Eventos
 function advanceBastionTurn() {
-  const camp = getActiveCampaign();
+  const camp = getSelectedBastionCampaign();
   if (!camp) return;
 
   const bastion = getCampaignBastion(camp);
@@ -2882,6 +2970,7 @@ function advanceBastionTurn() {
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
 
+  renderBastionsTab(camp.id);
   renderCampaigns();
   renderPartyStashViewer();
   if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
@@ -2913,7 +3002,7 @@ function closeBastionEventModal() {
 }
 
 function openBastionAddFacilityModal() {
-  const camp = getActiveCampaign();
+  const camp = getSelectedBastionCampaign();
   if (!camp) return;
 
   const bastion = getCampaignBastion(camp);
@@ -2968,7 +3057,7 @@ function updateNewFacilityPreview() {
 }
 
 function confirmAddBastionFacility() {
-  const camp = getActiveCampaign();
+  const camp = getSelectedBastionCampaign();
   if (!camp) return;
 
   const bastion = getCampaignBastion(camp);
@@ -2996,12 +3085,13 @@ function confirmAddBastionFacility() {
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
 
   closeBastionAddFacilityModal();
+  renderBastionsTab(camp.id);
   renderCampaigns();
   if (typeof addLog === 'function') addLog(`🏗️ <b>Bastião:</b> Nova instalação "${cat.name}" adicionada à fortaleza.`);
 }
 
 function removeBastionFacility(facId) {
-  const camp = getActiveCampaign();
+  const camp = getSelectedBastionCampaign();
   if (!camp) return;
 
   const bastion = getCampaignBastion(camp);
@@ -3015,13 +3105,14 @@ function removeBastionFacility(facId) {
     touchCampaign(camp);
     saveCampaignsState();
     if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+    renderBastionsTab(camp.id);
     renderCampaigns();
     if (typeof addLog === 'function') addLog(`🗑️ <b>Bastião:</b> Instalação "${fac.name}" desmantelada.`);
   }
 }
 
 function promptUpgradeBastionWalls() {
-  const camp = getActiveCampaign();
+  const camp = getSelectedBastionCampaign();
   if (!camp) return;
 
   const bastion = getCampaignBastion(camp);
@@ -3052,6 +3143,7 @@ function promptUpgradeBastionWalls() {
     bastion.walls = 'wood';
     touchCampaign(camp);
     saveCampaignsState();
+    renderBastionsTab(camp.id);
     renderCampaigns();
     if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
     alert('Paliçada de Madeira construída com sucesso ao redor do Bastião!');
@@ -3069,6 +3161,7 @@ function promptUpgradeBastionWalls() {
     bastion.walls = 'stone';
     touchCampaign(camp);
     saveCampaignsState();
+    renderBastionsTab(camp.id);
     renderCampaigns();
     if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
     alert('Muralhas de Pedra Maciça e Portão de Ferro erguidos com sucesso!');
@@ -3142,7 +3235,12 @@ if (typeof module !== 'undefined' && module.exports) {
     updateNewFacilityPreview,
     confirmAddBastionFacility,
     removeBastionFacility,
-    promptUpgradeBastionWalls
+    promptUpgradeBastionWalls,
+    renderBastionsTab,
+    switchBastionCampaign,
+    promptEditBastionInfo,
+    getSelectedBastionCampaign,
+    getCampaignPlayers
   };
 }
 
@@ -3175,6 +3273,11 @@ if (typeof window !== 'undefined') {
   window.confirmAddBastionFacility = confirmAddBastionFacility;
   window.removeBastionFacility = removeBastionFacility;
   window.promptUpgradeBastionWalls = promptUpgradeBastionWalls;
+  window.renderBastionsTab = renderBastionsTab;
+  window.switchBastionCampaign = switchBastionCampaign;
+  window.promptEditBastionInfo = promptEditBastionInfo;
+  window.getSelectedBastionCampaign = getSelectedBastionCampaign;
+  window.getCampaignPlayers = getCampaignPlayers;
 }
 
 // Auto-carregamento imediato na avaliação do módulo

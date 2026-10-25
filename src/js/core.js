@@ -2132,6 +2132,7 @@ function switchTab(tabId) {
     }
   }
   else if (tabId === 'campaigns' && typeof renderCampaigns === 'function') renderCampaigns();
+  else if (tabId === 'bastions' && typeof renderBastionsTab === 'function') renderBastionsTab();
 }
 
 // --- TOGGLE DE DROPDOWNS DO CABEÇALHO (COMPÊNDIO, MESTRE, MAIS) ---

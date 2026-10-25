@@ -7352,6 +7352,109 @@ vm.runInContext(`
 const cAfterHeal = vm.runInContext("state.combatants.find(c => c.id === 'p_caster_combat_test')", sandbox);
 assert(cAfterHeal.hp === 21, 'submitCombatDamageHeal curou 4 PV do combatente (de 17 para 21)');
 
+// =========================================================================
+// BATERIA 99: Testes da Aba Própria de Bastiões & Alternância Individual de Campanhas (ISSUE-131)
+// =========================================================================
+console.log('\n🏰 99. Testes da Aba Própria de Bastiões & Alternância Individual de Campanhas (ISSUE-131):');
+
+// 1. Integridade do HTML compilado
+assert(compiledHtml.includes('id="tab-bastions"'), 'HTML compilado contém a aba própria de bastiões (#tab-bastions)');
+assert(compiledHtml.includes('id="sel-bastion-active-campaign"'), 'HTML compilado contém o seletor de campanha do bastião (#sel-bastion-active-campaign)');
+assert(compiledHtml.includes('id="bastion-view-container"'), 'HTML compilado contém o container principal da fortaleza (#bastion-view-container)');
+assert(compiledHtml.includes("switchTab('bastions')"), 'Barra de navegação contém botão para alternar para a aba de bastiões');
+assert(compiledHtml.includes('id="drawer-btn-bastions"'), 'Menu drawer móvel contém atalho para a aba de bastiões');
+
+// 2. Exportação das funções no ambiente de execução (sandbox)
+assert(typeof vm.runInContext("renderBastionsTab", sandbox) === 'function', 'Função renderBastionsTab disponível');
+assert(typeof vm.runInContext("switchBastionCampaign", sandbox) === 'function', 'Função switchBastionCampaign disponível');
+assert(typeof vm.runInContext("getSelectedBastionCampaign", sandbox) === 'function', 'Função getSelectedBastionCampaign disponível');
+assert(typeof vm.runInContext("promptEditBastionInfo", sandbox) === 'function', 'Função promptEditBastionInfo disponível');
+
+// 3. Teste de isolamento de estado e alternância entre campanhas
+vm.runInContext(`
+  // Cria duas campanhas independentes com bastiões próprios
+  const campAlpha = {
+    id: 'camp_alpha_test',
+    name: 'Castelo Ravenloft',
+    status: 'active',
+    playerIds: [],
+    partyStash: { gold: 1500, items: [], history: [] },
+    bastion: {
+      name: 'Torre de Strahd',
+      level: 7,
+      turnCount: 1,
+      defenders: 12,
+      walls: 'stone',
+      specialFacilities: [
+        { id: 'fac_alpha_1', key: 'laboratory', name: 'Laboratório Alquímico', levelReq: 5, patronId: null, currentOrder: null }
+      ],
+      history: []
+    }
+  };
+
+  const campBeta = {
+    id: 'camp_beta_test',
+    name: 'Costa da Espada',
+    status: 'active',
+    playerIds: [],
+    partyStash: { gold: 400, items: [], history: [] },
+    bastion: {
+      name: 'Forte Tresdar',
+      level: 5,
+      turnCount: 1,
+      defenders: 4,
+      walls: 'none',
+      specialFacilities: [],
+      history: []
+    }
+  };
+
+  CAMPAIGNS_STATE.campaigns = [campAlpha, campBeta];
+  CAMPAIGNS_STATE.activeCampaignId = 'camp_alpha_test';
+
+  // Alterna o bastião para a Campanha Beta
+  switchBastionCampaign('camp_beta_test');
+`, sandbox);
+
+const selCampInitial = vm.runInContext("getSelectedBastionCampaign()", sandbox);
+assert(selCampInitial && selCampInitial.id === 'camp_beta_test', 'switchBastionCampaign selecionou a Campanha Beta');
+assert(selCampInitial.bastion.name === 'Forte Tresdar', 'Bastião selecionado é o Forte Tresdar da Campanha Beta');
+
+// 4. Testar adição de instalação e avanço de turno com garantia de isolamento
+vm.runInContext(`
+  // Adiciona instalação especial na Campanha Beta
+  const betaCamp = getSelectedBastionCampaign();
+  betaCamp.bastion.specialFacilities.push({
+    id: 'fac_beta_smith',
+    key: 'smithy',
+    name: 'Ferraria Forjada',
+    levelReq: 5,
+    patronId: null,
+    currentOrder: null
+  });
+
+  // Avança o turno da Campanha Beta
+  advanceBastionTurn();
+`, sandbox);
+
+const campAlphaState = vm.runInContext("CAMPAIGNS_STATE.campaigns.find(c => c.id === 'camp_alpha_test')", sandbox);
+const campBetaState = vm.runInContext("CAMPAIGNS_STATE.campaigns.find(c => c.id === 'camp_beta_test')", sandbox);
+
+assert(campBetaState.bastion.turnCount === 2, 'Avanço de turno incrementou a semana do Bastião da Campanha Beta (de 1 para 2)');
+assert(campBetaState.bastion.specialFacilities.length === 1, 'Campanha Beta possui 1 instalação especial');
+assert(campAlphaState.bastion.turnCount === 1, 'Bastião da Campanha Alpha permaneceu no turno 1 (isolamento garantido)');
+assert(campAlphaState.bastion.specialFacilities.length === 1, 'Instalações da Campanha Alpha não foram afetadas pela alteração da Beta');
+assert(campAlphaState.bastion.specialFacilities[0].name === 'Laboratório Alquímico', 'Campanha Alpha preservou suas próprias instalações isoladas');
+
+// 5. Testar alternância de volta para a Campanha Alpha e renderização do DOM
+vm.runInContext(`
+  switchBastionCampaign('camp_alpha_test');
+`, sandbox);
+
+const selCampFinal = vm.runInContext("getSelectedBastionCampaign()", sandbox);
+assert(selCampFinal && selCampFinal.id === 'camp_alpha_test', 'Alternância de volta para a Campanha Alpha foi bem sucedida');
+assert(selCampFinal.bastion.name === 'Torre de Strahd', 'Bastião ativo agora é a Torre de Strahd');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
