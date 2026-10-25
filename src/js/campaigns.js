@@ -2296,6 +2296,7 @@ function renderBastionsTab(targetCampId = null) {
   const bastion = getCampaignBastion(camp);
   const wallOpt = (typeof BASTION_WALL_OPTIONS !== 'undefined') ? BASTION_WALL_OPTIONS[bastion.walls || 'none'] : { name: 'Sem Muralhas', defenseDice: 6 };
   const goldAmount = camp.partyStash ? (camp.partyStash.gold || 0) : 0;
+  const bank = getBastionBank(bastion);
 
   // Atualiza badges do topo da aba
   const lvlBadge = document.getElementById('bastion-tab-lvl-badge');
@@ -2303,12 +2304,14 @@ function renderBastionsTab(targetCampId = null) {
   const defBadge = document.getElementById('bastion-tab-def-badge');
   const wallBadge = document.getElementById('bastion-tab-wall-badge');
   const goldBadge = document.getElementById('bastion-tab-gold-badge');
+  const bankBadge = document.getElementById('bastion-tab-bank-badge');
 
   if (lvlBadge) lvlBadge.innerText = `⭐ Nível ${bastion.level || 5}`;
   if (turnBadge) turnBadge.innerText = `⏳ Semana ${bastion.turnCount || 1}`;
   if (defBadge) defBadge.innerText = `🛡️ ${bastion.defenders || 0} Defensores`;
   if (wallBadge) wallBadge.innerText = `🧱 ${wallOpt ? wallOpt.name : 'Muralhas'}`;
   if (goldBadge) goldBadge.innerText = `💰 Baú: ${goldAmount} PO`;
+  if (bankBadge) bankBadge.innerText = `🏦 Cofre: ${bank.gold || 0} PO`;
 
   // Renderiza corpo da fortaleza no container principal da aba #bastion-view-container
   const campPlayers = getCampaignPlayers(camp);
@@ -2340,6 +2343,20 @@ function promptEditBastionInfo() {
   if (typeof addLog === 'function') addLog(`🏰 <b>Bastião:</b> Informações da fortaleza atualizadas para "${bastion.name}".`);
 }
 
+function getBastionBank(bastion) {
+  if (!bastion) return { gold: 0, history: [] };
+  bastion.bank = bastion.bank || { gold: 0, history: [] };
+  bastion.bank.gold = parseInt(bastion.bank.gold, 10) || 0;
+  bastion.bank.history = Array.isArray(bastion.bank.history) ? bastion.bank.history : [];
+  return bastion.bank;
+}
+
+function getBastionStaff(bastion) {
+  if (!bastion) return [];
+  bastion.staff = Array.isArray(bastion.staff) ? bastion.staff : [];
+  return bastion.staff;
+}
+
 function getCampaignBastion(camp) {
   if (!camp) return null;
   if (!camp.bastion) {
@@ -2352,12 +2369,17 @@ function getCampaignBastion(camp) {
       turnCount: 1,
       walls: "none",
       defenders: 4,
+      bank: { gold: 0, history: [] },
+      staff: [],
       specialFacilities: [
         {
           id: "fac_" + Date.now() + "_ws",
           key: "workshop",
           name: "Oficina de Artesanato",
           patronId: defaultOwnerId,
+          managerNpcId: null,
+          managerNpcName: null,
+          managerNpcRole: null,
           currentOrder: null,
           status: "active"
         },
@@ -2366,6 +2388,9 @@ function getCampaignBastion(camp) {
           key: "garden",
           name: "Jardim de Ervas",
           patronId: secondOwnerId,
+          managerNpcId: null,
+          managerNpcName: null,
+          managerNpcRole: null,
           currentOrder: null,
           status: "active"
         }
@@ -2383,6 +2408,8 @@ function getCampaignBastion(camp) {
     touchCampaign(camp);
     saveCampaignsState();
   }
+  if (!camp.bastion.bank) camp.bastion.bank = { gold: 0, history: [] };
+  if (!Array.isArray(camp.bastion.staff)) camp.bastion.staff = [];
   return camp.bastion;
 }
 
@@ -2464,6 +2491,7 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
       const patronName = patronHero ? patronHero.name : (fac.patronId ? 'Herói Vinculado' : 'Sem Patrono Definido');
       const icon = cat ? cat.icon : '🏛️';
       const order = fac.currentOrder;
+      const hasManager = Boolean(fac.managerNpcId && fac.managerNpcName);
 
       html += `
         <div class="bastion-facility-card">
@@ -2480,6 +2508,29 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
             </div>
             <div style="display: flex; gap: 4px;">
               <button type="button" class="btn-micro" style="color: #f87171;" onclick="removeBastionFacility('${fac.id}')" title="Desativar/Excluir esta sala">🗑️</button>
+            </div>
+          </div>
+
+          <!-- Crachá do NPC Encarregado da Sala (ISSUE-132) -->
+          <div class="bastion-facility-manager-row">
+            <div class="bastion-facility-manager-info">
+              <span style="font-size: 14px;">${fac.managerNpcIcon || '👤'}</span>
+              <div>
+                ${hasManager ? `
+                  <span style="color: #67e8f9; font-weight: 700;">${fac.managerNpcName}</span>
+                  <span style="color: #94a3b8; font-size: 10px;"> • ${fac.managerNpcRole || 'Encarregado'}</span>
+                ` : `
+                  <span style="color: #94a3b8; font-style: italic;">Sem encarregado exclusivo</span>
+                `}
+              </div>
+            </div>
+            <div style="display: flex; gap: 4px;">
+              <button type="button" class="btn-secondary" style="font-size: 10px; padding: 2px 6px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" onclick="openAssignBastionNpcModal('${fac.id}')" title="Designar ou alterar o NPC encarregado desta sala">
+                ${hasManager ? '✏️ Trocar' : '👤 Designar'}
+              </button>
+              ${hasManager ? `
+                <button type="button" class="btn-micro" style="color: #f87171;" onclick="unassignBastionNpc('${fac.id}')" title="Desvincular encarregado">✕</button>
+              ` : ''}
             </div>
           </div>
 
@@ -2515,6 +2566,96 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
 
   html += `</div></div>`;
 
+  // 1. Painel do Banco / Cofre da Fortaleza (ISSUE-132)
+  const bank = getBastionBank(bastion);
+  const staff = getBastionStaff(bastion);
+
+  html += `
+    <div class="bastion-bank-panel">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 28px;">🏦</span>
+        <div>
+          <div style="font-size: 14px; font-weight: 800; color: #fef08a; font-family: var(--font-title);">Cofre Forte & Banco da Fortaleza</div>
+          <div style="font-size: 11px; color: #94a3b8;">Depósito seguro de ouro, financiamento de obras e movimentações do grupo</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(234, 179, 8, 0.4); border-radius: 8px; padding: 4px 12px; text-align: center;">
+          <span style="font-size: 10px; color: #94a3b8; text-transform: uppercase;">Saldo no Cofre:</span>
+          <div style="font-size: 18px; font-weight: 900; color: #facc15; font-family: var(--font-mono);">${bank.gold || 0} PO</div>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button type="button" class="btn-action" style="font-size: 11px; font-weight: 800; background: linear-gradient(135deg, #10b981, #059669); color: #fff;" onclick="openBastionBankModal()">
+            📥 Depositar / Sacar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Seção do Corpo de Funcionários & Especialistas (Staff - ISSUE-132) -->
+    <div class="bastion-staff-section">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">👥</span>
+          <div>
+            <div style="font-size: 13px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px;">Corpo de Funcionários & Especialistas (${staff.length})</div>
+            <div style="font-size: 10.5px; color: #94a3b8;">NPCs criados pelo mestre para administrar os cômodos e serviços da fortaleza</div>
+          </div>
+        </div>
+        <div>
+          <button type="button" class="btn-action" style="font-size: 11px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff;" onclick="openCreateBastionStaffModal()">
+            ➕ Criar Novo Especialista
+          </button>
+        </div>
+      </div>
+
+      <div class="bastion-staff-grid">
+  `;
+
+  if (staff.length === 0) {
+    html += `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #94a3b8; font-size: 11.5px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+        Nenhum especialista cadastrado no staff desta fortaleza. Clique em <b>"➕ Criar Novo Especialista"</b> para designar mestres ferreiros, alquimistas, senescais ou comandantes!
+      </div>
+    `;
+  } else {
+    staff.forEach(npc => {
+      const assignedFacility = npc.assignedFacilityId ? (bastion.specialFacilities || []).find(f => f.id === npc.assignedFacilityId) : null;
+      html += `
+        <div class="bastion-staff-card">
+          <div class="bastion-staff-header">
+            <div>
+              <div class="bastion-staff-name">
+                <span>${npc.icon || '👤'}</span>
+                <span>${npc.name}</span>
+              </div>
+              <div class="bastion-staff-role">${npc.role || 'Especialista'}</div>
+            </div>
+            <div style="display: flex; gap: 4px;">
+              <button type="button" class="btn-micro" onclick="openCreateBastionStaffModal('${npc.id}')" title="Editar dados do especialista">✏️</button>
+              <button type="button" class="btn-micro" style="color: #f87171;" onclick="deleteBastionStaffMember('${npc.id}')" title="Dispensar especialista">🗑️</button>
+            </div>
+          </div>
+
+          ${npc.trait ? `
+            <div style="font-size: 11px; color: #cbd5e1; font-style: italic; background: rgba(0,0,0,0.2); padding: 4px 6px; border-radius: 4px;">
+              "${npc.trait}"
+            </div>
+          ` : ''}
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; font-size: 10.5px;">
+            <span class="bastion-staff-status-badge ${assignedFacility ? 'bastion-staff-status-assigned' : 'bastion-staff-status-idle'}">
+              ${assignedFacility ? `🟢 Alocado: ${assignedFacility.name}` : `🟡 Disponível / Sem Sala`}
+            </span>
+            <span style="color: #facc15; font-weight: 700;">🪙 ${npc.wage || 0} PO/sem</span>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  html += `</div></div>`;
+
   // Banner do Último Evento Semanal do Bastião
   if (lastEvent) {
     html += `
@@ -2530,6 +2671,658 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
 
   html += `</div>`;
   container.innerHTML = html;
+}
+
+// =========================================================================
+// 🏦 BANCO & COFRE FORTE DO BASTIÃO (ISSUE-132)
+// =========================================================================
+
+let currentBastionBankMode = 'deposit'; // 'deposit' ou 'withdraw'
+
+function openBastionBankModal() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+  const bank = getBastionBank(bastion);
+
+  const modal = document.getElementById('modal-bastion-bank');
+  if (!modal) return;
+
+  const campMeta = document.getElementById('bastion-bank-camp-meta');
+  if (campMeta) campMeta.innerText = `${camp.name} • ${bastion.name}`;
+
+  const goldDisp = document.getElementById('bastion-bank-gold-display');
+  if (goldDisp) goldDisp.innerText = `${bank.gold || 0} PO`;
+
+  setBastionBankMode('deposit');
+  populateBastionBankEntities();
+  renderBastionBankHistory();
+
+  modal.style.display = 'flex';
+}
+
+function closeBastionBankModal() {
+  const modal = document.getElementById('modal-bastion-bank');
+  if (modal) modal.style.display = 'none';
+}
+
+function setBastionBankMode(mode) {
+  currentBastionBankMode = mode;
+  const btnDep = document.getElementById('btn-bank-tab-deposit');
+  const btnWith = document.getElementById('btn-bank-tab-withdraw');
+  const lblEntity = document.getElementById('lbl-bank-entity');
+  const btnExec = document.getElementById('btn-bank-execute');
+
+  if (mode === 'deposit') {
+    if (btnDep) {
+      btnDep.className = 'btn-action';
+      btnDep.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+      btnDep.style.color = '#fff';
+    }
+    if (btnWith) {
+      btnWith.className = 'btn-secondary';
+      btnWith.style.background = '';
+      btnWith.style.color = '';
+    }
+    if (lblEntity) lblEntity.innerText = 'Origem dos Recursos (De onde sai o ouro):';
+    if (btnExec) {
+      btnExec.innerText = '📥 Confirmar Depósito no Cofre';
+      btnExec.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+      btnExec.style.color = '#fff';
+    }
+  } else {
+    if (btnWith) {
+      btnWith.className = 'btn-action';
+      btnWith.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+      btnWith.style.color = '#000';
+    }
+    if (btnDep) {
+      btnDep.className = 'btn-secondary';
+      btnDep.style.background = '';
+      btnDep.style.color = '';
+    }
+    if (lblEntity) lblEntity.innerText = 'Destino dos Recursos (Para onde vai o ouro):';
+    if (btnExec) {
+      btnExec.innerText = '📤 Confirmar Saque do Cofre';
+      btnExec.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+      btnExec.style.color = '#000';
+    }
+  }
+
+  updateBastionBankEntityLimits();
+}
+
+function populateBastionBankEntities() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const sel = document.getElementById('sel-bank-entity');
+  if (!sel) return;
+
+  const campPlayers = getCampaignPlayers(camp);
+  const stashGold = camp.partyStash?.gold || 0;
+
+  let opts = `<option value="party_stash">🎒 Baú Coletivo do Grupo (${stashGold} PO disponíveis)</option>`;
+  campPlayers.forEach(p => {
+    const heroGold = p.gold || (p.coins ? p.coins.gp : 0) || 0;
+    opts += `<option value="${p.id}">👤 ${p.name} (${heroGold} PO na bolsa)</option>`;
+  });
+
+  sel.innerHTML = opts;
+  updateBastionBankEntityLimits();
+}
+
+function updateBastionBankEntityLimits() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  const bank = getBastionBank(bastion);
+
+  const sel = document.getElementById('sel-bank-entity');
+  const meta = document.getElementById('bank-entity-balance-meta');
+  if (!sel || !meta) return;
+
+  const val = sel.value;
+  let maxAvailable = 0;
+
+  if (currentBastionBankMode === 'deposit') {
+    if (val === 'party_stash') {
+      maxAvailable = camp.partyStash?.gold || 0;
+      meta.innerText = `Saldo disponível no Baú Geral: ${maxAvailable} PO`;
+    } else {
+      const hero = (typeof PLAYERS !== 'undefined' ? PLAYERS.find(p => String(p.id) === String(val)) : null);
+      maxAvailable = hero ? (hero.gold || (hero.coins ? hero.coins.gp : 0) || 0) : 0;
+      meta.innerText = `Saldo na bolsa de ${hero ? hero.name : 'Herói'}: ${maxAvailable} PO`;
+    }
+  } else {
+    maxAvailable = bank.gold || 0;
+    meta.innerText = `Saldo total no Cofre do Bastião para saque: ${maxAvailable} PO`;
+  }
+}
+
+function addBastionBankAmount(add) {
+  const inp = document.getElementById('inp-bank-amount');
+  if (!inp) return;
+  const cur = parseInt(inp.value, 10) || 0;
+  inp.value = cur + add;
+}
+
+function setBastionBankMaxAmount() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  const bank = getBastionBank(bastion);
+  const sel = document.getElementById('sel-bank-entity');
+  const inp = document.getElementById('inp-bank-amount');
+  if (!sel || !inp) return;
+
+  let max = 0;
+  if (currentBastionBankMode === 'deposit') {
+    if (sel.value === 'party_stash') {
+      max = camp.partyStash?.gold || 0;
+    } else {
+      const hero = (typeof PLAYERS !== 'undefined' ? PLAYERS.find(p => String(p.id) === String(sel.value)) : null);
+      max = hero ? (hero.gold || (hero.coins ? hero.coins.gp : 0) || 0) : 0;
+    }
+  } else {
+    max = bank.gold || 0;
+  }
+  inp.value = Math.max(0, max);
+}
+
+function submitBastionBankOperation() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  const bank = getBastionBank(bastion);
+
+  const sel = document.getElementById('sel-bank-entity');
+  const inpAmount = document.getElementById('inp-bank-amount');
+  const inpReason = document.getElementById('inp-bank-reason');
+  if (!sel || !inpAmount) return;
+
+  const entityKey = sel.value;
+  const amount = parseInt(inpAmount.value, 10);
+  const reason = inpReason ? inpReason.value.trim() : '';
+
+  if (isNaN(amount) || amount <= 0) {
+    alert('Por favor, informe uma quantia válida de Peças de Ouro (PO) maior que zero.');
+    return;
+  }
+
+  if (currentBastionBankMode === 'deposit') {
+    if (entityKey === 'party_stash') {
+      camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+      const curStash = camp.partyStash.gold || 0;
+      if (curStash < amount) {
+        alert(`Saldo insuficiente no Baú Geral (${curStash} PO). Não é possível depositar ${amount} PO.`);
+        return;
+      }
+      camp.partyStash.gold -= amount;
+      bank.gold += amount;
+
+      camp.partyStash.history = camp.partyStash.history || [];
+      camp.partyStash.history.push({
+        date: new Date().toISOString().split('T')[0],
+        text: `-${amount} PO transferido para o Cofre do Bastião (${bastion.name})${reason ? ` • ${reason}` : ''}`,
+        type: 'gold_out'
+      });
+      touchPartyStash(camp);
+
+      bank.history.push({
+        id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+        date: new Date().toISOString().split('T')[0],
+        type: 'deposit',
+        amount,
+        entityType: 'party_stash',
+        entityName: 'Baú do Grupo',
+        reason: reason || 'Depósito do Baú Geral'
+      });
+
+      if (typeof addLog === 'function') {
+        addLog(`🏦 <b>Banco do Bastião:</b> +${amount} PO depositado pelo Baú Geral no cofre de "${bastion.name}".`);
+      }
+    } else {
+      const hero = (typeof PLAYERS !== 'undefined' ? PLAYERS.find(p => String(p.id) === String(entityKey)) : null);
+      if (!hero) {
+        alert('Herói não encontrado.');
+        return;
+      }
+      const heroGold = hero.gold || (hero.coins ? hero.coins.gp : 0) || 0;
+      if (heroGold < amount) {
+        alert(`Saldo insuficiente na bolsa de ${hero.name} (${heroGold} PO). Não é possível depositar ${amount} PO.`);
+        return;
+      }
+      hero.gold = heroGold - amount;
+      if (hero.coins) hero.coins.gp = hero.gold;
+      if (typeof touchPlayer === 'function') touchPlayer(hero);
+
+      bank.gold += amount;
+      bank.history.push({
+        id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+        date: new Date().toISOString().split('T')[0],
+        type: 'deposit',
+        amount,
+        entityType: 'player',
+        entityId: hero.id,
+        entityName: hero.name,
+        reason: reason || `Depósito pessoal de ${hero.name}`
+      });
+
+      if (typeof addLog === 'function') {
+        addLog(`🏦 <b>Banco do Bastião:</b> +${amount} PO depositado por ${hero.name} no cofre de "${bastion.name}".`);
+      }
+    }
+  } else {
+    if (bank.gold < amount) {
+      alert(`Saldo insuficiente no Cofre do Bastião (${bank.gold} PO). Não é possível sacar ${amount} PO.`);
+      return;
+    }
+
+    bank.gold -= amount;
+
+    if (entityKey === 'party_stash') {
+      camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+      camp.partyStash.gold = (camp.partyStash.gold || 0) + amount;
+      camp.partyStash.history = camp.partyStash.history || [];
+      camp.partyStash.history.push({
+        date: new Date().toISOString().split('T')[0],
+        text: `+${amount} PO retirado do Cofre do Bastião (${bastion.name})${reason ? ` • ${reason}` : ''}`,
+        type: 'gold_in'
+      });
+      touchPartyStash(camp);
+
+      bank.history.push({
+        id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+        date: new Date().toISOString().split('T')[0],
+        type: 'withdraw',
+        amount,
+        entityType: 'party_stash',
+        entityName: 'Baú do Grupo',
+        reason: reason || 'Saque para o Baú Geral'
+      });
+
+      if (typeof addLog === 'function') {
+        addLog(`🏦 <b>Banco do Bastião:</b> -${amount} PO sacado do cofre de "${bastion.name}" para o Baú Geral.`);
+      }
+    } else {
+      const hero = (typeof PLAYERS !== 'undefined' ? PLAYERS.find(p => String(p.id) === String(entityKey)) : null);
+      if (!hero) {
+        alert('Herói não encontrado.');
+        return;
+      }
+      hero.gold = (hero.gold || (hero.coins ? hero.coins.gp : 0) || 0) + amount;
+      if (hero.coins) hero.coins.gp = hero.gold;
+      if (typeof touchPlayer === 'function') touchPlayer(hero);
+
+      bank.history.push({
+        id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+        date: new Date().toISOString().split('T')[0],
+        type: 'withdraw',
+        amount,
+        entityType: 'player',
+        entityId: hero.id,
+        entityName: hero.name,
+        reason: reason || `Saque pessoal para ${hero.name}`
+      });
+
+      if (typeof addLog === 'function') {
+        addLog(`🏦 <b>Banco do Bastião:</b> -${amount} PO sacado do cofre de "${bastion.name}" por ${hero.name}.`);
+      }
+    }
+  }
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+
+  const goldDisp = document.getElementById('bastion-bank-gold-display');
+  if (goldDisp) goldDisp.innerText = `${bank.gold || 0} PO`;
+  inpAmount.value = '';
+  if (inpReason) inpReason.value = '';
+  populateBastionBankEntities();
+  renderBastionBankHistory();
+  renderBastionsTab(camp.id);
+  renderCampaigns();
+}
+
+function renderBastionBankHistory() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  const bank = getBastionBank(bastion);
+  const list = document.getElementById('bastion-bank-history-list');
+  if (!list) return;
+
+  const raw = bank.history || [];
+  if (raw.length === 0) {
+    list.innerHTML = `<div style="text-align: center; color: #94a3b8; font-size: 11px; padding: 12px;">Nenhuma movimentação registrada no cofre.</div>`;
+    return;
+  }
+
+  const txs = raw.slice(-15).reverse();
+  list.innerHTML = txs.map(tx => `
+    <div class="bank-tx-item ${tx.type === 'deposit' ? 'bank-tx-deposit' : 'bank-tx-withdraw'}">
+      <div>
+        <b>${tx.type === 'deposit' ? '📥 +' : '📤 -'}${tx.amount} PO</b>
+        <span style="color: #94a3b8; margin-left: 6px;">(${tx.entityName || 'Recurso'})</span>
+        ${tx.reason ? `<div style="font-size: 10px; color: #cbd5e1; margin-top: 1px;">${tx.reason}</div>` : ''}
+      </div>
+      <span style="font-size: 10px; color: #64748b; white-space: nowrap;">${tx.date || ''}</span>
+    </div>
+  `).join('');
+}
+
+function clearBastionBankHistory() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  const bank = getBastionBank(bastion);
+
+  if (!bank.history || bank.history.length === 0) return;
+  if (!confirm('Deseja realmente limpar o extrato de movimentações deste cofre?')) return;
+
+  bank.history = [];
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderBastionBankHistory();
+}
+
+// =========================================================================
+// 👥 CORPO DE FUNCIONÁRIOS & ESPECIALISTAS DO BASTIÃO (ISSUE-132)
+// =========================================================================
+
+function openCreateBastionStaffModal(npcId = null) {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  const staff = getBastionStaff(bastion);
+
+  const modal = document.getElementById('modal-create-bastion-staff');
+  if (!modal) return;
+
+  const titleEl = document.getElementById('bastion-staff-modal-title');
+  const inpId = document.getElementById('inp-bstaff-id');
+  const inpName = document.getElementById('inp-bstaff-name');
+  const selIcon = document.getElementById('sel-bstaff-icon');
+  const inpRole = document.getElementById('inp-bstaff-role');
+  const inpWage = document.getElementById('inp-bstaff-wage');
+  const inpTrait = document.getElementById('inp-bstaff-trait');
+  const inpNotes = document.getElementById('inp-bstaff-notes');
+
+  const existing = npcId ? staff.find(x => x.id === npcId) : null;
+
+  if (existing) {
+    if (titleEl) titleEl.innerText = `Editar Especialista: ${existing.name}`;
+    if (inpId) inpId.value = existing.id;
+    if (inpName) inpName.value = existing.name || '';
+    if (selIcon) selIcon.value = existing.icon || '🔨';
+    if (inpRole) inpRole.value = existing.role || '';
+    if (inpWage) inpWage.value = (existing.wage !== undefined ? existing.wage : 2);
+    if (inpTrait) inpTrait.value = existing.trait || '';
+    if (inpNotes) inpNotes.value = existing.notes || '';
+  } else {
+    if (titleEl) titleEl.innerText = 'Criar Novo Especialista do Staff';
+    if (inpId) inpId.value = '';
+    if (inpName) inpName.value = '';
+    if (selIcon) selIcon.value = '🔨';
+    if (inpRole) inpRole.value = 'Armeiro-Chefe / Ferreiro';
+    if (inpWage) inpWage.value = '2';
+    if (inpTrait) inpTrait.value = '';
+    if (inpNotes) inpNotes.value = '';
+  }
+
+  modal.style.display = 'flex';
+  setTimeout(() => { if (inpName && typeof inpName.focus === 'function') inpName.focus(); }, 100);
+}
+
+function closeCreateBastionStaffModal() {
+  const modal = document.getElementById('modal-create-bastion-staff');
+  if (modal) modal.style.display = 'none';
+}
+
+function saveBastionStaffMember() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  const staff = getBastionStaff(bastion);
+
+  const inpId = document.getElementById('inp-bstaff-id')?.value;
+  const name = document.getElementById('inp-bstaff-name')?.value.trim();
+  const icon = document.getElementById('sel-bstaff-icon')?.value || '👤';
+  const role = document.getElementById('inp-bstaff-role')?.value.trim() || 'Especialista';
+  const wage = parseInt(document.getElementById('inp-bstaff-wage')?.value, 10) || 0;
+  const trait = document.getElementById('inp-bstaff-trait')?.value.trim() || '';
+  const notes = document.getElementById('inp-bstaff-notes')?.value.trim() || '';
+
+  if (!name) {
+    alert('Por favor, informe o nome do especialista / NPC.');
+    const el = document.getElementById('inp-bstaff-name');
+    if (el && typeof el.focus === 'function') el.focus();
+    return;
+  }
+
+  if (inpId) {
+    const member = staff.find(x => x.id === inpId);
+    if (member) {
+      member.name = name;
+      member.icon = icon;
+      member.role = role;
+      member.wage = wage;
+      member.trait = trait;
+      member.notes = notes;
+
+      if (member.assignedFacilityId) {
+        const fac = (bastion.specialFacilities || []).find(f => f.id === member.assignedFacilityId);
+        if (fac) {
+          fac.managerNpcName = name;
+          fac.managerNpcIcon = icon;
+          fac.managerNpcRole = role;
+        }
+      }
+    }
+  } else {
+    staff.push({
+      id: 'bstaff_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      name,
+      icon,
+      role,
+      wage,
+      trait,
+      notes,
+      assignedFacilityId: null
+    });
+  }
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+
+  closeCreateBastionStaffModal();
+  renderBastionsTab(camp.id);
+  renderCampaigns();
+
+  if (typeof addLog === 'function') {
+    addLog(`👥 <b>Staff do Bastião:</b> Especialista "${name}" (${role}) registrado no staff de ${bastion.name}.`);
+  }
+}
+
+function deleteBastionStaffMember(npcId) {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  const staff = getBastionStaff(bastion);
+
+  const idx = staff.findIndex(x => x.id === npcId);
+  if (idx === -1) return;
+  const member = staff[idx];
+
+  if (!confirm(`Deseja realmente dispensar e remover o especialista "${member.name}" (${member.role}) do Bastião?`)) return;
+
+  (bastion.specialFacilities || []).forEach(fac => {
+    if (fac.managerNpcId === npcId) {
+      fac.managerNpcId = null;
+      fac.managerNpcName = null;
+      fac.managerNpcIcon = null;
+      fac.managerNpcRole = null;
+    }
+  });
+
+  staff.splice(idx, 1);
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+
+  renderBastionsTab(camp.id);
+  renderCampaigns();
+  if (typeof addLog === 'function') {
+    addLog(`👥 <b>Staff do Bastião:</b> Especialista "${member.name}" dispensado de ${bastion.name}.`);
+  }
+}
+
+function openAssignBastionNpcModal(facilityId) {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  const fac = (bastion.specialFacilities || []).find(f => f.id === facilityId);
+  if (!fac) return;
+
+  const modal = document.getElementById('modal-assign-bastion-npc');
+  if (!modal) return;
+
+  const roomNameEl = document.getElementById('assign-bastion-npc-room-name');
+  if (roomNameEl) roomNameEl.innerText = `${fac.name || 'Instalação'} (${bastion.name})`;
+
+  const inpFacId = document.getElementById('assign-bastion-facility-id');
+  if (inpFacId) inpFacId.value = fac.id;
+
+  const sel = document.getElementById('sel-assign-staff-npc');
+  if (sel) {
+    const staff = getBastionStaff(bastion);
+    if (staff.length === 0) {
+      sel.innerHTML = `<option value="">Nenhum NPC criado no staff. Clique em "➕ Criar Novo NPC" abaixo!</option>`;
+    } else {
+      sel.innerHTML = staff.map(npc => {
+        const isCurrent = fac.managerNpcId === npc.id;
+        let assignedRoomName = '';
+        if (npc.assignedFacilityId && npc.assignedFacilityId !== fac.id) {
+          const otherFac = (bastion.specialFacilities || []).find(f => f.id === npc.assignedFacilityId);
+          if (otherFac) assignedRoomName = ` (⚠️ Já alocado em: ${otherFac.name})`;
+        }
+        return `
+          <option value="${npc.id}" ${isCurrent ? 'selected' : ''}>
+            ${npc.icon || '👤'} ${npc.name} • ${npc.role || 'Especialista'}${assignedRoomName}
+          </option>
+        `;
+      }).join('');
+    }
+  }
+
+  modal.style.display = 'flex';
+}
+
+function closeAssignBastionNpcModal() {
+  const modal = document.getElementById('modal-assign-bastion-npc');
+  if (modal) modal.style.display = 'none';
+}
+
+function confirmAssignBastionNpc() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  const inpFacId = document.getElementById('assign-bastion-facility-id')?.value;
+  const fac = (bastion.specialFacilities || []).find(f => f.id === inpFacId);
+  if (!fac) return;
+
+  const selNpc = document.getElementById('sel-assign-staff-npc')?.value;
+  if (!selNpc) {
+    alert('Nenhum especialista selecionado.');
+    return;
+  }
+
+  const staff = getBastionStaff(bastion);
+  const npc = staff.find(x => x.id === selNpc);
+  if (!npc) {
+    alert('Especialista não encontrado.');
+    return;
+  }
+
+  // Desvincula de cômodo anterior se houver (sem repetição do mesmo NPC)
+  if (npc.assignedFacilityId && npc.assignedFacilityId !== fac.id) {
+    const oldFac = (bastion.specialFacilities || []).find(f => f.id === npc.assignedFacilityId);
+    if (oldFac) {
+      oldFac.managerNpcId = null;
+      oldFac.managerNpcName = null;
+      oldFac.managerNpcIcon = null;
+      oldFac.managerNpcRole = null;
+    }
+  }
+
+  // Desvincula NPC anterior deste cômodo se houver
+  if (fac.managerNpcId && fac.managerNpcId !== npc.id) {
+    const prevNpc = staff.find(x => x.id === fac.managerNpcId);
+    if (prevNpc) prevNpc.assignedFacilityId = null;
+  }
+
+  fac.managerNpcId = npc.id;
+  fac.managerNpcName = npc.name;
+  fac.managerNpcIcon = npc.icon;
+  fac.managerNpcRole = npc.role;
+  npc.assignedFacilityId = fac.id;
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+
+  closeAssignBastionNpcModal();
+  renderBastionsTab(camp.id);
+  renderCampaigns();
+
+  if (typeof addLog === 'function') {
+    addLog(`👤 <b>Bastião:</b> ${npc.icon} ${npc.name} (${npc.role}) agora é o encarregado da ${fac.name}.`);
+  }
+}
+
+function unassignBastionNpc(facilityId = null) {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  const targetId = facilityId || document.getElementById('assign-bastion-facility-id')?.value;
+  const fac = (bastion.specialFacilities || []).find(f => f.id === targetId);
+  if (!fac) return;
+
+  if (fac.managerNpcId) {
+    const staff = getBastionStaff(bastion);
+    const npc = staff.find(x => x.id === fac.managerNpcId);
+    if (npc) npc.assignedFacilityId = null;
+  }
+
+  const prevName = fac.managerNpcName || 'Responsável';
+  fac.managerNpcId = null;
+  fac.managerNpcName = null;
+  fac.managerNpcIcon = null;
+  fac.managerNpcRole = null;
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+
+  closeAssignBastionNpcModal();
+  renderBastionsTab(camp.id);
+  renderCampaigns();
+
+  if (typeof addLog === 'function') {
+    addLog(`👤 <b>Bastião:</b> ${prevName} foi desvinculado da ${fac.name}.`);
+  }
 }
 
 // Abre o Modal de Ações com Filtro por Nível e Seletores de Itens
@@ -2845,13 +3638,15 @@ function advanceBastionTurn() {
             carrier: 'Baú do Grupo',
             desc: `Item fabricado no Bastião pela ordem "${fac.currentOrder.name}".`
           });
+          const mgrNotice = fac.managerNpcName ? ` (Supervisionado por ${fac.managerNpcName})` : '';
           camp.partyStash.history.push({
             date: new Date().toISOString().split('T')[0],
-            text: `+1x ${fac.currentOrder.selectedItem.name} fabricado na ${fac.name}`,
+            text: `+1x ${fac.currentOrder.selectedItem.name} fabricado na ${fac.name}${mgrNotice}`,
             type: 'item_in'
           });
         } else if (fac.currentOrder.rewardItem) {
           const rItem = fac.currentOrder.rewardItem;
+          const mgrNotice = fac.managerNpcName ? ` (Supervisionado por ${fac.managerNpcName})` : '';
           camp.partyStash.items = camp.partyStash.items || [];
           camp.partyStash.items.push({
             id: 'it_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
@@ -2863,7 +3658,7 @@ function advanceBastionTurn() {
           });
           camp.partyStash.history.push({
             date: new Date().toISOString().split('T')[0],
-            text: `+${rItem.qty || 1}x ${rItem.name} produzido no Bastião`,
+            text: `+${rItem.qty || 1}x ${rItem.name} produzido no Bastião (${fac.name})${mgrNotice}`,
             type: 'item_in'
           });
         }
@@ -3240,7 +4035,26 @@ if (typeof module !== 'undefined' && module.exports) {
     switchBastionCampaign,
     promptEditBastionInfo,
     getSelectedBastionCampaign,
-    getCampaignPlayers
+    getCampaignPlayers,
+    getBastionBank,
+    getBastionStaff,
+    openBastionBankModal,
+    closeBastionBankModal,
+    setBastionBankMode,
+    populateBastionBankEntities,
+    updateBastionBankEntityLimits,
+    addBastionBankAmount,
+    setBastionBankMaxAmount,
+    submitBastionBankOperation,
+    clearBastionBankHistory,
+    openCreateBastionStaffModal,
+    closeCreateBastionStaffModal,
+    saveBastionStaffMember,
+    deleteBastionStaffMember,
+    openAssignBastionNpcModal,
+    closeAssignBastionNpcModal,
+    confirmAssignBastionNpc,
+    unassignBastionNpc
   };
 }
 
@@ -3278,6 +4092,25 @@ if (typeof window !== 'undefined') {
   window.promptEditBastionInfo = promptEditBastionInfo;
   window.getSelectedBastionCampaign = getSelectedBastionCampaign;
   window.getCampaignPlayers = getCampaignPlayers;
+  window.getBastionBank = getBastionBank;
+  window.getBastionStaff = getBastionStaff;
+  window.openBastionBankModal = openBastionBankModal;
+  window.closeBastionBankModal = closeBastionBankModal;
+  window.setBastionBankMode = setBastionBankMode;
+  window.populateBastionBankEntities = populateBastionBankEntities;
+  window.updateBastionBankEntityLimits = updateBastionBankEntityLimits;
+  window.addBastionBankAmount = addBastionBankAmount;
+  window.setBastionBankMaxAmount = setBastionBankMaxAmount;
+  window.submitBastionBankOperation = submitBastionBankOperation;
+  window.clearBastionBankHistory = clearBastionBankHistory;
+  window.openCreateBastionStaffModal = openCreateBastionStaffModal;
+  window.closeCreateBastionStaffModal = closeCreateBastionStaffModal;
+  window.saveBastionStaffMember = saveBastionStaffMember;
+  window.deleteBastionStaffMember = deleteBastionStaffMember;
+  window.openAssignBastionNpcModal = openAssignBastionNpcModal;
+  window.closeAssignBastionNpcModal = closeAssignBastionNpcModal;
+  window.confirmAssignBastionNpc = confirmAssignBastionNpc;
+  window.unassignBastionNpc = unassignBastionNpc;
 }
 
 // Auto-carregamento imediato na avaliação do módulo

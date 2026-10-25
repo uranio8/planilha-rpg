@@ -7455,6 +7455,164 @@ const selCampFinal = vm.runInContext("getSelectedBastionCampaign()", sandbox);
 assert(selCampFinal && selCampFinal.id === 'camp_alpha_test', 'Alternância de volta para a Campanha Alpha foi bem sucedida');
 assert(selCampFinal.bastion.name === 'Torre de Strahd', 'Bastião ativo agora é a Torre de Strahd');
 
+// =========================================================================
+// BATERIA 100: Testes de Criação de Staff de NPCs & Banco/Cofre do Bastião (ISSUE-132)
+// =========================================================================
+console.log('\n🏦 100. Testes de Criação de Staff de NPCs & Banco/Cofre do Bastião (ISSUE-132):');
+
+// 1. Integridade do HTML compilado
+assert(compiledHtml.includes('id="modal-bastion-bank"'), 'HTML compilado contém o modal do Banco/Cofre (#modal-bastion-bank)');
+assert(compiledHtml.includes('id="modal-create-bastion-staff"'), 'HTML compilado contém o modal de criação de staff (#modal-create-bastion-staff)');
+assert(compiledHtml.includes('id="modal-assign-bastion-npc"'), 'HTML compilado contém o modal de designação de responsável (#modal-assign-bastion-npc)');
+assert(compiledHtml.includes('id="bastion-tab-bank-badge"'), 'Barra de controles do bastião contém o badge de saldo do cofre (#bastion-tab-bank-badge)');
+assert(compiledHtml.includes('bastion-bank-panel'), 'HTML compilado contém a classe de estilo do painel do banco');
+assert(compiledHtml.includes('bastion-staff-section'), 'HTML compilado contém a classe de estilo do corpo de funcionários');
+
+// 2. Exportação de funções no sandbox
+assert(typeof vm.runInContext("getBastionBank", sandbox) === 'function', 'Função getBastionBank disponível');
+assert(typeof vm.runInContext("getBastionStaff", sandbox) === 'function', 'Função getBastionStaff disponível');
+assert(typeof vm.runInContext("openBastionBankModal", sandbox) === 'function', 'Função openBastionBankModal disponível');
+assert(typeof vm.runInContext("submitBastionBankOperation", sandbox) === 'function', 'Função submitBastionBankOperation disponível');
+assert(typeof vm.runInContext("openCreateBastionStaffModal", sandbox) === 'function', 'Função openCreateBastionStaffModal disponível');
+assert(typeof vm.runInContext("saveBastionStaffMember", sandbox) === 'function', 'Função saveBastionStaffMember disponível');
+assert(typeof vm.runInContext("confirmAssignBastionNpc", sandbox) === 'function', 'Função confirmAssignBastionNpc disponível');
+assert(typeof vm.runInContext("unassignBastionNpc", sandbox) === 'function', 'Função unassignBastionNpc disponível');
+
+// 3. Testes Funcionais do Banco / Cofre do Bastião
+vm.runInContext(`
+  // Configura ambiente para teste bancário
+  const campBankTest = {
+    id: 'camp_bank_test',
+    name: 'Campanha Finanças de Faerûn',
+    status: 'active',
+    playerIds: ['p_bank_hero'],
+    partyStash: { gold: 500, items: [], history: [] },
+    bastion: {
+      name: 'Cidadela Dourada',
+      level: 6,
+      turnCount: 1,
+      bank: { gold: 0, history: [] },
+      staff: [],
+      specialFacilities: [
+        { id: 'fac_forge', key: 'smithy', name: 'Forja dos Titãs', managerNpcId: null, currentOrder: null },
+        { id: 'fac_lab', key: 'laboratory', name: 'Laboratório Arcano', managerNpcId: null, currentOrder: null }
+      ],
+      history: []
+    }
+  };
+
+  const playerBankHero = {
+    id: 'p_bank_hero',
+    name: 'Gildor Tesoureiro',
+    student: 'Lucas',
+    gold: 200,
+    coins: { gp: 200 }
+  };
+
+  CAMPAIGNS_STATE.campaigns.push(campBankTest);
+  PLAYERS.push(playerBankHero);
+  switchBastionCampaign('camp_bank_test');
+
+  // Abre modal e simula depósito de 150 PO do Baú do Grupo
+  openBastionBankModal();
+  setBastionBankMode('deposit');
+  document.getElementById('sel-bank-entity').value = 'party_stash';
+  document.getElementById('inp-bank-amount').value = '150';
+  document.getElementById('inp-bank-reason').value = 'Fundo inicial de obras';
+  submitBastionBankOperation();
+`, sandbox);
+
+const bankAfterDep1 = vm.runInContext("getBastionBank(getSelectedBastionCampaign().bastion)", sandbox);
+const stashAfterDep1 = vm.runInContext("getSelectedBastionCampaign().partyStash.gold", sandbox);
+assert(bankAfterDep1.gold === 150, 'Depósito creditou 150 PO no Cofre do Bastião');
+assert(stashAfterDep1 === 350, 'Depósito debitou 150 PO do Baú do Grupo (restam 350 PO)');
+assert(bankAfterDep1.history.length === 1, 'Extrato do cofre registrou 1 movimentação');
+assert(bankAfterDep1.history[0].type === 'deposit', 'Tipo da movimentação é depósito');
+
+// Testar depósito a partir da bolsa pessoal de um Herói
+vm.runInContext(`
+  setBastionBankMode('deposit');
+  document.getElementById('sel-bank-entity').value = 'p_bank_hero';
+  document.getElementById('inp-bank-amount').value = '50';
+  document.getElementById('inp-bank-reason').value = 'Doação pessoal do Gildor';
+  submitBastionBankOperation();
+`, sandbox);
+
+const bankAfterDep2 = vm.runInContext("getBastionBank(getSelectedBastionCampaign().bastion)", sandbox);
+const heroAfterDep2 = vm.runInContext("PLAYERS.find(p => p.id === 'p_bank_hero')", sandbox);
+assert(bankAfterDep2.gold === 200, 'Cofre agora possui 200 PO acumulados');
+assert(heroAfterDep2.gold === 150, 'Bolsa do herói foi debitada em 50 PO (restam 150 PO)');
+
+// Testar saque de 80 PO do cofre para o Baú Geral
+vm.runInContext(`
+  setBastionBankMode('withdraw');
+  document.getElementById('sel-bank-entity').value = 'party_stash';
+  document.getElementById('inp-bank-amount').value = '80';
+  document.getElementById('inp-bank-reason').value = 'Compra de mantimentos';
+  submitBastionBankOperation();
+`, sandbox);
+
+const bankAfterWith1 = vm.runInContext("getBastionBank(getSelectedBastionCampaign().bastion)", sandbox);
+const stashAfterWith1 = vm.runInContext("getSelectedBastionCampaign().partyStash.gold", sandbox);
+assert(bankAfterWith1.gold === 120, 'Saque debitou 80 PO do cofre (restam 120 PO)');
+assert(stashAfterWith1 === 430, 'Saque creditou 80 PO no Baú Geral (total 430 PO)');
+
+// 4. Testes de Criação de Staff de NPCs Exclusivos pelo Mestre (Sem Repetição)
+vm.runInContext(`
+  // Cria NPC 1: Thorgar Mão-de-Ferro (Ferreiro)
+  openCreateBastionStaffModal();
+  document.getElementById('inp-bstaff-id').value = '';
+  document.getElementById('inp-bstaff-name').value = 'Thorgar Mão-de-Ferro';
+  document.getElementById('sel-bstaff-icon').value = '🔨';
+  document.getElementById('inp-bstaff-role').value = 'Armeiro-Chefe';
+  document.getElementById('inp-bstaff-wage').value = '3';
+  document.getElementById('inp-bstaff-trait').value = 'Mestre forjador anão';
+  saveBastionStaffMember();
+
+  // Cria NPC 2: Irmã Selene (Alquimista)
+  openCreateBastionStaffModal();
+  document.getElementById('inp-bstaff-id').value = '';
+  document.getElementById('inp-bstaff-name').value = 'Irmã Selene';
+  document.getElementById('sel-bstaff-icon').value = '⚗️';
+  document.getElementById('inp-bstaff-role').value = 'Alquimista Chefe';
+  document.getElementById('inp-bstaff-wage').value = '4';
+  document.getElementById('inp-bstaff-trait').value = 'Erudita em poções curativas';
+  saveBastionStaffMember();
+`, sandbox);
+
+const staffList = vm.runInContext("getBastionStaff(getSelectedBastionCampaign().bastion)", sandbox);
+assert(staffList.length === 2, 'Mestre criou com sucesso 2 especialistas no staff do bastião');
+const thorgar = staffList.find(n => n.name === 'Thorgar Mão-de-Ferro');
+const selene = staffList.find(n => n.name === 'Irmã Selene');
+assert(thorgar && thorgar.role === 'Armeiro-Chefe', 'Thorgar foi criado com cargo de Armeiro-Chefe');
+assert(selene && selene.role === 'Alquimista Chefe', 'Selene foi criada com cargo de Alquimista Chefe');
+
+// Designar Thorgar para a Forja dos Titãs
+vm.runInContext(`
+  openAssignBastionNpcModal('fac_forge');
+  document.getElementById('sel-assign-staff-npc').value = '${thorgar.id}';
+  confirmAssignBastionNpc();
+`, sandbox);
+
+const facForge = vm.runInContext("getSelectedBastionCampaign().bastion.specialFacilities.find(f => f.id === 'fac_forge')", sandbox);
+const thorgarAfterAssign = vm.runInContext("getBastionStaff(getSelectedBastionCampaign().bastion).find(n => n.id === '" + thorgar.id + "')", sandbox);
+assert(facForge.managerNpcId === thorgar.id, 'Thorgar foi vinculado como encarregado da Forja dos Titãs');
+assert(facForge.managerNpcName === 'Thorgar Mão-de-Ferro', 'Nome do encarregado refletido na instalação');
+assert(thorgarAfterAssign && thorgarAfterAssign.assignedFacilityId === 'fac_forge', 'Staff registra que Thorgar está alocado na Forja');
+
+// Garantia de Exclusividade (Sem Repetição):
+// Se o Mestre tentar designar Thorgar para o Laboratório, o sistema deve automaticamente desvinculá-lo da Forja
+vm.runInContext(`
+  openAssignBastionNpcModal('fac_lab');
+  document.getElementById('sel-assign-staff-npc').value = '` + thorgar.id + `';
+  confirmAssignBastionNpc();
+`, sandbox);
+
+const facForgeAfterMove = vm.runInContext("getSelectedBastionCampaign().bastion.specialFacilities.find(f => f.id === 'fac_forge')", sandbox);
+const facLabAfterMove = vm.runInContext("getSelectedBastionCampaign().bastion.specialFacilities.find(f => f.id === 'fac_lab')", sandbox);
+assert(facLabAfterMove.managerNpcId === thorgar.id, 'Thorgar agora é o encarregado do Laboratório');
+assert(facForgeAfterMove.managerNpcId === null, 'Forja anterior foi automaticamente liberada, garantindo exclusividade e sem repetição de NPCs');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
