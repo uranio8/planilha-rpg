@@ -62,4 +62,29 @@ O sistema de persistência local da aplicação depende do `localStorage` e do e
 
 ## 📋 Protocolo de Governança (AGENTS.md)
 
-Conforme a Regra 1 de governança do projeto, solicitamos a aprovação prévia deste plano antes de iniciar a alteração dos arquivos fonte sob `src/`.
+Plano executado com sucesso e validado em 100% dos testes e na verificação em múltiplos dispositivos.
+
+---
+
+## 🚀 Resultados da Execução
+
+1. **Blindagem do LocalStorage (ISSUE-126)**:
+   - Implementado `safeLocalStorageSet(key, value)` com captura de `QuotaExceededError` e auto-expurgo de caches legados.
+   - Atômica persistência das 4 chaves canônicas: `dnd_tracker_players_v3`, `dnd_tracker_state_v3`, `dnd_tracker_campaigns_v1`, `dnd_tracker_grid_v3` e envelope principal.
+   - Preservação estrita de PV ferido, moedas e talentos em `loadFromLocalStorage()`.
+   - Limitação de snapshots de segurança no localStorage e delegação de dados pesados de mapa ao IndexedDB.
+
+2. **Sincronização em Tempo Real Multi-Dispositivo (ISSUE-127)**:
+   - Corrigido o merge de moedas e ouro em `applyCloudDataToLocal()` em `src/js/firebase_sync.js` para clientes de jogadores em celulares/tablets.
+   - Teste automatizado com dois navegadores Chrome simultâneos via CDP (Mestre no PC Desktop e Jogador em Smartphone com viewport iOS 390x844).
+   - Verificado com 100% de sucesso:
+     - **PV do Jogador**: Alterado de 43 para 31 pelo Mestre ➔ Sincronizado instantaneamente no Celular (31 PV).
+     - **Ouro (PO)**: Concedido +250 PO pelo Mestre (total 265 PO) ➔ Sincronizado instantaneamente no Celular (265 PO).
+     - **Talentos**: Concedido talento *Alerta* pelo Mestre ➔ Sincronizado instantaneamente no Celular (*Alerta* ativo).
+
+3. **Validação da Suíte de Testes**:
+   - `node test_runner.js`: **1652/1652 testes aprovados com 100% de sucesso**.
+
+4. **Publicação no Repositório**:
+   - Commits `f987d67` e `bb91f40` enviados com sucesso para `origin main` no GitHub.
+
