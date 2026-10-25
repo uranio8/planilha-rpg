@@ -7079,6 +7079,28 @@ assert(Array.isArray(snapHistory) && snapHistory.length > 0, 'saveSafetySnapshot
 assert(snapHistory[0].gridState && snapHistory[0].gridState._omittedBgInSnapshot === true, 'saveSafetySnapshot omitiu imagem base64 gigante do grid para economizar quota');
 assert(snapHistory.length <= 4, 'saveSafetySnapshot limitou histórico a no máximo 4 snapshots no localStorage');
 
+// ==========================================
+// 95. TESTES DE NEUTRALIZAÇÃO DE SPIN-BUTTONS E ERGONOMIA DE INPUTS NUMÉRICOS (ISSUE-128)
+// ==========================================
+console.log('\n🔢 95. Testes de Neutralização de Spin-Buttons & Ergonomia de Inputs Numéricos (ISSUE-128):');
+
+const compiledHtml = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+
+// 1. Validação do CSS global de eliminação de spin-buttons nativos
+assert(compiledHtml.includes('::-webkit-outer-spin-button') && compiledHtml.includes('::-webkit-inner-spin-button'), 'CSS compilado contém seletores de pseudo-elementos spin-button WebKit');
+assert(compiledHtml.includes('-webkit-appearance: none !important;'), 'CSS compilado neutraliza -webkit-appearance em spin buttons');
+assert(compiledHtml.includes('-moz-appearance: textfield !important;'), 'CSS compilado neutraliza -moz-appearance em input[type="number"]');
+assert(compiledHtml.includes('appearance: textfield !important;'), 'CSS compilado define appearance: textfield padrão');
+
+// 2. Validação de dimensões ergonômicas de .roll20-hp-input e .inline-hp-input
+assert(compiledHtml.includes('.roll20-hp-input') && compiledHtml.includes('width: 52px;'), 'CSS compilado expande largura de .roll20-hp-input para 52px');
+assert(compiledHtml.includes('.inline-hp-input') && compiledHtml.includes('width: 54px !important;'), 'CSS compilado expande largura de .inline-hp-input para 54px');
+
+// 3. Validação de auto-seleção tátil e por foco
+assert(compiledHtml.includes('class="roll20-hp-input"') && compiledHtml.includes('onfocus="this.select()"'), 'Input de HP da ficha Roll20 possui onfocus="this.select()"');
+assert(compiledHtml.includes('class="roll20-hp-input"') && compiledHtml.includes('onclick="this.select()"'), 'Input de HP da ficha Roll20 possui onclick="this.select()"');
+assert(compiledHtml.includes('class="inline-hp-input"') && compiledHtml.includes('this.select()'), 'Input de HP inline no combate possui auto-seleção com this.select()');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

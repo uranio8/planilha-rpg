@@ -1229,7 +1229,7 @@ function enableInlineHpEdit(combatantId, evt) {
   if (parentSpan.querySelector('input')) return;
 
   const curHp = c.hp;
-  parentSpan.innerHTML = `PV: <input type="number" min="0" max="${c.maxHp}" value="${curHp}" class="inline-hp-input" id="inp-inline-hp-${combatantId}" onclick="event.stopPropagation()" onblur="saveInlineHpEdit('${combatantId}', this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"> / ${c.maxHp}`;
+  parentSpan.innerHTML = `PV: <input type="number" min="0" max="${c.maxHp}" value="${curHp}" class="inline-hp-input" id="inp-inline-hp-${combatantId}" onfocus="this.select()" onclick="event.stopPropagation();this.select()" onblur="saveInlineHpEdit('${combatantId}', this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"> / ${c.maxHp}`;
   const inp = document.getElementById(`inp-inline-hp-${combatantId}`);
   if (inp) {
     inp.focus();

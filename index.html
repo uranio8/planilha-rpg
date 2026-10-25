@@ -52,6 +52,17 @@
     ::-webkit-scrollbar-thumb { background: #2a374f; border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
 
+    /* Neutralização de spin-buttons nativos em inputs numéricos para melhor ergonomia */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none !important;
+      margin: 0 !important;
+    }
+    input[type="number"] {
+      -moz-appearance: textfield !important;
+      appearance: textfield !important;
+    }
+
     /* HEADER */
     header {
       background: rgba(15, 21, 35, 0.92);
@@ -697,10 +708,10 @@
       border-bottom: 1px dashed var(--primary);
     }
     .inline-hp-input {
-      width: 48px !important;
-      height: 22px !important;
+      width: 54px !important;
+      height: 24px !important;
       padding: 1px 4px !important;
-      font-size: 12px !important;
+      font-size: 13px !important;
       font-weight: 800 !important;
       color: #fff !important;
       background: #090d18 !important;
@@ -9659,7 +9670,7 @@
       gap: 4px;
     }
     .roll20-hp-input {
-      width: 44px;
+      width: 52px;
       height: 32px;
       background: #090d16;
       border: 1px solid var(--border-color);
@@ -9668,6 +9679,13 @@
       font-weight: 700;
       font-size: 14px;
       text-align: center;
+      padding: 0 4px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .roll20-hp-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+      outline: none;
     }
     .roll20-btn-hp-dmg {
       background: linear-gradient(135deg, #ef4444, #dc2626);
@@ -39815,7 +39833,7 @@ function enableInlineHpEdit(combatantId, evt) {
   if (parentSpan.querySelector('input')) return;
 
   const curHp = c.hp;
-  parentSpan.innerHTML = `PV: <input type="number" min="0" max="${c.maxHp}" value="${curHp}" class="inline-hp-input" id="inp-inline-hp-${combatantId}" onclick="event.stopPropagation()" onblur="saveInlineHpEdit('${combatantId}', this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"> / ${c.maxHp}`;
+  parentSpan.innerHTML = `PV: <input type="number" min="0" max="${c.maxHp}" value="${curHp}" class="inline-hp-input" id="inp-inline-hp-${combatantId}" onfocus="this.select()" onclick="event.stopPropagation();this.select()" onblur="saveInlineHpEdit('${combatantId}', this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"> / ${c.maxHp}`;
   const inp = document.getElementById(`inp-inline-hp-${combatantId}`);
   if (inp) {
     inp.focus();
@@ -41548,7 +41566,7 @@ function renderPlayers() {
               <!-- STEPPER DE DANO / CURA INSTANTÂNEO -->
               <div class="roll20-hp-stepper-box">
                 <button type="button" class="roll20-btn-hp-dmg" onclick="applyRoll20QuickDamage('${p.id}')" title="Aplicar Dano">💔 Dano</button>
-                <input type="number" id="roll20-hp-input-${p.id}" class="roll20-hp-input" value="1" min="1" max="999" onkeydown="if(event.key==='Enter'){event.preventDefault();applyRoll20QuickDamage('${p.id}');}">
+                <input type="number" id="roll20-hp-input-${p.id}" class="roll20-hp-input" value="1" min="1" max="999" onfocus="this.select()" onclick="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();applyRoll20QuickDamage('${p.id}');}">
                 <button type="button" class="roll20-btn-hp-heal" onclick="applyRoll20QuickHeal('${p.id}')" title="Aplicar Cura">💚 Cura</button>
               </div>
             </div>

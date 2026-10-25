@@ -1635,7 +1635,7 @@ function renderPlayers() {
               <!-- STEPPER DE DANO / CURA INSTANTÂNEO -->
               <div class="roll20-hp-stepper-box">
                 <button type="button" class="roll20-btn-hp-dmg" onclick="applyRoll20QuickDamage('${p.id}')" title="Aplicar Dano">💔 Dano</button>
-                <input type="number" id="roll20-hp-input-${p.id}" class="roll20-hp-input" value="1" min="1" max="999" onkeydown="if(event.key==='Enter'){event.preventDefault();applyRoll20QuickDamage('${p.id}');}">
+                <input type="number" id="roll20-hp-input-${p.id}" class="roll20-hp-input" value="1" min="1" max="999" onfocus="this.select()" onclick="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();applyRoll20QuickDamage('${p.id}');}">
                 <button type="button" class="roll20-btn-hp-heal" onclick="applyRoll20QuickHeal('${p.id}')" title="Aplicar Cura">💚 Cura</button>
               </div>
             </div>

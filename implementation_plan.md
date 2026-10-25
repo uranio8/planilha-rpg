@@ -1,90 +1,65 @@
-# Plano de Implementação - Blindagem & Otimização Definitiva do LocalStorage (ISSUE-126)
+# Plano de Implementação - Remoção de Setas Nativas (Spin Buttons) e Otimização Ergonômica de Inputs Numéricos (ISSUE-128)
 
 ## 📌 Contexto e Diagnóstico
 
-O sistema de persistência local da aplicação depende do `localStorage` e do espelhamento secundário no `IndexedDB`. Identificamos vulnerabilidades críticas que causam perda de dados ou comportamento errático:
+O usuário enviou captura de tela demonstrando que em inputs numéricos compactos (como o stepper de dano/cura da Ficha Roll20 `.roll20-hp-input`, o ajuste direto de PV em combate `.inline-hp-input`, quantidade de monstros `.monster-qty-input` e campos de atributos), as setas nativas do navegador (`spin buttons`) espremem o texto do número, ocupando quase metade do campo e impedindo a inserção ou edição limpa dos valores. Ao tentar clicar ou tocar para digitar, o usuário frequentemente esbarra nas setas acidentalmente.
 
-### 1. ⚠️ Fragmentação e Descompasso de Chaves
-- `saveToLocalStorage()` em `src/js/core.js` gravava apenas no envelope `dnd5e_prisco_sheet_state_v2` e em `dnd_tracker_players_v3` / `dnd_tracker_state_v3`.
-- As chaves oficiais canônicas definidas nas diretrizes do projeto (`dnd_tracker_campaigns_v1` e `dnd_tracker_grid_v3`) eram gravadas separadamente em outros arquivos (`campaigns.js`, `vtt_grid.js`), gerando descompassos onde campanhas e grid ficavam dessincronizados do estado principal.
-
-### 2. 💥 Risco de `QuotaExceededError` (Limite de 5MB do Navegador)
-- O navegador impõe limite rígido de ~5MB para o `localStorage` por origem.
-- O salvamento de imagens base64 de mapas no grid somado aos múltiplos snapshots de segurança (`dnd5e_safety_snapshots_history_v1`) acumulava centenas de kilobytes a megabytes, podendo estourar a cota silenciosamente.
-- Quando ocorria `QuotaExceededError`, o salvamento falhava em silêncio dentro do `catch (e)`, e o usuário continuava usando a planilha acreditando que estava salvando.
-
-### 3. 🔄 Sobrescrita de Modificações no `loadFromLocalStorage()`
-- No boot (`core.js`), `loadFromLocalStorage()` é invocado antes de `campaigns.js` ser avaliado no bundle concatenado, podendo gravar `campaignsState: null` no envelope `STORAGE_KEY`.
-- Durante a sanitização e migração de heróis no carregamento, propriedades legítimas modificadas pelo usuário (como ouro, PV e campos personalizados) podiam ser revertidas para valores padrão de `CANONICAL_INITIAL_PLAYERS`.
-- Faltava sanitização proativa contra dados corrompidos ou chaves legadas inúteis (`v1`, drafts antigos) que ocupam espaço desnecessário.
+### Causas Identificadas:
+1. **Comportamento padrão dos navegadores (WebKit/Blink/Gecko)**: Navegadores inserem setas verticais cinzas (`::-webkit-inner-spin-button` e `::-webkit-outer-spin-button`) por padrão em `<input type="number">`.
+2. **Espaço útil reduzido**: Em campos com largura de 38px a 48px, as setas ocupam de 16px a 20px, cortando números como "1", "12" ou "100" e dificultando o posicionamento do cursor.
+3. **Falta de seleção automática (`this.select()`)**: Ao clicar no campo, o texto anterior não era auto-selecionado, exigindo que o usuário use Backspace antes de digitar.
 
 ---
 
-## 🏗️ Módulos e Arquivos Afetados
+## 🏗️ Proposta de Solução
 
-1. **`src/js/core.js`**:
-   - **`saveToLocalStorage()`**:
-     - Gravação unificada e atômica de todas as chaves canônicas: `STORAGE_KEY`, `dnd_tracker_players_v3`, `dnd_tracker_state_v3`, `dnd_tracker_grid_v3` e `dnd_tracker_campaigns_v1`.
-     - Tratamento defensivo de `QuotaExceededError`: expurgo automático de caches legados (`v1`, backups antigos de snapshots, logs muito longos) e re-tentativa imediata.
-     - Preservação estrita de `campaignsState` existente mesmo se `CAMPAIGNS_STATE` ainda não estiver no escopo no momento da chamada.
-   - **`loadFromLocalStorage()`**:
-     - Priorização e unificação resiliente: lê do envelope `STORAGE_KEY` e das chaves canônicas `v3` com fallback ordenado.
-     - Proteção contra reversão de dados: preservar incondicionalmente alterações de PV, moedas/ouro, notas, magias, talentos e inventário, sem que `CANONICAL_INITIAL_PLAYERS` reverta dados mais recentes.
-   - **`saveSafetySnapshot()`**:
-     - Limitar o histórico a no máximo 3 snapshots e excluir cópias redundantes de mapas pesados do VTT no payload do localStorage (delegando o mapa ao IndexedDB).
-2. **`src/js/campaigns.js`**:
-   - Garantir sincronização bidirecional entre `CAMPAIGNS_STATE`, `dnd5e_prisco_campaigns_v1` e `dnd_tracker_campaigns_v1` em `saveCampaignsState()` e `loadCampaignsState()`.
-3. **`src/js/vtt_grid.js`**:
-   - Compactação e guarda contra estouro de quota em `saveGridStatePermanently()`.
-4. **`builder.js`**:
-   - Recompilação do arquivo standalone `planilha do rpg.html` e `index.html`.
-5. **`test_runner.js`**:
-   - Criação da **Bateria 94** com testes específicos para:
-     - Persistência e integridade das 4 chaves canônicas no `saveToLocalStorage()`;
-     - Recuperação automática em caso de `QuotaExceededError`;
-     - Preservação de moedas, anotações, PV e itens após reload;
-     - Retenção do histórico de campanhas e grid.
-6. **`issues/README.md`**:
-   - Registro detalhado da **ISSUE-126**.
+### 1. Eliminação Global de Spin-Buttons Nativos no CSS (`src/styles/head_css.html`)
+Adicionar reset universal em CSS:
+```css
+/* Neutralização de spin-buttons nativos em inputs numéricos para melhor ergonomia */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
 
----
+input[type="number"] {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
+```
 
-## 🧪 Estratégia de Verificação
-
-1. **Testes Automatizados**:
-   - Executar `node test_runner.js` garantindo que todos os 1634+ testes existentes e os novos da Bateria 94 passem com 100% de sucesso.
-2. **Teste em Navegador Real com Simulação de Quota e F5**:
-   - Executar script em Chrome Headless via CDP simulando modificações reais (PV, ouro, combate, baú e grid), forçando reload da página e conferindo se 100% das alterações são mantidas sem perdas.
-3. **Compilação**:
-   - Executar `node builder.js`.
+### 2. Aprimoramento Específico de Inputs Compactos
+- **`.roll20-hp-input`**:
+  - Ajustar largura de `44px` para `52px` com `padding: 0 4px;` e `text-align: center`.
+  - Adicionar `onfocus="this.select()"` e `onclick="this.select()"` no HTML (`src/js/players.js`), permitindo substituição imediata ao tocar ou clicar no campo sem necessidade de apagar antes.
+- **`.inline-hp-input`** (Combate):
+  - Garantir `min-width: 52px;` e `this.select()` no foco.
+- **`.monster-qty-input`** (Bestiário) e **`.hp-quick-input`**:
+  - Garantir largura adequada e desobstrução total.
 
 ---
 
-## 📋 Protocolo de Governança (AGENTS.md)
+## 🧪 Estratégia de Testes e Validação
+1. **Compilação**: Executar `node builder.js`.
+2. **Bateria de Testes Automatizados**: Criar testes na Bateria 95 em `test_runner.js` validando que as regras CSS de eliminação de spin-buttons estão presentes no HTML compilado e que os inputs possuem auto-seleção e dimensões desobstruídas.
+3. **Validação Visual e Funcional**: Simulação via CDP ou navegador verificando que não há setas obstruindo o número e que a digitação ocorre livremente.
 
-Plano executado com sucesso e validado em 100% dos testes e na verificação em múltiplos dispositivos.
+---
+
+## 📋 Governança (AGENTS.md)
+Plano aprovado pelo usuário e executado com 100% de sucesso.
 
 ---
 
 ## 🚀 Resultados da Execução
 
-1. **Blindagem do LocalStorage (ISSUE-126)**:
-   - Implementado `safeLocalStorageSet(key, value)` com captura de `QuotaExceededError` e auto-expurgo de caches legados.
-   - Atômica persistência das 4 chaves canônicas: `dnd_tracker_players_v3`, `dnd_tracker_state_v3`, `dnd_tracker_campaigns_v1`, `dnd_tracker_grid_v3` e envelope principal.
-   - Preservação estrita de PV ferido, moedas e talentos em `loadFromLocalStorage()`.
-   - Limitação de snapshots de segurança no localStorage e delegação de dados pesados de mapa ao IndexedDB.
-
-2. **Sincronização em Tempo Real Multi-Dispositivo (ISSUE-127)**:
-   - Corrigido o merge de moedas e ouro em `applyCloudDataToLocal()` em `src/js/firebase_sync.js` para clientes de jogadores em celulares/tablets.
-   - Teste automatizado com dois navegadores Chrome simultâneos via CDP (Mestre no PC Desktop e Jogador em Smartphone com viewport iOS 390x844).
-   - Verificado com 100% de sucesso:
-     - **PV do Jogador**: Alterado de 43 para 31 pelo Mestre ➔ Sincronizado instantaneamente no Celular (31 PV).
-     - **Ouro (PO)**: Concedido +250 PO pelo Mestre (total 265 PO) ➔ Sincronizado instantaneamente no Celular (265 PO).
-     - **Talentos**: Concedido talento *Alerta* pelo Mestre ➔ Sincronizado instantaneamente no Celular (*Alerta* ativo).
-
-3. **Validação da Suíte de Testes**:
-   - `node test_runner.js`: **1652/1652 testes aprovados com 100% de sucesso**.
-
-4. **Publicação no Repositório**:
-   - Commits `f987d67` e `bb91f40` enviados com sucesso para `origin main` no GitHub.
+1. **Eliminação de Spin-Buttons**:
+   - Adicionado reset global no CSS (`input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none !important; margin: 0 !important; }` e `-moz-appearance: textfield !important; appearance: textfield !important;`).
+2. **Ergonomia e Auto-Seleção**:
+   - `.roll20-hp-input` expandido para 52px de largura com `padding: 0 4px` e auto-seleção `onfocus="this.select()"` e `onclick="this.select()"`.
+   - `.inline-hp-input` expandido para 54px com auto-seleção.
+3. **Validação**:
+   - `node test_runner.js`: **1661/1661 testes aprovados com 100% de sucesso**.
+   - Captura de tela realizada no Chrome confirmando que o campo está limpo, amplo e sem setas obstruindo a digitação.
 
