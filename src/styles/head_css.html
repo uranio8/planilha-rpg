@@ -4406,6 +4406,19 @@
       border-color: rgba(239,68,68,0.3);
     }
 
+    /* ISSUE-137: Estado de Fila Offline com alterações pendentes */
+    .portal-sync-badge.sync-queued {
+      background: rgba(249,115,22,0.18);
+      color: #fb923c;
+      border-color: rgba(249,115,22,0.4);
+      animation: pulseSyncQueued 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseSyncQueued {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(0.98); }
+    }
+
     .portal-switch-btn {
       flex-shrink: 0;
       background: rgba(254,240,138,0.08);

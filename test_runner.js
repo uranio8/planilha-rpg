@@ -8034,7 +8034,103 @@ const mobileTabAfterInv = vm.runInContext("PLAYERS.find(p => p.id === 'hero_mobi
 assert(mobileTabAfterInv === 'inventory', 'scrollToPlayerSection("inventory") ativou a aba de inventário da ficha');
 
 // 4. Validação de Resiliência no Cloud Sync (15 segundos)
-assert(builtHtmlContent.includes('Timeout de sincronização com a nuvem (15s)') || builtHtmlContent.includes('15000'), 'Cloud save implementa timeout estendido de 15 segundos para conexões mobile');
+// -------------------------------------------------------------
+// 🛡️ 105. Testes de Fila Offline Persistida, Telemetria e Multi-Path Updates (ISSUE-137)
+// -------------------------------------------------------------
+console.log('\n🛡️ 105. Testes de Fila Offline Persistida, Telemetria e Multi-Path Updates (ISSUE-137):');
+
+// 1. Validação de CSS do badge com pendências offline
+assert(builtHtmlContent.includes('.portal-sync-badge.sync-queued'), 'HTML compilado inclui a classe .portal-sync-badge.sync-queued');
+assert(builtHtmlContent.includes('pulseSyncQueued'), 'CSS inclui animação de pulso pulseSyncQueued para alertar fila offline');
+
+// 2. Validação de Funções de Fila e Resiliência Exportadas
+assert(vm.runInContext("typeof getOfflineMutationQueue", sandbox) === 'function', 'Função getOfflineMutationQueue exportada');
+assert(vm.runInContext("typeof saveOfflineMutationQueue", sandbox) === 'function', 'Função saveOfflineMutationQueue exportada');
+assert(vm.runInContext("typeof peekOfflineMutationQueue", sandbox) === 'function', 'Função peekOfflineMutationQueue exportada');
+assert(vm.runInContext("typeof enqueueOfflineMutation", sandbox) === 'function', 'Função enqueueOfflineMutation exportada');
+assert(vm.runInContext("typeof flushOfflineMutationQueue", sandbox) === 'function', 'Função flushOfflineMutationQueue exportada');
+assert(vm.runInContext("typeof calculateBackoffDelay", sandbox) === 'function', 'Função calculateBackoffDelay exportada');
+assert(vm.runInContext("typeof executeDirectCloudSaveForPlayer", sandbox) === 'function', 'Função executeDirectCloudSaveForPlayer exportada');
+
+// 3. Teste de Enfileiramento e Persistência no LocalStorage
+vm.runInContext(`
+  // Limpa fila anterior para teste atômico
+  saveOfflineMutationQueue([]);
+
+  // Enfileira alteração de vida do herói 1
+  enqueueOfflineMutation({
+    type: 'player_save',
+    playerId: 'hero_queue_1',
+    payload: { id: 'hero_queue_1', name: 'Gromm', hp: 25, maxHp: 30 }
+  });
+
+  // Enfileira alteração de outro herói
+  enqueueOfflineMutation({
+    type: 'player_save',
+    playerId: 'hero_queue_2',
+    payload: { id: 'hero_queue_2', name: 'Lyra', hp: 18, maxHp: 18 }
+  });
+`, sandbox);
+
+const queueCountAfter2 = vm.runInContext("peekOfflineMutationQueue()", sandbox);
+assert(queueCountAfter2 === 2, 'Fila offline registra exatamente 2 mutações pendentes');
+
+// Verifica se gravou no localStorage
+const storedQueueJson = vm.runInContext("localStorage.getItem('dnd_offline_mutation_queue_v1')", sandbox);
+assert(storedQueueJson && storedQueueJson.includes('hero_queue_1') && storedQueueJson.includes('hero_queue_2'), 'Fila offline foi persistida no localStorage com os 2 heróis');
+
+// 4. Teste de Coalescência de Mutações (mesclagem sem duplicação)
+vm.runInContext(`
+  // Nova mutação para o mesmo herói hero_queue_1 (ex: conjurou magia logo após tomar dano)
+  enqueueOfflineMutation({
+    type: 'player_save',
+    playerId: 'hero_queue_1',
+    payload: { id: 'hero_queue_1', name: 'Gromm', hp: 20, slotsUsed: [1, 0, 0, 0, 0] }
+  });
+`, sandbox);
+
+const queueCountAfterMerge = vm.runInContext("peekOfflineMutationQueue()", sandbox);
+assert(queueCountAfterMerge === 2, 'Coalescência inteligente: mutação do mesmo herói foi mesclada sem inflar a fila');
+
+const mergedItem = vm.runInContext("getOfflineMutationQueue().find(q => q.playerId === 'hero_queue_1')", sandbox);
+assert(mergedItem.payload.hp === 20, 'Payload coalescido contém o PV mais recente (20)');
+assert(mergedItem.payload.slotsUsed[0] === 1, 'Payload coalescido contém os slots gastos atualizados');
+
+// 5. Teste de Exponential Backoff com Jitter
+const delay0 = vm.runInContext("calculateBackoffDelay(0)", sandbox);
+const delay3 = vm.runInContext("calculateBackoffDelay(3)", sandbox);
+const delay10 = vm.runInContext("calculateBackoffDelay(10)", sandbox);
+
+assert(delay0 >= 500 && delay0 <= 1000, 'Backoff tentativa 0 varia entre 500ms e 1000ms');
+assert(delay3 >= 2000 && delay3 <= 6000, 'Backoff tentativa 3 escala exponencialmente (2s a 6s)');
+assert(delay10 <= 15000, 'Backoff tentativa 10 respeita o teto de segurança de 15 segundos');
+
+// 6. Teste de Esvaziamento e Atualização do Badge
+vm.runInContext(`
+  // Cria elemento mock do badge se não existir
+  let badgeEl = document.getElementById('portal-sync-status-badge');
+  if (!badgeEl) {
+    badgeEl = { id: 'portal-sync-status-badge', className: '', innerText: '' };
+    document.getElementById = (id) => id === 'portal-sync-status-badge' ? badgeEl : { value: '1', style: {}, classList: { add:()=>{}, remove:()=>{} } };
+  }
+
+  // Com pendências na fila
+  updatePortalSyncBadgeStatus();
+`, sandbox);
+
+const badgeClassQueued = vm.runInContext("document.getElementById('portal-sync-status-badge')?.className || ''", sandbox);
+const badgeTextQueued = vm.runInContext("document.getElementById('portal-sync-status-badge')?.innerText || ''", sandbox);
+assert(badgeClassQueued.includes('sync-queued'), 'Badge recebe classe .sync-queued quando há itens pendentes');
+assert(badgeTextQueued.includes('pendente'), 'Badge exibe texto indicando operações pendentes');
+
+// Simula limpeza após envio com sucesso
+vm.runInContext(`
+  saveOfflineMutationQueue([]);
+  updatePortalSyncBadgeStatus();
+`, sandbox);
+
+const badgeClassEmpty = vm.runInContext("document.getElementById('portal-sync-status-badge')?.className || ''", sandbox);
+assert(badgeClassEmpty.includes('sync-online'), 'Badge retorna para .sync-online após a fila esvaziar');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

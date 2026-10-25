@@ -72,6 +72,99 @@ let isCloudRoomDataLoaded = false;
 let lastReceivedCloudData = null;
 let cloudSyncCooldownUntil = 0;
 
+// =========================================================================
+// 🛡️ ISSUE-137: FILA DE MUTAÇÃO OFFLINE PERSISTIDA & RESILIÊNCIA EM NUVEM
+// =========================================================================
+const OFFLINE_MUTATION_QUEUE_KEY = 'dnd_offline_mutation_queue_v1';
+let isFlushingMutationQueue = false;
+let isRealtimeDbConnected = false;
+
+function getOfflineMutationQueue() {
+  try {
+    if (typeof localStorage === 'undefined') return [];
+    const raw = localStorage.getItem(OFFLINE_MUTATION_QUEUE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveOfflineMutationQueue(queue) {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(OFFLINE_MUTATION_QUEUE_KEY, JSON.stringify(queue || []));
+    updatePortalSyncBadgeStatus();
+  } catch (e) {
+    console.warn('Erro ao salvar fila offline:', e);
+  }
+}
+
+function peekOfflineMutationQueue() {
+  return getOfflineMutationQueue().length;
+}
+
+function calculateBackoffDelay(attempt, baseDelay = 1000, maxDelay = 15000) {
+  const exponential = Math.min(maxDelay, baseDelay * Math.pow(1.8, attempt || 0));
+  // Full Jitter (0.5 a 1.0) para prevenir o thundering herd problem em redes móveis
+  const jitter = 0.5 + Math.random() * 0.5;
+  return Math.round(exponential * jitter);
+}
+
+function updatePortalSyncBadgeStatus(forceStatus, customText) {
+  const badge = (typeof document !== 'undefined') ? document.getElementById('portal-sync-status-badge') : null;
+  if (!badge) return;
+
+  const pendingCount = peekOfflineMutationQueue();
+
+  if (forceStatus === 'syncing') {
+    badge.className = 'portal-sync-badge sync-syncing';
+    badge.innerText = customText || '🟡 Sincronizando...';
+    return;
+  }
+
+  if (pendingCount > 0) {
+    badge.className = 'portal-sync-badge sync-queued';
+    badge.innerText = `🟡 Sincronizando (${pendingCount} pendente${pendingCount > 1 ? 's' : ''})`;
+    return;
+  }
+
+  if (forceStatus === 'offline' || (!isRealtimeDbConnected && typeof navigator !== 'undefined' && !navigator.onLine)) {
+    badge.className = 'portal-sync-badge sync-offline';
+    badge.innerText = customText || '🔴 Offline';
+    return;
+  }
+
+  badge.className = 'portal-sync-badge sync-online';
+  badge.innerText = customText || '🟢 Sincronizado';
+}
+
+function enqueueOfflineMutation(mutation) {
+  const queue = getOfflineMutationQueue();
+  const item = {
+    id: mutation.id || ('mut_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7)),
+    type: mutation.type || 'player_save',
+    roomId: mutation.roomId || getStoredFirebaseRoom(),
+    playerId: mutation.playerId || (typeof activePortalPlayerId !== 'undefined' ? activePortalPlayerId : null),
+    payload: mutation.payload || null,
+    timestamp: Date.now(),
+    attempts: 0
+  };
+
+  // Se já houver mutação pendente do mesmo herói, mescla o payload mais recente
+  const existingIdx = queue.findIndex(q => q.type === item.type && q.playerId && q.playerId === item.playerId);
+  if (existingIdx >= 0) {
+    queue[existingIdx] = Object.assign({}, queue[existingIdx], item, {
+      payload: Object.assign({}, queue[existingIdx].payload, item.payload),
+      attempts: 0
+    });
+  } else {
+    queue.push(item);
+  }
+
+  saveOfflineMutationQueue(queue);
+  return item;
+}
+
 // --- UTILITÁRIOS DE CONFIGURAÇÃO ---
 
 function getStoredFirebaseConfig() {
@@ -214,6 +307,24 @@ function startFirebaseRoomListener(roomId) {
 
   // 1. Escuta via Realtime Database
   if (realtimeDb) {
+    // ISSUE-137: Telemetria nativa da conexão com .info/connected
+    try {
+      const connectedRef = realtimeDb.ref('.info/connected');
+      connectedRef.on('value', snap => {
+        const isOnline = snap.val() === true;
+        isRealtimeDbConnected = isOnline;
+        if (isOnline) {
+          console.log('🟢 Realtime Database: Conexão restabelecida.');
+          flushOfflineMutationQueue();
+        } else {
+          console.log('🟡 Realtime Database: Conexão pausada/offline.');
+          updatePortalSyncBadgeStatus();
+        }
+      });
+    } catch (e) {
+      console.warn('Erro ao configurar listener .info/connected:', e);
+    }
+
     const rtdbRef = realtimeDb.ref('dnd_rooms/' + roomId);
     const callback = snapshot => {
       const cloudData = snapshot.val();
@@ -966,12 +1077,159 @@ function executeCloudSave() {
   }
 }
 
+// =========================================================================
+// 🛡️ MULTI-PATH UPDATES ATÔMICOS & FLUSH DA FILA OFFLINE (ISSUE-137)
+// =========================================================================
+
+function executeDirectCloudSaveForPlayer(playerData, roomId) {
+  roomId = roomId || getStoredFirebaseRoom();
+  const nowIso = new Date().toISOString();
+  const pId = playerData.id;
+  const savePromises = [];
+
+  // 1. Multi-Path atômico no Realtime Database
+  if (realtimeDb) {
+    try {
+      const roomRef = realtimeDb.ref(`dnd_rooms/${roomId}`);
+      const rtdbPromise = roomRef.child('players').once('value').then(snap => {
+        const rawPlayers = snap.val();
+        let list = Array.isArray(rawPlayers) 
+          ? [...rawPlayers] 
+          : (rawPlayers && typeof rawPlayers === 'object' ? Object.values(rawPlayers) : []);
+
+        const idx = list.findIndex(p => p && p.id === pId);
+        const updates = {
+          lastUpdatedBy: localClientId,
+          lastUpdateIso: nowIso,
+          publishedBy: 'player',
+          authorPlayerId: pId,
+          authorPlayerName: playerData.name || ''
+        };
+
+        if (idx >= 0) {
+          // Atualização atômica direcionada no índice exato do herói
+          updates[`players/${idx}`] = Object.assign({}, list[idx], playerData);
+        } else {
+          list.push(Object.assign({}, playerData));
+          updates.players = list;
+        }
+
+        if (typeof hasPendingPlayerStashSync !== 'undefined' && hasPendingPlayerStashSync && typeof CAMPAIGNS_STATE !== 'undefined' && CAMPAIGNS_STATE) {
+          updates.campaigns = CAMPAIGNS_STATE;
+          hasPendingPlayerStashSync = false;
+        }
+
+        return roomRef.update(updates);
+      });
+      savePromises.push(rtdbPromise);
+    } catch (err) {
+      console.warn('Multi-Path RTDB save falhou:', err);
+    }
+  }
+
+  // 2. Cloud Firestore com merge seguro
+  if (firestoreDb) {
+    try {
+      const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
+      const fsPromise = roomDocRef.get().then(snap => {
+        const current = snap.exists ? snap.data() : {};
+        let list = Array.isArray(current.players) ? [...current.players] : [];
+        const idx = list.findIndex(p => p && p.id === pId);
+        if (idx >= 0) {
+          list[idx] = Object.assign({}, list[idx], playerData);
+        } else {
+          list.push(Object.assign({}, playerData));
+        }
+        const fsData = {
+          players: list,
+          lastUpdatedBy: localClientId,
+          lastUpdateIso: nowIso,
+          publishedBy: 'player',
+          authorPlayerId: pId,
+          authorPlayerName: playerData.name || ''
+        };
+        if (typeof CAMPAIGNS_STATE !== 'undefined' && CAMPAIGNS_STATE) {
+          fsData.campaigns = CAMPAIGNS_STATE;
+        }
+        return roomDocRef.set(fsData, { merge: true });
+      });
+      savePromises.push(fsPromise);
+    } catch (e) {
+      console.warn('Firestore fallback silencioso:', e);
+    }
+  }
+
+  if (savePromises.length === 0) {
+    return Promise.resolve();
+  }
+
+  // Timeout resiliente de 15 segundos
+  const safetyTimeout = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Timeout de envio direto (15s)')), 15000);
+  });
+
+  const primaryPromise = (typeof Promise.any === 'function')
+    ? Promise.any(savePromises)
+    : Promise.race(savePromises);
+
+  return Promise.race([primaryPromise, safetyTimeout]);
+}
+
+async function flushOfflineMutationQueue() {
+  if (isFlushingMutationQueue) return;
+  const queue = getOfflineMutationQueue();
+  if (!queue || queue.length === 0) {
+    updatePortalSyncBadgeStatus();
+    return;
+  }
+
+  if (!isFirebaseConnected && typeof initFirebaseSync === 'function') {
+    initFirebaseSync();
+  }
+
+  isFlushingMutationQueue = true;
+  updatePortalSyncBadgeStatus('syncing', `🟡 Sincronizando (${queue.length} pendente${queue.length > 1 ? 's' : ''})...`);
+
+  while (queue.length > 0) {
+    const item = queue[0];
+    try {
+      if (item.type === 'player_save' && item.payload) {
+        await executeDirectCloudSaveForPlayer(item.payload, item.roomId);
+      } else if (item.type === 'master_save') {
+        if (typeof publishMasterCampaignToCloud === 'function') {
+          await publishMasterCampaignToCloud(true);
+        }
+      }
+      // Sucesso na gravação do item: remove da fila persistida
+      queue.shift();
+      saveOfflineMutationQueue(queue);
+    } catch (err) {
+      console.warn('Erro ao descarregar mutação da fila offline:', err);
+      item.attempts = (item.attempts || 0) + 1;
+      saveOfflineMutationQueue(queue);
+      isFlushingMutationQueue = false;
+
+      // Agenda re-tentativa com Exponential Backoff + Jitter
+      const nextDelay = calculateBackoffDelay(item.attempts);
+      setTimeout(() => {
+        if (peekOfflineMutationQueue() > 0) {
+          flushOfflineMutationQueue();
+        }
+      }, nextDelay);
+      return;
+    }
+  }
+
+  isFlushingMutationQueue = false;
+  updatePortalSyncBadgeStatus('online', '🟢 Sincronizado');
+}
+
 function executePlayerCloudSave() {
   if (firebaseCloudDebounceTimer) {
     clearTimeout(firebaseCloudDebounceTimer);
     firebaseCloudDebounceTimer = null;
   }
-  if (!isFirebaseConnected || !activePortalPlayerId) return;
+  if (!activePortalPlayerId) return;
   const myPlayer = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(p => p.id === activePortalPlayerId) : null;
   if (!myPlayer) return;
 
@@ -984,116 +1242,23 @@ function executePlayerCloudSave() {
   myPlayer.updatedAt = Date.now();
   myPlayer.updatedBy = localClientId;
 
-  const roomId = getStoredFirebaseRoom();
-  const nowIso = new Date().toISOString();
-
-  // Badge de sincronização: amarelo durante o envio
-  const syncBadge = (typeof document !== 'undefined') ? document.getElementById('portal-sync-status-badge') : null;
-  if (syncBadge) {
-    syncBadge.className = 'portal-sync-badge sync-syncing';
-    syncBadge.innerText = '🟡 Sincronizando...';
-  }
-
-  // Prepara promessa principal no Realtime Database
-  let rtdbPromise = Promise.resolve();
-
-  if (realtimeDb) {
-    try {
-      const roomRef = realtimeDb.ref(`dnd_rooms/${roomId}`);
-      rtdbPromise = roomRef.child('players').once('value').then(snap => {
-        const rawPlayers = snap.val();
-        let list = Array.isArray(rawPlayers) 
-          ? [...rawPlayers] 
-          : (rawPlayers && typeof rawPlayers === 'object' ? Object.values(rawPlayers) : []);
-
-        const idx = list.findIndex(p => p && p.id === activePortalPlayerId);
-        if (idx >= 0) {
-          list[idx] = Object.assign({}, list[idx], myPlayer);
-        } else {
-          list.push(Object.assign({}, myPlayer));
-        }
-
-        const updates = {
-          players: list,
-          lastUpdatedBy: localClientId,
-          lastUpdateIso: nowIso,
-          publishedBy: 'player',
-          authorPlayerId: activePortalPlayerId,
-          authorPlayerName: myPlayer.name || ''
-        };
-
-        if (typeof hasPendingPlayerStashSync !== 'undefined' && hasPendingPlayerStashSync && typeof CAMPAIGNS_STATE !== 'undefined' && CAMPAIGNS_STATE) {
-          updates.campaigns = CAMPAIGNS_STATE;
-          hasPendingPlayerStashSync = false;
-        }
-
-        return roomRef.update(updates);
-      });
-    } catch (err) {
-      console.warn('Realtime DB player save falhou:', err);
-      rtdbPromise = Promise.resolve();
-    }
-  }
-
-  // Firestore secundário com tratamento defensivo (nunca bloqueia caso 404/desativado)
-  if (firestoreDb) {
-    try {
-      const roomDocRef = firestoreDb.collection('dnd_rooms').doc(roomId);
-      roomDocRef.get().then(snap => {
-        const current = snap.exists ? snap.data() : {};
-        let list = Array.isArray(current.players) ? [...current.players] : [];
-        const idx = list.findIndex(p => p && p.id === activePortalPlayerId);
-        if (idx >= 0) {
-          list[idx] = Object.assign({}, list[idx], myPlayer);
-        } else {
-          list.push(Object.assign({}, myPlayer));
-        }
-        const fsData = {
-          players: list,
-          lastUpdatedBy: localClientId,
-          lastUpdateIso: nowIso,
-          publishedBy: 'player',
-          authorPlayerId: activePortalPlayerId,
-          authorPlayerName: myPlayer.name || ''
-        };
-        if (typeof CAMPAIGNS_STATE !== 'undefined' && CAMPAIGNS_STATE) {
-          fsData.campaigns = CAMPAIGNS_STATE;
-        }
-        return roomDocRef.set(fsData, { merge: true });
-      }).catch(e => {
-        console.warn('Firestore fallback silencioso (portal):', e);
-      });
-    } catch (e) {
-      console.warn('Firestore portal ignorado:', e);
-    }
-  }
-
-  // ISSUE-136: Timeout resiliente de 15 segundos para conexões móveis (3G/4G/5G)
-  const safetyTimeout = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('Timeout de sincronização com a nuvem (15s)')), 15000);
+  // ISSUE-137: Enfileira a mutação de forma offline-first persistente antes de tentar o despacho
+  enqueueOfflineMutation({
+    type: 'player_save',
+    playerId: myPlayer.id,
+    payload: Object.assign({}, myPlayer)
   });
 
-  Promise.race([rtdbPromise, safetyTimeout])
-    .then(() => {
-      if (syncBadge) {
-        syncBadge.className = 'portal-sync-badge sync-online';
-        syncBadge.innerText = '🟢 Sincronizado';
-      }
-    })
-    .catch(err => {
-      console.warn('Erro ao sincronizar ficha do jogador no Firebase:', err);
-      if (syncBadge) {
-        syncBadge.className = 'portal-sync-badge sync-offline';
-        syncBadge.innerText = '🔴 Erro de Sync';
-      }
-      // Re-tentativa automática transparente após 4 segundos em caso de perda temporária de pacote no 4G
-      setTimeout(() => {
-        if (isFirebaseConnected && activePortalPlayerId) {
-          executePlayerCloudSave();
-        }
-      }, 4000);
-    });
+  // Dispara o esvaziamento imediato da fila
+  flushOfflineMutationQueue();
 }
+
+
+
+
+
+
+
 
 
 function publishMasterCampaignToCloud(silent = false) {
@@ -1509,6 +1674,15 @@ if (typeof window !== 'undefined') {
   window.copyMasterSyncDeviceUrl = copyMasterSyncDeviceUrl;
   window.handleUpdateSyncDeviceRoom = handleUpdateSyncDeviceRoom;
   window.handleDeviceWakeupOrTabFocus = handleDeviceWakeupOrTabFocus;
+  // ISSUE-137: Exportações de resiliência e fila offline
+  window.getOfflineMutationQueue = getOfflineMutationQueue;
+  window.saveOfflineMutationQueue = saveOfflineMutationQueue;
+  window.peekOfflineMutationQueue = peekOfflineMutationQueue;
+  window.enqueueOfflineMutation = enqueueOfflineMutation;
+  window.flushOfflineMutationQueue = flushOfflineMutationQueue;
+  window.updatePortalSyncBadgeStatus = updatePortalSyncBadgeStatus;
+  window.calculateBackoffDelay = calculateBackoffDelay;
+  window.executeDirectCloudSaveForPlayer = executeDirectCloudSaveForPlayer;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -1535,6 +1709,15 @@ if (typeof module !== 'undefined' && module.exports) {
     closeMasterSyncDeviceModal,
     copyMasterSyncDeviceUrl,
     handleUpdateSyncDeviceRoom,
-    handleDeviceWakeupOrTabFocus
+    handleDeviceWakeupOrTabFocus,
+    // ISSUE-137: Exportações de resiliência e fila offline
+    getOfflineMutationQueue,
+    saveOfflineMutationQueue,
+    peekOfflineMutationQueue,
+    enqueueOfflineMutation,
+    flushOfflineMutationQueue,
+    updatePortalSyncBadgeStatus,
+    calculateBackoffDelay,
+    executeDirectCloudSaveForPlayer
   };
 }
