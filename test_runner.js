@@ -7162,6 +7162,113 @@ const afterToggleSyncPlayer = vm.runInContext("PLAYERS.find(p => p.id === 'p_tes
 assert(afterToggleSyncPlayer.inventory[0].equipped === false, 'Espada Curta foi desequipada');
 assert(!afterToggleSyncPlayer.attacks.toLowerCase().includes('espada curta'), 'Espada Curta foi removida de p.attacks após desequipar');
 
+// ==========================================
+// 97. TESTES DE SINCRONIZAÇÃO BIDIRECIONAL DE MAGIAS E SLOTS (JOGADOR ⇄ MESTRE)
+// ==========================================
+console.log('\n🔮 97. Testes de Sincronização Bidirecional de Magias e Slots (Jogador ⇄ Mestre):');
+
+// 1. Setup de herói conjurador
+const wizardHeroSync = {
+  id: 'p_wizard_sync_97',
+  name: 'Mago Aeloria',
+  className: 'Mago',
+  level: 3,
+  maxHp: 20,
+  hp: 20,
+  slots: [4, 2, 0, 0, 0, 0, 0, 0, 0],
+  slotsUsed: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+  preparedSpells: ['Alarme'],
+  updatedAt: 1000
+};
+
+// 2. Simulação: Jogador conjura magia em seu dispositivo móvel
+vm.runInContext(`
+  PLAYERS = [${JSON.stringify(wizardHeroSync)}];
+  clientRole = 'player';
+  activePortalPlayerId = 'p_wizard_sync_97';
+  executeCastSpell('p_wizard_sync_97', 'Alarme', 1);
+`, sandbox);
+
+const pAfterCastInPlayer = vm.runInContext("PLAYERS.find(p => p.id === 'p_wizard_sync_97')", sandbox);
+assert(pAfterCastInPlayer.slotsUsed[0] === 1, 'Jogador consumiu 1º espaço de magia ao conjurar Alarme');
+assert(pAfterCastInPlayer.updatedAt > 1000, 'touchPlayer atualizou o carimbo updatedAt do jogador');
+
+// 3. Simulação: Mestre recebe a sincronização via nuvem
+const cloudPayloadFromPlayer97 = {
+  publishedBy: 'player',
+  authorPlayerId: 'p_wizard_sync_97',
+  timestamp: pAfterCastInPlayer.updatedAt,
+  players: [JSON.parse(JSON.stringify(pAfterCastInPlayer))]
+};
+
+vm.runInContext(`
+  clientRole = 'master';
+  activePortalPlayerId = null;
+  PLAYERS = [${JSON.stringify(wizardHeroSync)}]; // Mestre tinha estado anterior
+  state.combatants = [{
+    id: 'comb_w97',
+    playerId: 'p_wizard_sync_97',
+    type: 'player',
+    name: 'Mago Aeloria',
+    hp: 20,
+    maxHp: 20
+  }];
+  applyCloudDataToLocal(${JSON.stringify(cloudPayloadFromPlayer97)});
+`, sandbox);
+
+const pInMasterAfterSync = vm.runInContext("PLAYERS.find(p => p.id === 'p_wizard_sync_97')", sandbox);
+assert(pInMasterAfterSync.slotsUsed[0] === 1, 'Mestre sincronizou o slot de 1º círculo consumido pelo jogador em outro aparelho');
+
+// 4. Simulação: Mestre realiza Descanso Longo e restaura todos os slots
+vm.runInContext(`
+  playerLongRest('p_wizard_sync_97');
+`, sandbox);
+
+const pInMasterAfterRest = vm.runInContext("PLAYERS.find(p => p.id === 'p_wizard_sync_97')", sandbox);
+assert(pInMasterAfterRest.slotsUsed[0] === 0, 'Descanso Longo no Mestre restaurou todos os slots de magia a 0');
+
+// 5. Simulação: Jogador recebe a restauração vinda do Mestre
+const cloudPayloadFromMaster97 = {
+  publishedBy: 'master',
+  timestamp: pInMasterAfterRest.updatedAt,
+  players: [JSON.parse(JSON.stringify(pInMasterAfterRest))]
+};
+
+vm.runInContext(`
+  clientRole = 'player';
+  activePortalPlayerId = 'p_wizard_sync_97';
+  applyCloudDataToLocal(${JSON.stringify(cloudPayloadFromMaster97)});
+`, sandbox);
+
+const pInPlayerAfterRestSync = vm.runInContext("PLAYERS.find(p => p.id === 'p_wizard_sync_97')", sandbox);
+assert(pInPlayerAfterRestSync.slotsUsed[0] === 0, 'Dispositivo do Jogador recebeu e aplicou a restauração de slots realizada pelo Mestre');
+
+// 6. Simulação: Mestre gasta slot manualmente (ex: 2º Círculo)
+vm.runInContext(`
+  clientRole = 'master';
+  activePortalPlayerId = null;
+  togglePlayerSlot('p_wizard_sync_97', 1, 0); // Gasta 1 slot de 2º Círculo
+`, sandbox);
+
+const pInMasterAfterToggle = vm.runInContext("PLAYERS.find(p => p.id === 'p_wizard_sync_97')", sandbox);
+assert(pInMasterAfterToggle.slotsUsed[1] === 1, 'Mestre marcou 2º Círculo como gasto via togglePlayerSlot');
+
+const cloudPayloadFromMasterToggle97 = {
+  publishedBy: 'master',
+  timestamp: pInMasterAfterToggle.updatedAt,
+  players: [JSON.parse(JSON.stringify(pInMasterAfterToggle))]
+};
+
+// Jogador recebe gasto aplicado pelo Mestre
+vm.runInContext(`
+  clientRole = 'player';
+  activePortalPlayerId = 'p_wizard_sync_97';
+  applyCloudDataToLocal(${JSON.stringify(cloudPayloadFromMasterToggle97)});
+`, sandbox);
+
+const pInPlayerAfterMasterToggle = vm.runInContext("PLAYERS.find(p => p.id === 'p_wizard_sync_97')", sandbox);
+assert(pInPlayerAfterMasterToggle.slotsUsed[1] === 1, 'Dispositivo do Jogador recebeu gasto de 2º Círculo aplicado pelo Mestre');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
