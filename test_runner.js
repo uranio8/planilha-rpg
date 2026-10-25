@@ -7101,6 +7101,67 @@ assert(compiledHtml.includes('class="roll20-hp-input"') && compiledHtml.includes
 assert(compiledHtml.includes('class="roll20-hp-input"') && compiledHtml.includes('onclick="this.select()"'), 'Input de HP da ficha Roll20 possui onclick="this.select()"');
 assert(compiledHtml.includes('class="inline-hp-input"') && compiledHtml.includes('this.select()'), 'Input de HP inline no combate possui auto-seleção com this.select()');
 
+// ==========================================
+// 96. TESTES DE SINCRONIZAÇÃO BIDIRECIONAL DE ARMAS, ATAQUES E INVENTÁRIO (ISSUE-129)
+// ==========================================
+console.log('\n⚔️ 96. Testes de Sincronização Bidirecional de Armas, Ataques e Inventário (ISSUE-129):');
+
+// 1. Funções exportadas
+assert(vm.runInContext("typeof isWeaponItem === 'function'", sandbox), 'Função isWeaponItem exportada e disponível');
+assert(vm.runInContext("typeof syncPlayerEquippedWeaponsAndAttacks === 'function'", sandbox), 'Função syncPlayerEquippedWeaponsAndAttacks exportada e disponível');
+
+// 2. Classificação correta de armas e armaduras
+assert(vm.runInContext("isWeaponItem('Espada Curta')", sandbox) === true, 'Espada Curta é identificada como arma');
+assert(vm.runInContext("isWeaponItem('Adaga')", sandbox) === true, 'Adaga é identificada como arma');
+assert(vm.runInContext("isWeaponItem('Arco Curto')", sandbox) === true, 'Arco Curto é identificado como arma');
+assert(vm.runInContext("isWeaponItem('Escudo')", sandbox) === false, 'Escudo NÃO é identificado como arma');
+assert(vm.runInContext("isWeaponItem('Armadura de Couro')", sandbox) === false, 'Armadura NÃO é identificada como arma');
+
+// 3. getPlayerCalculatedAttacks com p.attacks em string e inventário vazio
+vm.runInContext(`
+  pTestSync = {
+    id: 'p_test_weapon_sync',
+    name: 'Guerreiro Teste',
+    className: 'Guerreiro',
+    level: 3,
+    str: 16,
+    dex: 14,
+    attacks: 'Espada Curta (+4, 1d6+2 perfurante)',
+    inventory: []
+  };
+  atksCalculated = getPlayerCalculatedAttacks(pTestSync);
+`, sandbox);
+
+const atksCalculated = vm.runInContext("atksCalculated", sandbox);
+const pTestSync = vm.runInContext("pTestSync", sandbox);
+
+assert(Array.isArray(atksCalculated) && atksCalculated.length === 1, 'getPlayerCalculatedAttacks extraiu ataque da string p.attacks');
+assert(atksCalculated[0].name.toLowerCase().includes('espada curta'), 'Nome do ataque extraído é Espada Curta');
+assert(Array.isArray(pTestSync.inventory) && pTestSync.inventory.length === 1, 'Auto-reconciliação inseriu a Espada Curta no p.inventory');
+assert(pTestSync.inventory[0].equipped === true, 'Espada Curta foi marcada como equipped no inventário');
+
+// 4. selectWeaponForPlayer insere arma no inventário e atualiza p.attacks
+vm.runInContext(`
+  PLAYERS = [pTestSync];
+  if (typeof openWeaponPickerModal === 'function') {
+    openWeaponPickerModal('p_test_weapon_sync', 'player');
+  }
+  selectWeaponForPlayer('Machado de Batalha');
+`, sandbox);
+
+const updatedSyncPlayer = vm.runInContext("PLAYERS.find(p => p.id === 'p_test_weapon_sync')", sandbox);
+assert(updatedSyncPlayer.inventory.length === 2, 'selectWeaponForPlayer adicionou Machado de Batalha ao inventário (total 2 itens)');
+assert(updatedSyncPlayer.inventory.some(it => it.name.toLowerCase().includes('machado') && it.equipped === true), 'Machado de Batalha está equipado no inventário');
+assert(updatedSyncPlayer.attacks.toLowerCase().includes('machado'), 'p.attacks foi atualizado com o Machado de Batalha');
+
+// 5. togglePlayerItemEquipped desequipa arma e atualiza ataques
+vm.runInContext(`
+  togglePlayerItemEquipped('p_test_weapon_sync', 0); // Desequipa a Espada Curta
+`, sandbox);
+const afterToggleSyncPlayer = vm.runInContext("PLAYERS.find(p => p.id === 'p_test_weapon_sync')", sandbox);
+assert(afterToggleSyncPlayer.inventory[0].equipped === false, 'Espada Curta foi desequipada');
+assert(!afterToggleSyncPlayer.attacks.toLowerCase().includes('espada curta'), 'Espada Curta foi removida de p.attacks após desequipar');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

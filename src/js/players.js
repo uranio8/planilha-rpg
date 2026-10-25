@@ -130,6 +130,65 @@ function isShieldItem(name) {
   return n.includes('escudo') || n.includes('shield');
 }
 
+function isWeaponItem(name) {
+  if (!name) return false;
+  const n = String(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  if (isArmorItem(name) || isShieldItem(name)) return false;
+  if (typeof EQUIPMENT_DATA !== 'undefined' && Array.isArray(EQUIPMENT_DATA)) {
+    const found = EQUIPMENT_DATA.find(e => (e.category || '').toLowerCase().includes('armas') && (e.name.toLowerCase() === n || n.includes(e.name.toLowerCase()) || e.name.toLowerCase().includes(n)));
+    if (found) return true;
+  }
+  const weaponKeywords = ['espada', 'adaga', 'arco', 'besta', 'machado', 'martelo', 'lanca', 'rapieira', 'florete', 'cimitarra', 'maca', 'bordao', 'tridente', 'chicote', 'mangual', 'alabarda', 'glaive', 'azagaia', 'zarabatana', 'funda', 'clava', 'pique'];
+  return weaponKeywords.some(kw => n.includes(kw));
+}
+
+function syncPlayerEquippedWeaponsAndAttacks(p) {
+  if (!p) return;
+  p.inventory = Array.isArray(p.inventory) ? p.inventory : [];
+
+  // Armas equipadas no inventário
+  const equippedWeapons = p.inventory.filter(it => it.equipped && isWeaponItem(it.name));
+
+  if (equippedWeapons.length > 0) {
+    const formatted = [];
+    equippedWeapons.forEach(w => {
+      const stats = typeof calculateWeaponAttackStats === 'function' ? calculateWeaponAttackStats(p, w) : null;
+      if (stats && stats.formattedText) formatted.push(stats.formattedText);
+      else formatted.push(w.name);
+    });
+    p.attacks = formatted.join(', ');
+  } else if (p.attacks && typeof p.attacks === 'string' && p.attacks.trim() && p.inventory.length === 0) {
+    // Reconcilia armas declaradas em p.attacks para o inventário (respeitando vírgulas internas de dano)
+    const rawList = p.attacks.split(/(?:\||\n|;|\s*,\s*(?![^(]*\)))/).map(s => s.trim()).filter(Boolean);
+    rawList.forEach((attStr, idx) => {
+      const cleanName = attStr.split('(')[0].replace(/[⚔️🗡️🏹★]/g, '').trim();
+      if (!cleanName || cleanName.toLowerCase().includes('desarmado')) return;
+      if (isWeaponItem(cleanName)) {
+        const normAtt = cleanName.toLowerCase();
+        const existing = p.inventory.find(it => {
+          const itNorm = (it.name || '').toLowerCase().trim();
+          const itBase = itNorm.split('(')[0].trim();
+          return itNorm === normAtt || itBase === normAtt || itNorm.includes(normAtt) || normAtt.includes(itBase);
+        });
+        if (existing) {
+          existing.equipped = true;
+        } else {
+          const eqObj = typeof EQUIPMENT_DATA !== 'undefined' ? EQUIPMENT_DATA.find(e => e.name.toLowerCase() === cleanName.toLowerCase() || e.name.toLowerCase().includes(cleanName.toLowerCase())) : null;
+          p.inventory.push({
+            id: 'item_wpn_sync_' + Date.now() + '_' + idx,
+            name: eqObj ? eqObj.name : cleanName,
+            category: 'Armas',
+            qty: 1,
+            weight: eqObj && eqObj.weight ? eqObj.weight : 2,
+            cost: eqObj && eqObj.cost ? eqObj.cost : '10 PO',
+            equipped: true
+          });
+        }
+      }
+    });
+  }
+}
+
 function getArmorItemStats(name) {
   if (!name) return { ac: 10, type: 'none' };
   const n = String(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
@@ -1080,19 +1139,80 @@ function getPlayerCalculatedAttacks(p) {
     });
   }
 
-  // 2. Ataques declarados no array legado p.attacks (se não duplicados)
-  if (p.attacks && Array.isArray(p.attacks)) {
-    p.attacks.forEach(attStr => {
+  // 2. Ataques declarados em p.attacks (suporta tanto Array quanto String formatada 5E)
+  const rawAttacksList = Array.isArray(p.attacks)
+    ? p.attacks
+    : (typeof p.attacks === 'string' && p.attacks.trim() ? p.attacks.split(/(?:\||\n|;|\s*,\s*(?![^(]*\)))/).map(s => s.trim()).filter(Boolean) : []);
+
+  if (rawAttacksList.length > 0) {
+    p.inventory = Array.isArray(p.inventory) ? p.inventory : [];
+
+    rawAttacksList.forEach(attStr => {
       if (!attStr || typeof attStr !== 'string') return;
-      if (attacks.some(a => a.name.toLowerCase() === attStr.toLowerCase())) return;
+      const cleanName = attStr.split('(')[0].replace(/[⚔️🗡️🏹★]/g, '').trim();
+      if (!cleanName) return;
+
+      if (attacks.some(a => a.name.toLowerCase() === cleanName.toLowerCase())) return;
+
+      // Busca no catálogo oficial de equipamentos D&D 5E
+      const normClean = cleanName.toLowerCase();
+      const equipMatch = equipData.find(e => {
+        const eNorm = (e.name || '').toLowerCase().trim();
+        const eBase = eNorm.split('(')[0].trim();
+        return eNorm === normClean || eBase === normClean || eNorm.includes(normClean) || normClean.includes(eBase);
+      });
       
+      // Auto-reconciliação: se a arma não existe no inventário do herói, adiciona-a como equipada
+      const existingInInv = p.inventory.find(it => {
+        const itNorm = (it.name || '').toLowerCase().trim();
+        const itBase = itNorm.split('(')[0].trim();
+        return itNorm === normClean || itBase === normClean || itNorm.includes(normClean) || normClean.includes(itBase) ||
+               (equipMatch && (itNorm === equipMatch.name.toLowerCase() || itBase === equipMatch.name.toLowerCase().split('(')[0].trim()));
+      });
+      if (!existingInInv) {
+        if (p.inventory.length === 0) {
+          p.inventory.push({
+            id: 'item_wpn_sync_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            name: equipMatch ? equipMatch.name : cleanName,
+            category: 'Armas',
+            qty: 1,
+            weight: equipMatch && equipMatch.weight ? equipMatch.weight : 2,
+            cost: equipMatch && equipMatch.cost ? equipMatch.cost : '10 PO',
+            equipped: true
+          });
+        }
+      } else if (!existingInInv.equipped) {
+        existingInInv.equipped = true;
+      }
+
+      // Calcula estatísticas oficiais de acerto e dano da arma
+      if (typeof calculateWeaponAttackStats === 'function') {
+        const stats = calculateWeaponAttackStats(p, equipMatch || cleanName);
+        if (stats) {
+          attacks.push({
+            name: stats.name,
+            type: stats.isRanged ? 'Distância' : 'Corpo a Corpo',
+            range: stats.isRanged ? '24/96m' : '1,5m',
+            toHit: stats.hitStr,
+            toHitVal: stats.hitBonus,
+            hitBonus: stats.hitStr,
+            damage: stats.damageFormula,
+            damageType: stats.damageType,
+            notes: stats.properties || 'Arma equipada',
+            isEquipped: true,
+            rawAttackText: stats.formattedText
+          });
+          return;
+        }
+      }
+
       const hitMatch = attStr.match(/([+-]\d+)/);
       const dmgMatch = attStr.match(/(\d+d\d+(?:\s*[+-]\s*\d+)?)/i);
       const toHitStr = hitMatch ? hitMatch[1] : (strMod + prof >= 0 ? `+${strMod + prof}` : `${strMod + prof}`);
       const dmgStr = dmgMatch ? dmgMatch[1] : `1d6${strMod >= 0 ? '+' + strMod : strMod}`;
-      
+
       attacks.push({
-        name: attStr.replace(/\s*\([+-]\d+\).*/, '').trim(),
+        name: cleanName,
         type: 'Ação',
         range: '1,5m',
         toHit: toHitStr,
@@ -1137,6 +1257,9 @@ function togglePlayerItemEquipped(playerId, itemIndex) {
   p.inventory[itemIndex].equipped = !p.inventory[itemIndex].equipped;
   if (typeof calculatePlayerAcFromEquipment === 'function') {
     p.ac = calculatePlayerAcFromEquipment(p);
+  }
+  if (typeof syncPlayerEquippedWeaponsAndAttacks === 'function') {
+    syncPlayerEquippedWeaponsAndAttacks(p);
   }
   if (typeof touchPlayer === 'function') touchPlayer(p);
 
@@ -1365,6 +1488,12 @@ function renderPlayers() {
 
   if (badge) badge.innerText = filtered.length;
   if (!grid) return;
+
+  filtered.forEach(p => {
+    if (typeof syncPlayerEquippedWeaponsAndAttacks === 'function') {
+      syncPlayerEquippedWeaponsAndAttacks(p);
+    }
+  });
 
   grid.innerHTML = filtered.map(p => {
     const prof = getProfBonus(p.level);
@@ -3348,15 +3477,17 @@ function renderWeaponPickerList(filterText = '', categoryFilter = '') {
 }
 
 function selectWeaponForPlayer(weaponName) {
-  if (activeWeaponPickerTarget === 'modal') {
+  const target = (typeof activeWeaponPickerTarget !== 'undefined' && activeWeaponPickerTarget) ? activeWeaponPickerTarget : 'player';
+  if (target === 'modal') {
     if (typeof addModalWeapon === 'function') {
       addModalWeapon(weaponName);
     }
-    closeWeaponPickerModal();
+    if (typeof closeWeaponPickerModal === 'function') closeWeaponPickerModal();
     return;
   }
 
-  const p = PLAYERS ? PLAYERS.find(x => x.id === activeWeaponPickerPlayerId) : null;
+  const targetPlayerId = (typeof activeWeaponPickerPlayerId !== 'undefined' && activeWeaponPickerPlayerId) ? activeWeaponPickerPlayerId : (typeof PLAYERS !== 'undefined' && PLAYERS && PLAYERS[0] ? PLAYERS[0].id : null);
+  const p = (typeof PLAYERS !== 'undefined' && PLAYERS) ? PLAYERS.find(x => x.id === targetPlayerId) : null;
   if (!p) return;
 
   const weaponObj = typeof EQUIPMENT_DATA !== 'undefined'
@@ -3366,21 +3497,45 @@ function selectWeaponForPlayer(weaponName) {
   const stats = p ? calculateWeaponAttackStats(p, weaponObj || weaponName) : null;
   const attackText = stats ? stats.formattedText : `${weaponName} (+0, 1d6)`;
 
+  // 1. Atualiza p.attacks
   const current = (p.attacks || '').trim();
   p.attacks = current ? `${current} | ${attackText}` : attackText;
 
+  // 2. Sincroniza imediatamente com o Inventário do herói
+  p.inventory = Array.isArray(p.inventory) ? p.inventory : [];
+  const normW = (weaponName || '').toLowerCase().trim();
+  const wBase = normW.split('(')[0].trim();
+  const existingInInv = p.inventory.find(it => {
+    const itNorm = (it.name || '').toLowerCase().trim();
+    const itBase = itNorm.split('(')[0].trim();
+    return itNorm === normW || itBase === wBase || itNorm.includes(wBase) || wBase.includes(itBase);
+  });
+  if (existingInInv) {
+    existingInInv.equipped = true;
+  } else {
+    p.inventory.push({
+      id: 'item_wpn_' + Date.now(),
+      name: weaponObj && weaponObj.name ? weaponObj.name : weaponName,
+      category: 'Armas',
+      qty: 1,
+      weight: weaponObj && weaponObj.weight ? weaponObj.weight : 2,
+      cost: weaponObj && weaponObj.cost ? weaponObj.cost : '10 PO',
+      equipped: true
+    });
+  }
+
   if (typeof touchPlayer === 'function') touchPlayer(p);
-  renderPlayers();
-  saveToLocalStorage();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
   if (typeof broadcastStateSync === 'function') broadcastStateSync();
 
   if (typeof showToast === 'function') {
-    showToast(`⚔️ ${stats ? stats.name : weaponName} adicionada ao arsenal de ${p.name}! Acerto: ${stats.hitStr} | Dano: ${stats.damageFormula}`, 'success');
+    showToast(`⚔️ ${stats ? stats.name : weaponName} equipada e adicionada ao inventário de ${p.name}! (Acerto: ${stats ? stats.hitStr : '+0'} | Dano: ${stats ? stats.damageFormula : '1d6'})`, 'success');
   }
   if (typeof playFX === 'function') playFX('sword');
 
-  closeWeaponPickerModal();
+  if (typeof closeWeaponPickerModal === 'function') closeWeaponPickerModal();
 }
 
 function equipBackpackItemAsAttack(playerId, itemIdx) {
@@ -3388,11 +3543,14 @@ function equipBackpackItemAsAttack(playerId, itemIdx) {
   if (!p || !p.inventory || !p.inventory[itemIdx]) return;
 
   const item = p.inventory[itemIdx];
+  item.equipped = true;
   const stats = calculateWeaponAttackStats(p, item);
   if (!stats) return;
 
   const current = (p.attacks || '').trim();
-  p.attacks = current ? `${current} | ${stats.formattedText}` : stats.formattedText;
+  if (!current.includes(stats.name)) {
+    p.attacks = current ? `${current} | ${stats.formattedText}` : stats.formattedText;
+  }
 
   if (typeof touchPlayer === 'function') touchPlayer(p);
   renderPlayers();
@@ -7675,17 +7833,35 @@ function savePlayerSheet() {
 
   // Sincroniza armas equipadas do modal no inventário
   if (Array.isArray(modalEquippedWeapons)) {
+    // Desequipa armas no inventário que foram removidas do modal
+    currentInv.forEach(it => {
+      if (isWeaponItem(it.name) || it.category === 'Armas') {
+        const isStillInModal = modalEquippedWeapons.some(wName => {
+          const normW = (wName || '').toLowerCase().trim();
+          const itNorm = (it.name || '').toLowerCase().trim();
+          return itNorm === normW || itNorm.includes(normW) || normW.includes(itNorm);
+        });
+        if (!isStillInModal) {
+          it.equipped = false;
+        }
+      }
+    });
+
+    // Equipa ou insere as armas presentes no modal
+    const isNewOrEmptyInv = !existing || !Array.isArray(existing.inventory) || existing.inventory.length === 0;
     modalEquippedWeapons.forEach((wName, i) => {
       const normW = (wName || '').toLowerCase().trim();
       if (!normW) return;
       const existingWpn = currentInv.find(it => {
         const itNorm = (it.name || '').toLowerCase().trim();
-        return itNorm === normW || itNorm.includes(normW) || normW.includes(itNorm);
+        const itBase = itNorm.split('(')[0].trim();
+        const wBase = normW.split('(')[0].trim();
+        return itNorm === normW || itBase === wBase || itNorm.includes(wBase) || wBase.includes(itBase);
       });
       if (existingWpn) {
         existingWpn.equipped = true;
-      } else {
-        const eqObj = typeof EQUIPMENT_DATA !== 'undefined' ? EQUIPMENT_DATA.find(w => w.name.toLowerCase().trim() === normW) : null;
+      } else if (isNewOrEmptyInv) {
+        const eqObj = typeof EQUIPMENT_DATA !== 'undefined' ? EQUIPMENT_DATA.find(w => w.name.toLowerCase().trim() === normW || w.name.toLowerCase().includes(normW)) : null;
         currentInv.push({
           id: 'item_wpn_' + Date.now() + '_' + i,
           name: eqObj ? eqObj.name : wName,
