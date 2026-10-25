@@ -7613,6 +7613,184 @@ const facLabAfterMove = vm.runInContext("getSelectedBastionCampaign().bastion.sp
 assert(facLabAfterMove.managerNpcId === thorgar.id, 'Thorgar agora é o encarregado do Laboratório');
 assert(facForgeAfterMove.managerNpcId === null, 'Forja anterior foi automaticamente liberada, garantindo exclusividade e sem repetição de NPCs');
 
+// =========================================================================
+// 🏰 101. TESTES DE EVOLUÇÃO DE NPCS, CUSTOS NO BANCO E PRESETS DE ÍCONE (ISSUE-133)
+// =========================================================================
+console.log('\n🏰 101. Testes de Evolução de NPCs, Custos no Banco e Presets de Ícone (ISSUE-133):');
+
+const bundle133 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+
+// 1. Integridade de Elementos e Estilos no Bundle Compilado
+assert(bundle133.includes('id="sel-bstaff-icon"'), 'HTML compilado contém o select de ícone (#sel-bstaff-icon)');
+assert(bundle133.includes('id="sel-bstaff-level"'), 'HTML compilado contém o seletor de maestria (#sel-bstaff-level)');
+assert(bundle133.includes('bastion-mastery-badge'), 'HTML compilado contém a classe .bastion-mastery-badge');
+assert(bundle133.includes('btn-promote-staff'), 'HTML compilado contém a classe .btn-promote-staff');
+assert(bundle133.includes('bastion-staff-benefit-pill'), 'HTML compilado contém a classe .bastion-staff-benefit-pill');
+assert(bundle133.includes('onBastionStaffIconChange(this.value)'), 'Select de ícone possui listener reativo onBastionStaffIconChange');
+assert(bundle133.includes('onBastionStaffLevelChange(this.value)'), 'Select de nível possui listener reativo onBastionStaffLevelChange');
+
+// 2. Funções e Tabela de Presets Exportadas
+assert(typeof vm.runInContext('BASTION_STAFF_ICON_PRESETS', sandbox) === 'object', 'BASTION_STAFF_ICON_PRESETS exportado');
+assert(typeof vm.runInContext('getBastionStaffMasteryInfo', sandbox) === 'function', 'Função getBastionStaffMasteryInfo disponível');
+assert(typeof vm.runInContext('calculateBastionStaffWage', sandbox) === 'function', 'Função calculateBastionStaffWage disponível');
+assert(typeof vm.runInContext('onBastionStaffIconChange', sandbox) === 'function', 'Função onBastionStaffIconChange disponível');
+assert(typeof vm.runInContext('onBastionStaffLevelChange', sandbox) === 'function', 'Função onBastionStaffLevelChange disponível');
+assert(typeof vm.runInContext('promoteBastionStaffMember', sandbox) === 'function', 'Função promoteBastionStaffMember disponível');
+
+// 3. Teste de Automação Reativa de Ícone -> Cargo, Especialidade e Soldo
+vm.runInContext(`
+  openCreateBastionStaffModal();
+  document.getElementById('sel-bstaff-icon').value = '⚗️';
+  onBastionStaffIconChange('⚗️');
+`, sandbox);
+const roleAlch = vm.runInContext("document.getElementById('inp-bstaff-role').value", sandbox);
+const traitAlch = vm.runInContext("document.getElementById('inp-bstaff-trait').value", sandbox);
+const wageAlch = vm.runInContext("document.getElementById('inp-bstaff-wage').value", sandbox);
+assert(roleAlch === 'Alquimista Chefe', 'Ícone ⚗️ preencheu automaticamente o cargo "Alquimista Chefe"');
+assert(traitAlch.includes('poções'), 'Ícone ⚗️ preencheu a especialidade em poções');
+assert(parseInt(wageAlch) === 4, 'Ícone ⚗️ definiu o salário inicial base de 4 PO');
+
+// Mudar para Guarda
+vm.runInContext(`
+  document.getElementById('sel-bstaff-icon').value = '🛡️';
+  onBastionStaffIconChange('🛡️');
+`, sandbox);
+assert(vm.runInContext("document.getElementById('inp-bstaff-role').value", sandbox) === 'Comandante da Guarda', 'Ícone 🛡️ preencheu "Comandante da Guarda"');
+
+// 4. Teste de Progressão de Nível e Soldo Dinâmico
+const mastery1 = vm.runInContext("getBastionStaffMasteryInfo(1)", sandbox);
+const mastery3 = vm.runInContext("getBastionStaffMasteryInfo(3)", sandbox);
+const mastery5 = vm.runInContext("getBastionStaffMasteryInfo(5)", sandbox);
+assert(mastery1.level === 1 && mastery1.timeReductionDays === 0, 'Nível 1 possui redução de 0 dias');
+assert(mastery3.level === 3 && mastery3.timeReductionDays === 4, 'Nível 3 possui redução de 4 dias');
+assert(mastery5.level === 5 && mastery5.doubleProduction === true && mastery5.timeReductionDays === 7, 'Nível 5 dobra a produção e reduz 7 dias');
+
+const wageLvl1 = vm.runInContext("calculateBastionStaffWage('🔨', 1)", sandbox);
+const wageLvl2 = vm.runInContext("calculateBastionStaffWage('🔨', 2)", sandbox);
+const wageLvl3 = vm.runInContext("calculateBastionStaffWage('🔨', 3)", sandbox);
+const wageLvl5 = vm.runInContext("calculateBastionStaffWage('🔨', 5)", sandbox);
+assert(wageLvl1 === 3, 'Ferreiro Nível 1 tem soldo de 3 PO');
+assert(wageLvl2 === 6, 'Ferreiro Nível 2 tem soldo de 6 PO (+3)');
+assert(wageLvl3 === 10, 'Ferreiro Nível 3 tem soldo de 10 PO (+7)');
+assert(wageLvl5 === 33, 'Ferreiro Nível 5 tem soldo de 33 PO (+30)');
+
+// 5. Teste de Criação e Promoção de Especialista
+vm.runInContext(`
+  openCreateBastionStaffModal();
+  document.getElementById('inp-bstaff-name').value = 'Mestre Brokk';
+  document.getElementById('sel-bstaff-icon').value = '🔨';
+  onBastionStaffIconChange('🔨');
+  document.getElementById('sel-bstaff-level').value = '1';
+  saveBastionStaffMember();
+`, sandbox);
+const brokk = vm.runInContext("getSelectedBastionCampaign().bastion.staff.find(s => s.name === 'Mestre Brokk')", sandbox);
+assert(brokk !== undefined, 'Mestre Brokk criado com sucesso no staff');
+assert(brokk.level === 1, 'Mestre Brokk inicia no Nível 1');
+assert(brokk.wage === 3, 'Salário inicial de Brokk é 3 PO');
+
+// Promoção de Brokk
+vm.runInContext(`
+  promoteBastionStaffMember('` + brokk.id + `');
+`, sandbox);
+const brokkPromoted = vm.runInContext("getSelectedBastionCampaign().bastion.staff.find(s => s.id === '" + brokk.id + "')", sandbox);
+assert(brokkPromoted.level === 2, 'Brokk promovido para Nível 2');
+assert(brokkPromoted.wage === 6, 'Salário de Brokk reajustado para 6 PO após promoção');
+
+// 6. Teste de Cobrança Exclusiva pelo Cofre do Banco (Muralhas)
+// Configura cenário: Banco com 0 PO e Baú Coletivo com 5000 PO
+const origPrompt = sandbox.prompt;
+sandbox.prompt = () => '1'; // Seleciona opção 1: Paliçada de Madeira (250 PO)
+
+vm.runInContext(`
+  activeCamp133 = getSelectedBastionCampaign();
+  activeCamp133.partyStash.gold = 5000;
+  activeCamp133.bastion.bank.gold = 0;
+  activeCamp133.bastion.walls = 'none';
+  
+  // Tenta construir muralha com banco zerado
+  promptUpgradeBastionWalls();
+`, sandbox);
+
+let activeCampAfterWallTry = vm.runInContext("getSelectedBastionCampaign()", sandbox);
+assert(activeCampAfterWallTry.bastion.walls === 'none', 'Muralha NÃO foi construída porque o Cofre do Banco estava zerado (mesmo com 5000 PO no Baú)');
+
+// Agora deposita 500 PO no Cofre do Banco
+vm.runInContext(`
+  activeCamp133.bastion.bank.gold = 500;
+  promptUpgradeBastionWalls();
+`, sandbox);
+
+sandbox.prompt = origPrompt;
+
+let activeCampAfterWallSuccess = vm.runInContext("getSelectedBastionCampaign()", sandbox);
+assert(activeCampAfterWallSuccess.bastion.walls === 'wood', 'Paliçada de Madeira erguida com sucesso após financiamento via Cofre do Banco');
+assert(activeCampAfterWallSuccess.bastion.bank.gold === 250, 'Cofre do Banco foi debitado exatamente em 250 PO (restam 250 PO)');
+assert(activeCampAfterWallSuccess.partyStash.gold === 5000, 'Baú do Grupo permaneceu intacto com 5000 PO');
+const wallTx = activeCampAfterWallSuccess.bastion.bank.history.find(h => h.entityName === 'Obras de Defesa');
+assert(wallTx !== undefined && wallTx.amount === 250, 'Extrato do Banco registrou o saque das obras de muralha');
+
+// 7. Teste de Cobrança de Ordens no Cofre do Banco com Redução de Tempo por Maestria
+vm.runInContext(`
+  // Aloca Brokk (Ferreiro Nv 2, -2 dias) na Forja
+  const forgeFac = activeCamp133.bastion.specialFacilities.find(f => f.id === 'fac_forge');
+  forgeFac.managerNpcId = '` + brokk.id + `';
+  forgeFac.managerNpcName = '` + brokk.name + `';
+  forgeFac.managerNpcLevel = 2;
+  
+  // Banco tem 250 PO
+  document.getElementById('sel-bastion-action-facility').value = 'fac_forge';
+  document.getElementById('sel-item-for-craft_magic_arms').value = 'Espada Longa +1|200';
+  triggerActivateBastionAction('craft_magic_arms');
+`, sandbox);
+
+const orderFac = vm.runInContext("getSelectedBastionCampaign().bastion.specialFacilities.find(f => f.id === 'fac_forge')", sandbox);
+assert(orderFac.currentOrder !== null, 'Ordem de forja mágica ativada na Forja');
+assert(orderFac.currentOrder.costPO === 200, 'Custo de 200 PO registrado na ordem');
+assert(vm.runInContext("getSelectedBastionCampaign().bastion.bank.gold", sandbox) === 50, 'Cofre do Banco debitado em 200 PO (restam 50 PO)');
+assert(orderFac.currentOrder.durationDays === 12, 'Tempo da ordem reduzido de 14 para 12 dias graças ao Ferreiro Nível 2 (-2 dias)');
+
+// 8. Teste de Folha de Pagamento do Staff debitada do Banco no Avanço de Turno
+vm.runInContext(`
+  // Define o staff com soma salarial conhecida (ex: Brokk 6 PO + outro 4 PO = 10 PO)
+  const campPayroll = getSelectedBastionCampaign();
+  campPayroll.bastion.staff = [
+    { id: 'st_1', name: 'Mestre Brokk', wage: 6, level: 2 },
+    { id: 'st_2', name: 'Guarda Geral', wage: 4, level: 1 }
+  ];
+  // Banco tem 50 PO
+  campPayroll.bastion.bank.gold = 50;
+  advanceBastionTurn();
+`, sandbox);
+
+const bankAfterPayroll = vm.runInContext("getSelectedBastionCampaign().bastion.bank.gold", sandbox);
+assert(bankAfterPayroll === 40, 'Folha de pagamento de 10 PO foi debitada do Cofre do Banco (de 50 para 40 PO)');
+const payrollTx = vm.runInContext("getSelectedBastionCampaign().bastion.bank.history.find(h => h.entityName === 'Folha de Pagamento')", sandbox);
+assert(payrollTx !== undefined && payrollTx.amount === 10, 'Lançamento de Folha de Pagamento gravado no extrato do cofre');
+
+// 9. Teste de Produção em Dobro com Especialista Nível 5 (Lenda Viva)
+vm.runInContext(`
+  // Cria especialista Nv 5 na Alquimia
+  const campProd = getSelectedBastionCampaign();
+  const labFac = campProd.bastion.specialFacilities.find(f => f.id === 'fac_lab');
+  labFac.managerNpcId = 'alch_legend';
+  labFac.managerNpcName = 'Arquimago Ignis';
+  labFac.managerNpcLevel = 5;
+  
+  labFac.currentOrder = {
+    actionKey: 'distill_potion',
+    name: 'Destilar Poção ou Elixir Alquímico',
+    daysLeft: 7, // Conclui neste turno
+    selectedItem: { name: 'Poção Maior de Cura (4d4+4)' },
+    costPO: 0
+  };
+  
+  advanceBastionTurn();
+`, sandbox);
+
+const labItemEntry = vm.runInContext("getSelectedBastionCampaign().partyStash.items.find(i => i.name === 'Poção Maior de Cura (4d4+4)')", sandbox);
+assert(labItemEntry !== undefined, 'Poção Maior de Cura fabricada e entregue no Baú');
+assert(labItemEntry.qty === 2, 'Quantidade duplicada (2x) graças ao especialista Nível 5 (Lenda Viva)!');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

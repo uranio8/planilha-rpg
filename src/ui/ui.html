@@ -4604,33 +4604,33 @@
       <input type="hidden" id="inp-bstaff-id" value="">
 
       <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 10px;">
-        <div style="display: grid; grid-template-columns: 80px 1fr; gap: 8px;">
+        <div style="display: grid; grid-template-columns: 56px 1fr; gap: 8px;">
           <div>
-            <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Ícone:</label>
-            <select id="sel-bstaff-icon" style="width: 100%; font-size: 18px; text-align: center;">
-              <option value="🔨">🔨 Forja</option>
-              <option value="⚗️">⚗️ Alquimista</option>
-              <option value="🛡️">🛡️ Guarda</option>
-              <option value="📜">📜 Escriba</option>
-              <option value="🍷">🍷 Taverneiro</option>
-              <option value="🌿">🌿 Herbologista</option>
-              <option value="🧙‍♂️">🧙‍♂️ Mago</option>
-              <option value="🏹">🏹 Arqueiro</option>
-              <option value="🗝️">🗝️ Senescal</option>
-              <option value="🌾">🌾 Fazendeiro</option>
-              <option value="🐴">🐴 Estribeiro</option>
-              <option value="🍽️">🍽️ Cozinheiro</option>
-              <option value="⚖️">⚖️ Tesoureiro</option>
-              <option value="👤">👤 Outro</option>
+            <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block; text-align: center;">Ícone:</label>
+            <select id="sel-bstaff-icon" onchange="onBastionStaffIconChange(this.value)" style="width: 100%; font-size: 20px; height: 38px; text-align: center; padding: 0; cursor: pointer;" title="Escolha a ocupação / ícone">
+              <option value="🔨" title="Ferreiro / Armeiro">🔨</option>
+              <option value="⚗️" title="Alquimista">⚗️</option>
+              <option value="🛡️" title="Comandante da Guarda">🛡️</option>
+              <option value="📜" title="Escriba / Arquivista">📜</option>
+              <option value="🍷" title="Taverneiro">🍷</option>
+              <option value="🌿" title="Herbologista">🌿</option>
+              <option value="🧙‍♂️" title="Conselheiro Arcano">🧙‍♂️</option>
+              <option value="🏹" title="Capitão dos Arqueiros">🏹</option>
+              <option value="🗝️" title="Senescal">🗝️</option>
+              <option value="🌾" title="Feitor Agrícola">🌾</option>
+              <option value="🐴" title="Mestre dos Cavalos">🐴</option>
+              <option value="🍽️" title="Cozinheiro-Chefe">🍽️</option>
+              <option value="⚖️" title="Tesoureiro do Banco">⚖️</option>
+              <option value="👤" title="Especialista Geral">👤</option>
             </select>
           </div>
           <div>
             <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Nome do Especialista / NPC:</label>
-            <input type="text" id="inp-bstaff-name" placeholder="Ex: Mestre Thorgar, Irmã Selene, Capitão Valen" style="width: 100%; font-weight: 700;">
+            <input type="text" id="inp-bstaff-name" placeholder="Ex: Mestre Thorgar, Irmã Selene, Capitão Valen" style="width: 100%; font-weight: 700; height: 38px;">
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 110px; gap: 8px;">
+        <div style="display: grid; grid-template-columns: 1fr 140px 90px; gap: 8px;">
           <div>
             <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Cargo / Ocupação:</label>
             <input type="text" id="inp-bstaff-role" list="dl-bastion-staff-roles" placeholder="Ex: Armeiro-Chefe, Alquimista Chefe, Senescal" style="width: 100%;">
@@ -4648,8 +4648,18 @@
             </datalist>
           </div>
           <div>
-            <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Salário Semanal:</label>
-            <input type="number" id="inp-bstaff-wage" value="2" min="0" step="1" style="width: 100%; text-align: center; font-weight: 700;">
+            <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Maestria:</label>
+            <select id="sel-bstaff-level" onchange="onBastionStaffLevelChange(this.value)" style="width: 100%; font-weight: 700; color: #fef08a;">
+              <option value="1">⭐ Nv 1 (Aprendiz)</option>
+              <option value="2">⭐⭐ Nv 2 (Artífice)</option>
+              <option value="3">⭐⭐⭐ Nv 3 (Mestre)</option>
+              <option value="4">⭐⭐⭐⭐ Nv 4 (Grão-Mestre)</option>
+              <option value="5">⭐⭐⭐⭐⭐ Nv 5 (Lenda)</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Salário/sem:</label>
+            <input type="number" id="inp-bstaff-wage" value="2" min="0" step="1" style="width: 100%; text-align: center; font-weight: 700; color: #facc15;" title="Peças de Ouro pagas semanalmente a este especialista">
           </div>
         </div>
 
