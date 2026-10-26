@@ -1,77 +1,83 @@
-# 📋 Plano de Implementação - ISSUE-141: Correção de Armaduras/Escudos em Ataques, Desduplicação de Armas e Blindagem de Magias Preparadas do Mago
+# 📋 Plano de Implementação - ISSUE-142: Discriminação de Atributos Base, Bônus Raciais Automáticos e Valor Final no Modal de Personagem
 
 ---
 
-## 🎯 1. Contexto e Diagnóstico dos Problemas
+## 🎯 1. Contexto e Objetivo
 
-Dois problemas críticos foram reportados pelo usuário:
-1. **Armaduras e Escudos aparecendo como armas de ataque e armas duplicadas na tabela "Ações / Ataques & Armas Calculadas"**:
-   - Conforme captura de tela, a **Cota de Malha** aparecia com acerto `+7` e dano `CA 16+5 Concussão`, e o **Escudo** com acerto `+7` e dano `+2 CA+5 Concussão`. Além disso, a **Espada Longa** e a **Besta Leve** apareciam duplicadas na lista.
-2. **Magias preparadas do Mago sumindo**:
-   - O jogador configura as magias preparadas da sessão no grimório, mas elas não salvam ou somem ao atualizar ou ao sincronizar com a nuvem/Mestre, voltando a exibir `0/9` preparadas.
+O usuário solicitou um aprimoramento na aba/modal de criação de personagem:
+> *"na aba de criação de personagem podemos manter os valores tirados do dado e embaixo ficaria o valor final, indicando onde teria o bonus de raça por exemplo e outras cateracteristicas de classe."*
 
----
-
-### 🔍 Causa-Raiz Técnica
-
-1. **Cota de Malha e Escudo como Armas (`getPlayerCalculatedAttacks`)**:
-   - Em `src/js/players.js` (linha 1094), a verificação para itens equipados continha:
-     `if (dmgRaw || equipMatch || it.name.includes('espada') ...)`
-   - Como a Cota de Malha e o Escudo existem em `EQUIPMENT_DATA`, `equipMatch` era verdadeiro. Como não possuíam dano de arma, a string de defesa (`CA 16`, `+2 CA`) era usada como dado base, somando o modificador de Força (`+5`) e o tipo `Concussão`.
-   - Na etapa seguinte (linha 1142), as armas anotadas em `p.attacks` eram adicionadas sem verificar se a mesma arma já havia sido calculada a partir do inventário equipado, gerando duplicatas de Espada Longa e Besta Leve.
-
-2. **Perda/Sumiço das Magias Preparadas do Mago (`preparedSpells` e `spellbookSpells`)**:
-   - Em `togglePlayerSpellPrepared` e `saveSpellPickerSelection`, ao alterar as magias preparadas, `p.updatedAt = Date.now()` e `p.updatedBy = localClientId` não eram carimbados diretamente no herói local antes do salvamento.
-   - Em `firebase_sync.js` (`applyCloudUpdate`), quando o Mestre publica atualizações (ou quando snapshots chegam com dados onde `remoteP.preparedSpells` está vazio), o merge adotava o snapshot da nuvem como prioritário (`remoteUpdated > localUpdated`), sobrescrevendo o array de magias preparadas do jogador por `[]`.
-   - Falta de blindagem de autoridade do jogador: para o herói ativo do aluno (`p.id === activePortalPlayerId`), a seleção de magias preparadas e do grimório do aluno deve prevalecer sobre snapshots remotos vazios do Mestre.
+Atualmente, o modal possui apenas um campo direto por atributo (`pm-str`, `pm-dex`, etc.), onde o usuário precisa calcular de cabeça a soma dos bônus raciais (ex: Draconato ganha +2 Força e +1 Carisma). Isso causa dúvidas sobre onde os bônus raciais foram aplicados e se os valores inseridos já continham ou não os bônus.
 
 ---
 
-## 🛠️ 2. Soluções Planejadas
+## 🛠️ 2. Arquitetura da Solução
 
-### Solução 1: Filtro Estrito de Armas e Desduplicação em `getPlayerCalculatedAttacks`
-- Em `src/js/players.js`:
-  - Ignorar expressamente armaduras, vestimentas e escudos na tabela de ataques (`isArmorItem(it.name)`, categoria `'Armaduras'`, categoria `'Escudos'`, ou itens com `ac`).
-  - Exigir que o item seja classificado como arma (`it.category === 'Armas'`, `isWeaponItem(it.name)` ou fórmula de dano válida `/^\d+d\d+/i.test(dmgRaw)`).
-  - Na leitura de `p.attacks`, desduplicar armas já adicionadas a partir do inventário equipado, comparando nomes normalizados para impedir que a mesma arma apareça duas vezes.
+### A. Mapeamento Canônico de Bônus Raciais (`getRacialAbilityBonuses(raceName)`)
+Criar uma função utilitária em `src/js/players.js` que identifica a raça selecionada e retorna os bônus de habilidade oficiais D&D 5E:
+* **Draconato (*Dragonborn*)**: `+2 Força`, `+1 Carisma`
+* **Anão (*Dwarf*)**: `+2 Constituição` (Montanha: `+2 Força`; Colina: `+1 Sabedoria`)
+* **Elfo (*Elf*)**: `+2 Destreza` (Alto Elfo: `+1 Inteligência`; Floresta: `+1 Sabedoria`; Drow: `+1 Carisma`)
+* **Halfling**: `+2 Destreza` (Pés-Leves: `+1 Carisma`; Robusto: `+1 Constituição`)
+* **Humano (*Human*)**: `+1 em Todos os 6 Atributos`
+* **Gnomo (*Gnome*)**: `+2 Inteligência` (Rocha: `+1 Constituição`; Floresta: `+1 Destreza`)
+* **Meio-Orc (*Half-Orc*)**: `+2 Força`, `+1 Constituição`
+* **Tiefling**: `+2 Carisma`, `+1 Inteligência`
+* **Meio-Elfo (*Half-Elf*)**: `+2 Carisma`, `+1 em dois atributos` (padrão: +1 Destreza, +1 Constituição)
+* **Custom / Outra**: `0` nos bônus automáticos, com opção de ajuste livre.
 
-### Solução 2: Blindagem Definitiva de Magias Preparadas do Mago (`preparedSpells` & Nuvem)
-- Em `src/js/players.js`:
-  - Em `togglePlayerSpellPrepared(playerId, spellName)` e `saveSpellPickerSelection()`:
-    - Carimbar `p.updatedAt = Date.now()` e `p.updatedBy = (typeof localClientId !== 'undefined' ? localClientId : 'local')`.
-    - Garantir que `p.spellbookSpells` e `p.preparedSpells` sejam persistidos no `localStorage` e despachados imediatamente para a nuvem via `executeDirectCloudSaveForPlayer`.
-- Em `src/js/firebase_sync.js`:
-  - No merge de `applyCloudUpdate`:
-    - Para o herói ativo (`p.id === activePortalPlayerId`), se o jogador local já possuir magias preparadas (`localChar.preparedSpells && localChar.preparedSpells.length > 0`), nunca sobrescrever por um array remoto vazio (`remoteP.preparedSpells.length === 0`).
-    - Mesclar repertório do grimório (`spellbookSpells`) unindo os dois conjuntos sem perdas.
+### B. Novo Design Visual do Editor de Atributos (`.stat-box-editor`)
+Em `src/ui/ui.html` e `src/styles/head_css.html`, remodelar cada uma das 6 caixas de atributos (`FOR`, `DES`, `CON`, `INT`, `SAB`, `CAR`) para exibir três camadas transparentes:
+1. **Atributo & Dado Base (`pm-base-str`)**:
+   - Label com nome do atributo (`FOR`)
+   - Input editável para o valor tirado no dado / Array Padrão (ex: `15`) com tooltip *"Valor bruto tirado no dado ou array padrão"*
+2. **Badge de Bônus Racial / Origem (`pm-race-bonus-str`)**:
+   - Tag visual temática colorida (ex: `🐉 +2 Raça` para Draconato em Força, `🧬 +1 Raça` em Carisma, ou `--` se zero)
+   - Atualiza reativamente no exato momento em que o usuário troca a Raça no dropdown `pm-race-select`.
+3. **Resultado Final & Modificador (`pm-final-str` e `pm-mod-str`)**:
+   - `Valor Final = Base + Bônus Racial` (ex: `15 + 2 = 17`)
+   - Modificador D&D 5E oficial: `(Final - 10) / 2` (ex: `+3`)
+   - Input de compatibilidade `pm-str` mantido sincronizado para que todo o restante da aplicação continue recebendo o valor final sem quebras.
+
+### C. Integração com as Ferramentas de Criação
+1. **`🎲 Rolar 4d6 (Drop Lowest)`**:
+   - As rolagens de dados preenchem os inputs de **Base**.
+   - O sistema soma automaticamente os bônus raciais e atualiza os valores finais e modificadores.
+2. **`📊 Array Padrão (15, 14, 13, 12, 10, 8)`**:
+   - Distribui o array padrão na **Base** e soma os bônus raciais no final.
+3. **`⚡ Otimizar p/ Classe`**:
+   - Reordena as bases conforme a prioridade da classe, aplica os bônus raciais e atualiza os finais.
+4. **Troca de Raça no Modal (`pm-race-select`)**:
+   - Recalcula instantaneamente os bônus de cada atributo sem apagar as rolagens base feitas pelo jogador.
 
 ---
 
 ## 🏗️ 3. Módulos Afetados
 
-| Módulo / Arquivo | Modificações Planejadas |
+| Arquivo | Responsabilidade |
 | :--- | :--- |
-| **`src/js/players.js`** | 1. Filtrar estritamente armas em `getPlayerCalculatedAttacks` (ignorando armaduras e escudos) e desduplicar ataques.<br>2. Carimbar `updatedAt`/`updatedBy` e sincronizar mutações atômicas de magias em `togglePlayerSpellPrepared` e `saveSpellPickerSelection`. |
-| **`src/js/firebase_sync.js`** | Proteger `preparedSpells` e `spellbookSpells` contra sobrescrita por snapshots vazios da nuvem no merge do portal do jogador. |
-| **`test_runner.js`** | Adicionar a **Bateria 109** validando que Cota de Malha e Escudo não geram ataques, ausência de duplicatas na tabela de combate e persistência/resiliência de `preparedSpells`. |
-| **`issues/README.md`** | Registrar a documentação completa da **ISSUE-141**. |
+| **`src/ui/ui.html`** | Estrutura HTML das caixas de atributo em `#modal-player`, com campos de Base, Badge de Bônus Racial, Valor Final e Modificador. |
+| **`src/styles/head_css.html`** | Estilização das 3 camadas do `.stat-box-editor`, badges raciais iluminados e destaques numéricos. |
+| **`src/js/players.js`** | Implementar `getRacialAbilityBonuses`, atualizar `updateModalAttributeModifiers`, `rollAttributes4d6Modal`, `applyStandardArrayModal`, `optimizeAttributesForClassModal` e `onPlayerModalClassOrLevelChange`. |
+| **`builder.js`** | Compilar a nova versão para `planilha do rpg.html` e `index.html`. |
+| **`test_runner.js`** | Adicionar a **Bateria 110** validando cálculo de bônus raciais, persistência dos valores finais e reatividade na troca de raça. |
+| **`issues/README.md`** | Registrar a documentação completa da **ISSUE-142**. |
 
 ---
 
-## 🛡️ 4. Impactos em Persistência e Outras Telas
+## 🛡️ 4. Compatibilidade e Segurança
 
-- **Cálculo de CA**: Sem impacto. Armaduras e escudos continuam calculando normalmente a CA em `calculatePlayerAcFromEquipment`.
-- **Combate e VTT**: Nenhum impacto negativo. Monstros e combatentes continuam com seus ataques intactos.
-- **Outras Classes (Clérigo, Druida, Paladino, Bardo)**: Beneficiam-se igualmente da proteção de magias preparadas e da limpeza de ataques.
+- **Zero Breaking Changes**: Os IDs canônicos `pm-str`, `pm-dex`, etc., serão preservados e manterão sempre o valor final calculado, garantindo que `savePlayerSheet()`, `calculatePlayerAcFromEquipment()`, `calculateLevel1Hp()` e todos os 1913 testes existentes permaneçam 100% verdes.
+- **Edição de Fichas Existentes**: Ao abrir uma ficha já criada, o sistema decompõe ou preenche o valor base e bônus de forma coerente.
 
 ---
 
 ## 📋 5. Lista de Tarefas (Tasks)
 
-- [ ] **Task 1**: Atualizar `getPlayerCalculatedAttacks` em `src/js/players.js` para filtrar estritamente armas e desduplicar ataques.
-- [ ] **Task 2**: Blindar persistência e sincronização de `preparedSpells` em `src/js/players.js` e `src/js/firebase_sync.js`.
-- [ ] **Task 3**: Executar compilação com `node builder.js`.
-- [ ] **Task 4**: Adicionar a **Bateria 109** em `test_runner.js` e rodar a suíte completa garantindo 100% de sucesso.
-- [ ] **Task 5**: Documentar a ISSUE-141 em `issues/README.md`.
-- [ ] **Task 6**: Git commit semântico e push para `origin/main`.
-- [ ] **Task 7**: Apresentar resultado ao usuário.
+- [ ] **Task 1**: Adicionar a função `getRacialAbilityBonuses(raceName)` e atualizar a lógica de cálculo de atributos em `src/js/players.js`.
+- [ ] **Task 2**: Atualizar o markup HTML das caixas de atributos em `src/ui/ui.html` com campos Base, Bônus Racial e Valor Final.
+- [ ] **Task 3**: Adicionar estilos CSS em `src/styles/head_css.html` para os novos badges e disposição vertical ergonômica.
+- [ ] **Task 4**: Executar compilação com `node builder.js`.
+- [ ] **Task 5**: Adicionar a **Bateria 110** em `test_runner.js` e validar 100% de sucesso da suíte de testes.
+- [ ] **Task 6**: Registrar a documentação da ISSUE-142 em `issues/README.md`.
+- [ ] **Task 7**: Git commit semântico e push para `origin/main`.

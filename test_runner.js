@@ -8471,6 +8471,113 @@ assert(hasPrepProtected, 'Magias preparadas do Mago protegidas contra snapshot v
 assert(hasFireballProtected, 'Bola de Fogo permaneceu preparada após sync da nuvem');
 assert(hasMageArmorInBook, 'Grimório permanente preservado com sucesso no sync');
 
+// =========================================================================
+// 🎲 110. TESTES DE GERAÇÃO DE ATRIBUTOS E BÔNUS RACIAIS CANÔNICOS D&D 5E (ISSUE-142)
+// =========================================================================
+console.log('\n🎲 110. Testes de Geração de Atributos e Bônus Raciais Canônicos D&D 5E (ISSUE-142):');
+
+const bundle110 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+
+// 1. Elementos da UI compilados no bundle
+assert(bundle110.includes('pm-race-summary-bar'), 'HTML compilado possui a barra de resumo racial pm-race-summary-bar');
+assert(bundle110.includes('stat-dice-presets-bar'), 'HTML compilado possui o painel de presets de atributos .stat-dice-presets-bar');
+assert(bundle110.includes('rollAttributes4d6Modal()'), 'HTML compilado contém botão para rolagem 4d6 Drop Lowest');
+assert(bundle110.includes('applyStandardArrayModal()'), 'HTML compilado contém botão para Array Padrão');
+assert(bundle110.includes('optimizeAttributesForClassModal()'), 'HTML compilado contém botão para otimizar por classe');
+
+// 2. Testes de Bônus Raciais Canônicos
+const getRacialAbilityBonuses = sandbox.getRacialAbilityBonuses;
+const roll4d6DropLowest = sandbox.roll4d6DropLowest;
+
+const bonusHuman = getRacialAbilityBonuses('Humano');
+assert(bonusHuman.str === 1 && bonusHuman.dex === 1 && bonusHuman.con === 1 && bonusHuman.int === 1 && bonusHuman.wis === 1 && bonusHuman.cha === 1, 'Humano concede +1 em todos os atributos');
+
+const bonusElf = getRacialAbilityBonuses('Alto Elfo (High Elf)');
+assert(bonusElf.dex === 2 && bonusElf.int === 1, 'Alto Elfo concede +2 Des e +1 Int');
+
+const bonusWoodElf = getRacialAbilityBonuses('Elfo da Floresta');
+assert(bonusWoodElf.dex === 2 && bonusWoodElf.wis === 1, 'Elfo da Floresta concede +2 Des e +1 Sab');
+
+const bonusHillDwarf = getRacialAbilityBonuses('Anão da Colina');
+assert(bonusHillDwarf.con === 2 && bonusHillDwarf.wis === 1, 'Anão da Colina concede +2 Con e +1 Sab');
+
+const bonusMountainDwarf = getRacialAbilityBonuses('Anão da Montanha');
+assert(bonusMountainDwarf.str === 2 && bonusMountainDwarf.con === 2, 'Anão da Montanha concede +2 For e +2 Con');
+
+const bonusLightfootHalfling = getRacialAbilityBonuses('Halfling Pés-Leves');
+assert(bonusLightfootHalfling.dex === 2 && bonusLightfootHalfling.cha === 1, 'Halfling Pés-Leves concede +2 Des e +1 Car');
+
+const bonusDragonborn = getRacialAbilityBonuses('Draconato (Dragonborn)');
+assert(bonusDragonborn.str === 2 && bonusDragonborn.cha === 1, 'Draconato concede +2 For e +1 Car');
+
+const bonusHalfOrc = getRacialAbilityBonuses('Meio-Orc (Half-Orc)');
+assert(bonusHalfOrc.str === 2 && bonusHalfOrc.con === 1, 'Meio-Orc concede +2 For e +1 Con');
+
+const bonusTiefling = getRacialAbilityBonuses('Tiefling');
+assert(bonusTiefling.cha === 2 && bonusTiefling.int === 1, 'Tiefling concede +2 Car e +1 Int');
+
+const bonusHalfElf = getRacialAbilityBonuses('Meio-Elfo (Half-Elf)');
+assert(bonusHalfElf.cha === 2 && bonusHalfElf.dex === 1 && bonusHalfElf.con === 1, 'Meio-Elfo concede +2 Car, +1 Des e +1 Con');
+
+// 3. Testes da mecânica 4d6 Drop Lowest
+let rollsValid = true;
+for (let i = 0; i < 50; i++) {
+  const roll = roll4d6DropLowest();
+  if (roll < 3 || roll > 18) {
+    rollsValid = false;
+    break;
+  }
+}
+assert(rollsValid, 'roll4d6DropLowest() sempre produz valores entre 3 e 18');
+
+// 4. Testes de cálculo no VM com DOM mockado
+vm.runInContext(`
+  (function() {
+    // Mock dos inputs no sandbox
+    const inputsMock = {};
+    ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(k => {
+      inputsMock['pm-base-' + k] = { value: '10' };
+      inputsMock['pm-' + k] = { value: '10' };
+      inputsMock['pm-final-' + k] = { textContent: '10' };
+      inputsMock['pm-race-bonus-' + k] = { textContent: '+0', className: '' };
+      inputsMock['pm-mod-' + k] = { textContent: '+0', classList: { add: ()=>{}, remove: ()=>{} } };
+    });
+    inputsMock['pm-race-select'] = { value: 'Anão da Montanha' };
+    inputsMock['pm-race-summary-text'] = { innerHTML: '' };
+
+    const prevGetElementById = document.getElementById;
+    document.getElementById = function(id) {
+      if (inputsMock[id]) return inputsMock[id];
+      return prevGetElementById ? prevGetElementById.call(document, id) : null;
+    };
+
+    // Base: For 15, Con 14
+    inputsMock['pm-base-str'].value = '15';
+    inputsMock['pm-base-con'].value = '14';
+
+    updateModalAttributeModifiers();
+
+    // Salvar resultados globais para assert
+    globalThis.__test_finalFor = inputsMock['pm-str'].value;
+    globalThis.__test_finalCon = inputsMock['pm-con'].value;
+    globalThis.__test_badgeFor = inputsMock['pm-race-bonus-str'].textContent;
+    globalThis.__test_modFor = inputsMock['pm-mod-str'].textContent;
+
+    // Restaurar
+    document.getElementById = prevGetElementById;
+  })();
+`, sandbox);
+
+const finalFor = vm.runInContext('globalThis.__test_finalFor', sandbox);
+const finalCon = vm.runInContext('globalThis.__test_finalCon', sandbox);
+const badgeFor = vm.runInContext('globalThis.__test_badgeFor', sandbox);
+const modFor = vm.runInContext('globalThis.__test_modFor', sandbox);
+
+assert(finalFor === 17, 'Anão da Montanha (+2 For): Base 15 resulta em Força Final 17');
+assert(finalCon === 16, 'Anão da Montanha (+2 Con): Base 14 resulta em Constituição Final 16');
+assert(badgeFor.includes('+2'), 'Badge racial indica corretamente +2 Raça');
+assert(modFor === '+3', 'Modificador de atributo 17 calculado corretamente como +3');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

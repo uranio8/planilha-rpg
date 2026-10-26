@@ -7258,6 +7258,91 @@ function getSuggestedClassAttacks(className, strMod = 2, dexMod = 2) {
   return `Espada Longa (${signStr}, 1d8${strDmgSign} cortante)`;
 }
 
+// ============================================================================
+// 🧬 ISSUE-142: BÔNUS RACIAIS CANÔNICOS D&D 5E & MAPEAMENTO DE ATRIBUTOS
+// ============================================================================
+
+function getRacialAbilityBonuses(raceName) {
+  const norm = String(raceName || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  const bonuses = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0, label: 'Nenhum (+0)' };
+
+  if (norm.includes('draconato') || norm.includes('dragonborn')) {
+    bonuses.str = 2;
+    bonuses.cha = 1;
+    bonuses.label = 'Draconato (+2 FOR, +1 CAR)';
+  } else if (norm.includes('anao') || norm.includes('dwarf')) {
+    bonuses.con = 2;
+    if (norm.includes('montanha') || norm.includes('mountain')) {
+      bonuses.str = 2;
+      bonuses.label = 'Anão da Montanha (+2 CON, +2 FOR)';
+    } else if (norm.includes('colina') || norm.includes('hill')) {
+      bonuses.wis = 1;
+      bonuses.label = 'Anão da Colina (+2 CON, +1 SAB)';
+    } else {
+      bonuses.label = 'Anão (+2 CON)';
+    }
+  } else if (norm.includes('meio-elfo') || norm.includes('meio elfo') || norm.includes('half-elf') || norm.includes('half elf')) {
+    bonuses.cha = 2;
+    bonuses.dex = 1;
+    bonuses.con = 1;
+    bonuses.label = 'Meio-Elfo (+2 CAR, +1 DES, +1 CON)';
+  } else if (norm.includes('elfo') || norm.includes('elf')) {
+    bonuses.dex = 2;
+    if (norm.includes('alto') || norm.includes('high')) {
+      bonuses.int = 1;
+      bonuses.label = 'Alto Elfo (+2 DES, +1 INT)';
+    } else if (norm.includes('floresta') || norm.includes('wood')) {
+      bonuses.wis = 1;
+      bonuses.label = 'Elfo da Floresta (+2 DES, +1 SAB)';
+    } else if (norm.includes('drow') || norm.includes('negro') || norm.includes('dark')) {
+      bonuses.cha = 1;
+      bonuses.label = 'Elfo Drow (+2 DES, +1 CAR)';
+    } else {
+      bonuses.label = 'Elfo (+2 DES)';
+    }
+  } else if (norm.includes('halfling')) {
+    bonuses.dex = 2;
+    if (norm.includes('pes leves') || norm.includes('pes-leves') || norm.includes('lightfoot')) {
+      bonuses.cha = 1;
+      bonuses.label = 'Halfling Pés-Leves (+2 DES, +1 CAR)';
+    } else if (norm.includes('robusto') || norm.includes('stout')) {
+      bonuses.con = 1;
+      bonuses.label = 'Halfling Robusto (+2 DES, +1 CON)';
+    } else {
+      bonuses.label = 'Halfling (+2 DES)';
+    }
+  } else if (norm.includes('humano') || norm.includes('human')) {
+    bonuses.str = 1;
+    bonuses.dex = 1;
+    bonuses.con = 1;
+    bonuses.int = 1;
+    bonuses.wis = 1;
+    bonuses.cha = 1;
+    bonuses.label = 'Humano (+1 em Todos os 6 Atributos)';
+  } else if (norm.includes('gnomo') || norm.includes('gnome')) {
+    bonuses.int = 2;
+    if (norm.includes('floresta') || norm.includes('forest')) {
+      bonuses.dex = 1;
+      bonuses.label = 'Gnomo da Floresta (+2 INT, +1 DES)';
+    } else if (norm.includes('rocha') || norm.includes('rock')) {
+      bonuses.con = 1;
+      bonuses.label = 'Gnomo da Rocha (+2 INT, +1 CON)';
+    } else {
+      bonuses.label = 'Gnomo (+2 INT)';
+    }
+  } else if (norm.includes('meio-orc') || norm.includes('meio orc') || norm.includes('half-orc') || norm.includes('half orc')) {
+    bonuses.str = 2;
+    bonuses.con = 1;
+    bonuses.label = 'Meio-Orc (+2 FOR, +1 CON)';
+  } else if (norm.includes('tiefling')) {
+    bonuses.cha = 2;
+    bonuses.int = 1;
+    bonuses.label = 'Tiefling (+2 CAR, +1 INT)';
+  }
+
+  return bonuses;
+}
+
 function roll4d6DropLowest() {
   const rolls = [
     Math.floor(Math.random() * 6) + 1,
@@ -7287,6 +7372,8 @@ function rollAttributes4d6Modal() {
   const assigned = {};
   priority.forEach((attrKey, idx) => {
     assigned[attrKey] = rolledScores[idx];
+    const baseEl = document.getElementById(`pm-base-${attrKey}`);
+    if (baseEl) baseEl.value = rolledScores[idx];
     const el = document.getElementById(`pm-${attrKey}`);
     if (el) el.value = rolledScores[idx];
   });
@@ -7297,14 +7384,14 @@ function rollAttributes4d6Modal() {
   const lvl = parseInt(document.getElementById('pm-level')?.value) || 1;
   const isNew = !document.getElementById('pm-id')?.value;
   if (isNew || lvl === 1) {
-    const conVal = assigned['con'] || 14;
+    const conVal = parseInt(document.getElementById('pm-con')?.value) || assigned['con'] || 14;
     const hpVal = calculateLevel1Hp(className, conVal);
     const hpEl = document.getElementById('pm-maxhp');
     if (hpEl) hpEl.value = hpVal;
   }
 
   if (typeof playFX === 'function') playFX('dice');
-  const msg = `🎲 <b>4d6 Drop Lowest Rolado com Sucesso!</b><br>Valores obtidos: <b>${rolledScores.join(', ')}</b><br>Distribuídos estrategicamente para <b>${className}</b>:<br>FOR: ${assigned.str} | DES: ${assigned.dex} | CON: ${assigned.con} | INT: ${assigned.int} | SAB: ${assigned.wis} | CAR: ${assigned.cha}`;
+  const msg = `🎲 <b>4d6 Drop Lowest Rolado com Sucesso!</b><br>Valores base obtidos: <b>${rolledScores.join(', ')}</b><br>Distribuídos estrategicamente para <b>${className}</b> com bônus raciais somados!`;
   if (typeof showToast === 'function') showToast(msg, 'success');
   else alert(`🎲 4d6 Drop Lowest: ${rolledScores.join(', ')} distribuídos para ${className}!`);
 }
@@ -7319,6 +7406,8 @@ function applyStandardArrayModal() {
   const assigned = {};
   priority.forEach((attrKey, idx) => {
     assigned[attrKey] = standardScores[idx];
+    const baseEl = document.getElementById(`pm-base-${attrKey}`);
+    if (baseEl) baseEl.value = standardScores[idx];
     const el = document.getElementById(`pm-${attrKey}`);
     if (el) el.value = standardScores[idx];
   });
@@ -7329,14 +7418,14 @@ function applyStandardArrayModal() {
   const lvl = parseInt(document.getElementById('pm-level')?.value) || 1;
   const isNew = !document.getElementById('pm-id')?.value;
   if (isNew || lvl === 1) {
-    const conVal = assigned['con'] || 14;
+    const conVal = parseInt(document.getElementById('pm-con')?.value) || assigned['con'] || 14;
     const hpVal = calculateLevel1Hp(className, conVal);
     const hpEl = document.getElementById('pm-maxhp');
     if (hpEl) hpEl.value = hpVal;
   }
 
   if (typeof playFX === 'function') playFX('heal');
-  const msg = `📊 <b>Array Padrão Aplicado (15, 14, 13, 12, 10, 8)</b><br>Otimizado para <b>${className}</b>:<br>FOR: ${assigned.str} | DES: ${assigned.dex} | CON: ${assigned.con} | INT: ${assigned.int} | SAB: ${assigned.wis} | CAR: ${assigned.cha}`;
+  const msg = `📊 <b>Array Padrão Aplicado (15, 14, 13, 12, 10, 8)</b><br>Valores base organizados para <b>${className}</b> com bônus raciais somados!`;
   if (typeof showToast === 'function') showToast(msg, 'info');
   else alert(`📊 Array Padrão aplicado para ${className}!`);
 }
@@ -7347,12 +7436,12 @@ function optimizeAttributesForClassModal() {
   const className = classSel ? (classSel.value === 'custom' ? (classInput ? classInput.value : 'Guerreiro') : classSel.value) : 'Guerreiro';
 
   const currentScores = [
-    parseInt(document.getElementById('pm-str')?.value) || 10,
-    parseInt(document.getElementById('pm-dex')?.value) || 10,
-    parseInt(document.getElementById('pm-con')?.value) || 10,
-    parseInt(document.getElementById('pm-int')?.value) || 10,
-    parseInt(document.getElementById('pm-wis')?.value) || 10,
-    parseInt(document.getElementById('pm-cha')?.value) || 10
+    parseInt(document.getElementById('pm-base-str')?.value) || parseInt(document.getElementById('pm-str')?.value) || 10,
+    parseInt(document.getElementById('pm-base-dex')?.value) || parseInt(document.getElementById('pm-dex')?.value) || 10,
+    parseInt(document.getElementById('pm-base-con')?.value) || parseInt(document.getElementById('pm-con')?.value) || 10,
+    parseInt(document.getElementById('pm-base-int')?.value) || parseInt(document.getElementById('pm-int')?.value) || 10,
+    parseInt(document.getElementById('pm-base-wis')?.value) || parseInt(document.getElementById('pm-wis')?.value) || 10,
+    parseInt(document.getElementById('pm-base-cha')?.value) || parseInt(document.getElementById('pm-cha')?.value) || 10
   ];
 
   currentScores.sort((a, b) => b - a);
@@ -7360,6 +7449,8 @@ function optimizeAttributesForClassModal() {
   const assigned = {};
   priority.forEach((attrKey, idx) => {
     assigned[attrKey] = currentScores[idx];
+    const baseEl = document.getElementById(`pm-base-${attrKey}`);
+    if (baseEl) baseEl.value = currentScores[idx];
     const el = document.getElementById(`pm-${attrKey}`);
     if (el) el.value = currentScores[idx];
   });
@@ -7370,13 +7461,13 @@ function optimizeAttributesForClassModal() {
   const lvl = parseInt(document.getElementById('pm-level')?.value) || 1;
   const isNew = !document.getElementById('pm-id')?.value;
   if (isNew || lvl === 1) {
-    const conVal = assigned['con'] || 14;
+    const conVal = parseInt(document.getElementById('pm-con')?.value) || assigned['con'] || 14;
     const hpVal = calculateLevel1Hp(className, conVal);
     const hpEl = document.getElementById('pm-maxhp');
     if (hpEl) hpEl.value = hpVal;
   }
 
-  const msg = `⚡ <b>Atributos Reordenados p/ ${className}!</b><br>Valores organizados por prioridade da classe:<br>FOR: ${assigned.str} | DES: ${assigned.dex} | CON: ${assigned.con} | INT: ${assigned.int} | SAB: ${assigned.wis} | CAR: ${assigned.cha}`;
+  const msg = `⚡ <b>Atributos Reordenados p/ ${className}!</b><br>Valores base reordenados por prioridade da classe e recalculados com bônus raciais!`;
   if (typeof showToast === 'function') showToast(msg, 'info');
   else alert(`⚡ Atributos reordenados para ${className}!`);
 }
@@ -7857,20 +7948,66 @@ function updateModalCalculatedAc() {
 }
 
 function updateModalAttributeModifiers() {
+  const raceSel = document.getElementById('pm-race-select');
+  const raceInput = document.getElementById('pm-race');
+  const raceName = raceSel ? (raceSel.value === 'custom' ? (raceInput ? raceInput.value : 'Humano') : raceSel.value) : (raceInput ? raceInput.value : 'Humano');
+  const rBonuses = typeof getRacialAbilityBonuses === 'function' ? getRacialAbilityBonuses(raceName) : { str:0, dex:0, con:0, int:0, wis:0, cha:0, label: 'Nenhum (+0)' };
+
+  // Atualiza barra de resumo do bônus racial
+  const summaryEl = document.getElementById('pm-race-summary-text');
+  if (summaryEl) {
+    summaryEl.innerHTML = `🧬 <b>Bônus Racial Ativo:</b> <span style="color: #4ade80; font-weight: 700;">${rBonuses.label || 'Nenhum (+0)'}</span>`;
+  }
+
   const stats = [
-    { id: 'pm-str', modId: 'pm-mod-str' },
-    { id: 'pm-dex', modId: 'pm-mod-dex' },
-    { id: 'pm-con', modId: 'pm-mod-con' },
-    { id: 'pm-int', modId: 'pm-mod-int' },
-    { id: 'pm-wis', modId: 'pm-mod-wis' },
-    { id: 'pm-cha', modId: 'pm-mod-cha' }
+    { key: 'str', id: 'pm-str', baseId: 'pm-base-str', finalId: 'pm-final-str', bonusId: 'pm-race-bonus-str', modId: 'pm-mod-str' },
+    { key: 'dex', id: 'pm-dex', baseId: 'pm-base-dex', finalId: 'pm-final-dex', bonusId: 'pm-race-bonus-dex', modId: 'pm-mod-dex' },
+    { key: 'con', id: 'pm-con', baseId: 'pm-base-con', finalId: 'pm-final-con', bonusId: 'pm-race-bonus-con', modId: 'pm-mod-con' },
+    { key: 'int', id: 'pm-int', baseId: 'pm-base-int', finalId: 'pm-final-int', bonusId: 'pm-race-bonus-int', modId: 'pm-mod-int' },
+    { key: 'wis', id: 'pm-wis', baseId: 'pm-base-wis', finalId: 'pm-final-wis', bonusId: 'pm-race-bonus-wis', modId: 'pm-mod-wis' },
+    { key: 'cha', id: 'pm-cha', baseId: 'pm-base-cha', finalId: 'pm-final-cha', bonusId: 'pm-race-bonus-cha', modId: 'pm-mod-cha' }
   ];
+
   stats.forEach(st => {
-    const inp = document.getElementById(st.id);
+    const baseInp = document.getElementById(st.baseId);
+    const finalInp = document.getElementById(st.id);
+    const finalDisplay = document.getElementById(st.finalId);
+    const bonusBadge = document.getElementById(st.bonusId);
     const pill = document.getElementById(st.modId);
-    if (inp && pill) {
-      const val = parseInt(inp.value) || 10;
-      const mod = Math.floor((val - 10) / 2);
+
+    const bonus = rBonuses[st.key] || 0;
+
+    let baseVal;
+    if (baseInp && baseInp.value !== '') {
+      baseVal = parseInt(baseInp.value) || 10;
+    } else if (finalInp && finalInp.value !== '') {
+      baseVal = Math.max(1, (parseInt(finalInp.value) || 10) - bonus);
+      if (baseInp) baseInp.value = baseVal;
+    } else {
+      baseVal = 10;
+      if (baseInp) baseInp.value = 10;
+    }
+
+    const finalVal = baseVal + bonus;
+
+    if (finalInp) finalInp.value = finalVal;
+    if (finalDisplay) finalDisplay.textContent = finalVal;
+
+    if (bonusBadge) {
+      if (bonus > 0) {
+        bonusBadge.textContent = `+${bonus} Raça`;
+        bonusBadge.className = 'stat-race-badge positive';
+      } else if (bonus < 0) {
+        bonusBadge.textContent = `${bonus} Raça`;
+        bonusBadge.className = 'stat-race-badge negative';
+      } else {
+        bonusBadge.textContent = `+0`;
+        bonusBadge.className = 'stat-race-badge neutral';
+      }
+    }
+
+    if (pill) {
+      const mod = Math.floor((finalVal - 10) / 2);
       const sign = mod >= 0 ? '+' : '';
       pill.textContent = `${sign}${mod}`;
       if (mod < 0) {
@@ -7960,12 +8097,19 @@ function openPlayerModal(id) {
     document.getElementById('pm-maxhp').value = p.maxHp;
     document.getElementById('pm-speed').value = p.speed || '9m';
     document.getElementById('pm-gold').value = (p.coins && p.coins.gp !== undefined) ? p.coins.gp : (p.gold || 15);
-    document.getElementById('pm-str').value = p.str;
-    document.getElementById('pm-dex').value = p.dex;
-    document.getElementById('pm-con').value = p.con;
-    document.getElementById('pm-int').value = p.int;
-    document.getElementById('pm-wis').value = p.wis;
-    document.getElementById('pm-cha').value = p.cha;
+    const rBonuses = typeof getRacialAbilityBonuses === 'function' ? getRacialAbilityBonuses(p.race) : {};
+    ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(attr => {
+      const baseEl = document.getElementById(`pm-base-${attr}`);
+      if (baseEl) {
+        if (p.baseAttributes && p.baseAttributes[attr] !== undefined) {
+          baseEl.value = p.baseAttributes[attr];
+        } else {
+          baseEl.value = Math.max(1, (p[attr] || 10) - (rBonuses[attr] || 0));
+        }
+      }
+      const finalEl = document.getElementById(`pm-${attr}`);
+      if (finalEl) finalEl.value = p[attr] || 10;
+    });
     document.getElementById('pm-attacks').value = p.attacks || '';
     document.getElementById('pm-features').value = p.features || '';
     document.getElementById('pm-spells').value = p.spells || '';
@@ -8050,12 +8194,13 @@ function openPlayerModal(id) {
     document.getElementById('pm-maxhp').value = 12;
     document.getElementById('pm-speed').value = '9m';
     document.getElementById('pm-gold').value = 15;
-    document.getElementById('pm-str').value = 14;
-    document.getElementById('pm-dex').value = 12;
-    document.getElementById('pm-con').value = 14;
-    document.getElementById('pm-int').value = 10;
-    document.getElementById('pm-wis').value = 10;
-    document.getElementById('pm-cha').value = 10;
+    const defaultBases = { str: 15, dex: 14, con: 13, int: 12, wis: 10, cha: 8 };
+    ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(attr => {
+      const baseEl = document.getElementById(`pm-base-${attr}`);
+      if (baseEl) baseEl.value = defaultBases[attr];
+      const finalEl = document.getElementById(`pm-${attr}`);
+      if (finalEl) finalEl.value = defaultBases[attr];
+    });
     document.getElementById('pm-attacks').value = 'Espada Longa (+4, 1d8+2 cortante)';
     document.getElementById('pm-features').value = '';
     document.getElementById('pm-spells').value = '';
@@ -8384,6 +8529,14 @@ function savePlayerSheet() {
     bond: bondVal,
     flaw: flawVal,
     backstory: storyVal,
+    baseAttributes: {
+      str: parseInt(document.getElementById('pm-base-str')?.value) || (parseInt(document.getElementById('pm-str').value) || 10),
+      dex: parseInt(document.getElementById('pm-base-dex')?.value) || (parseInt(document.getElementById('pm-dex').value) || 10),
+      con: parseInt(document.getElementById('pm-base-con')?.value) || (parseInt(document.getElementById('pm-con').value) || 10),
+      int: parseInt(document.getElementById('pm-base-int')?.value) || (parseInt(document.getElementById('pm-int').value) || 10),
+      wis: parseInt(document.getElementById('pm-base-wis')?.value) || (parseInt(document.getElementById('pm-wis').value) || 10),
+      cha: parseInt(document.getElementById('pm-base-cha')?.value) || (parseInt(document.getElementById('pm-cha').value) || 10)
+    },
     str: parseInt(document.getElementById('pm-str').value) || 10,
     dex: parseInt(document.getElementById('pm-dex').value) || 10,
     con: parseInt(document.getElementById('pm-con').value) || 10,
@@ -12928,7 +13081,27 @@ if (typeof window !== 'undefined') {
   window.breakPlayerConcentration = breakPlayerConcentration;
   window.toggleCombatFocusMode = toggleCombatFocusMode;
   window.rollDirectD20FromHud = rollDirectD20FromHud;
+
+  // ISSUE-142: Geração de Atributos e Bônus Raciais Canônicos D&D 5E
+  window.getRacialAbilityBonuses = getRacialAbilityBonuses;
+  window.roll4d6DropLowest = roll4d6DropLowest;
+  window.rollAttributes4d6Modal = rollAttributes4d6Modal;
+  window.applyStandardArrayModal = applyStandardArrayModal;
+  window.optimizeAttributesForClassModal = optimizeAttributesForClassModal;
+  window.updateModalAttributeModifiers = updateModalAttributeModifiers;
 }
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    getRacialAbilityBonuses,
+    roll4d6DropLowest,
+    rollAttributes4d6Modal,
+    applyStandardArrayModal,
+    optimizeAttributesForClassModal,
+    updateModalAttributeModifiers
+  };
+}
+
 
 
 

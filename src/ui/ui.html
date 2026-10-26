@@ -1757,43 +1757,97 @@
 
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-          <label style="margin:0;">6 Atributos D&D (Valores Brutos 1 a 20 & Modificadores Calculados)</label>
-          <span style="font-size:10px; color:var(--text-muted);">Modificador oficial: (Valor - 10) / 2</span>
+          <label style="margin:0;">6 Atributos D&D (Geração Oficial & Bônus Raciais Automáticos)</label>
+          <span style="font-size:10px; color:var(--text-muted);">Modificador oficial: (Total - 10) / 2</span>
         </div>
-        <div style="display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap;">
-          <button type="button" class="btn-action" style="padding: 4px 9px; font-size: 11px; background: linear-gradient(135deg, #7c3aed, #6d28d9);" onclick="rollAttributes4d6Modal()" title="Rolar 4d6 e descartar o menor para cada atributo">🎲 Rolar 4d6 (Drop Lowest)</button>
-          <button type="button" class="btn-secondary" style="padding: 4px 9px; font-size: 11px; border-color: rgba(59, 130, 246, 0.4); color: #93c5fd;" onclick="applyStandardArrayModal()" title="Aplicar array padrão oficial (15, 14, 13, 12, 10, 8)">📊 Array Padrão (15, 14, 13, 12, 10, 8)</button>
-          <button type="button" class="btn-secondary" style="padding: 4px 9px; font-size: 11px; border-color: rgba(245, 158, 11, 0.4); color: #fde68a;" onclick="optimizeAttributesForClassModal()" title="Reordenar os atributos atuais priorizando os atributos principais da classe">⚡ Otimizar p/ Classe</button>
+
+        <div id="pm-race-summary-bar" class="pm-race-summary-bar">
+          <span style="font-size: 14px;">🧬</span>
+          <span id="pm-race-summary-text" style="font-size: 11px; color: #cbd5e1;">Selecione uma raça para calcular os bônus raciais canônicos de D&D 5E.</span>
         </div>
-        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;">
+
+        <div class="stat-dice-presets-bar">
+          <button type="button" class="btn-action" style="padding: 4px 9px; font-size: 11px; background: linear-gradient(135deg, #7c3aed, #6d28d9); font-weight: 700;" onclick="rollAttributes4d6Modal()" title="Rolar 4d6 e descartar o menor para cada atributo">🎲 Rolar 4d6 (Drop Lowest)</button>
+          <button type="button" class="btn-secondary" style="padding: 4px 9px; font-size: 11px; border-color: rgba(59, 130, 246, 0.4); color: #93c5fd; font-weight: 600;" onclick="applyStandardArrayModal()" title="Aplicar array padrão oficial (15, 14, 13, 12, 10, 8)">📊 Array Padrão (15, 14, 13, 12, 10, 8)</button>
+          <button type="button" class="btn-secondary" style="padding: 4px 9px; font-size: 11px; border-color: rgba(245, 158, 11, 0.4); color: #fde68a; font-weight: 600;" onclick="optimizeAttributesForClassModal()" title="Reordenar os atributos atuais priorizando os atributos principais da classe">⚡ Otimizar p/ Classe</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px;">
+          <!-- FORÇA -->
           <div class="stat-box-editor">
             <span class="stat-box-editor-label">FOR</span>
-            <input type="number" id="pm-str" value="16" min="1" max="30" oninput="updateModalAttributeModifiers()">
-            <span class="stat-mod-pill" id="pm-mod-str">+3</span>
+            <span style="font-size: 9px; color: #64748b;">Base</span>
+            <input type="number" id="pm-base-str" class="stat-base-input" value="15" min="1" max="30" oninput="updateModalAttributeModifiers()">
+            <span class="stat-race-bonus-pill" id="pm-race-bonus-str">+0 Raça</span>
+            <div class="stat-final-value-wrap">
+              <span class="stat-final-value" id="pm-final-str">15</span>
+              <input type="hidden" id="pm-str" value="15">
+            </div>
+            <span class="stat-mod-pill" id="pm-mod-str">+2</span>
           </div>
+
+          <!-- DESTREZA -->
           <div class="stat-box-editor">
             <span class="stat-box-editor-label">DES</span>
-            <input type="number" id="pm-dex" value="12" min="1" max="30" oninput="updateModalCalculatedAc()">
-            <span class="stat-mod-pill" id="pm-mod-dex">+1</span>
+            <span style="font-size: 9px; color: #64748b;">Base</span>
+            <input type="number" id="pm-base-dex" class="stat-base-input" value="14" min="1" max="30" oninput="updateModalAttributeModifiers()">
+            <span class="stat-race-bonus-pill" id="pm-race-bonus-dex">+0 Raça</span>
+            <div class="stat-final-value-wrap">
+              <span class="stat-final-value" id="pm-final-dex">14</span>
+              <input type="hidden" id="pm-dex" value="14" oninput="updateModalCalculatedAc()">
+            </div>
+            <span class="stat-mod-pill" id="pm-mod-dex">+2</span>
           </div>
+
+          <!-- CONSTITUIÇÃO -->
           <div class="stat-box-editor">
             <span class="stat-box-editor-label">CON</span>
-            <input type="number" id="pm-con" value="14" min="1" max="30" oninput="updateModalCalculatedAc()">
-            <span class="stat-mod-pill" id="pm-mod-con">+2</span>
+            <span style="font-size: 9px; color: #64748b;">Base</span>
+            <input type="number" id="pm-base-con" class="stat-base-input" value="13" min="1" max="30" oninput="updateModalAttributeModifiers()">
+            <span class="stat-race-bonus-pill" id="pm-race-bonus-con">+0 Raça</span>
+            <div class="stat-final-value-wrap">
+              <span class="stat-final-value" id="pm-final-con">13</span>
+              <input type="hidden" id="pm-con" value="13" oninput="updateModalCalculatedAc()">
+            </div>
+            <span class="stat-mod-pill" id="pm-mod-con">+1</span>
           </div>
+
+          <!-- INTELIGÊNCIA -->
           <div class="stat-box-editor">
             <span class="stat-box-editor-label">INT</span>
-            <input type="number" id="pm-int" value="10" min="1" max="30" oninput="updateModalAttributeModifiers()">
-            <span class="stat-mod-pill" id="pm-mod-int">+0</span>
+            <span style="font-size: 9px; color: #64748b;">Base</span>
+            <input type="number" id="pm-base-int" class="stat-base-input" value="12" min="1" max="30" oninput="updateModalAttributeModifiers()">
+            <span class="stat-race-bonus-pill" id="pm-race-bonus-int">+0 Raça</span>
+            <div class="stat-final-value-wrap">
+              <span class="stat-final-value" id="pm-final-int">12</span>
+              <input type="hidden" id="pm-int" value="12">
+            </div>
+            <span class="stat-mod-pill" id="pm-mod-int">+1</span>
           </div>
+
+          <!-- SABEDORIA -->
           <div class="stat-box-editor">
             <span class="stat-box-editor-label">SAB</span>
-            <input type="number" id="pm-wis" value="12" min="1" max="30" oninput="updateModalCalculatedAc()">
-            <span class="stat-mod-pill" id="pm-mod-wis">+1</span>
+            <span style="font-size: 9px; color: #64748b;">Base</span>
+            <input type="number" id="pm-base-wis" class="stat-base-input" value="10" min="1" max="30" oninput="updateModalAttributeModifiers()">
+            <span class="stat-race-bonus-pill" id="pm-race-bonus-wis">+0 Raça</span>
+            <div class="stat-final-value-wrap">
+              <span class="stat-final-value" id="pm-final-wis">10</span>
+              <input type="hidden" id="pm-wis" value="10" oninput="updateModalCalculatedAc()">
+            </div>
+            <span class="stat-mod-pill" id="pm-mod-wis">+0</span>
           </div>
+
+          <!-- CARISMA -->
           <div class="stat-box-editor">
             <span class="stat-box-editor-label">CAR</span>
-            <input type="number" id="pm-cha" value="8" min="1" max="30" oninput="updateModalAttributeModifiers()">
+            <span style="font-size: 9px; color: #64748b;">Base</span>
+            <input type="number" id="pm-base-cha" class="stat-base-input" value="8" min="1" max="30" oninput="updateModalAttributeModifiers()">
+            <span class="stat-race-bonus-pill" id="pm-race-bonus-cha">+0 Raça</span>
+            <div class="stat-final-value-wrap">
+              <span class="stat-final-value" id="pm-final-cha">8</span>
+              <input type="hidden" id="pm-cha" value="8">
+            </div>
             <span class="stat-mod-pill neg" id="pm-mod-cha">-1</span>
           </div>
         </div>
