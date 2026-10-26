@@ -1931,52 +1931,54 @@ function renderPlayers() {
                   </div>
                 </div>
 
-                <!-- TABELA DE ATAQUES ROLL20 -->
-                <table class="roll20-attacks-table">
-                  <thead>
-                    <tr>
-                      <th>Arma / Ataque</th>
-                      <th style="text-align: center;">Alcance</th>
-                      <th style="text-align: center;">Acerto</th>
-                      <th>Dano & Tipo</th>
-                      <th style="text-align: right;">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${calculatedAttacks.length > 0 ? calculatedAttacks.map((atk, aIdx) => `
+                <!-- TABELA DE ATAQUES ROLL20 (COM ROLAGEM TOUCH RESPONSIVA - ISSUE-139) -->
+                <div class="table-responsive-wrap">
+                  <table class="roll20-attacks-table">
+                    <thead>
                       <tr>
-                        <td>
-                          <div class="roll20-atk-name" title="${escapeAttr(atk.notes || '')}">
-                            <span>${atk.name}</span>
-                            ${atk.isEquipped ? '<span style="color:var(--accent-gold); font-size:10px;" title="Equipado no Inventário">★</span>' : ''}
-                          </div>
-                          <div style="font-size: 9.5px; color: #64748b;">${atk.type} ${atk.notes ? '• ' + atk.notes : ''}</div>
-                        </td>
-                        <td style="text-align: center; color: #94a3b8; font-size: 11px;">${atk.range}</td>
-                        <td style="text-align: center;">
-                          <button type="button" class="roll20-btn-roll-atk" onclick="rollPlayerAttack('${p.id}', '${escapeAttr(atk.rawAttackText)}')" title="Rolar Ataque Completo (d20 ${atk.toHit})">
-                            🎲 ${atk.toHit}
-                          </button>
-                        </td>
-                        <td style="color: #f8fafc; font-size: 11px;">
-                          <b style="color: #fbbf24;">${atk.damage}</b> <span style="font-size: 10px; color: #94a3b8;">${atk.damageType}</span>
-                        </td>
-                        <td style="text-align: right; white-space: nowrap;">
-                          <div class="attack-actions-cell">
-                            <button type="button" class="btn-micro roll20-btn-damage-only" onclick="rollWeaponDamageOnly('${p.id}', '${escapeAttr(atk.rawAttackText)}')" title="Rolar Apenas Dano">💥</button>
-                            <button type="button" class="btn-chat-feed" onclick="sharePlayerCalculatedAttackToFeed('${p.id}', ${aIdx})" title="Compartilhar ataque no chat da mesa">💬</button>
-                          </div>
-                        </td>
+                        <th>Arma / Ataque</th>
+                        <th style="text-align: center;">Alcance</th>
+                        <th style="text-align: center;">Acerto</th>
+                        <th>Dano & Tipo</th>
+                        <th style="text-align: right;">Ações</th>
                       </tr>
-                    `).join('') : `
-                      <tr>
-                        <td colspan="5" style="text-align: center; color: var(--text-dim); padding: 12px; font-style: italic;">
-                          Nenhuma arma equipada no inventário. Equipe uma arma na aba <b>Inventário</b> ou clique em <b>+ Arma</b>.
-                        </td>
-                      </tr>
-                    `}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      ${calculatedAttacks.length > 0 ? calculatedAttacks.map((atk, aIdx) => `
+                        <tr>
+                          <td>
+                            <div class="roll20-atk-name" title="${escapeAttr(atk.notes || '')}">
+                              <span>${atk.name}</span>
+                              ${atk.isEquipped ? '<span style="color:var(--accent-gold); font-size:10px;" title="Equipado no Inventário">★</span>' : ''}
+                            </div>
+                            <div style="font-size: 9.5px; color: #64748b;">${atk.type} ${atk.notes ? '• ' + atk.notes : ''}</div>
+                          </td>
+                          <td style="text-align: center; color: #94a3b8; font-size: 11px;">${atk.range}</td>
+                          <td style="text-align: center;">
+                            <button type="button" class="roll20-btn-roll-atk" onclick="rollPlayerAttack('${p.id}', '${escapeAttr(atk.rawAttackText)}')" title="Rolar Ataque Completo (d20 ${atk.toHit})">
+                              🎲 ${atk.toHit}
+                            </button>
+                          </td>
+                          <td style="color: #f8fafc; font-size: 11px;">
+                            <b style="color: #fbbf24;">${atk.damage}</b> <span style="font-size: 10px; color: #94a3b8;">${atk.damageType}</span>
+                          </td>
+                          <td style="text-align: right; white-space: nowrap;">
+                            <div class="attack-actions-cell">
+                              <button type="button" class="btn-micro roll20-btn-damage-only" onclick="rollWeaponDamageOnly('${p.id}', '${escapeAttr(atk.rawAttackText)}')" title="Rolar Apenas Dano">💥</button>
+                              <button type="button" class="btn-chat-feed" onclick="sharePlayerCalculatedAttackToFeed('${p.id}', ${aIdx})" title="Compartilhar ataque no chat da mesa">💬</button>
+                            </div>
+                          </td>
+                        </tr>
+                      `).join('') : `
+                        <tr>
+                          <td colspan="5" style="text-align: center; color: var(--text-dim); padding: 12px; font-style: italic;">
+                            Nenhuma arma equipada no inventário. Equipe uma arma na aba <b>Inventário</b> ou clique em <b>+ Arma</b>.
+                          </td>
+                        </tr>
+                      `}
+                    </tbody>
+                  </table>
+                </div>
 
                 <!-- RECURSOS TÁTEIS & CARGAS RÁPIDAS DA CLASSE -->
                 <div style="margin-top: 12px;">

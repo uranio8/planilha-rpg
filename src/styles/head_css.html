@@ -158,6 +158,15 @@
       border: 1px solid var(--border-color);
       backdrop-filter: blur(10px);
     }
+    @media (max-width: 768px) {
+      nav, .main-navbar {
+        overflow-x: auto !important;
+        flex-wrap: nowrap !important;
+        -webkit-overflow-scrolling: touch;
+        max-width: 100%;
+        scrollbar-width: thin;
+      }
+    }
     .nav-cluster {
       display: inline-flex;
       align-items: center;
@@ -943,7 +952,7 @@
       inset: 0;
       background: rgba(4, 6, 10, 0.85);
       backdrop-filter: blur(6px);
-      z-index: 2000;
+      z-index: 12000;
       align-items: center;
       justify-content: center;
       padding: 16px;
@@ -959,6 +968,7 @@
       max-width: 680px;
       width: 100%;
       max-height: 90vh;
+      max-height: calc(100vh - 60px);
       max-height: 90dvh;
       overflow-y: auto;
       padding: 20px;
@@ -4339,6 +4349,7 @@
       justify-content: space-between;
       gap: 8px;
       min-height: 32px;
+      flex-wrap: wrap;
     }
 
     .portal-hero-info {
@@ -9403,7 +9414,10 @@
     }
     @media (max-width: 900px) {
       body.mode-player-portal {
-        padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px)) !important;
+        padding-bottom: calc(128px + env(safe-area-inset-bottom, 0px)) !important;
+      }
+      body.mode-player-portal .roll20-sheet {
+        margin-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
       }
     }
 
@@ -10052,6 +10066,23 @@
       .roll20-abilities-bar {
         grid-template-columns: repeat(2, 1fr);
       }
+      .roll20-ac-speed-box {
+        grid-column: 1 / -1 !important;
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-around !important;
+        align-items: center !important;
+        padding: 10px 14px !important;
+      }
+    }
+
+    /* Container de Rolagem Suave para Tabelas no Mobile (ISSUE-139) */
+    .table-responsive-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-bottom: 6px;
+      border-radius: 6px;
     }
 
     .roll20-ability-box {

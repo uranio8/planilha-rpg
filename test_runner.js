@@ -3002,8 +3002,8 @@ const bundle73 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), '
 // 1. Dropdowns do cabeçalho possuem onclick="toggleNavDropdown(this, event)"
 assert(bundle73.includes('toggleNavDropdown(this, event)'), 'Bundle contém toggleNavDropdown nos botões de dropdown do cabeçalho');
 
-// 2. Modais com z-index 2000
-assert(bundle73.includes('.modal-overlay') && bundle73.includes('z-index: 2000;'), 'Bundle possui z-index: 2000 na classe base .modal-overlay');
+// 2. Modais com z-index elevado (>= 2000, elevado para 12000 na ISSUE-139 para cobrir dock e hud móveis)
+assert(bundle73.includes('.modal-overlay') && (bundle73.includes('z-index: 12000;') || bundle73.includes('z-index: 2000;')), 'Bundle possui z-index elevado (>=2000) na classe base .modal-overlay');
 
 // 3. Botões circulares do menu FAB possuem type="button" e onclick explícito
 assert(bundle73.includes('class="fab-action-circle" onclick="handleFabQuickAction(\'login\')"'), 'Botão circular FAB Login possui onclick direto');
@@ -8285,6 +8285,42 @@ try {
   hapticSafe = false;
 }
 assert(hapticSafe, 'triggerHapticFeedback executado de forma segura e defensiva');
+
+// =========================================================================
+// 📱 107. TESTES DE AUDITORIA VISUAL, Z-INDEX E RESPONSIVIDADE (ISSUE-139)
+// =========================================================================
+console.log('\n📐 107. Testes de Auditoria Visual, Hierarquia de Modais e Responsividade (ISSUE-139):');
+
+const bundle107 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+
+// 1. Z-index elevado da classe base .modal-overlay para cobrir Bottom Dock (10000) e Thumb HUD (9999)
+assert(bundle107.includes('.modal-overlay') && bundle107.includes('z-index: 12000;'), 'Classe base .modal-overlay configurada com z-index: 12000');
+
+// 2. Proteção de altura máxima e overflow no container de modais
+assert(bundle107.includes('max-height: calc(100vh - 80px);') || bundle107.includes('max-height: calc(100vh - 60px);'), 'Modais protegidos com max-height contra corte em telas baixas');
+assert(bundle107.includes('overflow-y: auto;'), 'Modais possuem rolagem vertical interna (overflow-y: auto)');
+
+// 3. Touch Targets acessíveis para polegar (mínimo 44px)
+assert(bundle107.includes('min-width: 44px;') && bundle107.includes('min-height: 44px;'), 'Botões do Thumb HUD configurados com touch target ergonômico de 44px');
+
+// 4. Desduplicação de IDs (btn-thumb-hud-focus vs btn-toggle-combat-focus)
+const focusBtnMatches = bundle107.match(/id="btn-toggle-combat-focus"/g) || [];
+assert(focusBtnMatches.length === 1, 'id="btn-toggle-combat-focus" é único na aplicação (sem duplicação)');
+assert(bundle107.includes('id="btn-thumb-hud-focus"'), 'Botão do Thumb HUD possui ID desduplicado id="btn-thumb-hud-focus"');
+
+// 5. Container de Rolagem Touch Suave para tabelas de combate
+assert(bundle107.includes('.table-responsive-wrap'), 'Classe .table-responsive-wrap incluída no CSS compilado');
+assert(bundle107.includes('<div class="table-responsive-wrap">') && bundle107.includes('roll20-attacks-table'), 'Tabela de ataques do card Roll20 envolvida em container touch deslizante');
+
+// 6. Portal Hero Row com quebra flexível para nomes longos
+assert(bundle107.includes('.portal-hero-row') && bundle107.includes('flex-wrap: wrap;'), '.portal-hero-row suporta quebra suave flex-wrap: wrap');
+
+// 7. Grid de atributos e CA/Deslocamento para telas compactas (<= 500px)
+assert(bundle107.includes('grid-column: 1 / -1 !important;'), 'Bloco de CA e Deslocamento se expande para preencher a linha em telas compactas');
+
+// 8. Navbar com rolagem suave horizontal em telas estreitas
+assert(bundle107.includes('overflow-x: auto !important;') && bundle107.includes('flex-wrap: nowrap !important;'), 'Barra de navegação suporta deslizamento horizontal sem desordenar ícones');
+
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
