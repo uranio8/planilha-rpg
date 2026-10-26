@@ -122,6 +122,8 @@ function renderCombat() {
           <div class="hp-bar-fill" style="width: ${hpPct}%; background-color: ${hpColor};"></div>
         </div>
 
+        ${typeof renderCombatantMiniActions === 'function' ? renderCombatantMiniActions(c) : ''}
+
         ${condsBadges ? `<div class="conditions-container">${condsBadges}</div>` : ''}
 
         <div class="combatant-notes-section" style="margin-top: 6px;">
@@ -145,6 +147,25 @@ function renderCombat() {
     const hpPct = Math.max(0, Math.min(100, Math.round((active.hp / active.maxHp) * 100)));
     const hpColor = hpPct > 50 ? 'var(--accent-green)' : (hpPct > 25 ? '#eab308' : 'var(--accent-red)');
 
+    const turnActions = active.turnActions || { action: true, bonus: true, reaction: true, movement: true };
+    const actionEcoHtml = `
+      <div class="combat-turn-actions-bar">
+        <span style="font-size: 10.5px; font-weight: 700; color: #fef08a; margin-right: 2px;">⚡ Turno:</span>
+        <button type="button" class="action-chip-toggle ${turnActions.action ? 'available' : 'used'}" onclick="toggleCombatantAction('${active.id}', 'action')" title="Alternar Ação Principal">
+          ${turnActions.action ? '⚔️ Ação' : '⚔️ Usada'}
+        </button>
+        <button type="button" class="action-chip-toggle ${turnActions.bonus ? 'available' : 'used'}" onclick="toggleCombatantAction('${active.id}', 'bonus')" title="Alternar Ação Bônus">
+          ${turnActions.bonus ? '⚡ Bônus' : '⚡ Usada'}
+        </button>
+        <button type="button" class="action-chip-toggle ${turnActions.reaction ? 'available' : 'used'}" onclick="toggleCombatantAction('${active.id}', 'reaction')" title="Alternar Reação">
+          ${turnActions.reaction ? '🛡️ Reação' : '🛡️ Usada'}
+        </button>
+        <button type="button" class="action-chip-toggle ${turnActions.movement ? 'available' : 'used'}" onclick="toggleCombatantAction('${active.id}', 'movement')" title="Alternar Deslocamento">
+          ${turnActions.movement ? '🏃 Movim.' : '🏃 Usado'}
+        </button>
+      </div>
+    `;
+
     activeDetails.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
         <div>
@@ -161,6 +182,8 @@ function renderCombat() {
         <div class="hp-bar-fill" style="width: ${hpPct}%; background-color: ${hpColor};"></div>
       </div>
 
+      ${actionEcoHtml}
+
       <div style="background: #080c16; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 12px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
           <b style="color: var(--primary-light);">⚔️ Ações & Ataques do Turno:</b>
@@ -172,6 +195,7 @@ function renderCombat() {
             : (active.actions || 'Ataque padrão (+4 para acertar, 1d6+2 dano físico)')}
         </div>
       </div>
+
 
       ${(active.type === 'player') ? (() => {
         const playerObj = typeof findPlayerForCombatant === 'function' 
@@ -271,9 +295,13 @@ function nextTurn() {
     startTurnTimer();
   }
   const currentCombatant = state.combatants[state.turnIndex];
+  if (currentCombatant) {
+    currentCombatant.turnActions = { action: true, bonus: true, reaction: true, movement: true };
+  }
   const turnNarrative = `É a vez de <b>${currentCombatant ? currentCombatant.name : 'combatente'}</b> agir!`;
   renderCombat();
   if (typeof renderPlayerView === 'function') renderPlayerView(turnNarrative);
+
   if (typeof updatePlayerPortalBanner === 'function') updatePlayerPortalBanner();
   saveToLocalStorage();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
@@ -1379,6 +1407,56 @@ function announceActiveTurn(combatantId) {
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
 
+function toggleCombatantAction(combatantId, actionType) {
+  const c = state.combatants.find(x => x.id === combatantId);
+  if (!c) return;
+  if (!c.turnActions) {
+    c.turnActions = { action: true, bonus: true, reaction: true, movement: true };
+  }
+  c.turnActions[actionType] = !c.turnActions[actionType];
+  renderCombat();
+  saveToLocalStorage();
+}
+
+function renderCombatantMiniActions(c) {
+  if (!c || c.type === 'player') return '';
+  const rawActions = c.actions || '';
+  if (!rawActions) return '';
+
+  const chunks = rawActions.split(/(?:\r?\n)+|[•]\s+/).map(s => s.trim()).filter(Boolean);
+  const actionButtons = [];
+
+  for (const chunk of chunks) {
+    const hitMatch = chunk.match(/([+-]\d+)\s*(?:para acertar|de bônus|to hit|\))/i) || chunk.match(/(?:Ataque|Bônus|Acerto)[^\d+-]*?([+-]\d+)/i);
+    const dmgMatch = chunk.match(/(\d+d\d+(?:\s*[+-]\s*\d+)?)/i);
+    if (!hitMatch && !dmgMatch) continue;
+
+    let atkName = 'Ataque';
+    const nameMatch = chunk.match(/^([A-Za-zÀ-ÿ0-9\s]+?)(?:\.|\:|\(|\-)/);
+    if (nameMatch && nameMatch[1].trim().length < 25) {
+      atkName = nameMatch[1].trim();
+    }
+
+    const hitBonus = hitMatch ? parseInt(hitMatch[1], 10) : 0;
+    const dmgFormula = dmgMatch ? dmgMatch[1].replace(/\s+/g, '') : '';
+    const safeAtkName = atkName.replace(/'/g, "\\'");
+    const safeDmgFormula = dmgFormula.replace(/'/g, "\\'");
+    const safeMonName = (c.name || 'Monstro').replace(/'/g, "\\'");
+    const safeCombId = (c.id || '').replace(/'/g, "\\'");
+
+    actionButtons.push(`
+      <button type="button" class="btn-monster-mini-act" onclick="rollMonsterAttackAction('${safeAtkName}', ${hitBonus}, '${safeDmgFormula}', '${safeMonName}', '${safeCombId}')" title="Rolar ataque rápido de ${atkName} (${hitBonus >= 0 ? '+' + hitBonus : hitBonus})">
+        ⚔️ ${atkName} (${hitBonus >= 0 ? '+' + hitBonus : hitBonus})
+      </button>
+    `);
+
+    if (actionButtons.length >= 3) break;
+  }
+
+  if (actionButtons.length === 0) return '';
+  return `<div class="combatant-mini-actions">${actionButtons.join('')}</div>`;
+}
+
 if (typeof window !== 'undefined') {
   window.promptCombatantDamageHeal = promptCombatantDamageHeal;
   window.closeCombatDamageHealModal = closeCombatDamageHealModal;
@@ -1391,6 +1469,8 @@ if (typeof window !== 'undefined') {
   window.openCombatQuickConditions = openCombatQuickConditions;
   window.closeCombatQuickConditions = closeCombatQuickConditions;
   window.toggleCombatQuickCondition = toggleCombatQuickCondition;
+  window.toggleCombatantAction = toggleCombatantAction;
+  window.renderCombatantMiniActions = renderCombatantMiniActions;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -1415,6 +1495,9 @@ if (typeof module !== 'undefined' && module.exports) {
     applyCriticalDamageMultiplier,
     openCombatQuickConditions,
     closeCombatQuickConditions,
-    toggleCombatQuickCondition
+    toggleCombatQuickCondition,
+    toggleCombatantAction,
+    renderCombatantMiniActions
   };
 }
+

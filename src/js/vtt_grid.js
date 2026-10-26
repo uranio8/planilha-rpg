@@ -1979,6 +1979,7 @@ function renderBattleGrid() {
   };
 
   container.innerHTML = generateTokensHtml(false);
+  if (typeof renderVttTokenActionHud === 'function') renderVttTokenActionHud(container);
   if (pvContainer) pvContainer.innerHTML = generateTokensHtml(true);
   if (typeof renderGridCombatantsDrawer === 'function') renderGridCombatantsDrawer();
   if (typeof renderVttCombatHud === 'function') renderVttCombatHud();
@@ -2892,6 +2893,109 @@ function toggleVttHudCollapse() {
   return isFocus;
 }
 
+/* ==========================================================================
+   FASE 2: VTT FLOATING TOKEN ACTION HUD
+   ========================================================================== */
+function renderVttTokenActionHud(container) {
+  if (!container || !selectedTokenIds || selectedTokenIds.size !== 1) return;
+
+  const tokenId = Array.from(selectedTokenIds)[0];
+  const token = (gridState.tokens || []).find(t => t.id === tokenId);
+  if (!token) return;
+
+  const c = state.combatants.find(x => x.id === token.combatantId) || { hp: 10, maxHp: 10, conditions: [] };
+  const span = typeof getTokenSpan === 'function' ? getTokenSpan(token) : 1;
+  const cSize = gridState.cellSize || 50;
+  const centerX = token.x + ((span * cSize) / 2);
+  const topY = token.y - 4;
+
+  let quickActionBtn = '';
+  if (token.type === 'player') {
+    quickActionBtn = `
+      <button type="button" class="token-hud-btn" onclick="openPlayerSheetFromVtt('${token.combatantId || ''}')" title="Abrir Ficha do Personagem">
+        👤 Ficha
+      </button>
+    `;
+  } else {
+    const hitMatch = (c.actions || '').match(/([+-]\d+)\s*(?:para acertar|de bônus|to hit|\))/i);
+    const hitBonus = hitMatch ? parseInt(hitMatch[1], 10) : 0;
+    quickActionBtn = `
+      <button type="button" class="token-hud-btn" onclick="rollTokenQuickAttack('${token.id}')" title="Rolar Ataque Rápido">
+        ⚔️ Ataque ${hitBonus >= 0 ? '+' + hitBonus : hitBonus}
+      </button>
+    `;
+  }
+
+  const hudHtml = `
+    <div id="vtt-token-hud" class="vtt-token-action-hud" style="left: ${centerX}px; top: ${topY}px;" onclick="event.stopPropagation()">
+      <div class="token-hud-pill">
+        <span style="font-size: 11px; font-weight: 800; color: #fff; padding: 0 4px;" title="Pontos de Vida Atuais">
+          ${c.hp}/${c.maxHp}
+        </span>
+        <div class="token-hud-quick-dmg">
+          <button type="button" class="token-hud-dmg-btn dmg" onclick="applyTokenQuickDamage('${token.id}', 5)" title="Causar 5 de Dano">-5</button>
+          <button type="button" class="token-hud-dmg-btn heal" onclick="applyTokenQuickHeal('${token.id}', 5)" title="Curar 5 de Vida">+5</button>
+        </div>
+        ${quickActionBtn}
+        <button type="button" class="token-hud-btn" onclick="openCondModal('${c.id}')" title="Gerenciar Status / Condições">
+          ⚡ Status
+        </button>
+        <button type="button" class="token-hud-btn" onclick="toggleTokenHidden('${token.id}')" title="Ocultar ou Revelar no Telão dos Jogadores">
+          ${token.hidden ? '👁️' : '🙈'}
+        </button>
+      </div>
+    </div>
+  `;
+
+  if (typeof container.insertAdjacentHTML === 'function') {
+    container.insertAdjacentHTML('beforeend', hudHtml);
+  } else {
+    container.innerHTML = (container.innerHTML || '') + hudHtml;
+  }
+}
+
+function openPlayerSheetFromVtt(combatantId) {
+  if (!combatantId) return;
+  const players = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS)) ? PLAYERS : [];
+  const target = players.find(p => p.id === combatantId || p.name === combatantId);
+  if (!target && players.length > 0) {
+    const combatant = state.combatants.find(c => c.id === combatantId);
+    if (combatant) {
+      const match = players.find(p => p.name && (combatant.name.includes(p.name) || p.name.includes(combatant.name)));
+      if (match) {
+        if (typeof switchTab === 'function') switchTab('players');
+        if (typeof selectPlayer === 'function') selectPlayer(match.id);
+        return;
+      }
+    }
+  }
+  if (target) {
+    if (typeof switchTab === 'function') switchTab('players');
+    if (typeof selectPlayer === 'function') selectPlayer(target.id);
+  }
+}
+
+function rollTokenQuickAttack(tokenId) {
+  const token = (gridState.tokens || []).find(t => t.id === tokenId);
+  if (!token) return;
+  const c = state.combatants.find(x => x.id === token.combatantId) || { name: token.name, actions: '' };
+  
+  const hitMatch = (c.actions || '').match(/([+-]\d+)\s*(?:para acertar|de bônus|to hit|\))/i);
+  const dmgMatch = (c.actions || '').match(/(\d+d\d+(?:\s*[+-]\s*\d+)?)/i);
+  const hitBonus = hitMatch ? parseInt(hitMatch[1], 10) : 0;
+  const dmgFormula = dmgMatch ? dmgMatch[1].replace(/\s+/g, '') : '1d6+2';
+
+  if (typeof rollMonsterAttackAction === 'function') {
+    rollMonsterAttackAction('Ataque', hitBonus, dmgFormula, c.name, c.id);
+  } else {
+    const d20 = Math.floor(Math.random() * 20) + 1;
+    const total = d20 + hitBonus;
+    if (typeof addLog === 'function') {
+      addLog(`🎲 <b>${c.name}</b> atacou pelo Grid: d20(${d20}) ${hitBonus >= 0 ? '+' + hitBonus : hitBonus} = <b>${total}</b>`);
+    }
+  }
+}
+
 // Exportações para Window e Node.js
 if (typeof window !== 'undefined') {
   window.handleBoardTouchStart = handleBoardTouchStart;
@@ -2900,6 +3004,9 @@ if (typeof window !== 'undefined') {
   window.setTokenAura = setTokenAura;
   window.rollDiceFormula = rollDiceFormula;
   window.toggleVttHudCollapse = toggleVttHudCollapse;
+  window.renderVttTokenActionHud = renderVttTokenActionHud;
+  window.openPlayerSheetFromVtt = openPlayerSheetFromVtt;
+  window.rollTokenQuickAttack = rollTokenQuickAttack;
 }
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -2909,8 +3016,12 @@ if (typeof module !== 'undefined' && module.exports) {
     handleBoardTouchEnd,
     setTokenAura,
     rollDiceFormula,
-    toggleVttHudCollapse
+    toggleVttHudCollapse,
+    renderVttTokenActionHud,
+    openPlayerSheetFromVtt,
+    rollTokenQuickAttack
   };
 }
+
 
 

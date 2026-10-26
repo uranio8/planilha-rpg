@@ -85,6 +85,13 @@
     <div class="top-actions">
       <span id="save-status">💾 Salvo</span>
       
+      <!-- ATALHO GLOBAL SPOTLIGHT OMNISEARCH (Ctrl+K) -->
+      <button class="btn-top btn-omnisearch-trigger" id="btn-global-omnisearch" onclick="toggleOmnisearchModal(true)" title="Busca Universal Rápida (Ctrl+K)">
+        <span style="font-size: 13px;">🔍</span>
+        <span class="omnisearch-btn-label">Buscar...</span>
+        <kbd class="omnisearch-kbd">Ctrl+K</kbd>
+      </button>
+
       <!-- CONEXÃO NUVEM -->
       <button class="btn-top" id="firebase-status-badge" onclick="openFirebaseModal()" title="Configurar Sincronização em Nuvem (Google Firebase)" style="display: flex; align-items: center; gap: 5px;">
         <span id="firebase-status-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
@@ -160,6 +167,7 @@
       <button class="portal-chip" id="pnav-classes" onclick="switchTab('classes')">🌳 Classes</button>
       <button class="portal-chip" id="pnav-species" onclick="switchTab('species')">🧬 Raças</button>
       <button class="portal-chip" id="pnav-dice" onclick="openDiceModal()">🎲 Dados</button>
+      <button class="portal-chip" id="pnav-omnisearch" onclick="toggleOmnisearchModal(true)" style="background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.4); color: #fef08a;">🔍 Buscar</button>
     </div>
   </div>
 
@@ -512,6 +520,8 @@
               <div id="grid-aoe-layer"></div>
               <div id="grid-markers-layer"></div>
               <div id="grid-tokens-layer"></div>
+              <!-- TOKEN ACTION HUD FLUTUANTE (VTT DOCK) -->
+              <div id="vtt-token-action-hud" class="vtt-token-action-hud" style="display: none;"></div>
               <canvas id="fow-canvas-dm" class="fow-canvas fow-canvas-dm" style="display: none;"></canvas>
             </div>
           </div>
@@ -4891,5 +4901,43 @@
       </div>
     </div>
   </div>
+
+  <!-- MODAL: SPOTLIGHT OMNISEARCH UNIVERSAL (Ctrl+K) -->
+  <div id="modal-omnisearch" class="modal-overlay omnisearch-modal-overlay" style="display: none;" onclick="if(event.target===this) toggleOmnisearchModal(false)">
+    <div class="omnisearch-card">
+      <div class="omnisearch-header-input">
+        <span class="omnisearch-search-icon">🔍</span>
+        <input type="text" id="omnisearch-input" class="omnisearch-input" placeholder="Buscar monstro, magia, item, ficha, condição ou regra... (Esc para fechar)" autocomplete="off" oninput="handleOmnisearchInput(this.value)" onkeydown="handleOmnisearchKeydown(event)">
+        <button type="button" class="omnisearch-close-btn" onclick="toggleOmnisearchModal(false)" title="Fechar busca (Esc)">✕</button>
+      </div>
+
+      <!-- FILTROS DE CATEGORIA RÁPIDOS -->
+      <div class="omnisearch-category-pills">
+        <button type="button" class="omnisearch-cat-btn active" data-cat="all" onclick="setOmnisearchCategoryFilter('all', this)">🌐 Tudo</button>
+        <button type="button" class="omnisearch-cat-btn" data-cat="monster" onclick="setOmnisearchCategoryFilter('monster', this)">🐉 Monstros</button>
+        <button type="button" class="omnisearch-cat-btn" data-cat="spell" onclick="setOmnisearchCategoryFilter('spell', this)">✨ Magias</button>
+        <button type="button" class="omnisearch-cat-btn" data-cat="item" onclick="setOmnisearchCategoryFilter('item', this)">🛡️ Itens</button>
+        <button type="button" class="omnisearch-cat-btn" data-cat="player" onclick="setOmnisearchCategoryFilter('player', this)">👤 Fichas</button>
+        <button type="button" class="omnisearch-cat-btn" data-cat="condition" onclick="setOmnisearchCategoryFilter('condition', this)">⚡ Condições</button>
+        <button type="button" class="omnisearch-cat-btn" data-cat="tab" onclick="setOmnisearchCategoryFilter('tab', this)">🗺️ Telas / Abas</button>
+      </div>
+
+      <!-- LISTA DE RESULTADOS -->
+      <div id="omnisearch-results-list" class="omnisearch-results-list">
+        <!-- Renderizado dinamicamente por renderOmnisearchResults -->
+      </div>
+
+      <!-- RODAPÉ COM ATALHOS ÚTEIS -->
+      <div class="omnisearch-footer-hints">
+        <div class="omnisearch-hint-group">
+          <kbd>↑</kbd><kbd>↓</kbd> <span>Navegar</span>
+          <kbd>↵</kbd> <span>Abrir / Executar</span>
+          <kbd>Esc</kbd> <span>Fechar</span>
+        </div>
+        <div id="omnisearch-count-badge" class="omnisearch-count-badge">0 resultados</div>
+      </div>
+    </div>
+  </div>
+
 
 

@@ -133,7 +133,12 @@ const sandbox = {
           },
           innerText: '',
           innerHTML: '',
-          style: {}
+          style: {},
+          querySelector: () => null,
+          querySelectorAll: () => [],
+          focus: () => {},
+          select: () => {},
+          insertAdjacentHTML: function(pos, html) { this.innerHTML = (this.innerHTML || '') + html; }
         };
       }
       return domElements[id];
@@ -156,7 +161,8 @@ const sandbox = {
         },
         appendChild: () => {},
         setAttribute: (k, v) => { el[k] = v; },
-        getAttribute: (k) => el[k] || null
+        getAttribute: (k) => el[k] || null,
+        insertAdjacentHTML: function(pos, html) { this.innerHTML = (this.innerHTML || '') + html; }
       };
       return el;
     },
@@ -8885,8 +8891,149 @@ assert(stashRes.totalGold >= 320, 'Ouro adicionado com sucesso ao Baú Coletivo 
 const fullSession = sim113.runFullSession(3);
 assert(fullSession.allAuditPassed === true, 'Sessão completa de 3 rodadas aprovada com 100% de integridade na auditoria de layout');
 
+console.log('\n🔍 114. Testes do Spotlight Omnisearch, Economia de Ações e VTT Action HUD (ISSUE-144):');
+
+const bundle114 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+
+// 1. Omnisearch no HTML Compilado
+assert(bundle114.includes('id="modal-omnisearch"'), 'HTML compilado possui o modal #modal-omnisearch');
+assert(bundle114.includes('id="omnisearch-input"'), 'HTML compilado possui o campo de busca #omnisearch-input');
+assert(bundle114.includes('id="btn-global-omnisearch"'), 'HTML compilado possui o botão de acionamento #btn-global-omnisearch');
+assert(bundle114.includes('.omnisearch-modal'), 'HTML compilado contém as classes CSS .omnisearch-modal');
+assert(bundle114.includes('.omnisearch-item'), 'HTML compilado contém as classes CSS .omnisearch-item');
+assert(bundle114.includes('.omnisearch-cat-btn'), 'HTML compilado contém os filtros de categoria .omnisearch-cat-btn');
+
+// 2. Lógica e Indexação do Omnisearch no VM
+const hasToggleOmni = vm.runInContext("typeof toggleOmnisearchModal === 'function'", sandbox);
+assert(hasToggleOmni, 'Função toggleOmnisearchModal disponível no escopo global');
+
+const omniConditions = vm.runInContext("Array.isArray(DND_CONDITIONS_OMNI) ? DND_CONDITIONS_OMNI : []", sandbox);
+assert(omniConditions.length >= 14, 'DND_CONDITIONS_OMNI contém o catálogo completo de condições canônicas D&D 5E');
+
+const omniTabs = vm.runInContext("Array.isArray(APP_TABS_OMNI) ? APP_TABS_OMNI : []", sandbox);
+assert(omniTabs.length >= 7, 'APP_TABS_OMNI indexa todas as abas principais do sistema');
+
+vm.runInContext(`
+  toggleOmnisearchModal(true);
+`, sandbox);
+const isOmniOpen = vm.runInContext("document.getElementById('modal-omnisearch').style.display === 'flex'", sandbox);
+assert(isOmniOpen, 'toggleOmnisearchModal(true) abre o modal em display flex');
+
+vm.runInContext(`
+  handleOmnisearchInput('dragao');
+`, sandbox);
+const omniResDragao = vm.runInContext("omnisearchResults", sandbox);
+assert(Array.isArray(omniResDragao) && omniResDragao.length > 0, 'Omnisearch localiza criaturas pelo nome (ex: Dragão)');
+
+vm.runInContext(`
+  handleOmnisearchInput('cego');
+`, sandbox);
+const omniResCego = vm.runInContext("omnisearchResults", sandbox);
+assert(omniResCego.some(r => r.id === 'blinded'), 'Omnisearch indexa e localiza condições de status (ex: Cego / Blinded)');
+
+vm.runInContext(`
+  toggleOmnisearchModal(false);
+`, sandbox);
+const isOmniClosed = vm.runInContext("document.getElementById('modal-omnisearch').style.display === 'none'", sandbox);
+assert(isOmniClosed, 'toggleOmnisearchModal(false) fecha o modal com sucesso');
+
+// 3. Economia de Ações D&D 5E
+assert(bundle114.includes('.combat-turn-actions-bar'), 'HTML compilado inclui o container .combat-turn-actions-bar');
+assert(bundle114.includes('.action-chip-toggle'), 'HTML compilado inclui os chips interativos .action-chip-toggle');
+assert(bundle114.includes('toggleCombatantAction'), 'Função toggleCombatantAction presente no código compilado');
+
+vm.runInContext(`
+  state.combatants = [
+    {
+      id: 'comb_test_hero',
+      name: 'Aldor o Paladino',
+      init: 18,
+      ac: 18,
+      hp: 30,
+      maxHp: 30,
+      type: 'player',
+      turnActions: { action: true, bonus: true, reaction: true, movement: true }
+    },
+    {
+      id: 'comb_test_mob',
+      name: 'Ogro Furioso',
+      init: 12,
+      ac: 12,
+      hp: 59,
+      maxHp: 59,
+      type: 'monster',
+      actions: 'Clava (+6 para acertar, 2d8+4 esmagamento)'
+    }
+  ];
+  state.turnIndex = 0;
+  state.round = 1;
+`, sandbox);
+
+vm.runInContext(`toggleCombatantAction('comb_test_hero', 'reaction');`, sandbox);
+const paladinReactionAfter = vm.runInContext("state.combatants[0].turnActions.reaction", sandbox);
+assert(paladinReactionAfter === false, 'toggleCombatantAction alterna a reação para usada (false)');
+
+vm.runInContext(`toggleCombatantAction('comb_test_hero', 'reaction');`, sandbox);
+const paladinReactionRestored = vm.runInContext("state.combatants[0].turnActions.reaction", sandbox);
+assert(paladinReactionRestored === true, 'toggleCombatantAction restaura a reação para disponível (true)');
+
+// Avançar o turno deve resetar as ações do novo combatente
+vm.runInContext(`
+  state.combatants[1].turnActions = { action: false, bonus: false, reaction: false, movement: false };
+  nextTurn();
+`, sandbox);
+const mobActionsAfterTurn = vm.runInContext("state.combatants[1].turnActions", sandbox);
+assert(mobActionsAfterTurn && mobActionsAfterTurn.action === true && mobActionsAfterTurn.reaction === true, 'nextTurn() reseta automaticamente os recursos de turno para o combatente da vez');
+
+// 4. Mini-Ações de Ataque de Monstros
+assert(bundle114.includes('.combatant-mini-actions'), 'HTML compilado inclui a classe .combatant-mini-actions');
+assert(bundle114.includes('.btn-monster-mini-act'), 'HTML compilado inclui os botões .btn-monster-mini-act');
+
+const mobMiniActHtml = vm.runInContext(`
+  renderCombatantMiniActions({
+    id: 'mob_wolf_1',
+    name: 'Lobo Alfa',
+    type: 'monster',
+    actions: 'Mordida (+5 para acertar, 2d4+3 perfurante)'
+  })
+`, sandbox);
+assert(mobMiniActHtml.includes('btn-monster-mini-act'), 'renderCombatantMiniActions gera botões rápidos para ataques de monstros');
+assert(mobMiniActHtml.includes('+5'), 'renderCombatantMiniActions extrai o bônus de acerto (+5) com precisão');
+assert(mobMiniActHtml.includes('Mordida'), 'renderCombatantMiniActions extrai o nome do ataque (Mordida)');
+
+// Jogador não deve gerar botões de mini-ações automáticas de monstro
+const playerMiniActHtml = vm.runInContext(`
+  renderCombatantMiniActions({
+    id: 'p_hero_1',
+    name: 'Herói',
+    type: 'player'
+  })
+`, sandbox);
+assert(playerMiniActHtml === '', 'renderCombatantMiniActions não gera mini-ações para fichas de alunos');
+
+// 5. VTT Floating Token Action HUD
+assert(bundle114.includes('.vtt-token-action-hud'), 'HTML compilado possui as classes do HUD flutuante do VTT');
+assert(bundle114.includes('.token-hud-pill'), 'HTML compilado possui .token-hud-pill');
+assert(bundle114.includes('.token-hud-dmg-btn'), 'HTML compilado possui .token-hud-dmg-btn');
+
+vm.runInContext(`
+  gridState.tokens = [
+    { id: 'tok_vtt_1', name: 'Guerreiro Teste', x: 100, y: 100, combatantId: 'comb_test_hero', type: 'player' }
+  ];
+  selectedTokenIds = new Set(['tok_vtt_1']);
+  const dummyVttContainer = document.createElement('div');
+  renderVttTokenActionHud(dummyVttContainer);
+`, sandbox);
+
+const vttHudRenderedHtml = vm.runInContext("dummyVttContainer.innerHTML", sandbox);
+assert(vttHudRenderedHtml.includes('vtt-token-action-hud'), 'renderVttTokenActionHud renderiza o HUD flutuante quando 1 token está selecionado');
+assert(vttHudRenderedHtml.includes('applyTokenQuickDamage'), 'HUD flutuante contém atalho de aplicação de dano rápido');
+assert(vttHudRenderedHtml.includes('applyTokenQuickHeal'), 'HUD flutuante contém atalho de aplicação de cura rápida');
+assert(vttHudRenderedHtml.includes('openCondModal'), 'HUD flutuante contém atalho para gerenciamento de status');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
+
 if (failedTests === 0) {
   console.log('🎉 TODOS OS TESTES PASSARAM COM SUCESSO! 🚀');
   console.log('========================================\n');

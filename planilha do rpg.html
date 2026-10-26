@@ -12104,7 +12104,403 @@
       box-shadow: 0 0 8px rgba(245, 158, 11, 0.3) !important;
     }
 
+    /* ==========================================================================
+       FASE 2: SPOTLIGHT OMNISEARCH (Ctrl+K)
+       ========================================================================== */
+    .btn-omnisearch-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(30, 41, 59, 0.8) !important;
+      border: 1px solid rgba(245, 158, 11, 0.35) !important;
+      color: #e2e8f0 !important;
+      padding: 4px 10px !important;
+      border-radius: 6px !important;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 12px;
+    }
+    .btn-omnisearch-trigger:hover {
+      background: rgba(245, 158, 11, 0.18) !important;
+      border-color: #f59e0b !important;
+      color: #fff !important;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+    }
+    .omnisearch-kbd {
+      font-size: 10px;
+      font-family: inherit;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 1px 5px;
+      border-radius: 4px;
+      color: var(--text-muted, #94a3b8);
+    }
+
+    .omnisearch-modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(6px);
+      z-index: 10000;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 10vh;
+      box-sizing: border-box;
+      animation: omniFadeIn 0.15s ease-out;
+    }
+    @keyframes omniFadeIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .omnisearch-card {
+      width: 100%;
+      max-width: 640px;
+      background: #0f172a;
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      border-radius: 12px;
+      box-shadow: 0 20px 45px rgba(0,0,0,0.8), 0 0 25px rgba(245,158,11,0.25);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      max-height: 80vh;
+    }
+    .omnisearch-header-input {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: rgba(15, 23, 42, 0.95);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .omnisearch-search-icon {
+      font-size: 18px;
+      opacity: 0.8;
+    }
+    .omnisearch-input {
+      flex: 1;
+      background: transparent !important;
+      border: none !important;
+      outline: none !important;
+      color: #fff !important;
+      font-size: 15px !important;
+      padding: 4px 0 !important;
+      font-family: inherit;
+    }
+    .omnisearch-input::placeholder {
+      color: #64748b;
+    }
+    .omnisearch-close-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: background 0.15s;
+    }
+    .omnisearch-close-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    .omnisearch-category-pills {
+      display: flex;
+      gap: 6px;
+      padding: 8px 16px;
+      background: rgba(0, 0, 0, 0.25);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .omnisearch-category-pills::-webkit-scrollbar {
+      display: none;
+    }
+    .omnisearch-cat-btn {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 16px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .omnisearch-cat-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+    .omnisearch-cat-btn.active {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: #f59e0b;
+      color: #fef08a;
+    }
+    .omnisearch-results-list {
+      flex: 1;
+      overflow-y: auto;
+      max-height: 52vh;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .omnisearch-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .omnisearch-item:hover, .omnisearch-item.selected {
+      background: rgba(245, 158, 11, 0.14);
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+    .omnisearch-item-icon {
+      font-size: 20px;
+      width: 28px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .omnisearch-item-content {
+      flex: 1;
+      min-width: 0;
+    }
+    .omnisearch-item-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+    .omnisearch-item-name {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .omnisearch-item-tag {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+      white-space: nowrap;
+    }
+    .omnisearch-item-desc {
+      font-size: 11.5px;
+      color: #94a3b8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .omnisearch-item-action {
+      font-size: 11px;
+      color: #f59e0b;
+      font-weight: 600;
+      opacity: 0;
+      transition: opacity 0.15s;
+      flex-shrink: 0;
+    }
+    .omnisearch-item:hover .omnisearch-item-action,
+    .omnisearch-item.selected .omnisearch-item-action {
+      opacity: 1;
+    }
+    .omnisearch-footer-hints {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      background: rgba(0, 0, 0, 0.4);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 11px;
+      color: #64748b;
+    }
+    .omnisearch-hint-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .omnisearch-hint-group kbd {
+      background: rgba(255, 255, 255, 0.08);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: #cbd5e1;
+    }
+    .omnisearch-count-badge {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    .omnisearch-empty-state {
+      padding: 32px 16px;
+      text-align: center;
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    /* ==========================================================================
+       FASE 2: ECONOMIA DE AÇÕES (D&D 5E ACTION ECONOMY)
+       ========================================================================== */
+    .combat-turn-actions-bar {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 6px;
+      padding: 4px 6px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+    }
+    .action-chip-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      user-select: none;
+      transition: all 0.15s ease;
+      background: rgba(30, 41, 59, 0.8);
+      color: #94a3b8;
+    }
+    .action-chip-toggle.available {
+      border-color: rgba(16, 185, 129, 0.4);
+      background: rgba(16, 185, 129, 0.12);
+      color: #6ee7b7;
+    }
+    .action-chip-toggle.used {
+      border-color: rgba(239, 68, 68, 0.3);
+      background: rgba(239, 68, 68, 0.1);
+      color: #fca5a5;
+      text-decoration: line-through;
+      opacity: 0.65;
+    }
+    .action-chip-toggle:hover {
+      opacity: 1;
+      transform: translateY(-1px);
+    }
+
+    /* ==========================================================================
+       FASE 2: MONSTER MINI-ACTIONS NO COMBATE & BESTIÁRIO
+       ========================================================================== */
+    .combatant-mini-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .btn-monster-mini-act {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fef08a;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-monster-mini-act:hover {
+      background: rgba(245, 158, 11, 0.25);
+      border-color: #f59e0b;
+      color: #fff;
+      transform: translateY(-1px);
+    }
+    .btn-monster-mini-act:active {
+      transform: translateY(0);
+    }
+
+    /* ==========================================================================
+       FASE 2: VTT TOKEN ACTION HUD FLUTUANTE
+       ========================================================================== */
+    .vtt-token-action-hud {
+      position: absolute;
+      z-index: 120;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      pointer-events: auto;
+      animation: hudPopIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: translate(-50%, -100%);
+      margin-top: -8px;
+    }
+    @keyframes hudPopIn {
+      from { opacity: 0; transform: translate(-50%, -90%) scale(0.92); }
+      to { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+    }
+    .token-hud-pill {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      padding: 4px 6px;
+      border-radius: 20px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 10px rgba(245, 158, 11, 0.2);
+      backdrop-filter: blur(8px);
+    }
+    .token-hud-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border-radius: 14px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 7px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .token-hud-btn:hover {
+      background: rgba(245, 158, 11, 0.25);
+      border-color: #f59e0b;
+      color: #fef08a;
+      transform: translateY(-1px);
+    }
+    .token-hud-quick-dmg {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .token-hud-dmg-btn {
+      padding: 2px 5px;
+      font-size: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      font-weight: 800;
+    }
+    .token-hud-dmg-btn.dmg {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+    .token-hud-dmg-btn.heal {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
+    }
+
   </style>
+
 
 
   <!-- Google Firebase SDK Compat (Nuvem em Tempo Real) -->
@@ -12200,6 +12596,13 @@
     <div class="top-actions">
       <span id="save-status">💾 Salvo</span>
       
+      <!-- ATALHO GLOBAL SPOTLIGHT OMNISEARCH (Ctrl+K) -->
+      <button class="btn-top btn-omnisearch-trigger" id="btn-global-omnisearch" onclick="toggleOmnisearchModal(true)" title="Busca Universal Rápida (Ctrl+K)">
+        <span style="font-size: 13px;">🔍</span>
+        <span class="omnisearch-btn-label">Buscar...</span>
+        <kbd class="omnisearch-kbd">Ctrl+K</kbd>
+      </button>
+
       <!-- CONEXÃO NUVEM -->
       <button class="btn-top" id="firebase-status-badge" onclick="openFirebaseModal()" title="Configurar Sincronização em Nuvem (Google Firebase)" style="display: flex; align-items: center; gap: 5px;">
         <span id="firebase-status-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
@@ -12275,6 +12678,7 @@
       <button class="portal-chip" id="pnav-classes" onclick="switchTab('classes')">🌳 Classes</button>
       <button class="portal-chip" id="pnav-species" onclick="switchTab('species')">🧬 Raças</button>
       <button class="portal-chip" id="pnav-dice" onclick="openDiceModal()">🎲 Dados</button>
+      <button class="portal-chip" id="pnav-omnisearch" onclick="toggleOmnisearchModal(true)" style="background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.4); color: #fef08a;">🔍 Buscar</button>
     </div>
   </div>
 
@@ -12627,6 +13031,8 @@
               <div id="grid-aoe-layer"></div>
               <div id="grid-markers-layer"></div>
               <div id="grid-tokens-layer"></div>
+              <!-- TOKEN ACTION HUD FLUTUANTE (VTT DOCK) -->
+              <div id="vtt-token-action-hud" class="vtt-token-action-hud" style="display: none;"></div>
               <canvas id="fow-canvas-dm" class="fow-canvas fow-canvas-dm" style="display: none;"></canvas>
             </div>
           </div>
@@ -17006,6 +17412,44 @@
       </div>
     </div>
   </div>
+
+  <!-- MODAL: SPOTLIGHT OMNISEARCH UNIVERSAL (Ctrl+K) -->
+  <div id="modal-omnisearch" class="modal-overlay omnisearch-modal-overlay" style="display: none;" onclick="if(event.target===this) toggleOmnisearchModal(false)">
+    <div class="omnisearch-card">
+      <div class="omnisearch-header-input">
+        <span class="omnisearch-search-icon">🔍</span>
+        <input type="text" id="omnisearch-input" class="omnisearch-input" placeholder="Buscar monstro, magia, item, ficha, condição ou regra... (Esc para fechar)" autocomplete="off" oninput="handleOmnisearchInput(this.value)" onkeydown="handleOmnisearchKeydown(event)">
+        <button type="button" class="omnisearch-close-btn" onclick="toggleOmnisearchModal(false)" title="Fechar busca (Esc)">✕</button>
+      </div>
+
+      <!-- FILTROS DE CATEGORIA RÁPIDOS -->
+      <div class="omnisearch-category-pills">
+        <button type="button" class="omnisearch-cat-btn active" data-cat="all" onclick="setOmnisearchCategoryFilter('all', this)">🌐 Tudo</button>
+        <button type="button" class="omnisearch-cat-btn" data-cat="monster" onclick="setOmnisearchCategoryFilter('monster', this)">🐉 Monstros</button>
+        <button type="button" class="omnisearch-cat-btn" data-cat="spell" onclick="setOmnisearchCategoryFilter('spell', this)">✨ Magias</button>
+        <button type="button" class="omnisearch-cat-btn" data-cat="item" onclick="setOmnisearchCategoryFilter('item', this)">🛡️ Itens</button>
+        <button type="button" class="omnisearch-cat-btn" data-cat="player" onclick="setOmnisearchCategoryFilter('player', this)">👤 Fichas</button>
+        <button type="button" class="omnisearch-cat-btn" data-cat="condition" onclick="setOmnisearchCategoryFilter('condition', this)">⚡ Condições</button>
+        <button type="button" class="omnisearch-cat-btn" data-cat="tab" onclick="setOmnisearchCategoryFilter('tab', this)">🗺️ Telas / Abas</button>
+      </div>
+
+      <!-- LISTA DE RESULTADOS -->
+      <div id="omnisearch-results-list" class="omnisearch-results-list">
+        <!-- Renderizado dinamicamente por renderOmnisearchResults -->
+      </div>
+
+      <!-- RODAPÉ COM ATALHOS ÚTEIS -->
+      <div class="omnisearch-footer-hints">
+        <div class="omnisearch-hint-group">
+          <kbd>↑</kbd><kbd>↓</kbd> <span>Navegar</span>
+          <kbd>↵</kbd> <span>Abrir / Executar</span>
+          <kbd>Esc</kbd> <span>Fechar</span>
+        </div>
+        <div id="omnisearch-count-badge" class="omnisearch-count-badge">0 resultados</div>
+      </div>
+    </div>
+  </div>
+
 
 
 
@@ -40293,6 +40737,8 @@ function renderCombat() {
           <div class="hp-bar-fill" style="width: ${hpPct}%; background-color: ${hpColor};"></div>
         </div>
 
+        ${typeof renderCombatantMiniActions === 'function' ? renderCombatantMiniActions(c) : ''}
+
         ${condsBadges ? `<div class="conditions-container">${condsBadges}</div>` : ''}
 
         <div class="combatant-notes-section" style="margin-top: 6px;">
@@ -40316,6 +40762,25 @@ function renderCombat() {
     const hpPct = Math.max(0, Math.min(100, Math.round((active.hp / active.maxHp) * 100)));
     const hpColor = hpPct > 50 ? 'var(--accent-green)' : (hpPct > 25 ? '#eab308' : 'var(--accent-red)');
 
+    const turnActions = active.turnActions || { action: true, bonus: true, reaction: true, movement: true };
+    const actionEcoHtml = `
+      <div class="combat-turn-actions-bar">
+        <span style="font-size: 10.5px; font-weight: 700; color: #fef08a; margin-right: 2px;">⚡ Turno:</span>
+        <button type="button" class="action-chip-toggle ${turnActions.action ? 'available' : 'used'}" onclick="toggleCombatantAction('${active.id}', 'action')" title="Alternar Ação Principal">
+          ${turnActions.action ? '⚔️ Ação' : '⚔️ Usada'}
+        </button>
+        <button type="button" class="action-chip-toggle ${turnActions.bonus ? 'available' : 'used'}" onclick="toggleCombatantAction('${active.id}', 'bonus')" title="Alternar Ação Bônus">
+          ${turnActions.bonus ? '⚡ Bônus' : '⚡ Usada'}
+        </button>
+        <button type="button" class="action-chip-toggle ${turnActions.reaction ? 'available' : 'used'}" onclick="toggleCombatantAction('${active.id}', 'reaction')" title="Alternar Reação">
+          ${turnActions.reaction ? '🛡️ Reação' : '🛡️ Usada'}
+        </button>
+        <button type="button" class="action-chip-toggle ${turnActions.movement ? 'available' : 'used'}" onclick="toggleCombatantAction('${active.id}', 'movement')" title="Alternar Deslocamento">
+          ${turnActions.movement ? '🏃 Movim.' : '🏃 Usado'}
+        </button>
+      </div>
+    `;
+
     activeDetails.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
         <div>
@@ -40332,6 +40797,8 @@ function renderCombat() {
         <div class="hp-bar-fill" style="width: ${hpPct}%; background-color: ${hpColor};"></div>
       </div>
 
+      ${actionEcoHtml}
+
       <div style="background: #080c16; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 12px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
           <b style="color: var(--primary-light);">⚔️ Ações & Ataques do Turno:</b>
@@ -40343,6 +40810,7 @@ function renderCombat() {
             : (active.actions || 'Ataque padrão (+4 para acertar, 1d6+2 dano físico)')}
         </div>
       </div>
+
 
       ${(active.type === 'player') ? (() => {
         const playerObj = typeof findPlayerForCombatant === 'function' 
@@ -40442,9 +40910,13 @@ function nextTurn() {
     startTurnTimer();
   }
   const currentCombatant = state.combatants[state.turnIndex];
+  if (currentCombatant) {
+    currentCombatant.turnActions = { action: true, bonus: true, reaction: true, movement: true };
+  }
   const turnNarrative = `É a vez de <b>${currentCombatant ? currentCombatant.name : 'combatente'}</b> agir!`;
   renderCombat();
   if (typeof renderPlayerView === 'function') renderPlayerView(turnNarrative);
+
   if (typeof updatePlayerPortalBanner === 'function') updatePlayerPortalBanner();
   saveToLocalStorage();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
@@ -41550,6 +42022,56 @@ function announceActiveTurn(combatantId) {
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
 
+function toggleCombatantAction(combatantId, actionType) {
+  const c = state.combatants.find(x => x.id === combatantId);
+  if (!c) return;
+  if (!c.turnActions) {
+    c.turnActions = { action: true, bonus: true, reaction: true, movement: true };
+  }
+  c.turnActions[actionType] = !c.turnActions[actionType];
+  renderCombat();
+  saveToLocalStorage();
+}
+
+function renderCombatantMiniActions(c) {
+  if (!c || c.type === 'player') return '';
+  const rawActions = c.actions || '';
+  if (!rawActions) return '';
+
+  const chunks = rawActions.split(/(?:\r?\n)+|[•]\s+/).map(s => s.trim()).filter(Boolean);
+  const actionButtons = [];
+
+  for (const chunk of chunks) {
+    const hitMatch = chunk.match(/([+-]\d+)\s*(?:para acertar|de bônus|to hit|\))/i) || chunk.match(/(?:Ataque|Bônus|Acerto)[^\d+-]*?([+-]\d+)/i);
+    const dmgMatch = chunk.match(/(\d+d\d+(?:\s*[+-]\s*\d+)?)/i);
+    if (!hitMatch && !dmgMatch) continue;
+
+    let atkName = 'Ataque';
+    const nameMatch = chunk.match(/^([A-Za-zÀ-ÿ0-9\s]+?)(?:\.|\:|\(|\-)/);
+    if (nameMatch && nameMatch[1].trim().length < 25) {
+      atkName = nameMatch[1].trim();
+    }
+
+    const hitBonus = hitMatch ? parseInt(hitMatch[1], 10) : 0;
+    const dmgFormula = dmgMatch ? dmgMatch[1].replace(/\s+/g, '') : '';
+    const safeAtkName = atkName.replace(/'/g, "\\'");
+    const safeDmgFormula = dmgFormula.replace(/'/g, "\\'");
+    const safeMonName = (c.name || 'Monstro').replace(/'/g, "\\'");
+    const safeCombId = (c.id || '').replace(/'/g, "\\'");
+
+    actionButtons.push(`
+      <button type="button" class="btn-monster-mini-act" onclick="rollMonsterAttackAction('${safeAtkName}', ${hitBonus}, '${safeDmgFormula}', '${safeMonName}', '${safeCombId}')" title="Rolar ataque rápido de ${atkName} (${hitBonus >= 0 ? '+' + hitBonus : hitBonus})">
+        ⚔️ ${atkName} (${hitBonus >= 0 ? '+' + hitBonus : hitBonus})
+      </button>
+    `);
+
+    if (actionButtons.length >= 3) break;
+  }
+
+  if (actionButtons.length === 0) return '';
+  return `<div class="combatant-mini-actions">${actionButtons.join('')}</div>`;
+}
+
 if (typeof window !== 'undefined') {
   window.promptCombatantDamageHeal = promptCombatantDamageHeal;
   window.closeCombatDamageHealModal = closeCombatDamageHealModal;
@@ -41562,6 +42084,8 @@ if (typeof window !== 'undefined') {
   window.openCombatQuickConditions = openCombatQuickConditions;
   window.closeCombatQuickConditions = closeCombatQuickConditions;
   window.toggleCombatQuickCondition = toggleCombatQuickCondition;
+  window.toggleCombatantAction = toggleCombatantAction;
+  window.renderCombatantMiniActions = renderCombatantMiniActions;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -41586,9 +42110,12 @@ if (typeof module !== 'undefined' && module.exports) {
     applyCriticalDamageMultiplier,
     openCombatQuickConditions,
     closeCombatQuickConditions,
-    toggleCombatQuickCondition
+    toggleCombatQuickCondition,
+    toggleCombatantAction,
+    renderCombatantMiniActions
   };
 }
+
 
 
 var activePortalPlayerId = (typeof activePortalPlayerId !== 'undefined') ? activePortalPlayerId : null;
@@ -56743,6 +57270,348 @@ if (typeof window !== 'undefined') {
   window.promptGrantFeatToHero = promptGrantFeatToHero;
 }
 
+/* ==========================================================================
+   FASE 2: SPOTLIGHT OMNISEARCH UNIVERSAL (Ctrl+K)
+   ========================================================================== */
+let omnisearchCurrentFilter = 'all';
+let omnisearchResults = [];
+let omnisearchSelectedIndex = -1;
+
+const DND_CONDITIONS_OMNI = [
+  { id: 'blinded', name: 'Cego (Blinded)', icon: '👁️‍🗨️', desc: 'Falha automática em testes que exigem visão. Ataques contra têm vantagem, seus ataques têm desvantagem.' },
+  { id: 'charmed', name: 'Enfeitiçado (Charmed)', icon: '💖', desc: 'Não pode atacar quem o enfeitiçou. Conjurador tem vantagem em testes sociais contra o alvo.' },
+  { id: 'deafened', name: 'Surdo (Deafened)', icon: '🔇', desc: 'Falha automática em qualquer teste de habilidade que exija audição.' },
+  { id: 'frightened', name: 'Amedrontado (Frightened)', icon: '😱', desc: 'Desvantagem em testes e ataques enquanto a fonte do medo estiver na linha de visão. Não pode se aproximar.' },
+  { id: 'grappled', name: 'Agarrado (Grappled)', icon: '🤼', desc: 'Deslocamento reduzido a 0. A condição encerra se o agarrador ficar incapacitado ou for empurrado.' },
+  { id: 'incapacitated', name: 'Incapacitado (Incapacitated)', icon: '💫', desc: 'Não pode realizar ações nem reações.' },
+  { id: 'invisible', name: 'Invisível (Invisible)', icon: '👻', desc: 'Impossível de ver sem magia. Vantagem em jogadas de ataque; ataques contra têm desvantagem.' },
+  { id: 'paralyzed', name: 'Paralisado (Paralyzed)', icon: '⚡', desc: 'Incapacitado, não pode se mover nem falar. Falha em FOR e DES. Ataques contra têm vantagem; a até 1,5m são críticos.' },
+  { id: 'petrified', name: 'Petrificado (Petrified)', icon: '🗿', desc: 'Transformado em pedra. Peso x10. Incapacitado. Resistência a todo dano; imune a veneno.' },
+  { id: 'poisoned', name: 'Envenenado (Poisoned)', icon: '🧪', desc: 'Desvantagem em todas as jogadas de ataque e testes de habilidade.' },
+  { id: 'prone', name: 'Caído (Prone)', icon: '🛌', desc: 'Só rasteja. Desvantagem em seus ataques. Ataques corpo-a-corpo têm vantagem contra ele; ataques à distância têm desvantagem.' },
+  { id: 'restrained', name: 'Contido (Restrained)', icon: '🕸️', desc: 'Deslocamento 0. Ataques contra têm vantagem; seus ataques têm desvantagem. Desvantagem em testes de resistência de DES.' },
+  { id: 'stunned', name: 'Atordoado (Stunned)', icon: '🌀', desc: 'Incapacitado, não se move, fala apenas balbucios. Falha em FOR e DES. Ataques contra têm vantagem.' },
+  { id: 'unconscious', name: 'Inconsciente (Unconscious)', icon: '💤', desc: 'Incapacitado, cai no chão. Falha em FOR e DES. Ataques contra têm vantagem; acertos a até 1,5m são críticos.' },
+  { id: 'exhaustion', name: 'Exaustão (Exhaustion)', icon: '⏳', desc: 'Níveis de 1 a 6 acumulativos (Nív 1: Desv em testes, Nív 2: Metade deslocamento, ..., Nív 6: Morte).' }
+];
+
+const APP_TABS_OMNI = [
+  { id: 'players', name: 'Fichas dos Personagens', icon: '👤', desc: 'Gerenciar heróis, perícias, atributos e magias' },
+  { id: 'combat', name: 'Combate & Iniciativa', icon: '⚔️', desc: 'Rastreador de rodadas, turnos, dano e condições' },
+  { id: 'monsters', name: 'Bestiário D&D 5E', icon: '🐉', desc: 'Catálogo oficial de criaturas, estatísticas e mini-ações' },
+  { id: 'spells', name: 'Grimório de Magias', icon: '✨', desc: 'Lista de magias D&D 5E por nível, escola e conjuração' },
+  { id: 'equipment', name: 'Arsenal & Equipamentos', icon: '🛡️', desc: 'Armas, armaduras, ferramentas e itens mágicos' },
+  { id: 'vtt', name: 'Grid Tático VTT', icon: '🗺️', desc: 'Tabuleiro virtual com tokens, névoa e alcance' },
+  { id: 'campaigns', name: 'Gestão de Campanhas', icon: '📜', desc: 'Diários de sessão, anotações de NPCs e ganchos' },
+  { id: 'screen', name: 'Modo Telão dos Jogadores', icon: '📺', desc: 'Visão limpa para projetor ou segunda tela' }
+];
+
+function toggleOmnisearchModal(forceOpen) {
+  const modal = document.getElementById('modal-omnisearch');
+  if (!modal) return;
+  const isCurrentlyOpen = modal.style.display !== 'none';
+  const shouldOpen = (forceOpen !== undefined) ? forceOpen : !isCurrentlyOpen;
+
+  if (shouldOpen) {
+    modal.style.display = 'flex';
+    const input = document.getElementById('omnisearch-input');
+    if (input) {
+      input.value = '';
+      setTimeout(() => {
+        if (typeof input.focus === 'function') input.focus();
+      }, 50);
+    }
+    omnisearchCurrentFilter = 'all';
+    updateOmnisearchCategoryPills();
+    handleOmnisearchInput('');
+  } else {
+    modal.style.display = 'none';
+    omnisearchSelectedIndex = -1;
+  }
+}
+
+function updateOmnisearchCategoryPills() {
+  const pills = document.querySelectorAll('.omnisearch-cat-btn');
+  pills.forEach(p => {
+    if (p.getAttribute('data-cat') === omnisearchCurrentFilter) {
+      p.classList.add('active');
+    } else {
+      p.classList.remove('active');
+    }
+  });
+}
+
+function setOmnisearchCategoryFilter(cat, btnEl) {
+  omnisearchCurrentFilter = cat || 'all';
+  updateOmnisearchCategoryPills();
+  const input = document.getElementById('omnisearch-input');
+  handleOmnisearchInput(input ? input.value : '');
+}
+
+function normalizeOmniText(str) {
+  if (!str) return '';
+  return String(str)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function handleOmnisearchInput(rawQuery) {
+  const query = normalizeOmniText(rawQuery).trim();
+  const cat = omnisearchCurrentFilter;
+  const results = [];
+
+  // 1. Monstros
+  if (cat === 'all' || cat === 'monster') {
+    const monsters = (typeof BESTIARY_DATA !== 'undefined' && Array.isArray(BESTIARY_DATA)) 
+      ? BESTIARY_DATA 
+      : ((typeof MONSTERS_DATA !== 'undefined' && Array.isArray(MONSTERS_DATA)) ? MONSTERS_DATA : []);
+    for (const m of monsters) {
+      if (!query || normalizeOmniText(m.name).includes(query) || normalizeOmniText(m.type || '').includes(query)) {
+        results.push({
+          type: 'monster',
+          id: m.id || m.name,
+          name: m.name,
+          categoryLabel: 'Monstro (ND ' + (m.cr || '0') + ')',
+          icon: '🐉',
+          desc: `${m.type || m.source || 'Criatura'} • CA ${m.ac || 10} • PV ${m.hp || 10} • Desloc: ${m.speed || '9m'}`,
+          actionLabel: 'Abrir Ficha',
+          run: () => {
+            if (typeof openMonsterQuickView === 'function') {
+              openMonsterQuickView(m.id);
+            } else if (typeof openMonsterDetail === 'function') {
+              openMonsterDetail(m.id);
+            }
+          }
+        });
+      }
+      if (results.length >= 60) break;
+    }
+  }
+
+  // 2. Magias
+  if ((cat === 'all' || cat === 'spell') && results.length < 60) {
+    const spells = (typeof SPELLS_DATA !== 'undefined' && Array.isArray(SPELLS_DATA)) ? SPELLS_DATA : [];
+    for (const s of spells) {
+      if (!query || normalizeOmniText(s.name).includes(query) || normalizeOmniText(s.school || '').includes(query)) {
+        results.push({
+          type: 'spell',
+          id: s.id,
+          name: s.name,
+          categoryLabel: (s.level === 0 ? 'Truque' : `Magia ${s.level}º Círc.`),
+          icon: '✨',
+          desc: `${s.school || 'Escola'} • Alcance: ${s.range || 'Toque'} • Tempo: ${s.castTime || '1 Ação'}`,
+          actionLabel: 'Ver Detalhes',
+          run: () => {
+            if (typeof openSpellQuickView === 'function') {
+              openSpellQuickView(s.id);
+            } else if (typeof openSpellDetail === 'function') {
+              openSpellDetail(s.id);
+            }
+          }
+        });
+      }
+      if (results.length >= 60) break;
+    }
+  }
+
+  // 3. Itens
+  if ((cat === 'all' || cat === 'item') && results.length < 60) {
+    const items = (typeof EQUIPMENT_DATA !== 'undefined' && Array.isArray(EQUIPMENT_DATA)) ? EQUIPMENT_DATA : [];
+    for (const it of items) {
+      if (!query || normalizeOmniText(it.name).includes(query) || normalizeOmniText(it.category || '').includes(query)) {
+        results.push({
+          type: 'item',
+          id: it.id,
+          name: it.name,
+          categoryLabel: it.category || 'Equipamento',
+          icon: '🛡️',
+          desc: `Preço: ${it.cost || '—'} • Peso: ${it.weight || '—'}`,
+          actionLabel: 'Ver Resumo',
+          run: () => {
+            if (typeof openItemQuickView === 'function') {
+              openItemQuickView(it.id);
+            }
+          }
+        });
+      }
+      if (results.length >= 60) break;
+    }
+  }
+
+  // 4. Fichas de Jogadores
+  if ((cat === 'all' || cat === 'player') && results.length < 60) {
+    const players = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS)) ? PLAYERS : [];
+    for (const p of players) {
+      if (!query || normalizeOmniText(p.name).includes(query) || normalizeOmniText(p.className || '').includes(query)) {
+        results.push({
+          type: 'player',
+          id: p.id,
+          name: p.name,
+          categoryLabel: `Herói Nív. ${p.level || 1}`,
+          icon: '👤',
+          desc: `${p.race || 'Humano'} ${p.className || 'Guerreiro'} • PV: ${p.currentHp || 0}/${p.maxHp || 0} • CA: ${p.armorClass || 10}`,
+          actionLabel: 'Abrir Ficha',
+          run: () => {
+            if (typeof switchTab === 'function') switchTab('players');
+            if (typeof selectPlayer === 'function') selectPlayer(p.id);
+          }
+        });
+      }
+    }
+  }
+
+  // 5. Condições D&D 5E
+  if ((cat === 'all' || cat === 'condition') && results.length < 60) {
+    for (const cond of DND_CONDITIONS_OMNI) {
+      if (!query || normalizeOmniText(cond.name).includes(query) || normalizeOmniText(cond.desc).includes(query)) {
+        results.push({
+          type: 'condition',
+          id: cond.id,
+          name: cond.name,
+          categoryLabel: 'Condição D&D 5E',
+          icon: cond.icon,
+          desc: cond.desc,
+          actionLabel: 'Consultar Regra',
+          run: () => {
+            alert(`⚡ ${cond.name}\n\n${cond.desc}`);
+          }
+        });
+      }
+    }
+  }
+
+  // 6. Abas e Telas
+  if ((cat === 'all' || cat === 'tab') && results.length < 60) {
+    for (const tab of APP_TABS_OMNI) {
+      if (!query || normalizeOmniText(tab.name).includes(query) || normalizeOmniText(tab.desc).includes(query)) {
+        results.push({
+          type: 'tab',
+          id: tab.id,
+          name: tab.name,
+          categoryLabel: 'Navegação',
+          icon: tab.icon,
+          desc: tab.desc,
+          actionLabel: 'Ir para Aba',
+          run: () => {
+            if (typeof switchTab === 'function') switchTab(tab.id);
+          }
+        });
+      }
+    }
+  }
+
+  omnisearchResults = results;
+  omnisearchSelectedIndex = results.length > 0 ? 0 : -1;
+  renderOmnisearchResults();
+}
+
+function renderOmnisearchResults() {
+  const container = document.getElementById('omnisearch-results-list');
+  const countBadge = document.getElementById('omnisearch-count-badge');
+  if (countBadge) {
+    countBadge.textContent = `${omnisearchResults.length} resultado(s)`;
+  }
+  if (!container) return;
+
+  if (omnisearchResults.length === 0) {
+    container.innerHTML = `
+      <div class="omnisearch-empty-state">
+        <div style="font-size: 24px; margin-bottom: 6px;">🔍</div>
+        Nenhum resultado encontrado para esta busca.<br>
+        <span style="font-size: 11px; opacity: 0.7;">Tente pesquisar por monstros, feitiços, armas, poções ou nomes de jogadores.</span>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = omnisearchResults.map((item, idx) => {
+    const isSelected = idx === omnisearchSelectedIndex;
+    return `
+      <div class="omnisearch-item ${isSelected ? 'selected' : ''}" data-index="${idx}" onclick="executeOmnisearchItem(${idx})">
+        <div class="omnisearch-item-icon">${item.icon}</div>
+        <div class="omnisearch-item-content">
+          <div class="omnisearch-item-title-row">
+            <span class="omnisearch-item-name">${item.name}</span>
+            <span class="omnisearch-item-tag">${item.categoryLabel}</span>
+          </div>
+          <div class="omnisearch-item-desc">${item.desc}</div>
+        </div>
+        <div class="omnisearch-item-action">${item.actionLabel} ↵</div>
+      </div>
+    `;
+  }).join('');
+
+  // Auto-scroll para manter item selecionado à vista
+  const selectedEl = (typeof container.querySelector === 'function')
+    ? container.querySelector('.omnisearch-item.selected')
+    : null;
+  if (selectedEl && typeof selectedEl.scrollIntoView === 'function') {
+    selectedEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+}
+
+function executeOmnisearchItem(index) {
+  if (index < 0 || index >= omnisearchResults.length) return;
+  const item = omnisearchResults[index];
+  toggleOmnisearchModal(false);
+  if (item && typeof item.run === 'function') {
+    item.run();
+  }
+}
+
+function handleOmnisearchKeydown(e) {
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (omnisearchResults.length > 0) {
+      omnisearchSelectedIndex = (omnisearchSelectedIndex + 1) % omnisearchResults.length;
+      renderOmnisearchResults();
+    }
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (omnisearchResults.length > 0) {
+      omnisearchSelectedIndex = (omnisearchSelectedIndex - 1 + omnisearchResults.length) % omnisearchResults.length;
+      renderOmnisearchResults();
+    }
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (omnisearchSelectedIndex >= 0 && omnisearchSelectedIndex < omnisearchResults.length) {
+      executeOmnisearchItem(omnisearchSelectedIndex);
+    }
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    toggleOmnisearchModal(false);
+  }
+}
+
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+      e.preventDefault();
+      toggleOmnisearchModal();
+    } else if (e.key === 'Escape') {
+      const modal = document.getElementById('modal-omnisearch');
+      if (modal && modal.style.display !== 'none') {
+        toggleOmnisearchModal(false);
+      }
+    }
+  });
+
+  window.toggleOmnisearchModal = toggleOmnisearchModal;
+  window.setOmnisearchCategoryFilter = setOmnisearchCategoryFilter;
+  window.handleOmnisearchInput = handleOmnisearchInput;
+  window.handleOmnisearchKeydown = handleOmnisearchKeydown;
+  window.executeOmnisearchItem = executeOmnisearchItem;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports.toggleOmnisearchModal = toggleOmnisearchModal;
+  module.exports.handleOmnisearchInput = handleOmnisearchInput;
+  module.exports.DND_CONDITIONS_OMNI = DND_CONDITIONS_OMNI;
+  module.exports.APP_TABS_OMNI = APP_TABS_OMNI;
+}
+
+
 
 // src/js/classes.js - D&D 5E Class Progression & Skill Tree Module
 // Renderizador interativo das 12 classes, árvores de habilidades e especializações 2024
@@ -63928,6 +64797,7 @@ function renderBattleGrid() {
   };
 
   container.innerHTML = generateTokensHtml(false);
+  if (typeof renderVttTokenActionHud === 'function') renderVttTokenActionHud(container);
   if (pvContainer) pvContainer.innerHTML = generateTokensHtml(true);
   if (typeof renderGridCombatantsDrawer === 'function') renderGridCombatantsDrawer();
   if (typeof renderVttCombatHud === 'function') renderVttCombatHud();
@@ -64841,6 +65711,109 @@ function toggleVttHudCollapse() {
   return isFocus;
 }
 
+/* ==========================================================================
+   FASE 2: VTT FLOATING TOKEN ACTION HUD
+   ========================================================================== */
+function renderVttTokenActionHud(container) {
+  if (!container || !selectedTokenIds || selectedTokenIds.size !== 1) return;
+
+  const tokenId = Array.from(selectedTokenIds)[0];
+  const token = (gridState.tokens || []).find(t => t.id === tokenId);
+  if (!token) return;
+
+  const c = state.combatants.find(x => x.id === token.combatantId) || { hp: 10, maxHp: 10, conditions: [] };
+  const span = typeof getTokenSpan === 'function' ? getTokenSpan(token) : 1;
+  const cSize = gridState.cellSize || 50;
+  const centerX = token.x + ((span * cSize) / 2);
+  const topY = token.y - 4;
+
+  let quickActionBtn = '';
+  if (token.type === 'player') {
+    quickActionBtn = `
+      <button type="button" class="token-hud-btn" onclick="openPlayerSheetFromVtt('${token.combatantId || ''}')" title="Abrir Ficha do Personagem">
+        👤 Ficha
+      </button>
+    `;
+  } else {
+    const hitMatch = (c.actions || '').match(/([+-]\d+)\s*(?:para acertar|de bônus|to hit|\))/i);
+    const hitBonus = hitMatch ? parseInt(hitMatch[1], 10) : 0;
+    quickActionBtn = `
+      <button type="button" class="token-hud-btn" onclick="rollTokenQuickAttack('${token.id}')" title="Rolar Ataque Rápido">
+        ⚔️ Ataque ${hitBonus >= 0 ? '+' + hitBonus : hitBonus}
+      </button>
+    `;
+  }
+
+  const hudHtml = `
+    <div id="vtt-token-hud" class="vtt-token-action-hud" style="left: ${centerX}px; top: ${topY}px;" onclick="event.stopPropagation()">
+      <div class="token-hud-pill">
+        <span style="font-size: 11px; font-weight: 800; color: #fff; padding: 0 4px;" title="Pontos de Vida Atuais">
+          ${c.hp}/${c.maxHp}
+        </span>
+        <div class="token-hud-quick-dmg">
+          <button type="button" class="token-hud-dmg-btn dmg" onclick="applyTokenQuickDamage('${token.id}', 5)" title="Causar 5 de Dano">-5</button>
+          <button type="button" class="token-hud-dmg-btn heal" onclick="applyTokenQuickHeal('${token.id}', 5)" title="Curar 5 de Vida">+5</button>
+        </div>
+        ${quickActionBtn}
+        <button type="button" class="token-hud-btn" onclick="openCondModal('${c.id}')" title="Gerenciar Status / Condições">
+          ⚡ Status
+        </button>
+        <button type="button" class="token-hud-btn" onclick="toggleTokenHidden('${token.id}')" title="Ocultar ou Revelar no Telão dos Jogadores">
+          ${token.hidden ? '👁️' : '🙈'}
+        </button>
+      </div>
+    </div>
+  `;
+
+  if (typeof container.insertAdjacentHTML === 'function') {
+    container.insertAdjacentHTML('beforeend', hudHtml);
+  } else {
+    container.innerHTML = (container.innerHTML || '') + hudHtml;
+  }
+}
+
+function openPlayerSheetFromVtt(combatantId) {
+  if (!combatantId) return;
+  const players = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS)) ? PLAYERS : [];
+  const target = players.find(p => p.id === combatantId || p.name === combatantId);
+  if (!target && players.length > 0) {
+    const combatant = state.combatants.find(c => c.id === combatantId);
+    if (combatant) {
+      const match = players.find(p => p.name && (combatant.name.includes(p.name) || p.name.includes(combatant.name)));
+      if (match) {
+        if (typeof switchTab === 'function') switchTab('players');
+        if (typeof selectPlayer === 'function') selectPlayer(match.id);
+        return;
+      }
+    }
+  }
+  if (target) {
+    if (typeof switchTab === 'function') switchTab('players');
+    if (typeof selectPlayer === 'function') selectPlayer(target.id);
+  }
+}
+
+function rollTokenQuickAttack(tokenId) {
+  const token = (gridState.tokens || []).find(t => t.id === tokenId);
+  if (!token) return;
+  const c = state.combatants.find(x => x.id === token.combatantId) || { name: token.name, actions: '' };
+  
+  const hitMatch = (c.actions || '').match(/([+-]\d+)\s*(?:para acertar|de bônus|to hit|\))/i);
+  const dmgMatch = (c.actions || '').match(/(\d+d\d+(?:\s*[+-]\s*\d+)?)/i);
+  const hitBonus = hitMatch ? parseInt(hitMatch[1], 10) : 0;
+  const dmgFormula = dmgMatch ? dmgMatch[1].replace(/\s+/g, '') : '1d6+2';
+
+  if (typeof rollMonsterAttackAction === 'function') {
+    rollMonsterAttackAction('Ataque', hitBonus, dmgFormula, c.name, c.id);
+  } else {
+    const d20 = Math.floor(Math.random() * 20) + 1;
+    const total = d20 + hitBonus;
+    if (typeof addLog === 'function') {
+      addLog(`🎲 <b>${c.name}</b> atacou pelo Grid: d20(${d20}) ${hitBonus >= 0 ? '+' + hitBonus : hitBonus} = <b>${total}</b>`);
+    }
+  }
+}
+
 // Exportações para Window e Node.js
 if (typeof window !== 'undefined') {
   window.handleBoardTouchStart = handleBoardTouchStart;
@@ -64849,6 +65822,9 @@ if (typeof window !== 'undefined') {
   window.setTokenAura = setTokenAura;
   window.rollDiceFormula = rollDiceFormula;
   window.toggleVttHudCollapse = toggleVttHudCollapse;
+  window.renderVttTokenActionHud = renderVttTokenActionHud;
+  window.openPlayerSheetFromVtt = openPlayerSheetFromVtt;
+  window.rollTokenQuickAttack = rollTokenQuickAttack;
 }
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -64858,9 +65834,13 @@ if (typeof module !== 'undefined' && module.exports) {
     handleBoardTouchEnd,
     setTokenAura,
     rollDiceFormula,
-    toggleVttHudCollapse
+    toggleVttHudCollapse,
+    renderVttTokenActionHud,
+    openPlayerSheetFromVtt,
+    rollTokenQuickAttack
   };
 }
+
 
 
 

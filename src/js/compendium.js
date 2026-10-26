@@ -1680,3 +1680,345 @@ if (typeof window !== 'undefined') {
   window.promptGrantFeatToHero = promptGrantFeatToHero;
 }
 
+/* ==========================================================================
+   FASE 2: SPOTLIGHT OMNISEARCH UNIVERSAL (Ctrl+K)
+   ========================================================================== */
+let omnisearchCurrentFilter = 'all';
+let omnisearchResults = [];
+let omnisearchSelectedIndex = -1;
+
+const DND_CONDITIONS_OMNI = [
+  { id: 'blinded', name: 'Cego (Blinded)', icon: '👁️‍🗨️', desc: 'Falha automática em testes que exigem visão. Ataques contra têm vantagem, seus ataques têm desvantagem.' },
+  { id: 'charmed', name: 'Enfeitiçado (Charmed)', icon: '💖', desc: 'Não pode atacar quem o enfeitiçou. Conjurador tem vantagem em testes sociais contra o alvo.' },
+  { id: 'deafened', name: 'Surdo (Deafened)', icon: '🔇', desc: 'Falha automática em qualquer teste de habilidade que exija audição.' },
+  { id: 'frightened', name: 'Amedrontado (Frightened)', icon: '😱', desc: 'Desvantagem em testes e ataques enquanto a fonte do medo estiver na linha de visão. Não pode se aproximar.' },
+  { id: 'grappled', name: 'Agarrado (Grappled)', icon: '🤼', desc: 'Deslocamento reduzido a 0. A condição encerra se o agarrador ficar incapacitado ou for empurrado.' },
+  { id: 'incapacitated', name: 'Incapacitado (Incapacitated)', icon: '💫', desc: 'Não pode realizar ações nem reações.' },
+  { id: 'invisible', name: 'Invisível (Invisible)', icon: '👻', desc: 'Impossível de ver sem magia. Vantagem em jogadas de ataque; ataques contra têm desvantagem.' },
+  { id: 'paralyzed', name: 'Paralisado (Paralyzed)', icon: '⚡', desc: 'Incapacitado, não pode se mover nem falar. Falha em FOR e DES. Ataques contra têm vantagem; a até 1,5m são críticos.' },
+  { id: 'petrified', name: 'Petrificado (Petrified)', icon: '🗿', desc: 'Transformado em pedra. Peso x10. Incapacitado. Resistência a todo dano; imune a veneno.' },
+  { id: 'poisoned', name: 'Envenenado (Poisoned)', icon: '🧪', desc: 'Desvantagem em todas as jogadas de ataque e testes de habilidade.' },
+  { id: 'prone', name: 'Caído (Prone)', icon: '🛌', desc: 'Só rasteja. Desvantagem em seus ataques. Ataques corpo-a-corpo têm vantagem contra ele; ataques à distância têm desvantagem.' },
+  { id: 'restrained', name: 'Contido (Restrained)', icon: '🕸️', desc: 'Deslocamento 0. Ataques contra têm vantagem; seus ataques têm desvantagem. Desvantagem em testes de resistência de DES.' },
+  { id: 'stunned', name: 'Atordoado (Stunned)', icon: '🌀', desc: 'Incapacitado, não se move, fala apenas balbucios. Falha em FOR e DES. Ataques contra têm vantagem.' },
+  { id: 'unconscious', name: 'Inconsciente (Unconscious)', icon: '💤', desc: 'Incapacitado, cai no chão. Falha em FOR e DES. Ataques contra têm vantagem; acertos a até 1,5m são críticos.' },
+  { id: 'exhaustion', name: 'Exaustão (Exhaustion)', icon: '⏳', desc: 'Níveis de 1 a 6 acumulativos (Nív 1: Desv em testes, Nív 2: Metade deslocamento, ..., Nív 6: Morte).' }
+];
+
+const APP_TABS_OMNI = [
+  { id: 'players', name: 'Fichas dos Personagens', icon: '👤', desc: 'Gerenciar heróis, perícias, atributos e magias' },
+  { id: 'combat', name: 'Combate & Iniciativa', icon: '⚔️', desc: 'Rastreador de rodadas, turnos, dano e condições' },
+  { id: 'monsters', name: 'Bestiário D&D 5E', icon: '🐉', desc: 'Catálogo oficial de criaturas, estatísticas e mini-ações' },
+  { id: 'spells', name: 'Grimório de Magias', icon: '✨', desc: 'Lista de magias D&D 5E por nível, escola e conjuração' },
+  { id: 'equipment', name: 'Arsenal & Equipamentos', icon: '🛡️', desc: 'Armas, armaduras, ferramentas e itens mágicos' },
+  { id: 'vtt', name: 'Grid Tático VTT', icon: '🗺️', desc: 'Tabuleiro virtual com tokens, névoa e alcance' },
+  { id: 'campaigns', name: 'Gestão de Campanhas', icon: '📜', desc: 'Diários de sessão, anotações de NPCs e ganchos' },
+  { id: 'screen', name: 'Modo Telão dos Jogadores', icon: '📺', desc: 'Visão limpa para projetor ou segunda tela' }
+];
+
+function toggleOmnisearchModal(forceOpen) {
+  const modal = document.getElementById('modal-omnisearch');
+  if (!modal) return;
+  const isCurrentlyOpen = modal.style.display !== 'none';
+  const shouldOpen = (forceOpen !== undefined) ? forceOpen : !isCurrentlyOpen;
+
+  if (shouldOpen) {
+    modal.style.display = 'flex';
+    const input = document.getElementById('omnisearch-input');
+    if (input) {
+      input.value = '';
+      setTimeout(() => {
+        if (typeof input.focus === 'function') input.focus();
+      }, 50);
+    }
+    omnisearchCurrentFilter = 'all';
+    updateOmnisearchCategoryPills();
+    handleOmnisearchInput('');
+  } else {
+    modal.style.display = 'none';
+    omnisearchSelectedIndex = -1;
+  }
+}
+
+function updateOmnisearchCategoryPills() {
+  const pills = document.querySelectorAll('.omnisearch-cat-btn');
+  pills.forEach(p => {
+    if (p.getAttribute('data-cat') === omnisearchCurrentFilter) {
+      p.classList.add('active');
+    } else {
+      p.classList.remove('active');
+    }
+  });
+}
+
+function setOmnisearchCategoryFilter(cat, btnEl) {
+  omnisearchCurrentFilter = cat || 'all';
+  updateOmnisearchCategoryPills();
+  const input = document.getElementById('omnisearch-input');
+  handleOmnisearchInput(input ? input.value : '');
+}
+
+function normalizeOmniText(str) {
+  if (!str) return '';
+  return String(str)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function handleOmnisearchInput(rawQuery) {
+  const query = normalizeOmniText(rawQuery).trim();
+  const cat = omnisearchCurrentFilter;
+  const results = [];
+
+  // 1. Monstros
+  if (cat === 'all' || cat === 'monster') {
+    const monsters = (typeof BESTIARY_DATA !== 'undefined' && Array.isArray(BESTIARY_DATA)) 
+      ? BESTIARY_DATA 
+      : ((typeof MONSTERS_DATA !== 'undefined' && Array.isArray(MONSTERS_DATA)) ? MONSTERS_DATA : []);
+    for (const m of monsters) {
+      if (!query || normalizeOmniText(m.name).includes(query) || normalizeOmniText(m.type || '').includes(query)) {
+        results.push({
+          type: 'monster',
+          id: m.id || m.name,
+          name: m.name,
+          categoryLabel: 'Monstro (ND ' + (m.cr || '0') + ')',
+          icon: '🐉',
+          desc: `${m.type || m.source || 'Criatura'} • CA ${m.ac || 10} • PV ${m.hp || 10} • Desloc: ${m.speed || '9m'}`,
+          actionLabel: 'Abrir Ficha',
+          run: () => {
+            if (typeof openMonsterQuickView === 'function') {
+              openMonsterQuickView(m.id);
+            } else if (typeof openMonsterDetail === 'function') {
+              openMonsterDetail(m.id);
+            }
+          }
+        });
+      }
+      if (results.length >= 60) break;
+    }
+  }
+
+  // 2. Magias
+  if ((cat === 'all' || cat === 'spell') && results.length < 60) {
+    const spells = (typeof SPELLS_DATA !== 'undefined' && Array.isArray(SPELLS_DATA)) ? SPELLS_DATA : [];
+    for (const s of spells) {
+      if (!query || normalizeOmniText(s.name).includes(query) || normalizeOmniText(s.school || '').includes(query)) {
+        results.push({
+          type: 'spell',
+          id: s.id,
+          name: s.name,
+          categoryLabel: (s.level === 0 ? 'Truque' : `Magia ${s.level}º Círc.`),
+          icon: '✨',
+          desc: `${s.school || 'Escola'} • Alcance: ${s.range || 'Toque'} • Tempo: ${s.castTime || '1 Ação'}`,
+          actionLabel: 'Ver Detalhes',
+          run: () => {
+            if (typeof openSpellQuickView === 'function') {
+              openSpellQuickView(s.id);
+            } else if (typeof openSpellDetail === 'function') {
+              openSpellDetail(s.id);
+            }
+          }
+        });
+      }
+      if (results.length >= 60) break;
+    }
+  }
+
+  // 3. Itens
+  if ((cat === 'all' || cat === 'item') && results.length < 60) {
+    const items = (typeof EQUIPMENT_DATA !== 'undefined' && Array.isArray(EQUIPMENT_DATA)) ? EQUIPMENT_DATA : [];
+    for (const it of items) {
+      if (!query || normalizeOmniText(it.name).includes(query) || normalizeOmniText(it.category || '').includes(query)) {
+        results.push({
+          type: 'item',
+          id: it.id,
+          name: it.name,
+          categoryLabel: it.category || 'Equipamento',
+          icon: '🛡️',
+          desc: `Preço: ${it.cost || '—'} • Peso: ${it.weight || '—'}`,
+          actionLabel: 'Ver Resumo',
+          run: () => {
+            if (typeof openItemQuickView === 'function') {
+              openItemQuickView(it.id);
+            }
+          }
+        });
+      }
+      if (results.length >= 60) break;
+    }
+  }
+
+  // 4. Fichas de Jogadores
+  if ((cat === 'all' || cat === 'player') && results.length < 60) {
+    const players = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS)) ? PLAYERS : [];
+    for (const p of players) {
+      if (!query || normalizeOmniText(p.name).includes(query) || normalizeOmniText(p.className || '').includes(query)) {
+        results.push({
+          type: 'player',
+          id: p.id,
+          name: p.name,
+          categoryLabel: `Herói Nív. ${p.level || 1}`,
+          icon: '👤',
+          desc: `${p.race || 'Humano'} ${p.className || 'Guerreiro'} • PV: ${p.currentHp || 0}/${p.maxHp || 0} • CA: ${p.armorClass || 10}`,
+          actionLabel: 'Abrir Ficha',
+          run: () => {
+            if (typeof switchTab === 'function') switchTab('players');
+            if (typeof selectPlayer === 'function') selectPlayer(p.id);
+          }
+        });
+      }
+    }
+  }
+
+  // 5. Condições D&D 5E
+  if ((cat === 'all' || cat === 'condition') && results.length < 60) {
+    for (const cond of DND_CONDITIONS_OMNI) {
+      if (!query || normalizeOmniText(cond.name).includes(query) || normalizeOmniText(cond.desc).includes(query)) {
+        results.push({
+          type: 'condition',
+          id: cond.id,
+          name: cond.name,
+          categoryLabel: 'Condição D&D 5E',
+          icon: cond.icon,
+          desc: cond.desc,
+          actionLabel: 'Consultar Regra',
+          run: () => {
+            alert(`⚡ ${cond.name}\n\n${cond.desc}`);
+          }
+        });
+      }
+    }
+  }
+
+  // 6. Abas e Telas
+  if ((cat === 'all' || cat === 'tab') && results.length < 60) {
+    for (const tab of APP_TABS_OMNI) {
+      if (!query || normalizeOmniText(tab.name).includes(query) || normalizeOmniText(tab.desc).includes(query)) {
+        results.push({
+          type: 'tab',
+          id: tab.id,
+          name: tab.name,
+          categoryLabel: 'Navegação',
+          icon: tab.icon,
+          desc: tab.desc,
+          actionLabel: 'Ir para Aba',
+          run: () => {
+            if (typeof switchTab === 'function') switchTab(tab.id);
+          }
+        });
+      }
+    }
+  }
+
+  omnisearchResults = results;
+  omnisearchSelectedIndex = results.length > 0 ? 0 : -1;
+  renderOmnisearchResults();
+}
+
+function renderOmnisearchResults() {
+  const container = document.getElementById('omnisearch-results-list');
+  const countBadge = document.getElementById('omnisearch-count-badge');
+  if (countBadge) {
+    countBadge.textContent = `${omnisearchResults.length} resultado(s)`;
+  }
+  if (!container) return;
+
+  if (omnisearchResults.length === 0) {
+    container.innerHTML = `
+      <div class="omnisearch-empty-state">
+        <div style="font-size: 24px; margin-bottom: 6px;">🔍</div>
+        Nenhum resultado encontrado para esta busca.<br>
+        <span style="font-size: 11px; opacity: 0.7;">Tente pesquisar por monstros, feitiços, armas, poções ou nomes de jogadores.</span>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = omnisearchResults.map((item, idx) => {
+    const isSelected = idx === omnisearchSelectedIndex;
+    return `
+      <div class="omnisearch-item ${isSelected ? 'selected' : ''}" data-index="${idx}" onclick="executeOmnisearchItem(${idx})">
+        <div class="omnisearch-item-icon">${item.icon}</div>
+        <div class="omnisearch-item-content">
+          <div class="omnisearch-item-title-row">
+            <span class="omnisearch-item-name">${item.name}</span>
+            <span class="omnisearch-item-tag">${item.categoryLabel}</span>
+          </div>
+          <div class="omnisearch-item-desc">${item.desc}</div>
+        </div>
+        <div class="omnisearch-item-action">${item.actionLabel} ↵</div>
+      </div>
+    `;
+  }).join('');
+
+  // Auto-scroll para manter item selecionado à vista
+  const selectedEl = (typeof container.querySelector === 'function')
+    ? container.querySelector('.omnisearch-item.selected')
+    : null;
+  if (selectedEl && typeof selectedEl.scrollIntoView === 'function') {
+    selectedEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+}
+
+function executeOmnisearchItem(index) {
+  if (index < 0 || index >= omnisearchResults.length) return;
+  const item = omnisearchResults[index];
+  toggleOmnisearchModal(false);
+  if (item && typeof item.run === 'function') {
+    item.run();
+  }
+}
+
+function handleOmnisearchKeydown(e) {
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (omnisearchResults.length > 0) {
+      omnisearchSelectedIndex = (omnisearchSelectedIndex + 1) % omnisearchResults.length;
+      renderOmnisearchResults();
+    }
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (omnisearchResults.length > 0) {
+      omnisearchSelectedIndex = (omnisearchSelectedIndex - 1 + omnisearchResults.length) % omnisearchResults.length;
+      renderOmnisearchResults();
+    }
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (omnisearchSelectedIndex >= 0 && omnisearchSelectedIndex < omnisearchResults.length) {
+      executeOmnisearchItem(omnisearchSelectedIndex);
+    }
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    toggleOmnisearchModal(false);
+  }
+}
+
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+      e.preventDefault();
+      toggleOmnisearchModal();
+    } else if (e.key === 'Escape') {
+      const modal = document.getElementById('modal-omnisearch');
+      if (modal && modal.style.display !== 'none') {
+        toggleOmnisearchModal(false);
+      }
+    }
+  });
+
+  window.toggleOmnisearchModal = toggleOmnisearchModal;
+  window.setOmnisearchCategoryFilter = setOmnisearchCategoryFilter;
+  window.handleOmnisearchInput = handleOmnisearchInput;
+  window.handleOmnisearchKeydown = handleOmnisearchKeydown;
+  window.executeOmnisearchItem = executeOmnisearchItem;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports.toggleOmnisearchModal = toggleOmnisearchModal;
+  module.exports.handleOmnisearchInput = handleOmnisearchInput;
+  module.exports.DND_CONDITIONS_OMNI = DND_CONDITIONS_OMNI;
+  module.exports.APP_TABS_OMNI = APP_TABS_OMNI;
+}
+
+

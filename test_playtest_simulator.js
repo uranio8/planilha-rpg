@@ -508,7 +508,8 @@ class PlayerAgent {
         const p = PLAYERS.find(x => x.id === '${this.playerId}');
         const enemy = COMBATANTS.find(c => c.id === '${enemyId}');
         if (enemy) {
-          const dmg = Math.floor(Math.random() * 8) + 3; // 1d8 + 3
+          const d8 = Math.floor(Math.random() * 8) + 1;
+          const dmg = d8 + 3; // 1d8 + 3 (mínimo 4, máximo 11)
           enemy.hp = Math.max(0, enemy.hp - dmg);
           if (typeof renderCombat === 'function') renderCombat();
           return { action: 'attack', weapon: 'Espada Longa', damage: dmg, enemyRemainingHp: enemy.hp };
