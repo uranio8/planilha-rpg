@@ -42031,14 +42031,22 @@ function toggleCombatantAction(combatantId, actionType) {
   c.turnActions[actionType] = !c.turnActions[actionType];
   renderCombat();
   saveToLocalStorage();
+  return c.turnActions[actionType];
 }
 
 function renderCombatantMiniActions(c) {
   if (!c || c.type === 'player') return '';
-  const rawActions = c.actions || '';
+  let rawActions = c.actions || c.monsterActions || '';
   if (!rawActions) return '';
 
-  const chunks = rawActions.split(/(?:\r?\n)+|[•]\s+/).map(s => s.trim()).filter(Boolean);
+  let chunks = [];
+  if (typeof rawActions === 'string') {
+    chunks = rawActions.split(/(?:\r?\n)+|[•]\s+/).map(s => s.trim()).filter(Boolean);
+  } else if (Array.isArray(rawActions)) {
+    chunks = rawActions.map(a => typeof a === 'string' ? a : (a.name ? `${a.name}: ${a.desc || ''}` : '')).filter(Boolean);
+  } else {
+    return '';
+  }
   const actionButtons = [];
 
   for (const chunk of chunks) {
