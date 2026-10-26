@@ -943,6 +943,9 @@ function quickAdjustCombatantHp(id, delta) {
   const prev = c.hp;
   if (delta < 0) {
     c.hp = Math.max(0, c.hp + delta);
+    if (typeof triggerHapticFeedback === 'function') {
+      triggerHapticFeedback(c.hp === 0 ? [50, 70, 50] : [25]);
+    }
     addLog(`⚔️ <b>${c.name}</b> sofreu ${Math.abs(delta)} de dano rápido (${prev} ➔ ${c.hp} PV)`);
     if (typeof playFX === 'function') playFX('sword');
     if (typeof showToast === 'function') {
@@ -955,6 +958,9 @@ function quickAdjustCombatantHp(id, delta) {
     }
   } else {
     c.hp = Math.min(c.maxHp, c.hp + delta);
+    if (typeof triggerHapticFeedback === 'function') {
+      triggerHapticFeedback([15, 30]);
+    }
     addLog(`💚 <b>${c.name}</b> recuperou ${delta} PV rápidos (${prev} ➔ ${c.hp} PV)`);
     if (typeof playFX === 'function') playFX('heal');
     if (typeof showToast === 'function') {

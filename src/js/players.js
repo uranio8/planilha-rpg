@@ -2509,6 +2509,173 @@ function renderPlayers() {
       </div>
     `;
   }
+
+  // ISSUE-138: Atualização reativa do Thumb HUD Vital Mobile
+  if (typeof updateMobileVitalThumbHud === 'function') {
+    const activeHero = (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId ? PLAYERS.find(p => p.id === activePortalPlayerId) : null) || filtered[0] || PLAYERS[0];
+    updateMobileVitalThumbHud(activeHero);
+  }
+}
+
+// =========================================================================
+// 🖐️ ISSUE-138: EXPERIÊNCIA MOBILE NEXT-GEN (THUMB HUD & HAPTICS)
+// =========================================================================
+
+function triggerHapticFeedback(pattern = [15]) {
+  if (typeof window !== 'undefined' && 'navigator' in window && typeof navigator.vibrate === 'function') {
+    try {
+      navigator.vibrate(pattern);
+    } catch (e) {}
+  }
+}
+
+function updateMobileVitalThumbHud(player) {
+  if (typeof document === 'undefined') return;
+  const hud = document.getElementById('mobile-vital-thumb-hud');
+  if (!hud) return;
+
+  const activeHero = player || (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId ? PLAYERS.find(p => p.id === activePortalPlayerId) : null) || PLAYERS[0];
+  if (!activeHero) return;
+
+  // 1. Atualização do Pill de PV
+  const hpValEl = document.getElementById('thumb-hud-hp-val');
+  const hpIconEl = document.getElementById('thumb-hud-hp-icon');
+  const hpPillEl = document.getElementById('thumb-hud-hp');
+
+  const curHp = activeHero.hp !== undefined ? activeHero.hp : (activeHero.currentHp || 0);
+  const maxHp = activeHero.maxHp || 1;
+  const tempHp = activeHero.tempHp || 0;
+  const hpPct = curHp / maxHp;
+
+  if (hpValEl) {
+    hpValEl.innerText = `${curHp}/${maxHp} PV${tempHp > 0 ? ` (+${tempHp})` : ''}`;
+  }
+
+  if (hpPillEl) {
+    hpPillEl.classList.remove('hp-warning', 'hp-danger');
+    if (hpPct <= 0.25 || curHp === 0) {
+      hpPillEl.classList.add('hp-danger');
+      if (hpIconEl) hpIconEl.innerText = '🩸';
+    } else if (hpPct <= 0.5) {
+      hpPillEl.classList.add('hp-warning');
+      if (hpIconEl) hpIconEl.innerText = '💛';
+    } else {
+      if (hpIconEl) hpIconEl.innerText = '💚';
+    }
+  }
+
+  // 2. Atualização de Concentração Ativa
+  const concChip = document.getElementById('thumb-hud-concentration');
+  const concNameEl = document.getElementById('thumb-hud-conc-name');
+  if (concChip && concNameEl) {
+    if (activeHero.concentrationSpell) {
+      concChip.classList.add('active');
+      concNameEl.innerText = activeHero.concentrationSpell;
+    } else {
+      concChip.classList.remove('active');
+    }
+  }
+
+  // 3. Rótulo do botão de Foco em Combate
+  const focusLabelEl = document.getElementById('label-combat-focus');
+  if (focusLabelEl) {
+    const isFocus = typeof document !== 'undefined' && document.body.classList.contains('combat-focus-mode');
+    focusLabelEl.innerText = isFocus ? '📜 Completa' : '⚔️ Foco';
+  }
+}
+
+function promptPlayerMobileHp() {
+  triggerHapticFeedback([20]);
+  const activeHero = (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId ? PLAYERS.find(p => p.id === activePortalPlayerId) : null) || PLAYERS[0];
+  if (!activeHero) return;
+
+  // Se houver modal tátil de combate ou de vida, abre com valores táteis
+  if (typeof openCombatDamageHealModal === 'function' && typeof state !== 'undefined' && Array.isArray(state.combatants)) {
+    const comb = state.combatants.find(c => c.playerId === activeHero.id || c.name === activeHero.name);
+    if (comb) {
+      openCombatDamageHealModal(comb.id);
+      return;
+    }
+  }
+
+  // Fallback rápido usando modal interativo com haptics
+  const deltaStr = prompt(`Vida de ${activeHero.name} (${activeHero.hp}/${activeHero.maxHp} PV)\nDigite dano (-X) ou cura (+X):`, '-5');
+  if (deltaStr === null) return;
+  const val = parseInt(deltaStr, 10);
+  if (!isNaN(val)) {
+    if (val < 0) {
+      triggerHapticFeedback([25]);
+      activeHero.hp = Math.max(0, (activeHero.hp || 0) + val);
+    } else {
+      triggerHapticFeedback([15, 30]);
+      activeHero.hp = Math.min(activeHero.maxHp || 999, (activeHero.hp || 0) + val);
+    }
+    activeHero.currentHp = activeHero.hp;
+    activeHero.updatedAt = Date.now();
+    saveToLocalStorage();
+    renderPlayers();
+    if (typeof executePlayerCloudSave === 'function') executePlayerCloudSave();
+    if (typeof showToast === 'function') showToast(`❤️ Vida atualizada para ${activeHero.hp}/${activeHero.maxHp} PV!`, 'success');
+  }
+}
+
+function breakPlayerConcentration() {
+  triggerHapticFeedback([30]);
+  const activeHero = (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId ? PLAYERS.find(p => p.id === activePortalPlayerId) : null) || PLAYERS[0];
+  if (!activeHero || !activeHero.concentrationSpell) return;
+
+  const spellName = activeHero.concentrationSpell;
+  activeHero.concentrationSpell = null;
+  activeHero.updatedAt = Date.now();
+  saveToLocalStorage();
+  renderPlayers();
+  if (typeof executePlayerCloudSave === 'function') executePlayerCloudSave();
+  if (typeof showToast === 'function') showToast(`✨ Concentração em '${spellName}' encerrada.`, 'info');
+}
+
+function toggleCombatFocusMode() {
+  triggerHapticFeedback([20]);
+  if (typeof document === 'undefined' || !document.body || !document.body.classList) return;
+  
+  let isFocus = false;
+  if (typeof document.body.classList.toggle === 'function') {
+    isFocus = document.body.classList.toggle('combat-focus-mode');
+  } else if (typeof document.body.classList.contains === 'function' && document.body.classList.contains('combat-focus-mode')) {
+    if (typeof document.body.classList.remove === 'function') document.body.classList.remove('combat-focus-mode');
+    isFocus = false;
+  } else {
+    if (typeof document.body.classList.add === 'function') document.body.classList.add('combat-focus-mode');
+    isFocus = true;
+  }
+
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('dnd_combat_focus_mode', isFocus ? 'true' : 'false');
+    }
+  } catch (e) {}
+
+  updateMobileVitalThumbHud();
+  if (typeof showToast === 'function') {
+    showToast(isFocus ? '⚔️ Modo Foco em Combate ativado!' : '📜 Ficha Completa restaurada.', 'info');
+  }
+}
+
+function rollDirectD20FromHud() {
+  const d20 = Math.floor(Math.random() * 20) + 1;
+  if (d20 === 20) {
+    triggerHapticFeedback([40, 60, 40]);
+    if (typeof showToast === 'function') showToast(`🎲 D20 NATURAL 20! ACERTO CRÍTICO! 🔥`, 'success');
+  } else if (d20 === 1) {
+    triggerHapticFeedback([60]);
+    if (typeof showToast === 'function') showToast(`🎲 D20 Natural 1... Falha Crítica! 💀`, 'error');
+  } else {
+    triggerHapticFeedback([15]);
+    if (typeof showToast === 'function') showToast(`🎲 Rolagem d20: [ ${d20} ]`, 'info');
+  }
+
+  if (typeof addCombatLog === 'function') {
+    addCombatLog(`🎲 Rolagem Rápida no Mobile: d20 ➔ **${d20}**`);
+  }
 }
 
 function switchPlayerCardTab(id, tabName) {
@@ -5927,6 +6094,7 @@ function closeSpellQuickSummaryModal() {
 
 function openSpellQuickView(spellName, playerId = null, event = null) {
   if (event) event.stopPropagation();
+  if (typeof triggerHapticFeedback === 'function') triggerHapticFeedback([15]);
   const modal = document.getElementById('modal-spell-quick-view');
   if (!modal) {
     if (typeof openSpellQuickSummaryModal === 'function') {
@@ -5996,6 +6164,7 @@ function closeSpellQuickView() {
 // ISSUE-134: Resumo Rápido de Itens (O que o item faz)
 function openItemQuickView(playerId, itemIndex, event = null) {
   if (event) event.stopPropagation();
+  if (typeof triggerHapticFeedback === 'function') triggerHapticFeedback([15]);
   const modal = document.getElementById('modal-item-quick-view');
   if (!modal) return;
 
@@ -12667,6 +12836,14 @@ if (typeof window !== 'undefined') {
 
   // ISSUE-136: Espaços de Magia Universal
   window.ensurePlayerSpellSlots = ensurePlayerSpellSlots;
+
+  // ISSUE-138: Experiência Mobile Next-Gen (Thumb HUD & Haptics)
+  window.triggerHapticFeedback = triggerHapticFeedback;
+  window.updateMobileVitalThumbHud = updateMobileVitalThumbHud;
+  window.promptPlayerMobileHp = promptPlayerMobileHp;
+  window.breakPlayerConcentration = breakPlayerConcentration;
+  window.toggleCombatFocusMode = toggleCombatFocusMode;
+  window.rollDirectD20FromHud = rollDirectD20FromHud;
 }
 
 

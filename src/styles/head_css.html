@@ -9378,6 +9378,204 @@
     }
 
     /* ===================================================
+       🖐️ ISSUE-138: HUD VITAL FIXO NO RODAPÉ (THUMB HUD)
+       =================================================== */
+    .mobile-vital-thumb-hud {
+      display: none;
+      position: fixed;
+      bottom: 56px;
+      left: 0;
+      right: 0;
+      height: 46px;
+      z-index: 9999;
+      background: rgba(10, 15, 30, 0.96);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.6);
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      gap: 8px;
+    }
+    body.mode-player-portal .mobile-vital-thumb-hud {
+      display: flex;
+    }
+    @media (max-width: 900px) {
+      body.mode-player-portal {
+        padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px)) !important;
+      }
+    }
+
+    .thumb-hud-hp-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #34d399;
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      touch-action: manipulation;
+      min-height: 34px;
+    }
+    .thumb-hud-hp-pill.hp-warning {
+      background: rgba(234, 179, 8, 0.18);
+      border-color: rgba(234, 179, 8, 0.4);
+      color: #facc15;
+    }
+    .thumb-hud-hp-pill.hp-danger {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.45);
+      color: #f87171;
+      animation: pulseDanger 1.8s infinite ease-in-out;
+    }
+    @keyframes pulseDanger {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .thumb-hud-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .thumb-hud-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 34px;
+      padding: 0 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.05);
+      color: #f1f5f9;
+      touch-action: manipulation;
+      transition: all 0.15s ease;
+    }
+    .thumb-hud-btn:active {
+      transform: scale(0.96);
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .thumb-hud-btn-d20 {
+      background: linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(217, 119, 6, 0.25));
+      border-color: rgba(234, 179, 8, 0.4);
+      color: #fef08a;
+    }
+
+    .thumb-hud-btn-focus {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: rgba(59, 130, 246, 0.35);
+      color: #93c5fd;
+    }
+    body.combat-focus-mode .thumb-hud-btn-focus {
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      border-color: #ef4444;
+      color: #fff;
+    }
+
+    .thumb-hud-concentration-chip {
+      display: none;
+      align-items: center;
+      gap: 4px;
+      background: rgba(168, 85, 247, 0.2);
+      border: 1px solid rgba(168, 85, 247, 0.45);
+      color: #d8b4fe;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+      max-width: 130px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .thumb-hud-concentration-chip.active {
+      display: inline-flex;
+    }
+
+    /* ===================================================
+       📑 ISSUE-138: BOTTOM SHEETS DESLIZANTES NO MOBILE
+       =================================================== */
+    .spell-quick-view-box {
+      background: var(--bg-card, #1e293b);
+      border: 1px solid var(--border-color, rgba(255,255,255,0.12));
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 540px;
+      width: 92%;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+      color: var(--text-main, #f8fafc);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .sheet-drag-handle {
+      display: none;
+      width: 44px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.28);
+      border-radius: 4px;
+      margin: 0 auto 12px auto;
+    }
+
+    @media (max-width: 768px) {
+      .modal-overlay:has(.spell-quick-view-box) {
+        align-items: flex-end !important;
+        padding: 0 !important;
+      }
+      .modal-overlay .spell-quick-view-box,
+      .bottom-sheet-active .spell-quick-view-box {
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 20px 20px 0 0 !important;
+        padding: 16px 18px calc(24px + env(safe-area-inset-bottom, 0px)) 18px !important;
+        max-height: 85vh !important;
+        overflow-y: auto !important;
+        box-shadow: 0 -10px 30px rgba(0,0,0,0.8) !important;
+        animation: slideUpBottomSheet 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+      }
+      .sheet-drag-handle {
+        display: block;
+      }
+    }
+
+    @keyframes slideUpBottomSheet {
+      from {
+        transform: translateY(100%);
+        opacity: 0.5;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    /* ===================================================
+       ⚔️ ISSUE-138: MODO FOCO EM COMBATE (COMBAT FOCUS)
+       =================================================== */
+    body.combat-focus-mode .roll20-col-side,
+    body.combat-focus-mode .roll20-col-skills,
+    body.combat-focus-mode .player-card-bio,
+    body.combat-focus-mode .player-notes-section,
+    body.combat-focus-mode .roll20-weight-status-bar {
+      display: none !important;
+    }
+    body.combat-focus-mode .roll20-col-main {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+
+
+    /* ===================================================
        💎 ESTILOS: GEMAS TÁTEIS DE ESPAÇOS DE MAGIA
        =================================================== */
     .spell-slot-gems {

@@ -9381,6 +9381,204 @@
     }
 
     /* ===================================================
+       🖐️ ISSUE-138: HUD VITAL FIXO NO RODAPÉ (THUMB HUD)
+       =================================================== */
+    .mobile-vital-thumb-hud {
+      display: none;
+      position: fixed;
+      bottom: 56px;
+      left: 0;
+      right: 0;
+      height: 46px;
+      z-index: 9999;
+      background: rgba(10, 15, 30, 0.96);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.6);
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      gap: 8px;
+    }
+    body.mode-player-portal .mobile-vital-thumb-hud {
+      display: flex;
+    }
+    @media (max-width: 900px) {
+      body.mode-player-portal {
+        padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px)) !important;
+      }
+    }
+
+    .thumb-hud-hp-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #34d399;
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      touch-action: manipulation;
+      min-height: 34px;
+    }
+    .thumb-hud-hp-pill.hp-warning {
+      background: rgba(234, 179, 8, 0.18);
+      border-color: rgba(234, 179, 8, 0.4);
+      color: #facc15;
+    }
+    .thumb-hud-hp-pill.hp-danger {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.45);
+      color: #f87171;
+      animation: pulseDanger 1.8s infinite ease-in-out;
+    }
+    @keyframes pulseDanger {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .thumb-hud-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .thumb-hud-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 34px;
+      padding: 0 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.05);
+      color: #f1f5f9;
+      touch-action: manipulation;
+      transition: all 0.15s ease;
+    }
+    .thumb-hud-btn:active {
+      transform: scale(0.96);
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .thumb-hud-btn-d20 {
+      background: linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(217, 119, 6, 0.25));
+      border-color: rgba(234, 179, 8, 0.4);
+      color: #fef08a;
+    }
+
+    .thumb-hud-btn-focus {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: rgba(59, 130, 246, 0.35);
+      color: #93c5fd;
+    }
+    body.combat-focus-mode .thumb-hud-btn-focus {
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      border-color: #ef4444;
+      color: #fff;
+    }
+
+    .thumb-hud-concentration-chip {
+      display: none;
+      align-items: center;
+      gap: 4px;
+      background: rgba(168, 85, 247, 0.2);
+      border: 1px solid rgba(168, 85, 247, 0.45);
+      color: #d8b4fe;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+      max-width: 130px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .thumb-hud-concentration-chip.active {
+      display: inline-flex;
+    }
+
+    /* ===================================================
+       📑 ISSUE-138: BOTTOM SHEETS DESLIZANTES NO MOBILE
+       =================================================== */
+    .spell-quick-view-box {
+      background: var(--bg-card, #1e293b);
+      border: 1px solid var(--border-color, rgba(255,255,255,0.12));
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 540px;
+      width: 92%;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+      color: var(--text-main, #f8fafc);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .sheet-drag-handle {
+      display: none;
+      width: 44px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.28);
+      border-radius: 4px;
+      margin: 0 auto 12px auto;
+    }
+
+    @media (max-width: 768px) {
+      .modal-overlay:has(.spell-quick-view-box) {
+        align-items: flex-end !important;
+        padding: 0 !important;
+      }
+      .modal-overlay .spell-quick-view-box,
+      .bottom-sheet-active .spell-quick-view-box {
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 20px 20px 0 0 !important;
+        padding: 16px 18px calc(24px + env(safe-area-inset-bottom, 0px)) 18px !important;
+        max-height: 85vh !important;
+        overflow-y: auto !important;
+        box-shadow: 0 -10px 30px rgba(0,0,0,0.8) !important;
+        animation: slideUpBottomSheet 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+      }
+      .sheet-drag-handle {
+        display: block;
+      }
+    }
+
+    @keyframes slideUpBottomSheet {
+      from {
+        transform: translateY(100%);
+        opacity: 0.5;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    /* ===================================================
+       ⚔️ ISSUE-138: MODO FOCO EM COMBATE (COMBAT FOCUS)
+       =================================================== */
+    body.combat-focus-mode .roll20-col-side,
+    body.combat-focus-mode .roll20-col-skills,
+    body.combat-focus-mode .player-card-bio,
+    body.combat-focus-mode .player-notes-section,
+    body.combat-focus-mode .roll20-weight-status-bar {
+      display: none !important;
+    }
+    body.combat-focus-mode .roll20-col-main {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+
+
+    /* ===================================================
        💎 ESTILOS: GEMAS TÁTEIS DE ESPAÇOS DE MAGIA
        =================================================== */
     .spell-slot-gems {
@@ -15908,6 +16106,31 @@
   </div>
 
   <!-- ===================================================
+       🖐️ ISSUE-138: HUD VITAL FIXO NO RODAPÉ (THUMB HUD)
+       =================================================== -->
+  <aside id="mobile-vital-thumb-hud" class="mobile-vital-thumb-hud" aria-label="Recursos Vitais no Rodapé">
+    <div id="thumb-hud-hp" class="thumb-hud-hp-pill" onclick="promptPlayerMobileHp()" title="Ajuste Rápido de Vida / PV">
+      <span id="thumb-hud-hp-icon">💚</span>
+      <span id="thumb-hud-hp-val">--/-- PV</span>
+    </div>
+
+    <div id="thumb-hud-concentration" class="thumb-hud-concentration-chip" onclick="breakPlayerConcentration()" title="Magia em Concentração (Toque para Encerrar)">
+      <span>✨</span>
+      <span id="thumb-hud-conc-name">Concentração</span>
+      <span style="opacity: 0.6; margin-left: 2px;">✕</span>
+    </div>
+
+    <div class="thumb-hud-actions">
+      <button type="button" id="btn-toggle-combat-focus" class="thumb-hud-btn thumb-hud-btn-focus" onclick="toggleCombatFocusMode()" title="Alternar Modo Foco em Combate">
+        <span id="label-combat-focus">⚔️ Foco</span>
+      </button>
+      <button type="button" class="thumb-hud-btn thumb-hud-btn-d20" onclick="rollDirectD20FromHud()" title="Rolar d20 Imediato com Vibração">
+        <span>🎲 d20</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===================================================
        📱 DOCK FLUTUANTE DE AÇÕES RÁPIDAS MOBILE
        =================================================== -->
   <nav id="player-mobile-dock" class="player-mobile-dock" aria-label="Ações Rápidas do Aluno">
@@ -15934,10 +16157,11 @@
   </nav>
 
   <!-- ===================================================
-       ✨ MODAL: RESUMO RÁPIDO DE MAGIA (TACTILE PREVIEW)
+       ✨ MODAL: RESUMO RÁPIDO DE MAGIA (TACTILE PREVIEW / BOTTOM SHEET)
        =================================================== -->
   <div id="modal-spell-quick-view" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeSpellQuickView()">
     <div class="spell-quick-view-box">
+      <div class="sheet-drag-handle"></div>
       <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 12px;">
         <div>
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -15963,10 +16187,11 @@
   </div>
 
   <!-- ===================================================
-       🎒 MODAL: RESUMO RÁPIDO DE ITEM (TACTILE PREVIEW)
+       🎒 MODAL: RESUMO RÁPIDO DE ITEM (TACTILE PREVIEW / BOTTOM SHEET)
        =================================================== -->
   <div id="modal-item-quick-view" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeItemQuickView()">
     <div class="spell-quick-view-box">
+      <div class="sheet-drag-handle"></div>
       <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 12px;">
         <div>
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -40440,6 +40665,9 @@ function quickAdjustCombatantHp(id, delta) {
   const prev = c.hp;
   if (delta < 0) {
     c.hp = Math.max(0, c.hp + delta);
+    if (typeof triggerHapticFeedback === 'function') {
+      triggerHapticFeedback(c.hp === 0 ? [50, 70, 50] : [25]);
+    }
     addLog(`⚔️ <b>${c.name}</b> sofreu ${Math.abs(delta)} de dano rápido (${prev} ➔ ${c.hp} PV)`);
     if (typeof playFX === 'function') playFX('sword');
     if (typeof showToast === 'function') {
@@ -40452,6 +40680,9 @@ function quickAdjustCombatantHp(id, delta) {
     }
   } else {
     c.hp = Math.min(c.maxHp, c.hp + delta);
+    if (typeof triggerHapticFeedback === 'function') {
+      triggerHapticFeedback([15, 30]);
+    }
     addLog(`💚 <b>${c.name}</b> recuperou ${delta} PV rápidos (${prev} ➔ ${c.hp} PV)`);
     if (typeof playFX === 'function') playFX('heal');
     if (typeof showToast === 'function') {
@@ -43420,6 +43651,173 @@ function renderPlayers() {
         </div>
       </div>
     `;
+  }
+
+  // ISSUE-138: Atualização reativa do Thumb HUD Vital Mobile
+  if (typeof updateMobileVitalThumbHud === 'function') {
+    const activeHero = (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId ? PLAYERS.find(p => p.id === activePortalPlayerId) : null) || filtered[0] || PLAYERS[0];
+    updateMobileVitalThumbHud(activeHero);
+  }
+}
+
+// =========================================================================
+// 🖐️ ISSUE-138: EXPERIÊNCIA MOBILE NEXT-GEN (THUMB HUD & HAPTICS)
+// =========================================================================
+
+function triggerHapticFeedback(pattern = [15]) {
+  if (typeof window !== 'undefined' && 'navigator' in window && typeof navigator.vibrate === 'function') {
+    try {
+      navigator.vibrate(pattern);
+    } catch (e) {}
+  }
+}
+
+function updateMobileVitalThumbHud(player) {
+  if (typeof document === 'undefined') return;
+  const hud = document.getElementById('mobile-vital-thumb-hud');
+  if (!hud) return;
+
+  const activeHero = player || (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId ? PLAYERS.find(p => p.id === activePortalPlayerId) : null) || PLAYERS[0];
+  if (!activeHero) return;
+
+  // 1. Atualização do Pill de PV
+  const hpValEl = document.getElementById('thumb-hud-hp-val');
+  const hpIconEl = document.getElementById('thumb-hud-hp-icon');
+  const hpPillEl = document.getElementById('thumb-hud-hp');
+
+  const curHp = activeHero.hp !== undefined ? activeHero.hp : (activeHero.currentHp || 0);
+  const maxHp = activeHero.maxHp || 1;
+  const tempHp = activeHero.tempHp || 0;
+  const hpPct = curHp / maxHp;
+
+  if (hpValEl) {
+    hpValEl.innerText = `${curHp}/${maxHp} PV${tempHp > 0 ? ` (+${tempHp})` : ''}`;
+  }
+
+  if (hpPillEl) {
+    hpPillEl.classList.remove('hp-warning', 'hp-danger');
+    if (hpPct <= 0.25 || curHp === 0) {
+      hpPillEl.classList.add('hp-danger');
+      if (hpIconEl) hpIconEl.innerText = '🩸';
+    } else if (hpPct <= 0.5) {
+      hpPillEl.classList.add('hp-warning');
+      if (hpIconEl) hpIconEl.innerText = '💛';
+    } else {
+      if (hpIconEl) hpIconEl.innerText = '💚';
+    }
+  }
+
+  // 2. Atualização de Concentração Ativa
+  const concChip = document.getElementById('thumb-hud-concentration');
+  const concNameEl = document.getElementById('thumb-hud-conc-name');
+  if (concChip && concNameEl) {
+    if (activeHero.concentrationSpell) {
+      concChip.classList.add('active');
+      concNameEl.innerText = activeHero.concentrationSpell;
+    } else {
+      concChip.classList.remove('active');
+    }
+  }
+
+  // 3. Rótulo do botão de Foco em Combate
+  const focusLabelEl = document.getElementById('label-combat-focus');
+  if (focusLabelEl) {
+    const isFocus = typeof document !== 'undefined' && document.body.classList.contains('combat-focus-mode');
+    focusLabelEl.innerText = isFocus ? '📜 Completa' : '⚔️ Foco';
+  }
+}
+
+function promptPlayerMobileHp() {
+  triggerHapticFeedback([20]);
+  const activeHero = (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId ? PLAYERS.find(p => p.id === activePortalPlayerId) : null) || PLAYERS[0];
+  if (!activeHero) return;
+
+  // Se houver modal tátil de combate ou de vida, abre com valores táteis
+  if (typeof openCombatDamageHealModal === 'function' && typeof state !== 'undefined' && Array.isArray(state.combatants)) {
+    const comb = state.combatants.find(c => c.playerId === activeHero.id || c.name === activeHero.name);
+    if (comb) {
+      openCombatDamageHealModal(comb.id);
+      return;
+    }
+  }
+
+  // Fallback rápido usando modal interativo com haptics
+  const deltaStr = prompt(`Vida de ${activeHero.name} (${activeHero.hp}/${activeHero.maxHp} PV)\nDigite dano (-X) ou cura (+X):`, '-5');
+  if (deltaStr === null) return;
+  const val = parseInt(deltaStr, 10);
+  if (!isNaN(val)) {
+    if (val < 0) {
+      triggerHapticFeedback([25]);
+      activeHero.hp = Math.max(0, (activeHero.hp || 0) + val);
+    } else {
+      triggerHapticFeedback([15, 30]);
+      activeHero.hp = Math.min(activeHero.maxHp || 999, (activeHero.hp || 0) + val);
+    }
+    activeHero.currentHp = activeHero.hp;
+    activeHero.updatedAt = Date.now();
+    saveToLocalStorage();
+    renderPlayers();
+    if (typeof executePlayerCloudSave === 'function') executePlayerCloudSave();
+    if (typeof showToast === 'function') showToast(`❤️ Vida atualizada para ${activeHero.hp}/${activeHero.maxHp} PV!`, 'success');
+  }
+}
+
+function breakPlayerConcentration() {
+  triggerHapticFeedback([30]);
+  const activeHero = (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId ? PLAYERS.find(p => p.id === activePortalPlayerId) : null) || PLAYERS[0];
+  if (!activeHero || !activeHero.concentrationSpell) return;
+
+  const spellName = activeHero.concentrationSpell;
+  activeHero.concentrationSpell = null;
+  activeHero.updatedAt = Date.now();
+  saveToLocalStorage();
+  renderPlayers();
+  if (typeof executePlayerCloudSave === 'function') executePlayerCloudSave();
+  if (typeof showToast === 'function') showToast(`✨ Concentração em '${spellName}' encerrada.`, 'info');
+}
+
+function toggleCombatFocusMode() {
+  triggerHapticFeedback([20]);
+  if (typeof document === 'undefined' || !document.body || !document.body.classList) return;
+  
+  let isFocus = false;
+  if (typeof document.body.classList.toggle === 'function') {
+    isFocus = document.body.classList.toggle('combat-focus-mode');
+  } else if (typeof document.body.classList.contains === 'function' && document.body.classList.contains('combat-focus-mode')) {
+    if (typeof document.body.classList.remove === 'function') document.body.classList.remove('combat-focus-mode');
+    isFocus = false;
+  } else {
+    if (typeof document.body.classList.add === 'function') document.body.classList.add('combat-focus-mode');
+    isFocus = true;
+  }
+
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('dnd_combat_focus_mode', isFocus ? 'true' : 'false');
+    }
+  } catch (e) {}
+
+  updateMobileVitalThumbHud();
+  if (typeof showToast === 'function') {
+    showToast(isFocus ? '⚔️ Modo Foco em Combate ativado!' : '📜 Ficha Completa restaurada.', 'info');
+  }
+}
+
+function rollDirectD20FromHud() {
+  const d20 = Math.floor(Math.random() * 20) + 1;
+  if (d20 === 20) {
+    triggerHapticFeedback([40, 60, 40]);
+    if (typeof showToast === 'function') showToast(`🎲 D20 NATURAL 20! ACERTO CRÍTICO! 🔥`, 'success');
+  } else if (d20 === 1) {
+    triggerHapticFeedback([60]);
+    if (typeof showToast === 'function') showToast(`🎲 D20 Natural 1... Falha Crítica! 💀`, 'error');
+  } else {
+    triggerHapticFeedback([15]);
+    if (typeof showToast === 'function') showToast(`🎲 Rolagem d20: [ ${d20} ]`, 'info');
+  }
+
+  if (typeof addCombatLog === 'function') {
+    addCombatLog(`🎲 Rolagem Rápida no Mobile: d20 ➔ **${d20}**`);
   }
 }
 
@@ -46839,6 +47237,7 @@ function closeSpellQuickSummaryModal() {
 
 function openSpellQuickView(spellName, playerId = null, event = null) {
   if (event) event.stopPropagation();
+  if (typeof triggerHapticFeedback === 'function') triggerHapticFeedback([15]);
   const modal = document.getElementById('modal-spell-quick-view');
   if (!modal) {
     if (typeof openSpellQuickSummaryModal === 'function') {
@@ -46908,6 +47307,7 @@ function closeSpellQuickView() {
 // ISSUE-134: Resumo Rápido de Itens (O que o item faz)
 function openItemQuickView(playerId, itemIndex, event = null) {
   if (event) event.stopPropagation();
+  if (typeof triggerHapticFeedback === 'function') triggerHapticFeedback([15]);
   const modal = document.getElementById('modal-item-quick-view');
   if (!modal) return;
 
@@ -53579,6 +53979,14 @@ if (typeof window !== 'undefined') {
 
   // ISSUE-136: Espaços de Magia Universal
   window.ensurePlayerSpellSlots = ensurePlayerSpellSlots;
+
+  // ISSUE-138: Experiência Mobile Next-Gen (Thumb HUD & Haptics)
+  window.triggerHapticFeedback = triggerHapticFeedback;
+  window.updateMobileVitalThumbHud = updateMobileVitalThumbHud;
+  window.promptPlayerMobileHp = promptPlayerMobileHp;
+  window.breakPlayerConcentration = breakPlayerConcentration;
+  window.toggleCombatFocusMode = toggleCombatFocusMode;
+  window.rollDirectD20FromHud = rollDirectD20FromHud;
 }
 
 

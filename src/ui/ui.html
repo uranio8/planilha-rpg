@@ -4347,6 +4347,31 @@
   </div>
 
   <!-- ===================================================
+       🖐️ ISSUE-138: HUD VITAL FIXO NO RODAPÉ (THUMB HUD)
+       =================================================== -->
+  <aside id="mobile-vital-thumb-hud" class="mobile-vital-thumb-hud" aria-label="Recursos Vitais no Rodapé">
+    <div id="thumb-hud-hp" class="thumb-hud-hp-pill" onclick="promptPlayerMobileHp()" title="Ajuste Rápido de Vida / PV">
+      <span id="thumb-hud-hp-icon">💚</span>
+      <span id="thumb-hud-hp-val">--/-- PV</span>
+    </div>
+
+    <div id="thumb-hud-concentration" class="thumb-hud-concentration-chip" onclick="breakPlayerConcentration()" title="Magia em Concentração (Toque para Encerrar)">
+      <span>✨</span>
+      <span id="thumb-hud-conc-name">Concentração</span>
+      <span style="opacity: 0.6; margin-left: 2px;">✕</span>
+    </div>
+
+    <div class="thumb-hud-actions">
+      <button type="button" id="btn-toggle-combat-focus" class="thumb-hud-btn thumb-hud-btn-focus" onclick="toggleCombatFocusMode()" title="Alternar Modo Foco em Combate">
+        <span id="label-combat-focus">⚔️ Foco</span>
+      </button>
+      <button type="button" class="thumb-hud-btn thumb-hud-btn-d20" onclick="rollDirectD20FromHud()" title="Rolar d20 Imediato com Vibração">
+        <span>🎲 d20</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===================================================
        📱 DOCK FLUTUANTE DE AÇÕES RÁPIDAS MOBILE
        =================================================== -->
   <nav id="player-mobile-dock" class="player-mobile-dock" aria-label="Ações Rápidas do Aluno">
@@ -4373,10 +4398,11 @@
   </nav>
 
   <!-- ===================================================
-       ✨ MODAL: RESUMO RÁPIDO DE MAGIA (TACTILE PREVIEW)
+       ✨ MODAL: RESUMO RÁPIDO DE MAGIA (TACTILE PREVIEW / BOTTOM SHEET)
        =================================================== -->
   <div id="modal-spell-quick-view" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeSpellQuickView()">
     <div class="spell-quick-view-box">
+      <div class="sheet-drag-handle"></div>
       <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 12px;">
         <div>
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -4402,10 +4428,11 @@
   </div>
 
   <!-- ===================================================
-       🎒 MODAL: RESUMO RÁPIDO DE ITEM (TACTILE PREVIEW)
+       🎒 MODAL: RESUMO RÁPIDO DE ITEM (TACTILE PREVIEW / BOTTOM SHEET)
        =================================================== -->
   <div id="modal-item-quick-view" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeItemQuickView()">
     <div class="spell-quick-view-box">
+      <div class="sheet-drag-handle"></div>
       <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 12px;">
         <div>
           <div style="display: flex; align-items: center; gap: 8px;">

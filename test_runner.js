@@ -8132,6 +8132,160 @@ vm.runInContext(`
 const badgeClassEmpty = vm.runInContext("document.getElementById('portal-sync-status-badge')?.className || ''", sandbox);
 assert(badgeClassEmpty.includes('sync-online'), 'Badge retorna para .sync-online após a fila esvaziar');
 
+// =========================================================================
+// 🖐️ 106. TESTES DE EXPERIÊNCIA MOBILE NEXT-GEN, THUMB HUD E HAPTICS (ISSUE-138)
+// =========================================================================
+console.log('\n🖐️ 106. Testes de Experiência Mobile Next-Gen, Thumb HUD e Haptics (ISSUE-138):');
+
+// 1. Verificação de Elementos e CSS no HTML Compilado
+const hasThumbHud = builtHtmlContent.includes('id="mobile-vital-thumb-hud"');
+const hasThumbHudCss = builtHtmlContent.includes('.mobile-vital-thumb-hud');
+const hasDragHandleCss = builtHtmlContent.includes('.sheet-drag-handle');
+const hasCombatFocusCss = builtHtmlContent.includes('.combat-focus-mode');
+const hasHpPillCss = builtHtmlContent.includes('.thumb-hud-hp-pill');
+
+assert(hasThumbHud, 'HTML compilado inclui o container #mobile-vital-thumb-hud');
+assert(hasThumbHudCss, 'HTML compilado inclui os estilos da classe .mobile-vital-thumb-hud');
+assert(hasDragHandleCss, 'HTML compilado inclui o indicador tátil .sheet-drag-handle para Bottom Sheets');
+assert(hasCombatFocusCss, 'HTML compilado inclui regras CSS do Modo Foco em Combate (.combat-focus-mode)');
+assert(hasHpPillCss, 'HTML compilado inclui estilos responsivos da barra tátil de PV (.thumb-hud-hp-pill)');
+
+// 2. Exportação de Funções
+assert(typeof vm.runInContext("triggerHapticFeedback", sandbox) === 'function', 'Função triggerHapticFeedback exportada');
+assert(typeof vm.runInContext("updateMobileVitalThumbHud", sandbox) === 'function', 'Função updateMobileVitalThumbHud exportada');
+assert(typeof vm.runInContext("promptPlayerMobileHp", sandbox) === 'function', 'Função promptPlayerMobileHp exportada');
+assert(typeof vm.runInContext("breakPlayerConcentration", sandbox) === 'function', 'Função breakPlayerConcentration exportada');
+assert(typeof vm.runInContext("toggleCombatFocusMode", sandbox) === 'function', 'Função toggleCombatFocusMode exportada');
+assert(typeof vm.runInContext("rollDirectD20FromHud", sandbox) === 'function', 'Função rollDirectD20FromHud exportada');
+
+// 3. Teste de Atualização Reativa do Thumb HUD (Vida e Status)
+vm.runInContext(`
+  // Cria elementos mock do DOM para o Thumb HUD
+  const mockHudEl = { id: 'mobile-vital-thumb-hud' };
+  const mockHpValEl = { innerText: '' };
+  const mockHpIconEl = { innerText: '' };
+  const mockHpPillEl = {
+    classes: new Set(),
+    classList: {
+      add: function(c) { mockHpPillEl.classes.add(c); },
+      remove: function(...args) { args.forEach(c => mockHpPillEl.classes.delete(c)); },
+      contains: function(c) { return mockHpPillEl.classes.has(c); }
+    }
+  };
+  const mockConcChip = {
+    classes: new Set(),
+    classList: {
+      add: function(c) { mockConcChip.classes.add(c); },
+      remove: function(...args) { args.forEach(c => mockConcChip.classes.delete(c)); },
+      contains: function(c) { return mockConcChip.classes.has(c); }
+    }
+  };
+  const mockConcNameEl = { innerText: '' };
+  const mockFocusLabel = { innerText: '' };
+
+  const prevGetEl = document.getElementById;
+  document.getElementById = function(id) {
+    if (id === 'mobile-vital-thumb-hud') return mockHudEl;
+    if (id === 'thumb-hud-hp-val') return mockHpValEl;
+    if (id === 'thumb-hud-hp-icon') return mockHpIconEl;
+    if (id === 'thumb-hud-hp') return mockHpPillEl;
+    if (id === 'thumb-hud-concentration') return mockConcChip;
+    if (id === 'thumb-hud-conc-name') return mockConcNameEl;
+    if (id === 'label-combat-focus') return mockFocusLabel;
+    return prevGetEl ? prevGetEl(id) : null;
+  };
+
+  const heroMobileTest = {
+    id: 'p_hero_thumb_test',
+    name: 'Alyn Sombraverde',
+    hp: 40,
+    maxHp: 40,
+    tempHp: 0,
+    concentrationSpell: null
+  };
+  PLAYERS.push(heroMobileTest);
+  activePortalPlayerId = heroMobileTest.id;
+
+  // Estado Saudável (100% PV)
+  updateMobileVitalThumbHud(heroMobileTest);
+`, sandbox);
+
+const hpHealthyText = vm.runInContext("mockHpValEl.innerText", sandbox);
+const isHpWarningBefore = vm.runInContext("mockHpPillEl.classList.contains('hp-warning')", sandbox);
+const isHpDangerBefore = vm.runInContext("mockHpPillEl.classList.contains('hp-danger')", sandbox);
+
+assert(hpHealthyText.includes('40/40 PV'), 'Thumb HUD exibe corretamente 40/40 PV');
+assert(!isHpWarningBefore && !isHpDangerBefore, 'Thumb HUD saudável não possui classes de perigo');
+
+// 4. Teste de Perigo Crítico e Concentração Ativa
+vm.runInContext(`
+  heroMobileTest.hp = 8; // 20% do PV (Danger)
+  heroMobileTest.concentrationSpell = 'Bênção (Bless)';
+  updateMobileVitalThumbHud(heroMobileTest);
+`, sandbox);
+
+const hpDangerText = vm.runInContext("mockHpValEl.innerText", sandbox);
+const isHpDangerNow = vm.runInContext("mockHpPillEl.classList.contains('hp-danger')", sandbox);
+const isConcActive = vm.runInContext("mockConcChip.classList.contains('active')", sandbox);
+const concSpellName = vm.runInContext("mockConcNameEl.innerText", sandbox);
+
+assert(hpDangerText.includes('8/40 PV'), 'Thumb HUD atualizado para 8/40 PV');
+assert(isHpDangerNow, 'Thumb HUD recebeu classe .hp-danger para PV <= 25%');
+assert(isConcActive, 'Chip de Concentração ativado no Thumb HUD');
+assert(concSpellName.includes('Bênção'), 'Nome da magia de concentração exibido no chip');
+
+// 5. Teste de Encerramento de Concentração com 1 Toque
+vm.runInContext(`
+  breakPlayerConcentration();
+`, sandbox);
+
+const concAfterBreak = vm.runInContext("heroMobileTest.concentrationSpell", sandbox);
+assert(concAfterBreak === null, 'breakPlayerConcentration() encerrou com sucesso a concentração do herói');
+
+// 6. Teste de Alternância do Modo Foco em Combate (Combat Focus Mode)
+vm.runInContext(`
+  const bodyClasses = new Set();
+  document.body = {
+    classList: {
+      add: function(c) { bodyClasses.add(c); },
+      remove: function(c) { bodyClasses.delete(c); },
+      toggle: function(c) {
+        if (bodyClasses.has(c)) { bodyClasses.delete(c); return false; }
+        else { bodyClasses.add(c); return true; }
+      },
+      contains: function(c) { return bodyClasses.has(c); }
+    }
+  };
+
+  // Alterna para Modo Foco
+  toggleCombatFocusMode();
+`, sandbox);
+
+const isFocusOn = vm.runInContext("document.body.classList.contains('combat-focus-mode')", sandbox);
+const storageFocusOn = vm.runInContext("localStorage.getItem('dnd_combat_focus_mode')", sandbox);
+assert(isFocusOn === true, 'document.body recebeu classe .combat-focus-mode');
+assert(storageFocusOn === 'true', 'Preferência de foco em combate persistida no localStorage como true');
+
+vm.runInContext(`
+  // Alterna de volta para Ficha Completa
+  toggleCombatFocusMode();
+`, sandbox);
+
+const isFocusOff = vm.runInContext("document.body.classList.contains('combat-focus-mode')", sandbox);
+const storageFocusOff = vm.runInContext("localStorage.getItem('dnd_combat_focus_mode')", sandbox);
+assert(isFocusOff === false, 'document.body removeu classe .combat-focus-mode');
+assert(storageFocusOff === 'false', 'Preferência de ficha completa persistida no localStorage como false');
+
+// 7. Teste de Execução Segura de Haptics
+let hapticSafe = false;
+try {
+  vm.runInContext("triggerHapticFeedback([15, 30])", sandbox);
+  hapticSafe = true;
+} catch (e) {
+  hapticSafe = false;
+}
+assert(hapticSafe, 'triggerHapticFeedback executado de forma segura e defensiva');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
