@@ -70,8 +70,8 @@ Após a implementação da suíte mobile anterior, uma inspeção minuciosa dos 
 - [x] **Task 4**: Compilar com `node builder.js`.
 - [x] **Task 5**: Adicionar a **Bateria 107** em `test_runner.js` e validar 100% dos testes verdes (`node test_runner.js`).
 - [x] **Task 6**: Registrar a ISSUE-139 em `issues/README.md`.
-- [ ] **Task 7**: Executar commits atômicos e push para `origin/main`.
-- [ ] **Task 8**: Apresentar resultado detalhado ao usuário.
+- [x] **Task 7**: Executar commits atômicos e push para `origin/main`.
+- [x] **Task 8**: Apresentar resultado detalhado ao usuário.
 
 ---
 
