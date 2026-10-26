@@ -8836,6 +8836,55 @@ assert(!hasKgKg, 'Renderização do inventário NÃO contém a repetição anôm
 assert(hasEquipBadge, 'Renderização do inventário utiliza o badge ergonômico .btn-item-equip-badge');
 assert(hasEquippedLabel, 'Item equipado exibe o badge "🛡️ Equipado"');
 
+// =========================================================================
+// 🤖 113. TESTES DO SIMULADOR DE MESA MULTI-AGENTE (MESTRE & JOGADORES)
+// =========================================================================
+console.log('\n🤖 113. Testes do Simulador de Mesa Multi-Agente (Mestre & Jogadores):');
+
+const { PlaytestSimulator } = require('./test_playtest_simulator.js');
+const sim113 = new PlaytestSimulator();
+
+// 1. Setup de Cenário
+const party = sim113.setupScenario('Caverna dos Goblins');
+assert(party.wizard && party.warrior, 'Simulador inicializou a party com Mago e Guerreiro');
+assert(party.wizard.persona === 'wizard', 'Persona do Mago configurada como wizard');
+assert(party.warrior.persona === 'warrior', 'Persona do Guerreiro configurada como warrior');
+
+// 2. Ações do DMAgent
+const spawnedMobs = sim113.dm.spawnMonsterEncounter('Goblin', 3);
+assert(spawnedMobs.length === 3, 'DMAgent invocou 3 monstros com sucesso no combate');
+
+const combatStart = sim113.dm.startCombat();
+assert(combatStart && combatStart.combatActive, 'DMAgent iniciou o combate com status ativo');
+
+const dmgResult = sim113.dm.applyDamage('hero_fighter_1', 5);
+assert(dmgResult && dmgResult.remainingHp === 23, 'DMAgent aplicou 5 de dano no Guerreiro (28 - 5 = 23 PV)');
+
+// 3. Ações do PlayerAgent (Mago - Gestão de Slots de Magia)
+const wizDataBefore = party.wizard.getData();
+const initialSlots = wizDataBefore.spellSlots[0].current;
+const castRes = party.wizard.castSpell('Mísseis Mágicos', 1, false);
+assert(castRes.success === true, 'PlayerAgent (Mago) conjurou Mísseis Mágicos com sucesso');
+assert(castRes.slotsRemaining === initialSlots - 1, 'Espaço de magia de 1º círculo foi consumido corretamente');
+
+// 4. Ações do PlayerAgent (Guerreiro - Ataque Tático)
+const targetGoblinId = spawnedMobs[0].id;
+const warTurn = party.warrior.takeTacticalTurn(targetGoblinId);
+assert(warTurn.action === 'attack', 'PlayerAgent (Guerreiro) executou ataque físico corpo-a-corpo');
+assert(warTurn.damage >= 4, 'Dano do Guerreiro gerado dentro dos limites da arma (1d8 + 3)');
+
+// 5. DMAgent - Recompensas e Baú do Grupo
+const rewRes = sim113.dm.distributeBatchRewards(400, 100);
+assert(rewRes.beneficiaries === 2, 'Recompensas distribuídas para os 2 heróis da mesa');
+assert(rewRes.shareGold === 50, '100 PO divididas igualmente resultaram em 50 PO para cada herói');
+
+const stashRes = sim113.dm.depositToPartyStash('Diamante Mágico', 1, 200);
+assert(stashRes.totalGold >= 320, 'Ouro adicionado com sucesso ao Baú Coletivo da Campanha');
+
+// 6. Simulação Completa e Auditoria de Layout
+const fullSession = sim113.runFullSession(3);
+assert(fullSession.allAuditPassed === true, 'Sessão completa de 3 rodadas aprovada com 100% de integridade na auditoria de layout');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {
