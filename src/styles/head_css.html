@@ -10063,8 +10063,21 @@
       }
     }
     @media (max-width: 500px) {
+      .roll20-sheet,
+      .player-card {
+        max-width: 100% !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+        padding: 10px 8px !important;
+        gap: 10px !important;
+      }
+      body.mode-player-portal .player-card,
+      .player-card.portal-view {
+        padding: 12px 8px !important;
+      }
       .roll20-abilities-bar {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
       }
       .roll20-ac-speed-box {
         grid-column: 1 / -1 !important;
@@ -10073,6 +10086,34 @@
         justify-content: space-around !important;
         align-items: center !important;
         padding: 10px 14px !important;
+      }
+      /* Previne estufamento de 428px no mobile: 1 carta de magia por linha (ISSUE-140) */
+      .player-spells-chips-grid {
+        grid-template-columns: 1fr !important;
+        width: 100% !important;
+        min-width: 0 !important;
+      }
+      /* HUD de Conjuração responsivo em 3 colunas fluidas */
+      .spellcasting-hud-bar {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 4px !important;
+        padding: 4px 6px !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+      }
+      .spell-stat-chip {
+        padding: 4px 2px !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
+      }
+      .spell-stat-label {
+        font-size: 8px !important;
+        white-space: nowrap !important;
+        text-overflow: ellipsis !important;
+      }
+      .spell-stat-val {
+        font-size: 11px !important;
       }
     }
 
@@ -10182,25 +10223,39 @@
       text-align: center;
     }
 
-    /* Layout Principal de 3 Colunas Roll20 (ISSUE-136: Mobile Reordered) */
+    /* Layout Principal de 3 Colunas Roll20 (ISSUE-136 / ISSUE-140: Mobile Reordered & Zero Overflow) */
     .roll20-columns-grid {
       display: grid;
       grid-template-columns: 240px 1fr 240px;
       gap: 12px;
       align-items: start;
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
     }
     @media (max-width: 1079px) {
       .roll20-columns-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr) !important;
+        width: 100% !important;
+        min-width: 0 !important;
       }
       .roll20-col-main {
         order: 1;
+        min-width: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
       }
       .roll20-col-side {
         order: 2;
+        min-width: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
       }
       .roll20-col-skills {
         order: 3;
+        min-width: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
       }
     }
 
@@ -10220,6 +10275,10 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
     }
     .roll20-panel-title {
       font-size: 11px;
@@ -10232,6 +10291,12 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
+    }
+    .roll20-panel-title .btn-micro {
+      flex-shrink: 0;
     }
 
     .roll20-skills-list {
@@ -10240,6 +10305,10 @@
       gap: 2px;
       max-height: 480px;
       overflow-y: auto;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
     }
     .roll20-skill-item {
       display: flex;
@@ -10251,6 +10320,9 @@
       font-size: 11.5px;
       cursor: pointer;
       transition: background 0.15s ease;
+      width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
     }
     .roll20-skill-item:hover {
       background: rgba(255,255,255,0.06);
@@ -10259,6 +10331,9 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      min-width: 0;
+      flex: 1;
+      overflow: hidden;
     }
     .roll20-prof-dot {
       width: 7px;
@@ -10266,6 +10341,7 @@
       border-radius: 50%;
       border: 1px solid #64748b;
       display: inline-block;
+      flex-shrink: 0;
     }
     .roll20-prof-dot.active {
       background: #ef4444;
@@ -10282,6 +10358,15 @@
       color: #64748b;
       font-weight: 700;
       width: 26px;
+      min-width: 26px;
+      flex-shrink: 0;
+    }
+    .roll20-skill-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+      color: #e2e8f0;
     }
     .roll20-skill-bonus {
       font-weight: 800;
@@ -10292,6 +10377,11 @@
       border-radius: 4px;
       min-width: 26px;
       text-align: center;
+      flex-shrink: 0;
+      margin-left: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
     .roll20-skill-bonus.is-prof {
       color: #fca5a5;

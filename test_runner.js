@@ -8321,6 +8321,38 @@ assert(bundle107.includes('grid-column: 1 / -1 !important;'), 'Bloco de CA e Des
 // 8. Navbar com rolagem suave horizontal em telas estreitas
 assert(bundle107.includes('overflow-x: auto !important;') && bundle107.includes('flex-wrap: nowrap !important;'), 'Barra de navegação suporta deslizamento horizontal sem desordenar ícones');
 
+// =========================================================================
+// 🛡️ 108. TESTES DE VISIBILIDADE DE MODIFICADORES E BLINDAGEM DE SWIPE (ISSUE-140)
+// =========================================================================
+console.log('\n📱 108. Testes de Visibilidade dos Modificadores, Contenção de Overflow e Blindagem de Swipe (ISSUE-140):');
+
+const bundle108 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+
+// 1. Modificador de perícia protegido contra compressão (flex-shrink: 0)
+assert(bundle108.includes('.roll20-skill-bonus') && bundle108.includes('flex-shrink: 0;'), '.roll20-skill-bonus configurado com flex-shrink: 0 garantindo visibilidade');
+
+// 2. Coluna de perícia com contenção de largura e ellipsis para nomes longos
+assert(bundle108.includes('.roll20-skill-name') && bundle108.includes('text-overflow: ellipsis;'), '.roll20-skill-name configurado com text-overflow: ellipsis');
+assert(bundle108.includes('.roll20-skill-left') && bundle108.includes('min-width: 0;'), '.roll20-skill-left configurado com min-width: 0');
+
+// 3. Grid de colunas mobile com minmax(0, 1fr) prevenindo estufamento horizontal
+assert(bundle108.includes('grid-template-columns: minmax(0, 1fr) !important;'), '.roll20-columns-grid no mobile utiliza minmax(0, 1fr) prevenindo overflow');
+
+// 4. Cartas de magias em 1 coluna no mobile (<= 500px) impedindo estufamento de 428px
+assert(bundle108.includes('.player-spells-chips-grid') && bundle108.includes('grid-template-columns: 1fr !important;'), '.player-spells-chips-grid ajustado para 1fr no mobile <= 500px');
+
+// 5. HUD de Conjuração fluido em 3 colunas responsivas no mobile
+assert(bundle108.includes('.spellcasting-hud-bar') && bundle108.includes('grid-template-columns: repeat(3, minmax(0, 1fr)) !important;'), '.spellcasting-hud-bar ajustado para repeat(3, minmax(0, 1fr)) no mobile');
+
+// 6. Contenção estrita de overflow-x no .roll20-sheet para telas <= 500px
+assert(bundle108.includes('overflow-x: hidden !important;') && bundle108.includes('.roll20-sheet,'), '.roll20-sheet blindada com overflow-x: hidden no mobile');
+
+// 7. Blindagem do Swipe Navigation contra toques dentro da ficha e no modo portal
+assert(bundle108.includes("target.closest('#tab-players')"), 'initSwipeNavigation ignora toques em #tab-players');
+assert(bundle108.includes("target.closest('.roll20-sheet')"), 'initSwipeNavigation ignora toques em .roll20-sheet');
+assert(bundle108.includes("target.closest('.roll20-skills-list')"), 'initSwipeNavigation ignora toques em .roll20-skills-list');
+assert(bundle108.includes('isPortalMode'), 'initSwipeNavigation ignora swipes no modo portal do jogador');
+
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

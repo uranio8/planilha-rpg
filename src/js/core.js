@@ -2418,12 +2418,13 @@ function initSwipeNavigation() {
       return;
     }
 
-    // Blindagem de segurança: NUNCA capturar swipes se estiver na aba Grid ou sobre elementos interativos do mapa/formulários/modais
+    // Blindagem de segurança: NUNCA capturar swipes se estiver na aba Grid ou sobre elementos da ficha/formulários/modais (ISSUE-140)
     const gridTab = document.getElementById('tab-grid');
     const isGridActive = gridTab && gridTab.classList.contains('active');
+    const isPortalMode = (document.body && document.body.classList.contains('mode-player-portal')) || (typeof activePortalPlayerId !== 'undefined' && !!activePortalPlayerId);
 
     const target = e.target;
-    const isInteractive = target && (
+    const isInteractiveOrSheet = target && (
       target.closest('#vtt-container') ||
       target.closest('#grid-canvas') ||
       target.closest('#vtt-hud') ||
@@ -2436,10 +2437,18 @@ function initSwipeNavigation() {
       target.closest('button') ||
       target.closest('.audio-top-widget') ||
       target.closest('.nav-drawer') ||
-      target.closest('.fab-speed-dial-container')
+      target.closest('.fab-speed-dial-container') ||
+      target.closest('#tab-players') ||
+      target.closest('.roll20-sheet') ||
+      target.closest('.player-card') ||
+      target.closest('.table-responsive-wrap') ||
+      target.closest('.roll20-skills-list') ||
+      target.closest('.portal-nav-scroll-row') ||
+      target.closest('.roll20-tabs-header')
     );
 
-    if (isGridActive || isInteractive) {
+    // No modo Portal do Jogador, o herói não deve ter abas trocadas por swipe acidental durante leitura da ficha
+    if (isGridActive || isInteractiveOrSheet || isPortalMode) {
       isSwipeIgnored = true;
       return;
     }

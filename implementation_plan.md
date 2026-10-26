@@ -1,82 +1,74 @@
-# 📋 Plano de Implementação - ISSUE-139: Correção de Erros Visuais, Z-Index, Estouro de Tabelas e Layout no Modo Dispositivo Móvel
+# 📋 Plano de Implementação - ISSUE-140: Correção de Overflow Horizontal, Visibilidade dos Modificadores e Blindagem do Gesto de Swipe
 
 ---
 
-## 🎯 1. Contexto e Diagnóstico dos Problemas Visuais
+## 🎯 1. Contexto e Diagnóstico dos Problemas
 
-Após a implementação da suíte mobile anterior, uma inspeção minuciosa dos layouts e das regras `@media` em viewport de smartphone (390px a 412px) identificou 6 problemas visuais específicos que impactam a usabilidade:
+O usuário reportou dois problemas interligados ao utilizar a ficha no smartphone (`uranio8.github.io`), comprovados através de três capturas de tela:
+1. **Modificadores ocultos/cortados**: Na lista de perícias (Imagem 2), apenas a bolinha e o nome da perícia aparecem (`○ FOR Atletismo`), enquanto os modificadores numéricos (`+3`, `+5`, etc.) e o botão de configuração `⚙️` sumiram. Na aba de magias (Imagem 1), a barra de estatísticas de conjuração (`CD DA MAGIA 15 | ATAC...`) e a segunda carta de magia (`Ataque Certeiro`) também estão cortadas na borda direita.
+2. **Pulo involuntário para a lista de magias ao arrastar**: Ao tentar arrastar a tela para o lado para enxergar os modificadores cortados à direita, a aplicação pula diretamente para a lista geral de magias do compêndio (Imagem 3 - "Mostrando 36 de 361 magias").
 
-1. **Sobreposição de Z-Index nos Modais e Bottom Sheets**:
-   - `.modal-overlay` possui `z-index: 2000;`.
-   - A dock móvel (`.player-mobile-dock`) tem `z-index: 10000;` e o Thumb HUD (`#mobile-vital-thumb-hud`) tem `z-index: 9999;`.
-   - **Problema**: Ao abrir qualquer modal (como o resumo de magias com o balão 💬, detalhes de itens do inventário, rolador de dados ou painel de vida), a barra do rodapé e a pílula de PV continuam flutuando por cima do modal e do overlay escuro, cobrindo os botões do rodapé (`Equipar`, `Fechar`, `Enviar ao Chat`).
-   - **Solução**: Elevar `.modal-overlay` para `z-index: 12000 !important;` (acima de dock e hud) e garantir que modais fiquem completamente visíveis e acessíveis em tela cheia no mobile.
-
-2. **Espaçamento e Prevenção de Oclusão no Rodapé da Ficha**:
-   - A soma do rodapé móvel (Dock 56px + Thumb HUD 46px) ocupa ~102px na base.
-   - **Problema**: O conteúdo final da ficha (último item da mochila ou notas) encosta ou fica parcialmente cortado sob o Thumb HUD.
-   - **Solução**: Garantir `padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)) !important;` em `.roll20-sheet`, no container principal e no `#grid-players`.
-
-3. **Espaço Vazio ("Buraco Preto") na Barra de Atributos e CA (`.roll20-abilities-bar`)**:
-   - Em smartphones (larguras ≤ 500px), a regra ativa é `grid-template-columns: repeat(2, 1fr);`.
-   - O container possui 7 itens (6 atributos + 1 bloco lateral de CA/Speed).
-   - **Problema**: Como 7 é ímpar, os atributos ocupam 3 linhas de 2 colunas e o bloco de CA/Speed ocupa apenas a coluna esquerda da 4ª linha, deixando a coluna direita completamente vazia.
-   - **Solução**: Aplicar `@media (max-width: 500px) { .roll20-ac-speed-box { grid-column: 1 / -1; display: flex; flex-direction: row; justify-content: space-around; align-items: center; } }`, expandindo o card de CA e Deslocamento para preencher harmoniosamente a largura total.
-
-4. **Estouro Horizontal na Tabela de Ataques (`.roll20-attacks-table`)**:
-   - A tabela possui 5 colunas fixas sem invólucro responsivo.
-   - **Problema**: Em telas de 390px, armas com textos e fórmulas longas estouram a largura útil de 358px do card Roll20.
-   - **Solução**: Envolver a tabela em um container `.table-responsive-wrap` com `overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;` e ajustar espaçamentos de padding em telas móveis.
-
-5. **Aperto e Desalinhamento no Cabeçalho do Portal do Jogador (`.portal-hero-row`)**:
-   - **Problema**: Em 390px, o avatar, o nome, o badge de sincronização e os botões `🔼 Upar` e `🔄 Trocar` disputam uma única linha rígida sem quebra.
-   - **Solução**: Permitir quebra responsiva suave (`flex-wrap: wrap; gap: 8px;`) para que os botões de ação e status se ajustem em linha dedicada caso o nome do herói seja extenso.
-
-6. **Duplicação de ID no Botão de Modo Foco**:
-   - **Problema**: `id="btn-toggle-combat-focus"` existe tanto em `src/ui/ui.html` linha 210 (Mestre) quanto na linha 4365 (Thumb HUD do Aluno).
-   - **Solução**: Diferenciar o botão do Thumb HUD para `id="btn-thumb-hud-focus"`.
-
-7. **Aba do Mestre no Mobile (Modo Geral)**:
-   - **Problema**: Ao usar a planilha como mestre em smartphones, as 9 abas quebram em várias linhas.
-   - **Solução**: Aplicar `overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch;` na barra `nav#navbar` em `@media (max-width: 768px)`, permitindo navegação touch horizontal limpa.
+### 🔍 Causa-Raiz Técnica:
+1. **Estufamento de Largura (Overflow Horizontal)**:
+   - Em CSS Grid, a regra `.roll20-columns-grid { grid-template-columns: 1fr; }` em telas móveis possui implicitamente `min-width: auto` (ou seja, `min-content`).
+   - Elementos internos como `.player-spells-chips-grid` possuem `grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));` (largura mínima de 2 cartas = 428px) e `.spellcasting-hud-bar` possui 3 colunas rígidas (~410px).
+   - Em smartphones com largura de tela de 360px a 390px, esses elementos forçam a coluna `.roll20-col-main` a se expandir para além da tela.
+   - Consequentemente, a coluna irmã de perícias `.roll20-col-skills` e a caixa `.roll20-panel` também se expandem para mais de 420px.
+   - Como `.roll20-skill-item` e `.roll20-panel-title` utilizam `justify-content: space-between;`, os modificadores (`.roll20-skill-bonus`) e a engrenagem `⚙️` são empurrados para além da coordenada 390px, ficando totalmente invisíveis fora do viewport!
+2. **Gesto de Swipe Global Invasivo no Modo Portal do Jogador**:
+   - Em `src/js/core.js` (função `initSwipeNavigation()`), existe um listener global de `touchstart`/`touchend` que captura qualquer arrasto horizontal (`deltaX < -70`).
+   - No modo portal do jogador, a ordem de abas definida é `const PORTAL_TABS_ORDER = ['players', 'spells', 'equipment', 'classes', 'species'];`.
+   - Quando o jogador está na sua ficha (`players`) e arrasta o dedo para a esquerda para tentar ver o conteúdo cortado, o swipe dispara `switchTab('spells')`, abrindo a lista geral de magias de forma indesejada.
 
 ---
 
-## 🏗️ 2. Módulos Afetados
+## 🛠️ 2. Soluções Planejadas
+
+### Solução 1: Blindagem e Desativação do Gesto de Swipe dentro da Ficha do Jogador
+- Em `src/js/core.js` (`initSwipeNavigation`):
+  - Adicionar blindagem para que o swipe de troca de abas **nunca capture toques originados dentro da ficha do jogador** (`target.closest('#tab-players')`, `target.closest('.roll20-sheet')`, `target.closest('.player-card')`).
+  - No modo portal do jogador (`isPortalMode`), a navegação entre a ficha e outras ferramentas deve ser feita exclusivamente através dos botões e chips de navegação da interface (ou pela dock inferior), prevenindo qualquer troca acidental de aba durante a rolagem de telas da ficha.
+
+### Solução 2: Blindagem Total de Largura e Responsividade da Ficha Mobile (Zero Overflow)
+- Em `src/styles/head_css.html`:
+  - Definir `min-width: 0;` em `.roll20-columns-grid`, `.roll20-col-main`, `.roll20-col-side`, `.roll20-col-skills` e na regra mobile `@media (max-width: 1079px) { .roll20-columns-grid { grid-template-columns: minmax(0, 1fr) !important; } }`.
+  - Em `.player-spells-chips-grid`: em telas móveis (`@media (max-width: 500px)`), ajustar para `grid-template-columns: 1fr !important;`, garantindo que cada carta de magia ocupe uma linha individual sem estufar a largura.
+  - Em `.spellcasting-hud-bar`: em telas móveis, aplicar `grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));` com fontes responsivas e `min-width: 0;` para que CD, Ataque Mágico e Atributo-Chave caibam harmoniosamente nos 390px.
+  - Em `.roll20-skill-item`:
+    - Adicionar `width: 100%; box-sizing: border-box; min-width: 0;`.
+    - Em `.roll20-skill-left`: aplicar `flex: 1; min-width: 0; overflow: hidden;`.
+    - Em `.roll20-skill-name`: adicionar `overflow: hidden; text-overflow: ellipsis; white-space: nowrap;`.
+    - Em `.roll20-skill-bonus`: definir `flex-shrink: 0;` garantindo que o bônus numérico (`+3`, `+5`, `-1`) fique **sempre visível, fixo e destacado à direita**.
+  - Em `.roll20-panel-title`: aplicar `width: 100%; box-sizing: border-box;` e `flex-shrink: 0;` no botão `⚙️`.
+  - Em `.roll20-sheet`: garantir `max-width: 100%; width: 100%; box-sizing: border-box; overflow-x: hidden;`.
+
+---
+
+## 🏗️ 3. Módulos Afetados
 
 | Módulo / Arquivo | Modificações Planejadas |
 | :--- | :--- |
-| **`src/styles/head_css.html`** | 1. Elevar o `z-index` de `.modal-overlay` para `12000` (acima de dock e hud móvel).<br>2. Adicionar `grid-column: 1 / -1;` para `.roll20-ac-speed-box` em telas ≤ 500px com layout horizontal balanceado.<br>3. Adicionar `.table-responsive-wrap` com `overflow-x: auto; -webkit-overflow-scrolling: touch;`.<br>4. Ajustar `.portal-hero-row` para `flex-wrap: wrap; gap: 8px;`.<br>5. Otimizar `nav#navbar` em telas ≤ 768px para rolagem horizontal suave sem quebra excessiva.<br>6. Ajustar padding inferior de segurança na ficha Roll20. |
-| **`src/ui/ui.html`** | 1. Renomear o ID duplicado no Thumb HUD para `id="btn-thumb-hud-focus"`. |
-| **`src/js/players.js`** | 1. Envolver a tabela de ataques `.roll20-attacks-table` no container `.table-responsive-wrap`.<br>2. Atualizar eventuais referências de ID do botão de foco no Thumb HUD. |
-| **`test_runner.js`** | Adicionar a **Bateria 107** validando z-index de modais superior ao HUD, span de 2 colunas do bloco AC/Speed no mobile, container responsivo da tabela de ataques e ausência de IDs duplicados. |
-| **`issues/README.md`** | Registrar a documentação completa da **ISSUE-139**. |
+| **`src/js/core.js`** | Isolar `initSwipeNavigation()` para ignorar eventos dentro de `#tab-players`, `.roll20-sheet`, `.player-card` e no modo portal do jogador. |
+| **`src/styles/head_css.html`** | Ajustar `grid-template-columns`, `min-width: 0`, responsividade de `.player-spells-chips-grid` (1fr no mobile), `.spellcasting-hud-bar` e flexbox seguro com `flex-shrink: 0` em `.roll20-skill-bonus`. |
+| **`test_runner.js`** | Adicionar a **Bateria 108** validando que o bônus de perícia tem `flex-shrink: 0`, que o grid de colunas possui `minmax(0, 1fr)`, e que eventos de swipe na ficha são ignorados. |
+| **`issues/README.md`** | Registrar a documentação completa da **ISSUE-140**. |
 
 ---
 
-## 🛡️ 3. Impactos em Persistência, Combate e Sincronização
+## 🛡️ 4. Impactos em Persistência e Outras Telas
 
-- **Persistência (`localStorage`)**: Zero impacto. Nenhuma chave do schema é alterada.
-- **Sincronização em Nuvem (Firebase)**: Zero impacto. O protocolo de rede e offline queue continuam idênticos.
-- **Desktop e Computadores**: As melhorias de CSS são isoladas por media queries (`@media (max-width: 768px)` e `@media (max-width: 500px)`), preservando 100% da integridade visual no desktop.
-
----
-
-## 📋 4. Lista de Tarefas (Tasks)
-
-- [x] **Task 1**: Atualizar `src/styles/head_css.html` corrigindo o `z-index` dos modais (12000), o span do bloco AC/Speed em 2 colunas, o wrapper de tabela responsivo e o wrap da barra de topo do portal.
-- [x] **Task 2**: Ajustar em `src/ui/ui.html` o ID duplicado do botão de foco no Thumb HUD para `btn-thumb-hud-focus`.
-- [x] **Task 3**: Atualizar em `src/js/players.js` a renderização da tabela de ataques envolvendo-a em `.table-responsive-wrap`.
-- [x] **Task 4**: Compilar com `node builder.js`.
-- [x] **Task 5**: Adicionar a **Bateria 107** em `test_runner.js` e validar 100% dos testes verdes (`node test_runner.js`).
-- [x] **Task 6**: Registrar a ISSUE-139 em `issues/README.md`.
-- [x] **Task 7**: Executar commits atômicos e push para `origin/main`.
-- [x] **Task 8**: Apresentar resultado detalhado ao usuário.
+- **Desktop**: Zero impacto regressivo (as correções são aplicadas em `@media (max-width: 1079px)` e `@media (max-width: 500px)`).
+- **Persistência (`localStorage`) e Nuvem**: Sem impacto.
+- **VTT Grid e Combate**: Permanecem 100% protegidos contra gestos indevidos.
 
 ---
 
-## 🧪 5. Estratégia de Verificação
+## 📋 5. Lista de Tarefas (Tasks)
 
-1. Execução de `node builder.js` para garantir compilação standalone sem erros de sintaxe.
-2. Execução de `node test_runner.js` validando a aprovação de todas as baterias anteriores (1878 testes) + novos testes da Bateria 107.
-3. Teste em simulação DOM verificando dimensões, classes e integridade em viewport móvel de 390px.
+- [x] **Task 1**: Atualizar `src/js/core.js` blindando `initSwipeNavigation()` contra toques dentro da ficha (`#tab-players`, `.roll20-sheet`) e no modo portal.
+- [x] **Task 2**: Atualizar `src/styles/head_css.html` com regras de `min-width: 0`, `flex-shrink: 0` nos modificadores de perícias e ajuste de 1 coluna para cartas de magias no mobile.
+- [x] **Task 3**: Executar compilação com `node builder.js`.
+- [x] **Task 4**: Adicionar a **Bateria 108** em `test_runner.js` e rodar a suíte completa garantindo 100% de sucesso.
+- [x] **Task 5**: Documentar a ISSUE-140 em `issues/README.md`.
+- [ ] **Task 6**: Git commit semântico e push para `origin/main`.
+- [ ] **Task 7**: Apresentar resultado ao usuário.
