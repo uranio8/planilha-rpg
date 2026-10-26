@@ -919,6 +919,12 @@ function usePlayerActionSurgeQuick(playerId) {
   if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
+function formatCleanItemWeight(weight) {
+  if (weight === null || weight === undefined || weight === '') return '';
+  const clean = String(weight).replace(/\s*kg/gi, '').trim();
+  return clean ? `${clean} kg` : '';
+}
+
 function getItemActionInfo(itemName) {
   const n = (itemName || '').toLowerCase();
   if (n.includes('flecha') || n.includes('arrow') || n.includes('virote') || n.includes('balas') || n.includes('dardo') || n.includes('munição') || n.includes('municao')) {
@@ -1411,9 +1417,10 @@ function sharePlayerItemToFeed(playerId, itemIndex) {
     eq = EQUIPMENT_DATA.find(e => e.name.toLowerCase() === clean || clean.includes(e.name.toLowerCase()) || e.name.toLowerCase().includes(clean));
   }
   const desc = it.desc || it.prop || (eq ? eq.prop : '') || 'Item padrão de aventura.';
-  const damageOrAc = it.damage || (eq ? eq.damage : '') || '';
-  const cat = it.category || (eq ? eq.category : '') || 'Item';
-  const msg = `🎒 <b>${p.name}</b> exibe o item: <b>${it.name}</b> (${cat}${damageOrAc ? ' • ' + damageOrAc : ''}) • Qtd: ${it.qty || 1} ${it.weight ? '• ' + it.weight + 'kg' : ''}<br><div style="margin-top:3px; color:#cbd5e1; font-size:11px; line-height:1.4;">${desc}</div>`;
+  const cat = it.category || (eq ? eq.category : 'Item');
+  const damageOrAc = (eq ? (eq.damage || (eq.ac ? `CA ${eq.ac}` : '')) : (it.damage || (it.ac ? `CA ${it.ac}` : ''))) || '';
+  const weightStr = typeof formatCleanItemWeight === 'function' ? formatCleanItemWeight(it.weight) : (it.weight ? `${it.weight} kg` : '');
+  const msg = `🎒 <b>${p.name}</b> exibe o item: <b>${it.name}</b> (${cat}${damageOrAc ? ' • ' + damageOrAc : ''}) • Qtd: ${it.qty || 1} ${weightStr ? '• ' + weightStr : ''}<br><div style="margin-top:3px; color:#cbd5e1; font-size:11px; line-height:1.4;">${desc}</div>`;
   addLog(msg);
   addPlayerActionLog(p.id, '🎒', `Exibiu item: ${it.name}`, 'inventory');
   if (typeof showToast === 'function') showToast(`Item "${it.name}" compartilhado no chat da mesa!`, 'info');
@@ -1543,15 +1550,106 @@ function handlePlayerNotesInput(id, text) {
 }
 
 
-function renderPlayers() {
-  const grid = document.getElementById('grid-players');
-  const badge = document.getElementById('cnt-players');
+function populateCampaignFilterOptions() {
+  const sel = document.getElementById('filter-player-campaign');
+  if (!sel) return;
+
+  const savedVal = typeof localStorage !== 'undefined' ? localStorage.getItem('dnd5e_player_filter_campaign') : null;
+  const currentVal = sel.value || savedVal || 'all';
+  const camps = (typeof CAMPAIGNS_STATE !== 'undefined' && Array.isArray(CAMPAIGNS_STATE.campaigns)) ? CAMPAIGNS_STATE.campaigns : [];
+  const players = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS)) ? PLAYERS : [];
+
+  let optionsHtml = `<option value="all">🏰 Todas as Campanhas (${players.length})</option>`;
+
+  camps.forEach(c => {
+    const count = players.filter(p => (Array.isArray(c.playerIds) && c.playerIds.some(pid => String(pid) === String(p.id))) || p.campaignId === c.id).length;
+    optionsHtml += `<option value="${c.id}">🏰 ${c.name || 'Campanha'} (${count})</option>`;
+  });
+
+  const unassignedCount = players.filter(p => {
+    const inAny = camps.some(c => (Array.isArray(c.playerIds) && c.playerIds.some(pid => String(pid) === String(p.id))) || p.campaignId === c.id);
+    return !inAny;
+  }).length;
+  optionsHtml += `<option value="none">👤 Sem Campanha (${unassignedCount})</option>`;
+
+  if (sel.innerHTML !== optionsHtml) {
+    sel.innerHTML = optionsHtml;
+    const optList = (sel && sel.options) ? Array.from(sel.options) : [];
+    if (optList.length > 0 && optList.some(o => o.value === currentVal)) {
+      sel.value = currentVal;
+    } else {
+      sel.value = currentVal || 'all';
+    }
+  }
+}
+
+function onPlayerCampaignFilterChange() {
+  const sel = document.getElementById('filter-player-campaign');
+  if (sel && typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem('dnd5e_player_filter_campaign', sel.value);
+    } catch(e) {}
+  }
+  renderPlayers();
+}
+
+function filterPlayersByCampaign(campaignId) {
+  const val = campaignId || 'all';
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem('dnd5e_player_filter_campaign', val);
+    } catch(e) {}
+  }
+  const sel = typeof document !== 'undefined' ? document.getElementById('filter-player-campaign') : null;
+  if (sel) {
+    sel.value = val;
+  }
+  if (typeof renderPlayers === 'function') {
+    renderPlayers();
+  }
+}
+
+function setCampaignFilter(campaignId) {
+  filterPlayersByCampaign(campaignId);
+}
+
+function clearCampaignFilter() {
+  filterPlayersByCampaign('all');
+}
+
+function getCurrentlySelectedCampaign() {
+  const sel = document.getElementById('filter-player-campaign');
+  const val = sel ? sel.value : ((typeof localStorage !== 'undefined' ? localStorage.getItem('dnd5e_player_filter_campaign') : 'all') || 'all');
+  if (!val || val === 'all' || val === 'none') return null;
+  const camps = (typeof CAMPAIGNS_STATE !== 'undefined' && Array.isArray(CAMPAIGNS_STATE.campaigns)) ? CAMPAIGNS_STATE.campaigns : [];
+  return camps.find(c => c.id === val) || null;
+}
+
+function getCurrentlyFilteredPlayers() {
   const rawQ = document.getElementById('filter-player-q')?.value || '';
   const q = typeof normalizeStr === 'function' ? normalizeStr(rawQ) : rawQ.toLowerCase().trim();
-  const sort = document.getElementById('filter-player-sort')?.value || 'name';
+  const sel = document.getElementById('filter-player-campaign');
+  const campFilter = sel ? sel.value : ((typeof localStorage !== 'undefined' ? localStorage.getItem('dnd5e_player_filter_campaign') : 'all') || 'all');
+  const camps = (typeof CAMPAIGNS_STATE !== 'undefined' && Array.isArray(CAMPAIGNS_STATE.campaigns)) ? CAMPAIGNS_STATE.campaigns : [];
+  const targetCamp = camps.find(c => c.id === campFilter);
 
-  let filtered = PLAYERS.filter(p => {
-    if (activePortalPlayerId && p.id !== activePortalPlayerId) return false;
+  const players = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS)) ? PLAYERS : [];
+
+  return players.filter(p => {
+    if (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId && p.id !== activePortalPlayerId) return false;
+
+    // Filtro por Campanha
+    if (campFilter !== 'all') {
+      if (campFilter === 'none') {
+        const inAny = camps.some(c => (Array.isArray(c.playerIds) && c.playerIds.some(pid => String(pid) === String(p.id))) || p.campaignId === c.id);
+        if (inAny) return false;
+      } else if (targetCamp) {
+        const isMember = (Array.isArray(targetCamp.playerIds) && targetCamp.playerIds.some(pid => String(pid) === String(p.id))) || p.campaignId === targetCamp.id;
+        if (!isMember) return false;
+      }
+    }
+
+    // Filtro por Busca Textual
     if (!q) return true;
     const pName = typeof normalizeStr === 'function' ? normalizeStr(p.name) : (p.name || '').toLowerCase();
     const pStudent = typeof normalizeStr === 'function' ? normalizeStr(p.student) : (p.student || '').toLowerCase();
@@ -1559,6 +1657,87 @@ function renderPlayers() {
     const pRace = typeof normalizeStr === 'function' ? normalizeStr(p.race) : (p.race || '').toLowerCase();
     return pName.includes(q) || pStudent.includes(q) || pClass.includes(q) || pRace.includes(q);
   });
+}
+
+
+function renderPlayers() {
+  const grid = document.getElementById('grid-players');
+  const badge = document.getElementById('cnt-players');
+  const sort = document.getElementById('filter-player-sort')?.value || 'name';
+
+  if (typeof populateCampaignFilterOptions === 'function') {
+    populateCampaignFilterOptions();
+  }
+
+  let filtered = typeof getCurrentlyFilteredPlayers === 'function' ? getCurrentlyFilteredPlayers() : (typeof PLAYERS !== 'undefined' ? PLAYERS : []);
+  const selectedCamp = typeof getCurrentlySelectedCampaign === 'function' ? getCurrentlySelectedCampaign() : null;
+
+  // Atualiza badge de status da campanha na barra de ferramentas
+  const statusEl = document.getElementById('player-campaign-filter-status');
+  if (statusEl) {
+    if (selectedCamp) {
+      statusEl.style.display = 'inline-flex';
+      statusEl.innerHTML = `🏰 Mesa: <b>${selectedCamp.name}</b> (${filtered.length} heróis)`;
+    } else {
+      const sel = document.getElementById('filter-player-campaign');
+      if (sel && sel.value === 'none') {
+        statusEl.style.display = 'inline-flex';
+        statusEl.innerHTML = `👤 Sem Campanha (${filtered.length} heróis)`;
+      } else {
+        statusEl.style.display = 'none';
+      }
+    }
+  }
+
+  // Atualiza botões de ação em lote conforme o escopo da campanha
+  const btnCombat = document.getElementById('btn-batch-combat');
+  const btnRewards = document.getElementById('btn-batch-rewards');
+  const btnShortRest = document.getElementById('btn-batch-short-rest');
+  const btnLongRest = document.getElementById('btn-batch-long-rest');
+
+  if (selectedCamp) {
+    if (btnCombat) {
+      btnCombat.innerText = `⚔️ Mesa no Combate (${filtered.length})`;
+      btnCombat.title = `Adicionar os ${filtered.length} heróis da mesa "${selectedCamp.name}" ao combate ativo`;
+      btnCombat.classList.add('btn-batch-camp-active');
+    }
+    if (btnRewards) {
+      btnRewards.innerText = `🎁 Recompensas (${selectedCamp.name.substring(0, 15)})`;
+      btnRewards.title = `Distribuir XP e Moedas para a mesa "${selectedCamp.name}"`;
+      btnRewards.classList.add('btn-batch-camp-active');
+    }
+    if (btnShortRest) {
+      btnShortRest.innerText = `☕ Curto (${filtered.length})`;
+      btnShortRest.title = `Descanso Curto (1h) para os ${filtered.length} heróis de "${selectedCamp.name}"`;
+      btnShortRest.classList.add('btn-batch-camp-active');
+    }
+    if (btnLongRest) {
+      btnLongRest.innerText = `🌙 Longo (${filtered.length})`;
+      btnLongRest.title = `Descanso Longo (8h) para os ${filtered.length} heróis de "${selectedCamp.name}"`;
+      btnLongRest.classList.add('btn-batch-camp-active');
+    }
+  } else {
+    if (btnCombat) {
+      btnCombat.innerText = '⚔️ Todos no Combate';
+      btnCombat.title = 'Adicionar todas as fichas de alunos ao combate ativo de uma vez';
+      btnCombat.classList.remove('btn-batch-camp-active');
+    }
+    if (btnRewards) {
+      btnRewards.innerText = '🎁 Recompensas';
+      btnRewards.title = 'Distribuir Experiência e Moedas em lote para o grupo';
+      btnRewards.classList.remove('btn-batch-camp-active');
+    }
+    if (btnShortRest) {
+      btnShortRest.innerText = '☕ Curto (Todos)';
+      btnShortRest.title = 'Descanso Curto para todo o grupo (1h)';
+      btnShortRest.classList.remove('btn-batch-camp-active');
+    }
+    if (btnLongRest) {
+      btnLongRest.innerText = '🌙 Longo (Todos)';
+      btnLongRest.title = 'Descanso Longo para todo o grupo (8h - restaura PV, magias e dados)';
+      btnLongRest.classList.remove('btn-batch-camp-active');
+    }
+  }
 
   if (sort === 'name') filtered.sort((a, b) => a.name.localeCompare(b.name));
   else if (sort === 'student') filtered.sort((a, b) => a.student.localeCompare(b.student));
@@ -2272,9 +2451,9 @@ function renderPlayers() {
                     const nameLower = (it.name || '').toLowerCase();
                     const isArmorOrShield = catLower.includes('armadura') || catLower.includes('escudo') || nameLower.includes('armadura') || nameLower.includes('escudo');
                     const isWeapon = catLower.includes('arma') || catLower.includes('weapon') || (typeof isPlayerWeaponItem === 'function' && isPlayerWeaponItem(it.name));
-                    const isConsumable = actionInfo.isConsumable && !isArmorOrShield && !isWeapon;
-                    const cleanWeight = String(it.weight || '').replace(/\s*kg/gi, '').trim();
-                    const weightDisplay = cleanWeight ? ` • ${cleanWeight} kg` : '';
+                    const isConsumable = !!(actionInfo.isConsumable && !isArmorOrShield && !isWeapon);
+                    const cleanWeightStr = typeof formatCleanItemWeight === 'function' ? formatCleanItemWeight(it.weight) : (it.weight ? String(it.weight).replace(/\s*kg/gi, '').trim() + ' kg' : '');
+                    const weightDisplay = cleanWeightStr ? ` • ${cleanWeightStr}` : '';
                     return `
                       <div class="inventory-item-row ${it.equipped ? 'equipped' : ''}">
                         <div class="inventory-item-info" style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 6px; cursor: pointer;" onclick="openItemQuickView('${p.id}', ${idx})" title="Clique para ver o que este item faz">
@@ -2287,7 +2466,7 @@ function renderPlayers() {
                               ${actionInfo.icon}
                             </button>
                           ` : ''}
-                          <button type="button" class="btn-item-equip-badge roll20-item-equipped-toggle ${it.equipped ? 'equipped active' : 'unequipped'}" onclick="togglePlayerItemEquipped('${p.id}', ${idx})" title="${it.equipped ? 'Equipado! Clique para desequipar' : 'Guardado na mochila. Clique para equipar e calcular CA/Ataques'}">
+                          <button type="button" class="btn-item-equip-badge ${it.equipped ? 'equipped active' : 'unequipped'}" onclick="togglePlayerItemEquipped('${p.id}', ${idx})" title="${it.equipped ? 'Equipado! Clique para desequipar' : 'Guardado na mochila. Clique para equipar e calcular CA/Ataques'}">
                             ${it.equipped ? '🛡️ Equipado' : 'Equipar'}
                           </button>
                           <div style="display: inline-flex; align-items: center; gap: 2px; background: rgba(0,0,0,0.25); padding: 1px 3px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.06); flex-shrink: 0;">
@@ -4270,8 +4449,18 @@ function playerLongRest(id) {
 }
 
 function partyLongRestAll() {
-  if (confirm('Conceder Descanso Longo (8h) para TODOS os alunos? Todos recuperarão PV total, magias, dados de vida e habilidades.')) {
-    PLAYERS.forEach(p => {
+  const targetPlayers = (typeof getCurrentlyFilteredPlayers === 'function' ? getCurrentlyFilteredPlayers() : (typeof PLAYERS !== 'undefined' ? PLAYERS : [])) || [];
+  if (targetPlayers.length === 0) {
+    alert('Nenhum herói encontrado para descansar.');
+    return;
+  }
+  const selectedCamp = typeof getCurrentlySelectedCampaign === 'function' ? getCurrentlySelectedCampaign() : null;
+  const promptMsg = selectedCamp
+    ? `Conceder Descanso Longo (8h) para os ${targetPlayers.length} aventureiros da mesa "${selectedCamp.name}"? Todos recuperarão PV total, magias, dados de vida e habilidades.`
+    : `Conceder Descanso Longo (8h) para TODOS os ${targetPlayers.length} alunos? Todos recuperarão PV total, magias, dados de vida e habilidades.`;
+
+  if (confirm(promptMsg)) {
+    targetPlayers.forEach(p => {
       p.hp = p.maxHp;
       p.tempHp = 0;
       p.deathSaves = { success: 0, fail: 0 };
@@ -4286,11 +4475,15 @@ function partyLongRestAll() {
         ? findCombatantForPlayer(p, typeof state !== 'undefined' && state ? state.combatants : [])
         : (typeof state !== 'undefined' && state.combatants ? state.combatants.find(c => (c.playerId && c.playerId === p.id) || c.name.includes(p.name)) : null);
       if (comb) { comb.hp = p.hp; comb.conditions = []; }
-      addPlayerActionLog(p.id, '🌙', `Descanso Longo em Grupo: PV total, magias, dados de vida e cargas restauradas`, 'rest');
+      const logText = selectedCamp ? `Descanso Longo da Mesa (${selectedCamp.name})` : `Descanso Longo em Grupo`;
+      addPlayerActionLog(p.id, '🌙', `${logText}: PV total, magias, dados de vida e cargas restauradas`, 'rest');
       if (typeof touchPlayer === 'function') touchPlayer(p);
     });
     if (typeof playFX === 'function') playFX('crit');
-    addLog('✨ <b>DESCANSO LONGO DO GRUPO:</b> Todos os aventureiros recuperaram vida, magias, dados de vida e habilidades ao máximo!');
+    const logMsg = selectedCamp
+      ? `✨ <b>DESCANSO LONGO (Mesa: ${selectedCamp.name}):</b> Os ${targetPlayers.length} aventureiros recuperaram vida, magias, dados de vida e habilidades ao máximo!`
+      : '✨ <b>DESCANSO LONGO DO GRUPO:</b> Todos os aventureiros recuperaram vida, magias, dados de vida e habilidades ao máximo!';
+    addLog(logMsg);
     renderPlayers();
     if (typeof renderCombat === 'function') renderCombat();
     saveToLocalStorage();
@@ -8753,14 +8946,20 @@ function clonePlayerSheet(id) {
 }
 
 function addAllPlayersToCombat() {
-  if (!PLAYERS || PLAYERS.length === 0) {
-    alert('Nenhuma ficha de aluno cadastrada para entrar no combate!');
+  const targetPlayers = (typeof getCurrentlyFilteredPlayers === 'function' ? getCurrentlyFilteredPlayers() : (typeof PLAYERS !== 'undefined' ? PLAYERS : [])) || [];
+  if (targetPlayers.length === 0) {
+    alert('Nenhuma ficha de aluno encontrada para entrar no combate!');
     return;
   }
-  if (!confirm(`Deseja adicionar todas as ${PLAYERS.length} fichas ao combate ativo?`)) return;
+  const selectedCamp = typeof getCurrentlySelectedCampaign === 'function' ? getCurrentlySelectedCampaign() : null;
+  const confirmMsg = selectedCamp
+    ? `Deseja adicionar todos os ${targetPlayers.length} alunos da mesa "${selectedCamp.name}" ao combate ativo?`
+    : `Deseja adicionar todas as ${targetPlayers.length} fichas ao combate ativo?`;
+
+  if (!confirm(confirmMsg)) return;
 
   let addedCount = 0;
-  PLAYERS.forEach(p => {
+  targetPlayers.forEach(p => {
     const currentHp = (p.hp !== undefined ? p.hp : p.maxHp);
     const dexMod = Math.floor((p.dex - 10) / 2);
     const d20 = Math.floor(Math.random() * 20) + 1;
@@ -8793,7 +8992,10 @@ function addAllPlayersToCombat() {
   });
 
   state.combatants.sort((a, b) => b.init - a.init);
-  addLog(`⚔️ <b>${addedCount} alunos</b> entraram no combate.`);
+  const logMsg = selectedCamp
+    ? `⚔️ <b>${addedCount} alunos da mesa "${selectedCamp.name}"</b> entraram no combate.`
+    : `⚔️ <b>${addedCount} alunos</b> entraram no combate.`;
+  addLog(logMsg);
   if (typeof renderCombat === 'function') renderCombat();
   if (typeof renderVTT === 'function') renderVTT();
   if (typeof renderPlayerView === 'function') renderPlayerView();
@@ -8802,9 +9004,19 @@ function addAllPlayersToCombat() {
 }
 
 function partyShortRestAll() {
-  if (!PLAYERS || PLAYERS.length === 0) return;
-  if (!confirm('Realizar Descanso Curto (1 hora) para todo o grupo?')) return;
-  PLAYERS.forEach(p => {
+  const targetPlayers = (typeof getCurrentlyFilteredPlayers === 'function' ? getCurrentlyFilteredPlayers() : (typeof PLAYERS !== 'undefined' ? PLAYERS : [])) || [];
+  if (targetPlayers.length === 0) {
+    alert('Nenhum herói encontrado para descansar.');
+    return;
+  }
+  const selectedCamp = typeof getCurrentlySelectedCampaign === 'function' ? getCurrentlySelectedCampaign() : null;
+  const promptMsg = selectedCamp
+    ? `Realizar Descanso Curto (1 hora) para os ${targetPlayers.length} aventureiros da mesa "${selectedCamp.name}"?`
+    : `Realizar Descanso Curto (1 hora) para todos os ${targetPlayers.length} alunos?`;
+
+  if (!confirm(promptMsg)) return;
+
+  targetPlayers.forEach(p => {
     const conMod = Math.max(0, Math.floor((p.con - 10) / 2));
     const heal = Math.floor(Math.random() * 6) + 1 + conMod;
     p.hp = Math.min(p.maxHp, p.hp + heal);
@@ -8812,11 +9024,19 @@ function partyShortRestAll() {
       ? findCombatantForPlayer(p, state ? state.combatants : [])
       : (state && state.combatants ? state.combatants.find(c => (c.playerId && c.playerId === p.id) || c.name.includes(p.name)) : null);
     if (comb) comb.hp = p.hp;
+    const logText = selectedCamp ? `Descanso Curto da Mesa (${selectedCamp.name})` : `Descanso Curto em Grupo`;
+    addPlayerActionLog(p.id, '☕', `${logText}: Recuperou ${heal} PV (${p.hp}/${p.maxHp})`, 'rest');
+    if (typeof touchPlayer === 'function') touchPlayer(p);
   });
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   saveToLocalStorage();
-  addLog('☕ <b>Descanso Curto (Grupo)</b>: O grupo descansou 1h e recuperou energia e PV.');
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+  const logMsg = selectedCamp
+    ? `☕ <b>Descanso Curto (Mesa: ${selectedCamp.name})</b>: ${targetPlayers.length} aventureiros descansaram 1h e recuperaram energia.`
+    : `☕ <b>Descanso Curto (Grupo)</b>: O grupo descansou 1h e recuperou energia e PV.`;
+  addLog(logMsg);
   if (typeof playFX === 'function') playFX('heal');
 }
 
@@ -11297,7 +11517,8 @@ function openTradeItemModal(donorId, itemIdx) {
   const inpQty = document.getElementById('inp-trade-qty');
 
   if (nameEl) nameEl.innerText = item.name || 'Item';
-  if (metaEl) metaEl.innerText = `Doador: ${donor.name} • Disponível: ${maxQty}x ${item.weight ? `(${item.weight}kg cada)` : ''}`;
+  const tradeItemWeight = typeof formatCleanItemWeight === 'function' ? formatCleanItemWeight(item.weight) : (item.weight ? `${item.weight} kg` : '');
+  if (metaEl) metaEl.innerText = `Doador: ${donor.name} • Disponível: ${maxQty}x ${tradeItemWeight ? `(${tradeItemWeight} cada)` : ''}`;
   if (iconEl) {
     const actionInfo = typeof getItemActionInfo === 'function' ? getItemActionInfo(item.name) : { icon: '🎒' };
     iconEl.innerText = actionInfo.icon || '🎒';
@@ -11429,8 +11650,9 @@ function openBatchRewardsModal() {
   const modal = document.getElementById('modal-batch-rewards');
   if (!modal) return;
 
-  // Seleciona todos os heróis cadastrados por padrão
-  batchRewardSelectedHeroIds = new Set((typeof PLAYERS !== 'undefined' ? PLAYERS : []).map(p => p.id));
+  // Seleciona os heróis da mesa ativa (ou todos se nenhuma mesa filtrada) por padrão
+  const targetPlayers = (typeof getCurrentlyFilteredPlayers === 'function' ? getCurrentlyFilteredPlayers() : (typeof PLAYERS !== 'undefined' ? PLAYERS : [])) || [];
+  batchRewardSelectedHeroIds = new Set(targetPlayers.map(p => p.id));
   renderBatchRewardHeroList();
 
   const inpXp = document.getElementById('inp-batch-xp-total');
@@ -13203,6 +13425,17 @@ if (typeof window !== 'undefined') {
   window.saveAsiChoiceModal = saveAsiChoiceModal;
   window.updateAsiStatsDistributionView = updateAsiStatsDistributionView;
   window.updateAsiStatsPreview = updateAsiStatsPreview;
+
+  // ISSUE-145: Filtro Dinâmico de Campanhas e Ações Coletivas por Mesa
+  window.getCurrentlyFilteredPlayers = getCurrentlyFilteredPlayers;
+  window.getCurrentlySelectedCampaign = getCurrentlySelectedCampaign;
+  window.filterPlayersByCampaign = filterPlayersByCampaign;
+  window.setCampaignFilter = setCampaignFilter;
+  window.clearCampaignFilter = clearCampaignFilter;
+  window.populateCampaignFilterOptions = populateCampaignFilterOptions;
+
+  // ISSUE-146: Sanitização de Peso e Layout Blindado
+  window.formatCleanItemWeight = formatCleanItemWeight;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -13221,7 +13454,14 @@ if (typeof module !== 'undefined' && module.exports) {
     saveAsiChoiceModal,
     formatPlayerFeatureForDisplay,
     getClassAsiLevels,
-    isClassAsiLevel
+    isClassAsiLevel,
+    getCurrentlyFilteredPlayers,
+    getCurrentlySelectedCampaign,
+    filterPlayersByCampaign,
+    setCampaignFilter,
+    clearCampaignFilter,
+    populateCampaignFilterOptions,
+    formatCleanItemWeight
   };
 }
 

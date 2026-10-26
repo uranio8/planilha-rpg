@@ -8777,6 +8777,65 @@ const rogueChoice = vm.runInContext('globalThis.__test_rogue_choice', sandbox);
 assert(rogueHasFeat, 'Ladino adquiriu o talento "Móvel" através da escolha de ASI');
 assert(rogueChoice && rogueChoice.label.includes('Talento'), 'p.asiChoices do Ladino registrou escolha de Talento no Nível 4');
 
+// =========================================================================
+// 🛡️ 112. TESTES DE AUDITORIA VISUAL DE ÍCONES, INVENTÁRIO E ATAQUES (ISSUE-135)
+// =========================================================================
+console.log('\n🛡️ 112. Testes de Auditoria Visual de Ícones, Inventário e Ataques (ISSUE-135):');
+
+const bundle112 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+
+// 1. Verificações de Estilo CSS no Bundle
+assert(bundle112.includes('.btn-item-equip-badge'), 'HTML compilado possui a classe .btn-item-equip-badge');
+assert(bundle112.includes('.attack-actions-cell'), 'HTML compilado possui a classe .attack-actions-cell');
+assert(bundle112.includes('.inventory-item-row'), 'HTML compilado possui a classe .inventory-item-row');
+assert(bundle112.includes('.inventory-item-info'), 'HTML compilado possui a classe .inventory-item-info');
+assert(bundle112.includes('.inventory-item-actions'), 'HTML compilado possui a classe .inventory-item-actions');
+
+// 2. Testes de Formatação Defensiva de Peso (Sem repetição "kgkg")
+const formatCleanItemWeight = sandbox.formatCleanItemWeight;
+assert(typeof formatCleanItemWeight === 'function', 'Função formatCleanItemWeight exportada no escopo global');
+assert(formatCleanItemWeight('1.5 kg') === '1.5 kg', 'formatCleanItemWeight("1.5 kg") preserva unidade única');
+assert(formatCleanItemWeight('1,5kg') === '1,5 kg', 'formatCleanItemWeight("1,5kg") normaliza espaçamento sem duplicar');
+assert(formatCleanItemWeight('1,5 kgkg') === '1,5 kg', 'formatCleanItemWeight("1,5 kgkg") higieniza repetições prévias');
+assert(formatCleanItemWeight('3') === '3 kg', 'formatCleanItemWeight("3") adiciona unidade padrão');
+assert(formatCleanItemWeight('') === '', 'formatCleanItemWeight("") retorna string vazia para itens sem peso');
+assert(formatCleanItemWeight(null) === '', 'formatCleanItemWeight(null) trata valores nulos com segurança');
+
+// 3. Teste de Renderização do Item no Inventário sem Sobreposição
+vm.runInContext(`
+  (() => {
+    activePortalPlayerId = null;
+    if (document.getElementById('filter-player-q')) document.getElementById('filter-player-q').value = '';
+    
+    const pTest = {
+      id: 'test-icon-overlap-hero',
+      name: 'Guerreiro de Ferro',
+      inventory: [
+        { name: 'Espada Longa (Longsword)', weight: '1,5 kg', qty: 1, equipped: true },
+        { name: 'Poção de Cura', weight: '0.2 kg', qty: 3, equipped: false, category: 'Poção' }
+      ]
+    };
+    PLAYERS.push(pTest);
+    
+    if (typeof renderPlayers === 'function') {
+      renderPlayers();
+    }
+    
+    const renderedApp = document.getElementById('grid-players') ? document.getElementById('grid-players').innerHTML : '';
+    globalThis.__test_has_kgkg = renderedApp.includes('kgkg');
+    globalThis.__test_has_equip_badge = renderedApp.includes('btn-item-equip-badge');
+    globalThis.__test_has_equipped_label = renderedApp.includes('🛡️ Equipado');
+  })();
+`, sandbox);
+
+const hasKgKg = vm.runInContext('globalThis.__test_has_kgkg', sandbox);
+const hasEquipBadge = vm.runInContext('globalThis.__test_has_equip_badge', sandbox);
+const hasEquippedLabel = vm.runInContext('globalThis.__test_has_equipped_label', sandbox);
+
+assert(!hasKgKg, 'Renderização do inventário NÃO contém a repetição anômala "kgkg"');
+assert(hasEquipBadge, 'Renderização do inventário utiliza o badge ergonômico .btn-item-equip-badge');
+assert(hasEquippedLabel, 'Item equipado exibe o badge "🛡️ Equipado"');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

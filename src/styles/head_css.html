@@ -10787,45 +10787,60 @@
       box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
     }
 
-    /* ISSUE-134 & ISSUE-135: Botão Intuitivo de Equipar Item com Largura Auto e Sem Sobreposição */
-    .btn-item-equip-badge {
+    /* ISSUE-134, ISSUE-135 & ISSUE-146: Botão Intuitivo de Equipar Item com Largura Auto e Sem Sobreposição */
+    .btn-item-equip-badge,
+    button.btn-item-equip-badge,
+    .roll20-item-equipped-toggle.btn-item-equip-badge {
       width: auto !important;
-      min-width: fit-content !important;
+      min-width: 78px !important;
+      max-width: none !important;
       height: auto !important;
-      min-height: 22px;
+      min-height: 22px !important;
       display: inline-flex !important;
-      align-items: center;
-      justify-content: center;
-      gap: 3px;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 4px !important;
       font-size: 10px !important;
       font-weight: 700 !important;
-      padding: 2px 7px !important;
+      padding: 2px 8px !important;
       border-radius: 4px !important;
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
       background: rgba(255, 255, 255, 0.05);
       color: #94a3b8;
       cursor: pointer;
       transition: all 0.15s ease;
       white-space: nowrap !important;
       flex-shrink: 0 !important;
+      box-sizing: border-box !important;
     }
-    .btn-item-equip-badge:hover {
+    .btn-item-equip-badge:hover,
+    button.btn-item-equip-badge:hover {
       background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.25);
+      border-color: rgba(255, 255, 255, 0.25) !important;
       color: #fff;
     }
     .btn-item-equip-badge.equipped,
-    .btn-item-equip-badge.active {
+    .btn-item-equip-badge.active,
+    button.btn-item-equip-badge.equipped,
+    button.btn-item-equip-badge.active {
       background: rgba(16, 185, 129, 0.18) !important;
       border-color: #10b981 !important;
       color: #6ee7b7 !important;
       box-shadow: 0 0 6px rgba(16, 185, 129, 0.35) !important;
     }
     .btn-item-equip-badge.equipped:hover,
-    .btn-item-equip-badge.active:hover {
+    .btn-item-equip-badge.active:hover,
+    button.btn-item-equip-badge.equipped:hover,
+    button.btn-item-equip-badge.active:hover {
       background: rgba(16, 185, 129, 0.3) !important;
       border-color: #34d399 !important;
       color: #a7f3d0 !important;
+    }
+    .btn-item-equip-badge.unequipped,
+    button.btn-item-equip-badge.unequipped {
+      background: rgba(255, 255, 255, 0.05) !important;
+      border-color: rgba(255, 255, 255, 0.15) !important;
+      color: #94a3b8 !important;
     }
 
     /* ISSUE-135: Ações da Tabela de Ataques e Inventário sem Colisão */
@@ -10835,6 +10850,28 @@
       justify-content: flex-end;
       gap: 4px;
       flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .inventory-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 6px 10px;
+      background: rgba(15, 23, 42, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .inventory-item-row.equipped {
+      border-color: rgba(16, 185, 129, 0.3);
+      background: rgba(16, 185, 129, 0.05);
+    }
+    .inventory-item-info {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
     .inventory-item-actions {
@@ -12021,6 +12058,47 @@
       background: rgba(239, 68, 68, 0.15);
       color: #fca5a5;
       border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    /* ===================================================
+       🏰 FILTRO DE CAMPANHA E AÇÕES EM LOTE (ISSUE-144)
+       =================================================== */
+    .filter-player-campaign-select {
+      background: #080c16 !important;
+      color: #f59e0b !important;
+      border: 1px solid rgba(245, 158, 11, 0.4) !important;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .filter-player-campaign-select:hover,
+    .filter-player-campaign-select:focus {
+      border-color: #f59e0b !important;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+    }
+    .campaign-filter-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fef08a;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 3px 8px;
+      border-radius: 12px;
+      animation: fadeInBadge 0.25s ease;
+    }
+    @keyframes fadeInBadge {
+      from { opacity: 0; transform: translateY(-2px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .btn-batch-camp-active {
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.3) !important;
     }
 
   </style>

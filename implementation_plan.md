@@ -1,74 +1,85 @@
-# 📋 Plano de Implementação: Cards de Aumento de Habilidade / Talento (ASI) por Nível e Escolhas Individualizadas (ISSUE-143)
+# Plano de Implementação - Correção de Sobreposição de Ícones e Varredura Visual (ISSUE-135)
 
-## 📌 Contexto & Diagnóstico
+## 1. Contexto e Diagnóstico
 
-O usuário relatou:
-> *"nos traços, não está mostrando o 'aprimorar habilidade ou talento' do lv 4, está como se fosse geral, ai no lv 8 ele n conseguirar adicionar +2 em outro, pq vai ficar bugando, vamos deixar como se fosse uma escolha q ele pudesse fazer nos niveis indicados em cada classe"*
+O usuário enviou uma captura de tela demonstrando sobreposição de ícones na linha de itens do inventário da ficha (`Espada Longa (Longsword) • 1,5 kgkg`), onde o botão "🛡️ Equipado", os botões de quantidade (`−`, `1x`, `+`), o botão do Baú (`📦 Baú`), o balão de fala (`💬`) e o botão de exclusão (`🗑️`) colidiram visualmente. Além disso, o usuário solicitou uma varredura para identificar e corrigir quaisquer outras funcionalidades com riscos semelhantes de sobreposição de ícones.
 
-### Causa-Raiz Técnica:
-1. **Ausência nos Traços Desbloqueados**:
-   - Em `CLASSES_DATA` (`src/data/classes.js`), as tabelas de progressão indicam "Aumento no Valor de Atributo" no 4º, 8º, 12º, 16º e 19º níveis (e 6º/14º para Guerreiro e 10º para Ladino). No entanto, o array `features` de cada classe não continha objetos para esses marcos.
-   - Como resultado, `getUnlockedClassFeatures` e `renderPlayerUnlockedFeatures` nunca renderizavam o card de ASI na aba de Características/Traços da Ficha.
-2. **Falta de Isolamento por Marco de Nível**:
-   - `saveAsiChoiceModal` aplicava aumentos diretamente nos atributos do herói (`p.str += 2`) ou concedia talentos, mas **não registrava a qual marco de nível aquela escolha pertencia**.
-   - Ao atingir o Nível 8, o jogador não tinha como saber o que já havia escolhido no Nível 4, nem conseguia fazer outra escolha independente sem conflito ou descontrole histórico.
+### 1.1 Causa-Raiz 1: Sobreposição no Inventário
+- No CSS (`src/styles/head_css.html`), a classe `.roll20-item-equipped-toggle` possuía regras legadas de um checkbox redondo minúsculo:
+  ```css
+  .roll20-item-equipped-toggle {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+  }
+  ```
+- Ao implementar o badge tátil com texto (`🛡️ Equipado` / `Equipar`), a classe combinada herdava essa largura de apenas 14px. O texto (que requer ~75px) extravasava a caixa do botão. Como o container flex posiciona o próximo elemento logo após os 14px da caixa, os botões `−`, `1x` e `+` foram renderizados **diretamente sobre as letras de "Equipado"**.
+- Adicionalmente, quando o título do item era longo, a ausência de `flex-shrink: 0` no bloco de ações causava compressão horizontal.
 
----
+### 1.2 Causa-Raiz 2: Duplicação de Unidade de Peso (`kgkg`)
+- Quando `it.weight` já continha a unidade `"kg"` vinda do compêndio (ex: `"1.5 kg"`), a concatenação direta `${it.weight}kg` gerava `"1,5 kgkg"`.
 
-## 🎯 Objetivos da Implementação
-
-1. **Injeção Canônica de ASI nos Traços Desbloqueados (`getUnlockedClassFeatures`)**:
-   - Cruzar os níveis de ASI de cada classe via `getClassAsiLevels(className)`.
-   - Gerar dinamicamente para cada marco atingido ($\le \text{nível da classe}$) uma característica oficial:
-     - Exemplo: `Aumento no Valor de Habilidade ou Talento (4º Nível)`.
-2. **Card Interativo de Escolha de ASI (`renderPlayerUnlockedFeatures`)**:
-   - Renderizar no card da habilidade um box temático interativo (`.feature-asi-box`), similar ao box marcial de *Estilo de Luta*:
-     - **Status Pendente**: `⚠️ Escolha Pendente (Nível 4)` com botão chamativo `[📈 Escolher Atributo ou Talento]`.
-     - **Status Concluído**: `✅ Escolhido: +2 em Força` ou `✅ Escolhido: Talento "Alerta"` com botão `[✏️ Alterar Escolha]`.
-3. **Mecanismo de Escolha Individualizada por Marco (`p.asiChoices`)**:
-   - Estrutura de dados persistente no herói:
-     ```javascript
-     p.asiChoices = {
-       "guerreiro_lvl_4": { type: "stats", distType: "single", stat1: "str", gain1: 2, label: "+2 em Força", level: 4, classKey: "guerreiro" },
-       "guerreiro_lvl_6": { type: "feat", featId: "alerta", featName: "Alerta", label: "Talento: Alerta", level: 6, classKey: "guerreiro" },
-       "guerreiro_lvl_8": { type: "stats", distType: "dual", stat1: "con", stat2: "dex", gain1: 1, gain2: 1, label: "+1 em Constituição, +1 em Destreza", level: 8, classKey: "guerreiro" }
-     };
-     ```
-   - Ao alterar uma escolha existente em um nível específico, reverter cirurgicamente os atributos ou o talento daquele nível antes de aplicar a nova escolha, **sem afetar os demais níveis**.
-4. **Preservação e Sincronização**:
-   - Garantir que `p.asiChoices` seja retido em `savePlayerSheet()` e transmitido via Firebase / LocalStorage.
+### 1.3 Varredura em Outras Funcionalidades
+1. **Ações na Tabela de Ataques (`attack-actions-cell`)**:
+   - Os botões `💥` (dano) e `💬` (chat) precisavam de alinhamento flex com `gap: 4px` e `flex-shrink: 0` explícitos para evitar sobreposição em telas estreitas.
+2. **Chips de Magia (`player-spell-card-tactile`)**:
+   - O título `.spell-chip-name` em flex row necessita de `min-width: 0` com `text-overflow: ellipsis` para que nomes longos de magias não empurrem o balão `💬` e o badge de círculo para fora do card.
+3. **Linhas de Itens no Inventário (`inventory-item-row`)**:
+   - `.inventory-item-info` deve ter `min-width: 0; flex: 1;` com truncamento elegante (`ellipsis`), e `.inventory-item-actions` deve ter `flex-shrink: 0; display: inline-flex; gap: 4px; align-items: center;` impedindo qualquer quebra ou colisão.
 
 ---
 
-## 🛠️ Arquivos e Módulos Afetados
+## 2. Modificações Propostas
 
-| Arquivo | Modificações Planejadas |
-|---|---|
-| `src/js/players.js` | Injeção dinâmica de ASI em `getUnlockedClassFeatures`; formatação em `formatPlayerFeatureForDisplay`; renderização interativa em `renderPlayerUnlockedFeatures`; vinculação atômica por marco em `openAsiChoiceModal` e `saveAsiChoiceModal`; reversão segura ao editar; retenção em `savePlayerSheet`. |
-| `src/styles/head_css.html` | Estilos para `.feature-asi-box`, `.feature-asi-header`, `.feature-asi-status-badge`, `.feature-asi-btn` e micro-animações. |
-| `test_runner.js` | Bateria 111 de testes automatizados validando presença dos cards de ASI nos níveis indicados, isolamento de escolhas no Nv 4 e Nv 8, e reversão segura. |
-| `issues/README.md` | Registro oficial da ISSUE-143. |
+### 2.1 Estilos CSS (`src/styles/head_css.html`)
+- Atualizar `.btn-item-equip-badge` e anular qualquer herança restritiva de `width: 14px` ou `height: 14px`:
+  ```css
+  .btn-item-equip-badge {
+    width: auto !important;
+    height: auto !important;
+    min-width: 68px;
+    min-height: 22px;
+    max-height: 26px;
+    padding: 2px 8px !important;
+    border-radius: 4px !important;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  ```
+- Blindar a classe `.attack-actions-cell`:
+  ```css
+  .attack-actions-cell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  ```
+- Blindar `.spell-chip-name` com `min-width: 0` e `text-overflow: ellipsis`.
+
+### 2.2 Lógica e Renderização das Fichas (`src/js/players.js`)
+- Sanitizar formatação de peso com helper dedicado `formatCleanItemWeight(weight)`, removendo unidades duplicadas (`replace(/\s*kg/gi, '').trim() + ' kg'`).
+- Garantir que `.inventory-item-actions` utilize `flex-shrink: 0; display: inline-flex; gap: 4px; align-items: center;`.
+- Proteger escopo de variáveis auxiliares (ex: `isConsumable`, `cat`, `damageOrAc`).
+
+### 2.3 Compilação e Testes Automatizados
+- Compilar via `node builder.js`.
+- Adicionar testes em `test_runner.js` validando:
+  - Formatação correta de peso (sem `kgkg`).
+  - `.btn-item-equip-badge` com largura livre (`width: auto`) e `flex-shrink: 0`.
+  - `.attack-actions-cell` com flex container e gap ativo.
+  - Ausência de quebra ou sobreposição em itens com nomes longos.
+- Executar `node test_runner.js` garantindo 100% de testes aprovados.
 
 ---
 
-## 🧪 Estratégia de Testes Automatizados (Bateria 111)
+## 3. Plano de Verificação
 
-1. Validação de que `getUnlockedClassFeatures` inclui ASI no nível 4 para qualquer classe.
-2. Validação de que Guerreiro possui ASI no nível 4 e 6, e Ladino no nível 4, 8 e 10.
-3. Validação de renderização do card com botão de escolha interativa quando a escolha estiver pendente.
-4. Escolha de +2 em Força no nível 4 registrada em `p.asiChoices['guerreiro_lvl_4']`.
-5. Escolha de +2 em Constituição no nível 8 registrada em `p.asiChoices['guerreiro_lvl_8']`, preservando ambos os aumentos independentemente.
-6. Alteração da escolha do nível 4 (troca de +2 FOR para Talento "Alerta"), revertendo os 2 pontos de Força sem mexer na Constituição do nível 8.
-7. Preservação de `p.asiChoices` em `savePlayerSheet()`.
-
----
-
-## 📋 Checklist de Entrega
-
-- [ ] Aprovação do usuário deste plano de implementação (`implementation_plan.md`).
-- [ ] Implementação das funções e renderizadores em `src/js/players.js`.
-- [ ] Implementação dos estilos visuais em `src/styles/head_css.html`.
-- [ ] Compilação com `node builder.js`.
-- [ ] Execução da suíte completa de testes (`node test_runner.js`), garantindo 100% dos testes verdes.
-- [ ] Registro em `issues/README.md`.
-- [ ] Commit semântico e `git push origin main`.
+1. **Testes Automatizados**: `node test_runner.js` (validando bateria 103 + todas as baterias existentes).
+2. **Validação Visual no Navegador**:
+   - Abrir a ficha no navegador.
+   - Conferir a aba Inventário: verificar o botão `🛡️ Equipado`, botões `−`, `1x`, `+`, `📦 Baú`, `💬`, `🗑️` perfeitamente alinhados e espaçados.
+   - Conferir texto de peso: `1,5 kg` sem repetição de `kgkg`.
+   - Conferir tabela de ataques e chips de magias em resoluções padrão e mobile.

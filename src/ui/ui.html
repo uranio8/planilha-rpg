@@ -750,19 +750,22 @@
       <div class="controls-bar">
         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
           <input type="text" id="filter-player-q" placeholder="Buscar aluno, personagem, raça..." style="max-width: 250px;" oninput="renderPlayers()">
+          <select id="filter-player-campaign" class="filter-player-campaign-select" style="max-width: 210px; padding: 6px 10px; border-radius: 6px; background: #080c16; color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); font-size: 12px; font-weight: 700;" onchange="onPlayerCampaignFilterChange()" title="Filtrar fichas por Campanha / Mesa">
+            <option value="all">🏰 Todas as Campanhas</option>
+          </select>
           <select id="filter-player-sort" style="max-width: 150px; padding: 6px 10px; border-radius: 6px; background: #080c16; color: #fff; border: 1px solid var(--border-color); font-size: 12px;" onchange="renderPlayers()">
             <option value="name">Ordenar: Nome</option>
             <option value="student">Ordenar: Aluno</option>
             <option value="level">Maior Nível</option>
             <option value="hp">Maior % PV</option>
           </select>
-          <div style="font-size: 11px; color: var(--text-muted);">Clique nos atributos, ataques e dados para rolar instantaneamente.</div>
+          <span id="player-campaign-filter-status" class="campaign-filter-badge" style="display: none;"></span>
         </div>
         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-          <button class="btn-action" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 700;" onclick="addAllPlayersToCombat()" title="Adicionar todas as fichas de alunos ao combate ativo de uma vez">⚔️ Todos no Combate</button>
-          <button class="btn-secondary" style="color: #fbbf24; border-color: rgba(245, 158, 11, 0.4);" onclick="openBatchRewardsModal()" title="Distribuir Experiência e Moedas em lote para o grupo">🎁 Recompensas</button>
-          <button class="btn-secondary" onclick="partyShortRestAll()" title="Descanso Curto para todo o grupo (1h)">☕ Curto (Todos)</button>
-          <button class="btn-secondary" onclick="partyLongRestAll()" title="Descanso Longo para todo o grupo (8h - restaura PV, magias e dados)">🌙 Longo (Todos)</button>
+          <button id="btn-batch-combat" class="btn-action" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 700;" onclick="addAllPlayersToCombat()" title="Adicionar fichas ao combate ativo">⚔️ Todos no Combate</button>
+          <button id="btn-batch-rewards" class="btn-secondary" style="color: #fbbf24; border-color: rgba(245, 158, 11, 0.4);" onclick="openBatchRewardsModal()" title="Distribuir Experiência e Moedas em lote">🎁 Recompensas</button>
+          <button id="btn-batch-short-rest" class="btn-secondary" onclick="partyShortRestAll()" title="Descanso Curto (1h)">☕ Curto (Todos)</button>
+          <button id="btn-batch-long-rest" class="btn-secondary" onclick="partyLongRestAll()" title="Descanso Longo (8h - restaura PV, magias e dados)">🌙 Longo (Todos)</button>
           <button class="btn-action" onclick="openPlayerModal(null)">➕ Nova Ficha</button>
         </div>
       </div>
@@ -4072,9 +4075,13 @@
 
       <!-- SELEÇÃO DE HERÓIS -->
       <div style="margin-bottom: 12px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <span style="font-size: 11px; font-weight: 700; color: var(--primary-light);">👥 Aventureiros Beneficiados:</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 4px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 11px; font-weight: 700; color: var(--primary-light);">👥 Aventureiros Beneficiados:</span>
+            <span id="batch-reward-campaign-badge" style="font-size: 10px; color: #f59e0b; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 4px; padding: 1px 6px; font-weight: 700; display: none;"></span>
+          </div>
           <div style="display: flex; gap: 6px;">
+            <button id="btn-batch-reward-select-camp" class="btn-secondary" style="font-size: 10px; padding: 1px 6px; color: #f59e0b; border-color: rgba(245, 158, 11, 0.4); display: none;" onclick="selectCurrentCampaignBatchRewardHeroes()">🏰 Selecionar Mesa</button>
             <button class="btn-secondary" style="font-size: 10px; padding: 1px 6px;" onclick="toggleAllBatchRewardHeroes(true)">Marcar Todos</button>
             <button class="btn-secondary" style="font-size: 10px; padding: 1px 6px;" onclick="toggleAllBatchRewardHeroes(false)">Desmarcar</button>
           </div>
