@@ -70,5 +70,5 @@ O usuário reportou dois problemas interligados ao utilizar a ficha no smartphon
 - [x] **Task 3**: Executar compilação com `node builder.js`.
 - [x] **Task 4**: Adicionar a **Bateria 108** em `test_runner.js` e rodar a suíte completa garantindo 100% de sucesso.
 - [x] **Task 5**: Documentar a ISSUE-140 em `issues/README.md`.
-- [ ] **Task 6**: Git commit semântico e push para `origin/main`.
-- [ ] **Task 7**: Apresentar resultado ao usuário.
+- [x] **Task 6**: Git commit semântico e push para `origin/main`.
+- [x] **Task 7**: Apresentar resultado ao usuário.
