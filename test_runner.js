@@ -8354,6 +8354,123 @@ assert(bundle108.includes("target.closest('.roll20-skills-list')"), 'initSwipeNa
 assert(bundle108.includes('isPortalMode'), 'initSwipeNavigation ignora swipes no modo portal do jogador');
 
 
+// =========================================================================
+// ⚔️ 109. TESTES DE FILTRO DE ARMAS, DESDUPLICAÇÃO E BLINDAGEM DE MAGIAS (ISSUE-141)
+// =========================================================================
+console.log('\n⚔️ 109. Testes de Filtro de Armas, Desduplicação e Blindagem de Magias (ISSUE-141):');
+
+// 1. Cria herói de teste com Cota de Malha, Escudo e Armas equipadas
+vm.runInContext(`
+  const hero109 = {
+    id: 'p_test_109',
+    name: 'Guerreiro de Armadura',
+    level: 5,
+    str: 16,
+    dex: 14,
+    inventory: [
+      { id: 'i1', name: 'Cota de Malha', category: 'Armaduras', equipped: true, weight: 25 },
+      { id: 'i2', name: 'Escudo', category: 'Escudos', equipped: true, weight: 3 },
+      { id: 'i3', name: 'Espada Longa (Longsword)', category: 'Armas', equipped: true, damage: '1d8 Cortante', weight: 1.5 },
+      { id: 'i4', name: 'Besta Leve (Light Crossbow)', category: 'Armas', equipped: true, damage: '1d8 Perfurante', weight: 2.5 }
+    ],
+    attacks: [
+      'Espada Longa (+6) 1d8+3 Cortante',
+      'Besta Leve (+5) 1d8+2 Perfurante'
+    ]
+  };
+
+  const calcAttacks109 = getPlayerCalculatedAttacks(hero109);
+`, sandbox);
+
+// Validação 1: Cota de Malha NÃO deve ser considerada arma/ataque
+const hasChainMail = vm.runInContext("calcAttacks109.some(a => a.name.toLowerCase().includes('cota de malha'))", sandbox);
+assert(!hasChainMail, 'Cota de Malha não deve aparecer como arma na tabela de ataques');
+
+// Validação 2: Escudo NÃO deve ser considerado arma/ataque
+const hasShield = vm.runInContext("calcAttacks109.some(a => a.name.toLowerCase().includes('escudo'))", sandbox);
+assert(!hasShield, 'Escudo não deve aparecer como arma na tabela de ataques');
+
+// Validação 3: Espada Longa e Besta Leve devem constar exatamente 1 vez cada (desduplicação)
+const swordCount = vm.runInContext("calcAttacks109.filter(a => a.name.toLowerCase().includes('espada longa')).length", sandbox);
+assert(swordCount === 1, `Espada Longa desduplicada com sucesso (encontrada ${swordCount}x, esperado 1x)`);
+
+const crossbowCount = vm.runInContext("calcAttacks109.filter(a => a.name.toLowerCase().includes('besta leve')).length", sandbox);
+assert(crossbowCount === 1, `Besta Leve desduplicada com sucesso (encontrada ${crossbowCount}x, esperado 1x)`);
+
+// Validação 4: Total de ataques calculados deve ser exatamente 2 (apenas as armas)
+const totalAttacksCount = vm.runInContext("calcAttacks109.length", sandbox);
+assert(totalAttacksCount === 2, `Total de ataques calculado com precisão (${totalAttacksCount} armas, esperado 2)`);
+
+// 2. Testes de Blindagem de Magias Preparadas e Grimório do Mago
+vm.runInContext(`
+  const mage109 = {
+    id: 'p_mage_109',
+    name: 'Mago Ilusionista',
+    className: 'Mago',
+    level: 5,
+    int: 18,
+    preparedSpells: ['Amizade', 'Mísseis Mágicos', 'Bola de Fogo'],
+    spellbookSpells: ['Amizade', 'Mísseis Mágicos', 'Armadura Arcana', 'Bola de Fogo', 'Invisibilidade'],
+    updatedAt: 1000
+  };
+
+  PLAYERS.push(mage109);
+
+  const initialTime109 = mage109.updatedAt;
+  togglePlayerSpellPrepared('p_mage_109', 'Invisibilidade');
+`, sandbox);
+
+// Validação 5: togglePlayerSpellPrepared carimba updatedAt
+const hasInvisPrepared = vm.runInContext("PLAYERS.find(p => p.id === 'p_mage_109').preparedSpells.includes('Invisibilidade')", sandbox);
+const hasUpdatedAtNewer = vm.runInContext("PLAYERS.find(p => p.id === 'p_mage_109').updatedAt > 1000", sandbox);
+const hasUpdatedBy = vm.runInContext("PLAYERS.find(p => p.id === 'p_mage_109').updatedBy !== undefined", sandbox);
+
+assert(hasInvisPrepared, 'Invisibilidade foi preparada para a sessão');
+assert(hasUpdatedAtNewer, 'togglePlayerSpellPrepared atualizou updatedAt com timestamp atual');
+assert(hasUpdatedBy, 'togglePlayerSpellPrepared definiu updatedBy');
+
+// Validação 6: Desmarcar preserva no spellbookSpells
+vm.runInContext(`
+  togglePlayerSpellPrepared('p_mage_109', 'Invisibilidade');
+`, sandbox);
+
+const hasInvisRemovedFromPrep = vm.runInContext("!PLAYERS.find(p => p.id === 'p_mage_109').preparedSpells.includes('Invisibilidade')", sandbox);
+const hasInvisInSpellbook = vm.runInContext("PLAYERS.find(p => p.id === 'p_mage_109').spellbookSpells.includes('Invisibilidade')", sandbox);
+
+assert(hasInvisRemovedFromPrep, 'Invisibilidade foi desmarcada das preparadas');
+assert(hasInvisInSpellbook, 'Invisibilidade permaneceu preservada no Grimório permanente');
+
+// Validação 7: Simulação de merge da nuvem quando o Mestre publica snapshot com preparedSpells vazio
+// No portal do jogador, o herói não deve perder suas magias preparadas
+vm.runInContext(`
+  const remoteEmptyMage = {
+    id: 'p_mage_109',
+    name: 'Mago Ilusionista',
+    className: 'Mago',
+    level: 5,
+    int: 18,
+    preparedSpells: [], // Mestre enviou array vazio
+    spellbookSpells: [],
+    updatedAt: 999999999 // Mestre tem timestamp mais recente
+  };
+
+  activePortalPlayerId = 'p_mage_109';
+  clientRole = 'player';
+  applyCloudDataToLocal({
+    publishedBy: 'master',
+    lastUpdateIso: new Date().toISOString(),
+    players: [remoteEmptyMage]
+  });
+`, sandbox);
+
+const hasPrepProtected = vm.runInContext("Array.isArray(PLAYERS.find(p => p.id === 'p_mage_109').preparedSpells) && PLAYERS.find(p => p.id === 'p_mage_109').preparedSpells.length > 0", sandbox);
+const hasFireballProtected = vm.runInContext("PLAYERS.find(p => p.id === 'p_mage_109').preparedSpells.includes('Bola de Fogo')", sandbox);
+const hasMageArmorInBook = vm.runInContext("PLAYERS.find(p => p.id === 'p_mage_109').spellbookSpells.includes('Armadura Arcana')", sandbox);
+
+assert(hasPrepProtected, 'Magias preparadas do Mago protegidas contra snapshot vazio do Mestre');
+assert(hasFireballProtected, 'Bola de Fogo permaneceu preparada após sync da nuvem');
+assert(hasMageArmorInBook, 'Grimório permanente preservado com sucesso no sync');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 if (failedTests === 0) {

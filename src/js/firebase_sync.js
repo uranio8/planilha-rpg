@@ -695,18 +695,19 @@ function applyCloudDataToLocal(cloudData) {
                 ? localChar.slots
                 : ((Array.isArray(remoteP.slots) && remoteP.slots.some(s => s > 0)) ? remoteP.slots : ((typeof ensurePlayerSpellSlots === 'function') ? ensurePlayerSpellSlots(localChar || remoteP) : (localChar.slots || remoteP.slots))),
               slotsUsed: keepLocalSlots ? localChar.slotsUsed : (remoteP.slotsUsed || localChar.slotsUsed || [0, 0, 0, 0, 0, 0, 0, 0, 0]),
-              preparedSpells: isLocalNewer
-                ? ((localChar.preparedSpells && localChar.preparedSpells.length > 0) ? localChar.preparedSpells : (remoteP.preparedSpells || []))
-                : ((remoteP.preparedSpells && remoteP.preparedSpells.length > 0) ? remoteP.preparedSpells : (localChar.preparedSpells || [])),
-              spellbookSpells: isLocalNewer
-                ? ((localChar.spellbookSpells && localChar.spellbookSpells.length > 0) ? localChar.spellbookSpells : (remoteP.spellbookSpells || []))
-                : ((remoteP.spellbookSpells && remoteP.spellbookSpells.length > 0) ? remoteP.spellbookSpells : (localChar.spellbookSpells || [])),
-              customSpells: isLocalNewer
-                ? ((localChar.customSpells && localChar.customSpells.length > 0) ? localChar.customSpells : (remoteP.customSpells || []))
-                : ((remoteP.customSpells && remoteP.customSpells.length > 0) ? remoteP.customSpells : (localChar.customSpells || [])),
-              spells: isLocalNewer
-                ? ((localChar.spells && localChar.spells.length > 0) ? localChar.spells : (remoteP.spells || localChar.spells))
-                : (remoteP.spells || localChar.spells),
+              preparedSpells: (remoteP.preparedSpells && remoteP.preparedSpells.length > 0)
+                ? remoteP.preparedSpells
+                : (localChar.preparedSpells || []),
+              spellbookSpells: Array.from(new Set([
+                ...(Array.isArray(localChar.spellbookSpells) ? localChar.spellbookSpells : []),
+                ...(Array.isArray(remoteP.spellbookSpells) ? remoteP.spellbookSpells : [])
+              ])),
+              customSpells: (remoteP.customSpells && remoteP.customSpells.length > 0)
+                ? remoteP.customSpells
+                : (localChar.customSpells || []),
+              spells: (remoteP.spells && remoteP.spells.trim().length > 0)
+                ? remoteP.spells
+                : (localChar.spells || ''),
               featureCharges: keepLocalFeatures ? localChar.featureCharges : (remoteP.featureCharges || localChar.featureCharges || []),
               // Mantém inventário mais recente entre ambos
               inventory: (isLocalNewer && localChar.inventory && localChar.inventory.length > 0)
@@ -840,6 +841,25 @@ function applyCloudDataToLocal(cloudData) {
                 if (currentLocal[attr] !== undefined) mergedPlayer[attr] = currentLocal[attr];
               });
             }
+
+            // ISSUE-141: Blindagem de Magias Preparadas e Grimório para o Herói do Jogador
+            // O jogador é autoridade sobre seu próprio grimório e magias preparadas; snapshots remotos vazios nunca apagam
+            const isMyPortalHero = (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId === remoteP.id);
+            if (isMyPortalHero || clientRole === 'player') {
+              if (Array.isArray(currentLocal.preparedSpells) && currentLocal.preparedSpells.length > 0) {
+                if (!Array.isArray(remoteP.preparedSpells) || remoteP.preparedSpells.length === 0) {
+                  mergedPlayer.preparedSpells = [...currentLocal.preparedSpells];
+                }
+              }
+              if (Array.isArray(currentLocal.spellbookSpells) && currentLocal.spellbookSpells.length > 0) {
+                const combinedBook = new Set([...currentLocal.spellbookSpells, ...(Array.isArray(remoteP.spellbookSpells) ? remoteP.spellbookSpells : [])]);
+                mergedPlayer.spellbookSpells = Array.from(combinedBook);
+              }
+              if (currentLocal.spells && (!remoteP.spells || remoteP.spells.trim().length === 0)) {
+                mergedPlayer.spells = currentLocal.spells;
+              }
+            }
+
             mergedMap.set(remoteP.id, mergedPlayer);
           } else {
             // Personagem novo vindo da nuvem
