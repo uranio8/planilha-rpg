@@ -9272,6 +9272,71 @@
       margin-top: 1px;
     }
 
+    /* BOX DE AUMENTO DE HABILIDADE OU TALENTO (ASI) POR NÍVEL (ISSUE-143) */
+    .feature-asi-box {
+      margin-top: 8px;
+      padding: 8px 10px;
+      background: rgba(11, 17, 32, 0.9);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .feature-asi-box.pending {
+      border-color: rgba(239, 68, 68, 0.45);
+      background: rgba(239, 68, 68, 0.05);
+    }
+    .feature-asi-box:hover {
+      border-color: rgba(59, 130, 246, 0.7);
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+    }
+    .feature-asi-box.pending:hover {
+      border-color: rgba(239, 68, 68, 0.8);
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.25);
+    }
+    .feature-asi-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #93c5fd;
+      flex-wrap: wrap;
+    }
+    .feature-asi-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .feature-asi-status-badge.active {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+    .feature-asi-status-badge.pending {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+    .feature-asi-btn {
+      font-size: 11px !important;
+      padding: 5px 12px !important;
+      white-space: nowrap !important;
+      font-weight: 700 !important;
+      border-radius: 5px !important;
+      cursor: pointer !important;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     /* ===================================================
        💀 ESTILOS: PAINEL DE SALVAGUARDAS DA MORTE GRANDE
        =================================================== */

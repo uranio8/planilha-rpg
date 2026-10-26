@@ -9275,6 +9275,71 @@
       margin-top: 1px;
     }
 
+    /* BOX DE AUMENTO DE HABILIDADE OU TALENTO (ASI) POR NÍVEL (ISSUE-143) */
+    .feature-asi-box {
+      margin-top: 8px;
+      padding: 8px 10px;
+      background: rgba(11, 17, 32, 0.9);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .feature-asi-box.pending {
+      border-color: rgba(239, 68, 68, 0.45);
+      background: rgba(239, 68, 68, 0.05);
+    }
+    .feature-asi-box:hover {
+      border-color: rgba(59, 130, 246, 0.7);
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+    }
+    .feature-asi-box.pending:hover {
+      border-color: rgba(239, 68, 68, 0.8);
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.25);
+    }
+    .feature-asi-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #93c5fd;
+      flex-wrap: wrap;
+    }
+    .feature-asi-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .feature-asi-status-badge.active {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+    .feature-asi-status-badge.pending {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+    .feature-asi-btn {
+      font-size: 11px !important;
+      padding: 5px 12px !important;
+      white-space: nowrap !important;
+      font-weight: 700 !important;
+      border-radius: 5px !important;
+      cursor: pointer !important;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     /* ===================================================
        💀 ESTILOS: PAINEL DE SALVAGUARDAS DA MORTE GRANDE
        =================================================== */
@@ -34097,7 +34162,10 @@ const FEATS_DATA = [
 function findFeatById(featId) {
   if (!featId) return null;
   const target = String(featId).toLowerCase().trim();
-  return FEATS_DATA.find(f => f.id.toLowerCase() === target) || null;
+  return FEATS_DATA.find(f => 
+    f.id.toLowerCase() === target || 
+    (f.nameEn && f.nameEn.toLowerCase() === target)
+  ) || null;
 }
 
 function findFeatByName(name) {
@@ -46832,17 +46900,21 @@ function getSubclassUnlockLevel(className) {
   return 3;
 }
 
+function getClassAsiLevels(className) {
+  const norm = String(className || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  if (norm.includes('guerreiro') || norm.includes('fighter')) {
+    return [4, 6, 8, 12, 14, 16, 19];
+  }
+  if (norm.includes('ladino') || norm.includes('rogue')) {
+    return [4, 8, 10, 12, 16, 19];
+  }
+  return [4, 8, 12, 16, 19];
+}
+
 function isClassAsiLevel(className, classLevel) {
   const lvl = parseInt(classLevel, 10);
   if (isNaN(lvl) || lvl < 4) return false;
-  const norm = String(className || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-  if (norm.includes('guerreiro') || norm.includes('fighter')) {
-    return [4, 6, 8, 12, 14, 16, 19].includes(lvl);
-  }
-  if (norm.includes('ladino') || norm.includes('rogue')) {
-    return [4, 8, 10, 12, 16, 19].includes(lvl);
-  }
-  return [4, 8, 12, 16, 19].includes(lvl);
+  return getClassAsiLevels(className).includes(lvl);
 }
 
 function resolveSubclassIndex(className, subclassIdx = 0, subclassName = '') {
@@ -46895,6 +46967,28 @@ function getUnlockedClassFeatures(className, level, subclassIdx = 0) {
       });
     }
   }
+
+  // 🎯 MARCOS CANÔNICOS DE ASI (AUMENTO NO VALOR DE HABILIDADE / TALENTO - ISSUE-143)
+  const asiLevels = (typeof getClassAsiLevels === 'function') ? getClassAsiLevels(cls.name || className) : [4, 8, 12, 16, 19];
+  if (Array.isArray(asiLevels)) {
+    asiLevels.forEach(asiLvl => {
+      if (asiLvl <= level) {
+        unlocked.push({
+          level: asiLvl,
+          name: `Aumento no Valor de Habilidade (${asiLvl}º Nível)`,
+          type: 'Evolução',
+          desc: `No ${asiLvl}º nível da sua classe, você pode aumentar um valor de atributo à sua escolha em 2, ou dois valores de atributo à sua escolha em 1 (até o máximo de 20). Usando a regra opcional de talentos, você pode, em vez disso, escolher um talento oficial de D&D 5E.`,
+          source: `${cls.name} • Marco do ${asiLvl}º Nível`,
+          isSubclass: false,
+          isAsi: true,
+          asiLevel: asiLvl
+        });
+      }
+    });
+  }
+
+  // Ordena características por nível ascendente
+  unlocked.sort((a, b) => (parseInt(a.level, 10) || 0) - (parseInt(b.level, 10) || 0));
 
   return unlocked;
 }
@@ -47193,6 +47287,21 @@ function formatPlayerFeatureForDisplay(feature, p, clsItem = null) {
     }
   }
 
+  // 0.1 Aumento no Valor de Habilidade / Talento por Nível (ISSUE-143)
+  else if (f.isAsi || normName.includes('aumento no valor de habilidade') || normName.includes('aumento no valor de atributo')) {
+    const asiLvl = f.asiLevel || f.level || 4;
+    const clsKey = (clsItem ? clsItem.className : (p.className || '')).toLowerCase();
+    const asiKey = `${clsKey}_lvl_${asiLvl}`;
+    const choice = (p.asiChoices && p.asiChoices[asiKey]) || null;
+    if (choice) {
+      name = `Aumento de Habilidade / Talento (${asiLvl}º Nv: ${choice.label})`;
+      desc = `<b>Escolha Registrada:</b> ⭐ <b>${choice.label}</b>.<br>• Benefício oficial de ${asiLvl}º nível da classe já integrado e ativo na ficha.`;
+    } else {
+      name = `Aumento no Valor de Habilidade (${asiLvl}º Nível)`;
+      desc = `No ${asiLvl}º nível da sua classe, você tem direito a um <b>Aumento no Valor de Habilidade</b> (+2 em um atributo ou +1 em dois atributos) ou a um <b>Talento oficial</b> de D&D 5E.<br>• <span style="color:#f87171; font-weight:700;">⚠️ Escolha ainda pendente para este nível.</span>`;
+    }
+  }
+
   // 1. Defesa sem Armadura
   if (normName.includes('defesa sem armadura') || normName.includes('unarmored defense')) {
     const isBarbarian = normCls.includes('barbaro') || normDesc.includes('constituicao');
@@ -47400,6 +47509,42 @@ function renderPlayerUnlockedFeatures(p, actionFilter = 'all') {
                 '</select>' +
               '</div>';
             }
+
+            // Box de Aumento no Valor de Habilidade / Talento por Marco de Nível (ISSUE-143)
+            const isAsiFeature = f.isAsi || (f.name && f.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes('aumento no valor de'));
+            let asiActionHtml = '';
+            if (isAsiFeature) {
+              const asiLvl = f.asiLevel || f.level || 4;
+              const clsKey = (clsItem ? clsItem.className : (p.className || '')).toLowerCase();
+              const asiKey = `${clsKey}_lvl_${asiLvl}`;
+              const choice = (p.asiChoices && p.asiChoices[asiKey]) || null;
+              if (choice) {
+                asiActionHtml = '<div class="feature-asi-box" onclick="event.stopPropagation();">' +
+                  '<div class="feature-asi-header">' +
+                    '<span>📈 Marco do ' + asiLvl + 'º Nível:</span>' +
+                    '<span class="feature-asi-status-badge active">✅ ' + choice.label + '</span>' +
+                  '</div>' +
+                  '<div style="display:flex; justify-content:flex-end; margin-top:4px;">' +
+                    '<button type="button" class="btn-secondary feature-asi-btn" onclick="openAsiChoiceModal(\'' + p.id + '\', ' + asiLvl + ', \'' + clsItem.className + '\')" title="Alterar a escolha deste nível">' +
+                      '✏️ Alterar Escolha' +
+                    '</button>' +
+                  '</div>' +
+                '</div>';
+              } else {
+                asiActionHtml = '<div class="feature-asi-box pending" onclick="event.stopPropagation();">' +
+                  '<div class="feature-asi-header">' +
+                    '<span>📈 Marco do ' + asiLvl + 'º Nível:</span>' +
+                    '<span class="feature-asi-status-badge pending">⚠️ Escolha Pendente</span>' +
+                  '</div>' +
+                  '<div style="display:flex; justify-content:flex-end; margin-top:4px;">' +
+                    '<button type="button" class="btn-action feature-asi-btn" onclick="openAsiChoiceModal(\'' + p.id + '\', ' + asiLvl + ', \'' + clsItem.className + '\')" title="Fazer a escolha de Atributo ou Talento">' +
+                      '📈 Escolher Atributo ou Talento' +
+                    '</button>' +
+                  '</div>' +
+                '</div>';
+              }
+            }
+
             const featKey = registerFeatureForModal(formatted.name, formatted.desc, formatted.type || (actTagLabel + ' de Classe'), formatted.source || clsItem.className);
             return `
             <div class="unlocked-feature-item" onclick="openPlayerFeatureModalByKey('${featKey}')" title="Clique para ver detalhes em tópicos">
@@ -47414,6 +47559,7 @@ function renderPlayerUnlockedFeatures(p, actionFilter = 'all') {
                 ${formatFeatureSnippet(formatted.desc)}
               </div>
               ${fightingStyleActionHtml}
+              ${asiActionHtml}
             </div>
             `;
           }).join('')}
@@ -53920,10 +54066,14 @@ function selectAsiModalMode(mode) {
 }
 
 function updateAsiStatsDistributionView() {
-  const radios = document.getElementsByName('asi_stat_dist_type');
+  const radios = (typeof document !== 'undefined' && document.getElementsByName)
+    ? Array.from(document.getElementsByName('asi_stat_dist_type'))
+    : ((typeof document !== 'undefined' && document.querySelectorAll)
+        ? Array.from(document.querySelectorAll('input[name="asi_stat_dist_type"]'))
+        : []);
   let type = 'single';
   for (const r of radios) {
-    if (r.checked) { type = r.value; break; }
+    if (r && r.checked) { type = r.value; break; }
   }
   const sBox = document.getElementById('asi-stat-single-box');
   const dBox = document.getElementById('asi-stat-dual-box');
@@ -54077,6 +54227,9 @@ function saveAsiChoiceModal() {
   const p = PLAYERS.find(x => x.id === activeAsiPlayerId);
   if (!p) return;
 
+  let choiceLabel = '';
+  let choiceDetails = {};
+
   if (activeAsiModalMode === 'stats') {
     const radios = document.getElementsByName('asi_stat_dist_type');
     let distType = 'single';
@@ -54093,6 +54246,8 @@ function saveAsiChoiceModal() {
       const next = Math.min(20, cur + 2);
       p[stat] = next;
       const lbl = { str: 'Força', dex: 'Destreza', con: 'Constituição', int: 'Inteligência', wis: 'Sabedoria', cha: 'Carisma' }[stat] || stat;
+      choiceLabel = `+2 em ${lbl}`;
+      choiceDetails = { type: 'stat', dist: 'single', stat, gain: 2 };
       addLog(`📈 <b>${p.name}</b> aplicou ASI: <b>+2 em ${lbl}</b> (${cur} ➔ ${next})`);
       addPlayerActionLog(p.id, '📈', `ASI: +2 em ${lbl} (${cur} ➔ ${next})`, 'level');
     } else {
@@ -54109,6 +54264,8 @@ function saveAsiChoiceModal() {
       p[s1] = n1;
       p[s2] = n2;
       const lbl = key => ({ str: 'Força', dex: 'Destreza', con: 'Constituição', int: 'Inteligência', wis: 'Sabedoria', cha: 'Carisma' }[key] || key);
+      choiceLabel = `+1 em ${lbl(s1)} e +1 em ${lbl(s2)}`;
+      choiceDetails = { type: 'stat', dist: 'dual', s1, s2, gain: 1 };
       addLog(`📈 <b>${p.name}</b> aplicou ASI: <b>+1 em ${lbl(s1)}</b> (${c1} ➔ ${n1}) e <b>+1 em ${lbl(s2)}</b> (${c2} ➔ ${n2})`);
       addPlayerActionLog(p.id, '📈', `ASI: +1 em ${lbl(s1)} e +1 em ${lbl(s2)}`, 'level');
     }
@@ -54131,9 +54288,27 @@ function saveAsiChoiceModal() {
       return;
     }
     const chosenStat = document.getElementById('asi-feat-stat-choice-select')?.value || null;
+    const featObj = typeof findFeatById === 'function' ? findFeatById(selectedAsiFeatId) : null;
+    choiceLabel = `Talento: ${featObj ? featObj.name : selectedAsiFeatId}`;
+    choiceDetails = { type: 'feat', featId: selectedAsiFeatId, chosenStat };
     const success = grantFeatToPlayer(p.id, selectedAsiFeatId, { source: 'asi', chosenStat });
     if (!success) return;
   }
+
+  // 🎯 Registro oficial da escolha do marco de nível (ISSUE-143)
+  if (!p.asiChoices || typeof p.asiChoices !== 'object') {
+    p.asiChoices = {};
+  }
+  const clsKey = (activeAsiClassKey || p.className || 'guerreiro').toLowerCase();
+  const targetLvl = parseInt(activeAsiTargetLevel, 10) || parseInt(p.level, 10) || 4;
+  const asiKey = `${clsKey}_lvl_${targetLvl}`;
+  p.asiChoices[asiKey] = {
+    level: targetLvl,
+    classKey: clsKey,
+    label: choiceLabel,
+    details: choiceDetails,
+    timestamp: Date.now()
+  };
 
   if (typeof touchPlayer === 'function') touchPlayer(p);
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
@@ -54143,7 +54318,7 @@ function saveAsiChoiceModal() {
   renderPlayers();
   if (typeof renderCombat === 'function') renderCombat();
   closeAsiChoiceModal();
-  if (typeof showToast === 'function') showToast(`Evolução de ASI de ${p.name} salva com sucesso!`, 'success');
+  if (typeof showToast === 'function') showToast(`Evolução de ASI de ${p.name} (${choiceLabel}) salva com sucesso!`, 'success');
 }
 
 // Vincula no window para navegadores
@@ -54524,10 +54699,17 @@ if (typeof window !== 'undefined') {
   // ISSUE-142: Geração de Atributos e Bônus Raciais Canônicos D&D 5E
   window.getRacialAbilityBonuses = getRacialAbilityBonuses;
   window.roll4d6DropLowest = roll4d6DropLowest;
-  window.rollAttributes4d6Modal = rollAttributes4d6Modal;
-  window.applyStandardArrayModal = applyStandardArrayModal;
-  window.optimizeAttributesForClassModal = optimizeAttributesForClassModal;
-  window.updateModalAttributeModifiers = updateModalAttributeModifiers;
+  // ISSUE-143: Progressão Canônica de ASI e Talentos D&D 5E
+  window.getClassAsiLevels = getClassAsiLevels;
+  window.isClassAsiLevel = isClassAsiLevel;
+  window.openAsiChoiceModal = openAsiChoiceModal;
+  window.closeAsiChoiceModal = closeAsiChoiceModal;
+  window.selectAsiModalMode = selectAsiModalMode;
+  window.selectAsiModalFeat = selectAsiModalFeat;
+  window.filterAsiModalFeats = filterAsiModalFeats;
+  window.saveAsiChoiceModal = saveAsiChoiceModal;
+  window.updateAsiStatsDistributionView = updateAsiStatsDistributionView;
+  window.updateAsiStatsPreview = updateAsiStatsPreview;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -54537,7 +54719,16 @@ if (typeof module !== 'undefined' && module.exports) {
     rollAttributes4d6Modal,
     applyStandardArrayModal,
     optimizeAttributesForClassModal,
-    updateModalAttributeModifiers
+    updateModalAttributeModifiers,
+    openAsiChoiceModal,
+    closeAsiChoiceModal,
+    selectAsiModalMode,
+    selectAsiModalFeat,
+    filterAsiModalFeats,
+    saveAsiChoiceModal,
+    formatPlayerFeatureForDisplay,
+    getClassAsiLevels,
+    isClassAsiLevel
   };
 }
 

@@ -181,6 +181,7 @@ const sandbox = {
       appendChild: () => {}
     },
     documentElement: { style: { setProperty: () => {} } },
+    getElementsByName: (name) => [],
     addEventListener: () => {},
     removeEventListener: () => {}
   },
@@ -8577,6 +8578,204 @@ assert(finalFor === 17, 'Anão da Montanha (+2 For): Base 15 resulta em Força F
 assert(finalCon === 16, 'Anão da Montanha (+2 Con): Base 14 resulta em Constituição Final 16');
 assert(badgeFor.includes('+2'), 'Badge racial indica corretamente +2 Raça');
 assert(modFor === '+3', 'Modificador de atributo 17 calculado corretamente como +3');
+
+// =========================================================================
+// 📈 111. TESTES DE PROGRESSÃO CANÔNICA DE ASI E TALENTOS D&D 5E (ISSUE-143)
+// =========================================================================
+console.log('\n📈 111. Testes de Progressão Canônica de ASI e Talentos D&D 5E (ISSUE-143):');
+
+const bundle111 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+
+// 1. Elementos e estilos compilados no bundle
+assert(bundle111.includes('feature-asi-box'), 'HTML compilado inclui a classe .feature-asi-box');
+assert(bundle111.includes('feature-asi-status-badge'), 'HTML compilado inclui a classe .feature-asi-status-badge');
+assert(bundle111.includes('feature-asi-btn'), 'HTML compilado inclui a classe .feature-asi-btn');
+assert(bundle111.includes('id="modal-player-asi"'), 'HTML compilado inclui o modal #modal-player-asi');
+assert(bundle111.includes('openAsiChoiceModal'), 'HTML compilado inclui a função openAsiChoiceModal');
+assert(bundle111.includes('saveAsiChoiceModal'), 'HTML compilado inclui a função saveAsiChoiceModal');
+
+// 2. Validação da tabela canônica de classes D&D 5E
+const CLASSES_DATA = vm.runInContext('CLASSES_DATA', sandbox);
+assert(Array.isArray(CLASSES_DATA) && CLASSES_DATA.length === 12, 'CLASSES_DATA carregado com sucesso (12 classes)');
+
+const getClassAsiLevels = vm.runInContext('getClassAsiLevels', sandbox);
+assert(typeof getClassAsiLevels === 'function', 'Função canônica getClassAsiLevels está disponível no escopo');
+
+const fighterAsiLevels = getClassAsiLevels('Guerreiro');
+assert(JSON.stringify(fighterAsiLevels) === JSON.stringify([4, 6, 8, 12, 14, 16, 19]), 'Guerreiro possui 7 marcos de ASI canônicos (4, 6, 8, 12, 14, 16, 19)');
+
+const rogueAsiLevels = getClassAsiLevels('Ladino');
+assert(JSON.stringify(rogueAsiLevels) === JSON.stringify([4, 8, 10, 12, 16, 19]), 'Ladino possui 6 marcos de ASI canônicos (4, 8, 10, 12, 16, 19)');
+
+const wizardAsiLevels = getClassAsiLevels('Mago');
+assert(JSON.stringify(wizardAsiLevels) === JSON.stringify([4, 8, 12, 16, 19]), 'Mago possui 5 marcos de ASI canônicos padrão (4, 8, 12, 16, 19)');
+
+const barbarianAsiLevels = getClassAsiLevels('Bárbaro');
+assert(JSON.stringify(barbarianAsiLevels) === JSON.stringify([4, 8, 12, 16, 19]), 'Bárbaro possui 5 marcos de ASI canônicos padrão (4, 8, 12, 16, 19)');
+
+// 3. Validação de getUnlockedClassFeatures para filtragem de ASI
+const getUnlockedClassFeatures = vm.runInContext('getUnlockedClassFeatures', sandbox);
+const fighterLvl3Feats = getUnlockedClassFeatures('Guerreiro', 3);
+assert(!fighterLvl3Feats.some(f => f.isAsi), 'Guerreiro nível 3 não possui marcos de ASI desbloqueados');
+
+const fighterLvl6Feats = getUnlockedClassFeatures('Guerreiro', 6);
+const unlockedFighterAsis = fighterLvl6Feats.filter(f => f.isAsi);
+assert(unlockedFighterAsis.length === 2, 'Guerreiro nível 6 possui exatamente 2 marcos de ASI desbloqueados (Nv 4 e Nv 6)');
+assert(unlockedFighterAsis[0].level === 4 && unlockedFighterAsis[1].level === 6, 'Marcos de ASI desbloqueados correspondem aos níveis 4 e 6');
+
+// 4. Teste de formatação visual do marco com formatPlayerFeatureForDisplay
+const formatPlayerFeatureForDisplay = vm.runInContext('formatPlayerFeatureForDisplay', sandbox);
+const sampleAsiFeat = unlockedFighterAsis[0];
+const samplePlayer = { id: 'p_test_asi_1', name: 'Ragnar', className: 'Guerreiro', level: 6 };
+const formattedAsi = formatPlayerFeatureForDisplay(sampleAsiFeat, samplePlayer, { className: 'Guerreiro', level: 6 });
+assert(formattedAsi.source.includes('Marco do 4º Nível'), 'Fonte da feature formatada indica "Marco do 4º Nível"');
+assert(formattedAsi.desc.includes('Aumento no Valor de Habilidade') && formattedAsi.desc.includes('Talento'), 'Descrição orienta sobre escolha entre Atributos ou Talento');
+
+// 5. Teste de aplicação prática de ASI (+2 Força) e persistência em p.asiChoices
+vm.runInContext(`
+  (function() {
+    const testFighter = {
+      id: 'p_fighter_asi_test',
+      name: 'Valerius o Forte',
+      className: 'Guerreiro',
+      level: 4,
+      str: 16,
+      dex: 12,
+      con: 14,
+      int: 10,
+      wis: 12,
+      cha: 8,
+      maxHp: 36,
+      hp: 36,
+      asiChoices: {},
+      feats: []
+    };
+
+    // Insere no array global PLAYERS
+    PLAYERS.push(testFighter);
+
+    // Mock dos elementos de modal
+    const asiElements = {
+      'modal-player-asi': { classList: { add: ()=>{}, remove: ()=>{} } },
+      'player-asi-modal-title': { innerText: '' },
+      'player-asi-modal-subtitle': { innerText: '' },
+      'asi-stat-single-select': { value: 'str', innerHTML: '' },
+      'asi-stat-dual-1-select': { value: 'str', innerHTML: '' },
+      'asi-stat-dual-2-select': { value: 'dex', innerHTML: '' },
+      'card-asi-mode-stats': { classList: { toggle: ()=>{} } },
+      'card-asi-mode-feat': { classList: { toggle: ()=>{} } },
+      'asi-stats-options-container': { style: {} },
+      'asi-feat-options-container': { style: {} },
+      'asi-stats-preview-panel': { innerHTML: '' }
+    };
+
+    const prevGetElementById = document.getElementById;
+    const prevGetElementsByName = document.getElementsByName;
+
+    document.getElementById = function(id) {
+      if (asiElements[id]) return asiElements[id];
+      return prevGetElementById ? prevGetElementById.call(document, id) : null;
+    };
+
+    document.getElementsByName = function(name) {
+      if (name === 'asi_stat_dist_type') {
+        return [{ value: 'single', checked: true }, { value: 'dual', checked: false }];
+      }
+      return prevGetElementsByName ? prevGetElementsByName.call(document, name) : [];
+    };
+
+    // 1) Abre o modal para o Marco do Nível 4
+    openAsiChoiceModal(testFighter.id, 4, 'Guerreiro');
+
+    // 2) Salva escolha (+2 em Força)
+    saveAsiChoiceModal();
+
+    globalThis.__test_asi_str = testFighter.str;
+    globalThis.__test_asi_choice = testFighter.asiChoices['guerreiro_lvl_4'];
+
+    // 3) Agora testa aumento retroativo de PV ao subir Constituição (+2 em Constituição no nível 6)
+    testFighter.level = 6;
+    testFighter.con = 14; // Mod +2
+    testFighter.maxHp = 52; // 10 + 5*7 + 6*2 = 57 aprox, digamos 52
+    testFighter.hp = 52;
+    asiElements['asi-stat-single-select'].value = 'con';
+
+    openAsiChoiceModal(testFighter.id, 6, 'Guerreiro');
+    saveAsiChoiceModal();
+
+    globalThis.__test_asi_con = testFighter.con;
+    globalThis.__test_asi_maxHp = testFighter.maxHp;
+    globalThis.__test_asi_choice_lvl6 = testFighter.asiChoices['guerreiro_lvl_6'];
+
+    // Restaurar DOM
+    document.getElementById = prevGetElementById;
+    document.getElementsByName = prevGetElementsByName;
+  })();
+`, sandbox);
+
+const asiStr = vm.runInContext('globalThis.__test_asi_str', sandbox);
+const asiChoiceLvl4 = vm.runInContext('globalThis.__test_asi_choice', sandbox);
+const asiCon = vm.runInContext('globalThis.__test_asi_con', sandbox);
+const asiMaxHp = vm.runInContext('globalThis.__test_asi_maxHp', sandbox);
+const asiChoiceLvl6 = vm.runInContext('globalThis.__test_asi_choice_lvl6', sandbox);
+
+assert(asiStr === 18, 'ASI de +2 em Força aumentou Força de 16 para 18');
+assert(asiChoiceLvl4 && asiChoiceLvl4.label.includes('+2 em Força'), 'p.asiChoices registrou escolha do Nível 4 com label "+2 em Força"');
+assert(asiChoiceLvl4.level === 4 && asiChoiceLvl4.classKey === 'guerreiro', 'p.asiChoices armazena nível 4 e classe guerreiro');
+
+assert(asiCon === 16, 'ASI de +2 em Constituição aumentou Con de 14 para 16 (Mod +2 para +3)');
+assert(asiMaxHp === 58, 'Constituição subindo +1 no modificador concedeu +6 PV retroativos no nível 6 (52 + 6 = 58 PV)');
+assert(asiChoiceLvl6 && asiChoiceLvl6.label.includes('+2 em Constituição'), 'p.asiChoices registrou escolha do Nível 6 com label "+2 em Constituição"');
+
+// 6. Teste de escolha de Talento via ASI
+vm.runInContext(`
+  (function() {
+    const testRogue = {
+      id: 'p_rogue_asi_test',
+      name: 'Sombra Silenciosa',
+      className: 'Ladino',
+      level: 4,
+      dex: 16,
+      asiChoices: {},
+      feats: []
+    };
+    PLAYERS.push(testRogue);
+
+    const asiElements = {
+      'modal-player-asi': { classList: { add: ()=>{}, remove: ()=>{} } },
+      'player-asi-modal-title': { innerText: '' },
+      'player-asi-modal-subtitle': { innerText: '' },
+      'card-asi-mode-stats': { classList: { toggle: ()=>{} } },
+      'card-asi-mode-feat': { classList: { toggle: ()=>{} } },
+      'asi-stats-options-container': { style: {} },
+      'asi-feat-options-container': { style: {} },
+      'asi-stats-preview-panel': { innerHTML: '' },
+      'asi-feat-stat-choice-select': { value: null }
+    };
+
+    const prevGetElementById = document.getElementById;
+    document.getElementById = function(id) {
+      if (asiElements[id]) return asiElements[id];
+      return prevGetElementById ? prevGetElementById.call(document, id) : null;
+    };
+
+    openAsiChoiceModal(testRogue.id, 4, 'Ladino');
+    selectAsiModalMode('feat');
+    selectAsiModalFeat('mobile'); // Talento Móvel
+    saveAsiChoiceModal();
+
+    globalThis.__test_rogue_has_feat = testRogue.feats.some(f => f.id === 'mobilidade' || f.id === 'mobile' || f.nameEn === 'Mobile');
+    globalThis.__test_rogue_choice = testRogue.asiChoices['ladino_lvl_4'];
+
+    document.getElementById = prevGetElementById;
+  })();
+`, sandbox);
+
+const rogueHasFeat = vm.runInContext('globalThis.__test_rogue_has_feat', sandbox);
+const rogueChoice = vm.runInContext('globalThis.__test_rogue_choice', sandbox);
+
+assert(rogueHasFeat, 'Ladino adquiriu o talento "Móvel" através da escolha de ASI');
+assert(rogueChoice && rogueChoice.label.includes('Talento'), 'p.asiChoices do Ladino registrou escolha de Talento no Nível 4');
 
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);

@@ -637,7 +637,10 @@ const FEATS_DATA = [
 function findFeatById(featId) {
   if (!featId) return null;
   const target = String(featId).toLowerCase().trim();
-  return FEATS_DATA.find(f => f.id.toLowerCase() === target) || null;
+  return FEATS_DATA.find(f => 
+    f.id.toLowerCase() === target || 
+    (f.nameEn && f.nameEn.toLowerCase() === target)
+  ) || null;
 }
 
 function findFeatByName(name) {
