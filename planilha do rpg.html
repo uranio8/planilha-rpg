@@ -57052,6 +57052,42 @@ if (typeof module !== 'undefined' && module.exports) {
     }
   }
 
+  // Atribuição 100% segura e blindada contra NaN, Array, Object ou null
+  function safeSetText(field, val) {
+    if (!field) return;
+    if (val === null || val === undefined) {
+      field.setText('');
+      return;
+    }
+    if (typeof val === 'number') {
+      if (Number.isNaN(val) || !Number.isFinite(val)) {
+        field.setText('');
+      } else {
+        field.setText(String(val));
+      }
+      return;
+    }
+    if (typeof val === 'string') {
+      field.setText(val);
+      return;
+    }
+    if (Array.isArray(val)) {
+      const formatted = val.map(x => {
+        if (x === null || x === undefined) return '';
+        if (typeof x === 'string') return x;
+        if (typeof x === 'object' && x.name) return `${x.name}${x.qty ? ` (x${x.qty})` : ''}`;
+        return String(x);
+      }).filter(Boolean).join('\n');
+      field.setText(formatted);
+      return;
+    }
+    if (typeof val === 'object') {
+      field.setText(val.name || JSON.stringify(val));
+      return;
+    }
+    field.setText(String(val));
+  }
+
   // Gera o PDF Editável Interativo com cálculo automático para um personagem do Planilha RPG
   async function generateEditableDnd5ePdf(playerData) {
     const PDFLib = getPdfLib();
@@ -57067,6 +57103,30 @@ if (typeof module !== 'undefined' && module.exports) {
 
     const form = doc.getForm();
     const p = playerData || {};
+
+    // Normalizações robustas de campos (compatíveis com localStorage, Firebase e instâncias legadas)
+    const charName = String(p.name || 'Personagem');
+    const charClass = String(p.className || '');
+    const charLevel = Number(p.level) || 1;
+    const charRace = String(p.race || '');
+    const charStudent = String(p.student || '');
+    const charBg = String(p.background || '');
+    const charAlign = String(p.alignment || 'Neutro');
+    const charXp = String(p.xp !== undefined ? p.xp : 0);
+
+    const charStr = Number(p.str) || 10;
+    const charDex = Number(p.dex) || 10;
+    const charCon = Number(p.con) || 10;
+    const charInt = Number(p.int) || 10;
+    const charWis = Number(p.wis) || 10;
+    const charCha = Number(p.cha) || 10;
+
+    const charHpMax = Number(p.hpMax !== undefined ? p.hpMax : (p.maxHp !== undefined ? p.maxHp : 10)) || 10;
+    const charHpCur = Number(p.hpCurrent !== undefined ? p.hpCurrent : (p.hp !== undefined ? p.hp : charHpMax)) || charHpMax;
+    const charHpTemp = Number(p.hpTemp !== undefined ? p.hpTemp : (p.tempHp !== undefined ? p.tempHp : 0)) || 0;
+
+    const saveProfs = Array.isArray(p.savingThrows) ? p.savingThrows : (Array.isArray(p.saveProficiencies) ? p.saveProficiencies : []);
+    const skillProfs = Array.isArray(p.skills) ? p.skills : (Array.isArray(p.skillProficiencies) ? p.skillProficiencies : []);
 
     // Cores temáticas elegantes para impressão e leitura digital
     const cDark = rgb(0.08, 0.12, 0.18);
@@ -57106,23 +57166,23 @@ if (typeof module !== 'undefined' && module.exports) {
     // Campo: Nome do Personagem
     page1.drawText('NOME DO PERSONAGEM', { x: 32, y: p1Height - 80, size: 7, font: fontBold, color: cMuted });
     const fCharName = form.createTextField('CharacterName');
-    fCharName.setText(p.name || '');
+    safeSetText(fCharName, charName);
     fCharName.addToPage(page1, { x: 32, y: p1Height - 70, width: 170, height: 18 });
 
     // Grid de Metadados do Cabeçalho
     const metaCols = [
-      { label: 'CLASSE E NÍVEL', name: 'ClassLevel', val: `${p.className || ''} ${p.level || 1}`, x: 215, y: p1Height - 48, w: 110 },
-      { label: 'ANTECEDENTE', name: 'Background', val: p.background || '', x: 335, y: p1Height - 48, w: 105 },
-      { label: 'JOGADOR / ALUNO', name: 'PlayerName', val: p.student || '', x: 450, y: p1Height - 48, w: 110 },
-      { label: 'RAÇA / ESPÉCIE', name: 'Race', val: p.race || '', x: 215, y: p1Height - 78, w: 110 },
-      { label: 'TENDÊNCIA', name: 'Alignment', val: p.alignment || 'Neutro', x: 335, y: p1Height - 78, w: 105 },
-      { label: 'EXP (XP)', name: 'XP', val: String(p.xp || 0), x: 450, y: p1Height - 78, w: 110 }
+      { label: 'CLASSE E NÍVEL', name: 'ClassLevel', val: `${charClass} ${charLevel}`, x: 215, y: p1Height - 48, w: 110 },
+      { label: 'ANTECEDENTE', name: 'Background', val: charBg, x: 335, y: p1Height - 48, w: 105 },
+      { label: 'JOGADOR / ALUNO', name: 'PlayerName', val: charStudent, x: 450, y: p1Height - 48, w: 110 },
+      { label: 'RAÇA / ESPÉCIE', name: 'Race', val: charRace, x: 215, y: p1Height - 78, w: 110 },
+      { label: 'TENDÊNCIA', name: 'Alignment', val: charAlign, x: 335, y: p1Height - 78, w: 105 },
+      { label: 'EXP (XP)', name: 'XP', val: charXp, x: 450, y: p1Height - 78, w: 110 }
     ];
 
     metaCols.forEach(m => {
       page1.drawText(m.label, { x: m.x, y: m.y - 4, size: 6.5, font: fontBold, color: cMuted });
       const tf = form.createTextField(m.name);
-      tf.setText(m.val);
+      safeSetText(tf, m.val);
       tf.addToPage(page1, { x: m.x, y: m.y + 7, width: m.w, height: 16 });
     });
 
@@ -57130,16 +57190,15 @@ if (typeof module !== 'undefined' && module.exports) {
     // COLUNA 1: ATRIBUTOS E MODIFICADORES COM AUTO-CÁLCULO
     // ------------------------------------------
     const statsDefs = [
-      { key: 'FOR', label: 'FORÇA', val: p.str || 10, y: p1Height - 165 },
-      { key: 'DES', label: 'DESTREZA', val: p.dex || 10, y: p1Height - 235 },
-      { key: 'CON', label: 'CONSTITUIÇÃO', val: p.con || 10, y: p1Height - 305 },
-      { key: 'INT', label: 'INTELIGÊNCIA', val: p.int || 10, y: p1Height - 375 },
-      { key: 'SAB', label: 'SABEDORIA', val: p.wis || 10, y: p1Height - 445 },
-      { key: 'CAR', label: 'CARISMA', val: p.cha || 10, y: p1Height - 515 }
+      { key: 'FOR', label: 'FORÇA', val: charStr, y: p1Height - 165 },
+      { key: 'DES', label: 'DESTREZA', val: charDex, y: p1Height - 235 },
+      { key: 'CON', label: 'CONSTITUIÇÃO', val: charCon, y: p1Height - 305 },
+      { key: 'INT', label: 'INTELIGÊNCIA', val: charInt, y: p1Height - 375 },
+      { key: 'SAB', label: 'SABEDORIA', val: charWis, y: p1Height - 445 },
+      { key: 'CAR', label: 'CARISMA', val: charCha, y: p1Height - 515 }
     ];
 
     statsDefs.forEach(s => {
-      // Moldura do Atributo
       page1.drawRectangle({
         x: 24, y: s.y,
         width: 60, height: 60,
@@ -57148,7 +57207,6 @@ if (typeof module !== 'undefined' && module.exports) {
         borderWidth: 1.2
       });
 
-      // Título do Atributo
       page1.drawText(s.label, {
         x: 27, y: s.y + 49,
         size: 7,
@@ -57156,14 +57214,12 @@ if (typeof module !== 'undefined' && module.exports) {
         color: cDark
       });
 
-      // Campo do Modificador (Central, Grande, Calculado)
       const modFieldName = `${s.key}_MOD`;
       const modField = form.createTextField(modFieldName);
-      const initialMod = Math.floor((Number(s.val) - 10) / 2);
-      modField.setText((initialMod >= 0 ? '+' : '') + initialMod);
+      const initialMod = Math.floor((s.val - 10) / 2);
+      safeSetText(modField, (initialMod >= 0 ? '+' : '') + initialMod);
       modField.addToPage(page1, { x: 30, y: s.y + 19, width: 48, height: 26 });
 
-      // Campo do Escore Base (Pequeno, Editável)
       page1.drawRectangle({
         x: 37, y: s.y + 4,
         width: 34, height: 14,
@@ -57172,10 +57228,9 @@ if (typeof module !== 'undefined' && module.exports) {
         borderWidth: 1
       });
       const scoreField = form.createTextField(s.key);
-      scoreField.setText(String(s.val));
+      safeSetText(scoreField, String(s.val));
       scoreField.addToPage(page1, { x: 39, y: s.y + 5, width: 30, height: 12 });
 
-      // Script de Auto-Cálculo de Modificador no Acrobat JS
       const calcJs = `
         var v = this.getField("${s.key}").value;
         if (v !== "" && !isNaN(v)) {
@@ -57199,8 +57254,8 @@ if (typeof module !== 'undefined' && module.exports) {
     page1.drawRectangle({ x: 96, y: p1Height - 160, width: 104, height: 26, color: cWhite, borderColor: cBorder, borderWidth: 1 });
     page1.drawText('BÔNUS PROFICIÊNCIA', { x: 126, y: p1Height - 150, size: 6.5, font: fontBold, color: cDark });
     const fProf = form.createTextField('ProfBonus');
-    const calcProfInitial = Math.floor(((p.level || 1) - 1) / 4) + 2;
-    fProf.setText('+' + calcProfInitial);
+    const calcProfInitial = Math.floor((charLevel - 1) / 4) + 2;
+    safeSetText(fProf, '+' + calcProfInitial);
     fProf.addToPage(page1, { x: 100, y: p1Height - 156, width: 22, height: 18 });
 
     // ------------------------------------------
@@ -57210,32 +57265,30 @@ if (typeof module !== 'undefined' && module.exports) {
     page1.drawText('TESTES DE RESISTÊNCIA', { x: 102, y: p1Height - 175, size: 7, font: fontBold, color: cDark });
 
     const saveStats = [
-      { key: 'FOR', pt: 'Força', y: p1Height - 192 },
-      { key: 'DES', pt: 'Destreza', y: p1Height - 207 },
-      { key: 'CON', pt: 'Constituição', y: p1Height - 222 },
-      { key: 'INT', pt: 'Inteligência', y: p1Height - 237 },
-      { key: 'SAB', pt: 'Sabedoria', y: p1Height - 252 },
-      { key: 'CAR', pt: 'Carisma', y: p1Height - 267 }
+      { key: 'FOR', pt: 'Força', val: charStr, y: p1Height - 192 },
+      { key: 'DES', pt: 'Destreza', val: charDex, y: p1Height - 207 },
+      { key: 'CON', pt: 'Constituição', val: charCon, y: p1Height - 222 },
+      { key: 'INT', pt: 'Inteligência', val: charInt, y: p1Height - 237 },
+      { key: 'SAB', pt: 'Sabedoria', val: charWis, y: p1Height - 252 },
+      { key: 'CAR', pt: 'Carisma', val: charCha, y: p1Height - 267 }
     ];
 
     saveStats.forEach(sv => {
       const chkName = `Check_Save_${sv.key}`;
       const valName = `Save_${sv.key}`;
       const chk = form.createCheckBox(chkName);
-      const isProf = p.savingThrows && p.savingThrows.includes(sv.key.toLowerCase());
+      const isProf = saveProfs.some(x => String(x).toLowerCase() === sv.key.toLowerCase());
       if (isProf) chk.check();
       chk.addToPage(page1, { x: 100, y: sv.y, width: 10, height: 10 });
 
       const tv = form.createTextField(valName);
-      const baseStat = p[sv.key.toLowerCase()] || 10;
-      const baseMod = Math.floor((baseStat - 10) / 2);
+      const baseMod = Math.floor((sv.val - 10) / 2);
       const totalSave = baseMod + (isProf ? calcProfInitial : 0);
-      tv.setText((totalSave >= 0 ? '+' : '') + totalSave);
+      safeSetText(tv, (totalSave >= 0 ? '+' : '') + totalSave);
       tv.addToPage(page1, { x: 114, y: sv.y - 1, width: 18, height: 12 });
 
       page1.drawText(sv.pt, { x: 136, y: sv.y + 2, size: 7.5, font: fontRegular, color: cDark });
 
-      // Script de Auto-Cálculo de Salvaguarda
       const saveJs = `
         var m = Number(this.getField("${sv.key}_MOD").value) || 0;
         var p = Number(this.getField("ProfBonus").value) || 2;
@@ -57253,26 +57306,30 @@ if (typeof module !== 'undefined' && module.exports) {
     page1.drawRectangle({ x: 96, y: p1Height - 575, width: 104, height: 292, color: cWhite, borderColor: cBorder, borderWidth: 1 });
     page1.drawText('PERÍCIAS', { x: 130, y: p1Height - 290, size: 8, font: fontBold, color: cDark });
 
+    const attrMapValues = { str: charStr, dex: charDex, con: charCon, int: charInt, wis: charWis, cha: charCha };
+
     DND_SKILLS_MAPPING.forEach((sk, idx) => {
       const yLine = p1Height - 306 - (idx * 15.5);
       const chkName = `Check_Skill_${sk.key}`;
       const valName = `Skill_${sk.key}`;
 
       const chk = form.createCheckBox(chkName);
-      const isProf = p.skills && (p.skills.includes(sk.key) || p.skills.includes(sk.pt.toLowerCase()));
+      const isProf = skillProfs.some(sp => {
+        const strSp = String(sp).toLowerCase();
+        return strSp === sk.key.toLowerCase() || strSp === sk.pt.toLowerCase();
+      });
       if (isProf) chk.check();
       chk.addToPage(page1, { x: 100, y: yLine, width: 9, height: 9 });
 
       const tv = form.createTextField(valName);
-      const baseStat = p[sk.attrKey] || 10;
+      const baseStat = attrMapValues[sk.attrKey] || 10;
       const baseMod = Math.floor((baseStat - 10) / 2);
       const totalSkill = baseMod + (isProf ? calcProfInitial : 0);
-      tv.setText((totalSkill >= 0 ? '+' : '') + totalSkill);
+      safeSetText(tv, (totalSkill >= 0 ? '+' : '') + totalSkill);
       tv.addToPage(page1, { x: 112, y: yLine - 1, width: 18, height: 11 });
 
       page1.drawText(`${sk.pt} (${sk.stat})`, { x: 133, y: yLine + 2, size: 6.5, font: fontRegular, color: cDark });
 
-      // Script de Auto-Cálculo de Perícia
       const skillJs = `
         var m = Number(this.getField("${sk.stat}_MOD").value) || 0;
         var p = Number(this.getField("ProfBonus").value) || 2;
@@ -57287,9 +57344,9 @@ if (typeof module !== 'undefined' && module.exports) {
     // Percepção Passiva
     page1.drawRectangle({ x: 24, y: p1Height - 582, width: 176, height: 22, color: cWhite, borderColor: cBorder, borderWidth: 1 });
     const fPassPerc = form.createTextField('Passive_Perception');
-    const percProf = p.skills && (p.skills.includes('perception') || p.skills.includes('percepção'));
-    const initialPass = 10 + Math.floor(((p.wis || 10) - 10) / 2) + (percProf ? calcProfInitial : 0);
-    fPassPerc.setText(String(initialPass));
+    const percProf = skillProfs.some(sp => String(sp).toLowerCase().includes('percep'));
+    const initialPass = 10 + Math.floor((charWis - 10) / 2) + (percProf ? calcProfInitial : 0);
+    safeSetText(fPassPerc, String(initialPass));
     fPassPerc.addToPage(page1, { x: 28, y: p1Height - 578, width: 22, height: 14 });
     page1.drawText('SABEDORIA PASSIVA (PERCEPÇÃO)', { x: 54, y: p1Height - 574, size: 6.5, font: fontBold, color: cDark });
 
@@ -57307,17 +57364,20 @@ if (typeof module !== 'undefined' && module.exports) {
     fProfLang.enableMultiline();
     let initialProfText = (p.languages ? `Idiomas: ${p.languages}\n` : 'Idiomas: Comum\n');
     if (p.proficiencies) initialProfText += `Armaduras/Armas: ${p.proficiencies}\n`;
-    fProfLang.setText(initialProfText);
+    safeSetText(fProfLang, initialProfText);
     fProfLang.addToPage(page1, { x: 28, y: p1Height - 800, width: 168, height: 195 });
 
     // ------------------------------------------
     // COLUNA 2: COMBATE, PV, ATAQUES & MAGIAS
     // ------------------------------------------
-    // Caixas de CA, Iniciativa e Deslocamento
-    const dexModInitial = Math.floor(((p.dex || 10) - 10) / 2);
+    const dexModInitial = Math.floor((charDex - 10) / 2);
+    const charInitVal = (p.initiative !== undefined && !Number.isNaN(Number(p.initiative)))
+      ? (Number(p.initiative) >= 0 ? '+' + p.initiative : '' + p.initiative)
+      : (dexModInitial >= 0 ? '+' + dexModInitial : '' + dexModInitial);
+
     const combatBoxes = [
       { label: 'CLASSE DE ARMADURA', name: 'AC', val: String(p.ac || 10), x: 215, w: 56 },
-      { label: 'INICIATIVA', name: 'Initiative', val: (p.initiative !== undefined ? (p.initiative >= 0 ? '+' + p.initiative : '' + p.initiative) : (dexModInitial >= 0 ? '+' + dexModInitial : '' + dexModInitial)), x: 277, w: 56 },
+      { label: 'INICIATIVA', name: 'Initiative', val: charInitVal, x: 277, w: 56 },
       { label: 'DESLOCAMENTO', name: 'Speed', val: `${p.speed || 9}m`, x: 339, w: 56 }
     ];
 
@@ -57325,7 +57385,7 @@ if (typeof module !== 'undefined' && module.exports) {
       page1.drawRectangle({ x: cb.x, y: p1Height - 165, width: cb.w, height: 50, color: cWhite, borderColor: cBorder, borderWidth: 1.2 });
       page1.drawText(cb.label, { x: cb.x + 3, y: p1Height - 124, size: 5.5, font: fontBold, color: cMuted });
       const f = form.createTextField(cb.name);
-      f.setText(cb.val);
+      safeSetText(f, cb.val);
       f.addToPage(page1, { x: cb.x + 6, y: p1Height - 160, width: cb.w - 12, height: 32 });
 
       if (cb.name === 'Initiative') {
@@ -57342,24 +57402,24 @@ if (typeof module !== 'undefined' && module.exports) {
     page1.drawRectangle({ x: 215, y: p1Height - 275, width: 180, height: 104, color: cWhite, borderColor: cBorder, borderWidth: 1.2 });
     page1.drawText('PONTOS DE VIDA MÁXIMOS:', { x: 222, y: p1Height - 180, size: 6.5, font: fontBold, color: cMuted });
     const fHpMax = form.createTextField('HP_Max');
-    fHpMax.setText(String(p.hpMax || 10));
+    safeSetText(fHpMax, String(charHpMax));
     fHpMax.addToPage(page1, { x: 325, y: p1Height - 183, width: 62, height: 14 });
 
     page1.drawText('PONTOS DE VIDA ATUAIS', { x: 250, y: p1Height - 200, size: 7, font: fontBold, color: cDark });
     const fHpCur = form.createTextField('HP_Current');
-    fHpCur.setText(String(p.hpCurrent || p.hpMax || 10));
+    safeSetText(fHpCur, String(charHpCur));
     fHpCur.addToPage(page1, { x: 245, y: p1Height - 238, width: 120, height: 32 });
 
     page1.drawText('PONTOS DE VIDA TEMPORÁRIOS', { x: 235, y: p1Height - 250, size: 6.5, font: fontBold, color: cMuted });
     const fHpTemp = form.createTextField('HP_Temp');
-    fHpTemp.setText(String(p.hpTemp || '0'));
+    safeSetText(fHpTemp, String(charHpTemp));
     fHpTemp.addToPage(page1, { x: 245, y: p1Height - 270, width: 120, height: 16 });
 
     // Dados de Vida e Salvaguardas contra a Morte
     page1.drawRectangle({ x: 215, y: p1Height - 335, width: 86, height: 55, color: cWhite, borderColor: cBorder, borderWidth: 1 });
     page1.drawText('DADOS DE VIDA', { x: 225, y: p1Height - 290, size: 6.5, font: fontBold, color: cDark });
     const fHitDice = form.createTextField('Hit_Dice');
-    fHitDice.setText(`${p.level || 1}d${p.hitDice || 8}`);
+    safeSetText(fHitDice, p.hitDice ? `${p.hitDice}` : `${charLevel}d8`);
     fHitDice.addToPage(page1, { x: 222, y: p1Height - 325, width: 72, height: 28 });
 
     page1.drawRectangle({ x: 309, y: p1Height - 335, width: 86, height: 55, color: cWhite, borderColor: cBorder, borderWidth: 1 });
@@ -57381,33 +57441,60 @@ if (typeof module !== 'undefined' && module.exports) {
     page1.drawText('BÔNUS', { x: 298, y: p1Height - 364, size: 6, font: fontBold, color: cMuted });
     page1.drawText('DANO / TIPO', { x: 335, y: p1Height - 364, size: 6, font: fontBold, color: cMuted });
 
-    // 4 Linhas estruturadas de ataques editáveis
-    const initialAttacks = p.attacks || [
-      { name: 'Espada Longa', bonus: '+5', damage: '1d8+3 cortante' },
-      { name: 'Arco Curto', bonus: '+4', damage: '1d6+2 perfurante' }
-    ];
+    // Resolução robusta de ataques (suporte a array de objetos, array de strings ou string formatada)
+    let initialAttacks = [];
+    if (typeof getPlayerCalculatedAttacks === 'function') {
+      try {
+        const calced = getPlayerCalculatedAttacks(p);
+        if (Array.isArray(calced) && calced.length > 0) {
+          initialAttacks = calced.map(a => ({ name: a.name || '', bonus: a.hit || a.bonus || '', damage: a.dmg || a.damage || '' }));
+        }
+      } catch (e) {}
+    }
+    if (initialAttacks.length === 0) {
+      if (Array.isArray(p.attacks)) {
+        initialAttacks = p.attacks.map(atk => {
+          if (typeof atk === 'string') {
+            const m = atk.match(/^([^(]+)(?:\(([^,]+),\s*([^)]+)\))?/);
+            return m ? { name: m[1].trim(), bonus: (m[2] || '').trim(), damage: (m[3] || '').trim() } : { name: atk.trim(), bonus: '', damage: '' };
+          }
+          return atk || { name: '', bonus: '', damage: '' };
+        });
+      } else if (typeof p.attacks === 'string' && p.attacks.trim()) {
+        const parts = p.attacks.split(/(?:\||\n|;)/);
+        initialAttacks = parts.map(pt => {
+          const m = pt.match(/^([^(]+)(?:\(([^,]+),\s*([^)]+)\))?/);
+          return m ? { name: m[1].trim(), bonus: (m[2] || '').trim(), damage: (m[3] || '').trim() } : { name: pt.trim(), bonus: '', damage: '' };
+        });
+      }
+    }
+    if (initialAttacks.length === 0) {
+      initialAttacks = [
+        { name: 'Ataque Desarmado', bonus: '+' + (Math.floor((charStr - 10) / 2) + calcProfInitial), damage: '1 + ' + Math.floor((charStr - 10) / 2) }
+      ];
+    }
 
     for (let i = 0; i < 4; i++) {
       const yAtk = p1Height - 380 - (i * 20);
       const atk = initialAttacks[i] || { name: '', bonus: '', damage: '' };
 
       const fName = form.createTextField(`Attack_Name_${i + 1}`);
-      fName.setText(atk.name || '');
+      safeSetText(fName, atk.name || '');
       fName.addToPage(page1, { x: 218, y: yAtk, width: 76, height: 14 });
 
       const fBon = form.createTextField(`Attack_Bonus_${i + 1}`);
-      fBon.setText(atk.bonus || '');
+      safeSetText(fBon, atk.bonus || '');
       fBon.addToPage(page1, { x: 298, y: yAtk, width: 32, height: 14 });
 
       const fDmg = form.createTextField(`Attack_Damage_${i + 1}`);
-      fDmg.setText(atk.damage || '');
+      safeSetText(fDmg, atk.damage || '');
       fDmg.addToPage(page1, { x: 334, y: yAtk, width: 57, height: 14 });
     }
 
     // Área de Texto Adicional de Magias/Ataques
     const fAtkNotes = form.createTextField('Attacks_Notes');
     fAtkNotes.enableMultiline();
-    fAtkNotes.setText(p.attackNotes || 'Anotações táticas de combate, truques de ataque ou manobras especiais.');
+    safeSetText(fAtkNotes, p.attackNotes || 'Anotações táticas de combate, truques de ataque ou manobras especiais.');
     fAtkNotes.addToPage(page1, { x: 218, y: p1Height - 570, width: 174, height: 100 });
 
     // ------------------------------------------
@@ -57415,9 +57502,9 @@ if (typeof module !== 'undefined' && module.exports) {
     // ------------------------------------------
     const traitsBoxes = [
       { label: 'TRAÇOS DE PERSONALIDADE', name: 'Personality_Traits', val: p.personality || '', y: p1Height - 170, h: 55 },
-      { label: 'IDEAIS', name: 'Ideals', val: p.ideals || '', y: p1Height - 232, h: 55 },
-      { label: 'VÍNCULOS', name: 'Bonds', val: p.bonds || '', y: p1Height - 294, h: 55 },
-      { label: 'DEFEITOS', name: 'Flaws', val: p.flaws || '', y: p1Height - 356, h: 55 }
+      { label: 'IDEAIS', name: 'Ideals', val: p.ideals || p.ideal || '', y: p1Height - 232, h: 55 },
+      { label: 'VÍNCULOS', name: 'Bonds', val: p.bonds || p.bond || '', y: p1Height - 294, h: 55 },
+      { label: 'DEFEITOS', name: 'Flaws', val: p.flaws || p.flaw || '', y: p1Height - 356, h: 55 }
     ];
 
     traitsBoxes.forEach(tb => {
@@ -57425,7 +57512,7 @@ if (typeof module !== 'undefined' && module.exports) {
       page1.drawText(tb.label, { x: 412, y: tb.y + tb.h - 10, size: 6.5, font: fontBold, color: cMuted });
       const f = form.createTextField(tb.name);
       f.enableMultiline();
-      f.setText(tb.val);
+      safeSetText(f, tb.val);
       f.addToPage(page1, { x: 409, y: tb.y + 3, width: 158, height: tb.h - 16 });
     });
 
@@ -57437,12 +57524,14 @@ if (typeof module !== 'undefined' && module.exports) {
     let initialFeatText = '';
     if (p.classFeatures && Array.isArray(p.classFeatures)) {
       initialFeatText = p.classFeatures.map(feat => `• ${feat.name || feat}: ${feat.desc || ''}`).join('\n\n');
+    } else if (p.features) {
+      initialFeatText = typeof p.features === 'string' ? p.features : JSON.stringify(p.features);
     }
-    fFeatures.setText(initialFeatText || p.notes || '');
+    safeSetText(fFeatures, initialFeatText || p.notes || '');
     fFeatures.addToPage(page1, { x: 409, y: p1Height - 570, width: 158, height: 190 });
 
     // Rodapé da Página 1
-    page1.drawText(`Ficha D&D 5E Editável • ${p.name || 'Personagem'} • Página 1 de 2 • Clube de RPG`, {
+    page1.drawText(`Ficha D&D 5E Editável • ${charName} • Página 1 de 2 • Clube de RPG`, {
       x: 32, y: 18, size: 8, font: fontRegular, color: cMuted
     });
 
@@ -57468,7 +57557,7 @@ if (typeof module !== 'undefined' && module.exports) {
       color: cGold
     });
 
-    page2.drawText(`${p.name || 'Personagem'} (${p.className || ''})`, {
+    page2.drawText(`${charName} (${charClass})`, {
       x: 32, y: p2Height - 50,
       size: 9,
       font: fontRegular,
@@ -57482,7 +57571,7 @@ if (typeof module !== 'undefined' && module.exports) {
     page2.drawText('CONJURAÇÃO DE MAGIA (D&D 5E)', { x: 30, y: p2Height - 84, size: 9, font: fontBold, color: cDark });
 
     const spellMeta = [
-      { label: 'CLASSE CONJURADORA', name: 'Spellcasting_Class', val: p.spellcastingClass || p.className || '', x: 30, w: 120 },
+      { label: 'CLASSE CONJURADORA', name: 'Spellcasting_Class', val: p.spellcastingClass || charClass || '', x: 30, w: 120 },
       { label: 'HABILIDADE CHAVE', name: 'Spellcasting_Ability', val: p.spellAbility || 'INT', x: 160, w: 90 },
       { label: 'CD DE RESISTÊNCIA', name: 'Spell_Save_DC', val: '', x: 260, w: 100 },
       { label: 'BÔNUS DE ATAQUE', name: 'Spell_Attack_Bonus', val: '', x: 370, w: 100 }
@@ -57493,7 +57582,6 @@ if (typeof module !== 'undefined' && module.exports) {
       const tf = form.createTextField(sm.name);
       tf.addToPage(page2, { x: sm.x, y: p2Height - 138, width: sm.w, height: 30 });
 
-      // Auto-cálculo da CD e Bônus Mágico vinculados à habilidade chave
       if (sm.name === 'Spell_Save_DC') {
         const dcJs = `
           var prof = Number(this.getField("ProfBonus").value) || 2;
@@ -57526,12 +57614,12 @@ if (typeof module !== 'undefined' && module.exports) {
         attachFieldCalculation(doc, PDFLib, tf, atkJs);
         calculationFieldsOrder.push(tf);
       } else {
-        tf.setText(sm.val);
+        safeSetText(tf, sm.val);
       }
     });
 
     // ------------------------------------------
-    // GRIMÓRIO: CÍRCULOS DE MAGIA (TRUQUES ATÉ 5º CÍRCULO)
+    // GRIMÓRIO: CÍRCULOS DE MAGIA
     // ------------------------------------------
     page2.drawRectangle({ x: 20, y: p2Height - 485, width: 340, height: 310, color: cWhite, borderColor: cBorder, borderWidth: 1 });
     page2.drawText('GRIMÓRIO & MAGIAS PREPARADAS', { x: 30, y: p2Height - 180, size: 8, font: fontBold, color: cDark });
@@ -57539,13 +57627,17 @@ if (typeof module !== 'undefined' && module.exports) {
     const fSpells = form.createTextField('Spells_List');
     fSpells.enableMultiline();
     let initialSpellText = '';
-    if (p.spells && Array.isArray(p.spells)) {
+    if (Array.isArray(p.spells)) {
       initialSpellText = p.spells.map(s => {
         if (typeof s === 'string') return `• ${s}`;
         return `• ${s.name || ''} (Círculo ${s.level !== undefined ? s.level : '0'}${s.prepared ? ' - Preparada' : ''})`;
       }).join('\n');
+    } else if (typeof p.spells === 'string' && p.spells.trim()) {
+      initialSpellText = p.spells;
+    } else if (Array.isArray(p.preparedSpells) && p.preparedSpells.length > 0) {
+      initialSpellText = p.preparedSpells.map(s => `• ${s} (Preparada)`).join('\n');
     }
-    fSpells.setText(initialSpellText || '• Truques:\n• 1º Círculo:\n• 2º Círculo:');
+    safeSetText(fSpells, initialSpellText || '• Truques:\n• 1º Círculo:\n• 2º Círculo:');
     fSpells.addToPage(page2, { x: 28, y: p2Height - 480, width: 324, height: 290 });
 
     // ------------------------------------------
@@ -57555,29 +57647,36 @@ if (typeof module !== 'undefined' && module.exports) {
     page2.drawText('EQUIPAMENTO & TESOURO', { x: 385, y: p2Height - 180, size: 8, font: fontBold, color: cDark });
 
     // Moedas (PC, PP, PE, PO, PL)
+    const coins = p.coins || { cp: 0, sp: 0, ep: 0, gp: p.gold || 0, pp: 0 };
     const coinsDef = [
-      { label: 'PC', name: 'Coin_CP', val: String(p.cp || 0), x: 385 },
-      { label: 'PP', name: 'Coin_SP', val: String(p.sp || 0), x: 425 },
-      { label: 'PE', name: 'Coin_EP', val: String(p.ep || 0), x: 465 },
-      { label: 'PO', name: 'Coin_GP', val: String(p.gp || 0), x: 505 },
-      { label: 'PL', name: 'Coin_PP', val: String(p.pp || 0), x: 545 }
+      { label: 'PC', name: 'Coin_CP', val: String(coins.cp !== undefined ? coins.cp : (p.cp || 0)), x: 385 },
+      { label: 'PP', name: 'Coin_SP', val: String(coins.sp !== undefined ? coins.sp : (p.sp || 0)), x: 425 },
+      { label: 'PE', name: 'Coin_EP', val: String(coins.ep !== undefined ? coins.ep : (p.ep || 0)), x: 465 },
+      { label: 'PO', name: 'Coin_GP', val: String(coins.gp !== undefined ? coins.gp : (p.gold || p.gp || 0)), x: 505 },
+      { label: 'PL', name: 'Coin_PP', val: String(coins.pp !== undefined ? coins.pp : (p.pp || 0)), x: 545 }
     ];
 
     coinsDef.forEach(cn => {
       page2.drawText(cn.label, { x: cn.x + 4, y: p2Height - 194, size: 6.5, font: fontBold, color: cMuted });
       const f = form.createTextField(cn.name);
-      f.setText(cn.val);
+      safeSetText(f, cn.val);
       f.addToPage(page2, { x: cn.x, y: p2Height - 215, width: 32, height: 16 });
     });
 
     // Campo de Inventário Geral
     const fEquip = form.createTextField('Equipment_List');
     fEquip.enableMultiline();
+    const rawEquip = Array.isArray(p.equipment) ? p.equipment : (Array.isArray(p.inventory) ? p.inventory : []);
     let initialEquipText = '';
-    if (p.equipment && Array.isArray(p.equipment)) {
-      initialEquipText = p.equipment.map(eq => typeof eq === 'string' ? eq : `${eq.name} (x${eq.qty || 1})`).join('\n');
+    if (rawEquip.length > 0) {
+      initialEquipText = rawEquip.map(eq => {
+        if (typeof eq === 'string') return `• ${eq}`;
+        return `• ${eq.name || 'Item'} (x${eq.qty || 1})${eq.weight ? ` - ${eq.weight}kg` : ''}${eq.equipped ? ' [Equipado]' : ''}`;
+      }).join('\n');
+    } else if (typeof p.inventory === 'string') {
+      initialEquipText = p.inventory;
     }
-    fEquip.setText(initialEquipText || p.inventory || 'Mochila de Aventureiro, Ração de Viagem (10 dias), Tochas, Odre.');
+    safeSetText(fEquip, initialEquipText || 'Mochila de Aventureiro, Ração de Viagem (10 dias), Tochas, Odre.');
     fEquip.addToPage(page2, { x: 383, y: p2Height - 480, width: 184, height: 255 });
 
     // ------------------------------------------
@@ -57588,11 +57687,11 @@ if (typeof module !== 'undefined' && module.exports) {
 
     const fStory = form.createTextField('Character_Backstory');
     fStory.enableMultiline();
-    fStory.setText(p.backstory || p.notes || 'Origem do herói, anotações de campanha, juramentos e alianças.');
+    safeSetText(fStory, p.backstory || p.notes || p.playerNotes || 'Origem do herói, anotações de campanha, juramentos e alianças.');
     fStory.addToPage(page2, { x: 28, y: 45, width: p1Width - 56, height: p2Height - 565 });
 
     // Rodapé da Página 2
-    page2.drawText(`Ficha D&D 5E Editável • ${p.name || 'Personagem'} • Página 2 de 2 • Clube de RPG`, {
+    page2.drawText(`Ficha D&D 5E Editável • ${charName} • Página 2 de 2 • Clube de RPG`, {
       x: 32, y: 18, size: 8, font: fontRegular, color: cMuted
     });
 
