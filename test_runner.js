@@ -9222,6 +9222,35 @@ assert(compiledHtml.includes('.a4-spellbook-list {'), 'CSS compilado possui list
 assert(compiledHtml.includes('.a4-print-page') && compiledHtml.includes('page-break-after: always'), 'CSS de impressão define quebra de página precisa entre a Página 1 e Página 2');
 assert(compiledHtml.includes('.a4-bordered-box') && compiledHtml.includes('break-inside: avoid'), 'CSS de impressão evita cortes indesejados no interior de caixas canônicas');
 
+// ========================================
+// 118. Testes da Estilização Nobre Colorida da Ficha A4 para PDF e Impressão (ISSUE-149):
+// ========================================
+console.log('\n🎨 118. Testes da Estilização Nobre Colorida da Ficha A4 para PDF e Impressão (ISSUE-149):');
+
+// 1. Verificação de Cores Funcionais e Classes Semânticas no CSS Compilado
+assert(compiledHtml.includes('.a4-combat-ac'), 'CSS possui classe funcional .a4-combat-ac para destaque de Classe de Armadura');
+assert(compiledHtml.includes('.a4-combat-init'), 'CSS possui classe funcional .a4-combat-init para destaque de Iniciativa');
+assert(compiledHtml.includes('.a4-combat-speed'), 'CSS possui classe funcional .a4-combat-speed para destaque de Deslocamento');
+assert(compiledHtml.includes('.a4-coin-gp'), 'CSS possui classe de moeda .a4-coin-gp com coloração dourada funcional');
+assert(compiledHtml.includes('.a4-coin-sp'), 'CSS possui classe de moeda .a4-coin-sp com coloração prateada');
+assert(compiledHtml.includes('.a4-coin-cp'), 'CSS possui classe de moeda .a4-coin-cp com coloração de cobre');
+assert(compiledHtml.includes('.a4-coin-pp'), 'CSS possui classe de moeda .a4-coin-pp com coloração de platina');
+assert(compiledHtml.includes('.a4-coin-ep'), 'CSS possui classe de moeda .a4-coin-ep com coloração de electrum');
+
+// 2. Verificação de Cabeçalho Nobre e Medalhões de Atributo
+assert(compiledHtml.includes('linear-gradient(135deg, #1e293b 0%, #0f172a 100%)') || compiledHtml.includes('linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'), 'Cabeçalho .a4-sheet-header possui gradiente dark fantasy nobre');
+assert(compiledHtml.includes('radial-gradient(circle at 50% 25%'), 'Atributos .a4-stat-card utilizam estilo medalhão com gradiente radial e borda nobre');
+assert(compiledHtml.includes('.a4-bullet.active'), 'Proficiências e salvaguardas utilizam marcadores dourados preenchidos');
+
+// 3. Verificação de Saída no HTML Gerado por printPlayerSheet
+vm.runInContext(`printPlayerSheet('p_print_hero_1');`, sandbox);
+const sampleHtml = vm.runInContext("document.getElementById('print-sheet-content').innerHTML", sandbox);
+
+assert(sampleHtml.includes('a4-combat-ac'), 'HTML gerado pela impressão inclui container com classe a4-combat-ac');
+assert(sampleHtml.includes('a4-combat-init'), 'HTML gerado pela impressão inclui container com classe a4-combat-init');
+assert(sampleHtml.includes('a4-combat-speed'), 'HTML gerado pela impressão inclui container com classe a4-combat-speed');
+assert(sampleHtml.includes('a4-coin-gp'), 'HTML gerado pela impressão inclui moedas identificadas por suas classes de cores específicas');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 

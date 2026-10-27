@@ -9336,20 +9336,20 @@ function printPlayerSheet(id) {
         <div class="a4-col-center">
           <!-- CA, INICIATIVA E DESLOCAMENTO -->
           <div class="a4-combat-top-grid">
-            <div class="a4-combat-pill">
+            <div class="a4-combat-pill a4-combat-ac">
               <span class="a4-combat-label">Classe Armadura</span>
               <span class="a4-combat-val">${p.ac || 10}</span>
-              <span class="a4-combat-sub">CA</span>
+              <span class="a4-combat-sub">CA 🛡️</span>
             </div>
-            <div class="a4-combat-pill">
+            <div class="a4-combat-pill a4-combat-init">
               <span class="a4-combat-label">Iniciativa</span>
               <span class="a4-combat-val">${fmtMod(dexMod)}</span>
-              <span class="a4-combat-sub">DES</span>
+              <span class="a4-combat-sub">DES ⚡</span>
             </div>
-            <div class="a4-combat-pill">
+            <div class="a4-combat-pill a4-combat-speed">
               <span class="a4-combat-label">Deslocamento</span>
               <span class="a4-combat-val">${p.speed || '9m'}</span>
-              <span class="a4-combat-sub">Velocidade</span>
+              <span class="a4-combat-sub">Velocidade 👟</span>
             </div>
           </div>
 
@@ -9524,11 +9524,11 @@ function printPlayerSheet(id) {
           <div class="a4-bordered-box">
             <div class="a4-box-title">Riquezas & Moedas</div>
             <div class="a4-coins-grid">
-              <div class="a4-coin-cell"><b>PC:</b> ${coins.cp || 0}</div>
-              <div class="a4-coin-cell"><b>PP:</b> ${coins.sp || 0}</div>
-              <div class="a4-coin-cell"><b>PE:</b> ${coins.ep || 0}</div>
-              <div class="a4-coin-cell" style="background: #fef3c7; font-weight: 800;"><b>PO:</b> ${coins.gp || p.gold || 0}</div>
-              <div class="a4-coin-cell"><b>PL:</b> ${coins.pp || 0}</div>
+              <div class="a4-coin-cell a4-coin-cp"><b>PC:</b> ${coins.cp || 0}</div>
+              <div class="a4-coin-cell a4-coin-sp"><b>PP:</b> ${coins.sp || 0}</div>
+              <div class="a4-coin-cell a4-coin-ep"><b>PE:</b> ${coins.ep || 0}</div>
+              <div class="a4-coin-cell a4-coin-gp"><b>PO:</b> ${coins.gp || p.gold || 0}</div>
+              <div class="a4-coin-cell a4-coin-pp"><b>PL:</b> ${coins.pp || 0}</div>
             </div>
           </div>
 

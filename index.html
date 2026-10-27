@@ -8251,53 +8251,63 @@
       display: flex;
       gap: 12px;
       margin-bottom: 6px;
-      border-bottom: 2px solid #0f172a;
-      padding-bottom: 6px;
+      border: 1.5px solid #0f172a;
+      border-radius: 6px;
+      padding: 5px 6px;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
     }
     .a4-sheet-title-box {
       min-width: 180px;
       max-width: 220px;
-      border-right: 2px solid #0f172a;
-      padding-right: 12px;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      border: 1.5px solid #d97706;
+      border-radius: 5px;
+      padding: 6px 10px;
       display: flex;
       flex-direction: column;
       justify-content: center;
+      box-shadow: 0 2px 4px rgba(15, 23, 42, 0.2);
     }
     .a4-char-name {
       font-family: 'Cinzel', Georgia, serif;
-      font-size: 15pt;
+      font-size: 14.5pt;
       font-weight: 800;
-      color: #0f172a;
+      color: #fef08a;
       line-height: 1.1;
       margin-bottom: 2px;
       word-break: break-word;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
     }
     .a4-char-tag {
-      font-size: 6.5pt;
+      font-size: 6pt;
       font-weight: 800;
-      color: #64748b;
-      letter-spacing: 0.6px;
+      color: #f59e0b;
+      letter-spacing: 0.8px;
       text-transform: uppercase;
     }
     .a4-sheet-meta-grid {
       flex: 1;
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 4px 10px;
+      gap: 4px 8px;
       align-content: center;
     }
     .a4-meta-cell {
       display: flex;
       flex-direction: column;
       justify-content: center;
-      border-bottom: 1px solid #94a3b8;
-      padding-bottom: 2px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 3px solid #d97706;
+      border-radius: 3px;
+      padding: 2px 6px;
     }
     .a4-meta-label {
-      font-size: 5.5pt;
+      font-size: 5pt;
       text-transform: uppercase;
       color: #64748b;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: 0.4px;
     }
     .a4-meta-val {
@@ -8342,26 +8352,30 @@
     }
     .a4-stat-card {
       border: 1.5px solid #0f172a;
-      border-radius: 4px;
-      background: #ffffff;
+      border-radius: 6px;
+      background: radial-gradient(circle at 50% 25%, #ffffff 0%, #f8fafc 100%);
       text-align: center;
-      padding: 2px 0 1px 0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: space-between;
       box-sizing: border-box;
       height: 20.5mm;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
     }
     .a4-stat-name {
-      font-size: 6pt;
+      background: #0f172a;
+      color: #f8fafc;
+      width: 100%;
+      padding: 1.5px 0;
+      font-size: 5.5pt;
       font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #0f172a;
+      letter-spacing: 0.8px;
     }
     .a4-stat-mod {
-      font-size: 13pt;
+      font-size: 13.5pt;
       font-weight: 900;
       color: #0f172a;
       line-height: 1;
@@ -8369,12 +8383,13 @@
     }
     .a4-stat-score {
       font-size: 6.5pt;
-      font-weight: 700;
+      font-weight: 800;
       color: #334155;
-      border: 1px solid #94a3b8;
-      border-radius: 8px;
-      padding: 0 4px;
-      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 0.5px 6px;
+      background: #f1f5f9;
+      margin-bottom: 2px;
       min-width: 14px;
     }
 
@@ -8387,12 +8402,14 @@
     }
     .a4-badge-box {
       border: 1px solid #0f172a;
-      border-radius: 3px;
+      border-left: 3px solid #d97706;
+      border-radius: 4px;
       padding: 2px 4px;
       display: flex;
       align-items: center;
       gap: 4px;
-      background: #ffffff;
+      background: #fdfefe;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
     }
     .a4-badge-box-icon,
     .a4-badge-box-mod {
@@ -8417,24 +8434,27 @@
 
     .a4-bordered-box {
       border: 1.5px solid #0f172a;
-      border-radius: 4px;
-      padding: 3px 5px;
+      border-radius: 5px;
+      padding: 4px 6px;
       background: #ffffff;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     }
     .a4-box-title {
       font-family: 'Cinzel', Georgia, serif;
       font-size: 6pt;
       font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.6px;
       text-align: center;
-      border-bottom: 1px solid #0f172a;
-      padding-bottom: 2px;
-      margin-bottom: 3px;
+      background: #f8fafc;
       color: #0f172a;
+      border-bottom: 1.5px solid #d97706;
+      border-radius: 3px 3px 0 0;
+      padding: 2px 4px;
+      margin: -4px -6px 3px -6px;
     }
     .a4-box-content-sm {
       font-size: 6pt;
@@ -8455,17 +8475,24 @@
       gap: 3px;
       font-size: 6pt;
       line-height: 1.15;
+      padding: 0.5px 2px;
+      border-radius: 2px;
+    }
+    .a4-save-item:nth-child(even),
+    .a4-skill-row:nth-child(even) {
+      background: #fbfcfd;
     }
     .a4-bullet {
       font-size: 6pt;
-      color: #94a3b8;
+      color: #cbd5e1;
       width: 8px;
       text-align: center;
       flex-shrink: 0;
     }
     .a4-bullet.active {
-      color: #0f172a;
+      color: #d97706;
       font-weight: 900;
+      text-shadow: 0 0 1px #b45309;
     }
     .a4-mod-badge,
     .a4-skill-mod {
@@ -8481,12 +8508,13 @@
       overflow: hidden;
       text-overflow: ellipsis;
       color: #1e293b;
-      font-weight: 500;
+      font-weight: 600;
       flex: 1;
     }
     .a4-skill-attr {
       font-size: 5pt;
       color: #64748b;
+      font-weight: 400;
     }
 
     .a4-combat-top-grid {
@@ -8497,23 +8525,33 @@
     }
     .a4-combat-pill {
       border: 1.5px solid #0f172a;
-      border-radius: 4px;
-      padding: 2px 2px 1px 2px;
+      border-radius: 6px;
+      padding: 3px 2px 2px 2px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       background: #ffffff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    .a4-combat-pill.a4-combat-ac {
+      border-top: 3.5px solid #1e3a8a;
+    }
+    .a4-combat-pill.a4-combat-init {
+      border-top: 3.5px solid #d97706;
+    }
+    .a4-combat-pill.a4-combat-speed {
+      border-top: 3.5px solid #059669;
     }
     .a4-combat-label {
       font-size: 5pt;
-      font-weight: 700;
+      font-weight: 800;
       text-transform: uppercase;
       color: #64748b;
       letter-spacing: 0.3px;
     }
     .a4-combat-val {
-      font-size: 13pt;
+      font-size: 13.5pt;
       font-weight: 900;
       color: #0f172a;
       line-height: 1.1;
@@ -8527,20 +8565,25 @@
 
     .a4-hp-box {
       border: 1.5px solid #0f172a;
-      border-radius: 4px;
-      padding: 3px 5px;
+      border-radius: 6px;
+      padding: 4px 6px;
       background: #ffffff;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 3px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
     .a4-hp-top-bar {
+      background: #ecfdf5;
+      border-bottom: 1.5px solid #10b981;
+      border-radius: 4px 4px 0 0;
+      padding: 2px 6px;
+      margin: -4px -6px 2px -6px;
       display: flex;
       justify-content: space-between;
       font-size: 6pt;
-      border-bottom: 1px solid #cbd5e1;
-      padding-bottom: 2px;
-      color: #334155;
+      color: #065f46;
+      font-weight: 800;
     }
     .a4-hp-tracking-area {
       display: grid;
@@ -8548,20 +8591,22 @@
       gap: 4px;
     }
     .a4-hp-slot {
-      border: 1px dashed #64748b;
-      border-radius: 3px;
+      border: 1.5px dashed #94a3b8;
+      border-radius: 4px;
       padding: 2px;
       text-align: center;
+      background: #f8fafc;
     }
     .a4-hp-slot-title {
       display: block;
       font-size: 5pt;
       text-transform: uppercase;
       color: #64748b;
+      font-weight: 700;
     }
     .a4-hp-slot-num {
       display: block;
-      font-size: 12pt;
+      font-size: 13pt;
       font-weight: 900;
       color: #0f172a;
       line-height: 1.1;
@@ -8577,16 +8622,17 @@
       justify-content: space-between;
       align-items: center;
       font-size: 6pt;
-      padding: 1px 0;
+      padding: 1.5px 2px;
     }
     .a4-death-label {
-      font-weight: 700;
+      font-weight: 800;
       color: #334155;
     }
     .a4-death-circles {
       letter-spacing: 2px;
-      font-weight: 800;
-      color: #0f172a;
+      font-weight: 900;
+      color: #b91c1c;
+      font-size: 7pt;
     }
 
     .a4-attacks-section {
@@ -8596,6 +8642,9 @@
     }
     .a4-attacks-table-wrap {
       margin-bottom: 3px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      overflow: hidden;
     }
     .a4-attacks-table {
       width: 100%;
@@ -8603,16 +8652,21 @@
       font-size: 6pt;
     }
     .a4-attacks-table th {
-      border-bottom: 1px solid #0f172a;
-      padding: 2px;
+      background: #f1f5f9;
+      border-bottom: 1px solid #cbd5e1;
+      padding: 2.5px 4px;
       text-align: left;
-      font-size: 5pt;
+      font-size: 5.5pt;
+      font-weight: 800;
       text-transform: uppercase;
-      color: #64748b;
+      color: #1e293b;
     }
     .a4-attacks-table td {
-      border-bottom: 1px solid #e2e8f0;
-      padding: 2px;
+      border-bottom: 1px solid #f1f5f9;
+      padding: 2.5px 4px;
+    }
+    .a4-attacks-table tr:nth-child(even) td {
+      background: #fbfcfd;
     }
     .a4-attacks-notes {
       font-size: 6pt;
@@ -8620,32 +8674,35 @@
       line-height: 1.25;
       max-height: 35mm;
       overflow: hidden;
+      padding: 2px 1px;
     }
 
     .a4-spell-slots-grid {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      gap: 2px;
+      gap: 2.5px;
     }
     .a4-slot-pill {
       border: 1px solid #cbd5e1;
-      border-radius: 3px;
+      border-radius: 4px;
       text-align: center;
-      padding: 1px;
+      padding: 1.5px;
       font-size: 5pt;
       background: #f8fafc;
     }
     .a4-slot-pill.active {
-      border-color: #0f172a;
-      background: #ffffff;
-      font-weight: 700;
+      border-color: #0284c7;
+      background: #f0f9ff;
+      font-weight: 800;
+      box-shadow: 0 1px 2px rgba(2, 132, 199, 0.1);
     }
     .a4-slot-lvl {
       font-weight: 800;
-      color: #0f172a;
+      color: #0284c7;
     }
     .a4-slot-dots {
-      color: #64748b;
+      color: #0f172a;
+      font-weight: 700;
     }
 
     .a4-features-box {
@@ -8665,16 +8722,27 @@
     .a4-header-p2 {
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
-      border-bottom: 2px solid #0f172a;
-      padding-bottom: 4px;
+      align-items: center;
+      border: 1.5px solid #0f172a;
+      border-radius: 6px;
+      padding: 5px 8px;
       margin-bottom: 6px;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+    }
+    .a4-header-p2 .a4-sheet-title-box {
+      min-width: 170px;
+      max-width: 200px;
     }
     .a4-header-p2-meta {
       display: flex;
       gap: 12px;
       font-size: 7.5pt;
-      color: #475569;
+      color: #334155;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 4px 10px;
     }
     .a4-rp-text {
       font-size: 6pt;
@@ -8695,21 +8763,51 @@
     .a4-coins-grid {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      gap: 2px;
+      gap: 3px;
       text-align: center;
-      margin-bottom: 3px;
+      margin-bottom: 4px;
     }
     .a4-coin-cell {
+      border-radius: 4px;
+      padding: 3px 1px;
+      font-size: 6.5pt;
+      font-weight: 800;
       border: 1px solid #cbd5e1;
-      border-radius: 3px;
-      padding: 2px 1px;
-      font-size: 6pt;
-      background: #ffffff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
     }
+    .a4-coin-cp {
+      background: #ffedd5;
+      border-color: #fdba74;
+      color: #9a3412;
+    }
+    .a4-coin-sp {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      color: #334155;
+    }
+    .a4-coin-ep {
+      background: #fef9c3;
+      border-color: #fde047;
+      color: #854d0e;
+    }
+    .a4-coin-gp {
+      background: #fef3c7;
+      border-color: #fcd34d;
+      color: #b45309;
+      box-shadow: 0 1px 3px rgba(217, 119, 6, 0.2);
+    }
+    .a4-coin-pp {
+      background: #ede9fe;
+      border-color: #c4b5fd;
+      color: #5b21b6;
+    }
+
     .a4-inv-table-wrap {
       flex: 1;
       max-height: 90mm;
       overflow: hidden;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
     }
     .a4-inv-table {
       width: 100%;
@@ -8717,55 +8815,65 @@
       font-size: 6pt;
     }
     .a4-inv-table th {
-      border-bottom: 1px solid #0f172a;
-      padding: 2px;
+      background: #f1f5f9;
+      border-bottom: 1px solid #cbd5e1;
+      padding: 2.5px 4px;
       font-size: 5pt;
+      font-weight: 800;
       text-transform: uppercase;
-      color: #64748b;
+      color: #1e293b;
     }
     .a4-inv-table td {
-      border-bottom: 1px solid #e2e8f0;
-      padding: 2px;
+      border-bottom: 1px solid #f1f5f9;
+      padding: 2.5px 4px;
+    }
+    .a4-inv-table tr:nth-child(even) td {
+      background: #fbfcfd;
     }
     .a4-carry-capacity-bar {
-      border-top: 1px solid #0f172a;
-      padding-top: 2px;
+      border-top: 1.5px solid #d97706;
+      background: #f8fafc;
+      border-radius: 0 0 4px 4px;
+      padding: 2px 6px;
       margin-top: 3px;
       display: flex;
       justify-content: space-between;
       font-size: 5.5pt;
-      color: #475569;
+      color: #334155;
+      font-weight: 700;
     }
 
     .a4-spell-meta-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 2px;
+      gap: 3px;
       text-align: center;
-      margin-bottom: 3px;
+      margin-bottom: 4px;
     }
     .a4-spell-meta-cell {
-      border: 1px solid #cbd5e1;
-      border-radius: 3px;
-      padding: 2px;
+      border: 1px solid #bae6fd;
+      border-radius: 4px;
+      padding: 2.5px;
       font-size: 5.5pt;
+      background: #f0f9ff;
     }
     .a4-spell-meta-lbl {
       display: block;
       font-size: 5pt;
+      font-weight: 800;
       text-transform: uppercase;
-      color: #64748b;
+      color: #0369a1;
     }
     .a4-spell-meta-val {
       display: block;
-      font-size: 7.5pt;
-      font-weight: 800;
-      color: #0f172a;
+      font-size: 8pt;
+      font-weight: 900;
+      color: #0c4a6e;
     }
     .a4-spellbook-list {
       display: flex;
       flex-direction: column;
-      gap: 1px;
+      gap: 1.5px;
       font-size: 6pt;
       max-height: 90mm;
       overflow: hidden;
@@ -8774,13 +8882,19 @@
       display: flex;
       align-items: center;
       gap: 3px;
+      padding: 1px 2px;
+    }
+    .a4-spell-entry:nth-child(even) {
+      background: #f8fafc;
+      border-radius: 2px;
     }
     .a4-spell-entry-bullet {
-      font-size: 4.5pt;
+      font-size: 5pt;
       color: #0284c7;
     }
     .a4-spell-entry-name {
       font-weight: 700;
+      color: #1e293b;
       flex: 1;
       white-space: nowrap;
       overflow: hidden;
@@ -8788,7 +8902,11 @@
     }
     .a4-spell-entry-lvl {
       font-size: 5pt;
-      color: #64748b;
+      color: #0284c7;
+      font-weight: 700;
+      background: #e0f2fe;
+      border-radius: 3px;
+      padding: 0.5px 3px;
     }
     .a4-notes-lines {
       display: flex;
@@ -8804,8 +8922,8 @@
     .a4-page-footer {
       display: flex;
       justify-content: space-between;
-      border-top: 1px solid #0f172a;
-      padding-top: 2px;
+      border-top: 1.5px solid #d97706;
+      padding-top: 3px;
       font-size: 5.5pt;
       color: #64748b;
       font-weight: 600;
@@ -52192,20 +52310,20 @@ function printPlayerSheet(id) {
         <div class="a4-col-center">
           <!-- CA, INICIATIVA E DESLOCAMENTO -->
           <div class="a4-combat-top-grid">
-            <div class="a4-combat-pill">
+            <div class="a4-combat-pill a4-combat-ac">
               <span class="a4-combat-label">Classe Armadura</span>
               <span class="a4-combat-val">${p.ac || 10}</span>
-              <span class="a4-combat-sub">CA</span>
+              <span class="a4-combat-sub">CA 🛡️</span>
             </div>
-            <div class="a4-combat-pill">
+            <div class="a4-combat-pill a4-combat-init">
               <span class="a4-combat-label">Iniciativa</span>
               <span class="a4-combat-val">${fmtMod(dexMod)}</span>
-              <span class="a4-combat-sub">DES</span>
+              <span class="a4-combat-sub">DES ⚡</span>
             </div>
-            <div class="a4-combat-pill">
+            <div class="a4-combat-pill a4-combat-speed">
               <span class="a4-combat-label">Deslocamento</span>
               <span class="a4-combat-val">${p.speed || '9m'}</span>
-              <span class="a4-combat-sub">Velocidade</span>
+              <span class="a4-combat-sub">Velocidade 👟</span>
             </div>
           </div>
 
@@ -52380,11 +52498,11 @@ function printPlayerSheet(id) {
           <div class="a4-bordered-box">
             <div class="a4-box-title">Riquezas & Moedas</div>
             <div class="a4-coins-grid">
-              <div class="a4-coin-cell"><b>PC:</b> ${coins.cp || 0}</div>
-              <div class="a4-coin-cell"><b>PP:</b> ${coins.sp || 0}</div>
-              <div class="a4-coin-cell"><b>PE:</b> ${coins.ep || 0}</div>
-              <div class="a4-coin-cell" style="background: #fef3c7; font-weight: 800;"><b>PO:</b> ${coins.gp || p.gold || 0}</div>
-              <div class="a4-coin-cell"><b>PL:</b> ${coins.pp || 0}</div>
+              <div class="a4-coin-cell a4-coin-cp"><b>PC:</b> ${coins.cp || 0}</div>
+              <div class="a4-coin-cell a4-coin-sp"><b>PP:</b> ${coins.sp || 0}</div>
+              <div class="a4-coin-cell a4-coin-ep"><b>PE:</b> ${coins.ep || 0}</div>
+              <div class="a4-coin-cell a4-coin-gp"><b>PO:</b> ${coins.gp || p.gold || 0}</div>
+              <div class="a4-coin-cell a4-coin-pp"><b>PL:</b> ${coins.pp || 0}</div>
             </div>
           </div>
 
