@@ -2335,7 +2335,8 @@
           </div>
         </div>
         <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-          <button class="btn-action" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; font-size: 13px; font-weight: 700; padding: 7px 16px; border-radius: 6px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);" onclick="triggerPlayerBrowserPrint()" title="Salvar em PDF ou Imprimir em Folha A4">📥 Salvar em PDF / Imprimir</button>
+          <button class="btn-action" id="btn-export-pdf-acroform" style="background: linear-gradient(135deg, #d97706, #b45309); color: #fff; font-size: 13px; font-weight: 700; padding: 7px 16px; border-radius: 6px; box-shadow: 0 2px 8px rgba(217, 119, 6, 0.4);" onclick="exportCurrentModalPlayerEditablePdf()" title="Baixar PDF Oficial com campos editáveis e cálculo automático de modificadores e perícias">📄 Baixar PDF Editável (Auto-Cálculo)</button>
+          <button class="btn-action" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; font-size: 13px; font-weight: 700; padding: 7px 16px; border-radius: 6px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);" onclick="triggerPlayerBrowserPrint()" title="Salvar em PDF ou Imprimir em Folha A4">🖨️ Imprimir / Salvar A4</button>
           <button class="btn-secondary" style="background: #1e293b; color: #38bdf8; border-color: #0284c7; font-size: 13px; font-weight: 600; padding: 7px 14px; border-radius: 6px;" onclick="exportCurrentModalPlayerJson()" title="Baixar arquivo JSON com os dados desta ficha">💾 Baixar Ficha (.JSON)</button>
           <button class="btn-secondary" style="background: #1e293b; color: #cbd5e1; border-color: #475569; font-size: 13px; padding: 7px 14px; border-radius: 6px;" onclick="closePrintModal()">Fechar ✕</button>
         </div>

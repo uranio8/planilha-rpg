@@ -34,6 +34,7 @@ const jsDice = fs.readFileSync(path.join(srcDir, 'js', 'dice_roller.js'), 'utf8'
 const jsGrid = fs.readFileSync(path.join(srcDir, 'js', 'vtt_grid.js'), 'utf8');
 const jsScreen = fs.readFileSync(path.join(srcDir, 'js', 'screen_sync.js'), 'utf8');
 const jsFirebase = fs.readFileSync(path.join(srcDir, 'js', 'firebase_sync.js'), 'utf8');
+const jsPdfExport = fs.readFileSync(path.join(srcDir, 'js', 'pdf_export.js'), 'utf8');
 
 const finalHtml = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -43,6 +44,8 @@ ${headCss}
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  <!-- PDF-Lib para Geração de Formulários e PDFs Editáveis D&D 5E -->
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 </head>
 <body>
 ${ui}
@@ -63,6 +66,7 @@ ${jsCore}
 ${jsFirebase}
 ${jsCombat}
 ${jsPlayers}
+${jsPdfExport}
 ${jsCompendium}
 ${jsClasses}
 ${jsSpecies}

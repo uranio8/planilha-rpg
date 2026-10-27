@@ -1,76 +1,108 @@
-# Plano de Implementação - Modernização Visual & Paleta Nobre da Ficha A4 em PDF (ISSUE-149)
+# Plano de Implementação - Ficha D&D 5E em PDF Editável com Auto-Cálculo (ISSUE-150)
 
 ## 🎯 Contexto e Objetivos
 
 O usuário solicitou:
-> *"está excelente o pdf, vamos apenas pesquisar na internet uma melhoria tecnica em questão visual, colorir um pouco mais ou uma mudança mais personalizada no layout pra ficar mais bonitinho"*
+> *"a ficha em pdf que geramos, ela poderia depois de ser baixada, o jogador poder editar? tipo aqueles pdfs editaveis, mas vinculando a parte de modificadores para as pericias, CD e tal. Também um cálculo rapido de "tenho 18 de força" e automaticamente calcular o modificador? acho que a opção 1 é melhor"*
 
-O objetivo é transformar a ficha A4 em 2 páginas em uma peça visualmente nobre, colorida e charmosa, inspirada nos melhores redesigns visuais da comunidade D&D 5E, mantendo a fidelidade das regras e o respeito ao consumo de tinta na impressão física.
+Atualmente, o botão de download de ficha utiliza `window.print()`, que gera uma renderização estática visual para impressão em folha A4 física.
 
----
-
-## 🎨 Especificação do Design System Nobre D&D
-
-### 1. Cabeçalho Épico & Identidade Visual
-- **Título do Personagem**:
-  - Banner estilizado com borda dupla dourada/bronze (`#d97706`) e fundo escuro nobre gradiente (`linear-gradient(135deg, #0f172a 0%, #1e293b 100%)`).
-  - Nome do herói em tipografia *Cinzel* com cor dourada suave (`#fef08a`), e tag do sistema em dourado antigo (`#f59e0b`).
-- **Grade de Metadados**:
-  - Caixas com fundo suave pergaminho (`#f8fafc`), borda esquerda dourada sutil (`#f59e0b`) e labels em maiúsculas refinadas.
-
-### 2. Painéis Táteis & Color-Coding Funcional
-- **Atributos em Medalhão**:
-  - Caixas de atributos verticais com topo colorido em azul meia-noite (`#0f172a`), modificador em destaque com fundo branco e escore base em mini-pill oval cinza perolado (`#e2e8f0`).
-- **Combate de Alto Impacto**:
-  - **CA, Iniciativa e Deslocamento**: caixas no estilo brasão/escudo com acentos de cor temáticos (Iniciativa em âmbar `#d97706`, CA em azul profundo `#1e3a8a`, Deslocamento em verde bosque `#065f46`).
-  - **Pontos de Vida (PV)**: cabeçalho com barra esmeralda (`#ecfdf5`), PV atual em destaque vivo e slots temporários em azul safira suave (`#eff6ff`).
-- **Perícias e Salvaguardas**:
-  - Bullets de proficiência preenchidos (`●`) com a cor dourada/âmbar brilhante (`#d97706`) sobre fundo suave, destacando instantaneamente as especialidades do herói.
-- **Tabela de Ataques**:
-  - Cabeçalho com fundo suave `#f1f5f9`, linhas alternadas delicadas (`#ffffff` e `#fbfcfd`), e bônus de acerto envolto em uma pill arredondada com borda dourada.
-- **Cofre de Moedas (Página 2)**:
-  - Células coloridas por tipo de metal: **PO** em amarelo ouro suave (`#fef3c7`), **PP** em prata perolada (`#f1f5f9`), **PC** em cobre suave (`#ffedd5`), **PE** em bronze electrum (`#fef9c3`) e **PL** em platina suave (`#e0e7ff`).
-- **Grimório & Magias**:
-  - Títulos de níveis de magia com selos arcanos em azul/índigo (`#0284c7`) e marcadores estelares (`✦`).
-
-### 3. Otimização de Impressão (`@media print`)
-- No modo de impressão de papel ou PDF para gráfica, preserva o contraste de texto 100% legível com fundos claros, garantindo que mesmo em impressoras monocromáticas os elementos saiam com nitidez impecável.
+O objetivo desta melhoria é fornecer a opção de **Baixar Ficha PDF Editável Interativa** (padrão oficial D&D 5E com *AcroForms* e scripts de cálculo embutidos). Quando o jogador abrir o PDF no Adobe Acrobat Reader, Foxit Reader ou navegadores compatíveis:
+1. **Campos Editáveis**: O jogador pode clicar e alterar qualquer valor diretamente no PDF baixado.
+2. **Cálculo Automático de Modificadores**: Ao digitar um valor de atributo (ex: `18` em Força), o modificador recalcula imediatamente para `+4` (fórmula: `Math.floor((valor - 10) / 2)`).
+3. **Vinculação de Perícias e Salvaguardas**: Cada perícia e salvaguarda é vinculada ao modificador de atributo base correspondente, somando automaticamente o Bônus de Proficiência caso a caixinha de proficiência esteja marcada.
+4. **Cálculo Automático de CD e Ataque Mágico**: A Classe de Dificuldade de Magia (`8 + Prof + Mod Conjurador`) e Bônus de Ataque Mágico (`Prof + Mod Conjurador`) recalculam em tempo real.
+5. **Preenchimento Inicial Inteligente**: O PDF já é exportado preenchido com todos os dados atuais da ficha do jogador no Planilha RPG (Nome, Classe, Raça, Nível, PV, Atributos, Perícias, Equipamento, Magias).
 
 ---
 
-## 🛠️ Modificações Propostas
+## 🏗️ Arquitetura e Engenharia da Solução
 
-### 1. `src/styles/head_css.html`
-- Atualização das classes `.a4-*` para incorporar as novas bordas, gradientes, fundos temáticos e medalhões.
-- Definição de regras para `.a4-sheet-header`, `.a4-stat-card`, `.a4-combat-pill`, `.a4-hp-box`, `.a4-coin-cell`, `.a4-bullet.active`, etc.
+### 1. Motor de Geração de PDF Interativo (Client-Side)
+- O Planilha RPG opera 100% no navegador (offline-first).
+- Incorporamos o motor de geração de formulários PDF (utilizando o padrão aberto `pdf-lib` via CDN com suporte autônomo), capaz de criar documentos PDF com especificações ISO-32000 (PDF Forms / AcroForm) diretamente na memória do navegador sem necessidade de backend.
 
-### 2. `src/js/players.js`
-- Enriquecer a estrutura gerada em `printPlayerSheet`:
-  - Adicionar classes semânticas de cor nas células de combate e atributos.
-  - Formatar os marcadores de proficiência e badges de dano.
+### 2. Especificação dos Campos AcroForm e Scripts de Cálculo
+Cada campo terá um nome padronizado D&D 5E e scripts de cálculo embutidos (Acrobat JavaScript):
 
-### 3. `test_runner.js`
-- Adicionar **Bateria 118**:
-  - Validar a presença das novas regras de cores e medalhões no CSS compilado.
-  - Validar renderização dos atributos, moedas coloridas e tabela de ataques.
-  - Validar 100% de sucesso nos 2076+ testes.
+* **Atributos**: `FOR`, `DES`, `CON`, `INT`, `SAB`, `CAR`
+* **Modificadores (Auto-calculados)**:
+  - `FOR_MOD` = `Math.floor((FOR - 10) / 2)`
+  - `DES_MOD` = `Math.floor((DES - 10) / 2)`
+  - `CON_MOD` = `Math.floor((CON - 10) / 2)`
+  - `INT_MOD` = `Math.floor((INT - 10) / 2)`
+  - `SAB_MOD` = `Math.floor((SAB - 10) / 2)`
+  - `CAR_MOD` = `Math.floor((CAR - 10) / 2)`
+* **Salvaguardas / Testes de Resistência**:
+  - `SAV_FOR` = `FOR_MOD + (CHK_SAV_FOR ? PROF_BONUS : 0)`
+  - etc. para DES, CON, INT, SAB, CAR.
+* **Perícias**:
+  - `SKILL_ATLETISMO` = `FOR_MOD + (CHK_ATLETISMO ? PROF_BONUS : 0)`
+  - `SKILL_ACROBACIA` = `DES_MOD + (CHK_ACROBACIA ? PROF_BONUS : 0)`
+  - `SKILL_PERCEPCAO` = `SAB_MOD + (CHK_PERCEPCAO ? PROF_BONUS : 0)`
+  - (Todas as 18 perícias oficiais vinculadas aos respectivos atributos).
+* **Percepção Passiva**:
+  - `PASSIVE_PERCEPTION` = `10 + SKILL_PERCEPCAO`
+* **Conjurador**:
+  - `SPELL_DC` = `8 + PROF_BONUS + SPELL_CASTING_MOD`
+  - `SPELL_ATTACK` = `PROF_BONUS + SPELL_CASTING_MOD`
+
+### 3. Integração na Interface do Usuário (UI/UX)
+- No **Modal de Impressão da Ficha** (`#modal-print`), adicionaremos duas opções claras de ação:
+  1. 🖨️ **Imprimir em Papel / A4 Estilizado**: Mantém o fluxo visual customizado da arte nobre A4 do Planilha RPG.
+  2. 📥 **Baixar Ficha PDF Editável (Auto-Cálculo)**: Gera e faz o download imediato do arquivo `.pdf` interativo nomeado (ex: `Ficha_DND5E_Aragorn.pdf`).
+- Na listagem de personagens e no painel do jogador, inclusão de atalho rápido direto para baixar o PDF editável com 1 clique.
 
 ---
 
-## 🔒 Critérios de Aceite e Verificação
+## 🛠️ Arquivos e Módulos Afetados
 
-1. Ao abrir o modal de download da ficha (`📥`), as 2 páginas A4 surgem com design vibrante, elegante e estilizado (cabeçalho nobre, medalhões de combate e cores sutis).
-2. O salvamento em PDF / impressão gera um documento colorido de alta resolução.
-3. Compilação executada sem erros (`node builder.js`).
-4. Suíte completa de testes aprovada com 100% de sucesso (`node test_runner.js`).
+1. **`src/ui/ui.html`**:
+   - Inclusão dos botões de ação "📄 Baixar PDF Editável" no cabeçalho do `#modal-print` e nas ações de ferramentas do jogador.
+2. **`src/js/players.js`**:
+   - Função `exportEditablePlayerPdf(playerId)`: coleta os dados do jogador (`PLAYERS.find(p => p.id === playerId)`), calcula os valores iniciais e chama o gerador do documento PDF com os campos AcroForm e scripts de cálculo acoplados.
+   - Integração com a UI e atalhos de clique.
+3. **`builder.js`**:
+   - Inclusão do script auxiliar `pdf-lib` no `<head>` de `planilha do rpg.html` e `index.html`.
+4. **`test_runner.js`**:
+   - **Bateria 119**:
+     - Validação da existência da função `exportEditablePlayerPdf`.
+     - Validação do mapeamento correto dos atributos, modificadores e fórmulas das 18 perícias.
+     - Validação de que valores vazios ou não definidos no jogador não quebram a geração.
+     - Validação da preservação de todos os 2091+ testes anteriores.
+5. **`issues/README.md`**:
+   - Registro da **ISSUE-150** com escopo, arquivos alterados e critérios de verificação.
+
+---
+
+## 🔒 Impacto em Persistência e Compatibilidade
+
+- **Persistência (`localStorage`)**: Nenhuma alteração estrutural no schema existente (`dnd_tracker_players_v3`), compatibilidade total retroativa garantida.
+- **Sincronização / Combate**: Zero impacto colateral no combate ou grid VTT.
+- **Leitores de PDF suportados**: Adobe Acrobat Reader (Desktop/Mobile), Foxit Reader, Google Chrome, Microsoft Edge e visualizadores PDF modernos.
+
+---
+
+## 📋 Critérios de Aceite
+
+1. O usuário clica em "Baixar Ficha PDF Editável" e recebe um arquivo `.pdf` salvo diretamente no computador/celular.
+2. Ao abrir o PDF em um leitor de PDF (ex: Adobe Reader ou navegador):
+   - Os campos de texto (Nome, Classe, Nível, Pontos de Vida, Equipamentos, Magias) estão liberados para digitação.
+   - Ao alterar o valor de **Força** de 10 para 18, o modificador de Força atualiza automaticamente para **+4**.
+   - As perícias vinculadas (como Atletismo) atualizam seu valor automaticamente com base no novo modificador.
+3. Suíte de testes automatizados executada via `node test_runner.js` com 100% de sucesso.
+4. Compilação executada via `node builder.js` sem falhas.
 
 ---
 
 ## ✅ Status de Execução
 
-- [x] Design System Nobre Colorido D&D 5E implementado em `src/styles/head_css.html`.
-- [x] Classes semânticas e marcação temática enriquecida em `src/js/players.js`.
-- [x] Compilação gerada com sucesso via `node builder.js` (`planilha do rpg.html` e `index.html`).
-- [x] Bateria 118 implementada e aprovada em `test_runner.js` (2091/2091 testes passando - 100% de sucesso).
-- [x] Registro efetuado em `issues/README.md` (ISSUE-149).
-- [x] Código sincronizado no GitHub via git seguro (`origin main`).
+- [x] Motor client-side de geração PDF com AcroForms implementado em `src/js/pdf_export.js`.
+- [x] Fórmulas e scripts de auto-cálculo Acrobat JS embutidos para Modificadores, Salvaguardas, Perícias e CD de Magia.
+- [x] Ordem oficial de cálculo (`/CO`) registrada no catálogo do formulário PDF.
+- [x] Botão de ação `[📄 Baixar PDF Editável (Auto-Cálculo)]` adicionado no modal de impressão em `src/ui/ui.html`.
+- [x] Integração de compilação em `builder.js` incluindo `pdf-lib` e `pdf_export.js`.
+- [x] Compilação executada via `node builder.js` gerando `planilha do rpg.html` e `index.html`.
+- [x] Bateria 119 de testes automatizados adicionada em `test_runner.js` (2114/2114 testes aprovados - 100% de sucesso).
+- [x] Registro efetuado no Quadro Geral de Issues em `issues/README.md` (ISSUE-150).
+

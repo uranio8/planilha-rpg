@@ -48,7 +48,8 @@ const requiredFiles = [
   'src/js/dice_roller.js',
   'src/js/vtt_grid.js',
   'src/js/screen_sync.js',
-  'src/js/firebase_sync.js'
+  'src/js/firebase_sync.js',
+  'src/js/pdf_export.js'
 ];
 
 requiredFiles.forEach(file => {
@@ -239,7 +240,8 @@ const sandbox = {
   CONDITIONS_LIST: [
     { id: 'caido', name: 'Caído' },
     { id: 'envenenado', name: 'Envenenado' }
-  ]
+  ],
+  PDFLib: require('pdf-lib')
 };
 
 vm.createContext(sandbox);
@@ -259,6 +261,7 @@ const jsQrCode = fs.readFileSync(path.join(srcDir, 'js', 'qrcode_lib.js'), 'utf8
 const jsCore = fs.readFileSync(path.join(srcDir, 'js', 'core.js'), 'utf8');
 const jsCombat = fs.readFileSync(path.join(srcDir, 'js', 'combat.js'), 'utf8');
 const jsPlayers = fs.readFileSync(path.join(srcDir, 'js', 'players.js'), 'utf8');
+const jsPdfExport = fs.readFileSync(path.join(srcDir, 'js', 'pdf_export.js'), 'utf8');
 const jsComp = fs.readFileSync(path.join(srcDir, 'js', 'compendium.js'), 'utf8');
 const jsCampaigns = fs.readFileSync(path.join(srcDir, 'js', 'campaigns.js'), 'utf8');
 const jsDice = fs.readFileSync(path.join(srcDir, 'js', 'dice_roller.js'), 'utf8');
@@ -289,6 +292,7 @@ vm.runInContext(jsCore, sandbox);
 vm.runInContext(jsFirebase, sandbox);
 vm.runInContext(jsCombat, sandbox);
 vm.runInContext(jsPlayers, sandbox);
+vm.runInContext(jsPdfExport, sandbox);
 vm.runInContext(jsComp, sandbox);
 vm.runInContext(jsCampaigns, sandbox);
 vm.runInContext(jsDice, sandbox);
@@ -9251,18 +9255,91 @@ assert(sampleHtml.includes('a4-combat-init'), 'HTML gerado pela impressão inclu
 assert(sampleHtml.includes('a4-combat-speed'), 'HTML gerado pela impressão inclui container com classe a4-combat-speed');
 assert(sampleHtml.includes('a4-coin-gp'), 'HTML gerado pela impressão inclui moedas identificadas por suas classes de cores específicas');
 
-console.log('\n========================================');
-console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
+// ========================================
+// 119. Testes de Ficha D&D 5E em PDF Editável com Auto-Cálculo (ISSUE-150):
+// ========================================
+console.log('\n📄 119. Testes de Ficha D&D 5E em PDF Editável com Auto-Cálculo (ISSUE-150):');
 
-if (failedTests === 0) {
-  console.log('🎉 TODOS OS TESTES PASSARAM COM SUCESSO! 🚀');
-  console.log('========================================\n');
-  process.exit(0);
-} else {
-  console.error(`💥 ${failedTests} TESTES FALHARAM! Verifique os logs acima.`);
-  console.log('========================================\n');
-  process.exit(1);
-}
+// 1. Verificação de Inclusão da Biblioteca PDF-Lib e do Botão na Interface
+assert(compiledHtml.includes('pdf-lib@1.17.1') || compiledHtml.includes('pdf-lib.min.js'), 'HTML compilado inclui a biblioteca pdf-lib para AcroForms');
+assert(compiledHtml.includes('id="btn-export-pdf-acroform"'), 'HTML compilado possui o botão #btn-export-pdf-acroform');
+assert(compiledHtml.includes('exportCurrentModalPlayerEditablePdf()'), 'Botão de PDF editável possui chamada para exportCurrentModalPlayerEditablePdf()');
+assert(compiledHtml.includes('Baixar PDF Editável (Auto-Cálculo)'), 'Botão exibe a label explicativa de Auto-Cálculo');
+
+// 2. Verificação das Funções e Mapeamentos no Módulo Exportador
+const fnGeneratePdf = sandbox.generateEditableDnd5ePdf || (sandbox.window && sandbox.window.generateEditableDnd5ePdf);
+const fnExportPdf = sandbox.exportPlayerEditablePdf || (sandbox.window && sandbox.window.exportPlayerEditablePdf);
+const fnExportModalPdf = sandbox.exportCurrentModalPlayerEditablePdf || (sandbox.window && sandbox.window.exportCurrentModalPlayerEditablePdf);
+assert(typeof fnGeneratePdf === 'function', 'Função generateEditableDnd5ePdf está disponível no escopo compilado');
+assert(typeof fnExportPdf === 'function', 'Função exportPlayerEditablePdf está disponível no escopo compilado');
+assert(typeof fnExportModalPdf === 'function', 'Função exportCurrentModalPlayerEditablePdf está disponível no escopo compilado');
+
+const skillsMap = sandbox.DND_SKILLS_MAPPING || (sandbox.window && sandbox.window.DND_SKILLS_MAPPING);
+assert(Array.isArray(skillsMap) && skillsMap.length === 18, 'DND_SKILLS_MAPPING contém o catálogo canônico completo das 18 perícias do D&D 5E');
+assert(skillsMap.some(s => s.key === 'athletics' && s.stat === 'FOR'), 'Perícia Atletismo está vinculada à Força');
+assert(skillsMap.some(s => s.key === 'stealth' && s.stat === 'DES'), 'Perícia Furtividade está vinculada à Destreza');
+assert(skillsMap.some(s => s.key === 'perception' && s.stat === 'SAB'), 'Perícia Percepção está vinculada à Sabedoria');
+assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Arcanismo está vinculada à Inteligência');
+
+// 3. Teste de Geração e Estrutura do PDF com Cálculos AcroForm
+(async () => {
+  try {
+    const testPlayer = {
+      id: 'p_test_pdf_calc',
+      name: 'Aragorn Passolargo',
+      className: 'Patrulheiro',
+      level: 5,
+      race: 'Humano',
+      str: 18,
+      dex: 16,
+      con: 14,
+      int: 12,
+      wis: 16,
+      cha: 10,
+      hpMax: 44,
+      hpCurrent: 44,
+      ac: 16,
+      skills: ['athletics', 'stealth', 'survival', 'perception'],
+      savingThrows: ['str', 'dex'],
+      student: 'Lucas'
+    };
+
+    const pdfLibModule = require('./src/js/pdf_export.js');
+    const { PDFDocument } = require('pdf-lib');
+    const pdfBytes = await pdfLibModule.generateEditableDnd5ePdf(testPlayer);
+    assert(pdfBytes && pdfBytes.length > 50000, 'generateEditableDnd5ePdf gera buffer PDF válido');
+
+    const loadedDoc = await PDFDocument.load(pdfBytes);
+    const loadedForm = loadedDoc.getForm();
+    assert(!!loadedForm.getTextField('FOR_MOD'), 'PDF contém campo calculado de Modificador de Força (FOR_MOD)');
+    assert(!!loadedForm.getTextField('DES_MOD'), 'PDF contém campo calculado de Modificador de Destreza (DES_MOD)');
+    assert(!!loadedForm.getTextField('Skill_athletics'), 'PDF contém campo de perícia Atletismo');
+    assert(!!loadedForm.getTextField('Spell_Save_DC'), 'PDF contém campo de CD de Resistência de Magia');
+
+    const pdfStr = Buffer.from(pdfBytes).toString('utf8');
+    assert(pdfStr.includes('/AA'), 'PDF contém dicionário de Ações Adicionais (/AA)');
+    assert(pdfStr.includes('/C'), 'PDF contém Ações de Cálculo (/C) associadas aos campos');
+    assert(pdfStr.includes('/CO'), 'PDF contém ordem oficial de execução de cálculo (/CO)');
+    assert(pdfStr.includes('JavaScript'), 'PDF possui scripts Acrobat JavaScript embutidos');
+  } catch (err) {
+    console.error('Falha no teste assíncrono de geração de PDF:', err);
+    failedTests++;
+  }
+
+  console.log('\n========================================');
+  console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
+
+  if (failedTests === 0) {
+    console.log('🎉 TODOS OS TESTES PASSARAM COM SUCESSO! 🚀');
+    console.log('========================================\n');
+    process.exit(0);
+  } else {
+    console.error(`💥 ${failedTests} TESTES FALHARAM! Verifique os logs acima.`);
+    console.log('========================================\n');
+    process.exit(1);
+  }
+})();
+
 
 
 
