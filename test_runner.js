@@ -9321,6 +9321,44 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(pdfStr.includes('/C'), 'PDF contém Ações de Cálculo (/C) associadas aos campos');
     assert(pdfStr.includes('/CO'), 'PDF contém ordem oficial de execução de cálculo (/CO)');
     assert(pdfStr.includes('JavaScript'), 'PDF possui scripts Acrobat JavaScript embutidos');
+    // --- Bateria 120: Isolamento de Impressão A4 & Resolução de PDF Editável (Mestre e Jogador) [ISSUE-151] ---
+    console.log('\n🖨️ [Bateria 120] Isolamento de Impressão A4 & Resolução Resiliente de PDF (ISSUE-151):');
+    const headCssContent = fs.readFileSync(path.join(__dirname, 'src/styles/head_css.html'), 'utf8');
+    assert(headCssContent.includes('@media print'), 'head_css.html possui diretiva @media print');
+    const printSection = headCssContent.slice(headCssContent.indexOf('@media print'));
+    assert(printSection.includes('header') && printSection.includes('main') && printSection.includes('footer'), 'Regras de @media print isolam o modal ocultando header, main e footer');
+    assert(printSection.includes('.player-card'), 'Regras de @media print ocultam os cards dos heróis de fundo');
+    assert(printSection.includes('#modal-print'), 'Regras de @media print configuram exibição exclusiva do #modal-print');
+
+    // Validação de tolerância a arrays em spells/features/attacks
+    const magePlayer = {
+      id: 'p_test_mage',
+      name: 'Deraravely',
+      className: 'Mago',
+      level: 5,
+      str: 8, dex: 14, con: 14, int: 18, wis: 12, cha: 10,
+      hp: 30, maxHp: 30, ac: 12, speed: '9m',
+      saveProficiencies: ['int', 'wis'],
+      skills: ['arcanismo', 'investigacao'],
+      inventory: [{ name: 'Grimório', qty: 1, weight: '1.5', equipped: true }],
+      spells: ['Mísseis Mágicos', 'Escudo Arcano', 'Bola de Fogo'],
+      features: ['Recuperação Arcana', 'Evocação Esculpida'],
+      attacks: ['Raio de Fogo (+7, 2d10 fogo)'],
+      playerNotes: ['Estudar runas antigas de Netheril']
+    };
+
+    const magePdfBytes = await pdfLibModule.generateEditableDnd5ePdf(magePlayer);
+    assert(magePdfBytes && magePdfBytes.length > 50000, 'generateEditableDnd5ePdf suporta personagens magos com arrays em spells/features/inventory');
+
+    const loadedMageDoc = await PDFDocument.load(magePdfBytes);
+    const mageForm = loadedMageDoc.getForm();
+    assert(mageForm.getTextField('CharacterName').getText() === 'Deraravely', 'PDF gerado contém nome correto do mago');
+    assert(mageForm.getTextField('INT_MOD').getText() === '+4', 'PDF gerado calcula INT_MOD +4 para Mago com Int 18');
+    assert(mageForm.getTextField('Spell_Save_DC').getText() === '15', 'PDF gerado calcula Spell_Save_DC 15 para Nv 5 com Int 18 (8 + 3 + 4)');
+
+    // Validação da exportação do modal com múltiplos fallbacks
+    assert(typeof pdfLibModule.exportCurrentModalPlayerEditablePdf === 'function', 'exportCurrentModalPlayerEditablePdf é exportada');
+    assert(typeof pdfLibModule.exportPlayerEditablePdf === 'function', 'exportPlayerEditablePdf é exportada');
   } catch (err) {
     console.error('Falha no teste assíncrono de geração de PDF:', err);
     failedTests++;

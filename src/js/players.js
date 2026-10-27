@@ -9102,6 +9102,9 @@ function printPlayerSheet(id) {
   const p = PLAYERS.find(x => x.id === id);
   if (!p) return;
   currentPrintPlayerId = id;
+  if (typeof window !== 'undefined') {
+    window.currentPrintPlayerId = id;
+  }
 
   const prof = getProfBonus(p.level);
   
@@ -9219,7 +9222,9 @@ function printPlayerSheet(id) {
   const hasSpells = slots.some(s => s > 0) || (Array.isArray(p.preparedSpells) && p.preparedSpells.length > 0) || !!p.spells;
 
   // Ataques & Armas
-  const attacksText = p.attacks ? p.attacks.replace(/\n/g, '<br>') : 'Nenhum ataque registrado.';
+  const attacksText = typeof p.attacks === 'string'
+    ? p.attacks.replace(/\n/g, '<br>')
+    : (Array.isArray(p.attacks) ? p.attacks.map(a => typeof a === 'string' ? a : (a.name || '')).filter(Boolean).join('<br>') : 'Nenhum ataque registrado.');
 
   const container = document.getElementById('print-sheet-content');
   if (!container) return;
@@ -9228,7 +9233,7 @@ function printPlayerSheet(id) {
     <!-- ========================================== -->
     <!-- PÁGINA 1: COMBATE, ATRIBUTOS E HABILIDADES -->
     <!-- ========================================== -->
-    <div class="a4-print-page a4-page-1">
+    <div class="a4-print-page a4-page-1" data-player-id="${p.id}">
       <!-- CABEÇALHO D&D OFICIAL -->
       <div class="a4-sheet-header">
         <div class="a4-sheet-title-box">
@@ -9454,7 +9459,9 @@ function printPlayerSheet(id) {
           <div class="a4-bordered-box a4-features-box">
             <div class="a4-box-title">Características de Classe & Talentos</div>
             <div class="a4-features-content">
-              ${p.features ? p.features.replace(/\n/g, '<br>') : 'Nenhuma característica especial registrada.'}
+              ${typeof p.features === 'string'
+                ? p.features.replace(/\n/g, '<br>')
+                : (Array.isArray(p.features) ? p.features.map(f => typeof f === 'string' ? f : (f.name || '')).filter(Boolean).join('<br>') : 'Nenhuma característica especial registrada.')}
             </div>
           </div>
         </div>
@@ -9471,7 +9478,7 @@ function printPlayerSheet(id) {
     <!-- ======================================================= -->
     <!-- PÁGINA 2: INTERPRETAÇÃO, INVENTÁRIO, GRIMÓRIO E NOTAS  -->
     <!-- ======================================================= -->
-    <div class="a4-print-page a4-page-2">
+    <div class="a4-print-page a4-page-2" data-player-id="${p.id}">
       <!-- CABEÇALHO RESUMIDO DA PÁGINA 2 -->
       <div class="a4-sheet-header a4-header-p2">
         <div class="a4-sheet-title-box">
@@ -9598,17 +9605,29 @@ function printPlayerSheet(id) {
           <div class="a4-bordered-box" style="margin-top: 6px; flex: 1;">
             <div class="a4-box-title">Grimório & Magias Conhecidas</div>
             <div class="a4-spellbook-list">
-              ${(Array.isArray(p.preparedSpells) && p.preparedSpells.length > 0) ? p.preparedSpells.map(s => {
-                const sName = typeof s === 'string' ? s : (s.name || 'Magia');
-                const sLvl = typeof s === 'object' && s.level !== undefined ? (s.level === 0 ? 'Truque' : `Nv ${s.level}`) : '';
-                return `
-                  <div class="a4-spell-entry">
-                    <span class="a4-spell-entry-bullet">✦</span>
-                    <span class="a4-spell-entry-name">${sName}</span>
-                    ${sLvl ? `<span class="a4-spell-entry-lvl">${sLvl}</span>` : ''}
-                  </div>
-                `;
-              }).join('') : (p.spells ? `<div style="font-size: 8pt; line-height: 1.4;">${p.spells.replace(/\n/g, '<br>')}</div>` : '<div style="color: #666; font-size: 7.5pt;">Nenhuma magia preparada.</div>')}
+              ${(() => {
+                const spellsArr = (Array.isArray(p.preparedSpells) && p.preparedSpells.length > 0)
+                  ? p.preparedSpells
+                  : (Array.isArray(p.spells) && p.spells.length > 0 ? p.spells : []);
+
+                if (spellsArr.length > 0) {
+                  return spellsArr.map(s => {
+                    const sName = typeof s === 'string' ? s : (s.name || 'Magia');
+                    const sLvl = typeof s === 'object' && s.level !== undefined ? (s.level === 0 ? 'Truque' : `Nv ${s.level}`) : '';
+                    return `
+                      <div class="a4-spell-entry">
+                        <span class="a4-spell-entry-bullet">✦</span>
+                        <span class="a4-spell-entry-name">${sName}</span>
+                        ${sLvl ? `<span class="a4-spell-entry-lvl">${sLvl}</span>` : ''}
+                      </div>
+                    `;
+                  }).join('');
+                }
+                if (typeof p.spells === 'string' && p.spells.trim()) {
+                  return `<div style="font-size: 8pt; line-height: 1.4;">${p.spells.replace(/\n/g, '<br>')}</div>`;
+                }
+                return '<div style="color: #666; font-size: 7.5pt;">Nenhuma magia preparada.</div>';
+              })()}
             </div>
           </div>
 
@@ -9616,12 +9635,16 @@ function printPlayerSheet(id) {
           <div class="a4-bordered-box" style="margin-top: 6px;">
             <div class="a4-box-title">Diário de Missões & Anotações</div>
             <div class="a4-notes-lines">
-              ${p.playerNotes ? p.playerNotes.replace(/\n/g, '<br>') : `
-                <div class="a4-ruled-line"></div>
-                <div class="a4-ruled-line"></div>
-                <div class="a4-ruled-line"></div>
-                <div class="a4-ruled-line"></div>
-              `}
+              ${typeof p.playerNotes === 'string' && p.playerNotes.trim()
+                ? p.playerNotes.replace(/\n/g, '<br>')
+                : (Array.isArray(p.playerNotes) && p.playerNotes.length > 0
+                    ? p.playerNotes.join('<br>')
+                    : `
+                        <div class="a4-ruled-line"></div>
+                        <div class="a4-ruled-line"></div>
+                        <div class="a4-ruled-line"></div>
+                        <div class="a4-ruled-line"></div>
+                      `)}
             </div>
           </div>
         </div>
@@ -9697,9 +9720,25 @@ function exportSinglePlayerJson(id) {
 }
 
 function exportCurrentModalPlayerJson() {
-  const curId = currentPrintPlayerId || (document.getElementById('pm-id') ? document.getElementById('pm-id').value : null);
+  let curId = (typeof currentPrintPlayerId !== 'undefined' && currentPrintPlayerId)
+    || (typeof window !== 'undefined' && window.currentPrintPlayerId)
+    || (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId)
+    || (typeof window !== 'undefined' && window.activePortalPlayerId)
+    || (typeof document !== 'undefined' && document.getElementById('pm-id') ? document.getElementById('pm-id').value : null);
+
+  if (!curId && typeof document !== 'undefined') {
+    const el = document.querySelector('#print-sheet-content [data-player-id]');
+    if (el) curId = el.getAttribute('data-player-id');
+  }
+
+  if (!curId && typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS) && PLAYERS.length === 1) {
+    curId = PLAYERS[0].id;
+  }
+
   if (curId) {
     exportSinglePlayerJson(curId);
+  } else {
+    if (typeof alert === 'function') alert('Não foi possível identificar o personagem para exportação de JSON.');
   }
 }
 

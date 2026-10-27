@@ -150,7 +150,8 @@
     // ==========================================
     // PÁGINA 1: ATRIBUTOS, COMBATE, PERÍCIAS
     // ==========================================
-    const page1 = doc.addPage([595.28, 841.89]); // A4 em pontos (72 dpi)
+    const page1 = doc.addPage();
+    page1.setSize(595.28, 841.89); // A4 em pontos (72 dpi)
     const p1Width = 595.28;
     const p1Height = 841.89;
 
@@ -546,7 +547,8 @@
     // ==========================================
     // PÁGINA 2: INVENTÁRIO, MOEDAS, GRIMÓRIO DE MAGIAS COM AUTO-CÁLCULO
     // ==========================================
-    const page2 = doc.addPage([595.28, 841.89]);
+    const page2 = doc.addPage();
+    page2.setSize(595.28, 841.89);
     const p2Height = 841.89;
 
     // Cabeçalho da Página 2
@@ -591,6 +593,16 @@
       tf.addToPage(page2, { x: sm.x, y: p2Height - 138, width: sm.w, height: 30 });
 
       if (sm.name === 'Spell_Save_DC') {
+        let spellKeyMod = Math.floor((charInt - 10) / 2);
+        const sAb = (p.spellAbility || 'INT').toUpperCase();
+        if (sAb.includes('FOR') || sAb.includes('STR')) spellKeyMod = Math.floor((charStr - 10) / 2);
+        else if (sAb.includes('DES') || sAb.includes('DEX')) spellKeyMod = Math.floor((charDex - 10) / 2);
+        else if (sAb.includes('CON')) spellKeyMod = Math.floor((charCon - 10) / 2);
+        else if (sAb.includes('INT')) spellKeyMod = Math.floor((charInt - 10) / 2);
+        else if (sAb.includes('SAB') || sAb.includes('WIS')) spellKeyMod = Math.floor((charWis - 10) / 2);
+        else if (sAb.includes('CAR') || sAb.includes('CHA')) spellKeyMod = Math.floor((charCha - 10) / 2);
+
+        safeSetText(tf, String(8 + calcProfInitial + spellKeyMod));
         const dcJs = `
           var prof = Number(this.getField("ProfBonus").value) || 2;
           var ab = (this.getField("Spellcasting_Ability").value || "INT").toUpperCase().trim();
@@ -606,6 +618,17 @@
         attachFieldCalculation(doc, PDFLib, tf, dcJs);
         calculationFieldsOrder.push(tf);
       } else if (sm.name === 'Spell_Attack_Bonus') {
+        let spellKeyMod = Math.floor((charInt - 10) / 2);
+        const sAb = (p.spellAbility || 'INT').toUpperCase();
+        if (sAb.includes('FOR') || sAb.includes('STR')) spellKeyMod = Math.floor((charStr - 10) / 2);
+        else if (sAb.includes('DES') || sAb.includes('DEX')) spellKeyMod = Math.floor((charDex - 10) / 2);
+        else if (sAb.includes('CON')) spellKeyMod = Math.floor((charCon - 10) / 2);
+        else if (sAb.includes('INT')) spellKeyMod = Math.floor((charInt - 10) / 2);
+        else if (sAb.includes('SAB') || sAb.includes('WIS')) spellKeyMod = Math.floor((charWis - 10) / 2);
+        else if (sAb.includes('CAR') || sAb.includes('CHA')) spellKeyMod = Math.floor((charCha - 10) / 2);
+
+        const totAtk = calcProfInitial + spellKeyMod;
+        safeSetText(tf, (totAtk >= 0 ? '+' : '') + totAtk);
         const atkJs = `
           var prof = Number(this.getField("ProfBonus").value) || 2;
           var ab = (this.getField("Spellcasting_Ability").value || "INT").toUpperCase().trim();
@@ -777,10 +800,27 @@
   }
 
   function exportCurrentModalPlayerEditablePdf() {
-    const curId = (typeof currentPrintPlayerId !== 'undefined' && currentPrintPlayerId)
+    let curId = (typeof currentPrintPlayerId !== 'undefined' && currentPrintPlayerId)
+      || (typeof window !== 'undefined' && window.currentPrintPlayerId)
+      || (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId)
+      || (typeof window !== 'undefined' && window.activePortalPlayerId)
       || (typeof document !== 'undefined' && document.getElementById('pm-id') ? document.getElementById('pm-id').value : null);
+
+    if (!curId && typeof document !== 'undefined') {
+      const el = document.querySelector('#print-sheet-content [data-player-id]');
+      if (el) curId = el.getAttribute('data-player-id');
+    }
+
+    if (!curId && typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS) && PLAYERS.length === 1) {
+      curId = PLAYERS[0].id;
+    }
+
     if (curId) {
       exportPlayerEditablePdf(curId);
+    } else {
+      if (typeof alert === 'function') {
+        alert('Não foi possível identificar o personagem para exportação do PDF.');
+      }
     }
   }
 

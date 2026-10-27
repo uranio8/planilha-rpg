@@ -8932,26 +8932,48 @@
     }
 
     @media print {
-      body {
-        background: #ffffff !important;
-        color: #000000 !important;
-      }
-      .app-header, .tabs-nav, .controls-bar, .modal-overlay:not(#modal-print):not(#modal-print-chronicles),
+      /* Ocultar rigorosamente o site de fundo (header, main com as 28 páginas de cards, menus e banners) */
+      header, main, footer, nav,
+      .player-return-banner, .player-portal-banner,
+      .header-bar, .main-navbar, .top-actions, .app-header, .tabs-nav, .controls-bar,
+      .tab-content, .tab-pane, .player-card, .roll20-sheet,
+      .modal-overlay:not(#modal-print):not(#modal-print-chronicles),
       button, .btn-action, .btn-secondary, .fab-actions-container,
       .global-dice-widget, .dm-notes-drawer, .no-print,
       #modal-print .modal-header-print, #modal-print-toolbar,
-      .welcome-screen-overlay, .welcome-screen-backdrop {
+      #modal-print-chronicles .modal-header-print, #modal-print-chronicles-toolbar,
+      .welcome-screen-overlay, .welcome-screen-backdrop,
+      .mobile-vital-thumb-hud, .mobile-player-dock,
+      #modal-player, #modal-combat-damage-heal, #modal-omnisearch, #modal-firebase {
         display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        max-height: 0 !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
       }
+
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
       #modal-print, #modal-print-chronicles {
         display: block !important;
+        visibility: visible !important;
         position: static !important;
         background: #ffffff !important;
         padding: 0 !important;
         margin: 0 !important;
         width: 100% !important;
+        max-width: 100% !important;
         height: auto !important;
         overflow: visible !important;
+        border: none !important;
+        box-shadow: none !important;
       }
       #modal-print .modal-body, #modal-print-chronicles .modal-body {
         max-width: 100% !important;
