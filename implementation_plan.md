@@ -1,50 +1,57 @@
-# Plano de Implementação - Correção da Impressão A4 (28 Páginas ➔ 2 Páginas) e Blindagem de Download de Fichas (ISSUE-151)
+# 📋 Plano de Implementação: Características de Classe/Talentos e Paginação A4 em 2 Folhas (ISSUE-152)
 
-## 🎯 Contexto e Diagnóstico
-
-O usuário enviou duas capturas de tela e relatou:
-> *"a geração do pdf individual esta com problema, utilize os agentes para fazer o teste dos jogadores e do mestre no download das fichas, para que possa testar e ver o que esta acontecendo"*
-
-### 🔍 Diagnóstico das Capturas de Tela Enviadas:
-1. **Captura 1 (Modal A4 do Arkhalis)**:
-   - O modal de pré-visualização `#modal-print` renderiza a ficha de 2 páginas perfeitamente na tela.
-2. **Captura 2 (Janela de Impressão da EPSON L3250)**:
-   - A impressora acusou: **"Imprimir 28 folhas de papel"**!
-   - A folha exibida na impressão **não é o modal do Arkhalis**, mas sim a tela inteira do site (a aba de Fichas com o card do Alaster e de todos os outros heróis).
-   - **Causa Raiz**: O CSS `@media print` em `src/styles/head_css.html` ocultava apenas a navbar e botões, mas deixava `<header>`, `<main>` e todos os cards de todos os personagens da turma visíveis no fluxo de impressão. Como a turma possui múltiplos heróis com dezenas de itens e magias, o navegador tentava imprimir o site inteiro por trás do modal, gerando 28 páginas.
-3. **Resolução de ID do Herói na Exportação**:
-   - `exportCurrentModalPlayerEditablePdf()` dependia exclusivamente de `currentPrintPlayerId` sem fallback para o modo Portal do Jogador (`activePortalPlayerId`). Se o aluno/mestre clicar em baixar no portal ou se a variável sofrer atraso de ciclo de evento, o download não encontrava o herói.
+Este plano corrige os dois problemas evidenciados no diálogo de impressão e no download individual de fichas:
+1. **Características de Classe e Talentos vazias**: O bloco da coluna 3 estava em branco para heróis como *Alaster* (Guerreiro 4 / Draconato) porque o sistema lia apenas o campo de texto livre `p.features`, ignorando as habilidades oficiais desbloqueadas da classe (`getUnlockedClassFeatures`), especialidades marciais (`p.fightingStyle`), traços raciais da espécie (`findSpeciesData`) e talentos (`p.feats`/ASI).
+2. **Modelo truncado em 1 folha de papel ("1 folha de papel" no Chrome)**: No `@media print`, os containers ancestrais (`.modal-body` e `.print-a4-preview-viewport`) continham `max-height: 90vh` e `overflow-y: auto`, o que faz os motores Chromium/Blink e Firefox tratarem o modal como uma caixa scrollável limitada à tela, descartando todo o conteúdo que transborda a primeira página e impedindo a quebra para a Página 2.
 
 ---
 
-## 🛠️ Modificações Propostas
+## 🎯 Escopo das Alterações
 
-### 1. `src/styles/head_css.html` (Isolamento Estrito de Impressão)
-- No bloco `@media print`:
-  - Ocultar expressamente `<header>`, `<main>`, `<footer>`, `.player-return-banner`, `.player-portal-banner`, `.tabs-nav`, `.controls-bar`, `.top-actions`, `.tab-pane`, `.player-card`, `.roll20-sheet`, e qualquer modal diferente de `#modal-print`.
-  - Garantir que `#modal-print` seja o **único** elemento visível na impressão:
-    - Quebra de página exata após a Página 1 (`.a4-print-page:first-child { page-break-after: always !important; }`).
-    - Nenhuma quebra após a Página 2 (`.a4-print-page:last-child { page-break-after: auto !important; }`).
-  - **Resultado**: A janela de impressão exibirá exatamente **2 folhas de papel**, imprimindo a ficha A4 limpa sem nenhuma interferência do site ao fundo.
+### 1. `src/js/players.js` (Helper Universal de Características & Folha A4)
+- **Implementar `getPlayerAllFeaturesAndTraits(p)`**:
+  - Reúne e compila em uma lista estruturada:
+    1. **Habilidades Oficiais de Classe por Nível** (Guerreiro 4: Estilo de Luta, Retomar o Fôlego, Surto de Ação, Arquétipo Marcial/Campeão, Crítico Aprimorado, ASI Nv 4).
+    2. **Especialidades Marciais e Escolhas** (ex: Arquearia, Defesa, Duelismo, etc.).
+    3. **Traços Raciais da Espécie** (ex: Draconato: Ancestralidade Dracônica, Arma de Sopro, Resistência a Dano).
+    4. **Talentos e Marcos de Nível** (`p.feats` e escolhas de ASI).
+    5. **Anotações Livres do Jogador** (`p.features`).
+- **Renderização Rica na Coluna 3 da Página 1**:
+  - Exibir cada habilidade com marcador `✦`, nome em destaque, categoria/origem e descrição resumida para consulta rápida na mesa.
+  - Formatação tipográfica compacta e elegante (`.a4-feature-entry`, `.a4-feature-tag`, `.a4-feature-desc`).
 
-### 2. `src/js/pdf_export.js` (Resolução Universal de Herói no Download)
-- Em `exportCurrentModalPlayerEditablePdf()`:
-  - Adicionar resolução em cascata: `currentPrintPlayerId` $\rightarrow$ `activePortalPlayerId` $\rightarrow$ `document.getElementById('pm-id')` $\rightarrow$ primeiro herói de `PLAYERS` caso haja contexto unitário.
-  - Alerta amigável e preventivo em caso de ausência de herói selecionado.
+### 2. `src/js/pdf_export.js` (Exportação no PDF Editável AcroForm)
+- Atualizar o preenchimento inicial do campo `Features_Traits`:
+  - Utilizar `getPlayerAllFeaturesAndTraits(p)` para pré-carregar automaticamente todas as características de classe, raça e talentos no PDF editável, permitindo que o jogador/mestre visualize e edite livremente no Adobe Acrobat ou Foxit.
 
-### 3. Simulador Automatizado E2E de Impressão & Download (`test_pdf_and_print_session.js`)
-- Criar script automatizado executando testes para:
-  1. **Modo Mestre**: Abrir o modal de impressão de heróis (Arkhalis, Deraravely, Alaster, etc.), validar download de PDF editável e verificar que o CSS de impressão isola as 2 páginas sem vazar o `<main>`.
-  2. **Modo Jogador (Portal do Aluno)**: Logar como jogador, acionar o download da ficha individual e validar que gera o arquivo PDF com dados corretos.
-- Adicionar Bateria 120 em `test_runner.js`.
+### 3. `src/styles/head_css.html` (Garantia de 2 Folhas de Papel no `@media print`)
+- **Desbloqueio de Ancestrais Scrolláveis**:
+  - Forçar `overflow: visible !important;`, `max-height: none !important;`, `height: auto !important;` e `display: block !important;` em `#modal-print`, `#modal-print .modal-body`, `.print-a4-preview-viewport` e `#print-sheet-content`.
+- **Dimensões e Quebras Oficiais A4**:
+  - Configurar `.a4-print-page` com `height: 275mm !important; max-height: 275mm !important; box-sizing: border-box !important; break-inside: avoid !important; page-break-after: always !important; break-after: page !important;`.
+  - Configurar `.a4-print-page:last-child` com `page-break-after: auto !important; break-after: auto !important;`.
+  - Configurar `@page { size: A4 portrait; margin: 6mm 8mm; }`.
+
+---
+
+## 🧪 Estratégia de Verificação e Testes Automatizados
+
+1. **Atualização do Script E2E** (`test_pdf_and_print_session.js`):
+   - Adicionar teste com o herói **Alaster** (Guerreiro 4 / Draconato com `p.features = ''`).
+   - Validar que `getPlayerAllFeaturesAndTraits(sampleAlaster)` extrai pelo menos 6 características de classe e 3 traços raciais.
+   - Validar que o HTML da folha A4 renderiza as características de Guerreiro 4 e Draconato na coluna 3.
+   - Validar que o PDF editável gerado contém as características no campo `Features_Traits`.
+   - Validar que o CSS de `@media print` não possui `overflow: auto` ou `max-height` ativo em nenhum container ancestral de `#modal-print`.
+2. **Nova Bateria 121 em `test_runner.js`**:
+   - Garantir 100% de aprovação de todos os testes unitários e de integração.
+3. **Build Final**:
+   - Executar `node builder.js` e validar tamanho da bundle.
 
 ---
 
 ## 🔒 Critérios de Aceite & Status de Validação
 
-- [x] Ao abrir o modal de impressão e clicar em **`[🖨️ Imprimir / Salvar A4]`**, o diálogo de impressão do navegador exibe **exatamente 2 páginas** (em vez de 28), contendo apenas a ficha A4 nobre sem menus, banners ou cards de outros personagens.
-- [x] O botão **`[📄 Baixar PDF Editável (Auto-Cálculo)]`** funciona de forma confiável tanto no modo Mestre quanto no modo Jogador (Portal do Aluno), com resolução em cascata multi-role.
-- [x] Blindagem contra `NaN` e tipos complexos em inventário, magias, ataques e notas.
-- [x] Script `test_pdf_and_print_session.js` simulando os fluxos completos do Mestre e Jogador executado com 100% de aprovação.
-- [x] Compilação executada via `node builder.js`.
-- [x] Bateria 120 adicionada e 100% dos testes aprovados via `node test_runner.js` (2124/2124 testes).
+- [x] A coluna "CARACTERÍSTICAS DE CLASSE & TALENTOS" da folha A4 exibe automaticamente as habilidades da classe e traços de raça do herói mesmo se o campo de texto livre estiver em branco.
+- [x] O campo `Features_Traits` do PDF editável baixado é pré-preenchido com todas as habilidades de classe e talentos do personagem.
+- [x] No diálogo de impressão do navegador (Ctrl+P ou botão Imprimir), a visualização exibe **exatamente 2 folhas de papel** (em vez de 1), com quebra perfeita entre a Página 1 e a Página 2.
+- [x] 100% dos testes aprovados em `node test_runner.js` (2133/2133 testes aprovados na Bateria 121).

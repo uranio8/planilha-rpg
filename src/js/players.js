@@ -9096,6 +9096,80 @@ function addPlayerToCombat(id) {
   switchTab('combat');
 }
 
+function getPlayerAllFeaturesAndTraits(p) {
+  if (!p) return [];
+  const list = [];
+  const addedNames = new Set();
+
+  function addEntry(category, name, desc) {
+    if (!name) return;
+    const cleanName = String(name).trim();
+    const key = cleanName.toLowerCase();
+    if (addedNames.has(key)) return;
+    addedNames.add(key);
+    list.push({ category: category || 'Habilidade', name: cleanName, desc: desc ? String(desc).trim() : '' });
+  }
+
+  // 1. Habilidades Oficiais de Classe por Nível (incluindo Multiclasse)
+  const classesList = (typeof getPlayerClassesList === 'function')
+    ? getPlayerClassesList(p)
+    : [{ className: p.className, level: parseInt(p.level) || 1, subclassIdx: p.subclassIdx || 0 }];
+
+  if (typeof getUnlockedClassFeatures === 'function') {
+    classesList.forEach(c => {
+      const unlocked = getUnlockedClassFeatures(c.className, c.level, c.subclassIdx || 0);
+      unlocked.forEach(f => {
+        let detail = f.desc || f.description || '';
+        if (f.name && f.name.toLowerCase().includes('estilo de luta') && p.fightingStyle) {
+          const st = (typeof FIGHTING_STYLES !== 'undefined') ? FIGHTING_STYLES[p.fightingStyle] : null;
+          if (st) detail = `Especialidade: ${st.name}. ${st.desc}`;
+        }
+        addEntry(`Classe (${c.className} Nv ${f.level || c.level})`, f.name, detail);
+      });
+    });
+  }
+
+  // 2. Traços Raciais da Espécie (D&D 5E)
+  if (p.race && typeof findSpeciesData === 'function') {
+    const sp = findSpeciesData(p.race);
+    if (sp && Array.isArray(sp.traits)) {
+      sp.traits.forEach(t => {
+        if (t.name && t.name.toLowerCase().includes('aumento no valor')) return;
+        addEntry(`Raça (${sp.name})`, t.name, t.description || t.desc || '');
+      });
+    }
+  }
+
+  // 3. Talentos Oficiais / Escolhas de ASI
+  if (Array.isArray(p.feats) && p.feats.length > 0) {
+    p.feats.forEach(feat => {
+      const fName = typeof feat === 'string' ? feat : (feat.name || 'Talento');
+      const fDesc = typeof feat === 'object' ? (feat.desc || feat.description || '') : '';
+      addEntry('Talento', fName, fDesc);
+    });
+  }
+
+  // 4. Características Customizadas ou Anotações do Jogador (p.features)
+  if (typeof p.features === 'string' && p.features.trim()) {
+    const lines = p.features.split('\n').map(l => l.trim()).filter(Boolean);
+    lines.forEach(l => {
+      const cleanLine = l.replace(/^[•\-\*✦]\s*/, '');
+      const parts = cleanLine.split(/:(.+)/);
+      const name = parts[0] ? parts[0].trim() : cleanLine;
+      const desc = parts[1] ? parts[1].trim() : '';
+      addEntry('Personalizado', name, desc);
+    });
+  } else if (Array.isArray(p.features) && p.features.length > 0) {
+    p.features.forEach(f => {
+      const name = typeof f === 'string' ? f : (f.name || '');
+      const desc = typeof f === 'object' ? (f.desc || '') : '';
+      addEntry('Personalizado', name, desc);
+    });
+  }
+
+  return list;
+}
+
 let currentPrintPlayerId = null;
 
 function printPlayerSheet(id) {
@@ -9459,9 +9533,22 @@ function printPlayerSheet(id) {
           <div class="a4-bordered-box a4-features-box">
             <div class="a4-box-title">Características de Classe & Talentos</div>
             <div class="a4-features-content">
-              ${typeof p.features === 'string'
-                ? p.features.replace(/\n/g, '<br>')
-                : (Array.isArray(p.features) ? p.features.map(f => typeof f === 'string' ? f : (f.name || '')).filter(Boolean).join('<br>') : 'Nenhuma característica especial registrada.')}
+              ${(() => {
+                const allFeats = getPlayerAllFeaturesAndTraits(p);
+                if (allFeats.length === 0) {
+                  return '<div style="color: #666; font-size: 7.5pt; font-style: italic;">Nenhuma característica especial registrada.</div>';
+                }
+                return allFeats.map(feat => `
+                  <div class="a4-feature-item">
+                    <div class="a4-feature-item-header">
+                      <span class="a4-feature-bullet">✦</span>
+                      <b class="a4-feature-name">${feat.name}</b>
+                      ${feat.category ? `<span class="a4-feature-category">${feat.category}</span>` : ''}
+                    </div>
+                    ${feat.desc ? `<div class="a4-feature-desc">${feat.desc.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')}</div>` : ''}
+                  </div>
+                `).join('');
+              })()}
             </div>
           </div>
         </div>
@@ -9743,12 +9830,17 @@ function exportCurrentModalPlayerJson() {
 }
 
 if (typeof window !== 'undefined') {
+  window.getPlayerAllFeaturesAndTraits = getPlayerAllFeaturesAndTraits;
   window.printPlayerSheet = printPlayerSheet;
   window.closePrintModal = closePrintModal;
   window.printCurrentModalPlayerSheet = printCurrentModalPlayerSheet;
   window.triggerPlayerBrowserPrint = triggerPlayerBrowserPrint;
   window.exportSinglePlayerJson = exportSinglePlayerJson;
   window.exportCurrentModalPlayerJson = exportCurrentModalPlayerJson;
+}
+
+if (typeof global !== 'undefined') {
+  global.getPlayerAllFeaturesAndTraits = getPlayerAllFeaturesAndTraits;
 }
 
 // --- COMPARTILHAMENTO DE FICHA VIA LINK & QR CODE + PORTAL DO JOGADOR ---

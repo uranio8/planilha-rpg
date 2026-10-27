@@ -194,14 +194,40 @@ async function runSessionTest() {
       spells: ['Mísseis Mágicos', 'Escudo Arcano', 'Bola de Fogo'],
       gold: 120,
       attacks: 'Raio de Fogo: +7 para acertar, 2d10 dano de fogo'
+    },
+    {
+      id: 'p_alaster',
+      name: 'Alaster',
+      student: 'Abdevan',
+      className: 'Guerreiro',
+      level: 4,
+      race: 'Draconato',
+      alignment: 'Neutro e Bom',
+      str: 20,
+      dex: 14,
+      con: 16,
+      int: 10,
+      wis: 11,
+      cha: 10,
+      hp: 36,
+      maxHp: 36,
+      ac: 19,
+      speed: '9m',
+      features: '',
+      inventory: [{ name: 'Espada Longa', qty: 1, weight: '1.5', equipped: true }],
+      attacks: 'Espada Longa (+7, 1d8+5 cortante)'
     }
   ];
 
-  // Carregar core.js, players.js e pdf_export.js
+  // Carregar dados de classes e espécies, core.js, players.js e pdf_export.js
+  const classesCode = fs.readFileSync(path.join(__dirname, 'src/data/classes.js'), 'utf8');
+  const speciesCode = fs.readFileSync(path.join(__dirname, 'src/data/species.js'), 'utf8');
   const coreCode = fs.readFileSync(path.join(__dirname, 'src/js/core.js'), 'utf8');
   const playersCode = fs.readFileSync(path.join(__dirname, 'src/js/players.js'), 'utf8');
   const pdfExportCode = fs.readFileSync(path.join(__dirname, 'src/js/pdf_export.js'), 'utf8');
 
+  vm.runInContext(classesCode, context);
+  vm.runInContext(speciesCode, context);
   vm.runInContext(coreCode, context);
   context.samplePlayers = samplePlayers;
   vm.runInContext('PLAYERS.length = 0; samplePlayers.forEach(p => PLAYERS.push(p));', context);
@@ -237,6 +263,29 @@ async function runSessionTest() {
     throw new Error(`Falha: alerta durante exportação de Deraravely: ${alerts[alerts.length - 1]}`);
   }
   console.log('  ✅ Exportação de Deraravely concluída com sucesso.');
+
+  // Testar Alaster (Guerreiro 4 / Draconato com features vazio - ISSUE-152)
+  console.log('  👉 Testando Cenário MESTRE: herói Alaster (Guerreiro 4 / Draconato - ISSUE-152)...');
+  context.printPlayerSheet('p_alaster');
+  const alasterHtml = printSheetContent.innerHTML;
+  if (!alasterHtml.includes('Retomar o Fôlego') || !alasterHtml.includes('Surto de Ação')) {
+    throw new Error('Falha: habilidades oficiais de Guerreiro 4 ausentes na coluna 3 da folha A4 de Alaster!');
+  }
+  if (!alasterHtml.includes('Draconato') && !alasterHtml.includes('Arma de Sopro') && !alasterHtml.includes('Ancestralidade Dracônica')) {
+    throw new Error('Falha: traços raciais de Draconato ausentes na coluna 3 da folha A4 de Alaster!');
+  }
+  console.log('  ✅ Coluna de Características de Classe e Talentos da folha A4 renderizada com sucesso para Alaster.');
+
+  // Validar geração do PDF de Alaster com Features_Traits pré-preenchido
+  const alasterPdfBytes = await context.generateEditableDnd5ePdf(samplePlayers[2]);
+  const loadedAlasterDoc = await PDFLib.PDFDocument.load(alasterPdfBytes);
+  const alasterForm = loadedAlasterDoc.getForm();
+  const alasterFeatField = alasterForm.getTextField('Features_Traits');
+  const featFieldText = alasterFeatField.getText();
+  if (!featFieldText || !featFieldText.includes('Retomar o Fôlego') || !featFieldText.includes('Surto de Ação')) {
+    throw new Error(`Falha: campo Features_Traits do PDF editável não contém habilidades de Guerreiro! Conteúdo: "${featFieldText}"`);
+  }
+  console.log('  ✅ Campo Features_Traits do PDF editável de Alaster pré-carregado com sucesso.');
 
   // 4. Teste Cenário Portal do Jogador: onde currentPrintPlayerId pode estar nulo ou apenas activePortalPlayerId definido
   console.log('  👉 Testando Cenário JOGADOR (Portal): resolução resiliente de ID...');

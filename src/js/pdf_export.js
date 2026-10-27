@@ -531,10 +531,23 @@
     const fFeatures = form.createTextField('Features_Traits');
     fFeatures.enableMultiline();
     let initialFeatText = '';
-    if (p.classFeatures && Array.isArray(p.classFeatures)) {
-      initialFeatText = p.classFeatures.map(feat => `• ${feat.name || feat}: ${feat.desc || ''}`).join('\n\n');
-    } else if (p.features) {
-      initialFeatText = typeof p.features === 'string' ? p.features : JSON.stringify(p.features);
+    const resolveFeaturesFn = (typeof getPlayerAllFeaturesAndTraits === 'function')
+      ? getPlayerAllFeaturesAndTraits
+      : (typeof window !== 'undefined' && typeof window.getPlayerAllFeaturesAndTraits === 'function' ? window.getPlayerAllFeaturesAndTraits : null);
+
+    if (resolveFeaturesFn) {
+      const allFeats = resolveFeaturesFn(p);
+      if (Array.isArray(allFeats) && allFeats.length > 0) {
+        initialFeatText = allFeats.map(feat => `• ${feat.name}${feat.category ? ` [${feat.category}]` : ''}${feat.desc ? `: ${feat.desc.replace(/\*\*/g, '')}` : ''}`).join('\n\n');
+      }
+    }
+
+    if (!initialFeatText) {
+      if (p.classFeatures && Array.isArray(p.classFeatures)) {
+        initialFeatText = p.classFeatures.map(feat => `• ${feat.name || feat}: ${feat.desc || ''}`).join('\n\n');
+      } else if (p.features) {
+        initialFeatText = typeof p.features === 'string' ? p.features : JSON.stringify(p.features);
+      }
     }
     safeSetText(fFeatures, initialFeatText || p.notes || '');
     fFeatures.addToPage(page1, { x: 409, y: p1Height - 570, width: 158, height: 190 });

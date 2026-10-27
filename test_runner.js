@@ -9359,6 +9359,46 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     // Validação da exportação do modal com múltiplos fallbacks
     assert(typeof pdfLibModule.exportCurrentModalPlayerEditablePdf === 'function', 'exportCurrentModalPlayerEditablePdf é exportada');
     assert(typeof pdfLibModule.exportPlayerEditablePdf === 'function', 'exportPlayerEditablePdf é exportada');
+
+    // --- Bateria 121: Características de Classe/Talentos e Paginação de 2 Folhas A4 (ISSUE-152) ---
+    console.log('\n📜 [Bateria 121] Características de Classe/Talentos e Paginação de 2 Folhas A4 (ISSUE-152):');
+    
+    // 1. Validar desbloqueio de overflow no @media print
+    const cssContentPrint = fs.readFileSync(path.join(__dirname, 'src/styles/head_css.html'), 'utf8');
+    const mediaPrintBlock = cssContentPrint.slice(cssContentPrint.indexOf('@media print'));
+    assert(mediaPrintBlock.includes('overflow: visible !important'), '@media print força overflow: visible nos containers do modal');
+    assert(mediaPrintBlock.includes('max-height: none !important'), '@media print desbloqueia max-height: none nos containers do modal');
+    assert(mediaPrintBlock.includes('page-break-after: always !important'), '@media print define quebra de página oficial entre as folhas');
+    assert(mediaPrintBlock.includes('275mm'), '@media print define altura compatível com folha A4 (275mm)');
+
+    // 2. Validar extração universal de habilidades de classe e raça
+    const alasterPlayer = {
+      id: 'p_test_alaster',
+      name: 'Alaster',
+      student: 'Abdevan',
+      className: 'Guerreiro',
+      level: 4,
+      race: 'Draconato',
+      alignment: 'Neutro e Bom',
+      str: 20, dex: 14, con: 16, int: 10, wis: 11, cha: 10,
+      hp: 36, maxHp: 36, ac: 19, speed: '9m',
+      features: '', // vazio intencional
+      inventory: [{ name: 'Espada Longa', qty: 1, weight: '1.5', equipped: true }]
+    };
+
+    const alasterPdfBytes = await pdfLibModule.generateEditableDnd5ePdf(alasterPlayer);
+    assert(alasterPdfBytes && alasterPdfBytes.length > 50000, 'generateEditableDnd5ePdf gera PDF válido para Alaster');
+
+    const loadedAlasterDoc = await PDFDocument.load(alasterPdfBytes);
+    const alasterForm = loadedAlasterDoc.getForm();
+    const featField = alasterForm.getTextField('Features_Traits');
+    assert(!!featField, 'PDF contém campo Features_Traits');
+    
+    // 3. Validar exportação de funções helper
+    const playersFileContent = fs.readFileSync(path.join(__dirname, 'src/js/players.js'), 'utf8');
+    assert(playersFileContent.includes('function getPlayerAllFeaturesAndTraits'), 'Função getPlayerAllFeaturesAndTraits implementada em players.js');
+    assert(playersFileContent.includes('window.getPlayerAllFeaturesAndTraits'), 'Função getPlayerAllFeaturesAndTraits exportada em window');
+    assert(playersFileContent.includes('a4-feature-item'), 'Template A4 utiliza estrutura rica a4-feature-item para renderizar características');
   } catch (err) {
     console.error('Falha no teste assíncrono de geração de PDF:', err);
     failedTests++;
