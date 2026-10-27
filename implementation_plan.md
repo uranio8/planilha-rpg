@@ -1,61 +1,59 @@
-# Plano de Implementação - Botão de Download de Ficha ao Lado do Lápis (ISSUE-147)
+# Plano de Implementação - Estilização Canônica Oficial A4 D&D 5E em 2 Páginas (ISSUE-148)
 
 ## 🎯 Contexto e Objetivos
 
-O usuário solicitou:
-> *"vamos colocar o botão de donwload de ficha ao lado do lapis"*
-> (enviando captura da toolbar dos cards de personagens: `[ ✏️ ] [ 📱 ] [ 📏 ] | [ 🗑️ ]`)
+O usuário reportou:
+> *"a ficah esta com problema, em algum lugar do nosso sistema ja haviamos feito como seria essa ficha em pdf, mas não foi aplicado, avmos corrigir"*
 
-O objetivo é disponibilizar o botão de **download de ficha** posicionado imediatamente à direita do botão de edição (lápis ✏️) em cada card de personagem, proporcionando acesso direto e intuitivo para baixar/salvar a ficha canônica oficial D&D 5E em PDF (A4) ou exportar os dados em arquivo JSON.
+### 🔍 Diagnóstico da Causa-Raiz
+No gerador modular de ficha (`printPlayerSheet` em `src/js/players.js`), foi implementada uma estrutura HTML canônica oficial de D&D 5E em 2 páginas, dividida em cabeçalho oficial, 3 colunas harmonizadas por página, caixas de atributos, salvaguardas, perícias, tabela de ataques calculados, rastreadores de PV/morte, inventário e grimório.
 
----
-
-## 🔍 Análise e Posicionamento na Interface
-
-Atualmente, na barra de ferramentas do card de personagem (`.player-actions-group` em `src/js/players.js`):
-```html
-<div class="player-actions-group" onclick="event.stopPropagation();">
-  <button type="button" class="btn-micro roll20-btn-tool" onclick="openPlayerModal('${p.id}')" title="Editar Ficha Completa">✏️</button>
-  <!-- POSIÇÃO DO NOVO BOTÃO DE DOWNLOAD AQUI -->
-  <button type="button" class="btn-micro roll20-btn-tool" onclick="openSharePlayerModal('${p.id}')" title="Compartilhar Link/QR Code">📱</button>
-  <button type="button" class="btn-micro roll20-btn-tool" onclick="togglePlayerCardCompact('${p.id}')" title="Alternar Modo Compacto">📏</button>
-  <span class="roll20-tool-divider"></span>
-  <button type="button" class="btn-micro roll20-btn-tool roll20-btn-tool-del" onclick="deletePlayer('${p.id}')" title="Excluir Personagem">🗑️</button>
-</div>
-```
+No entanto, **as regras CSS correspondentes a essas classes (`.a4-print-page`, `.a4-sheet-header`, `.a4-stat-card`, `.a4-page1-columns`, etc.) não foram aplicadas em `src/styles/head_css.html`**. Como consequência:
+1. Os cards de atributos não formavam colunas ou caixas de atributos D&D.
+2. As 18 perícias e salvaguardas eram empilhadas como texto corrido desordenado.
+3. Não havia proporção de página A4 nem limites de margem para exportação em PDF.
+4. O documento ficava sem diagramação e ilegível ao imprimir ou salvar em PDF.
 
 ---
 
 ## 🛠️ Modificações Propostas
 
-### 1. `src/js/players.js`
-- **Inserção do Botão de Download na Toolbar**:
-  Posicionar entre o lápis (✏️) e o celular (📱):
-  ```html
-  <button type="button" class="btn-micro roll20-btn-tool" onclick="printPlayerSheet('${p.id}')" title="Baixar Ficha / Salvar em PDF (A4 Oficial D&D 5E)">📥</button>
-  ```
-  *(Utilizando o ícone semântico `📥` de download para clareza máxima e correspondência com a instrução do usuário).*
-- **Função de Exportação Individual em JSON (`exportSinglePlayerJson(id)`)**:
-  Permitir também baixar o arquivo JSON individual da ficha do herói (ex: `ficha_thorin_dnd5e.json`), útil para backup ou transferência de personagens específicos.
+### 1. `src/styles/head_css.html`
+Implementar o design system completo para a ficha impressa A4 (tanto no modal de preview `#modal-print` quanto em `@media print`):
 
-### 2. `src/ui/ui.html`
-- No modal de exportação (`#modal-print`), incluir na barra de ferramentas superior:
-  - Botão principal: `📥 Baixar PDF / Imprimir`
-  - Botão secundário de dados: `💾 Baixar Ficha (.JSON)`
-  - Botão de fechar: `✕ Fechar`
+- **Dimensões & Formato A4 Oficial**:
+  - `@page { size: A4 portrait; margin: 6mm; }`
+  - `.a4-print-page`: `width: 194mm; min-height: 280mm; background: #fff; color: #0f172a; padding: 7mm 8mm; box-sizing: border-box; page-break-after: always; position: relative;`
+- **Cabeçalho Canônico D&D (`.a4-sheet-header`)**:
+  - Título do personagem com fonte Cinzel, brasão sutil e subtítulo.
+  - Grade de metadados (`.a4-sheet-meta-grid`) com 6 caixas: Classe/Nível, Antecedente, Nome do Jogador, Raça, Tendência e XP.
+- **Estrutura de 3 Colunas da Página 1 (`.a4-page1-columns`)**:
+  - Coluna 1 (`.a4-col-left`, ~60mm): 6 Atributos em caixas verticais (`.a4-stat-card`) com Modificador grande e escore, Bônus de Proficiência, Inspiração, Salvaguardas com bullets, 18 Perícias com bullets de proficiência e Percepção Passiva.
+  - Coluna 2 (`.a4-col-center`, ~74mm): Grid superior de CA, Iniciativa e Deslocamento em formato de escudo/pill, Caixa de PV (Máximo, Atual e Temporário), Dados de Vida & Death Saves (círculos de sucesso/falha), Tabela de Ataques e Grid de Espaços de Magia (1º ao 9º círculo).
+  - Coluna 3 (`.a4-col-right`, ~60mm): Características de Classe, Habilidades Raciais e Talentos com diagramação limpa.
+- **Estrutura da Página 2 (`.a4-page2-columns`)**:
+  - Coluna 1: Traços de Personalidade, Ideais, Vínculos, Defeitos e Medalhas escolares.
+  - Coluna 2: Cofre de Moedas (PC, PP, PE, PO, PL), Tabela Completa de Inventário e Carga Atual/Capacidade de Carga.
+  - Coluna 3: Painel de Conjuração (Habilidade chave, CD, Bônus de Ataque), Lista de Magias Conhecidas/Preparadas e Bloco de Diário pautado.
+- **Rodapé Canônico (`.a4-page-footer`)**:
+  - Identificação de páginas (`Página 1 de 2`, `Página 2 de 2`), nome do personagem e do clube.
+- **Modo Impressão (`@media print`)**:
+  - Ocultação de menus, barras e elementos não imprimíveis.
+  - Reset de margens e fundos para impressão limpa em preto/cinza de alta definição (economizando tinta e garantindo legibilidade máxima).
 
-### 3. `test_runner.js`
-- Adicionar nova bateria de testes automatizados:
-  - Validar que a toolbar do card contém o botão com ícone `📥` e chamada `printPlayerSheet`.
-  - Validar que o botão está posicionado entre o botão de editar (`openPlayerModal`) e o de compartilhar (`openSharePlayerModal`).
-  - Validar a exportação das funções no escopo global (`printPlayerSheet`, `exportSinglePlayerJson`).
+### 2. `test_runner.js`
+- Adicionar **Bateria 117**:
+  - Validar que `head_css.html` possui todas as regras CSS fundamentais (`.a4-print-page`, `.a4-sheet-header`, `.a4-stat-card`, `.a4-page1-columns`, `.a4-attacks-table`, etc.).
+  - Validar que a diretiva `@page` e `page-break-after` estão configuradas.
+  - Validar a renderização da ficha com cálculo de todas as perícias, atributos e tabelas.
+  - Validar 100% de sucesso nos 2061+ testes existentes.
 
 ---
 
 ## 🔒 Critérios de Aceite e Verificação
 
-1. O botão `📥` aparece no card do herói imediatamente ao lado do botão de lápis `✏️`.
-2. Ao clicar no botão `📥`, o modal de download/impressão A4 em alta definição é aberto exibindo a ficha completa em 2 páginas.
-3. No modal, o usuário pode clicar em `📥 Baixar PDF / Imprimir` para salvar o PDF ou em `💾 Baixar Ficha (.JSON)` para obter o arquivo estruturado.
+1. Ao clicar em `📥` (Download Ficha) no card, o modal `#modal-print` exibe as 2 páginas perfeitamente diagramadas no formato A4 oficial D&D 5E.
+2. Cada página possui caixas delimitadas, cabeçalho estético, colunas proporcionais e tipografia nítida.
+3. Ao clicar em `📥 Salvar em PDF / Imprimir`, a impressão/exportação para PDF preserva as 2 páginas separadas sem sobreposições ou quebras no meio de tabelas.
 4. Compilação executada com sucesso (`node builder.js`).
-5. Suíte de testes 100% aprovada (`node test_runner.js`).
+5. Suíte de testes aprovada com 100% de sucesso (`node test_runner.js`).

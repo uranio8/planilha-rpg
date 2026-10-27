@@ -9196,6 +9196,32 @@ const downloadFilename = vm.runInContext("window.__lastDownload", sandbox);
 assert(downloadWasClicked === true, 'Disparo de download simulado executou o clique no link de exportação');
 assert(downloadFilename && downloadFilename.includes('valeros'), 'Arquivo gerado contém nome sanitizado do personagem no nome do arquivo JSON');
 
+// ========================================
+// 117. Testes do Design System Canônico A4 D&D 5E em 2 Páginas (ISSUE-148):
+// ========================================
+console.log('\n📄 117. Testes do Design System Canônico A4 D&D 5E em 2 Páginas (ISSUE-148):');
+
+// 1. Verificação de Regras CSS Fundamentais da Folha A4
+assert(compiledHtml.includes('.a4-print-page {'), 'CSS compilado possui regra de dimensão e padding para .a4-print-page');
+assert(compiledHtml.includes('.a4-sheet-header {'), 'CSS compilado possui regra de cabeçalho .a4-sheet-header');
+assert(compiledHtml.includes('.a4-char-name {'), 'CSS compilado possui regra tipográfica Cinzel para .a4-char-name');
+assert(compiledHtml.includes('.a4-sheet-meta-grid {'), 'CSS compilado possui grid de metadados .a4-sheet-meta-grid');
+assert(compiledHtml.includes('.a4-page1-columns'), 'CSS compilado possui grid de 3 colunas para Página 1');
+assert(compiledHtml.includes('.a4-page2-columns'), 'CSS compilado possui grid de 3 colunas para Página 2');
+
+// 2. Verificação de Blocos de Atributos, Vida e Combate
+assert(compiledHtml.includes('.a4-stat-card {'), 'CSS compilado possui estilo para cards verticais de atributos (.a4-stat-card)');
+assert(compiledHtml.includes('.a4-stat-mod {'), 'CSS compilado possui destaque para modificadores (.a4-stat-mod)');
+assert(compiledHtml.includes('.a4-combat-pill {'), 'CSS compilado possui caixas de combate (CA, Iniciativa, Deslocamento)');
+assert(compiledHtml.includes('.a4-hp-box {'), 'CSS compilado possui painel de PV Máximo, Atual e Temporário');
+assert(compiledHtml.includes('.a4-attacks-table {'), 'CSS compilado possui tabela canônica de ataques (.a4-attacks-table)');
+assert(compiledHtml.includes('.a4-inv-table {'), 'CSS compilado possui tabela de inventário (.a4-inv-table)');
+assert(compiledHtml.includes('.a4-spellbook-list {'), 'CSS compilado possui lista de magias conhecidas/preparadas');
+
+// 3. Verificação de Regras de Mídia de Impressão (@media print)
+assert(compiledHtml.includes('.a4-print-page') && compiledHtml.includes('page-break-after: always'), 'CSS de impressão define quebra de página precisa entre a Página 1 e Página 2');
+assert(compiledHtml.includes('.a4-bordered-box') && compiledHtml.includes('break-inside: avoid'), 'CSS de impressão evita cortes indesejados no interior de caixas canônicas');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 
