@@ -7521,6 +7521,14 @@
       min-width: 0;
     }
 
+    .spell-chip-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
     .spell-chip-lvl {
       font-size: 9px;
       font-weight: 800;
@@ -8188,33 +8196,152 @@
       transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
+    /* ===================================================
+       🖨️ ESTILOS DE IMPRESSÃO A4 PROFISSIONAL (ISSUE-146)
+       =================================================== */
+    @page {
+      size: A4 portrait;
+      margin: 8mm;
+    }
+
+    .print-a4-preview-viewport {
+      max-height: calc(88vh - 80px);
+      overflow-y: auto;
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .print-a4-sheet {
+      width: 100%;
+      max-width: 860px;
+    }
+
+    .print-a4-page {
+      width: 194mm;
+      min-height: 275mm;
+      background: #ffffff !important;
+      color: #0f172a !important;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+      box-sizing: border-box;
+      padding: 8mm 8mm;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      position: relative;
+      border: 1px solid #cbd5e1;
+      border-radius: 2px;
+      margin: 0 auto 20px auto;
+    }
+
+    .print-page-break {
+      page-break-after: always !important;
+      break-after: page !important;
+      height: 0 !important;
+      display: block;
+      clear: both;
+    }
+
+    .print-box {
+      border: 1.5px solid #0f172a;
+      border-radius: 4px;
+      padding: 6px 8px;
+      background: #ffffff;
+      box-sizing: border-box;
+    }
+
+    .print-title {
+      font-family: 'Cinzel', Georgia, serif;
+      font-weight: 700;
+      color: #0f172a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .print-badge-bubble {
+      display: inline-block;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      border: 1.5px solid #0f172a;
+      margin-right: 4px;
+      vertical-align: middle;
+      box-sizing: border-box;
+    }
+    .print-badge-bubble.filled {
+      background: #0f172a;
+    }
+
     @media print {
       body {
-        background: #fff !important;
-        color: #000 !important;
+        background: #ffffff !important;
+        color: #000000 !important;
       }
-      .app-header, .tabs-nav, .controls-bar, .modal-overlay:not(#modal-print):not(#modal-print-chronicles), button, .fab-actions-container, .global-dice-widget, .dm-notes-drawer {
+      .app-header, .tabs-nav, .controls-bar, .modal-overlay:not(#modal-print):not(#modal-print-chronicles),
+      button, .btn-action, .btn-secondary, .fab-actions-container,
+      .global-dice-widget, .dm-notes-drawer, .no-print,
+      #modal-print .modal-header-print, #modal-print-toolbar,
+      .welcome-screen-overlay, .welcome-screen-backdrop {
         display: none !important;
       }
       #modal-print, #modal-print-chronicles {
         display: block !important;
         position: static !important;
-        background: #fff !important;
+        background: #ffffff !important;
         padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+      }
+      #modal-print .modal-body, #modal-print-chronicles .modal-body {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: #ffffff !important;
+      }
+      .print-a4-preview-viewport {
+        max-height: none !important;
+        overflow: visible !important;
+        background: #ffffff !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: block !important;
       }
       .print-a4-sheet, .print-document-sheet {
-        background: #fff !important;
-        color: #000 !important;
+        background: #ffffff !important;
+        color: #000000 !important;
         border: none !important;
-        padding: 10px !important;
+        padding: 0 !important;
         box-shadow: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
       }
-      .print-document-sheet * {
-        color: #000 !important;
+      .print-a4-page {
+        width: 100% !important;
+        min-height: 270mm !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        break-after: page !important;
+        page-break-after: always !important;
       }
-      .chronicle-session-card, .session-timeline-card {
+      .print-a4-page:last-child {
+        break-after: auto !important;
+        page-break-after: auto !important;
+      }
+      .print-box, .print-subbox, .print-attack-row, .print-spell-group, .chronicle-session-card, .session-timeline-card {
         break-inside: avoid !important;
         page-break-inside: avoid !important;
+      }
+      .print-document-sheet * {
+        color: #000000 !important;
       }
     }
     /* ===================================================
@@ -10846,6 +10973,47 @@
       color: #94a3b8 !important;
     }
 
+    /* ISSUE-135: Estilização Robusta dos Botões de Inventário */
+    .btn-stash-send {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+    .btn-stash-send:hover {
+      background: rgba(245, 158, 11, 0.25);
+      border-color: #f59e0b;
+      color: #fff;
+    }
+    .btn-item-use {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #38bdf8;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+    .btn-item-use:hover:not(:disabled) {
+      background: rgba(56, 189, 248, 0.3);
+      border-color: #38bdf8;
+    }
+    .btn-item-use.empty,
+    .btn-item-use:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
     /* ISSUE-135: Ações da Tabela de Ataques e Inventário sem Colisão */
     .attack-actions-cell {
       display: inline-flex;
@@ -10860,7 +11028,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      padding: 6px 10px;
+      padding: 5px 8px;
       background: rgba(15, 23, 42, 0.45);
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 6px;
@@ -10878,6 +11046,15 @@
       white-space: nowrap;
     }
     .inventory-item-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    /* ISSUE-135: Blindagem do Topo dos Chips de Magia */
+    .spell-chip-top-badges {
       display: inline-flex;
       align-items: center;
       gap: 4px;
@@ -14834,17 +15011,26 @@
     </div>
   </div>
 
-  <!-- MODAL: IMPRESSÃO DA FICHA DO ALUNO (A4 LIMPO) -->
+  <!-- MODAL: IMPRESSÃO DA FICHA DO ALUNO (A4 LIMPO EM 2 PÁGINAS) -->
   <div id="modal-print" class="modal-overlay">
-    <div class="modal-body" style="max-width: 800px; background: #fff; color: #000;">
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 12px;">
-        <span style="font-size: 16px; font-weight: bold; color: #000;">Visualização de Impressão (Formato A4)</span>
-        <div style="display: flex; gap: 8px;">
-          <button class="btn-action" style="background: #000; color: #fff;" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
-          <button class="btn-secondary" style="background: #eee; color: #000; border-color: #999;" onclick="closePrintModal()">Fechar</button>
+    <div class="modal-body" style="max-width: 900px; width: 95vw; background: #0f172a; color: #f8fafc; padding: 16px; border: 1px solid #334155; border-radius: 12px; display: flex; flex-direction: column;">
+      <div id="modal-print-toolbar" class="modal-header-print" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 12px; margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 22px;">🖨️</span>
+          <div>
+            <div style="font-size: 16px; font-weight: 700; color: #f8fafc; font-family: 'Cinzel', serif;">Exportação & Impressão A4 (PDF)</div>
+            <div style="font-size: 11.5px; color: #94a3b8;">Layout Canônico D&D 5E • 2 Páginas • Alta Fidelidade</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <button class="btn-action" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; font-size: 13px; font-weight: 700; padding: 7px 16px; border-radius: 6px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);" onclick="triggerPlayerBrowserPrint()" title="Salvar em PDF ou Imprimir em Folha A4">📥 Salvar em PDF / Imprimir</button>
+          <button class="btn-secondary" style="background: #1e293b; color: #38bdf8; border-color: #0284c7; font-size: 13px; font-weight: 600; padding: 7px 14px; border-radius: 6px;" onclick="exportCurrentModalPlayerJson()" title="Baixar arquivo JSON com os dados desta ficha">💾 Baixar Ficha (.JSON)</button>
+          <button class="btn-secondary" style="background: #1e293b; color: #cbd5e1; border-color: #475569; font-size: 13px; padding: 7px 14px; border-radius: 6px;" onclick="closePrintModal()">Fechar ✕</button>
         </div>
       </div>
-      <div id="print-sheet-content" class="print-a4-sheet"></div>
+      <div class="print-a4-preview-viewport">
+        <div id="print-sheet-content" class="print-a4-sheet"></div>
+      </div>
     </div>
   </div>
 
@@ -44095,6 +44281,7 @@ function renderPlayers() {
                 <div class="player-toolbar" onclick="event.stopPropagation();">
                   <div class="player-actions-group" onclick="event.stopPropagation();">
                     <button type="button" class="btn-micro roll20-btn-tool" onclick="openPlayerModal('${p.id}')" title="Editar Ficha Completa">✏️</button>
+                    <button type="button" class="btn-micro roll20-btn-tool" onclick="printPlayerSheet('${p.id}')" title="Baixar Ficha / Salvar em PDF (A4 Oficial D&D 5E)">📥</button>
                     <button type="button" class="btn-micro roll20-btn-tool" onclick="openSharePlayerModal('${p.id}')" title="Compartilhar Link/QR Code">📱</button>
                     <button type="button" class="btn-micro roll20-btn-tool" onclick="togglePlayerCardCompact('${p.id}')" title="Alternar Modo Compacto">📏</button>
                     <span class="roll20-tool-divider"></span>
@@ -51222,67 +51409,543 @@ function addPlayerToCombat(id) {
   switchTab('combat');
 }
 
+let currentPrintPlayerId = null;
+
 function printPlayerSheet(id) {
   const p = PLAYERS.find(x => x.id === id);
   if (!p) return;
+  currentPrintPlayerId = id;
 
   const prof = getProfBonus(p.level);
-  const wisMod = Math.floor((p.wis - 10) / 2);
-  const dexMod = Math.floor((p.dex - 10) / 2);
-  const passPerc = 10 + wisMod;
+  
+  // Atributos e Modificadores
+  const strVal = parseInt(p.str) || 10;
+  const dexVal = parseInt(p.dex) || 10;
+  const conVal = parseInt(p.con) || 10;
+  const intVal = parseInt(p.int) || 10;
+  const wisVal = parseInt(p.wis) || 10;
+  const chaVal = parseInt(p.cha) || 10;
+
+  const strMod = Math.floor((strVal - 10) / 2);
+  const dexMod = Math.floor((dexVal - 10) / 2);
+  const conMod = Math.floor((conVal - 10) / 2);
+  const intMod = Math.floor((intVal - 10) / 2);
+  const wisMod = Math.floor((wisVal - 10) / 2);
+  const chaMod = Math.floor((chaVal - 10) / 2);
+
+  const attrMap = {
+    str: { name: 'FOR', label: 'Força', val: strVal, mod: strMod },
+    dex: { name: 'DES', label: 'Destreza', val: dexVal, mod: dexMod },
+    con: { name: 'CON', label: 'Constituição', val: conVal, mod: conMod },
+    int: { name: 'INT', label: 'Inteligência', val: intVal, mod: intMod },
+    wis: { name: 'SAB', label: 'Sabedoria', val: wisVal, mod: wisMod },
+    cha: { name: 'CAR', label: 'Carisma', val: chaVal, mod: chaMod }
+  };
+
+  const fmtMod = m => (m >= 0 ? `+${m}` : `${m}`);
+
+  // Testes de Resistência (Saving Throws)
+  const saveProfs = Array.isArray(p.saveProficiencies) ? p.saveProficiencies : [];
+  const savesHtml = ['str', 'dex', 'con', 'int', 'wis', 'cha'].map(key => {
+    const info = attrMap[key];
+    const isProf = saveProfs.includes(key);
+    const bonus = info.mod + (isProf ? prof : 0);
+    return `
+      <div class="a4-save-item">
+        <span class="a4-bullet ${isProf ? 'active' : ''}">${isProf ? '●' : '○'}</span>
+        <span class="a4-mod-badge">${fmtMod(bonus)}</span>
+        <span class="a4-save-label">${info.label} (${info.name})</span>
+      </div>
+    `;
+  }).join('');
+
+  // Perícias (Skills D&D 5E)
+  const skillProfs = Array.isArray(p.skillProficiencies) ? p.skillProficiencies : [];
+  const skillsList = (typeof DND5E_SKILLS !== 'undefined' && Array.isArray(DND5E_SKILLS)) ? DND5E_SKILLS : [
+    { key: 'atletismo', name: 'Atletismo', attr: 'str', label: 'FOR' },
+    { key: 'acrobacia', name: 'Acrobacia', attr: 'dex', label: 'DES' },
+    { key: 'furtividade', name: 'Furtividade', attr: 'dex', label: 'DES' },
+    { key: 'prestidigitacao', name: 'Prestidigitação', attr: 'dex', label: 'DES' },
+    { key: 'arcanismo', name: 'Arcanismo', attr: 'int', label: 'INT' },
+    { key: 'historia', name: 'História', attr: 'int', label: 'INT' },
+    { key: 'investigacao', name: 'Investigação', attr: 'int', label: 'INT' },
+    { key: 'natureza', name: 'Natureza', attr: 'int', label: 'INT' },
+    { key: 'religiao', name: 'Religião', attr: 'int', label: 'INT' },
+    { key: 'adestramento', name: 'Adestrar Animais', attr: 'wis', label: 'SAB' },
+    { key: 'intuicao', name: 'Intuição', attr: 'wis', label: 'SAB' },
+    { key: 'medicina', name: 'Medicina', attr: 'wis', label: 'SAB' },
+    { key: 'percepcao', name: 'Percepção', attr: 'wis', label: 'SAB' },
+    { key: 'sobrevivencia', name: 'Sobrevivência', attr: 'wis', label: 'SAB' },
+    { key: 'atuacao', name: 'Atuação', attr: 'cha', label: 'CAR' },
+    { key: 'enganacao', name: 'Enganação', attr: 'cha', label: 'CAR' },
+    { key: 'intimidacao', name: 'Intimidação', attr: 'cha', label: 'CAR' },
+    { key: 'persuasao', name: 'Persuasão', attr: 'cha', label: 'CAR' }
+  ];
+
+  const skillsHtml = skillsList.map(sk => {
+    const isProf = skillProfs.includes(sk.key);
+    const attrInfo = attrMap[sk.attr] || { mod: 0 };
+    const bonus = attrInfo.mod + (isProf ? prof : 0);
+    return `
+      <div class="a4-skill-row">
+        <span class="a4-bullet ${isProf ? 'active' : ''}">${isProf ? '●' : '○'}</span>
+        <span class="a4-skill-mod">${fmtMod(bonus)}</span>
+        <span class="a4-skill-name">${sk.name} <span class="a4-skill-attr">(${sk.label})</span></span>
+      </div>
+    `;
+  }).join('');
+
+  // Percepção Passiva
+  const isPercepProf = skillProfs.includes('percepcao');
+  const passPerc = 10 + wisMod + (isPercepProf ? prof : 0);
+
+  // Inventário e Peso
+  const inventory = Array.isArray(p.inventory) ? p.inventory : [];
+  let totalWeight = 0;
+  inventory.forEach(it => {
+    const w = parseFloat(String(it.weight || '0').replace(',', '.')) || 0;
+    const q = parseInt(it.qty) || 1;
+    totalWeight += (w * q);
+  });
+  const carryLimit = strVal * 7.5;
+  const pushLimit = strVal * 15;
+  const coins = p.coins || { cp: 0, sp: 0, ep: 0, gp: p.gold || 0, pp: 0 };
+
+  // Conjuração e Magias
+  const cName = (p.className || '').toLowerCase();
+  let spellAttrKey = 'int';
+  let spellAttrLabel = 'INT';
+  if (cName.includes('clérigo') || cName.includes('clerigo') || cName.includes('druida') || cName.includes('patrulheiro') || cName.includes('ranger') || cName.includes('monge')) {
+    spellAttrKey = 'wis';
+    spellAttrLabel = 'SAB';
+  } else if (cName.includes('bardo') || cName.includes('bruxo') || cName.includes('warlock') || cName.includes('feiticeiro') || cName.includes('sorcerer') || cName.includes('paladino')) {
+    spellAttrKey = 'cha';
+    spellAttrLabel = 'CAR';
+  }
+  const spellMod = attrMap[spellAttrKey].mod;
+  const spellSaveDc = 8 + prof + spellMod;
+  const spellAtkBonus = fmtMod(prof + spellMod);
+
+  // Espaços de Magia
+  const slots = Array.isArray(p.slots) ? p.slots : [0,0,0,0,0,0,0,0,0];
+  const slotsUsed = Array.isArray(p.slotsUsed) ? p.slotsUsed : [0,0,0,0,0,0,0,0,0];
+  const hasSpells = slots.some(s => s > 0) || (Array.isArray(p.preparedSpells) && p.preparedSpells.length > 0) || !!p.spells;
+
+  // Ataques & Armas
+  const attacksText = p.attacks ? p.attacks.replace(/\n/g, '<br>') : 'Nenhum ataque registrado.';
 
   const container = document.getElementById('print-sheet-content');
   if (!container) return;
 
   container.innerHTML = `
-    <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px;">
-      <h1 style="margin: 0; font-size: 24px; font-family: serif; text-transform: uppercase; letter-spacing: 1px;">${p.name}</h1>
-      <div style="font-size: 13px; margin-top: 4px;">
-        Aluno: <b>${p.student}</b> • Raça: <b>${p.race}</b> • Classe: <b>${p.className}</b> • Nível: <b>${p.level}</b> (Profic. +${prof}) • XP: <b>${p.xp}</b>
+    <!-- ========================================== -->
+    <!-- PÁGINA 1: COMBATE, ATRIBUTOS E HABILIDADES -->
+    <!-- ========================================== -->
+    <div class="a4-print-page a4-page-1">
+      <!-- CABEÇALHO D&D OFICIAL -->
+      <div class="a4-sheet-header">
+        <div class="a4-sheet-title-box">
+          <div class="a4-char-name">${p.name || 'Herói Sem Nome'}</div>
+          <div class="a4-char-tag">FICHA DE PERSONAGEM • D&D 5E</div>
+        </div>
+        <div class="a4-sheet-meta-grid">
+          <div class="a4-meta-cell">
+            <span class="a4-meta-label">Classe & Nível</span>
+            <span class="a4-meta-val">${p.className || 'Aventureiro'} ${p.level || 1}</span>
+          </div>
+          <div class="a4-meta-cell">
+            <span class="a4-meta-label">Antecedente</span>
+            <span class="a4-meta-val">${p.background || 'Aventureiro'}</span>
+          </div>
+          <div class="a4-meta-cell">
+            <span class="a4-meta-label">Nome do Aluno / Jogador</span>
+            <span class="a4-meta-val">${p.student || '-'}</span>
+          </div>
+          <div class="a4-meta-cell">
+            <span class="a4-meta-label">Raça</span>
+            <span class="a4-meta-val">${p.race || 'Humano'}</span>
+          </div>
+          <div class="a4-meta-cell">
+            <span class="a4-meta-label">Tendência / Alinhamento</span>
+            <span class="a4-meta-val">${p.alignment || 'Neutro e Bom'}</span>
+          </div>
+          <div class="a4-meta-cell">
+            <span class="a4-meta-label">Experiência (XP)</span>
+            <span class="a4-meta-val">${p.xp || 0} XP</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CORPO PRINCIPAL: 3 COLUNAS HARMONIZADAS -->
+      <div class="a4-page1-columns">
+        <!-- COLUNA 1: ATRIBUTOS, SALVAGUARDAS E PERÍCIAS -->
+        <div class="a4-col-left">
+          <div class="a4-stats-and-skills">
+            <!-- 6 ATRIBUTOS -->
+            <div class="a4-stats-stack">
+              ${['str', 'dex', 'con', 'int', 'wis', 'cha'].map(k => `
+                <div class="a4-stat-card">
+                  <div class="a4-stat-name">${attrMap[k].name}</div>
+                  <div class="a4-stat-mod">${fmtMod(attrMap[k].mod)}</div>
+                  <div class="a4-stat-score">${attrMap[k].val}</div>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- INSPIRAÇÃO, PROFICIÊNCIA, SAVES E SKILLS -->
+            <div class="a4-skills-stack">
+              <div class="a4-badge-box">
+                <span class="a4-badge-box-icon">${p.inspiration ? '⭐' : '○'}</span>
+                <div>
+                  <div class="a4-badge-box-title">Inspiração</div>
+                  <div class="a4-badge-box-sub">${p.inspiration ? 'Ativa' : 'Não'}</div>
+                </div>
+              </div>
+
+              <div class="a4-badge-box">
+                <span class="a4-badge-box-mod">+${prof}</span>
+                <div>
+                  <div class="a4-badge-box-title">Bônus de Proficiência</div>
+                  <div class="a4-badge-box-sub">Nível ${p.level}</div>
+                </div>
+              </div>
+
+              <!-- TESTES DE RESISTÊNCIA -->
+              <div class="a4-bordered-box">
+                <div class="a4-box-title">Testes de Resistência</div>
+                <div class="a4-saves-list">${savesHtml}</div>
+              </div>
+
+              <!-- PERÍCIAS (D&D 5E) -->
+              <div class="a4-bordered-box">
+                <div class="a4-box-title">Perícias (Skills)</div>
+                <div class="a4-skills-list">${skillsHtml}</div>
+              </div>
+
+              <!-- PERCEPÇÃO PASSIVA -->
+              <div class="a4-badge-box a4-passive-box">
+                <span class="a4-badge-box-mod">${passPerc}</span>
+                <div>
+                  <div class="a4-badge-box-title">Percepção Passiva (SAB)</div>
+                  <div class="a4-badge-box-sub">10 + Mod. Sabedoria</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- OUTRAS PROFICIÊNCIAS E IDIOMAS -->
+          <div class="a4-bordered-box" style="margin-top: 6px;">
+            <div class="a4-box-title">Outras Proficiências & Idiomas</div>
+            <div class="a4-box-content-sm">
+              <div><b>Idiomas:</b> ${p.languages || 'Comum'}</div>
+              <div><b>Armaduras:</b> ${p.armorProficiencies || 'Todas / Padrão da Classe'}</div>
+              <div><b>Armas:</b> ${p.weaponProficiencies || 'Simples e Marciais'}</div>
+              ${p.tools ? `<div><b>Ferramentas:</b> ${p.tools}</div>` : ''}
+            </div>
+          </div>
+        </div>
+
+        <!-- COLUNA 2: COMBATE, VIDA, ATAQUES E SLOTS -->
+        <div class="a4-col-center">
+          <!-- CA, INICIATIVA E DESLOCAMENTO -->
+          <div class="a4-combat-top-grid">
+            <div class="a4-combat-pill">
+              <span class="a4-combat-label">Classe Armadura</span>
+              <span class="a4-combat-val">${p.ac || 10}</span>
+              <span class="a4-combat-sub">CA</span>
+            </div>
+            <div class="a4-combat-pill">
+              <span class="a4-combat-label">Iniciativa</span>
+              <span class="a4-combat-val">${fmtMod(dexMod)}</span>
+              <span class="a4-combat-sub">DES</span>
+            </div>
+            <div class="a4-combat-pill">
+              <span class="a4-combat-label">Deslocamento</span>
+              <span class="a4-combat-val">${p.speed || '9m'}</span>
+              <span class="a4-combat-sub">Velocidade</span>
+            </div>
+          </div>
+
+          <!-- PONTOS DE VIDA -->
+          <div class="a4-hp-box">
+            <div class="a4-hp-top-bar">
+              <span><b>Pontos de Vida (PV) Máximos:</b> ${p.maxHp}</span>
+              <span><b>Atual:</b> ${p.hp}</span>
+            </div>
+            <div class="a4-hp-tracking-area">
+              <div class="a4-hp-slot">
+                <span class="a4-hp-slot-title">PV Atual em Mesa</span>
+                <span class="a4-hp-slot-num">${p.hp}</span>
+              </div>
+              <div class="a4-hp-slot">
+                <span class="a4-hp-slot-title">PV Temporários</span>
+                <span class="a4-hp-slot-num">${p.tempHp || '—'}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- DADOS DE VIDA & DEATH SAVES -->
+          <div class="a4-dice-death-grid">
+            <div class="a4-bordered-box">
+              <div class="a4-box-title">Dados de Vida</div>
+              <div style="text-align: center; padding: 4px 0;">
+                <div style="font-size: 13pt; font-weight: 800;">${p.hitDice || `${p.level}d8`}</div>
+                <div style="font-size: 7.5pt; color: #555;">Total: ${p.level} dado(s)</div>
+              </div>
+            </div>
+
+            <div class="a4-bordered-box">
+              <div class="a4-box-title">Salvaguardas Contra a Morte</div>
+              <div class="a4-death-saves-row">
+                <span class="a4-death-label">Sucessos:</span>
+                <span class="a4-death-circles">○ ○ ○</span>
+              </div>
+              <div class="a4-death-saves-row">
+                <span class="a4-death-label">Falhas:</span>
+                <span class="a4-death-circles">○ ○ ○</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ATAQUES & CONJURAÇÃO -->
+          <div class="a4-bordered-box a4-attacks-section">
+            <div class="a4-box-title">Ataques & Armas / Conjuração</div>
+            <div class="a4-attacks-table-wrap">
+              <table class="a4-attacks-table">
+                <thead>
+                  <tr>
+                    <th>Nome / Arma</th>
+                    <th style="width: 50px; text-align: center;">Ataque</th>
+                    <th>Dano & Tipo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${inventory.filter(it => it.equipped && (it.name.toLowerCase().includes('espada') || it.name.toLowerCase().includes('arco') || it.name.toLowerCase().includes('machado') || it.name.toLowerCase().includes('adaga') || it.name.toLowerCase().includes('martelo') || it.name.toLowerCase().includes('lança') || it.name.toLowerCase().includes('cajado'))).slice(0, 3).map(it => `
+                    <tr>
+                      <td><b>${it.name}</b></td>
+                      <td style="text-align: center;">${fmtMod(prof + (it.name.toLowerCase().includes('arco') || it.name.toLowerCase().includes('adaga') ? dexMod : strMod))}</td>
+                      <td>${it.desc ? it.desc.split('.')[0] : '1d8 cortante'}</td>
+                    </tr>
+                  `).join('') || `
+                    <tr>
+                      <td colspan="3" style="text-align: center; color: #666; font-size: 7.5pt; padding: 4px;">Utilize os ataques listados abaixo:</td>
+                    </tr>
+                  `}
+                </tbody>
+              </table>
+            </div>
+            <div class="a4-attacks-notes">
+              ${attacksText}
+            </div>
+          </div>
+
+          <!-- ESPAÇOS DE MAGIA (SLOTS) -->
+          ${hasSpells ? `
+            <div class="a4-bordered-box" style="margin-top: 6px;">
+              <div class="a4-box-title">Espaços de Magia (Spell Slots)</div>
+              <div class="a4-spell-slots-grid">
+                ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(lvl => {
+                  const maxSlot = slots[lvl - 1] || 0;
+                  const usedSlot = slotsUsed[lvl - 1] || 0;
+                  if (maxSlot === 0 && lvl > 3) return '';
+                  return `
+                    <div class="a4-slot-pill ${maxSlot > 0 ? 'active' : ''}">
+                      <div class="a4-slot-lvl">Nv ${lvl}</div>
+                      <div class="a4-slot-dots">
+                        ${maxSlot > 0 ? `${maxSlot} max` : '—'}
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+
+        <!-- COLUNA 3: TRAÇOS, CARACTERÍSTICAS E TALENTOS -->
+        <div class="a4-col-right">
+          <div class="a4-bordered-box a4-features-box">
+            <div class="a4-box-title">Características de Classe & Talentos</div>
+            <div class="a4-features-content">
+              ${p.features ? p.features.replace(/\n/g, '<br>') : 'Nenhuma característica especial registrada.'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RODAPÉ DA PÁGINA 1 -->
+      <div class="a4-page-footer">
+        <span><b>${p.name}</b> • Aluno: ${p.student || '-'} • D&D 5E</span>
+        <span class="a4-page-number">Página 1 de 2</span>
+        <span>Clube de RPG Prisco Bezerra</span>
       </div>
     </div>
 
-    <!-- COMBATE & VIDA -->
-    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; text-align: center; border: 1px solid #000; padding: 8px; margin-bottom: 12px;">
-      <div><b>CA:</b><br><span style="font-size: 18px; font-weight: bold;">${p.ac}</span></div>
-      <div><b>PV MÁX:</b><br><span style="font-size: 18px; font-weight: bold;">${p.maxHp}</span></div>
-      <div><b>DESLOC:</b><br><span style="font-size: 16px;">${p.speed}</span></div>
-      <div><b>INIC:</b><br><span style="font-size: 16px;">${dexMod >= 0 ? '+' + dexMod : dexMod}</span></div>
-      <div><b>PERCEP. PASS:</b><br><span style="font-size: 16px;">${passPerc}</span></div>
-    </div>
-
-    <!-- 6 ATRIBUTOS -->
-    <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; text-align: center; margin-bottom: 12px;">
-      <div style="border: 1px solid #000; padding: 6px;"><b>FOR</b><div style="font-size: 16px; font-weight: bold;">${getMod(p.str)}</div><small>(${p.str})</small></div>
-      <div style="border: 1px solid #000; padding: 6px;"><b>DES</b><div style="font-size: 16px; font-weight: bold;">${getMod(p.dex)}</div><small>(${p.dex})</small></div>
-      <div style="border: 1px solid #000; padding: 6px;"><b>CON</b><div style="font-size: 16px; font-weight: bold;">${getMod(p.con)}</div><small>(${p.con})</small></div>
-      <div style="border: 1px solid #000; padding: 6px;"><b>INT</b><div style="font-size: 16px; font-weight: bold;">${getMod(p.int)}</div><small>(${p.int})</small></div>
-      <div style="border: 1px solid #000; padding: 6px;"><b>SAB</b><div style="font-size: 16px; font-weight: bold;">${getMod(p.wis)}</div><small>(${p.wis})</small></div>
-      <div style="border: 1px solid #000; padding: 6px;"><b>CAR</b><div style="font-size: 16px; font-weight: bold;">${getMod(p.cha)}</div><small>(${p.cha})</small></div>
-    </div>
-
-    <!-- ATAQUES -->
-    <div style="border: 1px solid #000; padding: 8px; margin-bottom: 10px;">
-      <b style="font-size: 13px; text-transform: uppercase;">⚔️ Ataques & Armas</b>
-      <div style="font-size: 12px; margin-top: 4px; line-height: 1.4;">${p.attacks || 'Nenhum ataque especificado.'}</div>
-    </div>
-
-    <!-- TRAÇOS E MAGIAS -->
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-      <div style="border: 1px solid #000; padding: 8px;">
-        <b style="font-size: 13px; text-transform: uppercase;">📜 Características & Talentos</b>
-        <div style="font-size: 12px; margin-top: 4px; line-height: 1.4;">${p.features || 'Nenhum traço cadastrado.'}</div>
+    <!-- ======================================================= -->
+    <!-- PÁGINA 2: INTERPRETAÇÃO, INVENTÁRIO, GRIMÓRIO E NOTAS  -->
+    <!-- ======================================================= -->
+    <div class="a4-print-page a4-page-2">
+      <!-- CABEÇALHO RESUMIDO DA PÁGINA 2 -->
+      <div class="a4-sheet-header a4-header-p2">
+        <div class="a4-sheet-title-box">
+          <div class="a4-char-name" style="font-size: 15pt;">${p.name || 'Herói Sem Nome'}</div>
+          <div class="a4-char-tag">INVENTÁRIO, ANTECEDENTES & GRIMÓRIO DETALHADO</div>
+        </div>
+        <div class="a4-header-p2-meta">
+          <span><b>Classe:</b> ${p.className} ${p.level}</span>
+          <span><b>Aluno:</b> ${p.student || '-'}</span>
+          <span><b>Data:</b> ${new Date().toLocaleDateString('pt-BR')}</span>
+        </div>
       </div>
-      <div style="border: 1px solid #000; padding: 8px;">
-        <b style="font-size: 13px; text-transform: uppercase;">🔮 Magias & Equipamentos</b>
-        <div style="font-size: 12px; margin-top: 4px; line-height: 1.4;">${p.spells || 'Nenhuma magia cadastrada.'}</div>
-      </div>
-    </div>
 
-    <div style="border: 1px solid #000; padding: 6px 10px; display: flex; justify-content: space-between; font-size: 12px;">
-      <span>💰 <b>Tesouro:</b> ${p.gold || 0} Peças de Ouro (PO)</span>
-      <span>🎲 <b>Dado de Vida:</b> ${p.hitDice || '1d8'}</span>
-      <span>⭐ <b>Clube de RPG Prisco Bezerra</b></span>
+      <!-- CORPO PRINCIPAL PÁGINA 2: 3 COLUNAS -->
+      <div class="a4-page2-columns">
+        <!-- COLUNA 1: PERSONALIDADE, VÍNCULOS E HISTÓRIA -->
+        <div class="a4-col-p2-left">
+          <div class="a4-bordered-box">
+            <div class="a4-box-title">Traços de Personalidade</div>
+            <div class="a4-rp-text">${p.personality || 'Determinado, focado em ajudar seus companheiros de jornada.'}</div>
+          </div>
+
+          <div class="a4-bordered-box" style="margin-top: 6px;">
+            <div class="a4-box-title">Ideais</div>
+            <div class="a4-rp-text">${p.ideal || 'Honra, justiça e busca pelo conhecimento ancestral.'}</div>
+          </div>
+
+          <div class="a4-bordered-box" style="margin-top: 6px;">
+            <div class="a4-box-title">Vínculos</div>
+            <div class="a4-rp-text">${p.bond || 'Lealdade incondicional aos companheiros de guilda.'}</div>
+          </div>
+
+          <div class="a4-bordered-box" style="margin-top: 6px;">
+            <div class="a4-box-title">Defeitos</div>
+            <div class="a4-rp-text">${p.flaw || 'Dificuldade em recuar perante uma injustiça ou desafio.'}</div>
+          </div>
+
+          <!-- HISTÓRIA E CONQUISTAS ESCOLARES -->
+          <div class="a4-bordered-box" style="margin-top: 6px; flex: 1;">
+            <div class="a4-box-title">Conquistas & Medalhas Escolares</div>
+            <div class="a4-box-content-sm">
+              ${(Array.isArray(p.badges) && p.badges.length > 0) ? p.badges.map(b => `<div class="a4-badge-tag">${b}</div>`).join('') : '<div style="color: #666;">Nenhuma medalha registrada ainda.</div>'}
+            </div>
+          </div>
+        </div>
+
+        <!-- COLUNA 2: TESOURO, MOEDAS E EQUIPAMENTOS -->
+        <div class="a4-col-p2-center">
+          <!-- TESOURO / MOEDAS D&D -->
+          <div class="a4-bordered-box">
+            <div class="a4-box-title">Riquezas & Moedas</div>
+            <div class="a4-coins-grid">
+              <div class="a4-coin-cell"><b>PC:</b> ${coins.cp || 0}</div>
+              <div class="a4-coin-cell"><b>PP:</b> ${coins.sp || 0}</div>
+              <div class="a4-coin-cell"><b>PE:</b> ${coins.ep || 0}</div>
+              <div class="a4-coin-cell" style="background: #fef3c7; font-weight: 800;"><b>PO:</b> ${coins.gp || p.gold || 0}</div>
+              <div class="a4-coin-cell"><b>PL:</b> ${coins.pp || 0}</div>
+            </div>
+          </div>
+
+          <!-- TABELA DE INVENTÁRIO -->
+          <div class="a4-bordered-box a4-inventory-box">
+            <div class="a4-box-title">Inventário & Equipamentos Carregados</div>
+            <div class="a4-inv-table-wrap">
+              <table class="a4-inv-table">
+                <thead>
+                  <tr>
+                    <th style="width: 25px;">Qtd</th>
+                    <th>Item</th>
+                    <th style="width: 45px; text-align: right;">Peso</th>
+                    <th style="width: 60px; text-align: center;">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${inventory.length > 0 ? inventory.map(it => {
+                    const cleanW = String(it.weight || '').replace(/\s*kg/gi, '').trim();
+                    return `
+                      <tr>
+                        <td style="text-align: center; font-weight: bold;">${it.qty || 1}x</td>
+                        <td><b>${it.name}</b></td>
+                        <td style="text-align: right;">${cleanW ? cleanW + ' kg' : '—'}</td>
+                        <td style="text-align: center; font-size: 7pt;">${it.equipped ? '🛡️ Equipado' : 'Mochila'}</td>
+                      </tr>
+                    `;
+                  }).join('') : `
+                    <tr>
+                      <td colspan="4" style="text-align: center; color: #666; padding: 10px;">Mochila vazia.</td>
+                    </tr>
+                  `}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="a4-carry-capacity-bar">
+              <span><b>Carga Atual:</b> ${totalWeight.toFixed(1)} kg</span>
+              <span><b>Capacidade:</b> ${carryLimit} kg</span>
+              <span><b>Empurrar:</b> ${pushLimit} kg</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- COLUNA 3: GRIMÓRIO, CONJURAÇÃO E DIÁRIO DE AVENTURA -->
+        <div class="a4-col-p2-right">
+          <!-- PAINEL DE CONJURAÇÃO -->
+          <div class="a4-bordered-box">
+            <div class="a4-box-title">Conjuração de Magias D&D 5E</div>
+            <div class="a4-spell-meta-grid">
+              <div class="a4-spell-meta-cell">
+                <span class="a4-spell-meta-lbl">Habilidade Chave</span>
+                <span class="a4-spell-meta-val">${spellAttrLabel}</span>
+              </div>
+              <div class="a4-spell-meta-cell">
+                <span class="a4-spell-meta-lbl">CD Resistência</span>
+                <span class="a4-spell-meta-val">${spellSaveDc}</span>
+              </div>
+              <div class="a4-spell-meta-cell">
+                <span class="a4-spell-meta-lbl">Bônus de Ataque</span>
+                <span class="a4-spell-meta-val">${spellAtkBonus}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- GRIMÓRIO / MAGIAS PREPARADAS -->
+          <div class="a4-bordered-box" style="margin-top: 6px; flex: 1;">
+            <div class="a4-box-title">Grimório & Magias Conhecidas</div>
+            <div class="a4-spellbook-list">
+              ${(Array.isArray(p.preparedSpells) && p.preparedSpells.length > 0) ? p.preparedSpells.map(s => {
+                const sName = typeof s === 'string' ? s : (s.name || 'Magia');
+                const sLvl = typeof s === 'object' && s.level !== undefined ? (s.level === 0 ? 'Truque' : `Nv ${s.level}`) : '';
+                return `
+                  <div class="a4-spell-entry">
+                    <span class="a4-spell-entry-bullet">✦</span>
+                    <span class="a4-spell-entry-name">${sName}</span>
+                    ${sLvl ? `<span class="a4-spell-entry-lvl">${sLvl}</span>` : ''}
+                  </div>
+                `;
+              }).join('') : (p.spells ? `<div style="font-size: 8pt; line-height: 1.4;">${p.spells.replace(/\n/g, '<br>')}</div>` : '<div style="color: #666; font-size: 7.5pt;">Nenhuma magia preparada.</div>')}
+            </div>
+          </div>
+
+          <!-- DIÁRIO / NOTAS DO JOGADOR -->
+          <div class="a4-bordered-box" style="margin-top: 6px;">
+            <div class="a4-box-title">Diário de Missões & Anotações</div>
+            <div class="a4-notes-lines">
+              ${p.playerNotes ? p.playerNotes.replace(/\n/g, '<br>') : `
+                <div class="a4-ruled-line"></div>
+                <div class="a4-ruled-line"></div>
+                <div class="a4-ruled-line"></div>
+                <div class="a4-ruled-line"></div>
+              `}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RODAPÉ DA PÁGINA 2 -->
+      <div class="a4-page-footer">
+        <span><b>${p.name}</b> • Aluno: ${p.student || '-'} • D&D 5E</span>
+        <span class="a4-page-number">Página 2 de 2</span>
+        <span>Clube de RPG Prisco Bezerra</span>
+      </div>
     </div>
   `;
 
@@ -51293,6 +51956,73 @@ function printPlayerSheet(id) {
 function closePrintModal() {
   const mPrint = document.getElementById('modal-print');
   if (mPrint) mPrint.classList.remove('open');
+}
+
+function printCurrentModalPlayerSheet() {
+  const curId = document.getElementById('pm-id') ? document.getElementById('pm-id').value : null;
+  if (curId) {
+    printPlayerSheet(curId);
+  }
+}
+
+function triggerPlayerBrowserPrint() {
+  window.print();
+}
+
+function exportSinglePlayerJson(id) {
+  const p = PLAYERS.find(x => x.id === id);
+  if (!p) {
+    if (typeof alert === 'function') alert('Personagem não encontrado para exportação.');
+    return;
+  }
+  try {
+    const jsonStr = JSON.stringify(p, null, 2);
+    let url = '';
+    if (typeof Blob !== 'undefined' && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      url = URL.createObjectURL(blob);
+    } else {
+      url = 'data:application/json;charset=utf-8,' + encodeURIComponent(jsonStr);
+    }
+    const safeName = (p.name || 'personagem').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '_');
+    const filename = `ficha_${safeName}_dnd5e.json`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    if (document.body && typeof document.body.appendChild === 'function') {
+      document.body.appendChild(a);
+    }
+    a.click();
+    if (document.body && typeof document.body.removeChild === 'function') {
+      document.body.removeChild(a);
+    }
+    if (typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function' && url.startsWith('blob:')) {
+      URL.revokeObjectURL(url);
+    }
+    if (typeof playFX === 'function') playFX('heal');
+    if (typeof addLog === 'function') {
+      addLog(`📥 Ficha de <b>${p.name}</b> exportada com sucesso como [${filename}]!`);
+    }
+  } catch (e) {
+    console.error('Erro ao exportar ficha individual:', e);
+    if (typeof alert === 'function') alert('Erro ao exportar ficha: ' + e.message);
+  }
+}
+
+function exportCurrentModalPlayerJson() {
+  const curId = currentPrintPlayerId || (document.getElementById('pm-id') ? document.getElementById('pm-id').value : null);
+  if (curId) {
+    exportSinglePlayerJson(curId);
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.printPlayerSheet = printPlayerSheet;
+  window.closePrintModal = closePrintModal;
+  window.printCurrentModalPlayerSheet = printCurrentModalPlayerSheet;
+  window.triggerPlayerBrowserPrint = triggerPlayerBrowserPrint;
+  window.exportSinglePlayerJson = exportSinglePlayerJson;
+  window.exportCurrentModalPlayerJson = exportCurrentModalPlayerJson;
 }
 
 // --- COMPARTILHAMENTO DE FICHA VIA LINK & QR CODE + PORTAL DO JOGADOR ---

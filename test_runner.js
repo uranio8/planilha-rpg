@@ -9031,6 +9031,171 @@ assert(vttHudRenderedHtml.includes('applyTokenQuickDamage'), 'HUD flutuante cont
 assert(vttHudRenderedHtml.includes('applyTokenQuickHeal'), 'HUD flutuante contém atalho de aplicação de cura rápida');
 assert(vttHudRenderedHtml.includes('openCondModal'), 'HUD flutuante contém atalho para gerenciamento de status');
 
+// ========================================================
+// 115. TESTES DE EXPORTAÇÃO E IMPRESSÃO A4 CANÔNICA D&D 5E EM 2 PÁGINAS (ISSUE-146)
+// ========================================================
+console.log('\n🖨️ 115. Testes de Exportação e Impressão A4 Canônica D&D 5E em 2 Páginas (ISSUE-146):');
+
+const bundle115 = fs.readFileSync(path.join(__dirname, 'planilha do rpg.html'), 'utf8');
+
+// 1. Classes CSS e Elementos Estruturais
+assert(bundle115.includes('.print-a4-page'), 'HTML compilado possui a classe .print-a4-page');
+assert(bundle115.includes('.print-a4-sheet'), 'HTML compilado possui a classe .print-a4-sheet');
+assert(bundle115.includes('.print-a4-preview-viewport'), 'HTML compilado possui a viewport .print-a4-preview-viewport');
+assert(bundle115.includes('@page {'), 'CSS possui diretiva @page para formato A4 portrait');
+assert(bundle115.includes('break-after: page'), 'CSS possui quebra explícita de página para A4');
+assert(bundle115.includes('id="modal-print"'), 'HTML compilado inclui o modal #modal-print');
+
+// 2. Funções exportadas
+assert(typeof vm.runInContext("printPlayerSheet", sandbox) === 'function', 'Função printPlayerSheet está exportada no escopo global');
+assert(typeof vm.runInContext("closePrintModal", sandbox) === 'function', 'Função closePrintModal está exportada no escopo global');
+assert(typeof vm.runInContext("triggerPlayerBrowserPrint", sandbox) === 'function', 'Função triggerPlayerBrowserPrint está exportada no escopo global');
+assert(typeof vm.runInContext("printCurrentModalPlayerSheet", sandbox) === 'function', 'Função printCurrentModalPlayerSheet está exportada no escopo global');
+
+// 3. Teste de Renderização do Layout de 2 Páginas no DOM
+vm.runInContext(`
+  // Criação dos containers necessários no sandbox
+  if (!document.getElementById('modal-print')) {
+    const mPrintDiv = document.createElement('div');
+    mPrintDiv.id = 'modal-print';
+    mPrintDiv.className = 'modal-overlay';
+    mPrintDiv.innerHTML = '<div class="modal-body"><div id="print-sheet-content"></div></div>';
+    document.body.appendChild(mPrintDiv);
+  }
+  
+  const testHeroForPrint = {
+    id: 'p_print_hero_1',
+    name: 'Valeros, o Guardião',
+    student: 'Lucas Silveira',
+    race: 'Humano',
+    className: 'Guerreiro',
+    level: 5,
+    str: 16,
+    dex: 14,
+    con: 16,
+    int: 10,
+    wis: 12,
+    cha: 8,
+    hp: 44,
+    maxHp: 44,
+    tempHp: 5,
+    ac: 18,
+    proficiencyBonus: 3,
+    speed: '9m',
+    savingProficiencies: ['str', 'con'],
+    skillProficiencies: ['Atletismo', 'Percepção', 'Intimidação'],
+    inventory: [
+      { name: 'Espada Longa', qty: 1, weight: '1.5 kg', equipped: true },
+      { name: 'Escudo', qty: 1, weight: '3 kg', equipped: true },
+      { name: 'Cota de Malha', qty: 1, weight: '25 kg', equipped: true },
+      { name: 'Poção de Cura', qty: 2, weight: '0.5 kg', equipped: false }
+    ],
+    preparedSpells: ['Marca do Caçador'],
+    gold: 75,
+    coins: { cp: 10, sp: 20, ep: 0, gp: 75, pp: 1 },
+    personality: 'Protetor implacável.',
+    ideal: 'Defesa dos inocentes.',
+    bond: 'Minha espada é meu juramento.',
+    flaw: 'Teimoso como uma montanha.'
+  };
+
+  PLAYERS.push(testHeroForPrint);
+  printPlayerSheet('p_print_hero_1');
+`, sandbox);
+
+const printContentHtml = vm.runInContext("document.getElementById('print-sheet-content').innerHTML", sandbox);
+
+// 4. Verificação das 2 Páginas e Seções Canônicas
+assert(printContentHtml.includes('a4-page-1'), 'printPlayerSheet renderiza a Página 1 da ficha');
+assert(printContentHtml.includes('a4-page-2'), 'printPlayerSheet renderiza a Página 2 da ficha');
+assert(printContentHtml.includes('Página 1 de 2'), 'Rodapé identifica Página 1 de 2');
+assert(printContentHtml.includes('Página 2 de 2'), 'Rodapé identifica Página 2 de 2');
+assert(printContentHtml.includes('Valeros, o Guardião'), 'Nome do personagem impresso corretamente');
+assert(printContentHtml.includes('Lucas Silveira'), 'Nome do aluno impresso corretamente');
+
+// Atributos D&D 5E
+assert(printContentHtml.includes('FOR') && printContentHtml.includes('DES') && printContentHtml.includes('CON'), 'Página 1 contém atributos físicos');
+assert(printContentHtml.includes('INT') && printContentHtml.includes('SAB') && printContentHtml.includes('CAR'), 'Página 1 contém atributos mentais');
+
+// Perícias D&D 5E
+assert(printContentHtml.includes('Atletismo'), 'Página 1 lista perícia Atletismo com bônus de proficiência');
+assert(printContentHtml.includes('Percepção'), 'Página 1 lista perícia Percepção');
+assert(printContentHtml.includes('Furtividade'), 'Página 1 lista perícia Furtividade');
+
+// Tabela de Ataques e Defesas
+assert(printContentHtml.includes('Pontos de Vida (PV)'), 'Página 1 contém caixa detalhada de Pontos de Vida');
+assert(printContentHtml.includes('Salvaguardas Contra a Morte'), 'Página 1 contém rastreador de Salvaguardas contra Morte');
+assert(printContentHtml.includes('Ataques & Armas'), 'Página 1 contém tabela de Ataques calculados');
+
+// Página 2: Inventário, Moedas, Magias e Diário
+assert(printContentHtml.includes('Riquezas & Moedas'), 'Página 2 contém painel com PC, PP, PE, PO, PL');
+assert(printContentHtml.includes('Espada Longa'), 'Página 2 exibe itens do inventário');
+assert(printContentHtml.includes('Carga Atual:'), 'Página 2 calcula capacidade de carga e limites');
+assert(printContentHtml.includes('Grimório & Magias Conhecidas'), 'Página 2 exibe seção de magias e conjuração');
+assert(printContentHtml.includes('Diário de Missões & Anotações'), 'Página 2 possui espaço para anotações do jogador');
+
+// Modal deve estar aberto com classe .open
+const isModalOpen = vm.runInContext("document.getElementById('modal-print').classList.contains('open')", sandbox);
+assert(isModalOpen === true, 'Modal #modal-print é aberto com a classe .open ao disparar printPlayerSheet');
+
+// ========================================
+// 116. Testes do Botão de Download de Ficha ao Lado do Lápis e Exportação JSON (ISSUE-147):
+// ========================================
+console.log('\n📥 116. Testes do Botão de Download de Ficha ao Lado do Lápis e Exportação JSON (ISSUE-147):');
+
+// 1. Verificação na Toolbar do Card de Personagem
+vm.runInContext(`
+  renderPlayers();
+`, sandbox);
+const gridPlayersHtml = vm.runInContext("document.getElementById('grid-players').innerHTML", sandbox);
+
+assert(gridPlayersHtml.includes('onclick="openPlayerModal('), 'Toolbar contém botão de editar (lápis)');
+assert(gridPlayersHtml.includes('onclick="printPlayerSheet(') && gridPlayersHtml.includes('📥'), 'Toolbar contém botão de download de ficha com ícone 📥');
+assert(gridPlayersHtml.includes('onclick="openSharePlayerModal('), 'Toolbar contém botão de compartilhar celular');
+
+// Verificar ordenação exata: openPlayerModal -> printPlayerSheet (📥) -> openSharePlayerModal
+const posPencil = gridPlayersHtml.indexOf('openPlayerModal');
+const posDownload = gridPlayersHtml.indexOf('printPlayerSheet');
+const posShare = gridPlayersHtml.indexOf('openSharePlayerModal');
+
+assert(posPencil !== -1 && posDownload !== -1 && posShare !== -1, 'Todos os botões principais estão presentes no card');
+assert(posPencil < posDownload, 'Botão de download está posicionado após o botão de lápis (edição)');
+assert(posDownload < posShare, 'Botão de download está posicionado antes do botão de celular (compartilhamento)');
+
+// 2. Funções Globais de Exportação
+assert(typeof vm.runInContext("window.exportSinglePlayerJson", sandbox) === 'function', 'Função exportSinglePlayerJson exportada globalmente');
+assert(typeof vm.runInContext("window.exportCurrentModalPlayerJson", sandbox) === 'function', 'Função exportCurrentModalPlayerJson exportada globalmente');
+
+// 3. Botão no Modal de Impressão/Exportação
+assert(compiledHtml.includes('exportCurrentModalPlayerJson()'), 'Modal de exportação possui botão para baixar JSON');
+assert(compiledHtml.includes('💾 Baixar Ficha (.JSON)'), 'Modal exibe label explicativa para download de dados JSON');
+
+// 4. Execução Segura da Exportação Individual JSON
+let exportedFilename = '';
+vm.runInContext(`
+  if (!document.body) document.body = {};
+  document.body.appendChild = function() {};
+  document.body.removeChild = function() {};
+  const origCreateEl = document.createElement;
+  document.createElement = function(tag) {
+    const el = origCreateEl.call(document, tag);
+    if (tag === 'a') {
+      return {
+        set href(val) { this._href = val; },
+        set download(val) { this._download = val; window.__lastDownload = val; },
+        click: function() { window.__downloadClicked = true; }
+      };
+    }
+    return el;
+  };
+  exportSinglePlayerJson('p_print_hero_1');
+`, sandbox);
+
+const downloadWasClicked = vm.runInContext("window.__downloadClicked", sandbox);
+const downloadFilename = vm.runInContext("window.__lastDownload", sandbox);
+assert(downloadWasClicked === true, 'Disparo de download simulado executou o clique no link de exportação');
+assert(downloadFilename && downloadFilename.includes('valeros'), 'Arquivo gerado contém nome sanitizado do personagem no nome do arquivo JSON');
+
 console.log('\n========================================');
 console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} passaram`);
 

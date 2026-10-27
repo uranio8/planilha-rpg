@@ -7518,6 +7518,14 @@
       min-width: 0;
     }
 
+    .spell-chip-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
     .spell-chip-lvl {
       font-size: 9px;
       font-weight: 800;
@@ -8185,33 +8193,152 @@
       transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
+    /* ===================================================
+       🖨️ ESTILOS DE IMPRESSÃO A4 PROFISSIONAL (ISSUE-146)
+       =================================================== */
+    @page {
+      size: A4 portrait;
+      margin: 8mm;
+    }
+
+    .print-a4-preview-viewport {
+      max-height: calc(88vh - 80px);
+      overflow-y: auto;
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .print-a4-sheet {
+      width: 100%;
+      max-width: 860px;
+    }
+
+    .print-a4-page {
+      width: 194mm;
+      min-height: 275mm;
+      background: #ffffff !important;
+      color: #0f172a !important;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+      box-sizing: border-box;
+      padding: 8mm 8mm;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      position: relative;
+      border: 1px solid #cbd5e1;
+      border-radius: 2px;
+      margin: 0 auto 20px auto;
+    }
+
+    .print-page-break {
+      page-break-after: always !important;
+      break-after: page !important;
+      height: 0 !important;
+      display: block;
+      clear: both;
+    }
+
+    .print-box {
+      border: 1.5px solid #0f172a;
+      border-radius: 4px;
+      padding: 6px 8px;
+      background: #ffffff;
+      box-sizing: border-box;
+    }
+
+    .print-title {
+      font-family: 'Cinzel', Georgia, serif;
+      font-weight: 700;
+      color: #0f172a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .print-badge-bubble {
+      display: inline-block;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      border: 1.5px solid #0f172a;
+      margin-right: 4px;
+      vertical-align: middle;
+      box-sizing: border-box;
+    }
+    .print-badge-bubble.filled {
+      background: #0f172a;
+    }
+
     @media print {
       body {
-        background: #fff !important;
-        color: #000 !important;
+        background: #ffffff !important;
+        color: #000000 !important;
       }
-      .app-header, .tabs-nav, .controls-bar, .modal-overlay:not(#modal-print):not(#modal-print-chronicles), button, .fab-actions-container, .global-dice-widget, .dm-notes-drawer {
+      .app-header, .tabs-nav, .controls-bar, .modal-overlay:not(#modal-print):not(#modal-print-chronicles),
+      button, .btn-action, .btn-secondary, .fab-actions-container,
+      .global-dice-widget, .dm-notes-drawer, .no-print,
+      #modal-print .modal-header-print, #modal-print-toolbar,
+      .welcome-screen-overlay, .welcome-screen-backdrop {
         display: none !important;
       }
       #modal-print, #modal-print-chronicles {
         display: block !important;
         position: static !important;
-        background: #fff !important;
+        background: #ffffff !important;
         padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+      }
+      #modal-print .modal-body, #modal-print-chronicles .modal-body {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: #ffffff !important;
+      }
+      .print-a4-preview-viewport {
+        max-height: none !important;
+        overflow: visible !important;
+        background: #ffffff !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: block !important;
       }
       .print-a4-sheet, .print-document-sheet {
-        background: #fff !important;
-        color: #000 !important;
+        background: #ffffff !important;
+        color: #000000 !important;
         border: none !important;
-        padding: 10px !important;
+        padding: 0 !important;
         box-shadow: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
       }
-      .print-document-sheet * {
-        color: #000 !important;
+      .print-a4-page {
+        width: 100% !important;
+        min-height: 270mm !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        break-after: page !important;
+        page-break-after: always !important;
       }
-      .chronicle-session-card, .session-timeline-card {
+      .print-a4-page:last-child {
+        break-after: auto !important;
+        page-break-after: auto !important;
+      }
+      .print-box, .print-subbox, .print-attack-row, .print-spell-group, .chronicle-session-card, .session-timeline-card {
         break-inside: avoid !important;
         page-break-inside: avoid !important;
+      }
+      .print-document-sheet * {
+        color: #000000 !important;
       }
     }
     /* ===================================================
@@ -10843,6 +10970,47 @@
       color: #94a3b8 !important;
     }
 
+    /* ISSUE-135: Estilização Robusta dos Botões de Inventário */
+    .btn-stash-send {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+    .btn-stash-send:hover {
+      background: rgba(245, 158, 11, 0.25);
+      border-color: #f59e0b;
+      color: #fff;
+    }
+    .btn-item-use {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #38bdf8;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+    .btn-item-use:hover:not(:disabled) {
+      background: rgba(56, 189, 248, 0.3);
+      border-color: #38bdf8;
+    }
+    .btn-item-use.empty,
+    .btn-item-use:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
     /* ISSUE-135: Ações da Tabela de Ataques e Inventário sem Colisão */
     .attack-actions-cell {
       display: inline-flex;
@@ -10857,7 +11025,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      padding: 6px 10px;
+      padding: 5px 8px;
       background: rgba(15, 23, 42, 0.45);
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 6px;
@@ -10875,6 +11043,15 @@
       white-space: nowrap;
     }
     .inventory-item-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    /* ISSUE-135: Blindagem do Topo dos Chips de Magia */
+    .spell-chip-top-badges {
       display: inline-flex;
       align-items: center;
       gap: 4px;

@@ -2323,17 +2323,26 @@
     </div>
   </div>
 
-  <!-- MODAL: IMPRESSÃO DA FICHA DO ALUNO (A4 LIMPO) -->
+  <!-- MODAL: IMPRESSÃO DA FICHA DO ALUNO (A4 LIMPO EM 2 PÁGINAS) -->
   <div id="modal-print" class="modal-overlay">
-    <div class="modal-body" style="max-width: 800px; background: #fff; color: #000;">
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 12px;">
-        <span style="font-size: 16px; font-weight: bold; color: #000;">Visualização de Impressão (Formato A4)</span>
-        <div style="display: flex; gap: 8px;">
-          <button class="btn-action" style="background: #000; color: #fff;" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
-          <button class="btn-secondary" style="background: #eee; color: #000; border-color: #999;" onclick="closePrintModal()">Fechar</button>
+    <div class="modal-body" style="max-width: 900px; width: 95vw; background: #0f172a; color: #f8fafc; padding: 16px; border: 1px solid #334155; border-radius: 12px; display: flex; flex-direction: column;">
+      <div id="modal-print-toolbar" class="modal-header-print" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 12px; margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 22px;">🖨️</span>
+          <div>
+            <div style="font-size: 16px; font-weight: 700; color: #f8fafc; font-family: 'Cinzel', serif;">Exportação & Impressão A4 (PDF)</div>
+            <div style="font-size: 11.5px; color: #94a3b8;">Layout Canônico D&D 5E • 2 Páginas • Alta Fidelidade</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <button class="btn-action" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; font-size: 13px; font-weight: 700; padding: 7px 16px; border-radius: 6px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);" onclick="triggerPlayerBrowserPrint()" title="Salvar em PDF ou Imprimir em Folha A4">📥 Salvar em PDF / Imprimir</button>
+          <button class="btn-secondary" style="background: #1e293b; color: #38bdf8; border-color: #0284c7; font-size: 13px; font-weight: 600; padding: 7px 14px; border-radius: 6px;" onclick="exportCurrentModalPlayerJson()" title="Baixar arquivo JSON com os dados desta ficha">💾 Baixar Ficha (.JSON)</button>
+          <button class="btn-secondary" style="background: #1e293b; color: #cbd5e1; border-color: #475569; font-size: 13px; padding: 7px 14px; border-radius: 6px;" onclick="closePrintModal()">Fechar ✕</button>
         </div>
       </div>
-      <div id="print-sheet-content" class="print-a4-sheet"></div>
+      <div class="print-a4-preview-viewport">
+        <div id="print-sheet-content" class="print-a4-sheet"></div>
+      </div>
     </div>
   </div>
 

@@ -1,59 +1,61 @@
-# 📋 Plano de Execução: Teste Integral do Sistema com Agentes de Simulação Multi-Agente (Playtesting E2E)
+# Plano de Implementação - Botão de Download de Ficha ao Lado do Lápis (ISSUE-147)
 
-## 🎯 Objetivo
-Executar uma bateria de testes exaustiva de **todas as funcionalidades do sistema** utilizando nossos **Agentes de Simulação Multi-Agente** (`DMAgent`, `PlayerAgent` e `PlaytestSimulator` em `test_playtest_simulator.js`), complementando a suíte automatizada `test_runner.js`.
+## 🎯 Contexto e Objetivos
 
----
+O usuário solicitou:
+> *"vamos colocar o botão de donwload de ficha ao lado do lapis"*
+> (enviando captura da toolbar dos cards de personagens: `[ ✏️ ] [ 📱 ] [ 📏 ] | [ 🗑️ ]`)
 
-## 🤖 Escopo de Atuação dos Agentes de Teste
-
-### 1. 🧙‍♂️ Agentes Jogadores (`PlayerAgent` & Fichas Roll20 D&D 5E)
-- **Criação & Atributos**: Rolar 4d6 Drop Lowest, aplicar Array Padrão e otimização por classe.
-- **Bônus Raciais Canônicos**: Aplicação automática dos bônus de espécie (Humano, Anão, Elfo, Tiefling, etc.).
-- **Cálculo de Defesa & Vida**: CA dinâmica (armaduras, escudo, monge, bárbaro) e PV nível 1.
-- **Evolução & Marcos de ASI / Talentos**: Subir de nível e escolher marcos de ASI (+2 em atributo ou talentos como *Alerta* e *Robusto* com PV retroativo).
-- **Grimório & Magias**: Preparar magias, conjuração com consumo de slots de 1º a 9º círculo, teste de concentração e quebra por dano.
-- **Descansos D&D 5E**: Execução de Descanso Curto (gasto de Dados de Vida) e Descanso Longo (recuperação de PV total e 100% dos spell slots).
-- **Mochila & Inventário**: Equipar armas/armaduras com badges táteis (`.btn-item-equip-badge`), sanitização de peso (`cleanWeight` sem 'kgkg') e transferência de itens para o Baú do Grupo (`sendPlayerItemToPartyStash`).
-
-### 2. 🏰 Agente Mestre (`DMAgent` & Combat Tracker)
-- **Bestiário & Invocação em Lote**: Spawn de criaturas (`MONSTERS_DATA`) com numeração sequencial e iniciativa individual.
-- **Ordem de Iniciativa & Rodadas**: Gestão da fila, avanço de turnos (`nextTurn`) e contadores de rodada.
-- **Rastreador de Economia de Ações**: Uso de chips táteis para `⚔️ Ação`, `⚡ Bônus` e `🛡️ Reação`, e auto-reset no início do turno do combatente.
-- **Ações Rápidas de Monstros**: Rolar ataques diretamente dos cards de iniciativa (`⚔️ Mordida +5`, etc.).
-- **Dano & Cura Arbitrários**: Aplicação de dano e cura rápidos com sincronização bidirecional instantânea na ficha do jogador e no combate.
-- **Condições D&D 5E**: Aplicação e remoção de status (Caído, Envenenado, Cego, etc.).
-- **Distribuição de Saques**: Divisão justa de XP e Peças de Ouro (PO) e depósito no Baú do Grupo.
-
-### 3. 👥 Campanhas, NPCs & Baú Coletivo (`CampaignEngine`)
-- **Baú do Grupo (Party Stash)**: Depósito e retirada de PO e itens, com sincronização em tempo real.
-- **Contratação de Lacaios / Mercenários**: Teste diário de moral e liquidação de salários da tropa.
-
-### 4. 🏰 Bastiões & Fortaleza (`BastionEngine`)
-- **Instalações Especiais**: Criação de cômodos e designação de NPCs supervisores exclusivos (`managerNpcId`).
-- **Evolução de Especialistas**: Maestria de 1 a 5 estrelas com redução de prazos de ordens.
-- **Cofre do Banco da Fortaleza**: Depósitos, saques e cobrança semanal de salários debitando do banco no avanço de turno (`advanceBastionTurn`).
-
-### 5. 🎯 VTT Grid Tático (`VttEngine`)
-- **Tokens no Grid**: Posicionamento, seleção e movimentação de combatentes.
-- **Action HUD Flutuante**: Interação com a barra flutuante ancorada sobre o token para ajuste instantâneo de PV (dano -1/-5, cura +1/+5), condições e atalho para a ficha.
-
-### 6. 🔍 Spotlight Omnisearch Global (`OmnisearchEngine`)
-- **Busca Unificada (Ctrl+K)**: Pesquisa por monstros, magias, itens, talentos, fichas de alunos, condições canônicas e abas do sistema.
-
-### 7. 🛡️ Auditoria Visual & Sanitização Contínua
-- Verificação de ausência de literal `"undefined"`, `"NaN"`, `"kgkg"`.
-- Verificação de containers estruturados flexíveis sem colisão de largura fixa ou sobreposição de texto.
+O objetivo é disponibilizar o botão de **download de ficha** posicionado imediatamente à direita do botão de edição (lápis ✏️) em cada card de personagem, proporcionando acesso direto e intuitivo para baixar/salvar a ficha canônica oficial D&D 5E em PDF (A4) ou exportar os dados em arquivo JSON.
 
 ---
 
-## 🧪 Estratégia de Verificação
-1. Executar o simulador multi-agente expandido:
-   ```bash
-   node test_playtest_simulator.js
-   ```
-2. Executar a suíte de testes unitários e de integração:
-   ```bash
-   node test_runner.js
-   ```
-3. Confirmar que 100% dos testes e todas as fases da simulação foram concluídos com sucesso.
+## 🔍 Análise e Posicionamento na Interface
+
+Atualmente, na barra de ferramentas do card de personagem (`.player-actions-group` em `src/js/players.js`):
+```html
+<div class="player-actions-group" onclick="event.stopPropagation();">
+  <button type="button" class="btn-micro roll20-btn-tool" onclick="openPlayerModal('${p.id}')" title="Editar Ficha Completa">✏️</button>
+  <!-- POSIÇÃO DO NOVO BOTÃO DE DOWNLOAD AQUI -->
+  <button type="button" class="btn-micro roll20-btn-tool" onclick="openSharePlayerModal('${p.id}')" title="Compartilhar Link/QR Code">📱</button>
+  <button type="button" class="btn-micro roll20-btn-tool" onclick="togglePlayerCardCompact('${p.id}')" title="Alternar Modo Compacto">📏</button>
+  <span class="roll20-tool-divider"></span>
+  <button type="button" class="btn-micro roll20-btn-tool roll20-btn-tool-del" onclick="deletePlayer('${p.id}')" title="Excluir Personagem">🗑️</button>
+</div>
+```
+
+---
+
+## 🛠️ Modificações Propostas
+
+### 1. `src/js/players.js`
+- **Inserção do Botão de Download na Toolbar**:
+  Posicionar entre o lápis (✏️) e o celular (📱):
+  ```html
+  <button type="button" class="btn-micro roll20-btn-tool" onclick="printPlayerSheet('${p.id}')" title="Baixar Ficha / Salvar em PDF (A4 Oficial D&D 5E)">📥</button>
+  ```
+  *(Utilizando o ícone semântico `📥` de download para clareza máxima e correspondência com a instrução do usuário).*
+- **Função de Exportação Individual em JSON (`exportSinglePlayerJson(id)`)**:
+  Permitir também baixar o arquivo JSON individual da ficha do herói (ex: `ficha_thorin_dnd5e.json`), útil para backup ou transferência de personagens específicos.
+
+### 2. `src/ui/ui.html`
+- No modal de exportação (`#modal-print`), incluir na barra de ferramentas superior:
+  - Botão principal: `📥 Baixar PDF / Imprimir`
+  - Botão secundário de dados: `💾 Baixar Ficha (.JSON)`
+  - Botão de fechar: `✕ Fechar`
+
+### 3. `test_runner.js`
+- Adicionar nova bateria de testes automatizados:
+  - Validar que a toolbar do card contém o botão com ícone `📥` e chamada `printPlayerSheet`.
+  - Validar que o botão está posicionado entre o botão de editar (`openPlayerModal`) e o de compartilhar (`openSharePlayerModal`).
+  - Validar a exportação das funções no escopo global (`printPlayerSheet`, `exportSinglePlayerJson`).
+
+---
+
+## 🔒 Critérios de Aceite e Verificação
+
+1. O botão `📥` aparece no card do herói imediatamente ao lado do botão de lápis `✏️`.
+2. Ao clicar no botão `📥`, o modal de download/impressão A4 em alta definição é aberto exibindo a ficha completa em 2 páginas.
+3. No modal, o usuário pode clicar em `📥 Baixar PDF / Imprimir` para salvar o PDF ou em `💾 Baixar Ficha (.JSON)` para obter o arquivo estruturado.
+4. Compilação executada com sucesso (`node builder.js`).
+5. Suíte de testes 100% aprovada (`node test_runner.js`).
