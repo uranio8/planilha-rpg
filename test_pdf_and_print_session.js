@@ -332,6 +332,126 @@ async function runSessionTest() {
   }
 
   console.log('  ✅ Campos do formulário e bônus de perícias verificados com sucesso.');
+
+  // 6. Teste Específico ISSUE-153: Normalização de Perícias PT-BR, Sentidos Passivos, Multiclasse, Death Saves e Slots
+  console.log('  👉 Testando ISSUE-153: Sincronização Completa (Perícias PT-BR, Death Saves, Multiclasse, Sentidos Passivos e Slots)...');
+  const syncPlayer = {
+    id: 'p_sync_test',
+    name: 'Valerius Sombra',
+    student: 'Mariana',
+    className: 'Guerreiro',
+    level: 5,
+    multiclass: 'Guerreiro 3 / Mago 2',
+    race: 'Meio-Elfo',
+    str: 16,
+    dex: 14,
+    con: 14,
+    int: 14,
+    wis: 12,
+    cha: 10,
+    hp: 22,
+    maxHp: 38,
+    hitDice: '5d10',
+    spentHitDice: 2,
+    deathSaves: { success: 2, fail: 1 },
+    conditions: ['Envenenado', 'Incapacitado'],
+    skills: ['adestramento', 'enganacao', 'percepcao', 'investigacao'],
+    saveProficiencies: ['str', 'con'],
+    slots: [4, 2, 0, 0, 0, 0, 0, 0, 0],
+    slotsUsed: [1, 2, 0, 0, 0, 0, 0, 0, 0],
+    spells: ['Raio de Gelo', 'Mísseis Mágicos'],
+    inventory: [{ name: 'Espada Curta', qty: 1, weight: '1.0', equipped: true }]
+  };
+
+  context.samplePlayers.push(syncPlayer);
+  vm.runInContext('PLAYERS.push(samplePlayers[samplePlayers.length - 1]);', context);
+
+  // A. Validar Folha A4
+  context.printPlayerSheet('p_sync_test');
+  const a4Html = printSheetContent.innerHTML;
+  
+  if (!a4Html.includes('Guerreiro 3 / Mago 2 (Nv 5)')) {
+    throw new Error('Falha ISSUE-153: Multiclasse formatada ausente no cabeçalho A4!');
+  }
+  if (!a4Html.includes('Sentidos Passivos (Mestre)')) {
+    throw new Error('Falha ISSUE-153: Bloco de Sentidos Passivos do Mestre ausente na folha A4!');
+  }
+  if (!a4Html.includes('Investigação') || !a4Html.includes('Intuição')) {
+    throw new Error('Falha ISSUE-153: Investigação ou Intuição Passiva ausente na folha A4!');
+  }
+  if (!a4Html.includes('⚠️ <b>Condições Ativas:</b> Envenenado, Incapacitado')) {
+    throw new Error('Falha ISSUE-153: Banner de Condições Ativas ausente na folha A4!');
+  }
+  if (!a4Html.includes('Restantes: <b>3</b>')) {
+    throw new Error('Falha ISSUE-153: Dados de vida disponíveis incorretos na folha A4 (esperado 3 restantes)!');
+  }
+  if (!a4Html.includes('● ● ○') || !a4Html.includes('● ○ ○')) {
+    throw new Error('Falha ISSUE-153: Círculos de Salvaguardas contra a morte não preenchidos na folha A4!');
+  }
+  if (!a4Html.includes('a4-slot-circles')) {
+    throw new Error('Falha ISSUE-153: Marcadores visuais de slots de magia ausentes na folha A4!');
+  }
+  console.log('  ✅ Folha A4: Multiclasse, Sentidos Passivos, Condições, Death Saves e Slots validados.');
+
+  // B. Validar PDF Editável
+  const syncPdfBytes = await context.generateEditableDnd5ePdf(syncPlayer);
+  const syncLoadedDoc = await PDFLib.PDFDocument.load(syncPdfBytes);
+  const syncForm = syncLoadedDoc.getForm();
+
+  // 1. Checar reconhecimento de aliases de perícias PT-BR (adestramento -> animalHandling, enganacao -> deception)
+  const chkAnimalHandling = syncForm.getCheckBox('Check_Skill_animalHandling');
+  if (!chkAnimalHandling.isChecked()) {
+    throw new Error('Falha ISSUE-153: Perícia "adestramento" não foi reconhecida no Check_Skill_animalHandling!');
+  }
+  const chkDeception = syncForm.getCheckBox('Check_Skill_deception');
+  if (!chkDeception.isChecked()) {
+    throw new Error('Falha ISSUE-153: Perícia "enganacao" não foi reconhecida no Check_Skill_deception!');
+  }
+
+  // 2. Checar Death Saves no PDF
+  const dsS1 = syncForm.getCheckBox('DeathSave_S1');
+  const dsS2 = syncForm.getCheckBox('DeathSave_S2');
+  const dsS3 = syncForm.getCheckBox('DeathSave_S3');
+  const dsF1 = syncForm.getCheckBox('DeathSave_F1');
+  const dsF2 = syncForm.getCheckBox('DeathSave_F2');
+  if (!dsS1.isChecked() || !dsS2.isChecked() || dsS3.isChecked()) {
+    throw new Error('Falha ISSUE-153: Sucessos em Death Saves incorretos no PDF (esperado 2 marcados)!');
+  }
+  if (!dsF1.isChecked() || dsF2.isChecked()) {
+    throw new Error('Falha ISSUE-153: Falhas em Death Saves incorretas no PDF (esperado 1 marcada)!');
+  }
+
+  // 3. Checar Sentidos Passivos
+  const fPassPerc = syncForm.getTextField('Passive_Perception');
+  const fPassInvest = syncForm.getTextField('Passive_Investigation');
+  const fPassInsight = syncForm.getTextField('Passive_Insight');
+  if (!fPassPerc || !fPassInvest || !fPassInsight) {
+    throw new Error('Falha ISSUE-153: Campos de Sentidos Passivos ausentes no formulário do PDF!');
+  }
+
+  // 4. Checar Slots de Magia AcroForm na Página 2
+  const slot1Tot = syncForm.getTextField('Slot_Lvl_1_Total');
+  const slot1Use = syncForm.getTextField('Slot_Lvl_1_Used');
+  if (slot1Tot.getText() !== '4' || slot1Use.getText() !== '1') {
+    throw new Error(`Falha ISSUE-153: Slots do 1º nível incorretos no PDF: Tot=${slot1Tot.getText()}, Usado=${slot1Use.getText()}`);
+  }
+  const slot2Tot = syncForm.getTextField('Slot_Lvl_2_Total');
+  const slot2Use = syncForm.getTextField('Slot_Lvl_2_Used');
+  if (slot2Tot.getText() !== '2' || slot2Use.getText() !== '2') {
+    throw new Error(`Falha ISSUE-153: Slots do 2º nível incorretos no PDF: Tot=${slot2Tot.getText()}, Usado=${slot2Use.getText()}`);
+  }
+
+  // 5. Checar Condições Ativas e Multiclasse
+  const fClass = syncForm.getTextField('ClassLevel');
+  if (!fClass.getText().includes('Guerreiro 3 / Mago 2 (Nv 5)')) {
+    throw new Error(`Falha ISSUE-153: ClassLevel no PDF incorreto: ${fClass.getText()}`);
+  }
+  const fStory = syncForm.getTextField('Character_Backstory');
+  if (!fStory.getText().includes('[CONDIÇÕES ATIVAS EM MESA: Envenenado, Incapacitado]')) {
+    throw new Error('Falha ISSUE-153: Condições ativas ausentes em Character_Backstory!');
+  }
+
+  console.log('  ✅ PDF Editável: Perícias PT-BR, Death Saves, Sentidos Passivos, Slots e Condições validados com 100% de precisão.');
   console.log('🎉 Todos os testes de sessão de impressão e PDF foram concluídos com 100% de sucesso!\n');
 }
 

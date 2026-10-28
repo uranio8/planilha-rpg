@@ -1,57 +1,70 @@
-# 📋 Plano de Implementação: Características de Classe/Talentos e Paginação A4 em 2 Folhas (ISSUE-152)
+# 📋 Plano de Implementação: Sincronização Completa entre Ficha Virtual, Ficha Impressa A4 e PDF Editável (ISSUE-153)
 
-Este plano corrige os dois problemas evidenciados no diálogo de impressão e no download individual de fichas:
-1. **Características de Classe e Talentos vazias**: O bloco da coluna 3 estava em branco para heróis como *Alaster* (Guerreiro 4 / Draconato) porque o sistema lia apenas o campo de texto livre `p.features`, ignorando as habilidades oficiais desbloqueadas da classe (`getUnlockedClassFeatures`), especialidades marciais (`p.fightingStyle`), traços raciais da espécie (`findSpeciesData`) e talentos (`p.feats`/ASI).
-2. **Modelo truncado em 1 folha de papel ("1 folha de papel" no Chrome)**: No `@media print`, os containers ancestrais (`.modal-body` e `.print-a4-preview-viewport`) continham `max-height: 90vh` e `overflow-y: auto`, o que faz os motores Chromium/Blink e Firefox tratarem o modal como uma caixa scrollável limitada à tela, descartando todo o conteúdo que transborda a primeira página e impedindo a quebra para a Página 2.
+Este plano atende à auditoria de divergências identificadas entre a **Ficha Virtual** (painel do jogador/mestre), a **Ficha Impressa A4** (`printPlayerSheet`) e o **PDF Editável com AcroForms** (`generateEditableDnd5ePdf`), garantindo que tanto o **Mestre** quanto o **Jogador** tenham fidelidade total de dados e regras D&D 5E em todas as saídas de impressão e download.
 
 ---
 
-## 🎯 Escopo das Alterações
+## 🎯 Escopo das Alterações e Módulos Afetados
 
-### 1. `src/js/players.js` (Helper Universal de Características & Folha A4)
-- **Implementar `getPlayerAllFeaturesAndTraits(p)`**:
-  - Reúne e compila em uma lista estruturada:
-    1. **Habilidades Oficiais de Classe por Nível** (Guerreiro 4: Estilo de Luta, Retomar o Fôlego, Surto de Ação, Arquétipo Marcial/Campeão, Crítico Aprimorado, ASI Nv 4).
-    2. **Especialidades Marciais e Escolhas** (ex: Arquearia, Defesa, Duelismo, etc.).
-    3. **Traços Raciais da Espécie** (ex: Draconato: Ancestralidade Dracônica, Arma de Sopro, Resistência a Dano).
-    4. **Talentos e Marcos de Nível** (`p.feats` e escolhas de ASI).
-    5. **Anotações Livres do Jogador** (`p.features`).
-- **Renderização Rica na Coluna 3 da Página 1**:
-  - Exibir cada habilidade com marcador `✦`, nome em destaque, categoria/origem e descrição resumida para consulta rápida na mesa.
-  - Formatação tipográfica compacta e elegante (`.a4-feature-entry`, `.a4-feature-tag`, `.a4-feature-desc`).
+### 1. `src/js/pdf_export.js` (Exportação PDF Editável Oficial D&D 5E)
+- **Normalização Robusta de Perícias (Resolução de Bug Crítico)**:
+  - Expandir o mapeamento de perícias em `DND_SKILLS_MAPPING` e no verificador de proficiências `isProf` para suportar aliases canônicos em português e inglês:
+    - `animalHandling` ⇄ `adestramento`, `adestrar animais`
+    - `deception` ⇄ `enganacao`, `enganação`, `blefar`
+    - `sleightOfHand` ⇄ `prestidigitacao`, `prestidigitação`
+    - Normalizador de strings (remover acentos, pontuações e caixa baixa) para prevenir falhas de correspondência em qualquer origem de dados.
+- **Sincronização de Salvaguardas Contra a Morte (Death Saves)**:
+  - Pré-marcar os checkboxes `DeathSave_S1..S3` e `DeathSave_F1..F3` com base no estado atual de `p.deathSaves` (`p.deathSaves.success` e `p.deathSaves.fail`).
+- **Dados de Vida Gastos vs Totais**:
+  - Exibir no campo `Hit_Dice` tanto a fórmula/total (`p.hitDice || '4d10'`) quanto os dados disponíveis se houver dados gastos (`p.spentHitDice`), no formato: `4d10 (Disp: 2/4)`.
+- **Sentidos Passivos para o Mestre**:
+  - Adicionar campos AcroForm e rótulos para **Investigação Passiva** (10 + INT) e **Intuição Passiva** (10 + SAB), além da já existente **Percepção Passiva**.
+- **Multiclasse e Subclasse no Cabeçalho**:
+  - Utilizar a descrição completa de multiclasse (`p.multiclass` ou formatação composta `Guerreiro 3 / Mago 1 (Nv 4)`) no campo `ClassLevel`.
+- **Rastreador de Espaços de Magia (Spell Slots 1º ao 9º nível)**:
+  - Adicionar campos AcroForm para Total e Gastos de cada círculo de magia (`Slot_Lvl_X_Total`, `Slot_Lvl_X_Used`) na Página 2 do PDF, permitindo que o conjurador acompanhe seus slots diretamente no Adobe Reader ou Foxit.
+- **Condições Ativas**:
+  - Pré-carregar na área de anotações/status as condições ativas na sessão (`p.conditions`, ex: *Envenenado*, *Incapacitado*).
 
-### 2. `src/js/pdf_export.js` (Exportação no PDF Editável AcroForm)
-- Atualizar o preenchimento inicial do campo `Features_Traits`:
-  - Utilizar `getPlayerAllFeaturesAndTraits(p)` para pré-carregar automaticamente todas as características de classe, raça e talentos no PDF editável, permitindo que o jogador/mestre visualize e edite livremente no Adobe Acrobat ou Foxit.
+### 2. `src/js/players.js` (Ficha Impressa A4 `printPlayerSheet`)
+- **Salvaguardas Contra a Morte Dinâmicas**:
+  - Preencher dinamicamente os círculos de sucessos e falhas (`● ● ○`) com base em `p.deathSaves.success` e `p.deathSaves.fail`, em vez de manter círculos fixos vazios.
+- **Dados de Vida Atuais**:
+  - Exibir claramente os dados disponíveis vs totais (`Total: 4 dados | Restantes: 2`).
+- **Sentidos Passivos Completos**:
+  - Exibir na coluna esquerda os 3 sentidos passivos do D&D 5E:
+    - Percepção Passiva (10 + Sab + Prof se proficiente)
+    - Investigação Passiva (10 + Int + Prof se proficiente)
+    - Intuição Passiva (10 + Sab + Prof se proficiente)
+- **Círculos Visuais de Espaços de Magia**:
+  - Renderizar para cada círculo de magia os marcadores visuais de slots disponíveis (`○`) e gastos (`●`), facilitando a marcação a lápis ou visualização do estado atual da mesa.
+- **Multiclasse e Condições Ativas**:
+  - Refletir multiclasse completa e exibir banner discreto de condições ativas (ex: `⚠️ Condições Ativas: Envenenado`) caso o herói esteja sob efeito de algum status.
 
-### 3. `src/styles/head_css.html` (Garantia de 2 Folhas de Papel no `@media print`)
-- **Desbloqueio de Ancestrais Scrolláveis**:
-  - Forçar `overflow: visible !important;`, `max-height: none !important;`, `height: auto !important;` e `display: block !important;` em `#modal-print`, `#modal-print .modal-body`, `.print-a4-preview-viewport` e `#print-sheet-content`.
-- **Dimensões e Quebras Oficiais A4**:
-  - Configurar `.a4-print-page` com `height: 275mm !important; max-height: 275mm !important; box-sizing: border-box !important; break-inside: avoid !important; page-break-after: always !important; break-after: page !important;`.
-  - Configurar `.a4-print-page:last-child` com `page-break-after: auto !important; break-after: auto !important;`.
-  - Configurar `@page { size: A4 portrait; margin: 6mm 8mm; }`.
+### 3. `src/styles/head_css.html` (Estilos A4)
+- Estilizar os blocos de sentidos passivos múltiplos e círculos de dados de vida/slots de magia para garantir diagramação limpa, preservando a quebra perfeita em **exatamente 2 páginas A4**.
 
 ---
 
 ## 🧪 Estratégia de Verificação e Testes Automatizados
 
-1. **Atualização do Script E2E** (`test_pdf_and_print_session.js`):
-   - Adicionar teste com o herói **Alaster** (Guerreiro 4 / Draconato com `p.features = ''`).
-   - Validar que `getPlayerAllFeaturesAndTraits(sampleAlaster)` extrai pelo menos 6 características de classe e 3 traços raciais.
-   - Validar que o HTML da folha A4 renderiza as características de Guerreiro 4 e Draconato na coluna 3.
-   - Validar que o PDF editável gerado contém as características no campo `Features_Traits`.
-   - Validar que o CSS de `@media print` não possui `overflow: auto` ou `max-height` ativo em nenhum container ancestral de `#modal-print`.
-2. **Nova Bateria 121 em `test_runner.js`**:
-   - Garantir 100% de aprovação de todos os testes unitários e de integração.
-3. **Build Final**:
-   - Executar `node builder.js` e validar tamanho da bundle.
+1. **Testes E2E Automatizados (`test_pdf_and_print_session.js`)**:
+   - Validar personagem com `adestramento` e `enganacao`: verificar se o PDF editável gerado marca com `true` os checkboxes correspondentes.
+   - Validar personagem ferido com `deathSaves = { success: 2, fail: 1 }` e `spentHitDice = 2`: verificar se os checkboxes e círculos do A4 e PDF refletem exatamente 2 sucessos, 1 falha e 2 dados gastos.
+   - Validar conjurador com magias gastas: verificar renderização dos marcadores de slots.
+   - Validar presença dos sentidos passivos (Percepção, Investigação e Intuição).
+2. **Nova Bateria 122 em `test_runner.js`**:
+   - Garantir 100% de aprovação de toda a suíte de testes.
+3. **Build e Verificação Final**:
+   - Executar `node builder.js` e validar bundle `planilha do rpg.html`.
 
 ---
 
-## 🔒 Critérios de Aceite & Status de Validação
+## 🔒 Critérios de Aceite
 
-- [x] A coluna "CARACTERÍSTICAS DE CLASSE & TALENTOS" da folha A4 exibe automaticamente as habilidades da classe e traços de raça do herói mesmo se o campo de texto livre estiver em branco.
-- [x] O campo `Features_Traits` do PDF editável baixado é pré-preenchido com todas as habilidades de classe e talentos do personagem.
-- [x] No diálogo de impressão do navegador (Ctrl+P ou botão Imprimir), a visualização exibe **exatamente 2 folhas de papel** (em vez de 1), com quebra perfeita entre a Página 1 e a Página 2.
-- [x] 100% dos testes aprovados em `node test_runner.js` (2133/2133 testes aprovados na Bateria 121).
+- [ ] Checkboxes de perícias no PDF editável reconhecem todas as formas de chaves (`adestramento`, `enganacao`, `animalHandling`, etc.) e marcam corretamente com proficiência e bônus calculado.
+- [ ] O PDF editável e a folha impressa A4 preenchem as Salvaguardas Contra a Morte com base em `p.deathSaves`.
+- [ ] Ambos os modelos exibem os 3 Sentidos Passivos essenciais para o Mestre (Percepção, Investigação e Intuição).
+- [ ] Ambos os modelos exibem os Dados de Vida disponíveis vs gastos e rastreadores de Espaços de Magia.
+- [ ] Multiclasse e condições ativas refletem com precisão o estado da Ficha Virtual.
+- [ ] 100% dos testes aprovados em `node test_runner.js`.

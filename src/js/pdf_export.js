@@ -18,26 +18,36 @@
     return null;
   }
 
-  // Mapeamento canônico das 18 perícias do D&D 5E com os atributos base
+  // Helper de normalização fonética e ortográfica de perícias (remove acentos, pontuação e caixa alta)
+  function normalizeSkillKey(str) {
+    if (!str) return '';
+    return String(str)
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '');
+  }
+
+  // Mapeamento canônico das 18 perícias do D&D 5E com atributos base e suporte total a aliases PT/EN
   const DND_SKILLS_MAPPING = [
-    { key: 'acrobatics', pt: 'Acrobacia', stat: 'DES', attrKey: 'dex' },
-    { key: 'animalHandling', pt: 'Adestrar Animais', stat: 'SAB', attrKey: 'wis' },
-    { key: 'arcana', pt: 'Arcanismo', stat: 'INT', attrKey: 'int' },
-    { key: 'athletics', pt: 'Atletismo', stat: 'FOR', attrKey: 'str' },
-    { key: 'performance', pt: 'Atuação', stat: 'CAR', attrKey: 'cha' },
-    { key: 'deception', pt: 'Blefar', stat: 'CAR', attrKey: 'cha' },
-    { key: 'stealth', pt: 'Furtividade', stat: 'DES', attrKey: 'dex' },
-    { key: 'history', pt: 'História', stat: 'INT', attrKey: 'int' },
-    { key: 'intimidation', pt: 'Intimidação', stat: 'CAR', attrKey: 'cha' },
-    { key: 'insight', pt: 'Intuição', stat: 'SAB', attrKey: 'wis' },
-    { key: 'investigation', pt: 'Investigação', stat: 'INT', attrKey: 'int' },
-    { key: 'medicine', pt: 'Medicina', stat: 'SAB', attrKey: 'wis' },
-    { key: 'nature', pt: 'Natureza', stat: 'INT', attrKey: 'int' },
-    { key: 'perception', pt: 'Percepção', stat: 'SAB', attrKey: 'wis' },
-    { key: 'persuasion', pt: 'Persuasão', stat: 'CAR', attrKey: 'cha' },
-    { key: 'sleightOfHand', pt: 'Prestidigitação', stat: 'DES', attrKey: 'dex' },
-    { key: 'religion', pt: 'Religião', stat: 'INT', attrKey: 'int' },
-    { key: 'survival', pt: 'Sobrevivência', stat: 'SAB', attrKey: 'wis' }
+    { key: 'acrobatics', pt: 'Acrobacia', stat: 'DES', attrKey: 'dex', aliases: ['acrobacia', 'acrobatics'] },
+    { key: 'animalHandling', pt: 'Adestrar Animais', stat: 'SAB', attrKey: 'wis', aliases: ['adestramento', 'adestrar animais', 'animal handling', 'animalhandling', 'adestrar'] },
+    { key: 'arcana', pt: 'Arcanismo', stat: 'INT', attrKey: 'int', aliases: ['arcanismo', 'arcana'] },
+    { key: 'athletics', pt: 'Atletismo', stat: 'FOR', attrKey: 'str', aliases: ['atletismo', 'athletics'] },
+    { key: 'performance', pt: 'Atuação', stat: 'CAR', attrKey: 'cha', aliases: ['atuacao', 'atuação', 'performance'] },
+    { key: 'deception', pt: 'Blefar / Enganação', stat: 'CAR', attrKey: 'cha', aliases: ['enganacao', 'enganação', 'blefar', 'deception'] },
+    { key: 'stealth', pt: 'Furtividade', stat: 'DES', attrKey: 'dex', aliases: ['furtividade', 'stealth'] },
+    { key: 'history', pt: 'História', stat: 'INT', attrKey: 'int', aliases: ['historia', 'história', 'history'] },
+    { key: 'intimidation', pt: 'Intimidação', stat: 'CAR', attrKey: 'cha', aliases: ['intimidacao', 'intimidação', 'intimidation'] },
+    { key: 'insight', pt: 'Intuição', stat: 'SAB', attrKey: 'wis', aliases: ['intuicao', 'intuição', 'insight'] },
+    { key: 'investigation', pt: 'Investigação', stat: 'INT', attrKey: 'int', aliases: ['investigacao', 'investigação', 'investigation'] },
+    { key: 'medicine', pt: 'Medicina', stat: 'SAB', attrKey: 'wis', aliases: ['medicina', 'medicine'] },
+    { key: 'nature', pt: 'Natureza', stat: 'INT', attrKey: 'int', aliases: ['natureza', 'nature'] },
+    { key: 'perception', pt: 'Percepção', stat: 'SAB', attrKey: 'wis', aliases: ['percepcao', 'percepção', 'perception'] },
+    { key: 'persuasion', pt: 'Persuasão', stat: 'CAR', attrKey: 'cha', aliases: ['persuasao', 'persuasão', 'persuasion'] },
+    { key: 'sleightOfHand', pt: 'Prestidigitação', stat: 'DES', attrKey: 'dex', aliases: ['prestidigitacao', 'prestidigitação', 'sleight of hand', 'sleightofhand', 'ladinagem'] },
+    { key: 'religion', pt: 'Religião', stat: 'INT', attrKey: 'int', aliases: ['religiao', 'religião', 'religion'] },
+    { key: 'survival', pt: 'Sobrevivência', stat: 'SAB', attrKey: 'wis', aliases: ['sobrevivencia', 'sobrevivência', 'survival'] }
   ];
 
   // Helper para injetar script de cálculo Acrobat JS no campo AcroForm
@@ -60,6 +70,13 @@
     }
   }
 
+  // Sanitiza strings para compatibilidade estrita com codificação WinAnsi das fontes padrão Helvetica
+  function sanitizeWinAnsi(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/[^\x00-\x7F\u00A0-\u00FF\u0152\u0153\u0160\u0161\u0178\u017D\u017E\u0192\u02C6\u02DC\u2013\u2014\u2018\u2019\u201A\u201C\u201D\u201E\u2020\u2021\u2022\u2026\u2030\u2039\u203A\u20AC\u2122]/g, '');
+  }
+
   // Atribuição 100% segura e blindada contra NaN, Array, Object ou null
   function safeSetText(field, val) {
     if (!field) return;
@@ -76,7 +93,7 @@
       return;
     }
     if (typeof val === 'string') {
-      field.setText(val);
+      field.setText(sanitizeWinAnsi(val));
       return;
     }
     if (Array.isArray(val)) {
@@ -86,14 +103,14 @@
         if (typeof x === 'object' && x.name) return `${x.name}${x.qty ? ` (x${x.qty})` : ''}`;
         return String(x);
       }).filter(Boolean).join('\n');
-      field.setText(formatted);
+      field.setText(sanitizeWinAnsi(formatted));
       return;
     }
     if (typeof val === 'object') {
-      field.setText(val.name || JSON.stringify(val));
+      field.setText(sanitizeWinAnsi(val.name || JSON.stringify(val)));
       return;
     }
-    field.setText(String(val));
+    field.setText(sanitizeWinAnsi(String(val)));
   }
 
   // Gera o PDF Editável Interativo com cálculo automático para um personagem do Planilha RPG
@@ -179,8 +196,12 @@
     fCharName.addToPage(page1, { x: 32, y: p1Height - 70, width: 170, height: 18 });
 
     // Grid de Metadados do Cabeçalho
+    const formattedClassLevel = (p.multiclass && typeof p.multiclass === 'string' && p.multiclass.trim())
+      ? `${p.multiclass} (Nv ${charLevel})`
+      : `${charClass} ${charLevel}`;
+
     const metaCols = [
-      { label: 'CLASSE E NÍVEL', name: 'ClassLevel', val: `${charClass} ${charLevel}`, x: 215, y: p1Height - 48, w: 110 },
+      { label: 'CLASSE E NÍVEL', name: 'ClassLevel', val: formattedClassLevel, x: 215, y: p1Height - 48, w: 110 },
       { label: 'ANTECEDENTE', name: 'Background', val: charBg, x: 335, y: p1Height - 48, w: 105 },
       { label: 'JOGADOR / ALUNO', name: 'PlayerName', val: charStudent, x: 450, y: p1Height - 48, w: 110 },
       { label: 'RAÇA / ESPÉCIE', name: 'Race', val: charRace, x: 215, y: p1Height - 78, w: 110 },
@@ -324,8 +345,11 @@
 
       const chk = form.createCheckBox(chkName);
       const isProf = skillProfs.some(sp => {
-        const strSp = String(sp).toLowerCase();
-        return strSp === sk.key.toLowerCase() || strSp === sk.pt.toLowerCase();
+        const normSp = normalizeSkillKey(sp);
+        if (!normSp) return false;
+        return (sk.aliases && sk.aliases.some(alias => normalizeSkillKey(alias) === normSp)) ||
+               normalizeSkillKey(sk.key) === normSp ||
+               normalizeSkillKey(sk.pt) === normSp;
       });
       if (isProf) chk.check();
       chk.addToPage(page1, { x: 100, y: yLine, width: 9, height: 9 });
@@ -350,14 +374,22 @@
       calculationFieldsOrder.push(tv);
     });
 
-    // Percepção Passiva
-    page1.drawRectangle({ x: 24, y: p1Height - 582, width: 176, height: 22, color: cWhite, borderColor: cBorder, borderWidth: 1 });
+    // ------------------------------------------
+    // SENTIDOS PASSIVOS DO MESTRE (PERCEPÇÃO, INVESTIGAÇÃO E INTUIÇÃO)
+    // ------------------------------------------
+    page1.drawRectangle({ x: 24, y: p1Height - 636, width: 176, height: 58, color: cWhite, borderColor: cBorder, borderWidth: 1 });
+    page1.drawText('SENTIDOS PASSIVOS (MESTRE)', { x: 42, y: p1Height - 586, size: 6.5, font: fontBold, color: cDark });
+
+    // 1. Percepção Passiva (SAB)
     const fPassPerc = form.createTextField('Passive_Perception');
-    const percProf = skillProfs.some(sp => String(sp).toLowerCase().includes('percep'));
-    const initialPass = 10 + Math.floor((charWis - 10) / 2) + (percProf ? calcProfInitial : 0);
-    safeSetText(fPassPerc, String(initialPass));
-    fPassPerc.addToPage(page1, { x: 28, y: p1Height - 578, width: 22, height: 14 });
-    page1.drawText('SABEDORIA PASSIVA (PERCEPÇÃO)', { x: 54, y: p1Height - 574, size: 6.5, font: fontBold, color: cDark });
+    const percProf = skillProfs.some(sp => {
+      const n = normalizeSkillKey(sp);
+      return n.includes('percep') || n === 'perception';
+    });
+    const initialPassPerc = 10 + Math.floor((charWis - 10) / 2) + (percProf ? calcProfInitial : 0);
+    safeSetText(fPassPerc, String(initialPassPerc));
+    fPassPerc.addToPage(page1, { x: 28, y: p1Height - 601, width: 20, height: 11 });
+    page1.drawText('Percepção Passiva (SAB)', { x: 52, y: p1Height - 598, size: 6, font: fontRegular, color: cDark });
 
     const passPercJs = `
       var p = Number(this.getField("Skill_perception").value) || 0;
@@ -366,15 +398,54 @@
     attachFieldCalculation(doc, PDFLib, fPassPerc, passPercJs);
     calculationFieldsOrder.push(fPassPerc);
 
+    // 2. Investigação Passiva (INT)
+    const fPassInvest = form.createTextField('Passive_Investigation');
+    const investProf = skillProfs.some(sp => {
+      const n = normalizeSkillKey(sp);
+      return n.includes('investig') || n === 'investigation';
+    });
+    const initialPassInvest = 10 + Math.floor((charInt - 10) / 2) + (investProf ? calcProfInitial : 0);
+    safeSetText(fPassInvest, String(initialPassInvest));
+    fPassInvest.addToPage(page1, { x: 28, y: p1Height - 616, width: 20, height: 11 });
+    page1.drawText('Investigação Passiva (INT)', { x: 52, y: p1Height - 613, size: 6, font: fontRegular, color: cDark });
+
+    const passInvestJs = `
+      var p = Number(this.getField("Skill_investigation").value) || 0;
+      event.value = 10 + p;
+    `;
+    attachFieldCalculation(doc, PDFLib, fPassInvest, passInvestJs);
+    calculationFieldsOrder.push(fPassInvest);
+
+    // 3. Intuição Passiva (SAB)
+    const fPassInsight = form.createTextField('Passive_Insight');
+    const insightProf = skillProfs.some(sp => {
+      const n = normalizeSkillKey(sp);
+      return n.includes('intui') || n === 'insight';
+    });
+    const initialPassInsight = 10 + Math.floor((charWis - 10) / 2) + (insightProf ? calcProfInitial : 0);
+    safeSetText(fPassInsight, String(initialPassInsight));
+    fPassInsight.addToPage(page1, { x: 28, y: p1Height - 631, width: 20, height: 11 });
+    page1.drawText('Intuição Passiva (SAB)', { x: 52, y: p1Height - 628, size: 6, font: fontRegular, color: cDark });
+
+    const passInsightJs = `
+      var p = Number(this.getField("Skill_insight").value) || 0;
+      event.value = 10 + p;
+    `;
+    attachFieldCalculation(doc, PDFLib, fPassInsight, passInsightJs);
+    calculationFieldsOrder.push(fPassInsight);
+
     // Outras Proficiências e Idiomas
-    page1.drawRectangle({ x: 24, y: p1Height - 805, width: 176, height: 215, color: cWhite, borderColor: cBorder, borderWidth: 1 });
-    page1.drawText('OUTRAS PROFICIÊNCIAS & IDIOMAS', { x: 30, y: p1Height - 598, size: 7, font: fontBold, color: cDark });
+    page1.drawRectangle({ x: 24, y: p1Height - 805, width: 176, height: 164, color: cWhite, borderColor: cBorder, borderWidth: 1 });
+    page1.drawText('OUTRAS PROFICIÊNCIAS & IDIOMAS', { x: 30, y: p1Height - 648, size: 6.5, font: fontBold, color: cDark });
     const fProfLang = form.createTextField('Proficiencies_Languages');
     fProfLang.enableMultiline();
     let initialProfText = (p.languages ? `Idiomas: ${p.languages}\n` : 'Idiomas: Comum\n');
     if (p.proficiencies) initialProfText += `Armaduras/Armas: ${p.proficiencies}\n`;
+    if (p.armorProficiencies) initialProfText += `Armaduras: ${p.armorProficiencies}\n`;
+    if (p.weaponProficiencies) initialProfText += `Armas: ${p.weaponProficiencies}\n`;
+    if (p.tools) initialProfText += `Ferramentas: ${p.tools}\n`;
     safeSetText(fProfLang, initialProfText);
-    fProfLang.addToPage(page1, { x: 28, y: p1Height - 800, width: 168, height: 195 });
+    fProfLang.addToPage(page1, { x: 28, y: p1Height - 800, width: 168, height: 148 });
 
     // ------------------------------------------
     // COLUNA 2: COMBATE, PV, ATAQUES & MAGIAS
@@ -428,20 +499,41 @@
     page1.drawRectangle({ x: 215, y: p1Height - 335, width: 86, height: 55, color: cWhite, borderColor: cBorder, borderWidth: 1 });
     page1.drawText('DADOS DE VIDA', { x: 225, y: p1Height - 290, size: 6.5, font: fontBold, color: cDark });
     const fHitDice = form.createTextField('Hit_Dice');
-    safeSetText(fHitDice, p.hitDice ? `${p.hitDice}` : `${charLevel}d8`);
-    fHitDice.addToPage(page1, { x: 222, y: p1Height - 325, width: 72, height: 28 });
+    const spentHd = Number(p.spentHitDice) || 0;
+    const baseHdFormula = p.hitDice ? `${p.hitDice}` : `${charLevel}d8`;
+    const hdDisplay = spentHd > 0
+      ? `${baseHdFormula}\n(Disp: ${Math.max(0, charLevel - spentHd)}/${charLevel})`
+      : baseHdFormula;
+    safeSetText(fHitDice, hdDisplay);
+    fHitDice.addToPage(page1, { x: 222, y: p1Height - 328, width: 72, height: 32 });
 
     page1.drawRectangle({ x: 309, y: p1Height - 335, width: 86, height: 55, color: cWhite, borderColor: cBorder, borderWidth: 1 });
     page1.drawText('SALVAS / MORTE', { x: 318, y: p1Height - 290, size: 6.5, font: fontBold, color: cDark });
+    
+    const curSuccess = Number(p.deathSaves?.success || (p.death_saves?.success)) || 0;
+    const curFail = Number(p.deathSaves?.fail || (p.death_saves?.fail)) || 0;
+
     page1.drawText('Sucessos:', { x: 314, y: p1Height - 306, size: 6, font: fontRegular, color: cDark });
-    form.createCheckBox('DeathSave_S1').addToPage(page1, { x: 350, y: p1Height - 308, width: 8, height: 8 });
-    form.createCheckBox('DeathSave_S2').addToPage(page1, { x: 362, y: p1Height - 308, width: 8, height: 8 });
-    form.createCheckBox('DeathSave_S3').addToPage(page1, { x: 374, y: p1Height - 308, width: 8, height: 8 });
+    const dsS1 = form.createCheckBox('DeathSave_S1');
+    const dsS2 = form.createCheckBox('DeathSave_S2');
+    const dsS3 = form.createCheckBox('DeathSave_S3');
+    if (curSuccess >= 1) dsS1.check();
+    if (curSuccess >= 2) dsS2.check();
+    if (curSuccess >= 3) dsS3.check();
+    dsS1.addToPage(page1, { x: 350, y: p1Height - 308, width: 8, height: 8 });
+    dsS2.addToPage(page1, { x: 362, y: p1Height - 308, width: 8, height: 8 });
+    dsS3.addToPage(page1, { x: 374, y: p1Height - 308, width: 8, height: 8 });
 
     page1.drawText('Falhas:', { x: 314, y: p1Height - 322, size: 6, font: fontRegular, color: cDark });
-    form.createCheckBox('DeathSave_F1').addToPage(page1, { x: 350, y: p1Height - 324, width: 8, height: 8 });
-    form.createCheckBox('DeathSave_F2').addToPage(page1, { x: 362, y: p1Height - 324, width: 8, height: 8 });
-    form.createCheckBox('DeathSave_F3').addToPage(page1, { x: 374, y: p1Height - 324, width: 8, height: 8 });
+    const dsF1 = form.createCheckBox('DeathSave_F1');
+    const dsF2 = form.createCheckBox('DeathSave_F2');
+    const dsF3 = form.createCheckBox('DeathSave_F3');
+    if (curFail >= 1) dsF1.check();
+    if (curFail >= 2) dsF2.check();
+    if (curFail >= 3) dsF3.check();
+    dsF1.addToPage(page1, { x: 350, y: p1Height - 324, width: 8, height: 8 });
+    dsF2.addToPage(page1, { x: 362, y: p1Height - 324, width: 8, height: 8 });
+    dsF3.addToPage(page1, { x: 374, y: p1Height - 324, width: 8, height: 8 });
 
     // Tabela de Ataques e Conjuração
     page1.drawRectangle({ x: 215, y: p1Height - 575, width: 180, height: 234, color: cWhite, borderColor: cBorder, borderWidth: 1 });
@@ -663,10 +755,30 @@
     });
 
     // ------------------------------------------
-    // GRIMÓRIO: CÍRCULOS DE MAGIA
+    // GRIMÓRIO: CÍRCULOS DE MAGIA E RASTREADOR DE ESPAÇOS
     // ------------------------------------------
     page2.drawRectangle({ x: 20, y: p2Height - 485, width: 340, height: 310, color: cWhite, borderColor: cBorder, borderWidth: 1 });
-    page2.drawText('GRIMÓRIO & MAGIAS PREPARADAS', { x: 30, y: p2Height - 180, size: 8, font: fontBold, color: cDark });
+    page2.drawText('GRIMÓRIO & ESPAÇOS DE MAGIA', { x: 30, y: p2Height - 180, size: 8, font: fontBold, color: cDark });
+
+    // Grid de Espaços de Magia (1º ao 9º Nível com Total e Gastos)
+    const rawSlots = Array.isArray(p.slots) ? p.slots : [0,0,0,0,0,0,0,0,0];
+    const rawSlotsUsed = Array.isArray(p.slotsUsed) ? p.slotsUsed : [0,0,0,0,0,0,0,0,0];
+    page2.drawText('ESPAÇOS (T=Total / U=Usados):', { x: 30, y: p2Height - 193, size: 5.5, font: fontBold, color: cMuted });
+
+    for (let lvl = 1; lvl <= 9; lvl++) {
+      const xSlot = 30 + ((lvl - 1) * 36.5);
+      page2.drawText(`${lvl}º`, { x: xSlot + 12, y: p2Height - 204, size: 6.5, font: fontBold, color: cDark });
+
+      const fSlotTot = form.createTextField(`Slot_Lvl_${lvl}_Total`);
+      safeSetText(fSlotTot, rawSlots[lvl - 1] > 0 ? String(rawSlots[lvl - 1]) : '');
+      fSlotTot.addToPage(page2, { x: xSlot, y: p2Height - 222, width: 16, height: 14 });
+
+      const fSlotUse = form.createTextField(`Slot_Lvl_${lvl}_Used`);
+      safeSetText(fSlotUse, rawSlotsUsed[lvl - 1] > 0 ? String(rawSlotsUsed[lvl - 1]) : '');
+      fSlotUse.addToPage(page2, { x: xSlot + 17, y: p2Height - 222, width: 16, height: 14 });
+    }
+
+    page2.drawText('MAGIAS CONHECIDAS / PREPARADAS', { x: 30, y: p2Height - 236, size: 6.5, font: fontBold, color: cMuted });
 
     const fSpells = form.createTextField('Spells_List');
     fSpells.enableMultiline();
@@ -682,7 +794,7 @@
       initialSpellText = p.preparedSpells.map(s => `• ${s} (Preparada)`).join('\n');
     }
     safeSetText(fSpells, initialSpellText || '• Truques:\n• 1º Círculo:\n• 2º Círculo:');
-    fSpells.addToPage(page2, { x: 28, y: p2Height - 480, width: 324, height: 290 });
+    fSpells.addToPage(page2, { x: 28, y: p2Height - 480, width: 324, height: 238 });
 
     // ------------------------------------------
     // INVENTÁRIO, MOEDAS E TESOUROS
@@ -731,7 +843,11 @@
 
     const fStory = form.createTextField('Character_Backstory');
     fStory.enableMultiline();
-    safeSetText(fStory, p.backstory || p.notes || p.playerNotes || 'Origem do herói, anotações de campanha, juramentos e alianças.');
+    let backstoryContent = p.backstory || p.notes || p.playerNotes || 'Origem do herói, anotações de campanha, juramentos e alianças.';
+    if (Array.isArray(p.conditions) && p.conditions.length > 0) {
+      backstoryContent = `[CONDIÇÕES ATIVAS EM MESA: ${p.conditions.join(', ')}]\n\n` + backstoryContent;
+    }
+    safeSetText(fStory, backstoryContent);
     fStory.addToPage(page2, { x: 28, y: 45, width: p1Width - 56, height: p2Height - 565 });
 
     // Rodapé da Página 2

@@ -9395,10 +9395,82 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(!!featField, 'PDF contém campo Features_Traits');
     
     // 3. Validar exportação de funções helper
-    const playersFileContent = fs.readFileSync(path.join(__dirname, 'src/js/players.js'), 'utf8');
-    assert(playersFileContent.includes('function getPlayerAllFeaturesAndTraits'), 'Função getPlayerAllFeaturesAndTraits implementada em players.js');
-    assert(playersFileContent.includes('window.getPlayerAllFeaturesAndTraits'), 'Função getPlayerAllFeaturesAndTraits exportada em window');
-    assert(playersFileContent.includes('a4-feature-item'), 'Template A4 utiliza estrutura rica a4-feature-item para renderizar características');
+    // 4. BATERIA 122: Sincronização Completa entre Ficha Virtual, A4 e PDF Editável (ISSUE-153)
+    console.log('\n📄 122. Testes de Sincronização Completa: Virtual, A4 e PDF Editável (ISSUE-153):');
+
+    const syncPlayer122 = {
+      id: 'p_sync_runner',
+      name: 'Eldrin Valen',
+      student: 'Wesley',
+      className: 'Guerreiro',
+      level: 5,
+      multiclass: 'Guerreiro 3 / Mago 2',
+      race: 'Humano',
+      str: 16, dex: 14, con: 14, int: 14, wis: 12, cha: 10,
+      hp: 20, maxHp: 38, ac: 17, speed: '9m',
+      hitDice: '5d10',
+      spentHitDice: 2,
+      deathSaves: { success: 2, fail: 1 },
+      conditions: ['Envenenado', 'Incapacitado'],
+      skills: ['adestramento', 'enganacao', 'percepcao', 'investigacao'],
+      saveProficiencies: ['str', 'con'],
+      slots: [4, 2, 0, 0, 0, 0, 0, 0, 0],
+      slotsUsed: [1, 2, 0, 0, 0, 0, 0, 0, 0],
+      spells: ['Raio de Gelo', 'Mísseis Mágicos'],
+      inventory: [{ name: 'Espada Longa', qty: 1, weight: '1.5', equipped: true }]
+    };
+
+    const syncPdfBytes122 = await pdfLibModule.generateEditableDnd5ePdf(syncPlayer122);
+    assert(syncPdfBytes122 && syncPdfBytes122.length > 50000, 'generateEditableDnd5ePdf gera PDF para personagem com multiclasse e condições');
+
+    const loadedSyncDoc122 = await PDFDocument.load(syncPdfBytes122);
+    const syncForm122 = loadedSyncDoc122.getForm();
+
+    // Validações de Perícias PT-BR
+    const chkAnimal122 = syncForm122.getCheckBox('Check_Skill_animalHandling');
+    assert(chkAnimal122 && chkAnimal122.isChecked(), 'PDF marca checkbox de Adestrar Animais (animalHandling) via alias adestramento');
+
+    const chkDeception122 = syncForm122.getCheckBox('Check_Skill_deception');
+    assert(chkDeception122 && chkDeception122.isChecked(), 'PDF marca checkbox de Blefar (deception) via alias enganacao');
+
+    // Validações de Death Saves
+    const dsS1_122 = syncForm122.getCheckBox('DeathSave_S1');
+    const dsS2_122 = syncForm122.getCheckBox('DeathSave_S2');
+    const dsS3_122 = syncForm122.getCheckBox('DeathSave_S3');
+    const dsF1_122 = syncForm122.getCheckBox('DeathSave_F1');
+    const dsF2_122 = syncForm122.getCheckBox('DeathSave_F2');
+    assert(dsS1_122.isChecked() && dsS2_122.isChecked() && !dsS3_122.isChecked(), 'PDF reflete exatamente 2 sucessos de salvaguarda contra a morte');
+    assert(dsF1_122.isChecked() && !dsF2_122.isChecked(), 'PDF reflete exatamente 1 falha de salvaguarda contra a morte');
+
+    // Validações de Sentidos Passivos
+    assert(!!syncForm122.getTextField('Passive_Perception'), 'PDF possui campo Passive_Perception');
+    assert(!!syncForm122.getTextField('Passive_Investigation'), 'PDF possui campo Passive_Investigation');
+    assert(!!syncForm122.getTextField('Passive_Insight'), 'PDF possui campo Passive_Insight');
+
+    // Validações de Slots de Magia
+    const s1Tot122 = syncForm122.getTextField('Slot_Lvl_1_Total');
+    const s1Use122 = syncForm122.getTextField('Slot_Lvl_1_Used');
+    assert(s1Tot122.getText() === '4' && s1Use122.getText() === '1', 'PDF possui rastreador de espaços de magia de 1º nível (4 tot, 1 usado)');
+
+    const s2Tot122 = syncForm122.getTextField('Slot_Lvl_2_Total');
+    const s2Use122 = syncForm122.getTextField('Slot_Lvl_2_Used');
+    assert(s2Tot122.getText() === '2' && s2Use122.getText() === '2', 'PDF possui rastreador de espaços de magia de 2º nível (2 tot, 2 usados)');
+
+    // Validações de Multiclasse e Condições
+    const classFld122 = syncForm122.getTextField('ClassLevel');
+    assert(classFld122.getText().includes('Guerreiro 3 / Mago 2 (Nv 5)'), 'PDF exibe formato completo de multiclasse no cabeçalho');
+
+    const backstoryFld122 = syncForm122.getTextField('Character_Backstory');
+    assert(backstoryFld122.getText().includes('[CONDIÇÕES ATIVAS EM MESA: Envenenado, Incapacitado]'), 'PDF inclui anotação de condições ativas em Character_Backstory');
+
+    // Validações no código-fonte de players.js e head_css.html
+    const headCssContent122 = fs.readFileSync(path.join(__dirname, 'src/styles/head_css.html'), 'utf8');
+    const playersFileContent122 = fs.readFileSync(path.join(__dirname, 'src/js/players.js'), 'utf8');
+    assert(headCssContent122.includes('.a4-passive-grid'), 'head_css.html possui classe .a4-passive-grid');
+    assert(headCssContent122.includes('.a4-active-conditions-banner'), 'head_css.html possui classe .a4-active-conditions-banner');
+    assert(headCssContent122.includes('.a4-slot-circles'), 'head_css.html possui classe .a4-slot-circles');
+    assert(playersFileContent122.includes('Sentidos Passivos (Mestre)'), 'players.js renderiza bloco de Sentidos Passivos do Mestre');
+    assert(playersFileContent122.includes('a4-active-conditions-banner'), 'players.js renderiza banner de condições ativas');
   } catch (err) {
     console.error('Falha no teste assíncrono de geração de PDF:', err);
     failedTests++;

@@ -9259,9 +9259,31 @@ function printPlayerSheet(id) {
     `;
   }).join('');
 
-  // Percepção Passiva
-  const isPercepProf = skillProfs.includes('percepcao');
+  // Sentidos Passivos do D&D 5E (Percepção, Investigação e Intuição)
+  const isPercepProf = skillProfs.includes('percepcao') || skillProfs.includes('perception');
   const passPerc = 10 + wisMod + (isPercepProf ? prof : 0);
+
+  const isInvestProf = skillProfs.includes('investigacao') || skillProfs.includes('investigation');
+  const passInvest = 10 + intMod + (isInvestProf ? prof : 0);
+
+  const isInsightProf = skillProfs.includes('intuicao') || skillProfs.includes('insight');
+  const passInsight = 10 + wisMod + (isInsightProf ? prof : 0);
+
+  // Formatação consistente de Multiclasse
+  const formattedClassLevel = (p.multiclass && typeof p.multiclass === 'string' && p.multiclass.trim())
+    ? `${p.multiclass} (Nv ${p.level || 1})`
+    : `${p.className || 'Aventureiro'} ${p.level || 1}`;
+
+  // Salvaguardas contra a morte ativas
+  const curDeathSuccess = Number(p.deathSaves?.success || (p.death_saves?.success)) || 0;
+  const curDeathFail = Number(p.deathSaves?.fail || (p.death_saves?.fail)) || 0;
+  const deathSuccCircles = [1, 2, 3].map(i => i <= curDeathSuccess ? '●' : '○').join(' ');
+  const deathFailCircles = [1, 2, 3].map(i => i <= curDeathFail ? '●' : '○').join(' ');
+
+  // Dados de vida restantes vs totais
+  const spentHd = Number(p.spentHitDice) || 0;
+  const totalHdCount = p.level || 1;
+  const remHdCount = Math.max(0, totalHdCount - spentHd);
 
   // Inventário e Peso
   const inventory = Array.isArray(p.inventory) ? p.inventory : [];
@@ -9317,7 +9339,7 @@ function printPlayerSheet(id) {
         <div class="a4-sheet-meta-grid">
           <div class="a4-meta-cell">
             <span class="a4-meta-label">Classe & Nível</span>
-            <span class="a4-meta-val">${p.className || 'Aventureiro'} ${p.level || 1}</span>
+            <span class="a4-meta-val">${formattedClassLevel}</span>
           </div>
           <div class="a4-meta-cell">
             <span class="a4-meta-label">Antecedente</span>
@@ -9388,12 +9410,22 @@ function printPlayerSheet(id) {
                 <div class="a4-skills-list">${skillsHtml}</div>
               </div>
 
-              <!-- PERCEPÇÃO PASSIVA -->
-              <div class="a4-badge-box a4-passive-box">
-                <span class="a4-badge-box-mod">${passPerc}</span>
-                <div>
-                  <div class="a4-badge-box-title">Percepção Passiva (SAB)</div>
-                  <div class="a4-badge-box-sub">10 + Mod. Sabedoria</div>
+              <!-- SENTIDOS PASSIVOS DO MESTRE (PERCEPÇÃO, INVESTIGAÇÃO E INTUIÇÃO) -->
+              <div class="a4-bordered-box" style="margin-top: 2px;">
+                <div class="a4-box-title">Sentidos Passivos (Mestre)</div>
+                <div class="a4-passive-grid">
+                  <div class="a4-passive-item">
+                    <span class="a4-passive-val">${passPerc}</span>
+                    <span class="a4-passive-info"><b>Percepção</b> (10 + Sab${isPercepProf ? ' + Prof' : ''})</span>
+                  </div>
+                  <div class="a4-passive-item">
+                    <span class="a4-passive-val">${passInvest}</span>
+                    <span class="a4-passive-info"><b>Investigação</b> (10 + Int${isInvestProf ? ' + Prof' : ''})</span>
+                  </div>
+                  <div class="a4-passive-item">
+                    <span class="a4-passive-val">${passInsight}</span>
+                    <span class="a4-passive-info"><b>Intuição</b> (10 + Sab${isInsightProf ? ' + Prof' : ''})</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -9449,6 +9481,11 @@ function printPlayerSheet(id) {
               </div>
             </div>
           </div>
+          ${Array.isArray(p.conditions) && p.conditions.length > 0 ? `
+            <div class="a4-active-conditions-banner">
+              ⚠️ <b>Condições Ativas:</b> ${p.conditions.join(', ')}
+            </div>
+          ` : ''}
 
           <!-- DADOS DE VIDA & DEATH SAVES -->
           <div class="a4-dice-death-grid">
@@ -9456,7 +9493,7 @@ function printPlayerSheet(id) {
               <div class="a4-box-title">Dados de Vida</div>
               <div style="text-align: center; padding: 4px 0;">
                 <div style="font-size: 13pt; font-weight: 800;">${p.hitDice || `${p.level}d8`}</div>
-                <div style="font-size: 7.5pt; color: #555;">Total: ${p.level} dado(s)</div>
+                <div style="font-size: 7pt; color: #555;">Total: ${totalHdCount} | Restantes: <b>${remHdCount}</b></div>
               </div>
             </div>
 
@@ -9464,11 +9501,11 @@ function printPlayerSheet(id) {
               <div class="a4-box-title">Salvaguardas Contra a Morte</div>
               <div class="a4-death-saves-row">
                 <span class="a4-death-label">Sucessos:</span>
-                <span class="a4-death-circles">○ ○ ○</span>
+                <span class="a4-death-circles" style="letter-spacing: 2px; font-weight: bold;">${deathSuccCircles}</span>
               </div>
               <div class="a4-death-saves-row">
                 <span class="a4-death-label">Falhas:</span>
-                <span class="a4-death-circles">○ ○ ○</span>
+                <span class="a4-death-circles" style="letter-spacing: 2px; font-weight: bold; color: #b91c1c;">${deathFailCircles}</span>
               </div>
             </div>
           </div>
@@ -9513,12 +9550,17 @@ function printPlayerSheet(id) {
                 ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(lvl => {
                   const maxSlot = slots[lvl - 1] || 0;
                   const usedSlot = slotsUsed[lvl - 1] || 0;
+                  const remSlot = Math.max(0, maxSlot - usedSlot);
                   if (maxSlot === 0 && lvl > 3) return '';
+                  let slotCircles = '';
+                  for (let sc = 0; sc < maxSlot; sc++) {
+                    slotCircles += (sc < remSlot ? '○ ' : '● ');
+                  }
                   return `
                     <div class="a4-slot-pill ${maxSlot > 0 ? 'active' : ''}">
                       <div class="a4-slot-lvl">Nv ${lvl}</div>
                       <div class="a4-slot-dots">
-                        ${maxSlot > 0 ? `${maxSlot} max` : '—'}
+                        ${maxSlot > 0 ? `<span class="a4-slot-circles">${slotCircles.trim()}</span> <small>(${remSlot}/${maxSlot})</small>` : '—'}
                       </div>
                     </div>
                   `;
@@ -9573,7 +9615,7 @@ function printPlayerSheet(id) {
           <div class="a4-char-tag">INVENTÁRIO, ANTECEDENTES & GRIMÓRIO DETALHADO</div>
         </div>
         <div class="a4-header-p2-meta">
-          <span><b>Classe:</b> ${p.className} ${p.level}</span>
+          <span><b>Classe:</b> ${formattedClassLevel}</span>
           <span><b>Aluno:</b> ${p.student || '-'}</span>
           <span><b>Data:</b> ${new Date().toLocaleDateString('pt-BR')}</span>
         </div>
