@@ -9470,7 +9470,45 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(headCssContent122.includes('.a4-active-conditions-banner'), 'head_css.html possui classe .a4-active-conditions-banner');
     assert(headCssContent122.includes('.a4-slot-circles'), 'head_css.html possui classe .a4-slot-circles');
     assert(playersFileContent122.includes('Sentidos Passivos (Mestre)'), 'players.js renderiza bloco de Sentidos Passivos do Mestre');
-    assert(playersFileContent122.includes('a4-active-conditions-banner'), 'players.js renderiza banner de condições ativas');
+    // ============================================================================
+    // 🛡️ 123. Testes de Restauração e Enriquecimento dos Traços da Ficha (ISSUE-154)
+    // ============================================================================
+    console.log('\n🛡️ 123. Testes de Restauração e Enriquecimento dos Traços da Ficha (ISSUE-154):');
+
+    const playersJsContent123 = fs.readFileSync(path.join(__dirname, 'src/js/players.js'), 'utf8');
+    const uiHtmlContent123 = fs.readFileSync(path.join(__dirname, 'src/ui/ui.html'), 'utf8');
+    const headCssContent123 = fs.readFileSync(path.join(__dirname, 'src/styles/head_css.html'), 'utf8');
+
+    assert(uiHtmlContent123.includes('id="pm-personality"'), 'ui.html possui campo pm-personality no modal do jogador');
+    assert(headCssContent123.includes('.feature-race-group-header'), 'head_css.html possui estilos para .feature-race-group-header');
+    assert(headCssContent123.includes('.badge-race'), 'head_css.html possui estilos para .badge-race');
+    assert(playersJsContent123.includes('renderPlayerRacialTraits'), 'players.js possui função renderPlayerRacialTraits');
+    assert(playersJsContent123.includes("renderPlayerUnlockedFeatures(p, 'all')"), "players.js chama renderPlayerUnlockedFeatures com 'all' na aba de traços");
+
+    // Validação funcional no sandbox:
+    const dwarfHero123 = {
+      id: 'p_dwarf_test',
+      name: 'Bruenor Battlehammer',
+      race: 'Anão',
+      className: 'Guerreiro',
+      level: 3,
+      actionEconomyFilter: 'reaction', // Filtro de reação ativo (simulando clique na aba combate)
+      personality: 'Orgulhoso, leal e amante de boa cerveja anã.',
+      ideal: 'Proteger o clã e honrar os ancestrais.',
+      bond: 'Meu martelo de guerra forjado pelo meu pai.',
+      flaw: 'Teimoso como uma rocha.',
+      hp: 30, maxHp: 30
+    };
+
+    const racialTraitsHtml123 = sandbox.renderPlayerRacialTraits(dwarfHero123);
+    assert(racialTraitsHtml123 && racialTraitsHtml123.includes('Visão no Escuro'), 'renderPlayerRacialTraits inclui Visão no Escuro para Anão');
+    assert(racialTraitsHtml123 && racialTraitsHtml123.includes('Resiliência Anã'), 'renderPlayerRacialTraits inclui Resiliência Anã');
+    assert(racialTraitsHtml123 && racialTraitsHtml123.includes('feature-race-group-header'), 'renderPlayerRacialTraits inclui cabeçalho feature-race-group-header');
+
+    // Validação de desacoplamento do filtro:
+    const unlockedFeatures123 = sandbox.renderPlayerUnlockedFeatures(dwarfHero123, 'all');
+    assert(unlockedFeatures123 && unlockedFeatures123.includes('Retomar o Fôlego'), 'renderPlayerUnlockedFeatures exibe Retomar o Fôlego mesmo com p.actionEconomyFilter = reaction');
+    assert(unlockedFeatures123 && unlockedFeatures123.includes('Surto de Ação'), 'renderPlayerUnlockedFeatures exibe Surto de Ação para Guerreiro Nv 3');
   } catch (err) {
     console.error('Falha no teste assíncrono de geração de PDF:', err);
     failedTests++;

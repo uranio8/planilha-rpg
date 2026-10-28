@@ -2504,7 +2504,8 @@ function renderPlayers() {
 
                 <!-- CARACTERÍSTICAS DE CLASSE E RAÇA -->
                 <div class="roll20-traits-container" style="margin-top: 10px;">
-                  ${renderPlayerUnlockedFeatures(p, actionFilter)}
+                  ${typeof renderPlayerRacialTraits === 'function' ? renderPlayerRacialTraits(p) : ''}
+                  ${renderPlayerUnlockedFeatures(p, 'all')}
                 </div>
                 ${p.features ? `<div style="font-size: 11px; color: var(--text-dim); margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.07); padding-top: 6px;"><b>Outras Características:</b> ${typeof formatFeatureSnippet === 'function' ? formatFeatureSnippet(p.features) : p.features}</div>` : ''}
               </div>
@@ -2526,6 +2527,10 @@ function renderPlayers() {
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <span style="font-size: 12px; font-weight: 800; color: var(--primary-light);">🎭 Origem: <b style="color: #fff;">${p.background || 'Aventureiro'}</b></span>
                     <button type="button" class="btn-secondary" style="font-size: 10px; padding: 2px 8px;" onclick="openPlayerModal('${p.id}')">✏️ Editar</button>
+                  </div>
+                  <div style="font-size: 11px; margin-bottom: 8px;" class="origin-field-box">
+                    <span class="origin-label">🎭 Traço de Personalidade:</span>
+                    <div class="origin-text">${p.personality || 'Nenhum traço de personalidade definido.'}</div>
                   </div>
                   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; margin-bottom: 8px;">
                     <div class="origin-field-box">
@@ -5540,12 +5545,12 @@ function findSpeciesData(query) {
     if (found) return found;
   }
 
-  // 3. Fallback: Longest match first
+  // 3. Fallback: Longest match first ou correspondência parcial
   const sortedSpecies = [...SPECIES_DATA].sort((a, b) => b.name.length - a.name.length);
   found = sortedSpecies.find(s => {
     const sName = s.name.toLowerCase();
     const sId = s.id.toLowerCase();
-    return q.includes(sName) || q.includes(sId);
+    return q.includes(sName) || q.includes(sId) || sName.includes(q) || sId.includes(q);
   });
 
   return found || null;
@@ -6265,6 +6270,45 @@ function renderPlayerUnlockedFeatures(p, actionFilter = 'all') {
   }
 
   return html;
+}
+
+function renderPlayerRacialTraits(p) {
+  if (!p || !p.race) return '';
+  const sp = typeof findSpeciesData === 'function' ? findSpeciesData(p.race) : null;
+  if (!sp || !Array.isArray(sp.traits) || sp.traits.length === 0) return '';
+
+  const traits = sp.traits.filter(t => {
+    if (t.name && t.name.toLowerCase().includes('aumento no valor')) return false;
+    return true;
+  });
+
+  if (traits.length === 0) return '';
+
+  return `
+    <div class="feature-class-group-header feature-race-group-header">
+      <span>${sp.icon || '🧬'}</span> <span>Traços Raciais da Espécie: <b>${sp.name}</b> (${p.race})</span>
+    </div>
+    <div class="unlocked-features-list">
+      ${traits.map(t => {
+        const desc = t.description || t.desc || '';
+        const featKey = registerFeatureForModal(t.name, desc, t.type || 'Traço Racial', sp.name);
+        return `
+        <div class="unlocked-feature-item" onclick="openPlayerFeatureModalByKey('${featKey}')" title="Clique para ver detalhes do traço racial">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap: 4px;">
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <span style="font-weight:700; color:#fff; font-size:12px;">${t.name}</span>
+              <span class="action-economy-tag passive">${t.type || 'Racial'}</span>
+            </div>
+            <span class="badge badge-race" style="font-size:9px;">Raça</span>
+          </div>
+          <div class="feature-snippet">
+            ${typeof formatFeatureSnippet === 'function' ? formatFeatureSnippet(desc) : desc}
+          </div>
+        </div>
+        `;
+      }).join('')}
+    </div>
+  `;
 }
 
 function openPlayerFeatureModal(name, desc, type, source) {
@@ -8416,6 +8460,8 @@ function openPlayerModal(id) {
     // Novos campos de Origem & Background (P3)
     const bgInp = document.getElementById('pm-background');
     if (bgInp) bgInp.value = p.background || 'Aventureiro';
+    const persInp = document.getElementById('pm-personality');
+    if (persInp) persInp.value = p.personality || '';
     const idealInp = document.getElementById('pm-ideal');
     if (idealInp) idealInp.value = p.ideal || '';
     const bondInp = document.getElementById('pm-bond');
@@ -8483,6 +8529,8 @@ function openPlayerModal(id) {
     // Novos campos de Origem & Background (P3)
     const bgInp = document.getElementById('pm-background');
     if (bgInp) bgInp.value = 'Aventureiro';
+    const persInp = document.getElementById('pm-personality');
+    if (persInp) persInp.value = '';
     const idealInp = document.getElementById('pm-ideal');
     if (idealInp) idealInp.value = '';
     const bondInp = document.getElementById('pm-bond');
@@ -8598,6 +8646,7 @@ function savePlayerSheet() {
   const raceVal = raceSel && raceSel.value !== 'custom' ? raceSel.value : (document.getElementById('pm-race').value || 'Humano');
 
   const bgVal = document.getElementById('pm-background') ? document.getElementById('pm-background').value.trim() : (existing ? existing.background || 'Aventureiro' : 'Aventureiro');
+  const persVal = document.getElementById('pm-personality') ? document.getElementById('pm-personality').value.trim() : (existing ? existing.personality || '' : '');
   const idealVal = document.getElementById('pm-ideal') ? document.getElementById('pm-ideal').value.trim() : (existing ? existing.ideal || '' : '');
   const bondVal = document.getElementById('pm-bond') ? document.getElementById('pm-bond').value.trim() : (existing ? existing.bond || '' : '');
   const flawVal = document.getElementById('pm-flaw') ? document.getElementById('pm-flaw').value.trim() : (existing ? existing.flaw || '' : '');
@@ -8797,6 +8846,7 @@ function savePlayerSheet() {
     actionLogs: existing && existing.actionLogs ? existing.actionLogs : [],
     playerNotes: existing && existing.playerNotes !== undefined ? existing.playerNotes : '',
     background: bgVal,
+    personality: persVal,
     ideal: idealVal,
     bond: bondVal,
     flaw: flawVal,
@@ -14153,6 +14203,13 @@ if (typeof window !== 'undefined') {
 
   // ISSUE-146: Sanitização de Peso e Layout Blindado
   window.formatCleanItemWeight = formatCleanItemWeight;
+
+  // ISSUE-154: Renderização de Traços Raciais da Espécie
+  window.renderPlayerRacialTraits = renderPlayerRacialTraits;
+}
+
+if (typeof global !== 'undefined') {
+  global.renderPlayerRacialTraits = renderPlayerRacialTraits;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -14178,7 +14235,8 @@ if (typeof module !== 'undefined' && module.exports) {
     setCampaignFilter,
     clearCampaignFilter,
     populateCampaignFilterOptions,
-    formatCleanItemWeight
+    formatCleanItemWeight,
+    renderPlayerRacialTraits
   };
 }
 

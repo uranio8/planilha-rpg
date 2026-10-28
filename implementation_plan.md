@@ -1,70 +1,55 @@
-# 📋 Plano de Implementação: Sincronização Completa entre Ficha Virtual, Ficha Impressa A4 e PDF Editável (ISSUE-153)
+# 📋 Plano de Implementação: Restauração e Enriquecimento Completo da Aba "Traços" na Ficha Virtual (ISSUE-154)
 
-Este plano atende à auditoria de divergências identificadas entre a **Ficha Virtual** (painel do jogador/mestre), a **Ficha Impressa A4** (`printPlayerSheet`) e o **PDF Editável com AcroForms** (`generateEditableDnd5ePdf`), garantindo que tanto o **Mestre** quanto o **Jogador** tenham fidelidade total de dados e regras D&D 5E em todas as saídas de impressão e download.
+## 📌 Contexto & Causa Raiz do Bug
+O usuário reportou: *"os traços da ficha sumiram"*. Após diagnóstico aprofundado, identificamos duas causas raízes interligadas na Ficha Virtual (`renderPlayerCardRoll20` em `src/js/players.js`):
+
+1. **Vazamento do Filtro de Economia de Ações do Combate para a Aba "📜 Traços"**:
+   - No card Roll20, a variável `actionFilter` recebia `p.actionEconomyFilter || 'all'`.
+   - Se o usuário ou mestre clicou nos filtros de combate (ex: `⚔️ Ação`, `⚡ Bônus` ou `🛡️ Reação`) na aba de Ações, o valor ficava gravado no jogador (`p.actionEconomyFilter = 'reaction'`, etc.).
+   - Ao navegar para a aba **"📜 Traços"**, a função `renderPlayerUnlockedFeatures(p, actionFilter)` era chamada com esse filtro herdado do combate.
+   - Como 95%+ das características de classe são passivas (`actType === 'passive'`), nenhuma característica correspondia ao filtro de ação/reação. O sistema exibia apenas: *"Nenhuma característica de classe com custo de Reação."*, fazendo todas as características, talentos e poderes sumirem da visão do usuário.
+
+2. **Ausência dos Traços Raciais da Espécie na Aba "📜 Traços"**:
+   - Apesar do comentário no código indicar `<!-- CARACTERÍSTICAS DE CLASSE E RAÇA -->`, a função `renderPlayerUnlockedFeatures` só iterava sobre as classes (`classesList.forEach`).
+   - Os **Traços Raciais canônicos do D&D 5E** (ex: *Visão no Escuro*, *Ancestral Feérico*, *Resiliência dos Anões*, *Fôlego Dracônico*, *Furtividade Natural*, etc. definidos em `src/data/species.js`) não eram renderizados na aba da ficha virtual.
+
+3. **Ausência de "Traços de Personalidade" na Edição e na Aba Sobre**:
+   - O campo `p.personality` (*Traços de Personalidade* canônico do D&D 5E) não possuía campo de edição no modal `ui.html` nem exibição na aba 6 ("Sobre & História") do card, aparecendo apenas como fallback na folha de impressão e no PDF.
 
 ---
 
-## 🎯 Escopo das Alterações e Módulos Afetados
+## 🎯 Proposta de Modificações e Módulos Afetados
 
-### 1. `src/js/pdf_export.js` (Exportação PDF Editável Oficial D&D 5E)
-- **Normalização Robusta de Perícias (Resolução de Bug Crítico)**:
-  - Expandir o mapeamento de perícias em `DND_SKILLS_MAPPING` e no verificador de proficiências `isProf` para suportar aliases canônicos em português e inglês:
-    - `animalHandling` ⇄ `adestramento`, `adestrar animais`
-    - `deception` ⇄ `enganacao`, `enganação`, `blefar`
-    - `sleightOfHand` ⇄ `prestidigitacao`, `prestidigitação`
-    - Normalizador de strings (remover acentos, pontuações e caixa baixa) para prevenir falhas de correspondência em qualquer origem de dados.
-- **Sincronização de Salvaguardas Contra a Morte (Death Saves)**:
-  - Pré-marcar os checkboxes `DeathSave_S1..S3` e `DeathSave_F1..F3` com base no estado atual de `p.deathSaves` (`p.deathSaves.success` e `p.deathSaves.fail`).
-- **Dados de Vida Gastos vs Totais**:
-  - Exibir no campo `Hit_Dice` tanto a fórmula/total (`p.hitDice || '4d10'`) quanto os dados disponíveis se houver dados gastos (`p.spentHitDice`), no formato: `4d10 (Disp: 2/4)`.
-- **Sentidos Passivos para o Mestre**:
-  - Adicionar campos AcroForm e rótulos para **Investigação Passiva** (10 + INT) e **Intuição Passiva** (10 + SAB), além da já existente **Percepção Passiva**.
-- **Multiclasse e Subclasse no Cabeçalho**:
-  - Utilizar a descrição completa de multiclasse (`p.multiclass` ou formatação composta `Guerreiro 3 / Mago 1 (Nv 4)`) no campo `ClassLevel`.
-- **Rastreador de Espaços de Magia (Spell Slots 1º ao 9º nível)**:
-  - Adicionar campos AcroForm para Total e Gastos de cada círculo de magia (`Slot_Lvl_X_Total`, `Slot_Lvl_X_Used`) na Página 2 do PDF, permitindo que o conjurador acompanhe seus slots diretamente no Adobe Reader ou Foxit.
-- **Condições Ativas**:
-  - Pré-carregar na área de anotações/status as condições ativas na sessão (`p.conditions`, ex: *Envenenado*, *Incapacitado*).
+### 1. `src/js/players.js`
+- **Desacoplar o Filtro de Combate da Aba "📜 Traços"**:
+  - Na chamada da aba de traços (`roll20-tab-panel` de traits), chamar a renderização sempre com filtro `'all'` para exibir todas as características sem ocultar nada acidentalmente: `${renderPlayerUnlockedFeatures(p, 'all')}` ou com seletor independente interno.
+- **Integrar Traços Raciais da Espécie (`species.js`)**:
+  - Atualizar `renderPlayerUnlockedFeatures(p, filter)` (ou componente complementar) para renderizar uma seção destacada: **🧬 Traços Raciais: [Nome da Raça]** com todos os traços canônicos da espécie (`sp.traits`), com badges e descrições detalhadas.
+- **Integrar Características Customizadas (`p.features`)**:
+  - Exibir de forma visualmente limpa as anotações e características personalizadas preenchidas pelo mestre ou jogador.
+- **Aba 6 "Sobre & História"**:
+  - Adicionar o bloco visual de **🎭 Traço de Personalidade** (`p.personality`) ao lado de Ideal, Vínculo e Defeito.
+- **Modal de Edição do Personagem (`openPlayerModal` / `savePlayerModal`)**:
+  - Carregar `p.personality` no campo `pm-personality` ao abrir o modal e salvar de volta no objeto `p`.
 
-### 2. `src/js/players.js` (Ficha Impressa A4 `printPlayerSheet`)
-- **Salvaguardas Contra a Morte Dinâmicas**:
-  - Preencher dinamicamente os círculos de sucessos e falhas (`● ● ○`) com base em `p.deathSaves.success` e `p.deathSaves.fail`, em vez de manter círculos fixos vazios.
-- **Dados de Vida Atuais**:
-  - Exibir claramente os dados disponíveis vs totais (`Total: 4 dados | Restantes: 2`).
-- **Sentidos Passivos Completos**:
-  - Exibir na coluna esquerda os 3 sentidos passivos do D&D 5E:
-    - Percepção Passiva (10 + Sab + Prof se proficiente)
-    - Investigação Passiva (10 + Int + Prof se proficiente)
-    - Intuição Passiva (10 + Sab + Prof se proficiente)
-- **Círculos Visuais de Espaços de Magia**:
-  - Renderizar para cada círculo de magia os marcadores visuais de slots disponíveis (`○`) e gastos (`●`), facilitando a marcação a lápis ou visualização do estado atual da mesa.
-- **Multiclasse e Condições Ativas**:
-  - Refletir multiclasse completa e exibir banner discreto de condições ativas (ex: `⚠️ Condições Ativas: Envenenado`) caso o herói esteja sob efeito de algum status.
+### 2. `src/ui/ui.html`
+- Adicionar o campo `<label>Traço de Personalidade</label><input type="text" id="pm-personality">` na seção de Antecedente & Personalidade do modal de edição de jogador.
 
-### 3. `src/styles/head_css.html` (Estilos A4)
-- Estilizar os blocos de sentidos passivos múltiplos e círculos de dados de vida/slots de magia para garantir diagramação limpa, preservando a quebra perfeita em **exatamente 2 páginas A4**.
+### 3. `src/styles/head_css.html`
+- Estilizar o bloco de traços raciais e chips visuais dentro da aba "📜 Traços" do card Roll20, mantendo a estética dark fantasy e alta legibilidade.
 
 ---
 
 ## 🧪 Estratégia de Verificação e Testes Automatizados
 
-1. **Testes E2E Automatizados (`test_pdf_and_print_session.js`)**:
-   - Validar personagem com `adestramento` e `enganacao`: verificar se o PDF editável gerado marca com `true` os checkboxes correspondentes.
-   - Validar personagem ferido com `deathSaves = { success: 2, fail: 1 }` e `spentHitDice = 2`: verificar se os checkboxes e círculos do A4 e PDF refletem exatamente 2 sucessos, 1 falha e 2 dados gastos.
-   - Validar conjurador com magias gastas: verificar renderização dos marcadores de slots.
-   - Validar presença dos sentidos passivos (Percepção, Investigação e Intuição).
-2. **Nova Bateria 122 em `test_runner.js`**:
-   - Garantir 100% de aprovação de toda a suíte de testes.
-3. **Build e Verificação Final**:
-   - Executar `node builder.js` e validar bundle `planilha do rpg.html`.
-
----
-
-## 🔒 Critérios de Aceite
-
-- [ ] Checkboxes de perícias no PDF editável reconhecem todas as formas de chaves (`adestramento`, `enganacao`, `animalHandling`, etc.) e marcam corretamente com proficiência e bônus calculado.
-- [ ] O PDF editável e a folha impressa A4 preenchem as Salvaguardas Contra a Morte com base em `p.deathSaves`.
-- [ ] Ambos os modelos exibem os 3 Sentidos Passivos essenciais para o Mestre (Percepção, Investigação e Intuição).
-- [ ] Ambos os modelos exibem os Dados de Vida disponíveis vs gastos e rastreadores de Espaços de Magia.
-- [ ] Multiclasse e condições ativas refletem com precisão o estado da Ficha Virtual.
-- [ ] 100% dos testes aprovados em `node test_runner.js`.
+1. **Teste Automatizado de Isolamento e Renderização**:
+   - Criar teste em `test_runner.js` (Bateria 123) que:
+     - Configura um personagem com `actionEconomyFilter = 'reaction'`.
+     - Executa a renderização do card Roll20 na aba de traços e valida que todas as habilidades de classe, traços raciais (ex: Visão no Escuro para Elfo/Anão) e talentos são renderizados com sucesso (sem sumir).
+     - Valida a persistência e carregamento de `personality` no formulário e no card.
+2. **Execução da Suíte Completa**:
+   - `node test_runner.js` (garantir aprovação de 100% dos testes existentes).
+3. **Compilação**:
+   - `node builder.js` para atualizar `planilha do rpg.html`.
+4. **Git**:
+   - Commit atômico e push seguro sem perda de código.
