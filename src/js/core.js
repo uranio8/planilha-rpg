@@ -309,14 +309,30 @@ let PLAYERS = [
     "updatedAt": 1790177357973,
     "wis": 15,
     "xp": 0,
-    "inventory": [],
+    "personality": "Inflexível na busca pela ordem e proteção absoluta dos fracos.",
+    "inventory": [
+      {
+        "id": "inv_yoshi_1",
+        "name": "Cota de Malha",
+        "qty": 1,
+        "weight": 25,
+        "equipped": true
+      },
+      {
+        "id": "inv_yoshi_2",
+        "name": "Espada Longa",
+        "qty": 1,
+        "weight": 1.5,
+        "equipped": true
+      }
+    ],
     "conditions": []
   },
   {
     "ac": 19,
     "actionLogs": [],
     "activeCardTab": "skills",
-    "attacks": "Espada Longa (+6, 1d10+24cortante)",
+    "attacks": "Espada Longa (+7, 1d8+4 cortante)",
     "avatar": "👤",
     "background": "Aventureiro",
     "backstory": "",
@@ -373,6 +389,7 @@ let PLAYERS = [
     "hp": 43,
     "id": "p_1788966076171",
     "ideal": "Proteger os inocentes e defender a justiça",
+    "personality": "Falo pouco e prefiro resolver problemas com ações diretas e coragem.",
     "inspiration": false,
     "int": 15,
     "level": 5,
@@ -420,8 +437,16 @@ let PLAYERS = [
     "updatedAt": 1790178648395,
     "wis": 10,
     "xp": 0,
-    "skillProficiencies": [],
-    "saveProficiencies": [],
+    "skillProficiencies": [
+      "atletismo",
+      "sobrevivencia",
+      "intimidacao",
+      "percepcao"
+    ],
+    "saveProficiencies": [
+      "str",
+      "con"
+    ],
     "inventory": [
       {
         "id": "inv_der_1",
@@ -436,6 +461,13 @@ let PLAYERS = [
         "qty": 1,
         "weight": 6,
         "equipped": true
+      },
+      {
+        "id": "inv_der_3",
+        "name": "Espada Longa",
+        "qty": 1,
+        "weight": 1.5,
+        "equipped": true
       }
     ],
     "conditions": []
@@ -444,10 +476,10 @@ let PLAYERS = [
   {
     "ac": 11,
     "actionLogs": [],
-    "activeCardTab": "inventory",
-    "attacks": "Espada Longa (+4, 1d8+2 cortante)",
+    "activeCardTab": "spells",
+    "attacks": "Cajado Arcano (+1, 1d6-1 contundente) | Raio de Gelo (+5, 1d8 congelante)",
     "avatar": "🧙‍♀️",
-    "background": "Aventureiro",
+    "background": "Sábio",
     "backstory": "",
     "badges": [
       "⭐ Presença 100%"
@@ -458,7 +490,7 @@ let PLAYERS = [
     "coins": {
       "cp": 0,
       "ep": 0,
-      "gp": 0,
+      "gp": 10,
       "pp": 0,
       "sp": 0
     },
@@ -468,24 +500,21 @@ let PLAYERS = [
       "success": 0
     },
     "dex": 13,
-    "features": "Retomar o Fôlego (1d10+1 PV)",
+    "features": "Recuperação Arcana (Recupera 1 slot de 1º círculo em descanso curto)",
     "fightingStyle": "",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
-    "gold": 0,
+    "gold": 10,
     "hitDice": "1d6",
     "hp": 6,
     "id": "p_1788966196301",
     "ideal": "Proteger os inocentes e defender a justiça",
+    "personality": "Curioso e metódico; anoto cada detalhe arcanamente fascinante em meu tomo.",
     "inspiration": false,
     "int": 16,
     "level": 1,
     "maxHp": 6,
     "name": "Arkhalis",
     "playerNotes": "",
-    "preparedSpells": [
-      "Amizade",
-      "Ataque Certeiro"
-    ],
     "present": true,
     "race": "Elfo (Elf)",
     "slots": [
@@ -503,7 +532,7 @@ let PLAYERS = [
       0
     ],
     "speed": "9m",
-    "spells": "Truques: Amizade, Ataque Certeiro",
+    "spells": "Truques: Amizade, Ataque Certeiro, Raio de Gelo\nPreparadas: Mísseis Mágicos, Armadura Arcana",
     "spentHitDice": 0,
     "str": 7,
     "student": "Ademar",
@@ -512,19 +541,35 @@ let PLAYERS = [
     "updatedAt": 1789764256187,
     "wis": 11,
     "xp": 0,
-    "skillProficiencies": [],
-    "saveProficiencies": [],
-    "inventory": [],
+    "skillProficiencies": [
+      "arcanismo",
+      "historia",
+      "investigacao",
+      "intuicao"
+    ],
+    "saveProficiencies": [
+      "int",
+      "wis"
+    ],
+    "inventory": [
+      {
+        "id": "inv_ark_1",
+        "name": "Cajado Arcano",
+        "qty": 1,
+        "weight": 2,
+        "equipped": true
+      }
+    ],
     "conditions": [],
     "featureCharges": []
   },
   {
     "ac": 15,
     "actionLogs": [],
-    "activeCardTab": "features",
-    "attacks": "Espada Longa (+6, 1d6+4 cortante), Adaga (+6, 1d4+4 perfurante), arco curto (+6, 1d6+4)",
+    "activeCardTab": "skills",
+    "attacks": "Espada Curta (+6, 1d6+4 perfurante) | Adaga (+6, 1d4+4 perfurante) | Arco Curto (+6, 1d6+4 perfurante)",
     "avatar": "👤",
-    "background": "Aventureiro",
+    "background": "Criminoso",
     "backstory": "",
     "badges": [
       "⭐ Presença 100%"
@@ -545,13 +590,14 @@ let PLAYERS = [
       "success": 0
     },
     "dex": 19,
-    "features": "",
+    "features": "Ataque Furtivo (1d6), Ação Astuta",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
     "hitDice": "2d8",
     "hp": 17,
     "id": "p_1789139150496",
     "ideal": "Proteger os inocentes e defender a justiça",
+    "personality": "Sempre procuro uma rota de fuga rápida e conto piadas irônicas sob pressão.",
     "inspiration": false,
     "int": 13,
     "level": 2,
@@ -590,9 +636,50 @@ let PLAYERS = [
     "updatedAt": 1789764457703,
     "wis": 11,
     "xp": 0,
-    "skillProficiencies": [],
-    "saveProficiencies": [],
-    "inventory": [],
+    "skillProficiencies": [
+      "acrobacia",
+      "enganacao",
+      "furtividade",
+      "prestidigitacao"
+    ],
+    "skillExpertises": [
+      "furtividade",
+      "prestidigitacao"
+    ],
+    "saveProficiencies": [
+      "dex",
+      "int"
+    ],
+    "inventory": [
+      {
+        "id": "inv_marc_1",
+        "name": "Armadura de Couro",
+        "qty": 1,
+        "weight": 5,
+        "equipped": true
+      },
+      {
+        "id": "inv_marc_2",
+        "name": "Espada Curta",
+        "qty": 1,
+        "weight": 1,
+        "equipped": true
+      },
+      {
+        "id": "inv_marc_3",
+        "name": "Adaga",
+        "qty": 2,
+        "weight": 1,
+        "equipped": true
+      },
+      {
+        "id": "inv_marc_4",
+        "name": "Arco Curto",
+        "qty": 1,
+        "weight": 1,
+        "equipped": true
+      }
+    ],
     "conditions": [],
     "featureCharges": []
   },
@@ -600,9 +687,9 @@ let PLAYERS = [
     "ac": 15,
     "actionLogs": [],
     "activeCardTab": "spells",
-    "attacks": "Espada Curta (+6, 1d6+4 cortante), Adaga (+6, 1d4+4), Arco curto (+6, 1d6+4)",
+    "attacks": "Espada Curta (+6, 1d6+4 cortante) | Adaga (+6, 1d4+4 perfurante) | Arco Curto (+6, 1d6+4 perfurante)",
     "avatar": "👤",
-    "background": "Aventureiro",
+    "background": "Charlatão",
     "backstory": "",
     "badges": [
       "⭐ Presença 100%"
@@ -623,13 +710,14 @@ let PLAYERS = [
       "success": 0
     },
     "dex": 19,
-    "features": "",
+    "features": "Ataque Furtivo (2d6), Ação Astuta, Mãos Mágicas Trapaceiras",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
     "hitDice": "3d8",
     "hp": 19,
     "id": "p_1789139310556",
     "ideal": "Proteger os inocentes e defender a justiça",
+    "personality": "Fascinado por truques de ilusão e reflexos de luz; nunca recuso um enigma.",
     "inspiration": false,
     "int": 14,
     "level": 3,
@@ -639,11 +727,11 @@ let PLAYERS = [
         "className": "Ladino",
         "level": 3,
         "subclassIdx": 2,
-        "subclass": "Trapaceiro Arcano"
+        "subclass": "Trapaceiro Arcano (Arcane Trickster)"
       }
     ],
     "subclassIdx": 2,
-    "subclass": "Trapaceiro Arcano",
+    "subclass": "Trapaceiro Arcano (Arcane Trickster)",
     "name": "Lalw",
     "playerNotes": "",
     "preparedSpells": [
@@ -673,14 +761,54 @@ let PLAYERS = [
     "spells": "Truques: Mãos Mágicas, Rajada de Veneno, Proteção contra Lâminas\nPreparadas: Disfarçar-se, Enfeitiçar Pessoa",
     "str": 14,
     "student": "Luis Guilherme",
-    "subclassIdx": 0,
     "tempHp": 0,
     "updatedAt": 1789997672391,
     "wis": 12,
     "xp": 0,
-    "skillProficiencies": [],
-    "saveProficiencies": [],
-    "inventory": [],
+    "skillProficiencies": [
+      "furtividade",
+      "prestidigitacao",
+      "investigacao",
+      "enganacao"
+    ],
+    "skillExpertises": [
+      "furtividade",
+      "investigacao"
+    ],
+    "saveProficiencies": [
+      "dex",
+      "int"
+    ],
+    "inventory": [
+      {
+        "id": "inv_lalw_1",
+        "name": "Armadura de Couro",
+        "qty": 1,
+        "weight": 5,
+        "equipped": true
+      },
+      {
+        "id": "inv_lalw_2",
+        "name": "Espada Curta",
+        "qty": 1,
+        "weight": 1,
+        "equipped": true
+      },
+      {
+        "id": "inv_lalw_3",
+        "name": "Adaga",
+        "qty": 2,
+        "weight": 1,
+        "equipped": true
+      },
+      {
+        "id": "inv_lalw_4",
+        "name": "Arco Curto",
+        "qty": 1,
+        "weight": 1,
+        "equipped": true
+      }
+    ],
     "conditions": [],
     "featureCharges": []
   },
@@ -688,9 +816,9 @@ let PLAYERS = [
     "ac": 14,
     "actionLogs": [],
     "activeCardTab": "skills",
-    "attacks": "Espada curta (+5, 1d6+3 perfurante), Adaga curta (+5, 1d4+3 perfurante)",
+    "attacks": "Espada Curta (+5, 1d6+3 perfurante) | Adaga (+5, 1d4+3 perfurante)",
     "avatar": "👤",
-    "background": "Aventureiro",
+    "background": "Nobre",
     "backstory": "",
     "badges": [
       "⭐ Presença 100%"
@@ -711,13 +839,14 @@ let PLAYERS = [
       "success": 0
     },
     "dex": 16,
-    "features": "",
+    "features": "Bênção do Obscuro, Invocações Ocultas (Agonia Mística, Armadura das Sombras)",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
     "hitDice": "3d8",
     "hp": 22,
     "id": "p_1789143431458",
     "ideal": "Proteger os inocentes e defender a justiça",
+    "personality": "Orgulho dracônico inabalável e postura de liderança nata.",
     "inspiration": false,
     "int": 15,
     "level": 3,
@@ -774,7 +903,29 @@ let PLAYERS = [
     "updatedAt": 1789997068586,
     "wis": 13,
     "xp": 0,
-    "inventory": [],
+    "inventory": [
+      {
+        "id": "inv_caim_1",
+        "name": "Armadura de Couro",
+        "qty": 1,
+        "weight": 5,
+        "equipped": true
+      },
+      {
+        "id": "inv_caim_2",
+        "name": "Espada Curta",
+        "qty": 1,
+        "weight": 1,
+        "equipped": true
+      },
+      {
+        "id": "inv_caim_3",
+        "name": "Adaga",
+        "qty": 2,
+        "weight": 1,
+        "equipped": true
+      }
+    ],
     "conditions": [],
     "featureCharges": []
   },
@@ -782,9 +933,9 @@ let PLAYERS = [
     "ac": 12,
     "actionLogs": [],
     "activeCardTab": "spells",
-    "attacks": "Adaga Curta (+3, 1d4+1), Cajado (+3, 1d4+1), Besta (+3, 1d8+1)",
+    "attacks": "Adaga (+5, 1d4+2 perfurante) | Cajado Arcano (-2, 1d6-2 contundente) | Besta de Mão (+4, 1d6+2 perfurante)",
     "avatar": "👤",
-    "background": "Aventureiro",
+    "background": "Eremita",
     "backstory": "",
     "badges": [
       "⭐ Presença 100%"
@@ -805,7 +956,7 @@ let PLAYERS = [
       "success": 0
     },
     "dex": 14,
-    "features": "",
+    "features": "Bênção do Obscuro, Sorte do Obscuro",
     "fightingStyle": "",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
@@ -813,6 +964,7 @@ let PLAYERS = [
     "hp": 37,
     "id": "p_1789144892638",
     "ideal": "Proteger os inocentes e defender a justiça",
+    "personality": "Voz mansa e olhar penetrante; meu pacto sobrenatural é meu maior segredo.",
     "inspiration": false,
     "int": 14,
     "level": 5,
@@ -864,9 +1016,32 @@ let PLAYERS = [
     "updatedAt": 1790177907160,
     "wis": 10,
     "xp": 0,
-    "skillProficiencies": [],
-    "saveProficiencies": [],
-    "inventory": [],
+    "skillProficiencies": [
+      "arcanismo",
+      "enganacao",
+      "religiao",
+      "intimidacao"
+    ],
+    "saveProficiencies": [
+      "wis",
+      "cha"
+    ],
+    "inventory": [
+      {
+        "id": "inv_clak_1",
+        "name": "Adaga",
+        "qty": 1,
+        "weight": 1,
+        "equipped": true
+      },
+      {
+        "id": "inv_clak_2",
+        "name": "Cajado Arcano",
+        "qty": 1,
+        "weight": 2,
+        "equipped": true
+      }
+    ],
     "conditions": [],
     "featureCharges": []
   },
@@ -874,9 +1049,9 @@ let PLAYERS = [
     "ac": 12,
     "actionLogs": [],
     "activeCardTab": "skills",
-    "attacks": "Espada curta (+4, 1d6+2 cortante), Adaga (+4, 1d6+2)",
+    "attacks": "Espada Curta (+4, 1d6+2 perfurante) | Adaga (+4, 1d4+2 perfurante)",
     "avatar": "👤",
-    "background": "Aventureiro",
+    "background": "Órfão",
     "backstory": "",
     "badges": [
       "⭐ Presença 100%"
@@ -897,7 +1072,7 @@ let PLAYERS = [
       "success": 0
     },
     "dex": 14,
-    "features": "",
+    "features": "Ataque Furtivo (1d6)",
     "fightingStyle": "",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
@@ -905,6 +1080,7 @@ let PLAYERS = [
     "hp": 7,
     "id": "p_1789395282873",
     "ideal": "Proteger os inocentes e defender a justiça",
+    "personality": "Sempre alerta a perigos invisíveis e dedicado a provar seu valor aos veteranos.",
     "inspiration": false,
     "int": 12,
     "level": 1,
@@ -949,7 +1125,22 @@ let PLAYERS = [
     "tempHp": 0,
     "wis": 11,
     "xp": 0,
-    "inventory": [],
+    "inventory": [
+      {
+        "id": "inv_koi_1",
+        "name": "Espada Curta",
+        "qty": 1,
+        "weight": 1,
+        "equipped": true
+      },
+      {
+        "id": "inv_koi_2",
+        "name": "Adaga",
+        "qty": 2,
+        "weight": 1,
+        "equipped": true
+      }
+    ],
     "conditions": [],
     "featureCharges": []
   },
@@ -957,9 +1148,9 @@ let PLAYERS = [
     "ac": 14,
     "actionLogs": [],
     "activeCardTab": "skills",
-    "attacks": "Besta Leve (+2, 1d8+2)",
+    "attacks": "Besta Leve (+3, 1d8+1 perfurante)",
     "avatar": "👤",
-    "background": "Aventureiro",
+    "background": "Nobre",
     "backstory": "",
     "badges": [
       "⭐ Presença 100%"
@@ -984,13 +1175,13 @@ let PLAYERS = [
       {
         "icon": "🔮",
         "id": "sorcery_points",
-        "max": 5,
+        "max": 4,
         "name": "Pontos de Feitiçaria",
         "restType": "long",
         "used": 0
       }
     ],
-    "features": "",
+    "features": "Resiliência Dracônica (CA 13 + Des), Metamagia (Acelerar Magia, Magia Duplicada)",
     "fightingStyle": "",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
@@ -998,6 +1189,7 @@ let PLAYERS = [
     "hp": 36,
     "id": "p_1789398594305",
     "ideal": "Proteger os inocentes e defender a justiça",
+    "personality": "Sentindo a centelha mágica arder no peito, protejo meus amigos a qualquer preço.",
     "inspiration": false,
     "int": 9,
     "level": 5,
@@ -1066,7 +1258,22 @@ let PLAYERS = [
     "updatedAt": 1790016740629,
     "wis": 12,
     "xp": 0,
-    "inventory": [],
+    "inventory": [
+      {
+        "id": "inv_zen_1",
+        "name": "Besta Leve",
+        "qty": 1,
+        "weight": 2.5,
+        "equipped": true
+      },
+      {
+        "id": "inv_zen_2",
+        "name": "Adaga",
+        "qty": 1,
+        "weight": 1,
+        "equipped": true
+      }
+    ],
     "conditions": []
   }
 ];
@@ -1107,7 +1314,7 @@ let state = {
     },
     {
       "ac": 11,
-      "actions": "Espada Longa (+4, 1d8+2 cortante)",
+      "actions": "Cajado Arcano (+1, 1d6-1 contusão), Raio de Gelo (+5, 1d8 frio)",
       "hp": 6,
       "id": "c_1789399354643_odnr",
       "init": 15,
@@ -1447,6 +1654,7 @@ function getCanonicalPublicUrl(pathOrParams = '') {
 if (typeof window !== 'undefined') {
   window.OFFICIAL_CANONICAL_HOST = OFFICIAL_CANONICAL_HOST;
   window.getCanonicalPublicUrl = getCanonicalPublicUrl;
+  window.CANONICAL_INITIAL_PLAYERS = CANONICAL_INITIAL_PLAYERS;
 }
 
 // ===================================================
@@ -1906,6 +2114,38 @@ function loadFromLocalStorage() {
             features: canonical.features || p.features,
             hitDice: canonical.hitDice || p.hitDice
           });
+        }
+
+        if (canonical) {
+          // Preenche salvaguardas e perícias se estiverem vazias ou ausentes
+          if ((!p.skillProficiencies || p.skillProficiencies.length === 0) && Array.isArray(canonical.skillProficiencies) && canonical.skillProficiencies.length > 0) {
+            p.skillProficiencies = [...canonical.skillProficiencies];
+          }
+          if ((!p.skillExpertises || p.skillExpertises.length === 0) && Array.isArray(canonical.skillExpertises) && canonical.skillExpertises.length > 0) {
+            p.skillExpertises = [...canonical.skillExpertises];
+          }
+          if ((!p.saveProficiencies || p.saveProficiencies.length === 0) && Array.isArray(canonical.saveProficiencies) && canonical.saveProficiencies.length > 0) {
+            p.saveProficiencies = [...canonical.saveProficiencies];
+          }
+          // Preenche traços de personalidade se ausentes
+          if ((!p.personality || p.personality.trim() === '') && canonical.personality) {
+            p.personality = canonical.personality;
+          }
+          // Preenche inventário com equipamentos equipados se vazio
+          if ((!p.inventory || p.inventory.length === 0) && Array.isArray(canonical.inventory) && canonical.inventory.length > 0) {
+            p.inventory = JSON.parse(JSON.stringify(canonical.inventory));
+          }
+          // Corrige subclasse de Lalw se estiver como padrão (0) em vez de Trapaceiro Arcano (2)
+          if (p.name && p.name.toLowerCase().includes('lalw') && p.subclassIdx !== 2) {
+            p.subclassIdx = 2;
+            p.subclass = 'Trapaceiro Arcano (Arcane Trickster)';
+          }
+          // Garante ataques canônicos se vazios ou se for Arkhalis com ataque desatualizado
+          if ((!p.attacks || p.attacks.length === 0) && Array.isArray(canonical.attacks) && canonical.attacks.length > 0) {
+            p.attacks = JSON.parse(JSON.stringify(canonical.attacks));
+          } else if (p.name && p.name.toLowerCase().includes('arkhalis') && Array.isArray(p.attacks) && p.attacks.some(a => a.name && a.name.includes('Espada Longa'))) {
+            p.attacks = JSON.parse(JSON.stringify(canonical.attacks));
+          }
         }
 
         // Se for o Deraravely e estiver sem a estrutura de multiclasse canônica

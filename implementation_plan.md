@@ -1,55 +1,77 @@
-# 📋 Plano de Implementação: Restauração e Enriquecimento Completo da Aba "Traços" na Ficha Virtual (ISSUE-154)
+# 📋 Plano de Implementação: Correção de Incompatibilidades dos Jogadores e Blindagem do Portal do Jogador (ISSUE-155)
 
-## 📌 Contexto & Causa Raiz do Bug
-O usuário reportou: *"os traços da ficha sumiram"*. Após diagnóstico aprofundado, identificamos duas causas raízes interligadas na Ficha Virtual (`renderPlayerCardRoll20` em `src/js/players.js`):
+## 📌 Contexto & Objetivos
+Após auditoria minuciosa simulando a experiência do **Jogador** através do **Portal do Jogador** (`initPlayerPortalMode`), foram identificadas duas frentes de incompatibilidades críticas que afetam a integridade das mesas de RPG:
 
-1. **Vazamento do Filtro de Economia de Ações do Combate para a Aba "📜 Traços"**:
-   - No card Roll20, a variável `actionFilter` recebia `p.actionEconomyFilter || 'all'`.
-   - Se o usuário ou mestre clicou nos filtros de combate (ex: `⚔️ Ação`, `⚡ Bônus` ou `🛡️ Reação`) na aba de Ações, o valor ficava gravado no jogador (`p.actionEconomyFilter = 'reaction'`, etc.).
-   - Ao navegar para a aba **"📜 Traços"**, a função `renderPlayerUnlockedFeatures(p, actionFilter)` era chamada com esse filtro herdado do combate.
-   - Como 95%+ das características de classe são passivas (`actType === 'passive'`), nenhuma característica correspondia ao filtro de ação/reação. O sistema exibia apenas: *"Nenhuma característica de classe com custo de Reação."*, fazendo todas as características, talentos e poderes sumirem da visão do usuário.
+1. **Incompatibilidades de Regras e Dados nos Heróis Padrão (`src/js/core.js`)**:
+   - **Perícias e Salvaguardas Ausentes**: 5 heróis (`Deraravely`, `Arkhalis`, `Marc Hiroshi`, `Lalw`, `Claker`) estavam com arrays vazios de perícias (`skillProficiencies: []`) e salvaguardas (`saveProficiencies: []`), impedindo a aplicação do Bônus de Proficiência canônico de D&D 5E em testes e resistências.
+   - **Divergências de Classe de Armadura (CA)**: 4 heróis (`Yoshigake Kira`, `Marc Hiroshi`, `Lalw`, `Caim Vonsilford`) possuíam CA declarada divergente da CA calculada por falta de armadura equipada (`equipped: true`) no inventário.
+   - **Inconsistência de Classe/Magia em Lalw**: O herói Lalw (Ladino Nv 3) possui magias e slots de 1º círculo, porém sua subclasse não estava configurada como *Trapaceiro Arcano* (*Arcane Trickster*).
+   - **Armamento Incompatível em Arkhalis**: O Mago Nv 1 (Força 7) possuía apenas ataque de Espada Longa com modificador `-2`, sem armas de conjurador (Bordão/Cajado) nem truques mágicos de ataque.
+   - **Traços de Personalidade Vazios**: Todos os 9 personagens estavam com `personality: ""` vazio.
 
-2. **Ausência dos Traços Raciais da Espécie na Aba "📜 Traços"**:
-   - Apesar do comentário no código indicar `<!-- CARACTERÍSTICAS DE CLASSE E RAÇA -->`, a função `renderPlayerUnlockedFeatures` só iterava sobre as classes (`classesList.forEach`).
-   - Os **Traços Raciais canônicos do D&D 5E** (ex: *Visão no Escuro*, *Ancestral Feérico*, *Resiliência dos Anões*, *Fôlego Dracônico*, *Furtividade Natural*, etc. definidos em `src/data/species.js`) não eram renderizados na aba da ficha virtual.
-
-3. **Ausência de "Traços de Personalidade" na Edição e na Aba Sobre**:
-   - O campo `p.personality` (*Traços de Personalidade* canônico do D&D 5E) não possuía campo de edição no modal `ui.html` nem exibição na aba 6 ("Sobre & História") do card, aparecendo apenas como fallback na folha de impressão e no PDF.
+2. **Brecha de Segurança no Portal do Jogador (`src/styles/head_css.html`)**:
+   - O botão de exclusão de ficha (`.roll20-btn-tool-del`) permanecia visível para os alunos logados no celular ou computador devido ao seletor CSS mirar apenas classes legadas, permitindo a exclusão acidental da própria ficha pelo jogador.
+   - O botão de edição completa (`openPlayerModal`) também ficava acessível sem restrição no Portal do Jogador.
 
 ---
 
 ## 🎯 Proposta de Modificações e Módulos Afetados
 
-### 1. `src/js/players.js`
-- **Desacoplar o Filtro de Combate da Aba "📜 Traços"**:
-  - Na chamada da aba de traços (`roll20-tab-panel` de traits), chamar a renderização sempre com filtro `'all'` para exibir todas as características sem ocultar nada acidentalmente: `${renderPlayerUnlockedFeatures(p, 'all')}` ou com seletor independente interno.
-- **Integrar Traços Raciais da Espécie (`species.js`)**:
-  - Atualizar `renderPlayerUnlockedFeatures(p, filter)` (ou componente complementar) para renderizar uma seção destacada: **🧬 Traços Raciais: [Nome da Raça]** com todos os traços canônicos da espécie (`sp.traits`), com badges e descrições detalhadas.
-- **Integrar Características Customizadas (`p.features`)**:
-  - Exibir de forma visualmente limpa as anotações e características personalizadas preenchidas pelo mestre ou jogador.
-- **Aba 6 "Sobre & História"**:
-  - Adicionar o bloco visual de **🎭 Traço de Personalidade** (`p.personality`) ao lado de Ideal, Vínculo e Defeito.
-- **Modal de Edição do Personagem (`openPlayerModal` / `savePlayerModal`)**:
-  - Carregar `p.personality` no campo `pm-personality` ao abrir o modal e salvar de volta no objeto `p`.
+### 1. `src/js/core.js` (Bases Canônicas dos 9 Heróis)
+- **Deraravely** (Guerreiro 4 / Bárbaro 1):
+  - `saveProficiencies`: `['str', 'con']`
+  - `skillProficiencies`: `['atletismo', 'sobrevivencia', 'intimidacao', 'percepcao']`
+  - `personality`: "Falo pouco e prefiro resolver problemas com ações diretas e coragem."
+- **Arkhalis** (Mago 1):
+  - `saveProficiencies`: `['int', 'wis']`
+  - `skillProficiencies`: `['arcanismo', 'historia', 'investigacao', 'intuicao']`
+  - `attacks`: `"Cajado Arcano (+1, 1d6-1 contundente) | Raio de Gelo (+5, 1d8 congelante)"`
+  - `personality`: "Curioso e metódico; anoto cada detalhe arcanamente fascinante em meu tomo."
+- **Marc Hiroshi** (Ladino 2):
+  - `saveProficiencies`: `['dex', 'int']`
+  - `skillProficiencies`: `['furtividade', 'prestidigitacao', 'enganacao', 'acrobacia']`
+  - `skillExpertises`: `['furtividade', 'prestidigitacao']`
+  - `inventory`: Equipa *Armadura de Couro Batido* (`equipped: true`) para sincronizar CA 15 (11 + Des +4).
+  - `personality`: "Sempre procuro uma rota de fuga rápida e conto piadas irônicas sob pressão."
+- **Lalw** (Ladino 3 - Trapaceiro Arcano):
+  - `subclassName`: `"Trapaceiro Arcano"`
+  - `subclassIdx`: `2`
+  - `saveProficiencies`: `['dex', 'int']`
+  - `skillProficiencies`: `['furtividade', 'percepcao', 'investigacao', 'enganacao']`
+  - `skillExpertises`: `['furtividade', 'investigacao']`
+  - `inventory`: Equipa *Armadura de Couro Batido* (`equipped: true`) para sincronizar CA 15.
+  - `personality`: "Fascinado por truques de ilusão e reflexos de luz; nunca recuso um enigma."
+- **Claker** (Bruxo 5):
+  - `saveProficiencies`: `['wis', 'cha']`
+  - `skillProficiencies`: `['arcanismo', 'enganacao', 'religiao', 'intimidacao']`
+  - `personality`: "Voz mansa e olhar penetrante; meu pacto sobrenatural é meu maior segredo."
+- **Yoshigake Kira** (Paladino 5):
+  - `inventory`: Equipa *Cota de Malha* (`equipped: true`) e *Escudo* (`equipped: true`) para sincronizar CA 18 (ou 16 base da armadura).
+  - `personality`: "Inflexível na busca pela ordem e proteção absoluta dos fracos."
+- **Caim Vonsilford** (Bruxo 3):
+  - `inventory`: Equipa *Armadura de Couro* (`equipped: true`) para sincronizar CA 14 (11 + Des +3).
+  - `personality`: "Orgulho dracônico inabalável e postura de liderança nata."
+- **Koichi** (Ladino 1):
+  - `personality`: "Sempre alerta a perigos invisíveis e dedicado a provar seu valor aos veteranos."
+- **Zenit** (Feiticeiro 4 / Bruxo 1):
+  - `personality`: "Sentindo a centelha mágica arder no peito, protejo meus amigos a qualquer preço."
 
-### 2. `src/ui/ui.html`
-- Adicionar o campo `<label>Traço de Personalidade</label><input type="text" id="pm-personality">` na seção de Antecedente & Personalidade do modal de edição de jogador.
-
-### 3. `src/styles/head_css.html`
-- Estilizar o bloco de traços raciais e chips visuais dentro da aba "📜 Traços" do card Roll20, mantendo a estética dark fantasy e alta legibilidade.
+### 2. `src/styles/head_css.html` (Blindagem do Modo Portal do Jogador)
+- Ocultar estritamente o botão de excluir personagem `.roll20-btn-tool-del` e qualquer botão `button[onclick*="deletePlayer"]` sob `body.mode-player-portal`.
+- Ocultar o botão de editar ficha estrutural `.roll20-btn-tool[onclick*="openPlayerModal"]` sob `body.mode-player-portal`, mantendo os botões de Rest, Magias, Inventário, Ataques, Rolagens, Diário, A4 e Level-Up totalmente funcionais.
 
 ---
 
 ## 🧪 Estratégia de Verificação e Testes Automatizados
 
-1. **Teste Automatizado de Isolamento e Renderização**:
-   - Criar teste em `test_runner.js` (Bateria 123) que:
-     - Configura um personagem com `actionEconomyFilter = 'reaction'`.
-     - Executa a renderização do card Roll20 na aba de traços e valida que todas as habilidades de classe, traços raciais (ex: Visão no Escuro para Elfo/Anão) e talentos são renderizados com sucesso (sem sumir).
-     - Valida a persistência e carregamento de `personality` no formulário e no card.
-2. **Execução da Suíte Completa**:
-   - `node test_runner.js` (garantir aprovação de 100% dos testes existentes).
-3. **Compilação**:
-   - `node builder.js` para atualizar `planilha do rpg.html`.
-4. **Git**:
-   - Commit atômico e push seguro sem perda de código.
+1. [x] **Bateria 124 em `test_runner.js`**:
+   - [x] Validar que todos os 9 heróis possuem `saveProficiencies.length >= 2` e `skillProficiencies.length >= 2`.
+   - [x] Validar que a CA calculada pelo inventário equipado bate rigorosamente com a CA da ficha em todos os 9 personagens.
+   - [x] Validar que Lalw está configurado como Trapaceiro Arcano.
+   - [x] Validar que todos os 9 heróis possuem `personality` preenchido.
+   - [x] Validar que o CSS do Portal do Jogador bloqueia `.roll20-btn-tool-del` e botões de exclusão.
+   - [x] Validar auto-migração de salvaguardas, perícias e personalidade em `loadFromLocalStorage()`.
+2. [x] **Execução de `node builder.js` e `node test_runner.js`** (2210/2210 testes aprovados, 100% de sucesso).
+3. [x] **Registro no quadro geral de issues** (`issues/README.md`).
+4. [ ] **Commit semântico e push no Git**.

@@ -4724,7 +4724,16 @@
     body.mode-player-portal .player-toolbar .btn-action[onclick*="addPlayerToCombat"] {
       display: none !important;
     }
-    body.mode-player-portal .player-actions-group button[onclick*="deletePlayerDirect"],
+    body.mode-player-portal .player-actions-group button[onclick*="deletePlayer"],
+    body.mode-player-portal .player-actions-group .roll20-btn-tool-del,
+    body.mode-player-portal .roll20-btn-tool-del,
+    body.mode-player-portal button[onclick*="deletePlayer"],
+    body.mode-player-portal button[onclick*="openPlayerModal"],
+    .mode-player-portal .roll20-btn-tool-del,
+    .mode-player-portal button[onclick*="deletePlayer"],
+    .mode-player-portal button[onclick*="openPlayerModal"],
+    body.mode-player-portal .player-actions-group .roll20-tool-divider,
+    body.mode-player-portal .player-actions-group button[onclick*="openPlayerModal"],
     body.mode-player-portal .player-actions-group button[onclick*="clonePlayerSheet"] {
       display: none !important;
     }
@@ -7674,8 +7683,12 @@
     body.mode-player-portal .dm-only-btn,
     body.mode-player-portal .btn-header-backup,
     body.mode-player-portal .player-actions-group .btn-secondary[onclick*="deletePlayerDirect"],
+    body.mode-player-portal .player-actions-group .roll20-btn-tool-del,
+    body.mode-player-portal .player-actions-group button[onclick*="deletePlayer"],
     body.mode-player-portal .player-actions-group .btn-secondary[onclick*="openPlayerModal"],
+    body.mode-player-portal .player-actions-group button[onclick*="openPlayerModal"],
     body.mode-player-portal .player-actions-group .btn-secondary[onclick*="clonePlayerSheet"],
+    body.mode-player-portal .player-actions-group button[onclick*="clonePlayerSheet"],
     body.mode-player-portal .btn-spell-prep-toggle {
       display: none !important;
     }

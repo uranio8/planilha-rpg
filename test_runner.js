@@ -9509,6 +9509,73 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     const unlockedFeatures123 = sandbox.renderPlayerUnlockedFeatures(dwarfHero123, 'all');
     assert(unlockedFeatures123 && unlockedFeatures123.includes('Retomar o Fôlego'), 'renderPlayerUnlockedFeatures exibe Retomar o Fôlego mesmo com p.actionEconomyFilter = reaction');
     assert(unlockedFeatures123 && unlockedFeatures123.includes('Surto de Ação'), 'renderPlayerUnlockedFeatures exibe Surto de Ação para Guerreiro Nv 3');
+
+    // ============================================================================
+    // 👥 124. Testes de Compatibilidade dos Jogadores e Blindagem do Portal (ISSUE-155)
+    // ============================================================================
+    console.log('\n👥 124. Testes de Compatibilidade dos Jogadores e Blindagem do Portal (ISSUE-155):');
+
+    const headCssContent124 = fs.readFileSync(path.join(__dirname, 'src/styles/head_css.html'), 'utf8');
+    const coreJsContent124 = fs.readFileSync(path.join(__dirname, 'src/js/core.js'), 'utf8');
+
+    // 1. Blindagem de Segurança do Portal do Jogador no CSS
+    assert(headCssContent124.includes('.mode-player-portal .roll20-btn-tool-del'), 'CSS do Portal do Jogador oculta o botão de deletar personagem (.roll20-btn-tool-del)');
+    assert(headCssContent124.includes('.mode-player-portal button[onclick*="deletePlayer"]'), 'CSS do Portal do Jogador oculta botões deletePlayer');
+    assert(headCssContent124.includes('.mode-player-portal button[onclick*="openPlayerModal"]'), 'CSS do Portal do Jogador oculta modal estrutural da ficha (openPlayerModal)');
+
+    // 2. Integridade dos 9 Heróis Canônicos no sandbox
+    const allHeroes124 = (sandbox.window && sandbox.window.CANONICAL_INITIAL_PLAYERS)
+      ? sandbox.window.CANONICAL_INITIAL_PLAYERS
+      : (sandbox.CANONICAL_INITIAL_PLAYERS || []);
+    sandbox.PLAYERS = JSON.parse(JSON.stringify(allHeroes124));
+    assert(Array.isArray(allHeroes124) && allHeroes124.length >= 9, 'Existem pelo menos 9 heróis oficiais no elenco canônico');
+
+    allHeroes124.forEach(hero => {
+      const heroName = hero.name || 'Herói';
+      assert(Array.isArray(hero.saveProficiencies) && hero.saveProficiencies.length >= 2, `${heroName} possui pelo menos 2 salvaguardas proficientes`);
+      assert(Array.isArray(hero.skillProficiencies) && hero.skillProficiencies.length >= 2, `${heroName} possui pelo menos 2 perícias proficientes`);
+      assert(typeof hero.personality === 'string' && hero.personality.trim().length > 0, `${heroName} possui traços de personalidade configurados`);
+      
+      if (typeof sandbox.calculatePlayerAcFromEquipment === 'function') {
+        const calcAc = sandbox.calculatePlayerAcFromEquipment(hero);
+        assert(calcAc === hero.ac, `${heroName}: CA calculada (${calcAc}) é idêntica à CA da ficha (${hero.ac})`);
+      }
+    });
+
+    // 3. Verificações Específicas por Personagem
+    const arkhalis124 = allHeroes124.find(h => h.name && h.name.toLowerCase().includes('arkhalis'));
+    assert(arkhalis124 !== undefined, 'Arkhalis está presente no elenco canônico');
+    assert(arkhalis124.saveProficiencies.includes('int') && arkhalis124.saveProficiencies.includes('wis'), 'Arkhalis possui salvaguardas canônicas de Mago (Int/Sab)');
+    assert(typeof arkhalis124.attacks === 'string' && arkhalis124.attacks.includes('Cajado Arcano'), 'Arkhalis possui ataque de Cajado Arcano');
+    assert(typeof arkhalis124.attacks === 'string' && arkhalis124.attacks.includes('Raio de Gelo'), 'Arkhalis possui truque de ataque Raio de Gelo');
+    assert(arkhalis124.features.includes('Recuperação Arcana'), 'Arkhalis possui a habilidade Recuperação Arcana de Mago');
+
+    const lalw124 = allHeroes124.find(h => h.name && h.name.toLowerCase().includes('lalw'));
+    assert(lalw124 !== undefined, 'Lalw está presente no elenco canônico');
+    assert(lalw124.subclassIdx === 2, 'Lalw possui subclassIdx = 2 configurada');
+    assert(lalw124.subclass.includes('Trapaceiro Arcano'), 'Lalw possui subclasse Trapaceiro Arcano');
+
+    const deraravely124 = allHeroes124.find(h => h.name && h.name.toLowerCase().includes('deraravely'));
+    assert(deraravely124 !== undefined, 'Deraravely está presente no elenco canônico');
+    assert(deraravely124.saveProficiencies.includes('str') && deraravely124.saveProficiencies.includes('con'), 'Deraravely possui salvaguardas de Força e Constituição');
+    assert(typeof deraravely124.attacks === 'string' && !deraravely124.attacks.includes('24cortante'), 'Deraravely não possui erro tipográfico de dano');
+
+    // 4. Teste de Auto-Migração com Cache Antigo
+    const legacyOutdatedHero = {
+      id: 'p_1788966196301',
+      name: 'Arkhalis',
+      level: 1,
+      ac: 11,
+      skillProficiencies: [],
+      saveProficiencies: [],
+      personality: ''
+    };
+    sandbox.localStorage.setItem('dnd_tracker_players_v3', JSON.stringify([legacyOutdatedHero]));
+    sandbox.loadFromLocalStorage();
+    const migratedArkhalis = (sandbox.PLAYERS || []).find(p => p.id === 'p_1788966196301');
+    assert(migratedArkhalis && migratedArkhalis.saveProficiencies.length >= 2, 'Auto-migração no loadData restaura salvaguardas canônicas de herói com cache defasado');
+    assert(migratedArkhalis && migratedArkhalis.skillProficiencies.length >= 2, 'Auto-migração no loadData restaura perícias canônicas de herói com cache defasado');
+    assert(migratedArkhalis && migratedArkhalis.personality && migratedArkhalis.personality.length > 0, 'Auto-migração no loadData restaura traços de personalidade');
   } catch (err) {
     console.error('Falha no teste assíncrono de geração de PDF:', err);
     failedTests++;
