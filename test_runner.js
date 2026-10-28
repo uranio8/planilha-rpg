@@ -9736,7 +9736,143 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(editedBetaPot.cost === '250 PO', 'Custo atualizado para 250 PO');
     assert(editedBetaPot.desc.includes('Cura 8d4 + 8'), 'Descrição e efeitos atualizados com sucesso');
 
-    // Restaura mocks
+    // ============================================================================
+    // 🧭 [BATERIA 126] Navegação da Planilha, Visualização de Traços e Magias por Círculo (ISSUE-157)
+    // ============================================================================
+    console.log('\n🧭 [Bateria 126] Navegação da Planilha, Visualização de Traços e Magias por Círculo (ISSUE-157):');
+
+    // 1. Validar exportações de funções
+    assert(typeof sandbox.renderHeroQuickNav === 'function', 'Função renderHeroQuickNav exportada');
+    assert(typeof sandbox.jumpToPlayerCard === 'function', 'Função jumpToPlayerCard exportada');
+    assert(typeof sandbox.setPlayerTraitCategoryFilter === 'function', 'Função setPlayerTraitCategoryFilter exportada');
+    assert(typeof sandbox.handlePlayerTraitSearch === 'function', 'Função handlePlayerTraitSearch exportada');
+    assert(typeof sandbox.togglePlayerTraitsExpandAll === 'function', 'Função togglePlayerTraitsExpandAll exportada');
+    assert(typeof sandbox.togglePlayerFeatureAccordion === 'function', 'Função togglePlayerFeatureAccordion exportada');
+    assert(typeof sandbox.setPlayerSpellCircleFilter === 'function', 'Função setPlayerSpellCircleFilter exportada');
+    assert(typeof sandbox.handlePlayerSpellSearch === 'function', 'Função handlePlayerSpellSearch exportada');
+    assert(typeof sandbox.togglePlayerCircleSlot === 'function', 'Função togglePlayerCircleSlot exportada');
+
+    // 2. Hero Quick Switcher Bar
+    const mockNavHeroes = [
+      { id: 'p_nav_1', name: 'Gromm', className: 'Bárbaro', level: 4, hp: 45, maxHp: 45, avatar: '🪓' },
+      { id: 'p_nav_2', name: 'Serena', className: 'Maga', level: 4, hp: 10, maxHp: 22, avatar: '🔮' },
+      { id: 'p_nav_3', name: 'Alaster', className: 'Paladino', level: 4, hp: 3, maxHp: 36, avatar: '🛡️' }
+    ];
+
+    let quickNavHtml = '';
+    const mockNavContainer = {
+      innerHTML: '',
+      style: { display: 'none' }
+    };
+    const prevGetEl126 = sandbox.document.getElementById;
+    sandbox.document.getElementById = (id) => {
+      if (id === 'hero-quick-nav-container') return mockNavContainer;
+      return prevGetEl126 ? prevGetEl126(id) : null;
+    };
+
+    sandbox.renderHeroQuickNav(mockNavHeroes);
+    assert(mockNavContainer.style.display === 'flex', 'Quick Nav Bar exibida quando há 2 ou mais heróis');
+    assert(mockNavContainer.innerHTML.includes('Gromm'), 'Quick Nav contém chip de Gromm');
+    assert(mockNavContainer.innerHTML.includes('Serena'), 'Quick Nav contém chip de Serena');
+    assert(mockNavContainer.innerHTML.includes('Alaster'), 'Quick Nav contém chip de Alaster');
+    assert(mockNavContainer.innerHTML.includes('hp-healthy'), 'Gromm possui badge de HP Saudável (hp-healthy)');
+    assert(mockNavContainer.innerHTML.includes('hp-warning'), 'Serena possui badge de HP em Alerta (hp-warning)');
+    assert(mockNavContainer.innerHTML.includes('hp-critical'), 'Alaster possui badge de HP Crítico (hp-critical)');
+    assert(mockNavContainer.innerHTML.includes("jumpToPlayerCard('p_nav_1')"), 'Chip do herói chama jumpToPlayerCard com ID correto');
+
+    // Teste de chamada de jumpToPlayerCard
+    const cardEl126 = sandbox.document.getElementById('player-card-p_nav_1');
+    let scrolledTarget = null;
+    let addedHighlight = false;
+    cardEl126.scrollIntoView = (opt) => { scrolledTarget = opt; };
+    const origAdd126 = cardEl126.classList.add;
+    cardEl126.classList.add = function(cls) {
+      if (cls === 'hero-card-highlight') addedHighlight = true;
+      origAdd126.call(this, cls);
+    };
+    sandbox.jumpToPlayerCard('p_nav_1');
+    assert(scrolledTarget && scrolledTarget.behavior === 'smooth', 'jumpToPlayerCard executa scrollIntoView com suavidade');
+    assert(addedHighlight, 'jumpToPlayerCard aplica classe hero-card-highlight');
+
+    // 3. Magias e Grimório por Círculo
+    vm.runInContext(`
+      var casterHero126 = {
+        id: 'p_caster_126',
+        name: 'Eldrin de Myth Drannor',
+        className: 'Mago',
+        level: 3,
+        int: 16,
+        slots: [4, 2, 0, 0, 0, 0, 0, 0, 0],
+        slotsUsed: [1, 0, 0, 0, 0, 0, 0, 0, 0],
+        preparedSpells: ['Raio de Fogo', 'Mísseis Mágicos', 'Armadura Arcana', 'Passo Nebuloso']
+      };
+      PLAYERS.push(casterHero126);
+    `, sandbox);
+
+    // Toggle de Slot de Magia direto no Círculo
+    sandbox.togglePlayerCircleSlot('p_caster_126', 0, 1); // Gasta segundo slot de 1º círculo
+    const pCasterUpdated = vm.runInContext("PLAYERS.find(x => x.id === 'p_caster_126')", sandbox);
+    assert(pCasterUpdated.slotsUsed[0] === 2, 'togglePlayerCircleSlot incrementou slotsUsed do 1º círculo para 2');
+    sandbox.togglePlayerCircleSlot('p_caster_126', 0, 0); // Desgasta primeiro slot
+    assert(pCasterUpdated.slotsUsed[0] === 1, 'togglePlayerCircleSlot desfez slot gasto do 1º círculo para 1');
+
+    // Filtros e busca de magia
+    sandbox.setPlayerSpellCircleFilter('p_caster_126', '1');
+    sandbox.handlePlayerSpellSearch('p_caster_126', 'mísseis');
+    // Restaura filtros
+    sandbox.setPlayerSpellCircleFilter('p_caster_126', 'all');
+    sandbox.handlePlayerSpellSearch('p_caster_126', '');
+
+    // 4. Traços e Características com Filtros e Acordeão
+    const martialHero126 = {
+      id: 'p_fighter_126',
+      name: 'Thokk Martelo Forte',
+      race: 'Anão',
+      className: 'Guerreiro',
+      level: 3,
+      str: 16, con: 16,
+      features: 'Militar experiente'
+    };
+
+    // Filtros por categoria de traços
+    sandbox.setPlayerTraitCategoryFilter('p_fighter_126', 'species');
+    const speciesTraitsHtml = sandbox.renderPlayerRacialTraits(martialHero126, '', false, null);
+    assert(speciesTraitsHtml.includes('feature-species'), 'Traços de espécie possuem classe semântica feature-species');
+    assert(speciesTraitsHtml.includes('feature-chevron'), 'Traços de espécie possuem chevron indicativo de acordeão');
+
+    // Busca textual em traços
+    const filteredTraitsSearch = sandbox.renderPlayerUnlockedFeatures(martialHero126, 'all', 'fôlego', false, null);
+    assert(filteredTraitsSearch.includes('Retomar o Fôlego'), 'Busca em características encontra Retomar o Fôlego');
+    assert(!filteredTraitsSearch.includes('Surto de Ação'), 'Busca exclui Surto de Ação que não combina com a query');
+
+    // Acordeão de traço individual
+    sandbox.togglePlayerFeatureAccordion('p_fighter_126_class_retomar_o_folego');
+    const openTraitsSet = new Set(['p_fighter_126_class_retomar_o_folego']);
+    const openFeatureHtml = sandbox.renderPlayerUnlockedFeatures(martialHero126, 'all', '', false, openTraitsSet);
+    assert(openFeatureHtml.includes('feature-full-desc open'), 'Característica aberta contém classe feature-full-desc open');
+
+    // Expandir Todos os traços
+    sandbox.togglePlayerTraitsExpandAll('p_fighter_126');
+    const expandAllHtml = sandbox.renderPlayerUnlockedFeatures(martialHero126, 'all', '', true, null);
+    assert(expandAllHtml.includes('feature-chevron open'), 'Expandir todos ativa chevron aberto em todas as características');
+
+    // 5. Validação de CSS e UI no bundle compilado
+    const headCss126 = fs.readFileSync(path.join(__dirname, 'src/styles/head_css.html'), 'utf8');
+    assert(headCss126.includes('.hero-quick-nav-bar'), 'head_css.html possui estilos para .hero-quick-nav-bar');
+    assert(headCss126.includes('.hero-quick-chip'), 'head_css.html possui estilos para .hero-quick-chip');
+    assert(headCss126.includes('.tab-badge-pill'), 'head_css.html possui estilos para .tab-badge-pill');
+    assert(headCss126.includes('.traits-toolbar'), 'head_css.html possui estilos para .traits-toolbar');
+    assert(headCss126.includes('.spells-toolbar'), 'head_css.html possui estilos para .spells-toolbar');
+    assert(headCss126.includes('.spell-circle-group'), 'head_css.html possui estilos para .spell-circle-group');
+    assert(headCss126.includes('.spell-circle-slot-bubble'), 'head_css.html possui estilos para .spell-circle-slot-bubble');
+    assert(headCss126.includes('.spell-tag-badge.conc'), 'head_css.html possui estilos para badge de concentração');
+    assert(headCss126.includes('.spell-tag-badge.ritual'), 'head_css.html possui estilos para badge de ritual');
+
+    const uiHtml126 = fs.readFileSync(path.join(__dirname, 'src/ui/ui.html'), 'utf8');
+    assert(uiHtml126.includes('id="hero-quick-nav-container"'), 'ui.html possui container #hero-quick-nav-container');
+
+    // Restaura mocks de document.getElementById
+    sandbox.document.getElementById = origGetEl;
     sandbox.document.getElementById = origGetEl;
     sandbox.prompt = originalPrompt;
     sandbox.alert = originalAlert;

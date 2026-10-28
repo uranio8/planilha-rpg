@@ -1659,6 +1659,128 @@ function getCurrentlyFilteredPlayers() {
   });
 }
 
+// ISSUE-157: Estados dinâmicos de navegação, traços e magias
+let sheetTraitCategoryFilters = {};
+let sheetTraitSearchQueries = {};
+let sheetTraitExpandedAll = {};
+let sheetTraitOpenItems = new Set();
+let sheetSpellCircleFilters = {};
+let sheetSpellSearchQueries = {};
+
+function renderHeroQuickNav(filteredPlayers) {
+  const container = document.getElementById('hero-quick-nav-container');
+  if (!container) return;
+  if (!filteredPlayers || filteredPlayers.length === 0) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+    return;
+  }
+
+  container.style.display = 'flex';
+  container.innerHTML = filteredPlayers.map(p => {
+    const maxHp = p.maxHp || 1;
+    const hp = p.hp != null ? p.hp : maxHp;
+    const hpPct = maxHp > 0 ? Math.max(0, Math.min(100, Math.round((hp / maxHp) * 100))) : 0;
+    const isCritical = hpPct <= 25;
+    const isWounded = hpPct < 100;
+    const hpStatusClass = isCritical ? 'hp-critical' : (isWounded ? 'hp-warning' : 'hp-healthy');
+    const avatarHtml = p.avatar 
+      ? `<img src="${p.avatar}" alt="${escapeAttr(p.name)}" class="hero-quick-avatar" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'hero-quick-avatar\\'>🧙</div>';">`
+      : `<div class="hero-quick-avatar">🧙</div>`;
+
+    return `
+      <div class="hero-quick-chip" onclick="jumpToPlayerCard('${p.id}')" title="Ir direto para a ficha de ${escapeAttr(p.name)} (${p.className || 'Herói'} Nv ${p.level})">
+        ${avatarHtml}
+        <div class="hero-quick-details">
+          <div class="hero-quick-name">${p.name}</div>
+          <div class="hero-quick-meta">
+            <span>Nv ${p.level} ${p.className || ''}</span>
+            <span class="hero-quick-hp-pill ${hpStatusClass}">${hp}/${maxHp} PV</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function jumpToPlayerCard(playerId) {
+  const card = document.getElementById(`player-card-${playerId}`);
+  if (!card) return;
+  if (typeof card.scrollIntoView === 'function') {
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  if (card.classList) {
+    card.classList.remove('hero-card-highlight');
+    try { void card.offsetWidth; } catch (e) {}
+    card.classList.add('hero-card-highlight');
+    setTimeout(() => {
+      try { card.classList.remove('hero-card-highlight'); } catch (e) {}
+    }, 2200);
+  }
+}
+
+function setPlayerTraitCategoryFilter(playerId, category) {
+  sheetTraitCategoryFilters[playerId] = category;
+  renderPlayers();
+}
+
+function handlePlayerTraitSearch(playerId, query) {
+  sheetTraitSearchQueries[playerId] = query;
+  renderPlayers();
+  setTimeout(() => {
+    const inp = document.getElementById(`inp-trait-search-${playerId}`);
+    if (inp) {
+      inp.focus();
+      inp.selectionStart = inp.selectionEnd = inp.value.length;
+    }
+  }, 10);
+}
+
+function togglePlayerTraitsExpandAll(playerId) {
+  sheetTraitExpandedAll[playerId] = !sheetTraitExpandedAll[playerId];
+  if (!sheetTraitExpandedAll[playerId]) {
+    for (const key of Array.from(sheetTraitOpenItems)) {
+      if (key.startsWith(`${playerId}_`)) {
+        sheetTraitOpenItems.delete(key);
+      }
+    }
+  }
+  renderPlayers();
+}
+
+function togglePlayerFeatureAccordion(featKey, event) {
+  if (event) event.stopPropagation();
+  if (sheetTraitOpenItems.has(featKey)) {
+    sheetTraitOpenItems.delete(featKey);
+  } else {
+    sheetTraitOpenItems.add(featKey);
+  }
+  renderPlayers();
+}
+
+function setPlayerSpellCircleFilter(playerId, circle) {
+  sheetSpellCircleFilters[playerId] = circle;
+  renderPlayers();
+}
+
+function handlePlayerSpellSearch(playerId, query) {
+  sheetSpellSearchQueries[playerId] = query;
+  renderPlayers();
+  setTimeout(() => {
+    const inp = document.getElementById(`inp-spell-search-${playerId}`);
+    if (inp) {
+      inp.focus();
+      inp.selectionStart = inp.selectionEnd = inp.value.length;
+    }
+  }, 10);
+}
+
+function togglePlayerCircleSlot(playerId, circleIdx, slotIdx, event) {
+  if (event) event.stopPropagation();
+  if (typeof togglePlayerSlot === 'function') {
+    togglePlayerSlot(playerId, circleIdx, slotIdx);
+  }
+}
 
 function renderPlayers() {
   const grid = document.getElementById('grid-players');
@@ -1745,6 +1867,9 @@ function renderPlayers() {
   else if (sort === 'hp') filtered.sort((a, b) => (b.hp / b.maxHp) - (a.hp / a.maxHp));
 
   if (badge) badge.innerText = filtered.length;
+  if (typeof renderHeroQuickNav === 'function') {
+    renderHeroQuickNav(filtered);
+  }
   if (!grid) return;
 
   filtered.forEach(p => {
@@ -1788,6 +1913,22 @@ function renderPlayers() {
     const hdPool = typeof getPlayerHitDicePool === 'function' ? getPlayerHitDicePool(p) : { dieType: 'd8', total: p.level || 1, available: p.level || 1, spent: 0 };
     const restStatus = getPlayerRestStatus(p);
     const classBadgeHtml = getPlayerClassBadge(p);
+
+    // Contagem de elementos para Badges numéricas de Abas Roll20 e Filtros (ISSUE-157)
+    const allKnownSpells = typeof getPlayerKnownSpells === 'function' ? getPlayerKnownSpells(p) : ((p.preparedSpells || []));
+    const totalSpellsCount = allKnownSpells.length;
+    const totalInvCount = (p.inventory || []).length;
+    const heroFeatsList = typeof getPlayerFeats === 'function' ? getPlayerFeats(p) : [];
+    const heroClassesList = typeof getPlayerClassesList === 'function' ? getPlayerClassesList(p) : [];
+    let heroClassFeatsCount = 0;
+    heroClassesList.forEach(cls => {
+      if (typeof getUnlockedClassFeatures === 'function') {
+        heroClassFeatsCount += getUnlockedClassFeatures(cls.className, cls.level, cls.subclassIdx || 0).length;
+      }
+    });
+    const speciesDataObj = typeof findSpeciesData === 'function' ? findSpeciesData(p.race) : null;
+    const heroRacialTraitsCount = (speciesDataObj && Array.isArray(speciesDataObj.traits)) ? speciesDataObj.traits.length : 0;
+    const totalTraitsCount = heroClassFeatsCount + heroRacialTraitsCount + heroFeatsList.length + (p.features ? 1 : 0);
 
     // M3: Inicialização e automação de cargas de habilidades
     initPlayerFeatureCharges(p);
@@ -1949,7 +2090,7 @@ function renderPlayers() {
     const displayAc = p.ac || acInfo.ac;
 
     return `
-      <div class="player-card roll20-sheet ${activePortalPlayerId && p.id === activePortalPlayerId ? 'portal-view' : ''} ${p.compact ? 'is-compact' : ''} ${isCritical ? 'hp-critical' : ''} cls-${(classBadgeHtml.match(/class-(\w+)/) || ['', ''])[1]}">
+      <div id="player-card-${p.id}" data-player-id="${p.id}" class="player-card roll20-sheet ${activePortalPlayerId && p.id === activePortalPlayerId ? 'portal-view' : ''} ${p.compact ? 'is-compact' : ''} ${isCritical ? 'hp-critical' : ''} cls-${(classBadgeHtml.match(/class-(\w+)/) || ['', ''])[1]}">
         
         <!-- 1. TOPO ROLL20: HERO CARD + HIT POINTS CARD -->
         <div class="roll20-top-grid">
@@ -2153,13 +2294,22 @@ function renderPlayers() {
           =============================================== -->
           <div class="roll20-col-main">
 
-            <!-- NAVEGAÇÃO DE ABAS ROLL20 -->
+            <!-- NAVEGAÇÃO DE ABAS ROLL20 COM BADGES NUMÉRICAS (ISSUE-157) -->
             <div class="roll20-tabs-header">
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'combat' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'combat')">⚔️ Ações</button>
-              <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'spells' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'spells')">✨ Magias</button>
-              <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'inventory' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'inventory')">🎒 Inventário (${(p.inventory || []).length})</button>
+              <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'spells' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'spells')">
+                <span>✨ Magias</span>
+                <span class="tab-badge-pill">${totalSpellsCount}</span>
+              </button>
+              <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'inventory' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'inventory')">
+                <span>🎒 Mochila</span>
+                <span class="tab-badge-pill">${totalInvCount}</span>
+              </button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'hirelings' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'hirelings')">👥 Lacaios & Bastião</button>
-              <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'traits' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'traits')">📜 Traços</button>
+              <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'traits' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'traits')">
+                <span>📜 Traços</span>
+                <span class="tab-badge-pill">${totalTraitsCount}</span>
+              </button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'notes' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'notes')">📝 Notas</button>
               <button type="button" class="roll20-tab-link ${activeRoll20Tab === 'about' ? 'active' : ''}" onclick="setPlayerCardRoll20Tab('${p.id}', 'about')">👤 Sobre</button>
             </div>
@@ -2282,7 +2432,9 @@ function renderPlayers() {
                   ${(() => {
                     const allKnown = typeof getPlayerKnownSpells === 'function' ? getPlayerKnownSpells(p) : ((p.preparedSpells || []));
                     const prepInfo = typeof getMaxPreparedSpells === 'function' ? getMaxPreparedSpells(p) : { isKnownCaster: false, maxLeveled: 0, formula: '' };
-                    const curFilter = (typeof sheetSpellFilters !== 'undefined' && sheetSpellFilters[p.id]) ? sheetSpellFilters[p.id] : 'all';
+                    const curPrepFilter = (typeof sheetSpellFilters !== 'undefined' && sheetSpellFilters[p.id]) ? sheetSpellFilters[p.id] : 'all';
+                    const curCircleFilter = sheetSpellCircleFilters[p.id] || 'all';
+                    const curSearchQuery = (sheetSpellSearchQueries[p.id] || '').trim().toLowerCase();
 
                     const prepLeveledCount = allKnown.filter(sName => {
                       const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
@@ -2296,13 +2448,49 @@ function renderPlayers() {
                       return isCantrip || (p.preparedSpells || []).includes(sName);
                     }).length;
 
-                    let rawList = allKnown;
-                    if (curFilter === 'prepared') {
-                      rawList = allKnown.filter(sName => {
+                    let list = allKnown;
+                    if (curPrepFilter === 'prepared') {
+                      list = list.filter(sName => {
                         const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
                         const isCantrip = sp ? sp.level === 0 : false;
                         return isCantrip || (p.preparedSpells || []).includes(sName);
                       });
+                    }
+
+                    if (curSearchQuery) {
+                      list = list.filter(sName => {
+                        const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+                        const nameMatches = sName.toLowerCase().includes(curSearchQuery);
+                        const schoolMatches = sp && sp.school && sp.school.toLowerCase().includes(curSearchQuery);
+                        const descMatches = sp && sp.desc && sp.desc.toLowerCase().includes(curSearchQuery);
+                        return nameMatches || schoolMatches || descMatches;
+                      });
+                    }
+
+                    // Dicionário por nível de magia: 0 = Truques, 1 a 9 = Círculos
+                    const spellsByLevel = {};
+                    for (let i = 0; i <= 9; i++) spellsByLevel[i] = [];
+
+                    list.forEach(sName => {
+                      const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+                      const lvl = sp ? (sp.level != null ? sp.level : 1) : 1;
+                      const validLvl = Math.max(0, Math.min(9, lvl));
+                      spellsByLevel[validLvl].push({ name: sName, data: sp });
+                    });
+
+                    // Lista de círculos disponíveis para filtrar
+                    const availableCircles = [];
+                    if (spellsByLevel[0].length > 0 || allKnown.some(sName => {
+                      const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+                      return sp && sp.level === 0;
+                    })) {
+                      availableCircles.push(0);
+                    }
+                    for (let lvl = 1; lvl <= 9; lvl++) {
+                      const maxSlots = (p.slots || [])[lvl - 1] || 0;
+                      if (spellsByLevel[lvl].length > 0 || maxSlots > 0) {
+                        availableCircles.push(lvl);
+                      }
                     }
 
                     let prepBarHtml = '';
@@ -2314,8 +2502,8 @@ function renderPlayers() {
                             <span>🔮 <b>Preparadas para a Sessão:</b> <b class="prep-count-num ${isOver ? 'over' : ''}">${prepLeveledCount} / ${prepInfo.maxLeveled}</b> <span style="color:#94a3b8; font-size:10.5px;">(${prepInfo.formula})</span></span>
                           </div>
                           <div class="sheet-spell-filter-chips">
-                            <button type="button" class="sheet-spell-filter-chip ${curFilter === 'all' ? 'active' : ''}" onclick="setSheetSpellFilter('${p.id}', 'all')">🌐 Todas as Conhecidas (${allKnown.length})</button>
-                            <button type="button" class="sheet-spell-filter-chip ${curFilter === 'prepared' ? 'active' : ''}" onclick="setSheetSpellFilter('${p.id}', 'prepared')">⭐ Apenas Preparadas (${prepTotalCount})</button>
+                            <button type="button" class="sheet-spell-filter-chip ${curPrepFilter === 'all' ? 'active' : ''}" onclick="setSheetSpellFilter('${p.id}', 'all')">🌐 Todas (${allKnown.length})</button>
+                            <button type="button" class="sheet-spell-filter-chip ${curPrepFilter === 'prepared' ? 'active' : ''}" onclick="setSheetSpellFilter('${p.id}', 'prepared')">⭐ Apenas Preparadas (${prepTotalCount})</button>
                           </div>
                         </div>
                       `;
@@ -2332,13 +2520,152 @@ function renderPlayers() {
                       `;
                     }
 
-                    if (!rawList || rawList.length === 0) {
+                    const spellToolbarHtml = `
+                      <div class="spells-toolbar">
+                        <div class="spell-circle-chips">
+                          <button type="button" class="spell-circle-chip ${curCircleFilter === 'all' ? 'active' : ''}" onclick="setPlayerSpellCircleFilter('${p.id}', 'all')">🌐 Todos (${list.length})</button>
+                          ${availableCircles.map(lvl => {
+                            const countInCircle = spellsByLevel[lvl].length;
+                            const label = lvl === 0 ? '✨ Truques' : `🔮 ${lvl}º Círc.`;
+                            return `<button type="button" class="spell-circle-chip ${curCircleFilter === String(lvl) ? 'active' : ''}" onclick="setPlayerSpellCircleFilter('${p.id}', '${lvl}')">${label} (${countInCircle})</button>`;
+                          }).join('')}
+                        </div>
+                        <input type="text" class="spell-search-input" id="inp-spell-search-${p.id}" placeholder="🔍 Filtrar magias por nome, escola ou efeito..." value="${escapeAttr(sheetSpellSearchQueries[p.id] || '')}" oninput="handlePlayerSpellSearch('${p.id}', this.value)">
+                      </div>
+                    `;
+
+                    const renderSpellCard = (sItem) => {
+                      const sName = sItem.name;
+                      const sp = sItem.data;
+                      const isCantrip = sp && sp.level === 0;
+                      const lvlBadge = sp ? (isCantrip ? 'Truque' : `${sp.level}º Círc.`) : 'Magia';
+                      const school = sp ? sp.school : '';
+                      const range = sp ? sp.range : '';
+                      const diceInfo = typeof getSpellDiceInfo === 'function' ? getSpellDiceInfo(sp || sName, p) : null;
+                      const isPrep = isCantrip || (p.preparedSpells || []).includes(sName);
+
+                      // Detecção Canônica 5E: Concentração, Ritual, Tempo
+                      const descLower = (sp ? (sp.desc || '') : '').toLowerCase();
+                      const isConc = sp ? (sp.concentration || descLower.includes('concentraç')) : false;
+                      const isRitual = sp ? (sp.ritual || descLower.includes('ritual')) : false;
+                      const castTimeRaw = sp ? (sp.casting_time || sp.castTime || '') : '';
+                      let castTimeTag = '';
+                      if (castTimeRaw) {
+                        const ctLower = castTimeRaw.toLowerCase();
+                        if (ctLower.includes('bônus') || ctLower.includes('bonus')) {
+                          castTimeTag = '<span class="spell-tag-badge casttime" title="Tempo: Ação Bônus">⚡ Bônus</span>';
+                        } else if (ctLower.includes('reação') || ctLower.includes('reacao')) {
+                          castTimeTag = '<span class="spell-tag-badge casttime" title="Tempo: Reação">🛡️ Reação</span>';
+                        } else if (ctLower.includes('ação') || ctLower.includes('acao')) {
+                          castTimeTag = '<span class="spell-tag-badge casttime" title="Tempo: 1 Ação">⚔️ 1 Ação</span>';
+                        }
+                      }
+
                       return `
-                        ${prepBarHtml}
+                        <div class="spell-action-chip player-spell-card-tactile ${isPrep ? 'is-prep' : 'is-unprep'}" onclick="openSpellQuickView('${escapeAttr(sName)}', '${p.id}', event)">
+                          <div class="spell-chip-top">
+                            <div class="spell-chip-name" title="${escapeAttr(sName)}">${sName}</div>
+                            <div style="display:flex; align-items:center; gap:4px;">
+                              <button type="button" class="btn-chat-feed" onclick="event.stopPropagation(); openSpellQuickView('${escapeAttr(sName)}', '${p.id}', event)" title="Ver o que a magia faz (Descrição completa)">💬</button>
+                              <span class="spell-chip-lvl ${isCantrip ? 'cantrip' : 'leveled'}">${lvlBadge}</span>
+                            </div>
+                          </div>
+                          <div class="spell-chip-subinfo">
+                            ${school ? `<span>${school}</span>` : ''}
+                            ${range ? `<span>• ${range}</span>` : ''}
+                          </div>
+                          <div style="display:flex; gap:3px; flex-wrap:wrap; margin-top:3px;">
+                            ${isConc ? '<span class="spell-tag-badge conc" title="Exige Concentração (C)">⚠️ Concentração</span>' : ''}
+                            ${isRitual ? '<span class="spell-tag-badge ritual" title="Pode ser conjurada como Ritual (R)">🔮 Ritual</span>' : ''}
+                            ${castTimeTag}
+                          </div>
+                          ${diceInfo ? `
+                            <div class="spell-chip-dice-row">
+                              <button type="button" class="spell-dice-pill ${diceInfo.isHeal ? 'heal' : 'damage'}" onclick="event.stopPropagation(); rollPlayerSpellDice('${p.id}', '${escapeAttr(diceInfo.spellName || sName)}')" title="Clique para Rolar ${escapeAttr(diceInfo.label)}">
+                                <span>${diceInfo.icon}</span> <span>${diceInfo.label}</span> 🎲
+                              </button>
+                            </div>
+                          ` : ''}
+                          <div class="spell-chip-actions-bar" onclick="event.stopPropagation()">
+                            <button type="button" class="btn-spell-cast" onclick="event.stopPropagation(); castPlayerSpellPrompt('${p.id}', '${escapeAttr(sName)}')" title="Lançar Magia">⚡ Lançar</button>
+                            ${isCantrip ? `
+                              <span class="badge" style="background: rgba(16,185,129,0.2); color:#6ee7b7; border: 1px solid rgba(16,185,129,0.4); font-size: 9.5px; padding: 2px 6px;">
+                                ✨ Truque
+                              </span>
+                            ` : (prepInfo.isKnownCaster ? `
+                              <span class="badge badge-spell-known" title="Magia Conhecida Fixa (D&D 5E)">
+                                🔮 Conhecida
+                              </span>
+                            ` : `
+                              <button type="button" class="btn-spell-prep-toggle ${isPrep ? 'active' : ''}" onclick="event.stopPropagation(); togglePlayerSpellPrepared('${p.id}', '${escapeAttr(sName)}')" title="Clique para ${isPrep ? 'desmarcar' : 'preparar para a sessão'}">
+                                ${isPrep ? '⭐ Preparada' : '💤 Não prep'}
+                              </button>
+                            `)}
+                          </div>
+                        </div>
+                      `;
+                    };
+
+                    let circlesToRender = curCircleFilter === 'all' 
+                      ? availableCircles 
+                      : [parseInt(curCircleFilter, 10)];
+
+                    let groupsHtml = '';
+                    circlesToRender.forEach(lvl => {
+                      const circleSpells = spellsByLevel[lvl] || [];
+                      if (circleSpells.length === 0 && curCircleFilter === 'all') return;
+
+                      let circleTitle = lvl === 0 ? '✨ Truques & Preces Básicas' : `🔮 ${lvl}º Círculo`;
+                      let slotsBarHtml = '';
+
+                      if (lvl === 0) {
+                        slotsBarHtml = `
+                          <div class="spell-circle-slots-bar">
+                            <span style="font-size:10px; color:#6ee7b7; font-weight:600;">Infinito / À Vontade</span>
+                          </div>
+                        `;
+                      } else {
+                        const maxSlots = (p.slots || [])[lvl - 1] || 0;
+                        const usedSlots = (p.slotsUsed || [])[lvl - 1] || 0;
+                        const avail = Math.max(0, maxSlots - usedSlots);
+
+                        slotsBarHtml = `
+                          <div class="spell-circle-slots-bar" title="Espaços de ${lvl}º Círculo: ${avail}/${maxSlots} disponíveis">
+                            ${maxSlots > 0 ? Array.from({ length: maxSlots }).map((_, slotIdx) => {
+                              const isSpent = slotIdx < usedSlots;
+                              return `<div class="spell-circle-slot-bubble ${isSpent ? 'spent' : 'available'}" onclick="togglePlayerCircleSlot('${p.id}', ${lvl - 1}, ${slotIdx}, event)" title="${isSpent ? 'Espaço Gasto (Clique para restaurar)' : 'Espaço Disponível (Clique para gastar)'}"></div>`;
+                            }).join('') : '<span style="font-size:9.5px; color:#94a3b8;">Sem espaços</span>'}
+                            <span class="spell-circle-slot-count-text">${maxSlots > 0 ? `${avail}/${maxSlots} slots` : ''}</span>
+                          </div>
+                        `;
+                      }
+
+                      groupsHtml += `
+                        <div class="spell-circle-group">
+                          <div class="spell-circle-header">
+                            <div class="spell-circle-title">
+                              <span>${circleTitle}</span>
+                              <span class="spell-circle-count">${circleSpells.length}</span>
+                            </div>
+                            ${slotsBarHtml}
+                          </div>
+                          ${circleSpells.length > 0 ? `
+                            <div class="player-spells-chips-grid">
+                              ${circleSpells.map(renderSpellCard).join('')}
+                            </div>
+                          ` : `
+                            <div style="font-size: 10.5px; color: var(--text-dim); font-style: italic; padding: 6px 4px;">Nenhuma magia encontrada neste círculo.</div>
+                          `}
+                        </div>
+                      `;
+                    });
+
+                    if (!groupsHtml) {
+                      groupsHtml = `
                         <div style="text-align: center; padding: 20px; background: rgba(0,0,0,0.25); border: 1px dashed var(--border-color); border-radius: 8px; font-size: 11.5px; color: var(--text-dim); margin-top: 6px;">
-                          ${curFilter === 'prepared' 
+                          ${curSearchQuery ? `Nenhuma magia encontrada para o termo <b>"${escapeAttr(curSearchQuery)}"</b>.` : (curPrepFilter === 'prepared' 
                             ? 'Nenhuma magia foi preparada ainda para esta sessão.<br><span style="font-size:10.5px; color:#cbd5e1;">Mude para <b>"🌐 Todas as Conhecidas"</b> acima para escolher as que deseja preparar.</span>' 
-                            : 'Nenhuma magia cadastrada ou conhecida no momento.<br><span style="font-size:10.5px; color:#cbd5e1;">Clique no botão abaixo para escolher do compêndio D&D 5E.</span>'}
+                            : 'Nenhuma magia cadastrada ou conhecida no momento.<br><span style="font-size:10.5px; color:#cbd5e1;">Clique no botão abaixo para escolher do compêndio D&D 5E.</span>')}
                           <div style="margin-top: 8px;">
                             <button type="button" class="btn-action" style="font-size: 11px; padding: 4px 10px;" onclick="openSpellPickerModal('${p.id}')">✨ Escolher Magias</button>
                           </div>
@@ -2348,55 +2675,9 @@ function renderPlayers() {
 
                     return `
                       ${prepBarHtml}
-                      <div class="player-spells-chips-grid">
-                        ${rawList.map(sName => {
-                          const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
-                          const isCantrip = sp && sp.level === 0;
-                          const lvlBadge = sp ? (isCantrip ? 'Truque' : `${sp.level}º Círc.`) : 'Magia';
-                          const school = sp ? sp.school : '';
-                          const range = sp ? sp.range : '';
-                          const diceInfo = typeof getSpellDiceInfo === 'function' ? getSpellDiceInfo(sp || sName, p) : null;
-                          const isPrep = isCantrip || (p.preparedSpells || []).includes(sName);
-
-                          return `
-                            <div class="spell-action-chip player-spell-card-tactile ${isPrep ? 'is-prep' : 'is-unprep'}" onclick="openSpellQuickView('${escapeAttr(sName)}', '${p.id}', event)">
-                              <div class="spell-chip-top">
-                                <div class="spell-chip-name" title="${escapeAttr(sName)}">${sName}</div>
-                                <div style="display:flex; align-items:center; gap:4px;">
-                                  <button type="button" class="btn-chat-feed" onclick="event.stopPropagation(); openSpellQuickView('${escapeAttr(sName)}', '${p.id}', event)" title="Ver o que a magia faz (Descrição completa)">💬</button>
-                                  <span class="spell-chip-lvl ${isCantrip ? 'cantrip' : 'leveled'}">${lvlBadge}</span>
-                                </div>
-                              </div>
-                              <div class="spell-chip-subinfo">
-                                ${school ? `<span>${school}</span>` : ''}
-                                ${range ? `<span>• ${range}</span>` : ''}
-                              </div>
-                              ${diceInfo ? `
-                                <div class="spell-chip-dice-row">
-                                  <button type="button" class="spell-dice-pill ${diceInfo.isHeal ? 'heal' : 'damage'}" onclick="event.stopPropagation(); rollPlayerSpellDice('${p.id}', '${escapeAttr(sName)}')" title="Clique para Rolar ${escapeAttr(diceInfo.label)}">
-                                    <span>${diceInfo.icon}</span> <span>${diceInfo.label}</span> 🎲
-                                  </button>
-                                </div>
-                              ` : ''}
-                              <div class="spell-chip-actions-bar" onclick="event.stopPropagation()">
-                                <button type="button" class="btn-spell-cast" onclick="event.stopPropagation(); castPlayerSpellPrompt('${p.id}', '${escapeAttr(sName)}')" title="Lançar Magia">⚡ Lançar</button>
-                                ${isCantrip ? `
-                                  <span class="badge" style="background: rgba(16,185,129,0.2); color:#6ee7b7; border: 1px solid rgba(16,185,129,0.4); font-size: 9.5px; padding: 2px 6px;">
-                                    ✨ Truque
-                                  </span>
-                                ` : (prepInfo.isKnownCaster ? `
-                                  <span class="badge badge-spell-known" title="Magia Conhecida Fixa (D&D 5E)">
-                                    🔮 Conhecida
-                                  </span>
-                                ` : `
-                                  <button type="button" class="btn-spell-prep-toggle ${isPrep ? 'active' : ''}" onclick="event.stopPropagation(); togglePlayerSpellPrepared('${p.id}', '${escapeAttr(sName)}')" title="Clique para ${isPrep ? 'desmarcar' : 'preparar para a sessão'}">
-                                    ${isPrep ? '⭐ Preparada' : '💤 Não prep'}
-                                  </button>
-                                `)}
-                              </div>
-                            </div>
-                          `;
-                        }).join('')}
+                      ${spellToolbarHtml}
+                      <div class="player-spells-grouped-container">
+                        ${groupsHtml}
                       </div>
                     `;
                   })()}
@@ -2491,7 +2772,7 @@ function renderPlayers() {
                 </div>
               </div>
 
-              <!-- ABA 4: TRAÇOS & CARACTERÍSTICAS -->
+              <!-- ABA 4: TRAÇOS & CARACTERÍSTICAS (ISSUE-157: VISUALIZAÇÃO EXPANDIDA, BUSCA E FILTROS) -->
               <div class="roll20-tab-panel" style="display: ${activeRoll20Tab === 'traits' ? 'block' : 'none'};">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                   <span class="roll20-panel-title" style="margin: 0; border: none; padding: 0;">📜 CARACTERÍSTICAS & TALENTOS D&D 5E</span>
@@ -2501,15 +2782,51 @@ function renderPlayers() {
                   </div>
                 </div>
 
-                <!-- SEÇÃO DE TALENTOS ADQUIRIDOS -->
-                ${typeof renderPlayerFeatsSection === 'function' ? renderPlayerFeatsSection(p) : ''}
+                ${(() => {
+                  const catFilter = sheetTraitCategoryFilters[p.id] || 'all';
+                  const searchQuery = (sheetTraitSearchQueries[p.id] || '').trim().toLowerCase();
+                  const isExpAll = !!sheetTraitExpandedAll[p.id];
 
-                <!-- CARACTERÍSTICAS DE CLASSE E RAÇA -->
-                <div class="roll20-traits-container" style="margin-top: 10px;">
-                  ${typeof renderPlayerRacialTraits === 'function' ? renderPlayerRacialTraits(p) : ''}
-                  ${renderPlayerUnlockedFeatures(p, 'all')}
-                </div>
-                ${p.features ? `<div style="font-size: 11px; color: var(--text-dim); margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.07); padding-top: 6px;"><b>Outras Características:</b> ${typeof formatFeatureSnippet === 'function' ? formatFeatureSnippet(p.features) : p.features}</div>` : ''}
+                  const toolbarHtml = `
+                    <div class="traits-toolbar">
+                      <div class="trait-filter-chips">
+                        <button type="button" class="trait-filter-chip ${catFilter === 'all' ? 'active' : ''}" onclick="setPlayerTraitCategoryFilter('${p.id}', 'all')">🌐 Todos (${totalTraitsCount})</button>
+                        <button type="button" class="trait-filter-chip ${catFilter === 'species' ? 'active' : ''}" onclick="setPlayerTraitCategoryFilter('${p.id}', 'species')">🧬 Raça (${heroRacialTraitsCount})</button>
+                        <button type="button" class="trait-filter-chip ${catFilter === 'class' ? 'active' : ''}" onclick="setPlayerTraitCategoryFilter('${p.id}', 'class')">🌳 Classe (${heroClassFeatsCount})</button>
+                        <button type="button" class="trait-filter-chip ${catFilter === 'feats' ? 'active' : ''}" onclick="setPlayerTraitCategoryFilter('${p.id}', 'feats')">⭐ Talentos & ASI (${heroFeatsList.length})</button>
+                      </div>
+                      <div style="display:flex; gap:6px; align-items:center;">
+                        <input type="text" class="trait-search-input" id="inp-trait-search-${p.id}" placeholder="🔍 Filtrar características por nome ou regra..." value="${escapeAttr(sheetTraitSearchQueries[p.id] || '')}" oninput="handlePlayerTraitSearch('${p.id}', this.value)">
+                        <button type="button" class="trait-accordion-toggle" onclick="togglePlayerTraitsExpandAll('${p.id}')">${isExpAll ? '⊟ Recolher' : '⊞ Expandir'}</button>
+                      </div>
+                    </div>
+                  `;
+
+                  const showSpecies = catFilter === 'all' || catFilter === 'species';
+                  const showClass = catFilter === 'all' || catFilter === 'class';
+                  const showFeats = catFilter === 'all' || catFilter === 'feats';
+
+                  const featsHtml = showFeats && typeof renderPlayerFeatsSection === 'function' 
+                    ? renderPlayerFeatsSection(p, searchQuery, isExpAll, sheetTraitOpenItems) : '';
+                  const racialHtml = showSpecies && typeof renderPlayerRacialTraits === 'function' 
+                    ? renderPlayerRacialTraits(p, searchQuery, isExpAll, sheetTraitOpenItems) : '';
+                  const classHtml = showClass 
+                    ? (searchQuery || isExpAll || (sheetTraitOpenItems && sheetTraitOpenItems.size > 0)
+                        ? renderPlayerUnlockedFeatures(p, 'all', searchQuery, isExpAll, sheetTraitOpenItems)
+                        : renderPlayerUnlockedFeatures(p, 'all')) : '';
+
+                  const otherFeatures = p.features ? `<div style="font-size: 11px; color: var(--text-dim); margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.07); padding-top: 6px;"><b>Outras Características:</b> ${typeof formatFeatureSnippet === 'function' ? formatFeatureSnippet(p.features) : p.features}</div>` : '';
+
+                  return `
+                    ${toolbarHtml}
+                    ${featsHtml}
+                    <div class="roll20-traits-container" style="margin-top: 10px;">
+                      ${racialHtml}
+                      ${classHtml}
+                    </div>
+                    ${otherFeatures}
+                  `;
+                })()}
               </div>
 
               <!-- ABA 5: NOTAS PRIVADAS -->
@@ -6155,7 +6472,7 @@ function formatFeatureSnippet(rawDesc) {
   return typeof highlightInlineRules === 'function' ? highlightInlineRules(desc) : desc;
 }
 
-function renderPlayerUnlockedFeatures(p, actionFilter = 'all') {
+function renderPlayerUnlockedFeatures(p, actionFilter = 'all', textFilter = '', isExpandedAll = false, openItemsSet = null) {
   const classesList = getPlayerClassesList(p);
   let html = '';
   let totalFeaturesCount = 0;
@@ -6166,11 +6483,19 @@ function renderPlayerUnlockedFeatures(p, actionFilter = 'all') {
     if (unlocked.length > 0) {
       totalFeaturesCount += unlocked.length;
 
-      // Filtra de acordo com a economia de ações se um filtro específico estiver ativo
+      // Filtra de acordo com a economia de ações e busca textual
       const matching = unlocked.filter(f => {
-        if (actionFilter === 'all') return true;
-        const actType = getFeatureActionType(f, p);
-        return actType === actionFilter;
+        if (actionFilter !== 'all') {
+          const actType = getFeatureActionType(f, p);
+          if (actType !== actionFilter) return false;
+        }
+        if (textFilter) {
+          const q = textFilter.toLowerCase();
+          const nameMatches = (f.name || '').toLowerCase().includes(q);
+          const descMatches = (f.desc || '').toLowerCase().includes(q);
+          if (!nameMatches && !descMatches) return false;
+        }
+        return true;
       });
 
       if (matching.length === 0) return;
@@ -6240,17 +6565,29 @@ function renderPlayerUnlockedFeatures(p, actionFilter = 'all') {
             }
 
             const featKey = registerFeatureForModal(formatted.name, formatted.desc, formatted.type || (actTagLabel + ' de Classe'), formatted.source || clsItem.className);
+            const rawBaseName = (f.name ? f.name.split('(')[0] : (formatted.name ? formatted.name.split('(')[0] : '')).trim();
+            const featCleanName = rawBaseName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+            const accordionKey = `${p.id}_class_${featCleanName}`;
+            const isOpen = isExpandedAll || (openItemsSet && openItemsSet.has(accordionKey));
+
             return `
-            <div class="unlocked-feature-item" onclick="openPlayerFeatureModalByKey('${featKey}')" title="Clique para ver detalhes em tópicos">
+            <div class="unlocked-feature-item feature-class ${isOpen ? 'open' : ''}" onclick="togglePlayerFeatureAccordion('${accordionKey}', event)" title="Clique para expandir / recolher detalhes">
               <div style="display:flex; justify-content:space-between; align-items:center; gap: 4px;">
                 <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                  <span class="feature-chevron ${isOpen ? 'open' : ''}">${isOpen ? '▼' : '▶'}</span>
                   <span style="font-weight:700; color:#fff; font-size:12px;">${formatted.name}</span>
                   ${actBadgeHtml}
                 </div>
-                <span class="badge ${formatted.isSubclass ? 'badge-sub' : 'badge-cls'}" style="font-size:9px;">Nv ${formatted.level}</span>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <button type="button" class="btn-chat-feed" onclick="event.stopPropagation(); openPlayerFeatureModalByKey('${featKey}')" title="Ver detalhes completos em pop-up">💬</button>
+                  <span class="badge ${formatted.isSubclass ? 'badge-sub' : 'badge-cls'}" style="font-size:9px;">Nv ${formatted.level}</span>
+                </div>
               </div>
               <div class="feature-snippet">
                 ${formatFeatureSnippet(formatted.desc)}
+              </div>
+              <div class="feature-full-desc ${isOpen ? 'open' : ''}">
+                ${typeof highlightInlineRules === 'function' ? highlightInlineRules(formatted.desc) : formatted.desc}
               </div>
               ${fightingStyleActionHtml}
               ${asiActionHtml}
@@ -6274,13 +6611,19 @@ function renderPlayerUnlockedFeatures(p, actionFilter = 'all') {
   return html;
 }
 
-function renderPlayerRacialTraits(p) {
+function renderPlayerRacialTraits(p, textFilter = '', isExpandedAll = false, openItemsSet = null) {
   if (!p || !p.race) return '';
   const sp = typeof findSpeciesData === 'function' ? findSpeciesData(p.race) : null;
   if (!sp || !Array.isArray(sp.traits) || sp.traits.length === 0) return '';
 
   const traits = sp.traits.filter(t => {
     if (t.name && t.name.toLowerCase().includes('aumento no valor')) return false;
+    if (textFilter) {
+      const q = textFilter.toLowerCase();
+      const nameMatches = (t.name || '').toLowerCase().includes(q);
+      const descMatches = ((t.description || t.desc) || '').toLowerCase().includes(q);
+      if (!nameMatches && !descMatches) return false;
+    }
     return true;
   });
 
@@ -6294,17 +6637,29 @@ function renderPlayerRacialTraits(p) {
       ${traits.map(t => {
         const desc = t.description || t.desc || '';
         const featKey = registerFeatureForModal(t.name, desc, t.type || 'Traço Racial', sp.name);
+        const rawTraitBaseName = (t.name ? t.name.split('(')[0] : '').trim();
+        const traitCleanName = rawTraitBaseName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+        const accordionKey = `${p.id}_race_${traitCleanName}`;
+        const isOpen = isExpandedAll || (openItemsSet && openItemsSet.has(accordionKey));
+
         return `
-        <div class="unlocked-feature-item" onclick="openPlayerFeatureModalByKey('${featKey}')" title="Clique para ver detalhes do traço racial">
+        <div class="unlocked-feature-item feature-species ${isOpen ? 'open' : ''}" onclick="togglePlayerFeatureAccordion('${accordionKey}', event)" title="Clique para expandir / recolher detalhes do traço racial">
           <div style="display:flex; justify-content:space-between; align-items:center; gap: 4px;">
             <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <span class="feature-chevron ${isOpen ? 'open' : ''}">${isOpen ? '▼' : '▶'}</span>
               <span style="font-weight:700; color:#fff; font-size:12px;">${t.name}</span>
               <span class="action-economy-tag passive">${t.type || 'Racial'}</span>
             </div>
-            <span class="badge badge-race" style="font-size:9px;">Raça</span>
+            <div style="display:flex; align-items:center; gap:4px;">
+              <button type="button" class="btn-chat-feed" onclick="event.stopPropagation(); openPlayerFeatureModalByKey('${featKey}')" title="Ver detalhes do traço em pop-up">💬</button>
+              <span class="badge badge-race" style="font-size:9px;">Raça</span>
+            </div>
           </div>
           <div class="feature-snippet">
             ${typeof formatFeatureSnippet === 'function' ? formatFeatureSnippet(desc) : desc}
+          </div>
+          <div class="feature-full-desc ${isOpen ? 'open' : ''}">
+            ${typeof highlightInlineRules === 'function' ? highlightInlineRules(desc) : desc}
           </div>
         </div>
         `;
@@ -13380,8 +13735,8 @@ function openFeatDetailModal(featId) {
   modal.classList.add('open');
 }
 
-function renderPlayerFeatsSection(p) {
-  const feats = getPlayerFeats(p);
+function renderPlayerFeatsSection(p, textFilter = '', isExpandedAll = false, openItemsSet = null) {
+  let feats = getPlayerFeats(p);
   if (feats.length === 0) {
     return `
       <div class="player-no-feats-box" style="background: rgba(15, 23, 42, 0.4); border: 1px dashed rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
@@ -13396,6 +13751,19 @@ function renderPlayerFeatsSection(p) {
     `;
   }
 
+  if (textFilter) {
+    const q = textFilter.toLowerCase();
+    feats = feats.filter(f => {
+      const nameMatches = (f.name || '').toLowerCase().includes(q);
+      const catMatches = (f.category || '').toLowerCase().includes(q);
+      const summaryMatches = (f.summary || (f.benefits && f.benefits[0]) || '').toLowerCase().includes(q);
+      return nameMatches || catMatches || summaryMatches;
+    });
+    if (feats.length === 0) {
+      return `<div style="font-size: 11px; color: var(--text-dim); font-style: italic; padding: 6px 4px; margin-bottom: 8px;">Nenhum talento correspondente à busca.</div>`;
+    }
+  }
+
   return `
     <div class="player-feats-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; margin-bottom: 12px;">
       ${feats.map(f => {
@@ -13405,7 +13773,7 @@ function renderPlayerFeatsSection(p) {
         else if (f.hpPerLevel) tag = `<span class="feat-badge-pill green">+2 PV/nv</span>`;
 
         return `
-          <div class="player-feat-card" onclick="openFeatDetailModal('${f.id}')" title="Clique para ler regras completas" style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(250, 204, 21, 0.25); border-radius: 8px; padding: 8px 10px; cursor: pointer; transition: all 0.2s;">
+          <div class="player-feat-card" onclick="openFeatDetailModal('${f.id}')" title="Clique para ler regras completas" style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(250, 204, 21, 0.25); border-left: 3px solid #facc15; border-radius: 8px; padding: 8px 10px; cursor: pointer; transition: all 0.2s;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span style="font-size: 18px;">${f.icon}</span>
@@ -14308,10 +14676,23 @@ if (typeof window !== 'undefined') {
   window.openEditPlayerItemModal = openEditPlayerItemModal;
   window.closeEditPlayerItemModal = closeEditPlayerItemModal;
   window.saveEditedPlayerItem = saveEditedPlayerItem;
+
+  // ISSUE-157: Quick Switcher de Heróis, Traços e Magias por Círculo
+  window.renderHeroQuickNav = renderHeroQuickNav;
+  window.jumpToPlayerCard = jumpToPlayerCard;
+  window.setPlayerTraitCategoryFilter = setPlayerTraitCategoryFilter;
+  window.handlePlayerTraitSearch = handlePlayerTraitSearch;
+  window.togglePlayerTraitsExpandAll = togglePlayerTraitsExpandAll;
+  window.togglePlayerFeatureAccordion = togglePlayerFeatureAccordion;
+  window.setPlayerSpellCircleFilter = setPlayerSpellCircleFilter;
+  window.handlePlayerSpellSearch = handlePlayerSpellSearch;
+  window.togglePlayerCircleSlot = togglePlayerCircleSlot;
+  window.renderPlayerUnlockedFeatures = renderPlayerUnlockedFeatures;
 }
 
 if (typeof global !== 'undefined') {
   global.renderPlayerRacialTraits = renderPlayerRacialTraits;
+  global.renderPlayerUnlockedFeatures = renderPlayerUnlockedFeatures;
   global.openTradeItemModal = openTradeItemModal;
   global.closeTradeItemModal = closeTradeItemModal;
   global.adjustTradeQty = adjustTradeQty;
@@ -14321,6 +14702,15 @@ if (typeof global !== 'undefined') {
   global.openEditPlayerItemModal = openEditPlayerItemModal;
   global.closeEditPlayerItemModal = closeEditPlayerItemModal;
   global.saveEditedPlayerItem = saveEditedPlayerItem;
+  global.renderHeroQuickNav = renderHeroQuickNav;
+  global.jumpToPlayerCard = jumpToPlayerCard;
+  global.setPlayerTraitCategoryFilter = setPlayerTraitCategoryFilter;
+  global.handlePlayerTraitSearch = handlePlayerTraitSearch;
+  global.togglePlayerTraitsExpandAll = togglePlayerTraitsExpandAll;
+  global.togglePlayerFeatureAccordion = togglePlayerFeatureAccordion;
+  global.setPlayerSpellCircleFilter = setPlayerSpellCircleFilter;
+  global.handlePlayerSpellSearch = handlePlayerSpellSearch;
+  global.togglePlayerCircleSlot = togglePlayerCircleSlot;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -14348,6 +14738,7 @@ if (typeof module !== 'undefined' && module.exports) {
     populateCampaignFilterOptions,
     formatCleanItemWeight,
     renderPlayerRacialTraits,
+    renderPlayerUnlockedFeatures,
     openTradeItemModal,
     closeTradeItemModal,
     adjustTradeQty,
@@ -14356,7 +14747,16 @@ if (typeof module !== 'undefined' && module.exports) {
     transferPlayerItem,
     openEditPlayerItemModal,
     closeEditPlayerItemModal,
-    saveEditedPlayerItem
+    saveEditedPlayerItem,
+    renderHeroQuickNav,
+    jumpToPlayerCard,
+    setPlayerTraitCategoryFilter,
+    handlePlayerTraitSearch,
+    togglePlayerTraitsExpandAll,
+    togglePlayerFeatureAccordion,
+    setPlayerSpellCircleFilter,
+    handlePlayerSpellSearch,
+    togglePlayerCircleSlot
   };
 }
 
