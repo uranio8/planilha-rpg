@@ -9576,6 +9576,170 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(migratedArkhalis && migratedArkhalis.saveProficiencies.length >= 2, 'Auto-migração no loadData restaura salvaguardas canônicas de herói com cache defasado');
     assert(migratedArkhalis && migratedArkhalis.skillProficiencies.length >= 2, 'Auto-migração no loadData restaura perícias canônicas de herói com cache defasado');
     assert(migratedArkhalis && migratedArkhalis.personality && migratedArkhalis.personality.length > 0, 'Auto-migração no loadData restaura traços de personalidade');
+
+    // =========================================================================
+    // 🧰 Bateria 125: Sistema do Baú do Grupo, Mochilas, Trocas e Finanças (ISSUE-156)
+    // =========================================================================
+    console.log('\n🧰 [Bateria 125] Sistema do Baú do Grupo, Mochilas, Trocas e Finanças (ISSUE-156):');
+
+    // 1. Criação de Campanha e Jogadores de Teste dentro do escopo lexical da VM
+    vm.runInContext(`
+      PLAYERS = [
+        {
+          id: 'p_hero_alpha',
+          name: 'Alpha Guerreiro',
+          gold: 50,
+          coins: { cp: 0, sp: 0, ep: 0, gp: 50, pp: 0 },
+          inventory: [
+            { id: 'it_heavy_armor', name: 'Cota de Malha Pesada', qty: 1, weight: 25.0, category: 'Armadura' },
+            { id: 'it_healing_pot', name: 'Poção de Cura', qty: 5, weight: 0.5, category: 'Poção' }
+          ]
+        },
+        {
+          id: 'p_hero_beta',
+          name: 'Beta Ladino',
+          gold: 10,
+          coins: { cp: 0, sp: 0, ep: 0, gp: 10, pp: 0 },
+          inventory: []
+        },
+        {
+          id: 'p_hero_gamma',
+          name: 'Gamma Clérigo',
+          gold: 0,
+          coins: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 },
+          inventory: []
+        }
+      ];
+
+      CAMPAIGNS_STATE = {
+        activeCampaignId: 'camp_test_125',
+        campaigns: [
+          {
+            id: 'camp_test_125',
+            name: 'Aventura nas Colinas Nebulosas',
+            playerIds: ['p_hero_alpha', 'p_hero_beta', 'p_hero_gamma'],
+            partyStash: {
+              gold: 120,
+              items: [],
+              history: []
+            }
+          }
+        ]
+      };
+    `, sandbox);
+
+    const getCamp125 = () => vm.runInContext('getActiveCampaign()', sandbox);
+    const getHeroAlpha = () => vm.runInContext('PLAYERS.find(p => p.id === "p_hero_alpha")', sandbox);
+    const getHeroBeta = () => vm.runInContext('PLAYERS.find(p => p.id === "p_hero_beta")', sandbox);
+    const getHeroGamma = () => vm.runInContext('PLAYERS.find(p => p.id === "p_hero_gamma")', sandbox);
+
+    // Teste 1: Preservação de peso ao enviar item do jogador para o baú
+    // Alpha envia a Cota de Malha (25kg) para o baú do grupo
+    sandbox.sendPlayerItemToPartyStash('p_hero_alpha', 0, 1);
+    assert(getHeroAlpha().inventory.length === 1, 'Alpha transferiu a armadura da mochila');
+    assert(getCamp125().partyStash.items.length === 1, 'Baú recebeu a armadura');
+    assert(getCamp125().partyStash.items[0].weight === 25.0, 'Peso da Cota de Malha foi preservado no baú (25 kg, não perdeu o peso)');
+
+    // Teste 2: Preservação de peso ao retirar item do baú para a mochila do jogador
+    // Beta retira a Cota de Malha do baú
+    const stashArmor = getCamp125().partyStash.items[0];
+    sandbox.takePartyItemToPlayer(stashArmor.id, 'p_hero_beta', 1);
+    assert(getCamp125().partyStash.items.length === 0, 'Baú esvaziou a armadura');
+    assert(getHeroBeta().inventory.length === 1, 'Beta recebeu a armadura na mochila');
+    assert(getHeroBeta().inventory[0].weight === 25.0, 'Peso da armadura retirado para Beta permaneceu 25 kg (corrigido bug de 0.5kg forçado)');
+
+    // Teste 3: Transferência parcial de quantidade do jogador para o baú (Alpha envia 2 de 5 poções)
+    sandbox.sendPlayerItemToPartyStash('p_hero_alpha', 0, 2);
+    assert(getHeroAlpha().inventory[0].qty === 3, 'Alpha reteve 3x poções de cura na mochila');
+    assert(getCamp125().partyStash.items.length === 1 && getCamp125().partyStash.items[0].qty === 2, 'Baú recebeu exatamente 2x poções de cura');
+
+    // Teste 4: Transferência parcial do baú para o jogador (Gamma pega 1 de 2 poções)
+    const stashPot = getCamp125().partyStash.items[0];
+    sandbox.takePartyItemToPlayer(stashPot.id, 'p_hero_gamma', 1);
+    assert(getCamp125().partyStash.items[0].qty === 1, 'Baú ficou com 1x poção restante');
+    assert(getHeroGamma().inventory.length === 1 && getHeroGamma().inventory[0].qty === 1, 'Gamma recebeu 1x poção na mochila');
+
+    // Teste 5: Transações financeiras como Jogador (Depósito com débito e verificação de saldo)
+    vm.runInContext('activePortalPlayerId = "p_hero_alpha"', sandbox);
+    const originalPrompt = sandbox.prompt;
+    const originalAlert = sandbox.alert;
+
+    // Alpha tem 50 PO e deposita 20 PO no baú
+    sandbox.prompt = () => '20';
+    sandbox.promptAdjustPartyGold('add');
+    assert(getHeroAlpha().gold === 30, 'Alpha foi debitado em 20 PO (restam 30 PO)');
+    assert(getHeroAlpha().coins.gp === 30, 'Alpha coins.gp sincronizado para 30 PO');
+    assert(getCamp125().partyStash.gold === 140, 'Baú recebeu +20 PO (total 140 PO)');
+
+    // Alpha tenta depositar 100 PO (saldo insuficiente de 30 PO) -> deve ser barrado
+    sandbox.prompt = () => '100';
+    let alertCalled = false;
+    sandbox.alert = () => { alertCalled = true; };
+    sandbox.promptAdjustPartyGold('add');
+    assert(alertCalled === true, 'Alerta de fundos insuficientes disparado');
+    assert(getHeroAlpha().gold === 30, 'Saldo de Alpha mantido intacto após tentativa inválida');
+    assert(getCamp125().partyStash.gold === 140, 'Tesouro do baú inalterado após tentativa inválida');
+
+    // Teste 6: Retirada de ouro como Jogador
+    // Alpha retira 15 PO do baú
+    sandbox.prompt = () => '15';
+    sandbox.promptAdjustPartyGold('remove');
+    assert(getHeroAlpha().gold === 45, 'Alpha recebeu 15 PO retirados do baú (total 45 PO)');
+    assert(getCamp125().partyStash.gold === 125, 'Baú foi debitado em 15 PO (restam 125 PO)');
+
+    // Teste 7: Transação financeira como Mestre (Injeção de tesouro da aventura)
+    vm.runInContext('activePortalPlayerId = null', sandbox);
+    sandbox.prompt = () => '75';
+    sandbox.promptAdjustPartyGold('add'); // Mestre adiciona 75 PO ao baú sem debitar heróis
+    assert(getCamp125().partyStash.gold === 200, 'Mestre injetou 75 PO diretamente no baú (total 200 PO)');
+    assert(getHeroAlpha().gold === 45, 'Alpha manteve seu ouro intacto durante injeção do mestre');
+
+    // Teste 8: Divisão igualitária de ouro entre os heróis da mesa (splitPartyGold)
+    const splitConfirm = sandbox.confirm;
+    sandbox.confirm = () => true;
+    sandbox.splitPartyGold();
+    assert(getHeroAlpha().gold === 45 + 66, 'Alpha recebeu sua cota de 66 PO da divisão');
+    assert(getHeroBeta().gold === 10 + 66, 'Beta recebeu sua cota de 66 PO da divisão');
+    assert(getHeroGamma().gold === 0 + 66, 'Gamma recebeu sua cota de 66 PO da divisão');
+    assert(getCamp125().partyStash.gold === 2, 'Resto de 2 PO permaneceu no baú do grupo');
+    sandbox.confirm = splitConfirm;
+
+    // Teste 9: Doação / Troca direta entre jogadores (transferPlayerItem)
+    const tradeResult = sandbox.transferPlayerItem('p_hero_alpha', 0, 'p_hero_beta', 2);
+    assert(tradeResult && tradeResult.success === true, 'Troca direta entre jogadores concluída com sucesso');
+    assert(getHeroAlpha().inventory[0].qty === 1, 'Alpha ficou com 1x poção');
+    const betaPot = getHeroBeta().inventory.find(i => i.name === 'Poção de Cura');
+    assert(betaPot && betaPot.qty === 2, 'Beta recebeu 2x poções na sua mochila');
+
+    // Teste 10: Edição de propriedades de item na mochila (saveEditedPlayerItem)
+    const origGetEl = sandbox.document.getElementById;
+    sandbox.document.getElementById = (id) => {
+      if (id === 'inp-edit-pitem-name') return { value: 'Poção de Cura Superior' };
+      if (id === 'inp-edit-pitem-qty') return { value: '3' };
+      if (id === 'inp-edit-pitem-weight') return { value: '0.4' };
+      if (id === 'inp-edit-pitem-cat') return { value: 'Item Mágico' };
+      if (id === 'inp-edit-pitem-cost') return { value: '250 PO' };
+      if (id === 'inp-edit-pitem-desc') return { value: 'Cura 8d4 + 8 pontos de vida.' };
+      if (id === 'modal-edit-player-item') return { classList: { add: () => {}, remove: () => {} } };
+      return origGetEl ? origGetEl(id) : null;
+    };
+
+    const betaPotIdx = getHeroBeta().inventory.findIndex(i => i.name === 'Poção de Cura');
+    sandbox.openEditPlayerItemModal('p_hero_beta', betaPotIdx);
+    sandbox.saveEditedPlayerItem();
+
+    const editedBetaPot = getHeroBeta().inventory[betaPotIdx];
+    assert(editedBetaPot.name === 'Poção de Cura Superior', 'Nome do item atualizado para Poção de Cura Superior');
+    assert(editedBetaPot.qty === 3, 'Quantidade atualizada para 3x');
+    assert(editedBetaPot.weight === 0.4, 'Peso unitário atualizado para 0.4 kg');
+    assert(editedBetaPot.category === 'Item Mágico', 'Categoria atualizada para Item Mágico');
+    assert(editedBetaPot.cost === '250 PO', 'Custo atualizado para 250 PO');
+    assert(editedBetaPot.desc.includes('Cura 8d4 + 8'), 'Descrição e efeitos atualizados com sucesso');
+
+    // Restaura mocks
+    sandbox.document.getElementById = origGetEl;
+    sandbox.prompt = originalPrompt;
+    sandbox.alert = originalAlert;
   } catch (err) {
     console.error('Falha no teste assíncrono de geração de PDF:', err);
     failedTests++;

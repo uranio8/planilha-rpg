@@ -1466,6 +1466,7 @@
                   <tr>
                     <th>Item</th>
                     <th style="text-align:center;">Qtd</th>
+                    <th style="text-align:center;">Peso</th>
                     <th>Categoria</th>
                     <th>Portador / Local</th>
                     <th style="text-align:right;">Ações</th>
@@ -2998,6 +2999,7 @@
           <div style="display: flex; gap: 6px; flex-wrap: wrap;">
             <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="promptAdjustPartyGold('add')">➕ Depositar PO</button>
             <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="promptAdjustPartyGold('remove')">➖ Retirar PO</button>
+            <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px; color: #facc15;" onclick="splitPartyGold()" title="Dividir o ouro acumulado em partes iguais entre os heróis da campanha">💰 Dividir Ouro</button>
             <button class="btn-action" style="font-size: 11px; padding: 4px 10px;" onclick="openPartyItemModal()">➕ Item no Baú</button>
           </div>
         </div>
@@ -3010,7 +3012,8 @@
               <thead>
                 <tr>
                   <th>Item</th>
-                  <th style="text-align: center; width: 50px;">Qtd</th>
+                  <th style="text-align: center; width: 45px;">Qtd</th>
+                  <th style="text-align: center; width: 60px;">Peso</th>
                   <th>Categoria</th>
                   <th>Portador</th>
                   <th style="text-align: right; width: 110px;">Ações</th>
@@ -3047,7 +3050,7 @@
         <span id="party-item-modal-title" style="font-weight: 800; font-size: 16px; color: #fff;">➕ Item do Grupo</span>
         <button class="btn-secondary" onclick="closePartyItemModal()">✕</button>
       </div>
-      <div style="display: grid; grid-template-columns: 3fr 1fr; gap: 8px; margin-top: 12px;">
+      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; margin-top: 12px;">
         <div>
           <label>Nome do Item</label>
           <input type="text" id="inp-pitem-name" placeholder="Ex: Poção de Invisibilidade, 10x Ração de Viagem">
@@ -3055,6 +3058,10 @@
         <div>
           <label>Quantidade</label>
           <input type="number" id="inp-pitem-qty" min="1" value="1">
+        </div>
+        <div>
+          <label>Peso Unit. (kg)</label>
+          <input type="number" id="inp-pitem-weight" step="0.1" min="0" value="0" placeholder="0 kg">
         </div>
       </div>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
@@ -4220,6 +4227,53 @@
   </div>
 
   <!-- ===================================================
+       ✏️ MODAL: EDITAR ITEM DA MOCHILA DO JOGADOR
+       =================================================== -->
+  <div id="modal-edit-player-item" class="modal-overlay">
+    <div class="modal-body" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 style="display: flex; align-items: center; gap: 8px; font-family: var(--font-title); color: #fff;">
+          <span>✏️</span>
+          <span>Editar Item da Mochila</span>
+        </h3>
+        <button class="modal-close" onclick="closeEditPlayerItemModal()">✕</button>
+      </div>
+      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; margin-top: 12px;">
+        <div>
+          <label>Nome do Item</label>
+          <input type="text" id="inp-edit-pitem-name" class="form-input">
+        </div>
+        <div>
+          <label>Quantidade</label>
+          <input type="number" id="inp-edit-pitem-qty" class="form-input" min="1" value="1">
+        </div>
+        <div>
+          <label>Peso (kg)</label>
+          <input type="number" id="inp-edit-pitem-weight" class="form-input" step="0.1" min="0" value="0">
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
+        <div>
+          <label>Categoria</label>
+          <input type="text" id="inp-edit-pitem-cat" class="form-input" placeholder="Ex: Equipamento, Poção, Arma">
+        </div>
+        <div>
+          <label>Valor / Custo</label>
+          <input type="text" id="inp-edit-pitem-cost" class="form-input" placeholder="Ex: 50 PO">
+        </div>
+      </div>
+      <div style="margin-top: 8px;">
+        <label>Descrição / Propriedades</label>
+        <textarea id="inp-edit-pitem-desc" class="form-input" rows="3" placeholder="Efeito mágico, regras ou anotações..."></textarea>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+        <button class="btn-secondary" onclick="closeEditPlayerItemModal()">Cancelar</button>
+        <button class="btn-action" onclick="saveEditedPlayerItem()">Salvar Alterações</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================
        🔔 CONTAINER DE NOTIFICAÇÕES TOAST
        =================================================== -->
   <div id="toast-container" aria-live="polite"></div>
@@ -4539,7 +4593,9 @@
       <div id="iqv-desc" style="font-size: 13px; line-height: 1.5; color: #cbd5e1; max-height: 220px; overflow-y: auto; margin-bottom: 16px; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); padding-right: 4px;"></div>
       <div style="display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
         <button type="button" class="btn-secondary" onclick="closeItemQuickView()">Fechar</button>
-        <button type="button" id="iqv-btn-share" class="btn-secondary" style="border-color: rgba(56,189,248,0.4); color: #38bdf8;">💬 Enviar ao Chat</button>
+        <button type="button" id="iqv-btn-share" class="btn-secondary" style="border-color: rgba(56,189,248,0.4); color: #38bdf8;">💬 Chat</button>
+        <button type="button" id="iqv-btn-trade" class="btn-secondary" style="border-color: rgba(250,204,21,0.4); color: #facc15;">🤝 Doar / Trocar</button>
+        <button type="button" id="iqv-btn-edit" class="btn-secondary" style="border-color: rgba(148,163,184,0.4); color: #cbd5e1;">✏️ Editar</button>
         <button type="button" id="iqv-btn-equip" class="btn-action" style="min-height: 40px; padding: 6px 14px; font-size: 12px; background: #10b981; color: #fff;">🛡️ Equipar</button>
         <button type="button" id="iqv-btn-use" class="btn-action" style="min-height: 40px; padding: 6px 14px; font-size: 12px; display: none; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff;">⚡ Usar</button>
       </div>

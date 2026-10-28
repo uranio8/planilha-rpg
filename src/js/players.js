@@ -2475,7 +2475,9 @@ function renderPlayers() {
                             <span style="font-weight: 800; min-width: 14px; text-align: center; color: ${itemQty > 0 ? 'var(--primary-light)' : 'var(--text-dim)'}; font-size: 10px;">${itemQty}x</span>
                             <button type="button" class="btn-micro" onclick="adjustPlayerItemQty('${p.id}', ${idx}, 1)" title="Aumentar" style="padding: 1px 4px; font-size: 9px;">+</button>
                           </div>
-                          <button type="button" class="btn-stash-send" onclick="sendPlayerItemToPartyStash('${p.id}', ${idx})" title="Guardar 1x no Baú do Grupo" style="flex-shrink: 0;">📦 Baú</button>
+                          <button type="button" class="btn-stash-send" onclick="sendPlayerItemToPartyStash('${p.id}', ${idx})" title="Guardar no Baú do Grupo" style="flex-shrink: 0;">📦 Baú</button>
+                          <button type="button" class="btn-micro" style="color: #facc15; padding: 1px 4px; font-size: 9px; flex-shrink: 0;" onclick="openTradeItemModal('${p.id}', ${idx})" title="Doar ou transferir para outro herói ou Baú">🤝</button>
+                          <button type="button" class="btn-micro" style="color: #cbd5e1; padding: 1px 4px; font-size: 9px; flex-shrink: 0;" onclick="openEditPlayerItemModal('${p.id}', ${idx})" title="Editar propriedades deste item">✏️</button>
                           <button type="button" class="btn-chat-feed" onclick="openItemQuickView('${p.id}', ${idx})" title="Ver o que este item faz (Descrição completa)" style="flex-shrink: 0;">💬</button>
                           <button type="button" class="btn-micro" style="color: #f87171; padding: 1px 4px; font-size: 9px; flex-shrink: 0;" onclick="removePlayerItem('${p.id}', ${idx})" title="Remover item">🗑️</button>
                         </div>
@@ -6595,6 +6597,8 @@ function openItemQuickView(playerId, itemIndex, event = null) {
   const qtyEl = document.getElementById('iqv-qty');
   const descEl = document.getElementById('iqv-desc');
   const btnShare = document.getElementById('iqv-btn-share');
+  const btnTrade = document.getElementById('iqv-btn-trade');
+  const btnEdit = document.getElementById('iqv-btn-edit');
   const btnEquip = document.getElementById('iqv-btn-equip');
   const btnUse = document.getElementById('iqv-btn-use');
 
@@ -6610,6 +6614,24 @@ function openItemQuickView(playerId, itemIndex, event = null) {
     btnShare.onclick = () => {
       closeItemQuickView();
       sharePlayerItemToFeed(playerId, itemIndex);
+    };
+  }
+
+  if (btnTrade) {
+    btnTrade.onclick = () => {
+      closeItemQuickView();
+      if (typeof openTradeItemModal === 'function') {
+        openTradeItemModal(playerId, itemIndex);
+      }
+    };
+  }
+
+  if (btnEdit) {
+    btnEdit.onclick = () => {
+      closeItemQuickView();
+      if (typeof openEditPlayerItemModal === 'function') {
+        openEditPlayerItemModal(playerId, itemIndex);
+      }
     };
   }
 
@@ -12410,6 +12432,75 @@ function transferPlayerItem(donorId, itemIdx, receiverId, qty) {
   return { success: true, transferredQty: transferQty };
 }
 
+// --- EDIÇÃO DE ITENS DA MOCHILA DO HERÓI (ISSUE-156) ---
+let activeEditPlayerItemContext = { playerId: null, itemIdx: null };
+
+function openEditPlayerItemModal(playerId, itemIdx) {
+  const p = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(x => x.id === playerId) : null;
+  if (!p || !p.inventory || !p.inventory[itemIdx]) return;
+  const it = p.inventory[itemIdx];
+  activeEditPlayerItemContext = { playerId, itemIdx };
+
+  const modal = document.getElementById('modal-edit-player-item');
+  if (!modal) return;
+
+  const inpName = document.getElementById('inp-edit-pitem-name');
+  const inpQty = document.getElementById('inp-edit-pitem-qty');
+  const inpWeight = document.getElementById('inp-edit-pitem-weight');
+  const inpCat = document.getElementById('inp-edit-pitem-cat');
+  const inpCost = document.getElementById('inp-edit-pitem-cost');
+  const inpDesc = document.getElementById('inp-edit-pitem-desc');
+
+  if (inpName) inpName.value = it.name || '';
+  if (inpQty) inpQty.value = parseInt(it.qty, 10) || 1;
+  if (inpWeight) inpWeight.value = (it.weight !== undefined && !isNaN(parseFloat(it.weight))) ? parseFloat(it.weight) : 0;
+  if (inpCat) inpCat.value = it.category || '';
+  if (inpCost) inpCost.value = it.cost || '';
+  if (inpDesc) inpDesc.value = it.desc || it.prop || '';
+
+  modal.classList.add('open');
+}
+
+function closeEditPlayerItemModal() {
+  const modal = document.getElementById('modal-edit-player-item');
+  if (modal) modal.classList.remove('open');
+  activeEditPlayerItemContext = { playerId: null, itemIdx: null };
+}
+
+function saveEditedPlayerItem() {
+  const { playerId, itemIdx } = activeEditPlayerItemContext;
+  if (!playerId || itemIdx === null) return;
+  const p = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(x => x.id === playerId) : null;
+  if (!p || !p.inventory || !p.inventory[itemIdx]) return;
+  const it = p.inventory[itemIdx];
+
+  const name = document.getElementById('inp-edit-pitem-name')?.value.trim();
+  if (!name) {
+    alert('Por favor, informe o nome do item.');
+    return;
+  }
+  const qty = Math.max(1, parseInt(document.getElementById('inp-edit-pitem-qty')?.value, 10) || 1);
+  const weight = Math.max(0, parseFloat(document.getElementById('inp-edit-pitem-weight')?.value) || 0);
+  const category = document.getElementById('inp-edit-pitem-cat')?.value.trim() || 'Equipamento';
+  const cost = document.getElementById('inp-edit-pitem-cost')?.value.trim() || '-';
+  const desc = document.getElementById('inp-edit-pitem-desc')?.value.trim() || '';
+
+  it.name = name;
+  it.qty = qty;
+  it.weight = weight;
+  it.category = category;
+  it.cost = cost;
+  it.desc = desc;
+
+  touchPlayer(p);
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+  if (typeof showToast === 'function') showToast(`✏️ Item "${it.name}" atualizado com sucesso!`, 'success');
+  closeEditPlayerItemModal();
+}
+
 // --- SISTEMA DE DISTRIBUIÇÃO DE SAQUE & XP EM LOTE (MESTRE) ---
 let batchRewardSelectedHeroIds = new Set();
 
@@ -14206,10 +14297,30 @@ if (typeof window !== 'undefined') {
 
   // ISSUE-154: Renderização de Traços Raciais da Espécie
   window.renderPlayerRacialTraits = renderPlayerRacialTraits;
+
+  // ISSUE-156: Trocas e Edição da Mochila
+  window.openTradeItemModal = openTradeItemModal;
+  window.closeTradeItemModal = closeTradeItemModal;
+  window.adjustTradeQty = adjustTradeQty;
+  window.setTradeQtyMax = setTradeQtyMax;
+  window.confirmTradeItem = confirmTradeItem;
+  window.transferPlayerItem = transferPlayerItem;
+  window.openEditPlayerItemModal = openEditPlayerItemModal;
+  window.closeEditPlayerItemModal = closeEditPlayerItemModal;
+  window.saveEditedPlayerItem = saveEditedPlayerItem;
 }
 
 if (typeof global !== 'undefined') {
   global.renderPlayerRacialTraits = renderPlayerRacialTraits;
+  global.openTradeItemModal = openTradeItemModal;
+  global.closeTradeItemModal = closeTradeItemModal;
+  global.adjustTradeQty = adjustTradeQty;
+  global.setTradeQtyMax = setTradeQtyMax;
+  global.confirmTradeItem = confirmTradeItem;
+  global.transferPlayerItem = transferPlayerItem;
+  global.openEditPlayerItemModal = openEditPlayerItemModal;
+  global.closeEditPlayerItemModal = closeEditPlayerItemModal;
+  global.saveEditedPlayerItem = saveEditedPlayerItem;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -14236,7 +14347,16 @@ if (typeof module !== 'undefined' && module.exports) {
     clearCampaignFilter,
     populateCampaignFilterOptions,
     formatCleanItemWeight,
-    renderPlayerRacialTraits
+    renderPlayerRacialTraits,
+    openTradeItemModal,
+    closeTradeItemModal,
+    adjustTradeQty,
+    setTradeQtyMax,
+    confirmTradeItem,
+    transferPlayerItem,
+    openEditPlayerItemModal,
+    closeEditPlayerItemModal,
+    saveEditedPlayerItem
   };
 }
 

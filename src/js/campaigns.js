@@ -457,15 +457,17 @@ function renderCampaignPartyStash(camp, campPlayers) {
 
   if (itemsTbody) {
     if (!stash.items || stash.items.length === 0) {
-      itemsTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--text-muted);">O baú coletivo está vazio. Adicione itens encontrados na aventura!</td></tr>`;
+      itemsTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:15px; color:var(--text-muted);">O baú coletivo está vazio. Adicione itens encontrados na aventura!</td></tr>`;
     } else {
       itemsTbody.innerHTML = stash.items.map(it => `
         <tr>
           <td><b style="color:#fff;">${it.name}</b></td>
           <td style="text-align:center;"><span class="badge badge-lvl">${it.qty || 1}</span></td>
+          <td style="text-align:center;"><span style="font-size:10.5px; color:var(--text-dim);">${it.weight ? it.weight + ' kg' : '-'}</span></td>
           <td><span style="font-size:11px; color:var(--text-muted);">${it.category || 'Geral'}</span></td>
           <td><span class="carrier-badge">🎒 ${it.carrier || 'Baú do Grupo'}</span></td>
           <td style="text-align:right;">
+            <button class="btn-secondary" style="padding:3px 6px; font-size:10px;" onclick="takePartyItemToPlayer('${it.id}')" title="Transferir para a mochila de um herói">📥 Pegar</button>
             <button class="btn-secondary" style="padding:3px 6px; font-size:10px;" onclick="openPartyItemModal('${it.id}')" title="Editar item">✏️</button>
             <button class="btn-secondary" style="padding:3px 6px; font-size:10px; color:#f87171;" onclick="deletePartyItem('${it.id}')" title="Remover item">🗑️</button>
           </td>
@@ -1441,35 +1443,112 @@ function deleteSessionLog(sessionId) {
 }
 
 // --- BAÚ DO GRUPO & TESOURO (PARTY STASH) ---
-function promptAdjustPartyGold(type) {
+function promptAdjustPartyGold(type, sourcePlayerId = null) {
   const camp = getActiveCampaign();
   if (!camp) return;
   camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
   camp.partyStash.items = camp.partyStash.items || [];
   camp.partyStash.history = camp.partyStash.history || [];
 
-  const promptMsg = type === 'add' ? 'Quantas Peças de Ouro (PO) deseja ADICIONAR ao Baú do Grupo?' : 'Quantas Peças de Ouro (PO) deseja RETIRAR do Baú do Grupo?';
-  const valStr = prompt(promptMsg, '50');
-  if (valStr === null) return;
-  const val = parseInt(valStr);
-  if (isNaN(val) || val <= 0) return;
+  // Identifica o herói se a ação for disparada por um jogador ou portal
+  let player = null;
+  if (sourcePlayerId && typeof PLAYERS !== 'undefined') {
+    player = PLAYERS.find(p => p.id === sourcePlayerId);
+  } else if (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId && typeof PLAYERS !== 'undefined') {
+    player = PLAYERS.find(p => p.id === activePortalPlayerId);
+  } else if (typeof document !== 'undefined' && document.body && document.body.classList.contains('mode-player-portal') && typeof PLAYERS !== 'undefined' && PLAYERS.length > 0) {
+    player = PLAYERS[0];
+  }
 
-  const reason = prompt('Motivo / Origem da transação (ex: Recompensa da missão, Compra de suprimentos):', type === 'add' ? 'Recompensa de missão' : 'Gastos em suprimentos') || 'Transação';
+  // 1. FLUXO DO JOGADOR: Transfere diretamente de/para a carteira pessoal do herói
+  if (player) {
+    const playerGold = player.gold !== undefined ? player.gold : ((player.coins && player.coins.gp) || 0);
+    const stashGold = camp.partyStash.gold || 0;
 
-  if (type === 'add') {
-    camp.partyStash.gold = (camp.partyStash.gold || 0) + val;
-    camp.partyStash.history.push({
-      date: new Date().toISOString().split('T')[0],
-      text: `+${val} PO (${reason})`,
-      type: 'gold_in'
-    });
+    if (type === 'add') {
+      const promptMsg = `[${player.name}] - Carteira: ${playerGold} PO\n\nQuantas Peças de Ouro (PO) deseja transferir da sua carteira para o Baú do Grupo?`;
+      const valStr = prompt(promptMsg, String(Math.min(playerGold, 10)));
+      if (valStr === null) return;
+      const val = parseInt(valStr, 10);
+      if (isNaN(val) || val <= 0) return;
+
+      if (val > playerGold) {
+        alert(`Saldo insuficiente! ${player.name} possui apenas ${playerGold} PO em sua carteira.`);
+        return;
+      }
+
+      player.gold = playerGold - val;
+      player.coins = player.coins || { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
+      player.coins.gp = player.gold;
+
+      camp.partyStash.gold = stashGold + val;
+      const reason = prompt('Motivo / Observação do depósito:', 'Depósito no baú coletivo') || 'Depósito do Herói';
+
+      camp.partyStash.history.push({
+        date: new Date().toISOString().split('T')[0],
+        text: `+${val} PO guardados por ${player.name} (${reason})`,
+        type: 'gold_in'
+      });
+
+      if (typeof touchPlayer === 'function') touchPlayer(player);
+      if (typeof addLog === 'function') addLog(`💰 <b>Baú do Grupo:</b> ${player.name} guardou ${val} PO. (Saldo do Herói: ${player.gold} PO | Baú: ${camp.partyStash.gold} PO)`);
+    } else {
+      // Retirada do baú para a carteira do herói
+      const promptMsg = `[${player.name}] - Saldo no Baú: ${stashGold} PO\n\nQuantas Peças de Ouro (PO) deseja retirar do Baú do Grupo para a carteira de ${player.name}?`;
+      const valStr = prompt(promptMsg, String(Math.min(stashGold, 10)));
+      if (valStr === null) return;
+      const val = parseInt(valStr, 10);
+      if (isNaN(val) || val <= 0) return;
+
+      if (val > stashGold) {
+        alert(`Saldo insuficiente no Baú do Grupo! O baú possui apenas ${stashGold} PO.`);
+        return;
+      }
+
+      camp.partyStash.gold = stashGold - val;
+      player.gold = playerGold + val;
+      player.coins = player.coins || { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
+      player.coins.gp = player.gold;
+
+      const reason = prompt('Motivo / Finalidade da retirada:', 'Gastos em suprimentos') || 'Retirada do Herói';
+
+      camp.partyStash.history.push({
+        date: new Date().toISOString().split('T')[0],
+        text: `-${val} PO retirados por ${player.name} (${reason})`,
+        type: 'gold_out'
+      });
+
+      if (typeof touchPlayer === 'function') touchPlayer(player);
+      if (typeof addLog === 'function') addLog(`💰 <b>Baú do Grupo:</b> ${player.name} retirou ${val} PO. (Saldo do Herói: ${player.gold} PO | Baú: ${camp.partyStash.gold} PO)`);
+    }
   } else {
-    camp.partyStash.gold = Math.max(0, (camp.partyStash.gold || 0) - val);
-    camp.partyStash.history.push({
-      date: new Date().toISOString().split('T')[0],
-      text: `-${val} PO (${reason})`,
-      type: 'gold_out'
-    });
+    // 2. FLUXO DO MESTRE (DM): Injeção/gasto direto ou transferência de herói
+    const promptMsg = type === 'add'
+      ? 'Quantas Peças de Ouro (PO) deseja ADICIONAR ao Baú do Grupo (Tesouro da Campanha)?'
+      : 'Quantas Peças de Ouro (PO) deseja RETIRAR do Baú do Grupo?';
+    const valStr = prompt(promptMsg, '50');
+    if (valStr === null) return;
+    const val = parseInt(valStr, 10);
+    if (isNaN(val) || val <= 0) return;
+
+    const reason = prompt('Motivo / Origem da transação (ex: Recompensa de Masmorra, Compra de Carroça):', type === 'add' ? 'Recompensa de Masmorra' : 'Gastos da Mesa') || 'Transação do Mestre';
+
+    if (type === 'add') {
+      camp.partyStash.gold = (camp.partyStash.gold || 0) + val;
+      camp.partyStash.history.push({
+        date: new Date().toISOString().split('T')[0],
+        text: `+${val} PO (${reason})`,
+        type: 'gold_in'
+      });
+    } else {
+      camp.partyStash.gold = Math.max(0, (camp.partyStash.gold || 0) - val);
+      camp.partyStash.history.push({
+        date: new Date().toISOString().split('T')[0],
+        text: `-${val} PO (${reason})`,
+        type: 'gold_out'
+      });
+    }
+    if (typeof addLog === 'function') addLog(`💰 <b>Baú do Grupo:</b> ${type === 'add' ? '+' : '-'}${val} PO (${reason}). Saldo: ${camp.partyStash.gold} PO.`);
   }
 
   touchPartyStash(camp);
@@ -1480,7 +1559,6 @@ function promptAdjustPartyGold(type) {
   if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
   if (typeof renderPlayers === 'function') renderPlayers();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
-  if (typeof addLog === 'function') addLog(`💰 <b>Baú do Grupo:</b> ${type === 'add' ? '+' : '-'}${val} PO (${reason}). Saldo: ${camp.partyStash.gold} PO.`);
 }
 
 function splitPartyGold() {
@@ -1559,6 +1637,9 @@ function openPartyItemModal(itemId = null) {
   const qtyEl = document.getElementById('inp-pitem-qty');
   if (qtyEl) qtyEl.value = it ? (it.qty || 1) : 1;
 
+  const weightEl = document.getElementById('inp-pitem-weight');
+  if (weightEl) weightEl.value = it ? (it.weight !== undefined ? it.weight : 0) : 0;
+
   const catEl = document.getElementById('inp-pitem-cat');
   if (catEl) catEl.value = it ? (it.category || 'Equipamento de Aventura') : 'Equipamento de Aventura';
 
@@ -1600,6 +1681,7 @@ function savePartyItem() {
   const nameInput = document.getElementById('inp-pitem-name');
   const name = nameInput ? nameInput.value.trim() : '';
   const qty = parseInt(document.getElementById('inp-pitem-qty')?.value) || 1;
+  const weight = Math.max(0, parseFloat(document.getElementById('inp-pitem-weight')?.value) || 0);
   const category = document.getElementById('inp-pitem-cat')?.value || 'Equipamento de Aventura';
   const carrier = document.getElementById('inp-pitem-carrier')?.value || 'Baú do Grupo';
   const desc = document.getElementById('inp-pitem-desc')?.value?.trim() || '';
@@ -1615,12 +1697,13 @@ function savePartyItem() {
     if (it) {
       it.name = name;
       it.qty = qty;
+      it.weight = weight;
       it.category = category;
       it.carrier = carrier;
       it.desc = desc;
       camp.partyStash.history.push({
         date: new Date().toISOString().split('T')[0],
-        text: `✏️ Item "${name}" atualizado (${qty}x, ${carrier})`,
+        text: `✏️ Item "${name}" atualizado (${qty}x, ${weight ? weight + 'kg, ' : ''}${carrier})`,
         type: 'item_edit'
       });
     }
@@ -1629,13 +1712,14 @@ function savePartyItem() {
       id: 'it_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
       name,
       qty,
+      weight,
       category,
       carrier,
       desc
     });
     camp.partyStash.history.push({
       date: new Date().toISOString().split('T')[0],
-      text: `+${qty}x ${name} adicionado (${carrier})`,
+      text: `+${qty}x ${name} adicionado (${weight ? weight + 'kg, ' : ''}${carrier})`,
       type: 'item_in'
     });
   }
@@ -1681,10 +1765,22 @@ function sendPlayerItemToPartyStash(playerId, itemIdx, qty = null) {
 
   const item = p.inventory[itemIdx];
   const itemQty = parseInt(item.qty, 10) || 1;
-  let transferQty = qty !== null ? parseInt(qty, 10) : 1;
+  let transferQty = 1;
+
+  if (qty !== null && !isNaN(parseInt(qty, 10))) {
+    transferQty = parseInt(qty, 10);
+  } else if (itemQty > 1) {
+    const promptChoice = prompt(`Quantas unidades de "${item.name}" deseja guardar no Baú do Grupo?\n(Disponível na mochila: ${itemQty}x)`, '1');
+    if (promptChoice === null) return false;
+    transferQty = parseInt(promptChoice, 10);
+  }
 
   if (isNaN(transferQty) || transferQty <= 0) transferQty = 1;
   if (transferQty > itemQty) transferQty = itemQty;
+
+  const itemWeight = (item.weight !== undefined && !isNaN(parseFloat(item.weight))) ? parseFloat(item.weight) : 0;
+  const itemCategory = item.category || 'Equipamento de Aventura';
+  const itemDesc = item.desc || item.prop || '';
 
   // Remove ou subtrai da mochila do jogador
   if (itemQty <= transferQty) {
@@ -1697,7 +1793,7 @@ function sendPlayerItemToPartyStash(playerId, itemIdx, qty = null) {
   // Adiciona ao Baú do Grupo da campanha ativa
   const camp = (typeof getActiveCampaign === 'function') ? getActiveCampaign() : null;
   if (camp) {
-    addItemToPartyStash(item.name, transferQty, item.category || 'Equipamento de Aventura', item.desc || '', 'Baú do Grupo');
+    addItemToPartyStash(item.name, transferQty, itemCategory, itemDesc, 'Baú do Grupo', itemWeight);
   }
 
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
@@ -1744,21 +1840,36 @@ function deletePartyItem(itemId) {
 }
 
 // Função de utilidade para outros módulos (ex: Compêndio) adicionarem itens ao Baú com facilidade
-function addItemToPartyStash(name, qty = 1, category = 'Equipamento de Aventura', desc = '', carrier = 'Baú do Grupo') {
+function addItemToPartyStash(name, qty = 1, category = 'Equipamento de Aventura', desc = '', carrier = 'Baú do Grupo', weight = null) {
   const camp = getActiveCampaign();
   if (!camp) return false;
   camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
   camp.partyStash.items = camp.partyStash.items || [];
   camp.partyStash.history = camp.partyStash.history || [];
 
+  let resolvedWeight = 0;
+  if (weight !== null && weight !== undefined && !isNaN(parseFloat(weight))) {
+    resolvedWeight = Math.max(0, parseFloat(weight));
+  } else if (typeof EQUIPMENT_DATA !== 'undefined' && Array.isArray(EQUIPMENT_DATA)) {
+    const eq = EQUIPMENT_DATA.find(e => e.name && e.name.toLowerCase() === (name || '').toLowerCase());
+    if (eq && eq.weight) {
+      const match = String(eq.weight).match(/([\d,.]+)/);
+      if (match) resolvedWeight = parseFloat(match[1].replace(',', '.')) || 0;
+    }
+  }
+
   const existing = camp.partyStash.items.find(x => x.name.toLowerCase() === name.toLowerCase() && (x.carrier || 'Baú do Grupo') === carrier);
   if (existing) {
     existing.qty = (parseInt(existing.qty) || 0) + qty;
+    if ((!existing.weight || existing.weight === 0) && resolvedWeight > 0) {
+      existing.weight = resolvedWeight;
+    }
   } else {
     camp.partyStash.items.push({
       id: 'it_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
       name,
       qty,
+      weight: resolvedWeight,
       category,
       carrier,
       desc
@@ -1767,7 +1878,7 @@ function addItemToPartyStash(name, qty = 1, category = 'Equipamento de Aventura'
 
   camp.partyStash.history.push({
     date: new Date().toISOString().split('T')[0],
-    text: `+${qty}x ${name} adicionado (${carrier})`,
+    text: `+${qty}x ${name} adicionado (${resolvedWeight ? resolvedWeight + 'kg, ' : ''}${carrier})`,
     type: 'item_in'
   });
 
@@ -1838,7 +1949,7 @@ function renderPartyStashViewer() {
   const tbody = document.getElementById('party-stash-modal-tbody');
   if (tbody) {
     if (!stash.items || stash.items.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">O baú coletivo está vazio.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-muted);">O baú coletivo está vazio.</td></tr>`;
     } else {
       tbody.innerHTML = stash.items.map(it => `
         <tr>
@@ -1847,10 +1958,11 @@ function renderPartyStashViewer() {
             ${it.desc ? `<div style="font-size:10px; color:var(--text-dim);">${it.desc}</div>` : ''}
           </td>
           <td style="text-align:center;"><span class="badge badge-lvl">${it.qty || 1}</span></td>
+          <td style="text-align:center;"><span style="font-size:10.5px; color:var(--text-dim);">${it.weight ? it.weight + ' kg' : '-'}</span></td>
           <td><span style="font-size:11px; color:var(--text-muted);">${it.category || 'Geral'}</span></td>
           <td><span class="carrier-badge">🎒 ${it.carrier || 'Baú do Grupo'}</span></td>
           <td style="text-align:right;">
-            <button class="btn-secondary" style="padding:2px 6px; font-size:10px;" onclick="takePartyItemToPlayer('${it.id}')" title="Transferir 1x para a mochila de um herói">📥 Pegar</button>
+            <button class="btn-secondary" style="padding:2px 6px; font-size:10px;" onclick="takePartyItemToPlayer('${it.id}')" title="Transferir para a mochila de um herói">📥 Pegar</button>
             <button class="btn-secondary" style="padding:2px 6px; font-size:10px;" onclick="openPartyItemModal('${it.id}')" title="Editar item">✏️</button>
             <button class="btn-secondary" style="padding:2px 6px; font-size:10px; color:#f87171;" onclick="deletePartyItem('${it.id}')" title="Remover item">🗑️</button>
           </td>
@@ -1917,7 +2029,7 @@ function deletePartyStashHistoryItem(origIndex) {
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
 }
 
-function takePartyItemToPlayer(itemId, targetPlayerId = null) {
+function takePartyItemToPlayer(itemId, targetPlayerId = null, qty = null) {
   const camp = getActiveCampaign();
   if (!camp || !camp.partyStash?.items) return;
   camp.partyStash.history = camp.partyStash.history || [];
@@ -1927,16 +2039,16 @@ function takePartyItemToPlayer(itemId, targetPlayerId = null) {
 
   let targetPlayer = null;
   if (targetPlayerId) {
-    targetPlayer = PLAYERS.find(p => p.id === targetPlayerId);
+    targetPlayer = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(p => p.id === targetPlayerId) : null;
   } else if (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId) {
-    targetPlayer = PLAYERS.find(p => p.id === activePortalPlayerId);
-  } else if (PLAYERS.length === 1) {
+    targetPlayer = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(p => p.id === activePortalPlayerId) : null;
+  } else if (typeof PLAYERS !== 'undefined' && PLAYERS.length === 1) {
     targetPlayer = PLAYERS[0];
-  } else if (PLAYERS.length > 1) {
+  } else if (typeof PLAYERS !== 'undefined' && PLAYERS.length > 1) {
     const heroList = PLAYERS.map((p, i) => `${i + 1}. ${p.name} (${p.student || 'Personagem'})`).join('\n');
-    const choice = prompt(`Para qual herói deseja transferir 1x "${it.name}"?\nDigite o número correspondente:\n\n${heroList}`, '1');
+    const choice = prompt(`Para qual herói deseja transferir "${it.name}"?\nDigite o número correspondente:\n\n${heroList}`, '1');
     if (!choice) return;
-    const idx = parseInt(choice) - 1;
+    const idx = parseInt(choice, 10) - 1;
     if (idx >= 0 && idx < PLAYERS.length) {
       targetPlayer = PLAYERS[idx];
     } else {
@@ -1950,32 +2062,61 @@ function takePartyItemToPlayer(itemId, targetPlayerId = null) {
     return;
   }
 
+  const itQty = parseInt(it.qty, 10) || 1;
+  let takeQty = 1;
+  if (qty !== null && !isNaN(parseInt(qty, 10))) {
+    takeQty = parseInt(qty, 10);
+  } else if (itQty > 1) {
+    const promptChoice = prompt(`Quantas unidades de "${it.name}" deseja transferir para a mochila de ${targetPlayer.name}?\n(Disponível no baú: ${itQty}x)`, '1');
+    if (promptChoice === null) return;
+    takeQty = parseInt(promptChoice, 10);
+  }
+
+  if (isNaN(takeQty) || takeQty <= 0) takeQty = 1;
+  if (takeQty > itQty) takeQty = itQty;
+
+  // Resolve peso preservado ou busca no catálogo canônico
+  let resolvedWeight = (it.weight !== undefined && !isNaN(parseFloat(it.weight))) ? parseFloat(it.weight) : 0;
+  if (resolvedWeight === 0 && typeof EQUIPMENT_DATA !== 'undefined' && Array.isArray(EQUIPMENT_DATA)) {
+    const eq = EQUIPMENT_DATA.find(e => e.name && e.name.toLowerCase() === (it.name || '').toLowerCase());
+    if (eq && eq.weight) {
+      const match = String(eq.weight).match(/([\d,.]+)/);
+      if (match) resolvedWeight = parseFloat(match[1].replace(',', '.')) || 0;
+    }
+  }
+
   targetPlayer.inventory = targetPlayer.inventory || [];
   const existing = targetPlayer.inventory.find(x => x.name.toLowerCase() === it.name.toLowerCase());
   if (existing) {
-    existing.qty = (parseInt(existing.qty) || 0) + 1;
+    existing.qty = (parseInt(existing.qty, 10) || 0) + takeQty;
+    if ((!existing.weight || existing.weight === 0) && resolvedWeight > 0) {
+      existing.weight = resolvedWeight;
+    }
   } else {
     targetPlayer.inventory.push({
       name: it.name,
-      qty: 1,
+      qty: takeQty,
       equipped: false,
-      weight: 0.5
+      weight: resolvedWeight,
+      category: it.category || 'Equipamento de Aventura',
+      desc: it.desc || ''
     });
   }
 
-  if (it.qty > 1) {
-    it.qty -= 1;
-  } else {
+  if (itQty <= takeQty) {
     trackDeletedPartyItemId(itemId);
     camp.partyStash.items = camp.partyStash.items.filter(x => x.id !== itemId);
+  } else {
+    it.qty = itQty - takeQty;
   }
 
   touchCampaign(camp);
+  touchPartyStash(camp);
   if (typeof touchPlayer === 'function') touchPlayer(targetPlayer);
 
   camp.partyStash.history.push({
     date: new Date().toISOString().split('T')[0],
-    text: `1x ${it.name} transferido para a mochila de ${targetPlayer.name}`,
+    text: `${takeQty}x ${it.name} transferido para a mochila de ${targetPlayer.name}`,
     type: 'item_out'
   });
 
@@ -1985,8 +2126,10 @@ function takePartyItemToPlayer(itemId, targetPlayerId = null) {
   if (typeof renderCampaignPartyStash === 'function') {
     renderCampaignPartyStash(camp, (camp.playerIds || []).map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p));
   }
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
   if (typeof renderPlayers === 'function') renderPlayers();
-  if (typeof addLog === 'function') addLog(`🎒 <b>Baú do Grupo:</b> 1x "${it.name}" transferido para a mochila de <b>${targetPlayer.name}</b>.`);
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof addLog === 'function') addLog(`🎒 <b>Baú do Grupo:</b> ${takeQty}x "${it.name}" transferido para a mochila de <b>${targetPlayer.name}</b>.`);
 }
 
 // --- NOTAS RÁPIDAS DO MESTRE (DM2 - Ctrl+N) ---
@@ -4284,6 +4427,13 @@ if (typeof module !== 'undefined' && module.exports) {
 
 if (typeof window !== 'undefined') {
   window.sendPlayerItemToPartyStash = sendPlayerItemToPartyStash;
+  window.openPartyStashModal = openPartyStashModal;
+  window.closePartyStashModal = closePartyStashModal;
+  window.renderPartyStashViewer = renderPartyStashViewer;
+  window.addItemToPartyStash = addItemToPartyStash;
+  window.takePartyItemToPlayer = takePartyItemToPlayer;
+  window.promptAdjustPartyGold = promptAdjustPartyGold;
+  window.splitPartyGold = splitPartyGold;
   window.renderCampaignHirelings = renderCampaignHirelings;
   window.updateHirelingMission = updateHirelingMission;
   window.updateHirelingStatus = updateHirelingStatus;
