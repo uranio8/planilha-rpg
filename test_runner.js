@@ -10373,6 +10373,153 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     const fallbackDoc163 = await PDFDocument.load(fallbackBytes163);
     assert(fallbackDoc163.getPageCount() === 2, 'Fallback programático continua funcional quando solicitado (_forceFallbackPdf)');
 
+    // =========================================================================
+    // 133. TESTES DE ATAQUES ESPECIAIS DE CLASSE & DANO EXTRA (ISSUE-164)
+    // =========================================================================
+    console.log('\n⚔️ [Bateria 133] Ataques Especiais de Classe e Modificadores de Dano (ISSUE-164):');
+
+    // 1. Ladino: Ataque Furtivo (Sneak Attack)
+    const rogueHero1 = {
+      id: 'p_rogue_1',
+      name: 'Ladino Iniciante',
+      className: 'Ladino',
+      level: 1,
+      str: 10,
+      dex: 16,
+      inventory: [{ name: 'Adaga', equipped: true }]
+    };
+    const rogueAtks1 = sandbox.getPlayerCalculatedAttacks(rogueHero1);
+    const sneak1 = rogueAtks1.find(a => a.name.includes('Ataque Furtivo'));
+    assert(sneak1 && sneak1.damage === '+1d6', 'Ladino Nv 1 calcula Ataque Furtivo com +1d6');
+    assert(sneak1 && sneak1.toHit === '—' && sneak1.isDamageBonusOnly === true, 'Ataque Furtivo possui acerto "—" e isDamageBonusOnly');
+    assert(sneak1 && sneak1.badge === '🗡️ Furtivo', 'Ataque Furtivo possui badge temático 🗡️ Furtivo');
+
+    const rogueHero5 = {
+      id: 'p_rogue_5',
+      name: 'Ladino Nv 5',
+      className: 'Ladino',
+      level: 5,
+      str: 10,
+      dex: 18,
+      inventory: [{ name: 'Rapieira', equipped: true }]
+    };
+    const rogueAtks5 = sandbox.getPlayerCalculatedAttacks(rogueHero5);
+    const sneak5 = rogueAtks5.find(a => a.name.includes('Ataque Furtivo'));
+    assert(sneak5 && sneak5.damage === '+3d6', 'Ladino Nv 5 escala Ataque Furtivo para +3d6');
+
+    // 2. Paladino: Destruição Divina e Canalizar Divindade
+    const paladinHero2 = {
+      id: 'p_paladin_2',
+      name: 'Paladino Nv 2',
+      className: 'Paladino',
+      level: 2,
+      str: 16,
+      cha: 14,
+      inventory: [{ name: 'Espada Longa', equipped: true }]
+    };
+    const paladinAtks2 = sandbox.getPlayerCalculatedAttacks(paladinHero2);
+    const smite2 = paladinAtks2.find(a => a.name.includes('Destruição Divina'));
+    assert(smite2 && smite2.damageType === 'Radiante', 'Paladino Nv 2 possui Destruição Divina (Radiante)');
+    assert(smite2 && smite2.badge === '✨ Divino', 'Destruição Divina possui badge ✨ Divino');
+
+    const paladinHero3 = {
+      id: 'p_paladin_3',
+      name: 'Paladino Devoção Nv 3',
+      className: 'Paladino',
+      subclass: 'Devoção',
+      level: 3,
+      str: 16,
+      cha: 16,
+      inventory: [{ name: 'Espada Longa', equipped: true }]
+    };
+    const paladinAtks3 = sandbox.getPlayerCalculatedAttacks(paladinHero3);
+    const sacredWpn = paladinAtks3.find(a => a.name.includes('Arma Sagrada'));
+    assert(sacredWpn && sacredWpn.toHit === '+3', 'Paladino da Devoção calcula Arma Sagrada com +3 (Carisma 16)');
+
+    // 3. Bárbaro: Dano em Fúria (Rage)
+    const barbHero = {
+      id: 'p_barb_1',
+      name: 'Bárbaro Nv 1',
+      className: 'Bárbaro',
+      level: 1,
+      str: 16,
+      inventory: [{ name: 'Machado Grande', equipped: true }]
+    };
+    const barbAtks = sandbox.getPlayerCalculatedAttacks(barbHero);
+    const rageAtk = barbAtks.find(a => a.name.includes('Dano em Fúria'));
+    assert(rageAtk && rageAtk.damage === '+2', 'Bárbaro Nv 1 possui Dano em Fúria de +2');
+    assert(rageAtk && rageAtk.badge === '💢 Fúria', 'Dano em Fúria possui badge 💢 Fúria');
+
+    // 4. Monge: Golpe Desarmado (Artes Marciais)
+    const monkHero = {
+      id: 'p_monk_1',
+      name: 'Monge Nv 1',
+      className: 'Monge',
+      level: 1,
+      str: 10,
+      dex: 16,
+      inventory: []
+    };
+    const monkAtks = sandbox.getPlayerCalculatedAttacks(monkHero);
+    const martialStrike = monkAtks.find(a => a.name.includes('Artes Marciais'));
+    assert(martialStrike && martialStrike.toHit === '+5', 'Monge Nv 1 usa Destreza (+3 + PB +2) no acerto (+5)');
+    assert(martialStrike && martialStrike.damage === '1d4+3', 'Monge Nv 1 causa 1d4+3 com Golpe Desarmado');
+    assert(!monkAtks.some(a => a.name === 'Ataque Desarmado'), 'Ataque Desarmado genérico é substituído pelo Golpe Desarmado do Monge');
+
+    // 5. Draconato: Arma de Sopro
+    const dragonHero = {
+      id: 'p_dragon_1',
+      name: 'Draconato Nv 1',
+      className: 'Guerreiro',
+      race: 'Draconato',
+      level: 1,
+      con: 14,
+      inventory: [{ name: 'Espada Longa', equipped: true }]
+    };
+    const dragonAtks = sandbox.getPlayerCalculatedAttacks(dragonHero);
+    const breathAtk = dragonAtks.find(a => a.name.includes('Arma de Sopro'));
+    assert(breathAtk && breathAtk.damage === '2d6', 'Draconato Nv 1 possui Arma de Sopro com 2d6');
+    assert(breathAtk && breathAtk.toHit === 'CD 12', 'CD de Salvaguarda calculada corretamente: CD 12 (8 + PB +2 + CON +2)');
+
+    // 6. Bruxo: Rajada Mística & Truques de Dano
+    const warlockHero = {
+      id: 'p_warlock_5',
+      name: 'Bruxo Nv 5',
+      className: 'Bruxo',
+      level: 5,
+      cha: 18,
+      spells: 'Rajada Mística',
+      traits: 'Rajada Agonizante',
+      inventory: []
+    };
+    const warlockAtks = sandbox.getPlayerCalculatedAttacks(warlockHero);
+    const eldritchAtk = warlockAtks.find(a => a.name.includes('Rajada Mística'));
+    assert(eldritchAtk && eldritchAtk.toHit === '+7', 'Rajada Mística calcula acerto mágico +7 (PB +3 + CAR +4)');
+    assert(eldritchAtk && eldritchAtk.damage.includes('2× 1d10+4'), 'Rajada Mística Nv 5 dispara 2 feixes de 1d10+4 com Rajada Agonizante');
+
+    // 7. Rolagem de Dano Only com fórmulas e valores fixos
+    vm.runInContext(`
+      PLAYERS.push(
+        { id: 'p_rogue_5_test', name: 'Ladino 5', level: 5, className: 'Ladino' },
+        { id: 'p_barb_1_test', name: 'Bárbaro 1', level: 1, className: 'Bárbaro' }
+      );
+    `, sandbox);
+
+    const sneakDmgRoll = vm.runInContext("rollWeaponDamageOnly('p_rogue_5_test', 'Ataque Furtivo (+0) 3d6 dano extra')", sandbox);
+    assert(sneakDmgRoll && sneakDmgRoll.totalDmg >= 3 && sneakDmgRoll.totalDmg <= 18, 'rollWeaponDamageOnly rola corretamente os 3d6 do Ataque Furtivo');
+
+    const rageDmgRoll = vm.runInContext("rollWeaponDamageOnly('p_barb_1_test', 'Dano em Fúria (+0) +2 dano extra')", sandbox);
+    assert(rageDmgRoll && rageDmgRoll.totalDmg === 2, 'rollWeaponDamageOnly computa corretamente valor fixo +2 de dano da Fúria');
+
+    // 8. Renderização HTML com badges e estilos da ISSUE-164
+    vm.runInContext(`
+      PLAYERS = [${JSON.stringify(rogueHero5)}];
+      renderPlayers();
+    `, sandbox);
+    const renderedHtml = sandbox.document.getElementById('grid-players')?.innerHTML || '';
+    assert(renderedHtml.includes('roll20-atk-badge badge-sneak'), 'HTML renderiza badge temático .badge-sneak');
+    assert(renderedHtml.includes('is-special-attack'), 'Linha de ataque especial possui classe .is-special-attack');
+
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;
     sandbox.document.getElementById = origGetEl;

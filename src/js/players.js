@@ -1069,7 +1069,316 @@ function getPlayerCoinPurse(p) {
 
 // --- FUNÇÕES AUXILIARES ROLL20 (D&D 5E 2024 SHEET) ---
 
-function getPlayerCalculatedAttacks(p) {
+// ISSUE-164: Ataques Especiais de Classe, Raça e Truques Ofensivos Conhecidos
+function getPlayerSpecialClassAttacks(p) {
+  if (!p) return [];
+  const specialAttacks = [];
+  const prof = getProfBonus(p.level || 1);
+  const strMod = Math.floor(((p.str || 10) - 10) / 2);
+  const dexMod = Math.floor(((p.dex || 10) - 10) / 2);
+  const conMod = Math.floor(((p.con || 10) - 10) / 2);
+  const intMod = Math.floor(((p.int || 10) - 10) / 2);
+  const wisMod = Math.floor(((p.wis || 10) - 10) / 2);
+  const chaMod = Math.floor(((p.cha || 10) - 10) / 2);
+
+  const getEffectiveClassLevel = (player, classKw) => {
+    const kw = classKw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const classes = typeof getPlayerClassesList === 'function' ? getPlayerClassesList(player) : [];
+    let lvl = 0;
+    classes.forEach(c => {
+      const cName = (c.className || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (cName.includes(kw)) {
+        lvl += parseInt(c.level, 10) || 0;
+      }
+    });
+    if (lvl > 0) return lvl;
+    const pClass = (player.className || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (pClass.includes(kw)) {
+      return parseInt(player.level, 10) || 1;
+    }
+    return 0;
+  };
+
+  // 1. Ladino (Rogue): Ataque Furtivo (Sneak Attack)
+  const rogueLvl = getEffectiveClassLevel(p, 'ladino') || getEffectiveClassLevel(p, 'rogue');
+  if (rogueLvl >= 1) {
+    const sneakDiceCount = Math.ceil(rogueLvl / 2);
+    specialAttacks.push({
+      name: 'Ataque Furtivo (Sneak Attack)',
+      badge: '🗡️ Furtivo',
+      badgeClass: 'badge-sneak',
+      type: 'Dano Adicional • 1×/Turno',
+      range: 'Arma Acuidade/Dist.',
+      toHit: '—',
+      toHitVal: 0,
+      hitBonus: '—',
+      bonus: '—',
+      hit: '—',
+      damage: `+${sneakDiceCount}d6`,
+      dmg: `+${sneakDiceCount}d6`,
+      damageType: 'Dano da Arma',
+      notes: '1× por turno ao atingir com arma de acuidade ou à distância tendo Vantagem ou aliado a 1,5m',
+      isSpecialAttack: true,
+      isDamageBonusOnly: true,
+      rawAttackText: `Ataque Furtivo (+0) ${sneakDiceCount}d6 dano extra`
+    });
+  }
+
+  // 2. Paladino (Paladin): Destruição Divina & Canalizar Divindade
+  const paladinLvl = getEffectiveClassLevel(p, 'paladino') || getEffectiveClassLevel(p, 'paladin');
+  if (paladinLvl >= 2) {
+    specialAttacks.push({
+      name: 'Destruição Divina (Divine Smite)',
+      badge: '✨ Divino',
+      badgeClass: 'badge-smite',
+      type: 'Dano Adicional • No Acerto',
+      range: 'Corpo a Corpo',
+      toHit: '—',
+      toHitVal: 0,
+      hitBonus: '—',
+      bonus: '—',
+      hit: '—',
+      damage: '+2d8 a +5d8',
+      dmg: '+2d8 a +5d8',
+      damageType: 'Radiante',
+      notes: 'Ao atingir C.a.C.: gasta 1 espaço (2d8 no 1º círc. +1d8/círc. acima, máx 5d8; +1d8 vs Morto-Vivo/Corruptor)',
+      isSpecialAttack: true,
+      isDamageBonusOnly: true,
+      rawAttackText: 'Destruição Divina (+0) 2d8 radiante'
+    });
+  }
+  if (paladinLvl >= 3) {
+    const subNorm = ((p.subclass || '') + ' ' + (p.className || '')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const chaBonus = Math.max(1, chaMod);
+    if (subNorm.includes('devocao') || subNorm.includes('devotion') || !p.subclass) {
+      specialAttacks.push({
+        name: 'Arma Sagrada (Canalizar Divindade)',
+        badge: '✨ Sagrada',
+        badgeClass: 'badge-sacred',
+        type: 'Canalizar Divindade • Ação',
+        range: 'Arma Empunhada',
+        toHit: `+${chaBonus}`,
+        toHitVal: chaBonus,
+        hitBonus: `+${chaBonus}`,
+        bonus: `+${chaBonus}`,
+        hit: `+${chaBonus}`,
+        damage: 'Luz 6m',
+        dmg: 'Luz 6m',
+        damageType: 'Mágico',
+        notes: `Adiciona +${chaBonus} (Carisma) a todas as jogadas de ataque com a arma por 1 minuto`,
+        isSpecialAttack: true,
+        rawAttackText: `Arma Sagrada (+${chaBonus}) 0 luz`
+      });
+    }
+    if (subNorm.includes('conquista') || subNorm.includes('conquest') || subNorm.includes('vinganca') || subNorm.includes('vengeance') || subNorm.includes('guerra') || subNorm.includes('war')) {
+      specialAttacks.push({
+        name: 'Ataque Guiado (Canalizar Divindade)',
+        badge: '🎯 Guiado',
+        badgeClass: 'badge-guided',
+        type: 'Canalizar Divindade • Reação',
+        range: 'Pessoal',
+        toHit: '+10',
+        toHitVal: 10,
+        hitBonus: '+10',
+        bonus: '+10',
+        hit: '+10',
+        damage: 'Bônus no Acerto',
+        dmg: 'Bônus no Acerto',
+        damageType: 'Especial',
+        notes: '+10 de bônus na jogada de ataque após rolar o d20',
+        isSpecialAttack: true,
+        rawAttackText: 'Ataque Guiado (+10) 0 especial'
+      });
+    }
+  }
+
+  // 3. Bárbaro (Barbarian): Dano em Fúria (Rage)
+  const barbLvl = getEffectiveClassLevel(p, 'barbaro') || getEffectiveClassLevel(p, 'barbarian');
+  if (barbLvl >= 1) {
+    const rageBonus = barbLvl >= 16 ? 4 : (barbLvl >= 9 ? 3 : 2);
+    specialAttacks.push({
+      name: 'Dano em Fúria (Rage)',
+      badge: '💢 Fúria',
+      badgeClass: 'badge-rage',
+      type: 'Dano Adicional • Bônus',
+      range: 'Corpo a Corpo',
+      toHit: '—',
+      toHitVal: 0,
+      hitBonus: '—',
+      bonus: '—',
+      hit: '—',
+      damage: `+${rageBonus}`,
+      dmg: `+${rageBonus}`,
+      damageType: 'Dano da Arma',
+      notes: `Adiciona +${rageBonus} ao dano de ataques corpo a corpo usando FOR durante a Fúria`,
+      isSpecialAttack: true,
+      isDamageBonusOnly: true,
+      rawAttackText: `Dano em Fúria (+0) +${rageBonus} dano extra`
+    });
+  }
+
+  // 4. Monge (Monk): Golpe Desarmado (Artes Marciais)
+  const monkLvl = getEffectiveClassLevel(p, 'monge') || getEffectiveClassLevel(p, 'monk');
+  if (monkLvl >= 1) {
+    const martialDie = monkLvl >= 17 ? '1d10' : (monkLvl >= 11 ? '1d8' : (monkLvl >= 5 ? '1d6' : '1d4'));
+    const monkMod = Math.max(strMod, dexMod);
+    const monkHit = prof + monkMod;
+    const monkHitStr = monkHit >= 0 ? `+${monkHit}` : `${monkHit}`;
+    const monkDmgStr = `${martialDie}${monkMod !== 0 ? (monkMod > 0 ? '+' + monkMod : monkMod) : ''}`;
+    specialAttacks.push({
+      name: 'Golpe Desarmado (Artes Marciais)',
+      badge: '🥋 Marcial',
+      badgeClass: 'badge-monk',
+      type: 'Ação Bônus • C.a.C.',
+      range: '1,5m',
+      toHit: monkHitStr,
+      toHitVal: monkHit,
+      hitBonus: monkHitStr,
+      bonus: monkHitStr,
+      hit: monkHitStr,
+      damage: monkDmgStr,
+      dmg: monkDmgStr,
+      damageType: 'Concussão',
+      notes: 'Ação Bônus ao atacar com arma de monge ou desarmado; usa Destreza no acerto e dano',
+      isSpecialAttack: true,
+      rawAttackText: `Golpe Desarmado (${monkHitStr}) ${monkDmgStr} concussão`
+    });
+  }
+
+  // 5. Draconato (Dragonborn): Arma de Sopro
+  const raceNorm = (p.race || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (raceNorm.includes('draconato') || raceNorm.includes('dragonborn')) {
+    const pLvl = parseInt(p.level, 10) || 1;
+    const breathDice = pLvl >= 16 ? '5d6' : (pLvl >= 11 ? '4d6' : (pLvl >= 6 ? '3d6' : '2d6'));
+    const breathDc = 8 + prof + conMod;
+    specialAttacks.push({
+      name: 'Arma de Sopro (Draconato)',
+      badge: '🔥 Sopro',
+      badgeClass: 'badge-breath',
+      type: 'Ação • 1×/Descanso',
+      range: 'Cone 4,5m / Linha 9m',
+      toHit: `CD ${breathDc}`,
+      toHitVal: breathDc,
+      hitBonus: `CD ${breathDc}`,
+      bonus: `CD ${breathDc}`,
+      hit: `CD ${breathDc}`,
+      damage: breathDice,
+      dmg: breathDice,
+      damageType: 'Ancestralidade',
+      notes: `Salvaguarda CD ${breathDc} (DES ou CON conforme ancestralidade); metade do dano se passar`,
+      isSpecialAttack: true,
+      rawAttackText: `Arma de Sopro (CD ${breathDc}) ${breathDice} dano elemental`
+    });
+  }
+
+  // 6. Rajada Mística & Truques de Ataque Conhecidos
+  const knownSpells = typeof getPlayerKnownSpells === 'function' ? getPlayerKnownSpells(p) : [];
+  const spellsNorm = knownSpells.map(s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
+  const warlockLvl = getEffectiveClassLevel(p, 'bruxo') || getEffectiveClassLevel(p, 'warlock');
+  const hasEldritchBlast = spellsNorm.some(s => s.includes('rajada mistica') || s.includes('eldritch blast')) ||
+    (warlockLvl >= 1 && (p.spells || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes('rajada'));
+
+  if (hasEldritchBlast) {
+    const charLvl = parseInt(p.level, 10) || 1;
+    const beams = charLvl >= 17 ? 4 : (charLvl >= 11 ? 3 : (charLvl >= 5 ? 2 : 1));
+    const traitsText = [p.traits, p.features, p.classFeatures, (p.customFeatures || []).map(f => f.name + ' ' + f.desc).join(' ')].join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const hasAgonizing = traitsText.includes('rajada agonizante') || traitsText.includes('agonizing blast');
+    const blastDmgMod = hasAgonizing && chaMod > 0 ? `+${chaMod}` : '';
+    const spellStats = typeof getPlayerSpellcastingStats === 'function' ? getPlayerSpellcastingStats(p) : null;
+    const blastHit = (spellStats && spellStats.attackBonus) ? spellStats.attackBonus : (prof + chaMod >= 0 ? `+${prof + chaMod}` : `${prof + chaMod}`);
+    const blastHitVal = (spellStats && spellStats.attackModNum !== undefined) ? spellStats.attackModNum : (prof + chaMod);
+    specialAttacks.push({
+      name: 'Rajada Mística (Eldritch Blast)',
+      badge: '🟣 Truque',
+      badgeClass: 'badge-cantrip',
+      type: 'Magia de Ataque • 1 Ação',
+      range: '36m',
+      toHit: blastHit,
+      toHitVal: blastHitVal,
+      hitBonus: blastHit,
+      bonus: blastHit,
+      hit: blastHit,
+      damage: `${beams > 1 ? beams + '× ' : ''}1d10${blastDmgMod}`,
+      dmg: `${beams > 1 ? beams + '× ' : ''}1d10${blastDmgMod}`,
+      damageType: 'Energia',
+      notes: `${beams} feixe(s) de 1d10 de energia${hasAgonizing ? ` (+${chaMod} por feixe)` : ''}; alcance 36m`,
+      isSpecialAttack: true,
+      rawAttackText: `Rajada Mística (${blastHit}) 1d10${blastDmgMod} energia`
+    });
+  }
+
+  // 7. Outros Truques Ofensivos Conhecidos (Raio de Fogo, Raio de Gelo, Toque Chocante)
+  const spellStats = typeof getPlayerSpellcastingStats === 'function' ? getPlayerSpellcastingStats(p) : null;
+  const sAtkBonus = (spellStats && spellStats.attackBonus) ? spellStats.attackBonus : (prof + Math.max(intMod, wisMod, chaMod) >= 0 ? `+${prof + Math.max(intMod, wisMod, chaMod)}` : `${prof + Math.max(intMod, wisMod, chaMod)}`);
+  const sAtkVal = (spellStats && spellStats.attackModNum !== undefined) ? spellStats.attackModNum : (prof + Math.max(intMod, wisMod, chaMod));
+  const cLvl = parseInt(p.level, 10) || 1;
+  const cantripDiceCount = cLvl >= 17 ? 4 : (cLvl >= 11 ? 3 : (cLvl >= 5 ? 2 : 1));
+
+  if (spellsNorm.some(s => s.includes('raio de fogo') || s.includes('fire bolt'))) {
+    specialAttacks.push({
+      name: 'Raio de Fogo (Fire Bolt)',
+      badge: '🔥 Truque',
+      badgeClass: 'badge-cantrip',
+      type: 'Magia de Ataque • 1 Ação',
+      range: '36m',
+      toHit: sAtkBonus,
+      toHitVal: sAtkVal,
+      hitBonus: sAtkBonus,
+      bonus: sAtkBonus,
+      hit: sAtkBonus,
+      damage: `${cantripDiceCount}d10`,
+      dmg: `${cantripDiceCount}d10`,
+      damageType: 'Fogo',
+      notes: 'Incendeia objetos inflamáveis que não estejam sendo vestidos ou carregados',
+      isSpecialAttack: true,
+      rawAttackText: `Raio de Fogo (${sAtkBonus}) ${cantripDiceCount}d10 fogo`
+    });
+  }
+  if (spellsNorm.some(s => s.includes('raio de gelo') || s.includes('ray of frost'))) {
+    specialAttacks.push({
+      name: 'Raio de Gelo (Ray of Frost)',
+      badge: '❄️ Truque',
+      badgeClass: 'badge-cantrip',
+      type: 'Magia de Ataque • 1 Ação',
+      range: '18m',
+      toHit: sAtkBonus,
+      toHitVal: sAtkVal,
+      hitBonus: sAtkBonus,
+      bonus: sAtkBonus,
+      hit: sAtkBonus,
+      damage: `${cantripDiceCount}d8`,
+      dmg: `${cantripDiceCount}d8`,
+      damageType: 'Frio',
+      notes: 'Reduz o deslocamento do alvo em 3m até o início do seu próximo turno',
+      isSpecialAttack: true,
+      rawAttackText: `Raio de Gelo (${sAtkBonus}) ${cantripDiceCount}d8 frio`
+    });
+  }
+  if (spellsNorm.some(s => s.includes('toque chocante') || s.includes('shocking grasp'))) {
+    specialAttacks.push({
+      name: 'Toque Chocante (Shocking Grasp)',
+      badge: '⚡ Truque',
+      badgeClass: 'badge-cantrip',
+      type: 'Magia de Ataque • Toque',
+      range: 'Toque',
+      toHit: sAtkBonus,
+      toHitVal: sAtkVal,
+      hitBonus: sAtkBonus,
+      bonus: sAtkBonus,
+      hit: sAtkBonus,
+      damage: `${cantripDiceCount}d8`,
+      dmg: `${cantripDiceCount}d8`,
+      damageType: 'Elétrico',
+      notes: 'Vantagem no acerto se o alvo vestir armadura metálica; o alvo não pode realizar reações até o próximo turno',
+      isSpecialAttack: true,
+      rawAttackText: `Toque Chocante (${sAtkBonus}) ${cantripDiceCount}d8 elétrico`
+    });
+  }
+
+  return specialAttacks;
+}
+
+function getPlayerCalculatedAttacks(p, options = {}) {
   if (!p) return [];
   const prof = getProfBonus(p.level || 1);
   const strMod = Math.floor(((p.str || 10) - 10) / 2);
@@ -1187,7 +1496,10 @@ function getPlayerCalculatedAttacks(p) {
         toHit: toHitStr,
         toHitVal: toHit,
         hitBonus: toHitStr,
+        bonus: toHitStr,
+        hit: toHitStr,
         damage: finalDmg,
+        dmg: finalDmg,
         damageType: dmgType,
         notes: propRaw || 'Arma equipada',
         isEquipped: true,
@@ -1201,8 +1513,9 @@ function getPlayerCalculatedAttacks(p) {
   const normalizeWeaponBase = (str) => {
     return (str || '')
       .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/\(.*?\)/g, '')
-      .replace(/[⚔️🗡️🏹★]/g, '')
+      .replace(/[⚔️🗡️🏹★✨💢🥋🔥🟣⚡🎯]/g, '')
       .trim();
   };
 
@@ -1216,7 +1529,7 @@ function getPlayerCalculatedAttacks(p) {
 
     rawAttacksList.forEach(attStr => {
       if (!attStr || typeof attStr !== 'string') return;
-      const cleanName = attStr.split('(')[0].replace(/[⚔️🗡️🏹★]/g, '').trim();
+      const cleanName = attStr.split('(')[0].replace(/[⚔️🗡️🏹★✨💢🥋🔥🟣⚡🎯]/g, '').trim();
       if (!cleanName) return;
 
       const normCleanBase = normalizeWeaponBase(cleanName);
@@ -1268,7 +1581,10 @@ function getPlayerCalculatedAttacks(p) {
             toHit: stats.hitStr,
             toHitVal: stats.hitBonus,
             hitBonus: stats.hitStr,
+            bonus: stats.hitStr,
+            hit: stats.hitStr,
             damage: stats.damageFormula,
+            dmg: stats.damageFormula,
             damageType: stats.damageType,
             notes: stats.properties || 'Arma equipada',
             isEquipped: true,
@@ -1290,7 +1606,10 @@ function getPlayerCalculatedAttacks(p) {
         toHit: toHitStr,
         toHitVal: parseInt(toHitStr, 10) || 0,
         hitBonus: toHitStr,
+        bonus: toHitStr,
+        hit: toHitStr,
         damage: dmgStr,
+        dmg: dmgStr,
         damageType: 'Dano',
         notes: 'Ataque cadastrado',
         isEquipped: true,
@@ -1311,12 +1630,37 @@ function getPlayerCalculatedAttacks(p) {
       toHit: unarmHitStr,
       toHitVal: unarmHit,
       hitBonus: unarmHitStr,
+      bonus: unarmHitStr,
+      hit: unarmHitStr,
       damage: `${unarmDmg}`,
+      dmg: `${unarmDmg}`,
       damageType: 'Concussão',
       notes: 'Golpe corporal básico',
       isEquipped: true,
       rawAttackText: `Ataque Desarmado (${unarmHitStr}) ${unarmDmg} concussão`
     });
+  }
+
+  // 4. ISSUE-164: Ataques Especiais de Classe, Raça e Truques Ofensivos Conhecidos
+  if (options.weaponsOnly !== true && typeof getPlayerSpecialClassAttacks === 'function') {
+    const specials = getPlayerSpecialClassAttacks(p);
+    specials.forEach(sp => {
+      const spNorm = normalizeWeaponBase(sp.name);
+      if (!attacks.some(a => {
+        const aNorm = normalizeWeaponBase(a.name);
+        return aNorm === spNorm || aNorm.includes(spNorm) || spNorm.includes(aNorm);
+      })) {
+        attacks.push(sp);
+      }
+    });
+
+    // Se possui Golpe Desarmado (Artes Marciais) do Monge, remove o fallback básico de 1 dano
+    if (attacks.some(a => a.name.includes('Artes Marciais'))) {
+      const fallbackIdx = attacks.findIndex(a => a.name === 'Ataque Desarmado');
+      if (fallbackIdx !== -1) {
+        attacks.splice(fallbackIdx, 1);
+      }
+    }
   }
 
   return attacks;
@@ -1383,9 +1727,11 @@ function sharePlayerCalculatedAttackToFeed(playerId, atkIndex) {
   const atk = attacks[atkIndex];
   if (!atk) return;
 
-  const msg = `⚔️ <b>${p.name}</b> compartilha ataque: <b>${atk.name}</b> | Acerto: <b>${atk.toHit}</b> | Dano: <b>${atk.damage}</b> (${atk.damageType}) | Alcance: ${atk.range}`;
+  const msg = atk.isDamageBonusOnly
+    ? `⚡ <b>${p.name}</b> aciona: <b>${atk.name}</b> | Dano Extra: <b>${atk.damage}</b> (${atk.damageType})${atk.notes ? ' • ' + atk.notes : ''}`
+    : `⚔️ <b>${p.name}</b> compartilha ataque: <b>${atk.name}</b> | Acerto: <b>${atk.toHit}</b> | Dano: <b>${atk.damage}</b> (${atk.damageType}) | Alcance: ${atk.range}${atk.notes ? ' • ' + atk.notes : ''}`;
   addLog(msg);
-  addPlayerActionLog(p.id, '⚔️', `Compartilhou ${atk.name} (${atk.toHit} / ${atk.damage})`, 'attack');
+  addPlayerActionLog(p.id, atk.isDamageBonusOnly ? '⚡' : '⚔️', `Compartilhou ${atk.name} (${atk.damage})`, 'attack');
   if (typeof playFX === 'function') playFX('dice');
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
 }
@@ -2341,26 +2687,31 @@ function renderPlayers() {
                     </thead>
                     <tbody>
                       ${calculatedAttacks.length > 0 ? calculatedAttacks.map((atk, aIdx) => `
-                        <tr>
+                        <tr class="roll20-atk-row ${atk.isSpecialAttack ? 'is-special-attack' : ''}">
                           <td>
                             <div class="roll20-atk-name" title="${escapeAttr(atk.notes || '')}">
                               <span>${atk.name}</span>
+                              ${atk.badge ? `<span class="roll20-atk-badge ${atk.badgeClass || ''}">${atk.badge}</span>` : ''}
                               ${atk.isEquipped ? '<span style="color:var(--accent-gold); font-size:10px;" title="Equipado no Inventário">★</span>' : ''}
                             </div>
                             <div style="font-size: 9.5px; color: #64748b;">${atk.type} ${atk.notes ? '• ' + atk.notes : ''}</div>
                           </td>
                           <td style="text-align: center; color: #94a3b8; font-size: 11px;">${atk.range}</td>
                           <td style="text-align: center;">
-                            <button type="button" class="roll20-btn-roll-atk" onclick="rollPlayerAttack('${p.id}', '${escapeAttr(atk.rawAttackText)}')" title="Rolar Ataque Completo (d20 ${atk.toHit})">
-                              🎲 ${atk.toHit}
-                            </button>
+                            ${atk.isDamageBonusOnly ? `
+                              <span style="font-size: 11px; color: #64748b; font-weight: 700;" title="Dano ou bônus adicional aplicado no acerto">—</span>
+                            ` : `
+                              <button type="button" class="roll20-btn-roll-atk" onclick="rollPlayerAttack('${p.id}', '${escapeAttr(atk.rawAttackText)}')" title="${(atk.toHit || '').startsWith('CD') ? 'Salvaguarda: ' + atk.toHit : 'Rolar Ataque Completo (d20 ' + atk.toHit + ')'}">
+                                🎲 ${atk.toHit}
+                              </button>
+                            `}
                           </td>
                           <td style="color: #f8fafc; font-size: 11px;">
                             <b style="color: #fbbf24;">${atk.damage}</b> <span style="font-size: 10px; color: #94a3b8;">${atk.damageType}</span>
                           </td>
                           <td style="text-align: right; white-space: nowrap;">
                             <div class="attack-actions-cell">
-                              <button type="button" class="btn-micro roll20-btn-damage-only" onclick="rollWeaponDamageOnly('${p.id}', '${escapeAttr(atk.rawAttackText)}')" title="Rolar Apenas Dano">💥</button>
+                              <button type="button" class="btn-micro roll20-btn-damage-only" onclick="rollWeaponDamageOnly('${p.id}', '${escapeAttr(atk.rawAttackText)}')" title="${atk.isDamageBonusOnly ? 'Rolar Dano Extra / Bônus' : 'Rolar Apenas Dano'}">💥</button>
                               <button type="button" class="btn-chat-feed" onclick="sharePlayerCalculatedAttackToFeed('${p.id}', ${aIdx})" title="Compartilhar ataque no chat da mesa">💬</button>
                             </div>
                           </td>
@@ -4431,28 +4782,52 @@ function rollWeaponDamageOnly(id, rawAttackText, isCrit = false) {
   if (!p) return;
 
   const dmgMatch = rawAttackText.match(/(\d+d\d+(?:\s*[+-]\s*\d+)?)/i);
-  let dmgFormula = dmgMatch ? dmgMatch[1].replace(/\s+/g, '') : '1d8+3';
-  let dmgParts = dmgFormula.split(/[+-]/);
-  let dicePart = dmgParts[0];
-  let dmgMod = dmgFormula.includes('+') ? parseInt(dmgFormula.split('+')[1], 10) : (dmgFormula.includes('-') ? -parseInt(dmgFormula.split('-')[1], 10) : 0);
+  let dmgFormula = dmgMatch ? dmgMatch[1].replace(/\s+/g, '') : '';
+  let isFixedNumber = false;
+  let fixedVal = 0;
 
-  let [diceCount, diceSides] = dicePart.split('d').map(x => parseInt(x, 10));
-  diceCount = diceCount || 1;
-  diceSides = diceSides || 8;
-
-  if (isCrit) diceCount *= 2;
+  if (!dmgFormula) {
+    const fixedMatch = rawAttackText.match(/(?:dano|bônus|bonus|\))\s*([+-]?\d+)/i) || rawAttackText.match(/([+-]\d+)\s*(?:dano|bônus|cortante|concussão|perfurante|extra)/i);
+    if (fixedMatch) {
+      isFixedNumber = true;
+      fixedVal = parseInt(fixedMatch[1], 10) || 0;
+    } else {
+      dmgFormula = '1d8+3';
+    }
+  }
 
   let dmgRolls = [];
   let totalDmg = 0;
-  for (let i = 0; i < diceCount; i++) {
-    const r = Math.floor(Math.random() * diceSides) + 1;
-    dmgRolls.push(r);
-    totalDmg += r;
+  let diceCount = 1;
+  let diceSides = 8;
+  let dmgMod = 0;
+
+  if (isFixedNumber) {
+    totalDmg = fixedVal;
+    dmgRolls = [fixedVal];
+  } else {
+    let dmgParts = dmgFormula.split(/[+-]/);
+    let dicePart = dmgParts[0];
+    dmgMod = dmgFormula.includes('+') ? parseInt(dmgFormula.split('+')[1], 10) : (dmgFormula.includes('-') ? -parseInt(dmgFormula.split('-')[1], 10) : 0);
+
+    const splitDice = dicePart.split('d').map(x => parseInt(x, 10));
+    diceCount = splitDice[0] || 1;
+    diceSides = splitDice[1] || 8;
+
+    if (isCrit) diceCount *= 2;
+
+    for (let i = 0; i < diceCount; i++) {
+      const r = Math.floor(Math.random() * diceSides) + 1;
+      dmgRolls.push(r);
+      totalDmg += r;
+    }
+    totalDmg += dmgMod;
   }
-  totalDmg += dmgMod;
 
   const weaponName = rawAttackText.split('(')[0].trim() || 'Arma';
-  const dmgBreakdown = `${diceCount}d${diceSides} [${dmgRolls.join(', ')}] ${dmgMod !== 0 ? (dmgMod > 0 ? '+ ' + dmgMod : '- ' + Math.abs(dmgMod)) : ''} ➔ <b>${totalDmg}</b>`;
+  const dmgBreakdown = isFixedNumber
+    ? `<b>${totalDmg >= 0 ? '+' + totalDmg : totalDmg}</b>`
+    : `${diceCount}d${diceSides} [${dmgRolls.join(', ')}] ${dmgMod !== 0 ? (dmgMod > 0 ? '+ ' + dmgMod : '- ' + Math.abs(dmgMod)) : ''} ➔ <b>${totalDmg}</b>`;
   const logMsg = `💥 <b>${p.name}</b> rolou dano com <b>${weaponName}</b>: ${dmgBreakdown} de dano${isCrit ? ' 🔥 (CRÍTICO!)' : ''}`;
 
   addLog(logMsg);
@@ -10338,9 +10713,12 @@ function printPlayerSheet(id) {
   const hasSpells = slots.some(s => s > 0) || (Array.isArray(p.preparedSpells) && p.preparedSpells.length > 0) || !!p.spells;
 
   // Ataques & Armas
-  const attacksText = typeof p.attacks === 'string'
-    ? p.attacks.replace(/\n/g, '<br>')
-    : (Array.isArray(p.attacks) ? p.attacks.map(a => typeof a === 'string' ? a : (a.name || '')).filter(Boolean).join('<br>') : 'Nenhum ataque registrado.');
+  const calcedAttacksList = (typeof getPlayerCalculatedAttacks === 'function') ? getPlayerCalculatedAttacks(p) : [];
+  const attacksText = calcedAttacksList.length > 0
+    ? calcedAttacksList.map(a => `<b>${a.name}</b> ${a.toHit && a.toHit !== '—' ? '(' + a.toHit + ')' : ''} — <span style="color:#d97706;">${a.damage}</span> ${a.damageType || ''}${a.notes ? ` <i>(${a.notes})</i>` : ''}`).join('<br>')
+    : (typeof p.attacks === 'string'
+        ? p.attacks.replace(/\n/g, '<br>')
+        : (Array.isArray(p.attacks) ? p.attacks.map(a => typeof a === 'string' ? a : (a.name || '')).filter(Boolean).join('<br>') : 'Nenhum ataque registrado.'));
 
   const container = document.getElementById('print-sheet-content');
   if (!container) return;
@@ -15091,6 +15469,7 @@ if (typeof module !== 'undefined' && module.exports) {
 
     // ISSUE-111: Roll20 2024 Layout Overhaul
     getPlayerCalculatedAttacks,
+    getPlayerSpecialClassAttacks,
     togglePlayerItemEquipped,
     setPlayerCardRoll20Tab,
     applyRoll20QuickDamage,
@@ -15174,6 +15553,7 @@ if (typeof window !== 'undefined') {
 
   // ISSUE-111: Roll20 2024 Layout Overhaul
   window.getPlayerCalculatedAttacks = getPlayerCalculatedAttacks;
+  window.getPlayerSpecialClassAttacks = getPlayerSpecialClassAttacks;
   window.togglePlayerItemEquipped = togglePlayerItemEquipped;
   window.setPlayerCardRoll20Tab = setPlayerCardRoll20Tab;
   window.applyRoll20QuickDamage = applyRoll20QuickDamage;
@@ -16333,11 +16713,13 @@ if (typeof global !== 'undefined') {
   global.rollXanatharLifePathModal = rollXanatharLifePathModal;
   global.removeSpellFromPlayer = removeSpellFromPlayer;
   global.buildPlayerSpellsSummary = buildPlayerSpellsSummary;
+  global.getPlayerSpecialClassAttacks = getPlayerSpecialClassAttacks;
   global.parseSpellNamesFromRawText = parseSpellNamesFromRawText;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
+    getPlayerSpecialClassAttacks,
     getRacialAbilityBonuses,
     roll4d6DropLowest,
     rollAttributes4d6Modal,

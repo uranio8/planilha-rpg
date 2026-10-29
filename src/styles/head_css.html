@@ -11452,6 +11452,62 @@
       color: #fef08a;
     }
 
+    /* ISSUE-164: Badges e Estilos para Ataques Especiais de Classe e Dano Extra */
+    .roll20-atk-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 8.5px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      line-height: 1.2;
+    }
+    .roll20-atk-badge.badge-sneak {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+    .roll20-atk-badge.badge-smite,
+    .roll20-atk-badge.badge-sacred {
+      background: rgba(234, 179, 8, 0.15);
+      color: #facc15;
+      border: 1px solid rgba(234, 179, 8, 0.35);
+    }
+    .roll20-atk-badge.badge-guided {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.35);
+    }
+    .roll20-atk-badge.badge-rage {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+    }
+    .roll20-atk-badge.badge-monk {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+    .roll20-atk-badge.badge-breath {
+      background: rgba(249, 115, 22, 0.15);
+      color: #fb923c;
+      border: 1px solid rgba(249, 115, 22, 0.35);
+    }
+    .roll20-atk-badge.badge-cantrip {
+      background: rgba(168, 85, 247, 0.15);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.35);
+    }
+    .roll20-atk-row.is-special-attack {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .roll20-atk-row.is-special-attack:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
     /* ===================================================
        🎨 DESIGN SYSTEM DARK FANTASY: BOTÕES DA FICHA (ISSUE-112)
        =================================================== */
