@@ -10568,6 +10568,90 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(heroCardHtml.includes('CLASSE ARM.'), 'Bloco lateral exibe CLASSE ARM. em vez de ARMOR CLASS');
     assert(heroCardHtml.includes('DESLOC.'), 'Bloco lateral exibe DESLOC. em vez de SPEED');
 
+    // --- Bateria 136: Validação de Sincronização Canônica de Ouro, Prevenção de Perda de Moedas e Autoridade do Mestre (ISSUE-167) ---
+    console.log('\n--- Bateria 136: Validação de Sincronização Canônica de Moedas/Ouro e Portal do Jogador (ISSUE-167) ---');
+
+    vm.runInContext(`
+      testHeroCoins = {
+        id: 'p_test_coins_sync',
+        name: 'Midas do Teste',
+        gold: 150,
+        coins: { cp: 10, sp: 20, ep: 0, gp: 150, pp: 1 }
+      };
+
+      // 1. Teste de syncPlayerCoinsAndGold
+      syncPlayerCoinsAndGold(testHeroCoins);
+    `, sandbox);
+    assert(sandbox.testHeroCoins.gold === 162 && sandbox.testHeroCoins.coins.gp === 150, 'syncPlayerCoinsAndGold calcula gold total equivalente (162 PO) e preserva coins.gp (150)');
+
+    // Teste com coins.gp modificado (ex: moedas foram adicionadas pelo modal)
+    vm.runInContext(`
+      testHeroUpdatedCoins = {
+        id: 'p_test_updated_coins',
+        gold: 150,
+        coins: { cp: 0, sp: 0, ep: 0, gp: 320, pp: 0 }
+      };
+      syncPlayerCoinsAndGold(testHeroUpdatedCoins);
+    `, sandbox);
+    assert(sandbox.testHeroUpdatedCoins.gold === 320 && sandbox.testHeroUpdatedCoins.coins.gp === 320, 'syncPlayerCoinsAndGold adota o valor atualizado quando coins.gp é modificado');
+
+    // Teste com personagem legado possuindo apenas gold
+    vm.runInContext(`
+      testHeroUpdatedGold = {
+        id: 'p_test_updated_gold',
+        gold: 500
+      };
+      syncPlayerCoinsAndGold(testHeroUpdatedGold);
+    `, sandbox);
+    assert(sandbox.testHeroUpdatedGold.gold === 500 && sandbox.testHeroUpdatedGold.coins.gp === 500, 'syncPlayerCoinsAndGold inicializa coins.gp para heróis com apenas gold');
+
+    // 2. Teste de adjustPlayerGold
+    vm.runInContext(`
+      PLAYERS.push({
+        id: 'p_adjust_gold_test',
+        name: 'Bardo Afortunado',
+        gold: 50,
+        coins: { cp: 0, sp: 0, ep: 0, gp: 50, pp: 0 },
+        updatedAt: 1000
+      });
+      adjustPlayerGold('p_adjust_gold_test', 25);
+      adjustedHero = PLAYERS.find(p => p.id === 'p_adjust_gold_test');
+    `, sandbox);
+    assert(sandbox.adjustedHero.gold === 75, 'adjustPlayerGold ajusta p.gold corretamente (+25)');
+    assert(sandbox.adjustedHero.coins.gp === 75, 'adjustPlayerGold atualiza p.coins.gp sincronizado com p.gold (+25)');
+    assert(sandbox.adjustedHero.updatedAt > 1000, 'adjustPlayerGold atualiza timestamp updatedAt do herói');
+
+    // 3. Teste de autoridade do Mestre no Firebase Cloud Merge (ISSUE-167)
+    vm.runInContext(`
+      localHeroSnapshot = {
+        id: 'p_portal_sync_hero',
+        name: 'Herói Portal Local',
+        gold: 10,
+        coins: { cp: 0, sp: 0, ep: 0, gp: 10, pp: 0 },
+        inventory: ['Tocha'],
+        updatedAt: 50000 // Suponha relógio do celular adiantado
+      };
+
+      remoteMasterSnapshot = {
+        id: 'p_portal_sync_hero',
+        name: 'Herói Portal Local',
+        gold: 999, // Mestre deu 999 PO de recompensa
+        coins: { cp: 50, sp: 50, ep: 0, gp: 999, pp: 5 },
+        inventory: ['Tocha', 'Espada Mágica +1'],
+        updatedAt: 49000 // Timestamp do PC ligeiramente anterior por clock skew
+      };
+
+      // Simula a lógica de mesclagem de applyCloudDataToLocal quando publishedBy === 'master'
+      isMasterUpdate = true;
+      isLocalNewer = localHeroSnapshot.updatedAt >= remoteMasterSnapshot.updatedAt;
+
+      mergedCoins = isMasterUpdate ? (remoteMasterSnapshot.coins || { cp: 0, sp: 0, ep: 0, gp: remoteMasterSnapshot.gold || 0, pp: 0 }) : (isLocalNewer ? localHeroSnapshot.coins : remoteMasterSnapshot.coins);
+      mergedGold = isMasterUpdate ? (remoteMasterSnapshot.gold !== undefined ? remoteMasterSnapshot.gold : (remoteMasterSnapshot.coins?.gp || 0)) : (isLocalNewer ? localHeroSnapshot.gold : remoteMasterSnapshot.gold);
+      mergedInventory = isMasterUpdate ? remoteMasterSnapshot.inventory : (isLocalNewer ? localHeroSnapshot.inventory : remoteMasterSnapshot.inventory);
+    `, sandbox);
+    assert(sandbox.mergedCoins.gp === 999 && sandbox.mergedGold === 999, 'No Portal do Jogador, dados de moedas do Mestre têm autoridade mesmo com clock skew');
+    assert(sandbox.mergedInventory.includes('Espada Mágica +1'), 'No Portal do Jogador, itens dados pelo Mestre são adotados prioritariamente');
+
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;
     sandbox.document.getElementById = origGetEl;

@@ -1778,6 +1778,7 @@ function promptAdjustPartyGold(type, sourcePlayerId = null) {
   if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
   if (typeof renderPlayers === 'function') renderPlayers();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function splitPartyGold() {
@@ -1822,7 +1823,8 @@ function splitPartyGold() {
   touchCampaign(camp);
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
   renderCampaigns();
   renderPartyStashViewer();
   if (typeof renderPlayers === 'function') renderPlayers();

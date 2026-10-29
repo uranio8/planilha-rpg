@@ -1057,12 +1057,25 @@ function getPlayerCarryCapacity(p) {
   };
 }
 
-function getPlayerCoinPurse(p) {
-  p.coins = p.coins || { cp: 0, sp: 0, ep: 0, gp: p.gold || 0, pp: 0 };
-  const totalGp = (p.coins.cp || 0) / 100 + (p.coins.sp || 0) / 10 + (p.coins.ep || 0) / 2 + (p.coins.gp || 0) + (p.coins.pp || 0) * 10;
+function syncPlayerCoinsAndGold(p) {
+  if (!p) return null;
+  p.coins = p.coins || { cp: 0, sp: 0, ep: 0, gp: (p.gold !== undefined ? Number(p.gold) : 0), pp: 0 };
+  p.coins.cp = Number(p.coins.cp || 0);
+  p.coins.sp = Number(p.coins.sp || 0);
+  p.coins.ep = Number(p.coins.ep || 0);
+  p.coins.gp = Number(p.coins.gp || 0);
+  p.coins.pp = Number(p.coins.pp || 0);
+  const totalGp = (p.coins.cp / 100) + (p.coins.sp / 10) + (p.coins.ep / 2) + p.coins.gp + (p.coins.pp * 10);
   p.gold = Math.floor(totalGp);
+  return p;
+}
+
+function getPlayerCoinPurse(p) {
+  p = syncPlayerCoinsAndGold(p) || p;
+  const totalGp = (p.coins.cp || 0) / 100 + (p.coins.sp || 0) / 10 + (p.coins.ep || 0) / 2 + (p.coins.gp || 0) + (p.coins.pp || 0) * 10;
   return {
     coins: p.coins,
+    gold: p.gold,
     totalGp: Math.round(totalGp * 100) / 100
   };
 }
@@ -3913,11 +3926,17 @@ function setPlayerTempHp(id) {
 function adjustPlayerGold(id, amount) {
   const p = PLAYERS.find(x => x.id === id);
   if (!p) return;
-  p.gold = Math.max(0, (p.gold || 0) + amount);
+  syncPlayerCoinsAndGold(p);
+  const newGp = Math.max(0, (p.coins.gp || 0) + amount);
+  p.coins.gp = newGp;
+  p.gold = newGp;
+  touchPlayer(p);
   addLog(`💰 <b>${p.name}</b> ${amount >= 0 ? '+' : ''}${amount} PO (Total: ${p.gold} PO)`);
   addPlayerActionLog(p.id, '💰', `${amount >= 0 ? '+' : ''}${amount} PO (Total: ${p.gold} PO)`, 'gold');
   renderPlayers();
   saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
 }
 
 function rollPlayerAttr(id, attrName, customD20) {
@@ -11336,7 +11355,8 @@ function serializePlayerForShare(p) {
     inventory: Array.isArray(p.inventory) ? p.inventory : [],
     playerNotes: p.playerNotes || '',
     subclassIdx: parseInt(p.subclassIdx) || 0,
-    multiclass: Array.isArray(p.multiclass) ? p.multiclass : []
+    multiclass: Array.isArray(p.multiclass) ? p.multiclass : [],
+    updatedAt: p.updatedAt || Date.now()
   };
 
   try {
@@ -11877,19 +11897,33 @@ function checkPlayerPortalUrl() {
     if (encodedData) {
       const importedPlayer = deserializePlayerFromShare(encodedData);
       if (importedPlayer && importedPlayer.id) {
-        // Atualiza ou insere o jogador na lista local
+        // Atualiza ou insere o jogador na lista local apenas se não houver versão local mais recente
         const existingIdx = PLAYERS.findIndex(x => x.id === importedPlayer.id);
-        if (existingIdx >= 0) {
-          PLAYERS[existingIdx] = Object.assign({}, PLAYERS[existingIdx], importedPlayer);
-        } else {
-          PLAYERS.push(importedPlayer);
+        const existingHero = existingIdx >= 0 ? PLAYERS[existingIdx] : null;
+        const isExistingNewer = existingHero && (existingHero.updatedAt || 0) > (importedPlayer.updatedAt || 0);
+
+        if (!isExistingNewer) {
+          syncPlayerCoinsAndGold(importedPlayer);
+          if (existingIdx >= 0) {
+            PLAYERS[existingIdx] = Object.assign({}, PLAYERS[existingIdx], importedPlayer);
+          } else {
+            PLAYERS.push(importedPlayer);
+          }
+          saveToLocalStorage();
         }
 
-        saveToLocalStorage();
+        // Limpa o hash #pdata= da URL para não re-importar em F5 futuros
+        try {
+          if (typeof window !== 'undefined' && window.history && window.history.replaceState) {
+            const cleanUrl = window.location.pathname + window.location.search;
+            window.history.replaceState(null, '', cleanUrl);
+          }
+        } catch (e) { }
+
         initPlayerPortalMode(importedPlayer.id);
 
         if (typeof addLog === 'function') {
-          addLog(`✨ <b>Ficha Sincronizada:</b> Ficha de <b>${importedPlayer.name}</b> (${importedPlayer.student}) carregada e salva com sucesso neste dispositivo!`);
+          addLog(`✨ <b>Ficha Sincronizada:</b> Ficha de <b>${importedPlayer.name}</b> (${importedPlayer.student}) carregada com sucesso neste dispositivo!`);
         }
         return true;
       }
@@ -12420,7 +12454,6 @@ function savePlayerCoinsFromModal() {
   const pp = Math.max(0, parseInt(document.getElementById('inp-coin-pp')?.value) || 0);
 
   p.coins = { cp, sp, ep, gp, pp };
-  p.gold = gp;
   const purse = getPlayerCoinPurse(p);
   touchPlayer(p);
 
@@ -14052,7 +14085,8 @@ function distributeBatchRewards(opts = null) {
   if (typeof playFX === 'function') playFX('crit');
 
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
   if (typeof renderPlayers === 'function') renderPlayers();
   closeBatchRewardsModal();
 
@@ -15279,6 +15313,7 @@ if (typeof window !== 'undefined') {
   window.setBatchXpQuick = setBatchXpQuick;
   window.updateBatchRewardCalculations = updateBatchRewardCalculations;
   window.distributeBatchRewards = distributeBatchRewards;
+  window.syncPlayerCoinsAndGold = syncPlayerCoinsAndGold;
 
   window.openPlayerCombatModal = openPlayerCombatModal;
   window.closePlayerCombatModal = closePlayerCombatModal;
@@ -16805,7 +16840,8 @@ if (typeof module !== 'undefined' && module.exports) {
     rollXanatharLifePathModal,
     removeSpellFromPlayer,
     buildPlayerSpellsSummary,
-    parseSpellNamesFromRawText
+    parseSpellNamesFromRawText,
+    syncPlayerCoinsAndGold
   };
 }
 

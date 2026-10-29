@@ -2165,18 +2165,16 @@ function loadFromLocalStorage() {
           }
         }
 
-        // Sincroniza bidirecionalmente gold e coins.gp da ficha
-        if (p.coins && p.coins.gp !== undefined) {
-          if (p.gold !== undefined && p.gold !== p.coins.gp) {
-            p.coins.gp = p.gold;
-          } else {
-            p.gold = p.coins.gp;
-          }
-        } else if (p.gold !== undefined) {
-          p.coins = { cp: 0, sp: 0, ep: 0, gp: p.gold, pp: 0 };
+        // ISSUE-167: Sincronização canônica e não-destrutiva de gold e coins.gp
+        if (typeof syncPlayerCoinsAndGold === 'function') {
+          syncPlayerCoinsAndGold(p);
         } else {
-          p.gold = 0;
-          p.coins = { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
+          const resolvedGp = (p.coins && p.coins.gp !== undefined)
+            ? Number(p.coins.gp)
+            : (p.gold !== undefined ? Number(p.gold) : 0);
+          p.coins = p.coins || { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
+          p.coins.gp = resolvedGp;
+          p.gold = resolvedGp;
         }
         if (!p.feats || !Array.isArray(p.feats)) p.feats = [];
         if (!p.inventory || !Array.isArray(p.inventory)) p.inventory = [];

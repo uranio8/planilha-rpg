@@ -136,6 +136,7 @@ function broadcastStateSync() {
         publishedBy: currentRole,
         activePortalPlayerId: (typeof activePortalPlayerId !== 'undefined') ? activePortalPlayerId : null,
         players: (typeof PLAYERS !== 'undefined') ? PLAYERS : [],
+        campaigns: (typeof CAMPAIGNS_STATE !== 'undefined') ? CAMPAIGNS_STATE : null,
         state: currentRole === 'master' ? ((typeof state !== 'undefined') ? state : null) : null,
         gridState: currentRole === 'master' ? ((typeof gridState !== 'undefined') ? gridState : null) : null
       });
@@ -200,6 +201,23 @@ if (syncChannel) {
             if (typeof renderBattleGrid === 'function') renderBattleGrid();
           }
         }
+
+        if (event.data.campaigns && typeof CAMPAIGNS_STATE !== 'undefined') {
+          if (!isFromPlayer || !CAMPAIGNS_STATE) {
+            CAMPAIGNS_STATE = event.data.campaigns;
+          } else if (event.data.campaigns.currentCampaignId && CAMPAIGNS_STATE.campaigns) {
+            const remoteCamp = (event.data.campaigns.campaigns || []).find(c => c.id === event.data.campaigns.currentCampaignId);
+            const localCamp = (CAMPAIGNS_STATE.campaigns || []).find(c => c.id === event.data.campaigns.currentCampaignId);
+            if (remoteCamp && localCamp && remoteCamp.partyStash) {
+              localCamp.partyStash = remoteCamp.partyStash;
+            }
+          }
+          if (typeof renderPartyStashViewer === 'function') renderPartyStashViewer();
+          if (typeof renderCampaigns === 'function') renderCampaigns();
+        }
+
+        if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+        if (typeof updatePlayerPortalBanner === 'function') updatePlayerPortalBanner();
       } else if (event.data.type === 'COMBAT_UPDATE') {
         if (document.body.classList.contains('mode-screen-only')) {
           renderStandaloneScreen(event.data);

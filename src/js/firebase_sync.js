@@ -637,12 +637,13 @@ function applyCloudDataToLocal(cloudData) {
         }
       } else if (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId) {
         // Modo Portal do Jogador: mescla dados remotos dos outros heróis e atualiza campos do mestre no herói local
+        const isMasterPublished = (cloudData.publishedBy === 'master');
         const localChar = PLAYERS.find(p => p.id === activePortalPlayerId);
         PLAYERS = cloudData.players.map(remoteP => {
           if (localChar && remoteP.id === activePortalPlayerId) {
             const localPlayerUpdated = localChar.updatedAt || 0;
             const remotePlayerUpdated = remoteP.updatedAt || 0;
-            const isLocalNewer = localPlayerUpdated >= remotePlayerUpdated;
+            const isLocalNewer = !isMasterPublished && (localPlayerUpdated >= remotePlayerUpdated);
             const isLocalLevelHigher = (localChar.level || 1) > (remoteP.level || 1);
             const isStaleRemoteSnapshot = isLocalLevelHigher && (remotePlayerUpdated <= localPlayerUpdated);
 
@@ -671,12 +672,20 @@ function applyCloudDataToLocal(cloudData) {
               ? (localChar.hp !== undefined ? localChar.hp : resolvedMaxHp)
               : (remoteP.hp !== undefined ? Math.min(resolvedMaxHp, remoteP.hp) : localChar.hp);
 
-            return Object.assign({}, remoteP, {
+            const resolvedCoins = (isMasterPublished || !isLocalNewer)
+              ? (remoteP.coins !== undefined ? remoteP.coins : (remoteP.gold !== undefined ? { cp: 0, sp: 0, ep: 0, gp: remoteP.gold, pp: 0 } : localChar.coins))
+              : (localChar.coins || remoteP.coins || { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 });
+
+            const resolvedGold = (isMasterPublished || !isLocalNewer)
+              ? (remoteP.gold !== undefined ? remoteP.gold : (remoteP.coins && remoteP.coins.gp !== undefined ? remoteP.coins.gp : (localChar.gold || 0)))
+              : (localChar.gold !== undefined ? localChar.gold : (remoteP.gold || 0));
+
+            const mergedRes = Object.assign({}, remoteP, {
               hp: resolvedHp,
               maxHp: resolvedMaxHp,
               tempHp: remoteP.tempHp !== undefined ? remoteP.tempHp : localChar.tempHp,
-              conditions: remoteP.conditions || localChar.conditions || [],
-              xp: remoteP.xp !== undefined ? remoteP.xp : localChar.xp,
+              conditions: (isMasterPublished || !isLocalNewer) ? (remoteP.conditions || localChar.conditions || []) : (localChar.conditions || remoteP.conditions || []),
+              xp: (isMasterPublished || !isLocalNewer) ? (remoteP.xp !== undefined ? remoteP.xp : localChar.xp) : (localChar.xp !== undefined ? localChar.xp : remoteP.xp),
               level: resolvedLevel,
               className: isLocalLevelHigher ? (localChar.className || remoteP.className) : (remoteP.className || localChar.className),
               subclass: isLocalLevelHigher ? (localChar.subclass || remoteP.subclass) : (remoteP.subclass || localChar.subclass),
@@ -714,22 +723,26 @@ function applyCloudDataToLocal(cloudData) {
                   ? remoteP.spells
                   : (localChar.spells || '')),
               featureCharges: keepLocalFeatures ? localChar.featureCharges : (remoteP.featureCharges || localChar.featureCharges || []),
-              // Mantém inventário mais recente entre ambos
-              inventory: (isLocalNewer && localChar.inventory && localChar.inventory.length > 0)
-                ? localChar.inventory
-                : (remoteP.inventory || localChar.inventory || []),
+              attacks: (isMasterPublished || !isLocalNewer) ? (remoteP.attacks !== undefined ? remoteP.attacks : localChar.attacks) : (localChar.attacks || remoteP.attacks || ''),
+              features: (isMasterPublished || !isLocalNewer) ? (remoteP.features !== undefined ? remoteP.features : localChar.features) : (localChar.features || remoteP.features || ''),
+              playerNotes: (isMasterPublished || !isLocalNewer) ? (remoteP.playerNotes !== undefined ? remoteP.playerNotes : localChar.playerNotes) : (localChar.playerNotes !== undefined ? localChar.playerNotes : remoteP.playerNotes || ''),
+              // Mantém inventário do mestre prioritariamente se publicado pelo mestre
+              inventory: (isMasterPublished || !isLocalNewer)
+                ? (remoteP.inventory || localChar.inventory || [])
+                : (localChar.inventory && localChar.inventory.length > 0 ? localChar.inventory : (remoteP.inventory || [])),
               // Moedas e ouro sincronizados com prioridade de quem editou mais recentemente
-              coins: (isLocalNewer && localChar.coins !== undefined)
-                ? localChar.coins
-                : (remoteP.coins !== undefined ? remoteP.coins : (localChar.coins || { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 })),
-              gold: (isLocalNewer && localChar.gold !== undefined)
-                ? localChar.gold
-                : (remoteP.gold !== undefined ? remoteP.gold : (remoteP.coins && remoteP.coins.gp !== undefined ? remoteP.coins.gp : (localChar.gold || 0))),
+              coins: resolvedCoins,
+              gold: resolvedGold,
               feats: (isLocalNewer && localChar.feats && localChar.feats.length > 0)
                 ? localChar.feats
                 : (remoteP.feats || localChar.feats || []),
-              updatedAt: Math.max(localPlayerUpdated, remotePlayerUpdated)
+              updatedAt: Math.max(localPlayerUpdated, remotePlayerUpdated, isMasterPublished ? (cloudData.timestamp || Date.now()) : 0)
             });
+
+            if (typeof syncPlayerCoinsAndGold === 'function') {
+              syncPlayerCoinsAndGold(mergedRes);
+            }
+            return mergedRes;
           }
           return remoteP;
         });
