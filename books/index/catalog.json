@@ -1,0 +1,346 @@
+[
+  {
+    "index": 1,
+    "driveId": "1ClwtX9lURMfO62rurBkdRsC6UZTAGUyn",
+    "originalName": "D&D 5E - Guia do Mestre (Dungeon Masters Guide PT-BR).pdf",
+    "slug": "d_d_5e_-_guia_do_mestre_dungeon_masters_guide_pt-br",
+    "pdfFile": "books/pdfs/d_d_5e_-_guia_do_mestre_dungeon_masters_guide_pt-br.pdf",
+    "pagesJsonFile": "books/index/d_d_5e_-_guia_do_mestre_dungeon_masters_guide_pt-br_pages.json",
+    "fullTxtFile": "books/index/d_d_5e_-_guia_do_mestre_dungeon_masters_guide_pt-br_full.txt",
+    "sizeMB": 19.85,
+    "pageCount": 322,
+    "extractedPages": 322,
+    "nonEmptyPages": 298,
+    "totalChars": 1270538,
+    "meta": {
+      "title": null,
+      "author": "AlanVenic",
+      "subject": null,
+      "creator": "Microsoft® Word 2010",
+      "producer": "pdf-lib (https://github.com/Hopding/pdf-lib)",
+      "pageCount": 322
+    },
+    "samplePages": [
+      {
+        "page": 4,
+        "preview": "SUMÁRIO \nINTRODUÇÃO                                                4 \n \nO Mestre.............................................................................. 4 \nComo Usar Este Livro ........................................................4 \nConheça Seus Jogadores.....................................................   6  \n \nPARTE 1                                                          7 \n \nCAPÍTULO 1: SEU PRÓPRIO MUNDO.........................9 \nUm Amplo Panorama....................................................9 \nDeuses  do  Seu  Mundo.................................................10 \nMapeando  Sua  Campanha..........................................14 \nAssentamentos.............................................................15 \nIdiomas  e  Dialetos.......................................................21 \nFacções e Organizações............................................... 21 \nMagia no Seu Mundo................................................... 23 \nCriando uma Campanha............................................. 25 \nEventos  de  Campanha................................................ 26 \nEstilo de Jogo...............................................................   34"
+      },
+      {
+        "page": 5,
+        "preview": "4 \n \nINTRODUÇÃO\n BOM SER O MESTRE! VOCÊ NÃO APENAS CONTA \nhistórias fantásticas sobre heróis, vilões e \nmagia, mas também cria o mundo onde essas \nhistórias ganham vida. Se você já está \nmestrando um jogo de D&D ou está pensando  \nque isso é algo que você quer tentar, este livro é para \nvocê. \nO Guia do Mestre assume que você conhece o básico de \ncomo jogar o jogo de interpretação de mesa de D&D. Se \nvocê nunca havia jogado antes, o Conjunto para Iniciantes \nde DUNGEONS & DRAGONS é um ótimo ponto de partida \npara novos jogadores e Mestres. \nEste livro possui dois companheiros importantes: o \nLivro do Jogador, que contém as regras que seus \njogadores precisam para criar personagens e as regras \nque você precisa para dar seguimento ao jogo, e o Manual \ndos Monstros, que contem monstros prontos-para-uso \npara povoar seu mundo de D&D.  \n \nO MESTRE \nO Mestre é a força criativa por trás de um jogo de D&D. O \nmestre cria um mundo para os outros jogadores \nexplorarem e também cria e mestra aventuras que \nconduzem a história. Uma aventura geralmente se \ndesdobra na conclusão bem sucedida de uma busca e pode \nser tão curta quanto uma única sessão de jogo. Aventuras \nmais longas podem envolve"
+      },
+      {
+        "page": 6,
+        "preview": "5 \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \nPARTE 2: MESTRE DE AVENTURAS \nSe você está escrevendo suas próprias aventuras ou \nusando as aventuras publicadas, espera-se que você \ninvista tempo de preparação além das horas gastas na \nmesa de jogo. Você precisará encontrar algum tempo livre \npara exercitar sua criatividade enquanto inventa tramas \nintrigantes, cria novos PdMs, constrói encontros e pensa \nem formas inteligentes de prenunciar eventos da história \nque ainda estão por vir. \nA Parte 2 deste livro é voltada a ajudar você a criar e \nconduzir grandes aventuras. O capítulo 3 fala dos \nelementos básicos de uma aventura de D&D, e o capítulo \n4 ajuda você a criar PdMs memoráveis. O capítulo 5 \napresenta diretrizes e conselhos para conduzir aventuras \nocorridas em masmorras, ambientes selvagens e outros \nlocais, e o capítulo 6 fala do tempo entre as aventuras. O \ncapítulo 7 é todo voltado aos tesouros, itens mágicos e \nrecompensas especiais que ajudam a manter os jogadores \ninteressados na sua campanha. \n \nPARTE 3: MESTRE DE REGRAS \nDUNGEONS & DRAGONS não é uma competição ferrenha, \nmas precisa de alguém que seja imparcial, mas ainda \nesteja envolvido com o jogo para garantir q"
+      },
+      {
+        "page": 7,
+        "preview": "6 \n \nCONHEÇA SEUS JOGADORES \nO sucesso de um jogo de D&D reside na sua capacidade \nde entreter os outros jogadores na mesa de jogo. Ao passo \nque papel deles é criar personagens (os protagonistas da \ncampanha), dar vida a eles e ajudar a conduzir a \ncampanha através das ações dos seus personagens, seu \npapel é manter os jogadores (e a si mesmo) interessados e \nimersos no mundo que você criou e permitir que os \npersonagens deles façam coisas incríveis. \nSaber o que seus jogadores mais gostam num jogo de \nD&D ajuda você a criar e conduzir aventuras que eles \niram curtir e se lembrar. Uma vez que você saiba quais \ndas atividades a seguir cada um dos jogadores do seu \ngrupo mais gostam, você poderá criar aventuras que \nsatisfaçam as preferências dos seus jogadores da melhor \nforma possível, assim mantendo-os engajados. \n \nATUAR \nOs jogadores que gostam de atuar, curtem entrar em seus \npersonagens e falar com a voz do personagem. \nInterpretadores de personagens de coração, eles gostam \nde interações sociais com PdMs, monstros e seus \ncompanheiros de grupo. \nEntretenha jogadores que gostam de atuar ao... \n dar a eles oportunidades de desenvolver as \npersonalidades e antecedentes de seus"
+      },
+      {
+        "page": 10,
+        "preview": "9 \n \nCAPÍTULO 1: SEU PRÓPRIO MUNDO \nEU MUNDO É O CENÁRIO PARA A SUA CAMPANHA, O \nlugar onde as aventuras acontecem. Mesmo que \nvocê use um cenário existente, como o dos Reinos \nEsquecidos, ele se torna seu conforme você \nestabelece suas aventuras nele, cria personagens \npara habita-lo e faz mudanças nele ao longo de  \nsua campanha. Este capítulo é todo sobre construir seu \nmundo e, então, criar uma campanha para ocorrer nele. \n \nUM AMPLO PANORAMA \nEste livro, o Livro do Jogador e o Manual dos Monstros \napresentam premissas padrão de como os mundos de \nD&D funcionam. Os cenários oficiais de D&D, os Reinos \nEsquecidos, Greyhawk, Dragonlance e Mystara não se \ndistanciam muito dessas premissas. Cenários como Dark \nSun, Eberron, Ravenloft, Spelljammer e Planescape se \narriscam distanciando-se dessas bases. Conforme você \ncria seu próprio mundo, cabe a você decidir onde nesse \nespectro você deseja que seu mundo se estabeleça. \n \nPREMISSAS PRINCIPAIS \nAs regras do jogo são baseadas nas seguintes premissas \ncentrais sobre o mundo de jogo. \nOs Deuses Supervisionam o Mundo. Os deuses são \nreais e incorporam uma variedade de crenças, com cada \ndeus reivindicando domínio sobre um aspecto do mu"
+      }
+    ]
+  },
+  {
+    "index": 2,
+    "driveId": "11V7wNfJKqmKh6BNeZ66WaH8lNZknah3u",
+    "originalName": "Tome of Foes.pdf",
+    "slug": "tome_of_foes",
+    "pdfFile": "books/pdfs/tome_of_foes.pdf",
+    "pagesJsonFile": "books/index/tome_of_foes_pages.json",
+    "fullTxtFile": "books/index/tome_of_foes_full.txt",
+    "sizeMB": 47.39,
+    "pageCount": 258,
+    "extractedPages": 258,
+    "nonEmptyPages": 255,
+    "totalChars": 1116169,
+    "meta": {
+      "title": null,
+      "author": "https://yumpudownload.com",
+      "subject": null,
+      "creator": "https://yumpudownload.com",
+      "producer": "pdf-lib (https://github.com/Hopding/pdf-lib)",
+      "pageCount": 258
+    },
+    "samplePages": [
+      {
+        "page": 2,
+        "preview": "TOMO DO MONDERKAINEN \nSOBRE INIMIGOS\n®\n• \n• \n'"
+      },
+      {
+        "page": 3,
+        "preview": "CRÉDITOS \nLíderes Projetistas: Mike Mearls, Jeremy Crawford \nProjetistas: Adam Lee, Ben Petrisor, Robert J. Schwalb, \nMatt Sernett, Steve Winter \nProjetistas Adicionais: Kim Mohan, Christopher Perkins, Kate Welch \nProjetista Convidado: Nolan Whale (oblex, Balthran lreheart) \nEditor Chefe: Jeremy Crawford \nEditores: Kim Mohan, Michele Carter \nDiretor de Arte: Kate lrwin \nProjetista Gnlfico: Emi Tanji \nDiretor de Arte Extra: Shauna Narciso \nIlustrador de Capa: Jason Rainville \nIlustrador de Capa (Alternativa): Vance Kelly \nArtistas Conceituais: Richard Whitters, Shawn Wood \nIlustradores de Interior: Dave Allsop, Tom Babbey, Mark Behm, \nEric Belisle, Michael Berube, Zoltan Soros, Aleksi Briclot, Filip \nBurburan, Christopher Burdett, Matt Cavotta, Sidharth Chaturvedi,\nJedd Chevrier, Ed Cox, Olga Drebas, Wayne England, Justin Gerard, \nLars Grant-West, Leesha Hannigan, Jon Hodgson, Ralph Horsley, \nLake Hurwitz, Tyler Jacobson, Julian Kok, Daniel Landerman, Olly \nLawson, Howard L yon, Warren M ahy , Bryn n M  ethen ey, Aaron \nMiller, Scott Murphy, Jim Nelson, William O'Connor, Efrem \nPalacios, Adam Paquette, Claudio Pozas, Vincent Proce, Rob Rey, \nRichard Sardinha, Chris Seaman, llya Shki"
+      },
+      {
+        "page": 4,
+        "preview": ",,. \nINDICE \nPrefácio .............. 4 Cap. 2: E\nl\nfos ....................................... 35 Duergares .. .. .. \n.. ...................... 77 \nCap. \nl: A \nG\nuerra \ndo \nS\nan\ngu\ne \n............... \n5 \nU\nma \nRaça \nDividida \n............................\n.... \n35 \nPersonagens \nDuergares \n......................... \n81\nA  Grande Dança ............... 5 \nA Déspota \nÉ\nlfica. .. ........................ 36 Tabelas dos Anões .. ............................. 81 \nLordes \ndos \nNove \n.... \n.. . . .. . . . . . \n... . . \n. . .. . . . . . \n.. .. .. \n9 \nV\nivendo \nem \nDevaneio \n..................\n.. .... \n36 \nTabelas \ndos \nDuergares \n..................\n....\n.. . \n83 \nCultos Diab\nó\nlicos ................................ 18 \nA Perspec\nti\nva \nÉ\nl\nfi\nca ..... \n·· · · · · · \n.. \n· · · · · · \n.. \n· · · \n.... 39 \nCap\n.\n4\n: \nG\nit\nh\nse \nSu\nas \nG\nu\ne\nrr\nas \nI\nn\nfi\nndá\nv\neis\n. \n85\nCambions Infernais ... ......................... 21 \nElfos e Magia\n...............\n......\n.... \n42 \nGithyankis \n..................\n.............\n.............. \n85 \nSub-Raças de Tiefüng \n.......\n....... \n21 \nO \nSeldar\nine \n.......\n. \n.. ......... 43 \nGithzerais \n....................... ... 93 \nT\nabelas de Customização de Diabos \n."
+      },
+      {
+        "page": 5,
+        "preview": "PREFÁCIO \nVocê tem em suas mãos aquilo que \ncobiçava, como assim prometi. É de \nfato o verdadeiro trabalho daquele mago \nOeridiano,  Mordenkainen, ainda que \nescrito em grande parte por seu aprendiz, \nBigby. Você não sabia disso? Sim - o \ntrabalho de dois grandes magos pelo preço \nde um! Você deveria me pagar a mais. \nBigby escreveu conforme ditado por seu \nmestre, obrigado pelas amarras de uma \nmagia de encantamento. Eventualmente, \nMordenkainen libertou Bigby da magia, uma \nvez que ele havia afastado Bigby de suas \natitudes malignas e Bigby havia ganhado \na confiança de Mordenkainen. Por isso os \núltimos capítulos foram feitos pela própria \nmão de Mordenkainen. Mas você verá que a \nvoz do autor é a  mesma por todo o livro. \nEngraçado, não é? Como todas as \nhistórias dizem que Mordenkainen \nresgatou Bigby do mal? Mordenkainen \nparece o tipo de pessoa cujas virtudes \nsuperam sua vilania? Você o considera \ncapaz de salvar uma alma? Ele parece \nalguém que ao menos se importaria? \nTalvez não seja por acidente que este \nlivro contenha as primeiras impressões \nde Mordenkainen sobre o Equilíbrio. Aqui \nele começa a descrever o universo como \num  conjunto de forças opostas, cada qual \nten"
+      },
+      {
+        "page": 6,
+        "preview": "CAPÍTULO 1: \nA GUERRA DO SANGUE \nTRAVÉS DA HISTóRIA, AS FERVILHANTES \nhordas do Abismo e as estritamente \nregimentadas legiões dos Nove Infernos \ntem batalhado pela supremacia no cosmo. \nNo mundo mortal, os poucos e raros \nestudiosos, arcanistas, e aventureiros que \nsabem sobre esse conflito referem-se a ele \ncomo a Guerra do Sangue. \nA luta acontece pelos Planos Inferiores, no Plano \nMaterial, e em qualquer outro lugar em que os demõnios \ne diabos possam se  reunir. De tempos em tempos, \ndemõnios saem do Abismo para invadir Avernus, a \ncamada superior dos Nove Infernos. Enquanto os \ndiabos defendem seu território natal, eles também \nfazem investidas contra pontos no Abismo. Ainda que a \nintensidade do conflito tenha altos e baixos,  e as linhas \nde frente da guerra possam mudar drasticamente, nunca \nse passa um  momento sem que os demõnios e diabos \nestejam batalhando uns contra os outros em algum \nlugar do  multiverso. \nA GRANDE DAN\nÇ\nA \nNós MEDIMOS NOSSO VALOR POR AQUELES A QUEM \ncombatemos, e a  minha companhia enfrenta a maior \nameaça do cosmo. \n- Veritus Wrath, comandante, Execução Infalível\nAs  linhas de combate na Guerra do Sangue ondulam \ncomo uma serpente contorcendo-se. "
+      }
+    ]
+  },
+  {
+    "index": 3,
+    "driveId": "1E89LGtMXptIhG3SXdMwTvwUH8gO9B--a",
+    "originalName": "Monsters of the Universe.pdf",
+    "slug": "monsters_of_the_universe",
+    "pdfFile": "books/pdfs/monsters_of_the_universe.pdf",
+    "pagesJsonFile": "books/index/monsters_of_the_universe_pages.json",
+    "fullTxtFile": "books/index/monsters_of_the_universe_full.txt",
+    "sizeMB": 28.67,
+    "pageCount": 289,
+    "extractedPages": 289,
+    "nonEmptyPages": 288,
+    "totalChars": 884938,
+    "meta": {
+      "title": "Blank PDF Document",
+      "author": "Department of Justice (Executive Office of Immigration Review)",
+      "subject": null,
+      "creator": "AdobePS5.dll Version 5.2.2",
+      "producer": "pdf-lib (https://github.com/Hopding/pdf-lib)",
+      "pageCount": 289
+    },
+    "samplePages": [
+      {
+        "page": 2,
+        "preview": "MORDENKAINEN PRESENTS\nMONSTERS OF THE MULTIVERSE\n&"
+      },
+      {
+        "page": 3,
+        "preview": "Credits\nLead Designer: Jeremy Crawford\nArt Directors: Emi Tanji, Kate Irwin\nThis book is a revision of content that originally appeared \nin the books Volo’s Guide to Monsters (2016) and \nMordenkainen's Tome of Foes (2018). It also includes revised \noptions from Princes of the Apocalypse (2015), Eberron: Rising \nfrom the Last War (2019), and Mythic Odysseys ofTheros \n(2020).\nOriginal Design: Jeremy Crawford, Adam Lee, Mike Mearls, \nChristopher Perkins, Ben Petrisor, Sean K Reynolds, \nRobert J. Schwalb, Matt Sernett, Chris Sims, Nolan Whale, \nSteve Winter\nRevision Design: Sydney Adams, Judy Bauer, Jeremy \nCrawford, Makenzie De Armas, Dan Dillon, Ari Levitch, \nBen Petrisor, Taymoor Rehman\nEditing: Judy Bauer, Michele Carter, Kim Mohan, \nChristopher Perkins\nGraphic Designers: Trystan Falcone, Emi Tanji\nCover Illustrator: Joy Ang\nInterior Illustrators: Dave Allsop, Tom Babbey, John-Paul \nBalmet, Thomas M. Baxa, Mark Behm, Eric Belisle, \nMichael Berube, Mike Bierek, Jared Blando, Zoltan Boros,\nOn the Cover\nA celestial ki-rin soars into the air, bringing hope to the \nmultiverse in this painting by Joy Ang.\nChristopher Bradley, Alix Branwyn, Aleksi Briclot, IP \nDmitry Burmak, Filip Burbura"
+      },
+      {
+        "page": 4,
+        "preview": "Contents\nUsing This Book......................................4\nChapter 1: Fantastical Races.............5\nCreating Your Character..........................5\nAarakocra..................................................6\nAasimar.....................................................7\nBugbear.....................................................8\nCentaur.....................................................9\nChangeling..............................................10\nDeep Gnome...........................................11\nDuergar...................................................12\nEladrin....................................................13\nFairy.........................................................14\nFirbolg.....................................................15\nGenasi, Air..............................................16\nGenasi, Earth.........................................17\nGenasi, Fire............................................17\nGenasi, Water.........................................17\nGithyanki.................................................18\nGithzerai..................................................19\nGoblin......................................................20\nGoliath..."
+      },
+      {
+        "page": 5,
+        "preview": "Maurezhi...............................................175\nMaw Demon..........................................176\nMeazel...................................................177\nMeenlock..............................................178\nMerregon..............................................179\nMerrenoloth.........................................180\nMindwitness.........................................181\nMoloch...................................................183\nMolydeus...............................................184\nMorkoth.................................................186\nMouth of Grolantor...............................187\nNabassu................................................188\nNagpa...................................................189\nNarzugon..............................................190\nNeogi Hatchling...................................191\nNeogi.....................................................192\nNeogi Master........................................192\nNeothelid..............................................193\nNightwalker..........................................194\nNilbog...................................................195\nNupperibo............................."
+      },
+      {
+        "page": 6,
+        "preview": "Fantastical Races\nATHERING TOGETHER FANTASTICAL RACES \nfrom throughout the D&D multiverse, \nthis chapter offers the following races for \nplayer characters, supplementing the race\noptions in the Player’s Handbook:\nAarakocra \nAasimar \nBugbear \nCentaur \nChangeling \nDeep Gnome \nDuergar \nEladrin \nFairy\nFirbolg\nHarengon\nGenasi, Air\nHobgoblin\nGenasi, Earth\nKenku\nGenasi, Fire\nKobold\nGenasi, Water\nLizardfolk\nGithyanki\nMinotaur\nGithzeraiOrc\nGoblin\nSatyr\nGoliath\nSea Elf\nShadar-kai\nShifter\nTabaxi\nTortle\nTriton\nYuan-ti\nMany of these races are based on creatures that \nappear in the Monster Manual or the bestiary of this \nbook. Consult with your DM to see whether an op­\ntion here is appropriate for your campaign.\nIf you do use a race in this chapter, first read the \n“Creating Your Character” section below.\nCreating Your Character\nAt 1st level, you choose whether your character is a \nmember of the human race or of a fantastical race. \nIf you select a fantastical race in this chapter, follow \nthese additional rules during character creation.\nAbility Score Increases\nWhen determining your character’s ability scores, \nincrease one score by 2 and increase a different \nscore by 1, or increase three diff"
+      }
+    ]
+  },
+  {
+    "index": 4,
+    "driveId": "1jbN6PGOXsp0gTlttLV784GbYfDWJGScx",
+    "originalName": "manual dos monstros.pdf",
+    "slug": "manual_dos_monstros",
+    "pdfFile": "books/pdfs/manual_dos_monstros.pdf",
+    "pagesJsonFile": "books/index/manual_dos_monstros_pages.json",
+    "fullTxtFile": "books/index/manual_dos_monstros_full.txt",
+    "sizeMB": 20.87,
+    "pageCount": 352,
+    "extractedPages": 352,
+    "nonEmptyPages": 347,
+    "totalChars": 1326981,
+    "meta": {
+      "title": null,
+      "author": "AlanVenic",
+      "subject": null,
+      "creator": "Microsoft® Word 2013",
+      "producer": "pdf-lib (https://github.com/Hopding/pdf-lib)",
+      "pageCount": 352
+    },
+    "samplePages": [
+      {
+        "page": 4,
+        "preview": "SUMÁRIO \nIntrodução..........................................4 \nAarakocra.........................................12 \nAbocanhador Matraqueante............13 \nAbolete..............................................14 \nAnjos.................................................16 \nAnkheg............................................. 20 \nAnomalia da Água............................21 \nAparição........................................... 22 \nArbusto Errante...............................23 \nAzer.................................................. 24 \nBanshee............................................25 \nBasilisco........................................... 26 \nBehir.................................................27 \nBruxas..............................................28 \nBugbears.......................................... 32 \nBulette..............................................33 \nBullywug..........................................34 \nCaçador Invisível.............................35 \nCambion........................................... 36 \nCão Infernal.....................................37 \nCarniçais..........................................38 \nCavaleiro da Morte..........................39 \nCavei"
+      },
+      {
+        "page": 5,
+        "preview": "4 \n \nINTRODUÇÃO\nSTE BESTIÁRIO É PARA CONTADORES DE HISTÓRIAS \ne criadores de mundos. Se você já pensou em \nmestrar um jogo de DUNGEONS & DRAGONS \npara seus amigos, mesmo uma única noite de \naventura ou uma campanha duradoura, este  \ntomo contém páginas e páginas de inspiração. É a sua loja \nde departamentos para construção tanto de criaturas \nmalignas, quando benignas. \nAlgumas das criaturas que habitam os mundos de \nD&D possuem suas origens enraizadas na mitologia e \nliteratura fantástica do mundo real. Outras criaturas são \noriginais de D&D. Os monstros neste livro foram \ncoletados de todas as edições anteriores do jogo. Aqui você \nencontrará bichos clássicos como o observador e a besta \ndeslocadora assim como criaturas mais recentes como o \nchuul e ramo infectado. Bestas familiares se misturam \ncom bestas estranhas, terríveis e grotescas. Na coletânea \nde monstros do passado, nós nos esforçamos para refletir \na natureza multifacetada do jogo, com verrugas e tudo. Os \nmonstros de D&D vem em todos os formatos e tamanhos, \ncom histórias que não apenas nos arrepiam mas também \nnos fazem rir. \nSe você for um Mestre experiente, alguns monstros \ndescritos adiante podem surpreender você"
+      },
+      {
+        "page": 6,
+        "preview": "5 \n \n Uma cadeia de ilhas rochosas em um vasto mar sem \nsol, casa de aboletes e kuo-toas insanos \n \nO AMBIENTE SELVAGEM \nNem todos os monstros espreitam no subterrâneo. Muitos \ndeles habitam desertos, montanhas, pântanos, \ndesfiladeiros, florestas e outros ambientes naturais. O \nambiente selvagem pode ser tão perigoso quanto qualquer \nmasmorra, particularmente quando não há onde se \nesconder! Alguns locais selvagens são tão memoráveis \nquanto qualquer masmorra: \n O ninho de um roca feito de cascos de navios \ndespedaçados, construído no topo de uma montanha \nou colina rochosa solitária \n Uma vasta tundra ártica que serve de território de \ncaça para furiosos e yetis \n Uma floresta primitiva protegida por entes ou \ncorrompida por gnolls adoradores de demônios \n Um pântano cheio de sapos, assombrado por um povo \nlagarto que venera um vil dragão negro \n Uma selva ilhada habitada por dinossauros e \nguerreiros tribais humanos \n \nCIDADES E VILAS \nAlgumas das melhores aventuras desdobram-se sob o \nleito da civilização. Territórios urbanos propicia às \naventuras chance de ficar ombro-a-ombro com os ricos e \npoderosos, bater de frente com a escória da sociedade e \nremover a máscara de c"
+      },
+      {
+        "page": 7,
+        "preview": "6 \n \nestranhas vivem em outros planos de existência, desde os \nmetódicos modrons até demônios homicidas. Quando se \ntrata de locais interessantes para aventura, nem mesmo o \ncéu é o limite quando você ultrapassa as barreiras do \nmundo: \n A fortaleza de um senhor das profundezas em \nAvernus, a primeira camada dos Nove Infernos \n Um castelo assombrado na Umbra que serve como \ncovil de um dragão das sombras \n Uma tumba de uma rainha élfica em Faéria \n Um palácio de djinni no Plano Elemental do Ar, cheio \nde maravilhosos tesouros roubados \n O semiplano secreto de um lich, onde o arquimago \nmorto-vivo esconde sua filactéria e grimório \nVeja o Guia do Mestre para mais informações sobre os \nplanos de existência. \n \nQUAIS MONSTROS USAR? \nMuitos monstros habitam masmorras, enquanto outros \nvivem em desertos, florestas, labirintos e outros meio \nambientes. Independentemente de qual meio ambiente \num monstro tradicionalmente chama de casa, você pode \ncolocá-lo onde quiser. No fim das contas, histórias de \n“peixe fora d’água” são memoráveis e, às vezes, é \nengraçado surpreender os jogadores com gricks \nescondidos nas areias do deserto ou uma dríade vivendo \nem um cogumelo gigante no Subte"
+      },
+      {
+        "page": 8,
+        "preview": "7 \n \nExteriores, particularmente nos planos de Arbórea e nas \nTerras Selvagens. As fadas incluem dríades, pixies e \nsátiros. \nGigantes são uma espécie similar a humanos \nextremamente altos. Eles são humanoides no formato, \napesar de alguns terem múltiplas cabeças (ettins) ou \ndeformações (fomoris). As seis variações de gigantes \nverdadeiros são os gigantes da colina, gigantes de pedra, \ngigantes do gelo, gigantes do fogo, gigantes das nuvens e \ngigantes da tempestade. Além desses, criaturas como \nogros e trolls também são gigantes. \nHumanoides são o povo padrão do mundo de D&D, \ntanto civilizado quanto selvagem, incluindo humanos e \numa variedade tremenda de outras espécies. Eles \npossuem idioma e cultura, alguns poucos algumas \nhabilidades mágicas inatas (apesar de a maioria dos \nhumanoides ser capaz de aprender a conjurar) e uma \nforma bípede. As raças de humanoides mais comuns são \nas mais adequadas para serem personagens de jogador: \nhumanos, anões, elfos e halflings. Quase tão numerosos, \nmas muito mais selvagens e brutais e, em sua maioria \nuniformemente malignos, são as raças de goblinoides \n(goblins, hobgoblins e bugbears), orcs, gnolls, povo lagarto \ne kobolds. \nUma varied"
+      }
+    ]
+  },
+  {
+    "index": 5,
+    "driveId": "1fSbAPLOlZZ7qAZawHyWikoF54NFp5lRA",
+    "originalName": "Guia de Xanathar.pdf",
+    "slug": "guia_de_xanathar",
+    "pdfFile": "books/pdfs/guia_de_xanathar.pdf",
+    "pagesJsonFile": "books/index/guia_de_xanathar_pages.json",
+    "fullTxtFile": "books/index/guia_de_xanathar_full.txt",
+    "sizeMB": 42.61,
+    "pageCount": 195,
+    "extractedPages": 195,
+    "nonEmptyPages": 191,
+    "totalChars": 760829,
+    "meta": {
+      "title": null,
+      "author": null,
+      "subject": null,
+      "creator": "Adobe InDesign CC 2015 (Windows)",
+      "producer": "pdf-lib (https://github.com/Hopding/pdf-lib)",
+      "pageCount": 195
+    },
+    "samplePages": [
+      {
+        "page": 3,
+        "preview": "ESTE MATERIAL FOI ELABORADO POR FÃS PARA FÃS, SENDO ASSIM, ELE DEVE \nSER REMOVIDO DE SEU COMPUTADOR EM ATÉ 24HS, EXCETO NO CASO DE \nVOCÊ POSSUIR O MATERIAL ORIGINAL (ARQUIVO DIGITAL D&D BEYOND \nou LIVRO FÍSico). SuA IMPREssÃo Fiou VENDA sÃo EXPRESSAMENTE \nPROIBIDAS. Os DIREITOS AUTORAIS ESTÃO PRESERVADOS E DESTACADOS \nNO MATERIAL. NÃO NOS RESPONSABILIZAMOS PELO MAL USO DO ARQUIVO \nOU QUALQUER ESPÉCIE DE ADULTERAÇÃO POR PARTE DE TERCEIROS. \nTRADUZIDO E DIAGRAMADO PELAS EQUIPES \nD&D TRADUÇÕES E UNCENSORED RPG \n'.~.~,, ~ \n~· .. ~· ' \n~ , ,, \n.. ~ . \nAGRADEÇO A TODOS QUE AJUDARAM NA PRODUÇÃO REALIZADA \nPOR VOLUNTÁRIOS I NTUSIASTAS DE FÃ PARA FÃ EM PORTUGUÊS, \nTRADUTORES o CAD, DD, DBF, EF, FS, FN, \nGE, GA, HM, HN, IA,JVMB,JC, LC, MV, \nMMO, MZ, MO, MMT, OJMM, PHCS, RC, VS \nREVISORo MO/PROJETISTA GRÁFICOo MO"
+      },
+      {
+        "page": 5,
+        "preview": "o  a táSt \n. ot.st'nao \n\"\"S t. t. \nC \n~ tO\" ta $á0 t.stáO \nRED ITO S ~ t.\\.a&o\"a~o t.IOU ~t.t\\\n08\n5 \nauto\"a's \nt.\"t \\. tO ,,.t.ssao O'\"'\"'\"o \"'\"\"'a\\.· \nLíderes Projetistas:a~rem~ Crawfor< íW!ik Mear S. OS OOS t\\0 ti\\ ogadores de Teste: Van Arcken, Dee Ashe, Andrew Bahls, Chris \nProjetistas: Robert J. Schwalb f.t\\'tf. t\"O ~ ot.S't c& Balboni, Jason Baxter, Jerry Behrendt, Teddy Benson, Deb Berlin, \nProjetistas Adicionais: da ·   e e, Chrii]op er-P rkms, Matt Sernett Stacy Bermes, Jim Berrier, Lauren Bilanko, Jordan Brass, Ken J. \nDesenvolvimento: Ben Petrisort\"f.S Breese, Robert \"Bobby\" Brown, Matthew Budde, Matt Burton, \nEditor Chefe: Jeremy Crawford \nEditor: Kim Mohan \nAssistente de Edição: Michele Carter, Scott Fitzgerald Gray \nDiretor de Arte: Kate lrwin \nDiretores de Artes Extras: Shauna Narciso \nProjetista Gráfico: Em i Tanji \nIlustrador de Capa: Jason Rainville \nIlustrador de Capa (Alternativa): Hydro74 \nIlustradores de Interior: Rob Alexander, Mark Behm, Eric Belisle, \nZoltan \nBoros, Christopher Bradley, Noah Bradley, Sam Burley, Jedd \nChevrier, jD, Olga Drebas, Jesper Ejsing, Wayne England, Leesha \nHannigan, Jon Hodson, \nRalph Horsley, Lake Hurwitz, Julian Kok, \nRaphael Lub"
+      },
+      {
+        "page": 6,
+        "preview": "\"\"\" \nINDICE \nIntrodução ............................................................ 4 \nUsando Este Livro ......................................... 4 \nAs Regras Básicas . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .... 5 \nCap. 1: Opções de Personalização ........................ 7 \nBárbaro ....... 8 \nCaminhos Primitivos \n....................................... . 9 \nCaminho do Gua rdião Ancestral ......................... 9 \nCaminho do \nArauto da  Tempestade  ...................... 1 O \nCaminho do  Fa nático  ............................................ 11 \nBa rdo  ........................................................................ 12 \nColégios de Bardos ................................................ 14 \nColégio  do Gla mour . . . . . . . ....................................... 14 \nColégio  das Espadas .............. . 15 \nColégio dos  Sussurros ........................................... 16 \nBruxo ........................................................................ 17 \nPatronos Transcendentais ...................................... 18 \nCelestial ................................................................. 18 \nLâmina Maldita  .."
+      },
+      {
+        "page": 7,
+        "preview": "INTRODUÇÃO \nBAIXO DA MOVIMENTADA CIDADE DE ÁGUAS \nProfundas, um observador,  o senhor do \ncrime mantém controle sobre tudo e todos \n-ou assim ele pensa. Conhecido como \nXanathar, esse bizarro ser acredita que \npode coletar informações sobre tudo no \nmultiverso de DUNGEONS & DRAGONS. \nO observador deseja saber tudo! Mas não importa \no que o observador aprenda e quais tesouros ele \nadquira, sua posse mais prezada em todos os \nmultiversos é seu peixinho dourado, Sylgar. \nA primeira grande expansão de regras para a quinta \nedição de D&D, o Guia de Xanathar para Todas as \nCoisas oferece uma riqueza de novas opções para o \njogo. Xanathar pode não ser capaz de realizar o seu \nsonho de saber tudo, mas este livro mergulha em \ntodas as principais partes do jogo: para aventureiros, \nsuas aventuras e  a magia que eles executam. \nUSANDO ESTE LIVRO \nEscrito para jogadores e Mestres, este livro oferece \nopções para aprimorar campanhas em qualquer \nmundo, se você está se aventurando em Reinos \nEsquecidos, outro cenário oficial de D&D, ou um \nmundo de sua própria criação. As opções aqui \nse baseiam nas regras oficiais contida no Livro \ndo \nJogador, no Guia do Mestre, e no Manual dos \nMonstros. Pens"
+      },
+      {
+        "page": 8,
+        "preview": "As REGRAS BÁSICAS \nEste livro baseia-se nas regras dos três principais \nlivros de regras. O jogo usa especialmente o uso \nfreqüente das regras nos capítulos 7-10 do Livro do \nJogador. \"Utilizando Habilidade\", \"Aventurando-se\", \n\"\nCombate\" e \"Conjuração\".  O apêndice A do livro \ntambém é crucial; contém definilções de condições, \ncomo invisível e caído. Você não precisa conhecer \nas regras de cor, mas é útil saber onde encontrá-las \nquando precisar delas. Se você é um Mestre, também \ndeve saber onde procurar as coisas no Guia do Mestre, \nespecialmente as regras sobre como os itens mágicos \nfuncionam (ver o capítulo 7 desse livro). A introdução \ndo Manual dos Monstros é  o seu guia sobre como usar \no bloco estatístico de um monstro. \n0 MESTRE DECIDE AS REGRAS \nUma regra substitui todas as outras: o Mestre é  a \nautoridade final sobre como as regras funcionam em \njogo. As regras fazem parte do que faz D&D um jogo, \nao invés de apenas uma narrativa improvisada. As \nregras do jogo são destinadas a ajudar a organizar,  e \naté mesmo inspirar,  a ação de uma campanha D&D. \nAs regras são uma ferramenta,  e queremos que nossas \nferramentas sejam tão efetivas quanto possível. Não \nimporta quã"
+      }
+    ]
+  },
+  {
+    "index": 6,
+    "driveId": "1W2or33HEmuYX8p81y5sYUA2_g_TDVMFu",
+    "originalName": "Antecedentes.pdf",
+    "slug": "antecedentes",
+    "pdfFile": "books/pdfs/antecedentes.pdf",
+    "pagesJsonFile": "books/index/antecedentes_pages.json",
+    "fullTxtFile": "books/index/antecedentes_full.txt",
+    "sizeMB": 0.52,
+    "pageCount": 13,
+    "extractedPages": 13,
+    "nonEmptyPages": 13,
+    "totalChars": 66673,
+    "meta": {
+      "title": "Apresentação do PowerPoint",
+      "author": "Rodrigo Moreira",
+      "subject": null,
+      "creator": "Microsoft® PowerPoint® 2010",
+      "producer": "pdf-lib (https://github.com/Hopding/pdf-lib)",
+      "pageCount": 13
+    },
+    "samplePages": [
+      {
+        "page": 1,
+        "preview": "ACÓLITO \nVocê passou sua vida a serviço de um templo de algum \ndeus especifico ou de um panteão de deuses. Você age \ncomo um intermediário entre o reino divino e o reino \ndos mortais, realizando rituais e ofertando sacrifícios \npara conduzir adoradores para a presença do divino. \nVocê não é necessariamente um clérigo – realizar ritos \nsagrados não é a mesma coisa que canalizar poder \ndivino. \nEscolha um deus, um panteão de deuses ou algum \noutro ser quase-divino, dentre aqueles listados no \napêndice B ou aqueles especificados pelo seu Mestre, e \nconverse com seu Mestre pra detalhar a natureza do \nseu serviço religioso. Você era um serviçal menor no \ntemplo, criado desde a infância para auxiliar os \nsacerdotes em ritos sagrados? Ou era um alto sacerdote \nque repentinamente experimentou uma chamada para \nservir o seu Deus de uma forma diferente? Talvez você \nfosse o líder de um pequeno culto fora de qualquer \nestrutura de templo estabelecida, ou mesmo uma seita \nsecreta que servia a uma entidade demoníaca que \nagora você nega. \nProficiências em Perícias: Intuição, Religião \nIdiomas: Dois a sua escolha \nEquipamento: Um símbolo sagrado (um presente \ndado a você quando entrou para o sac"
+      },
+      {
+        "page": 2,
+        "preview": "ARTESÃO DE GUILDA \nVocê é membro de uma guilda de artesãos, hábil em um campo \nparticular e intimamente associado com outros artesãos. Você é \numa parte bem estabelecida de um mundo mercantil, libertado pelo \ntalento e riqueza de restrições da ordem social feudal. Você \naprendeu suas habilidades como um aprendiz de um mestre \nartesão, sob o patrocínio de sua guilda, até que você se tornou um \nmestre de direito. \nProficiências em Perícias: Intuição, Persuasão \nProficiências em Ferramentas: Um tipo de ferramentas de artesão \nIdiomas: Um da sua escolha \nEquipamento: Um conjunto de ferramentas de artesão (de sua \nescolha), uma carta de apresentação da sua guilda, um conjunto de \nroupas de viagem e uma algibeira contendo 15 peças de ouro. \nNEGÓCIOS DA GUILDA \nGuildas são geralmente encontradas em cidades grandes o \nsuficiente para apoiar vários artesãos que praticam o mesmo ofício. \nEntretanto, sua guilda pode em vez disso ser uma rede livre de \nartesãos que cada um trabalha em uma aldeia diferente dentro de \num reino maior. Converse com seu Mestre para determinar a \nnatureza da sua guilda. Você pode selecionar os negócios da sua \nguilda da tabela Negócios da Guilda ou rolar aleatoriame"
+      },
+      {
+        "page": 3,
+        "preview": "ARTISTA \nVocê prospera na frente de uma plateia. Você sabe \ncomo arrebata-los, entretê-los, e até inspirá-los. Suas \npoesias podem agitar os corações daqueles que lhe \nouve, despertar tristeza ou alegria, riso ou fúria. Sua \nmúsica levanta os espíritos deles ou capta a tristeza. \nSeus passos de dança cativam, seu humor ofende. \nQualquer que seja a técnica que você usa, sua arte é \nsua vida. \nProficiências em Perícias: Acrobacia, Performance \nProficiências em Ferramentas: kit de disfarce, um tipo \nde instrumento musical \nEquipamento: Um instrumento musical (um de sua \nescolha), um item de um admirador (carta de amor, \nmecha de cabelo ou bugiganga) e uma algibeira \ncontendo 15 peças de ouro. \nROTINAS DO ARTISTA \nUm bom artista é versátil, apimentando cada \nperformance com uma variedade de rotinas diferentes. \nEscolha de uma até três rotinas ou role na tabela para \ndefinir sua experiência como artista. \nHABILIDADE: PELA DEMANDA POPULAR \nVocê pode sempre encontrar um lugar para se \napresentar, geralmente em uma estalagem ou taberna, \nmas possivelmente em um circo, um teatro, ou mesmo \nem uma corte de nobres. Em qualquer lugar, você \nrecebe hospedagem e comida grátis, em um padrão \nmode"
+      },
+      {
+        "page": 4,
+        "preview": "CHARLATÃO \nVocê sempre teve um jeito com as pessoas. Você sabe \no que os toca, você pode provocar os desejos de seus \ncorações depois de alguns minutos de conversa, e com \nalgumas perguntas importantes você pode lê-los como \nse fossem livros infantis. É um talento útil, e que você \nestá perfeitamente disposto a usar para sua vantagem. \nVocê sabe o que as pessoas querem e você entrega, \nou melhor, você promete entregar. O bom senso deve \nguiar as pessoas para longe de coisas que parecem boas \ndemais para ser verdade, mas o senso comum parece \nestar em falta quando você está por perto. A garrafa de \nlíquido cor de rosa certamente vai curar essa erupção \ninconveniente, esta pomada – nada mais do que um \npouco de gordura com uma pitada de pó de prata – \npode restaurar a juventude e vigor, e há uma ponte na \ncidade que de repente está a venda. Estas maravilhas \nsoam improváveis, mas você as faz soar com o um \nnegócio real. \nProficiências em Perícias: Enganação, Prestidigitação \nProficiências em ferramentas: kit de disfarce, kit de \nfalsificação \nEquipamento: Um conjunto de roupas finas, um kit de \ndisfarce, ferramentas de enganação a sua escolha (dez \ngarrafas fechadas com rolha cheias "
+      },
+      {
+        "page": 5,
+        "preview": "CRIMINOSO \nVocê é um criminoso experiente com um histórico de \ncontravenções. Você gastou um bom tempo entre \noutros criminosos e ainda mantém contato com eles e \ncom o submundo do crime. Você está mais perto do \nque a maioria das pessoas do assassinato, roubo e \nviolência que prevalece no ventre da sociedade, e você \nsobreviveu até esse ponto desprezando a lei e os \nregulamentos da sociedade. \nProficiências em Perícias: Enganação, Furtividade \nProficiências em Ferramentas: Um tipo de conjunto \nde jogos, ferramentas de ladino \nEquipamento: Um pé de cabra, um conjunto de \nroupas escuras comuns com capuz e uma algibeira \ncontendo 15 peças de ouro. \nESPECIALIDADE CRIMINAL \nExistem muitos tipos de criminosos, e dentro de uma \nguilda de ladrões ou organização criminosa similar, \nmembros individuais possuem especialidades \nparticulares. Mesmo criminosos que operam fora \ndestas organizações têm fortes preferências por certos \ntipos de crimes em detrimento de outros. Escolha o \npapel que desempenhou em sua vida de criminoso, ou \nrole na tabela. \nHABILIDADE: CONTATO CRIMINOSO \nVocê tem um contato seguro e confiável que age como \nseu informante em uma rede criminosa. Você sabe \ncomo consegui"
+      }
+    ]
+  },
+  {
+    "index": 7,
+    "driveId": "14_cGPhpkrDTXfr_6Yh1IW6oru2GaDt1k",
+    "originalName": "Volo's Guide.pdf",
+    "slug": "volo_s_guide",
+    "pdfFile": "books/pdfs/volo_s_guide.pdf",
+    "pagesJsonFile": "books/index/volo_s_guide_pages.json",
+    "fullTxtFile": "books/index/volo_s_guide_full.txt",
+    "sizeMB": 80.78,
+    "pageCount": 226,
+    "extractedPages": 226,
+    "nonEmptyPages": 223,
+    "totalChars": 1005590,
+    "meta": {
+      "title": null,
+      "author": "Apollo",
+      "subject": null,
+      "creator": "CorelDRAW 2017",
+      "producer": "pdf-lib (https://github.com/Hopding/pdf-lib)",
+      "pageCount": 226
+    },
+    "samplePages": [
+      {
+        "page": 2,
+        "preview": "NOTA (DESABAFO) DE TRADUÇÃO\n Depois de mais de um ano de dedicação a este projeto, temos a felicidade\ne honra de compartilhar esse material lindo com você, ávido fã de D&D. Esse é um \nmaterial feito por fãs e para fãs, seu compartilhamento é e\nsempre deverá ser gratuito, não há venda dessa versão digital. Como\nno projeto anterior Costa das Espadas, alguns nomes foram\nmantidos de acordo com alguns padrões e alguns de acordo com o desejo\ndo tradutor que o fez. Contudo, deixamos claro que você pode e deve alterar\nos nomes de locais ou criaturas para melhor atender a sua mesa, \nconforme necessitar e ou preferir.\n Livres de hipocrisia queremos deixar bem claro que esta é uma versão digital, \ncomo disse, feita por fãs, mas sem direito de licença. Com isso não vamos aqui dizer \nque você não pode imprimir, ou destruir o esforço de nossa equipe entregando um \narquivo de baixíssima qualidade - respeitamos demais aqueles que nos ajudaram \npara os trair com tamanho ato de vileza e desperdício de seu trabalho e tempo. Isso é \npara você tradutor, diagramador, revisor, pense se seu tempo vale a pena ser perdido \ncom algo que lhe trará propositalmente um resultado ruim por pura birra e ego, \nquand"
+      },
+      {
+        "page": 4,
+        "preview": "CRÉDITOS\nLead Designer: Mike Mearls\nLead Rules Developer: Jeremy Crawford\nDesigners: Adam Lee, Kim Mohan, Christopher Perkins,\n Sean K Reynolds, Ma\u0000 Serne\u0000, Chris Sims, Steve Winter\nAddi\u0000onal Design: Ed Greenwood\nManaging Editor: Jeremy Crawford\nEditors: Kim Mohan, Christopher Perkins, Michele Carter\nEditorial Assistance: Chris Dupuis, Ben Petrisor, Stan!\nArt Director: Kate Irwin\nAddi\u0000onal Art Direc\u0000on: Shauna Narciso, Richard Whi\u0000ers\nGraphic Designer: Emi Tanji\nCover Illustrator: Tyler Jacobson\nInterior Illustrators: Tom Babbey, John-Paul Balmet, Thomas\n M. Baxa, Mark Behm, Eric Belisle, Christopher Bradley, Filip\n Burburan, Christopher Burde\u0000, Sam Burley, Conceptopolis,\n Stephen Crowe, Daarken, Eric Deschamps, Dave Dorman, Mike\n Faille, Sco\u0000 M. Fischer, Lars Grant-West, Rebecca Guay, Lake\n Hurwitz:, Tyler Jacobson, Jeremy Jarvis, Jorge Lacera, Daniel\n Ljunggren, Howard Lyon, Warren Mahy, Brynn Metheney, Sco\u0000\n Murphy, Marco Nelor, Jim Nelson, Marc Sasso, Chris Seaman,\n Craig J Spearing, Cory Trego-Erdner, Franz Vohwinkel, Richard\n Whi\u0000ers, Eva Widermann, Shawn Wood, Ben Woo\u0000en\nCartographer: Jared Blando\nOther D&D Team Members: Greg Bilsland, Bart Carroll, John Feil,\n Trevor Kidd, "
+      },
+      {
+        "page": 5,
+        "preview": "Ap. A: Animais Variados\nAp. B: Personagens do Mestre\nAp. C: Lista de Monstros\nMapas dos Covis dos Monstros\nCovil da Bruxa\nColônia dos Devoradores de Mentes\nCampo de Guerra Goblinóide \nCovil dos Kobolds\nCovil do Observador\nFortaleza Orc\nTemplo Yuan-ti\nCap.2: Raças para Personagens\nAasimar\nFirbolg\nGolias\nKenku\nPovo-Lagartos\nTabaxi\nTritões\nMonstros Aventureiros\nAltura e Peso\nCap.3: Bestiário\nCAPÍTULO 1   CONHECIMENTO SOBRE \nMONSTROS\n3\nPrefácio\nCap.1: Conhecimento Sobre Monstros\nBruxas: Irmandade da Escuridão \nDevoradores de Mentes: Flagelo \ndos Mundos\nGigantes: Estremecedores do Mundo\nGnolls: A Fome Insaciável\nGoblinóides: Tropas Conquistadoras\nKobolds: Pequenos Dragões\nObservadores: Pesadelos se Tornam \nRealidade\nOrcs: Deuses Antigos\nYuan-ti: Povo Serpente\nAbjurador\t\nAdepto em Artes Marciais\nAdvinho\nAlhoon \nAprendiz de Mago \nArqueiro\nArquidruida\nAuroque\nBabau\nBanderhobb\nBardo\nBarghest \nBeijo da Morte\nBisão Fétido (Gado)\nGigante Boca de Grolantor\nBodak \nBrontossauro\nBruxa Annis\nBruxa Invernal\nBruxo Arquifeérico\nBruxo Corrompido \nBruxo dos Supremos Anciões\nBruxo Firenewr de lmix\nBruxo Xvart de Raxivort\nCampeão \nCão Yeti\nCapuzcarlate\nCaracol Mangual\nCarvalho Guardião\nCatoblepas\nCavaleir"
+      },
+      {
+        "page": 6,
+        "preview": "Saudações, aventureiro. Você me parece do tipo curioso que \naprecia coisas refinadas. Permita-me confiar a você minha \núltima obra-prima, que levou anos em produção. Eu acredito \nque você entenderá ter gasto bem o seu tempo e dinheiro. \nPrimeiro de tudo, um aviso: há monstros aqui!\n Ninguém menos que a fonte inigualável de sagacidade \ncomo Elminster do Vale das Sombras¹, tem atestado que \nmuitos mundos além deste estão infestados com monstros. \nComo resultado, o trecho “Há monstros aqui” tem surgido em \nmapas de mundos distantes deste, e segredado de seu \nmodesto² escriba. E quem sou eu, você pergunta?\n Volothamp Geddarm a seus serviços, revelando verdades \nenterradas e segredos antigos sussurrados em meus ouvidos \npelos espíritos guardiões das tumbas ocultas de antigos \narquimagos, onde tudo agora é pó. Sim, neste denso tomo, eu \ndescrevo diversos detalhes, nunca antes tão bem reunidos \ncoerentemente ³ em um só lugar, sobre criaturas variadas e \nestranhas que os humanos e outras raças civilizadas as julgam \ncomo “monstros”.\n Não posso dizer que o conhecimento essencial contido \nneste tomo seja suficientemente o bastante , mas clamo que \nele seja um “salva-vidas necessário” para to"
+      },
+      {
+        "page": 7,
+        "preview": "CAPÍTULO 1:\nCONHECIMENTO\u0000SOBRE\u0000MONSTROS\nOLO ENCONTROU MUITOS MONSTROS \nV\nno seu tempo, alguns odiosos ou \nintempestivos como descritos aqui. Esse \ncapítulo abrange diversos monstros \nicônicos do D&D e provê informações \nadicionais sobre suas origens, seus \ncostumes, seus comportamentos e seus \ncovis – sobrepondo muito além do que está escrito no \nManual dos Monstros. Para dar a todo monstro uma \nquantidade descritiva tamanha, iria requerer uma \nquantidade de páginas além da conta, então nós \nselecionamos abaixo uma lista de nove grupos de \ncriaturas em que há bastante conteúdo sobre eles e \nque tendem a ser usados frequentemente em \ncampanhas de D&D.\n Bruxas         Devoradores de Mente        Gigantes                          \n     Gnolls                Goblinóides                Kobolds  \n Observadores              Orcs                       Yuan-ti\n Se você buscar neste capítulo por ideias e mapas \npara a próxima vez que você criar uma aventura ou \num vilão, então este material terá servido seu \npropósito. Nós esperamos que, à medida que você \nexplora cada sessão de monstros, você se renove com \nnovos modos de desaar e entreter seus jogadores, \nbem como encontrar coisas novas q"
+      }
+    ]
+  },
+  {
+    "index": 8,
+    "driveId": "1bib-CCd9b5qyVEQBaos6T92VowqWXtnS",
+    "originalName": "ficha.pdf",
+    "slug": "ficha",
+    "pdfFile": "books/pdfs/ficha.pdf",
+    "pagesJsonFile": "books/index/ficha_pages.json",
+    "fullTxtFile": "books/index/ficha_full.txt",
+    "sizeMB": 0.49,
+    "pageCount": 3,
+    "extractedPages": 3,
+    "nonEmptyPages": 3,
+    "totalChars": 1652,
+    "meta": {
+      "title": "Ficha de Personagem D&D 5E",
+      "author": "Johny Robert",
+      "subject": null,
+      "creator": "Adobe InDesign CS6 (Macintosh)",
+      "producer": "pdf-lib (https://github.com/Hopding/pdf-lib)",
+      "pageCount": 3
+    },
+    "samplePages": [
+      {
+        "page": 1,
+        "preview": "RAÇA\nCLASSE E NÍVEL\nNOME DO JOGADOR\nNOME DO PERSONAGEM\nANTECEDENTE\nPONTOS DE EXPERIÊNCIA\nTENDÊNCIA\nEQUIPAMENTO\nPV Totais\nForça\nDestreza\nConstituição\nInteligência\nSabedoria\nCarisma\nPC\nPE\nPL\nPO\nPP\nSABEDORIA PASSIVA (PERCEPÇÃO)\nIDIOMAS E OUTRAS PROFICIÊNCIAS\nATAQUES E MAGIAS\nCARACTERÍSTICAS E HABILIDADES\nAcrobacia (Des)\nArcanismo (Int)\nAtletismo (For)\nAtuação (Car)\nBlefar (Car)\nFurtividade (Des)\nHistória (Int)\nIntimidação (Car)\nIntuição (Sab)\nInvestigação (Int)\nLidar com Animais (Sab)\nMedicina (Sab)\nNatureza (Int)\nPercepção (Sab)\nPersuasão (Car)\nPrestidigitação (Des)\nReligião (Int)\nSobrevivência (Sab)\nTESTES CONTRA A MORTEDADOS DE VIDA\nNOME\nBÔNUS\nTotal\nSUCESSOS\nFRACASSOS\nIDEAIS\nLIGAÇÕES\nDEFEITOS\nTRAÇOS DE PERSONALIDADE\nCLASSE\nARMD\nPONTOS DE VIDA ATUAIS\nPONTOS DE VIDA TEMPORÁRIOS\nINICIATIVADESLOC.\nBÔNUS DE PROFICIÊNCIA\nFORÇA\nDESTREZA\nCONSTITUIÇÃO\nIN\nTELIGÊNCIA\nSABEDORIA\nCARISMA\nTE\nSTES DE RESISTÊNCIA\nINSPIRAÇÃO\nPERÍCIAS\nDANO / TIPO\nTM & © 2014 Wizards of the Coast LLC. Cópia permitida apenas para uso pessoal. Tradução: Johny Robert | johnyrobert@icloud.com"
+      },
+      {
+        "page": 2,
+        "preview": "NOME DO PERSONAGEM\nOLHOS\nIDADEPESOALTURA\nCABELOS\nPELE\nNOME\nH\nISTÓRIA DO PERSONAGEM\nAPARÊNCIA \nDO \nPERSONAGEM\nOUTRAS CARACTERÍSTICAS E HABILIDADES\nALIADOS E ORGANIZAÇÕES\nSÍMBOLO\nTESOURO\nTM & © 2014 Wizards of the Coast LLC. Cópia permitida apenas para uso pessoal. Tradução: Johny Robert | johnyrobert@icloud.com"
+      },
+      {
+        "page": 3,
+        "preview": "TM & © 20\n14 Wizards of the Coast LLC. Cópia permitida apenas para uso pessoal. Tradução: Johny Robert | johnyrobert@icloud.com\nCLASSE DE CONJURADOR\nMAGIAS CONHECIDAS\nNÍVEL\nMAGIA\nESPAÇOS USADOSESPAÇOS TOTAL\n1\n0\n2\n36\n7\n8\n9\n4\n5\nHABILIDADE CHAVECD DO TRBÔNUS DE ATAQUE\nTRUQUES"
+      }
+    ]
+  }
+]

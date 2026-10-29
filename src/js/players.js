@@ -7971,6 +7971,9 @@ function getRacialAbilityBonuses(raceName) {
     } else if (norm.includes('colina') || norm.includes('hill')) {
       bonuses.wis = 1;
       bonuses.label = 'Anão da Colina (+2 CON, +1 SAB)';
+    } else if (norm.includes('duergar') || norm.includes('cinzento')) {
+      bonuses.str = 1;
+      bonuses.label = 'Anão Duergar (+2 CON, +1 FOR)';
     } else {
       bonuses.label = 'Anão (+2 CON)';
     }
@@ -7990,6 +7993,12 @@ function getRacialAbilityBonuses(raceName) {
     } else if (norm.includes('drow') || norm.includes('negro') || norm.includes('dark')) {
       bonuses.cha = 1;
       bonuses.label = 'Elfo Drow (+2 DES, +1 CAR)';
+    } else if (norm.includes('eladrin')) {
+      bonuses.cha = 1;
+      bonuses.label = 'Elfo Eladrin (+2 DES, +1 CAR)';
+    } else if (norm.includes('shadar-kai') || norm.includes('shadarkai')) {
+      bonuses.con = 1;
+      bonuses.label = 'Elfo Shadar-kai (+2 DES, +1 CON)';
     } else {
       bonuses.label = 'Elfo (+2 DES)';
     }
@@ -8031,6 +8040,95 @@ function getRacialAbilityBonuses(raceName) {
     bonuses.cha = 2;
     bonuses.int = 1;
     bonuses.label = 'Tiefling (+2 CAR, +1 INT)';
+  } else if (norm.includes('aasimar')) {
+    bonuses.cha = 2;
+    bonuses.wis = 1;
+    bonuses.label = 'Aasimar (+2 CAR, +1 SAB)';
+  } else if (norm.includes('golias') || norm.includes('goliath')) {
+    bonuses.str = 2;
+    bonuses.con = 1;
+    bonuses.label = 'Golias (+2 FOR, +1 CON)';
+  } else if (norm.includes('tabaxi')) {
+    bonuses.dex = 2;
+    bonuses.cha = 1;
+    bonuses.label = 'Tabaxi (+2 DES, +1 CAR)';
+  } else if (norm.includes('kenku')) {
+    bonuses.dex = 2;
+    bonuses.wis = 1;
+    bonuses.label = 'Kenku (+2 DES, +1 SAB)';
+  } else if (norm.includes('firbolg')) {
+    bonuses.wis = 2;
+    bonuses.str = 1;
+    bonuses.label = 'Firbolg (+2 SAB, +1 FOR)';
+  } else if (norm.includes('lagarto') || norm.includes('lizardfolk')) {
+    bonuses.con = 2;
+    bonuses.wis = 1;
+    bonuses.label = 'Povo-Lagarto (+2 CON, +1 SAB)';
+  } else if (norm.includes('tritao') || norm.includes('triton')) {
+    bonuses.str = 1;
+    bonuses.con = 1;
+    bonuses.cha = 1;
+    bonuses.label = 'Tritão (+1 FOR, +1 CON, +1 CAR)';
+  } else if (norm.includes('aarakocra')) {
+    bonuses.dex = 2;
+    bonuses.wis = 1;
+    bonuses.label = 'Aarakocra (+2 DES, +1 SAB)';
+  } else if (norm.includes('genasi')) {
+    bonuses.con = 2;
+    if (norm.includes('agua') || norm.includes('water')) {
+      bonuses.wis = 1;
+      bonuses.label = 'Genasi da Água (+2 CON, +1 SAB)';
+    } else if (norm.includes('ar') || norm.includes('air')) {
+      bonuses.dex = 1;
+      bonuses.label = 'Genasi do Ar (+2 CON, +1 DES)';
+    } else if (norm.includes('terra') || norm.includes('earth')) {
+      bonuses.str = 1;
+      bonuses.label = 'Genasi da Terra (+2 CON, +1 FOR)';
+    } else {
+      bonuses.int = 1;
+      bonuses.label = 'Genasi (+2 CON, +1 INT)';
+    }
+  } else if (norm.includes('gith')) {
+    bonuses.int = 1;
+    if (norm.includes('githzerai')) {
+      bonuses.wis = 2;
+      bonuses.label = 'Githzerai (+2 SAB, +1 INT)';
+    } else {
+      bonuses.str = 2;
+      bonuses.label = 'Githyanki (+2 FOR, +1 INT)';
+    }
+  } else if (norm.includes('tortle') || norm.includes('tartaruga')) {
+    bonuses.str = 2;
+    bonuses.wis = 1;
+    bonuses.label = 'Tortle (+2 FOR, +1 SAB)';
+  } else if (norm.includes('harengon') || norm.includes('coelho')) {
+    bonuses.dex = 2;
+    bonuses.wis = 1;
+    bonuses.label = 'Harengon (+2 DES, +1 SAB)';
+  } else if (norm.includes('fada') || norm.includes('fairy')) {
+    bonuses.dex = 2;
+    bonuses.cha = 1;
+    bonuses.label = 'Fada (+2 DES, +1 CAR)';
+  } else if (norm.includes('metamorfo') || norm.includes('changeling')) {
+    bonuses.cha = 2;
+    bonuses.dex = 1;
+    bonuses.label = 'Metamorfo (+2 CAR, +1 DES)';
+  } else if (norm.includes('yuan-ti') || norm.includes('yuanti')) {
+    bonuses.cha = 2;
+    bonuses.int = 1;
+    bonuses.label = 'Yuan-ti (+2 CAR, +1 INT)';
+  } else if (norm.includes('duergar')) {
+    bonuses.con = 2;
+    bonuses.str = 1;
+    bonuses.label = 'Anão Duergar (+2 CON, +1 FOR)';
+  } else if (norm.includes('eladrin')) {
+    bonuses.dex = 2;
+    bonuses.cha = 1;
+    bonuses.label = 'Elfo Eladrin (+2 DES, +1 CAR)';
+  } else if (norm.includes('shadar-kai') || norm.includes('shadarkai')) {
+    bonuses.dex = 2;
+    bonuses.con = 1;
+    bonuses.label = 'Elfo Shadar-kai (+2 DES, +1 CON)';
   }
 
   return bonuses;
@@ -8937,6 +9035,10 @@ function openPlayerModal(id) {
   updateModalCalculatedAc();
   updateSuggestedHpLabelModal();
   renderModalEquippedWeapons();
+  if (typeof window !== 'undefined') window._modalPendingBackgroundSkills = [];
+  if (typeof onModalBackgroundChange === 'function') {
+    onModalBackgroundChange(document.getElementById('pm-background')?.value || '');
+  }
 
   if (modal) modal.classList.add('open');
 }
@@ -9215,7 +9317,14 @@ function savePlayerSheet() {
     slotsUsed: existing && Array.isArray(existing.slotsUsed) ? existing.slotsUsed : [0, 0, 0, 0, 0, 0, 0, 0, 0],
     spellbookSpells: currentBook,
     preparedSpells: currentPrepared,
-    skillProficiencies: existing && existing.skillProficiencies ? existing.skillProficiencies : [],
+    skillProficiencies: (() => {
+      const baseSkills = existing && Array.isArray(existing.skillProficiencies) ? [...existing.skillProficiencies] : [];
+      const pendingBg = (typeof window !== 'undefined' && Array.isArray(window._modalPendingBackgroundSkills)) ? window._modalPendingBackgroundSkills : [];
+      pendingBg.forEach(sk => {
+        if (sk && !baseSkills.includes(sk)) baseSkills.push(sk);
+      });
+      return baseSkills;
+    })(),
     skillExpertises: existing && existing.skillExpertises ? existing.skillExpertises : [],
     saveProficiencies: existing && existing.saveProficiencies ? existing.saveProficiencies : defaultSaves,
     featureCharges: existing && existing.featureCharges ? existing.featureCharges : [],
@@ -14688,6 +14797,142 @@ if (typeof window !== 'undefined') {
   window.handlePlayerSpellSearch = handlePlayerSpellSearch;
   window.togglePlayerCircleSlot = togglePlayerCircleSlot;
   window.renderPlayerUnlockedFeatures = renderPlayerUnlockedFeatures;
+
+  // ISSUE-159: Antecedentes Interativos D&D 5E
+  window.findBackgroundData = findBackgroundData;
+  window.onModalBackgroundChange = onModalBackgroundChange;
+  window.rollBackgroundTraitsModal = rollBackgroundTraitsModal;
+  window.applyBackgroundBenefitsModal = applyBackgroundBenefitsModal;
+}
+
+// ============================================================================
+// 📜 ISSUE-159: SISTEMA DE ANTECEDENTES INTERATIVOS (BACKGROUNDS_DATA)
+// ============================================================================
+function findBackgroundData(bgQuery) {
+  if (!bgQuery || typeof BACKGROUNDS_DATA === 'undefined' || !Array.isArray(BACKGROUNDS_DATA)) return null;
+  const norm = String(bgQuery).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  if (!norm) return null;
+  return BACKGROUNDS_DATA.find(bg => {
+    const bgName = String(bg.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const bgEn = String(bg.nameEn || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const bgId = String(bg.id || '').toLowerCase();
+    return bgId === norm || bgName === norm || bgEn === norm || bgName.includes(norm) || norm.includes(bgName);
+  }) || null;
+}
+
+function onModalBackgroundChange(bgVal) {
+  const query = bgVal !== undefined ? bgVal : (typeof document !== 'undefined' ? (document.getElementById('pm-background')?.value || '') : '');
+  const bg = findBackgroundData(query);
+  const bar = typeof document !== 'undefined' ? document.getElementById('pm-background-summary-bar') : null;
+  if (!bar) return bg;
+
+  if (!bg) {
+    bar.style.display = 'none';
+    bar.innerHTML = '';
+    return null;
+  }
+
+  bar.style.display = 'block';
+  const skillsStr = Array.isArray(bg.skillLabels) ? bg.skillLabels.join(' & ') : '';
+  bar.innerHTML = `
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;">
+      <span style="color: #fbbf24; font-weight: 800;">${bg.icon || '📜'} ${bg.name} (${bg.nameEn || ''})</span>
+      <span style="background: rgba(16,185,129,0.18); color: #34d399; border: 1px solid rgba(16,185,129,0.35); border-radius: 99px; padding: 1px 7px; font-size: 9.5px; font-weight: 700;">🎯 Perícias: ${skillsStr}</span>
+    </div>
+    <div style="margin-top: 3px; color: #cbd5e1; font-size: 10px;">
+      <b>Característica (${bg.featureName}):</b> ${bg.featureDesc}
+    </div>
+  `;
+  return bg;
+}
+
+function rollBackgroundTraitsModal(which = 'all') {
+  const bgVal = typeof document !== 'undefined' ? (document.getElementById('pm-background')?.value || 'Soldado') : 'Soldado';
+  const bg = findBackgroundData(bgVal) || (typeof BACKGROUNDS_DATA !== 'undefined' && BACKGROUNDS_DATA[0] ? BACKGROUNDS_DATA[0] : null);
+  if (!bg) return null;
+
+  const pickRandom = (arr) => (Array.isArray(arr) && arr.length > 0) ? arr[Math.floor(Math.random() * arr.length)] : '';
+  const rolled = {};
+
+  if (which === 'all' || which === 'personality') {
+    rolled.personality = pickRandom(bg.personalityTraits);
+    const el = typeof document !== 'undefined' ? document.getElementById('pm-personality') : null;
+    if (el && rolled.personality) el.value = rolled.personality;
+  }
+  if (which === 'all' || which === 'ideal') {
+    rolled.ideal = pickRandom(bg.ideals);
+    const el = typeof document !== 'undefined' ? document.getElementById('pm-ideal') : null;
+    if (el && rolled.ideal) el.value = rolled.ideal;
+  }
+  if (which === 'all' || which === 'bond') {
+    rolled.bond = pickRandom(bg.bonds);
+    const el = typeof document !== 'undefined' ? document.getElementById('pm-bond') : null;
+    if (el && rolled.bond) el.value = rolled.bond;
+  }
+  if (which === 'all' || which === 'flaw') {
+    rolled.flaw = pickRandom(bg.flaws);
+    const el = typeof document !== 'undefined' ? document.getElementById('pm-flaw') : null;
+    if (el && rolled.flaw) el.value = rolled.flaw;
+  }
+
+  if (typeof playFX === 'function') playFX('dice');
+  if (typeof showToast === 'function') {
+    showToast(`🎲 Tabelas de ${bg.name} sorteadas com sucesso!`, 'info');
+  }
+  return rolled;
+}
+
+function applyBackgroundBenefitsModal() {
+  const bgVal = typeof document !== 'undefined' ? (document.getElementById('pm-background')?.value || '') : '';
+  const bg = findBackgroundData(bgVal);
+  if (!bg) {
+    if (typeof showToast === 'function') showToast('Selecione um antecedente oficial D&D 5E primeiro (ex: Acólito, Criminoso, Sábio, Soldado).', 'warning');
+    return null;
+  }
+
+  if (typeof window !== 'undefined') {
+    window._modalPendingBackgroundSkills = Array.isArray(bg.skills) ? [...bg.skills] : [];
+  }
+
+  // Se estiver editando um personagem existente, já garante as perícias nele também
+  const pId = typeof document !== 'undefined' ? document.getElementById('pm-id')?.value : '';
+  if (pId && typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS)) {
+    const p = PLAYERS.find(x => String(x.id) === String(pId));
+    if (p) {
+      if (!Array.isArray(p.skillProficiencies)) p.skillProficiencies = [];
+      (bg.skills || []).forEach(sk => {
+        if (sk && !p.skillProficiencies.includes(sk)) p.skillProficiencies.push(sk);
+      });
+    }
+  }
+
+  // Adiciona a característica do antecedente ao campo de Características & Talentos se ainda não constar
+  const featInp = typeof document !== 'undefined' ? document.getElementById('pm-features') : null;
+  if (featInp && bg.featureName) {
+    const curText = featInp.value || '';
+    if (!curText.toLowerCase().includes(bg.featureName.toLowerCase())) {
+      const featureLine = `[Antecedente - ${bg.name}] ${bg.featureName}: ${bg.featureDesc}`;
+      featInp.value = curText.trim() ? `${curText.trim()}\n${featureLine}` : featureLine;
+    }
+  }
+
+  // Atualiza PO inicial caso seja ficha nova com PO padrão
+  const goldInp = typeof document !== 'undefined' ? document.getElementById('pm-gold') : null;
+  if (goldInp && (!pId) && bg.startingGold) {
+    goldInp.value = bg.startingGold;
+  }
+
+  onModalBackgroundChange(bg.name);
+  if (typeof playFX === 'function') playFX('heal');
+  if (typeof showToast === 'function') {
+    showToast(`⚡ Benefícios de ${bg.name} aplicados: Perícias (${(bg.skillLabels || []).join(', ')}) + ${bg.featureName}!`, 'success');
+  }
+  return {
+    background: bg.name,
+    skills: bg.skills,
+    featureName: bg.featureName,
+    startingGold: bg.startingGold
+  };
 }
 
 if (typeof global !== 'undefined') {
@@ -14711,6 +14956,10 @@ if (typeof global !== 'undefined') {
   global.setPlayerSpellCircleFilter = setPlayerSpellCircleFilter;
   global.handlePlayerSpellSearch = handlePlayerSpellSearch;
   global.togglePlayerCircleSlot = togglePlayerCircleSlot;
+  global.findBackgroundData = findBackgroundData;
+  global.onModalBackgroundChange = onModalBackgroundChange;
+  global.rollBackgroundTraitsModal = rollBackgroundTraitsModal;
+  global.applyBackgroundBenefitsModal = applyBackgroundBenefitsModal;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -14756,7 +15005,11 @@ if (typeof module !== 'undefined' && module.exports) {
     togglePlayerFeatureAccordion,
     setPlayerSpellCircleFilter,
     handlePlayerSpellSearch,
-    togglePlayerCircleSlot
+    togglePlayerCircleSlot,
+    findBackgroundData,
+    onModalBackgroundChange,
+    rollBackgroundTraitsModal,
+    applyBackgroundBenefitsModal
   };
 }
 

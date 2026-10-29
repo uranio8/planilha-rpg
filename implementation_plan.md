@@ -1,100 +1,94 @@
-# 📋 Plano de Implementação: Overhaul de Navegação da Planilha e Visualização Avançada de Traços e Magias (ISSUE-157)
+# 📋 Plano de Implementação: Integração do Acervo de 8 Livros D&D 5E (ISSUE-159)
 
 ## 📌 Contexto & Objetivos
 
-A usabilidade da Central do Mestre e Fichas dos Personagens depende criticamente da facilidade de navegação entre heróis e da clareza visual com que regras, magias e características são apresentadas em mesa de jogo.
+Com os **8 livros de D&D 5E** (1.658 páginas) indexados localmente em `books/index/`, vamos integrar os **4 pilares de conteúdo oficial** diretamente na **Planilha RPG**:
 
-A solicitação do usuário visa aprimorar dois pilares essenciais:
-1. **Navegação da Planilha e das Fichas**:
-   - Tornar o trânsito entre múltiplos heróis imediato e intuitivo na aba de Fichas (`#tab-players`), eliminando a necessidade de rolar exaustivamente a tela para encontrar personagens específicos.
-   - Modernizar a barra de abas internas do card do herói (`roll20-tabs-header`) com contadores visuais táteis (ex: `✨ Magias (12)`, `🎒 Inventário (15)`, `📜 Traços (8)`) e melhor usabilidade em dispositivos móveis e desktops.
-2. **Visualização de Traços & Características (Traits)**:
-   - Eliminar a sobrecarga visual da aba "📜 Traços": atualmente todas as habilidades de classe, raça e talentos aparecem em uma lista vertical sem agrupamento por tipo ou filtros.
-   - Implementar **Filtros Rápidos por Categoria** (`[🌐 Todos]`, `[🧬 Espécie / Raça]`, `[🌳 Classe & Subclasse]`, `[⭐ Talentos & ASI]`, `[📝 Outros]`).
-   - Implementar **Busca Instantânea de Traços** (`🔍 Filtrar características...`) para localização imediata em meio a combates e explorações.
-   - Adicionar **Modo Acordeão / Expansão Direta no Card** (`[⊞ Expandir Todos] / [⊟ Recolher]`) com revelação do texto completo no próprio card sem obrigar a abrir popovers ou modais.
-   - Badges cromáticas refinadas para economia de ação (`⚔️ Ação`, `⚡ Bônus`, `🛡️ Reação`, `✨ Passiva`) e recarga (`Descanso Curto / Longo`).
-3. **Visualização e Organização de Magias (Spells)**:
-   - **Agrupamento Canônico por Círculo de Magia**: substituir a grade única misturada por blocos organizados por círculo D&D 5E:
-     - ✨ **Truques (Círculo 0)**
-     - 🔮 **1º Círculo** (com indicador de slots disponíveis e atalhos rápidos)
-     - 🔮 **2º Círculo**, **3º Círculo** etc.
-   - **Badges de Metadados e Alertas Essenciais**:
-     - `[C] Concentração` em destaque âmbar (vital para conjuradores não quebrarem concentração por descuido).
-     - `[R] Ritual` em badge roxa.
-     - Tempo de conjuração (`1 Ação`, `1 Bônus`, `Reação`), alcance e componentes (`V, S, M`).
-   - **Busca e Filtro por Círculo no Grimório do Herói**:
-     - Filtros rápidos por círculo (`Todos`, `Truques`, `1º`, `2º`, `3º`...) e campo de busca instantânea de magia.
-     - Manter o filtro de preparação (`Todas as Conhecidas` vs `Apenas Preparadas`).
+1. **🎭 Pilar 1 — Antecedentes Oficiais Interativos (`Antecedentes.pdf` + `Guia de Xanathar.pdf`)**:
+   - Criar a base oficial `src/data/backgrounds.js` (`BACKGROUNDS_DATA`) contendo os **13 Antecedentes Clássicos** (*Acólito, Artesão de Guilda, Artista, Charlatão, Criminoso, Eremita, Forasteiro, Herói Popular, Marinheiro, Morador de Rua, Nobre, Sábio e Soldado*) extraídos de `Antecedentes.pdf`, cada um com:
+     - `skillProficiencies` (as 2 perícias oficiais, ex.: *Intuição* e *Religião* para Acólito).
+     - `toolProficiencies` e `languages`.
+     - `equipment` e `gold` inicial.
+     - `featureName` e `featureDesc` (Característica de Antecedente, ex.: *Abrigo dos Fiéis*, *Contato Criminal*, *Patente Militar*).
+     - Tabelas oficiais completas de `personalityTraits` (d8), `ideals` (d6), `bonds` (d6) e `flaws` (d6).
+   - No modal de criação/edição de ficha (`#modal-player` em `src/ui/ui.html` e `src/js/players.js`):
+     - Adicionar seletor/autocomplete dos 13 Antecedentes em `#pm-background` + barra interativa com botões **`🎲 Sortear Personalidade/Ideal/Vínculo/Defeito`** (`rollBackgroundTraitsModal()`) e **`✨ Aplicar Perícias & Característica do Antecedente`** (`applyBackgroundBenefitsModal()`), além de botões individuais `🎲` ao lado de Personalidade, Ideal, Vínculo e Defeito.
+     - Exibir a Característica do Antecedente também na aba de **Traços / Sobre** da ficha do jogador.
 
----
+2. **💎 Pilar 2 — Gerador Oficial de Tesouros, Gemas, Objetos de Arte & Catálogo de Itens Mágicos (`Guia do Mestre` + `Guia de Xanathar`)**:
+   - **Catálogo de Itens Mágicos & Gemas/Artes (`src/data/equipment.js`)**:
+     - Expandir `EQUIPMENT_DATA` com os principais **Itens Mágicos Oficiais do DMG e Xanathar** (incluindo *Espada da Vingança, Armas +1/+2/+3, Escudo +1/+2/+3, Armaduras +1/+2/+3, Poções de Cura Maior/Superior/Suprema, Poção de Invisibilidade, Poção de Voo, Pergaminhos de Magia 1º ao 5º Círculo, Bolsa de Carga, Manto Élfico, Botas Élficas, Anel de Proteção, Amuleto de Saúde, Manoplas de Força do Ogro, Cajado do Poder, Varinha de Mísseis Mágicos, Capa de Deslocamento, Pedra Ioun*, além de Itens Mágicos Comuns de Xanathar como *Manto de Muitas Modas, Chapéu de Mago, Armadura Fumegante*) e as **Gemas (10 a 5.000 PO)** e **Objetos de Arte (25 a 7.500 PO)**.
+   - **Tabelas do Gerador de Tesouro do DMG (`DMG_TREASURE_TABLES` em `src/js/campaigns.js`)**:
+     - Adicionar no painel do **Baú Coletivo & Suprimentos** (`src/ui/ui.html` e `#modal-party-stash-view`) uma barra **`🎲 Gerador Oficial de Saque (Guia do Mestre)`** com botões de 1-clique:
+       - `💎 +Gema Aleatória (10 / 50 / 100 / 500 / 1000 PO)`
+       - `🎨 +Objeto de Arte (25 / 250 / 750 / 2500 PO)`
+       - `✨ +Item Mágico Aleatório (Comum / Incomum / Raro)`
+       - `🏆 Rolar Pilha de Tesouro por ND (ND 0–4 | ND 5–10 | ND 11–16 | ND 17+)`: sorteia automaticamente o ouro, gemas, objetos de arte e itens mágicos segundo o Capítulo 7 do Guia do Mestre e deposita tudo no Baú Coletivo registrando no histórico!
 
-## 🎯 Proposta de Modificações e Módulos Afetados
+3. **⚔️ Pilar 3 — Subclasses do Guia de Xanathar & Raças de Volo / Mordenkainen (`src/data/classes.js` & `src/data/species.js`)**:
+   - **Subclasses de Xanathar (`src/data/classes.js`)**:
+     - Adicionar às 12 classes em `CLASSES_DATA` as subclasses clássicas do *Guia de Xanathar* com suas habilidades de nível 3, 6, 10, 14/15/17/18 em português:
+       - **Bárbaro**: *Caminho do Guardião Ancestral*, *Caminho do Arauto da Tempestade*.
+       - **Bardo**: *Colégio das Espadas*, *Colégio dos Sussurros*.
+       - **Bruxo**: *O Lâmina Maldita (Hexblade)*, *O Celestial*.
+       - **Clérigo**: *Domínio da Forja*, *Domínio da Sepultura*.
+       - **Druida**: *Círculo dos Sonhos*, *Círculo do Pastor*.
+       - **Feiticeiro**: *Alma Favorecida (Divine Soul)*, *Adepto das Sombras*, *Feiticeiro da Tempestade*.
+       - **Guerreiro**: *Samurai*, *Cavaleiro*, *Arqueiro Arcano*.
+       - **Ladino**: *Espadachim (Swashbuckler)*, *Inquiridor*, *Batedor*.
+       - **Mago**: *Mago de Guerra (War Magic)*.
+       - **Monge**: *Estilo do Kensei*, *Estilo do Mestre Bêbado*, *Estilo da Alma Solar*.
+       - **Paladino**: *Juramento da Conquista*, *Juramento da Redenção*.
+       - **Patrulheiro**: *Andarilho do Horizonte*, *Exterminador de Monstros*.
+   - **Raças Jogáveis de Volo & Mordenkainen (`src/data/species.js`)**:
+     - Expandir `SPECIES_DATA` com as raças de `Volo's Guide.pdf`, `Tome of Foes.pdf` e `Monsters of the Universe.pdf` (e seus bônus raciais em `src/js/players.js`):
+       - **Tabaxi**, **Kenku**, **Firbolg**, **Povo-Lagarto (Lizardfolk)**, **Tritão**, **Aarakocra**, **Genasi (Ar, Terra, Fogo, Água)**, **Gith (Githyanki & Githzerai)**, **Tortle**, **Harengon**, **Fada (Fairy)**, ** Metamórfo (Changeling)** e **Yuan-ti**, além das linhagens élficas/anãs (*Eladrin, Shadar-kai, Duergar*).
 
-### 1. `src/styles/head_css.html` (Design System & Responsividade)
-- Estilos para a **Barra de Acesso Rápido a Heróis** (`.hero-quick-nav-bar`, `.hero-quick-chip`, `.hero-quick-avatar`, `.hero-quick-hp-mini`):
-  - Barra horizontal deslizável fixa ou destacada no topo de `#tab-players` com visual glassmorphism épico.
-  - Efeito `:hover` e animação de pulso/highlight (`.hero-card-highlight`) ao saltar para o herói selecionado.
-- Estilos para a **Navegação de Abas da Ficha Roll20**:
-  - Abas em formato pill moderno com badges numéricos (`.tab-badge-pill`), rolagem suave e indicador ativo dourado D&D.
-- Estilos para a **Visualização de Traços**:
-  - Chips de filtro por categoria (`.feature-category-chip.active`).
-  - Barra de busca integrada (`.feature-search-input`).
-  - Acordeão expansível com animação sutil (`.feature-collapsible-body`, `.btn-feature-expand`).
-- Estilos para a **Visualização de Magias por Círculo**:
-  - Cabeçalho de círculo (`.spell-circle-group-header`, `.spell-circle-title`, `.spell-circle-slot-pills`).
-  - Badges de Concentração (`.spell-tag-conc`), Ritual (`.spell-tag-ritual`), Tempo e Alcance.
-  - Grade compacta e harmoniosa de magias por círculo.
-
-### 2. `src/js/players.js` (Lógica de Apresentação e Interação)
-- **Barra de Acesso Rápido aos Heróis (`renderHeroQuickNav`)**:
-  - Renderiza mini-chips de cada herói visível (respeitando filtros de campanha ativos) com avatar, nome, classe, nível e barra/porcentagem de PV.
-  - Função `jumpToPlayerCard(playerId)`: executa scroll suave (`scrollIntoView({ behavior: 'smooth', block: 'start' })`) e aplica classe de destaque temporário.
-- **Contadores Dinâmicos nas Abas Roll20**:
-  - Atualizar os rótulos de abas para incluir badges reais:
-    - `✨ Magias (${allKnownCount})`
-    - `🎒 Inventário (${itemCount})`
-    - `📜 Traços (${totalFeaturesCount})`
-- **Overhaul da Aba "📜 Traços"**:
-  - Incluir barra superior com campo de busca `inp-trait-search-${p.id}` e chips de categoria (`all`, `species`, `class`, `feats`).
-  - Adicionar botão alternador `[⊞ Expandir / ⊟ Recolher Todos]`.
-  - Permitir que cada item de característica abra/feche seu texto explicativo inline, mantendo a opção de abrir o modal detalhado com 1 clique.
-- **Overhaul da Aba "✨ Magias"**:
-  - Agrupar magias conhecidas/preparadas em um dicionário canônico por círculo (0 = Truques, 1 = 1º Círculo, etc.).
-  - Para cada círculo que possuir magias, renderizar um container `.spell-circle-group` com cabeçalho temático, quantidade de magias e rastreador de slots correspondente (com botões de gastar/recuperar slot ali mesmo).
-  - Incluir badges visuais de metadados (`[C] Concentração`, `[R] Ritual`, tempo de conjuração) extraídos de `SPELLS_DATA`.
-  - Filtros rápidos por círculo (`all`, `0`, `1`, `2`, `3`...) e busca em tempo real.
-
-### 3. `src/ui/ui.html` (Estrutura da Aba de Fichas)
-- Inserir o container ancorado `#hero-quick-nav-container` no topo da seção de heróis em `#tab-players`.
+4. **🐉 Pilar 4 — Expansão do Bestiário com Criaturas e PdMs de Volo, Tome of Foes e Manual dos Monstros (`src/data/monsters.js` & `src/js/compendium.js`)**:
+   - Adicionar ao `BESTIARY_DATA` (`src/data/monsters.js`) as criaturas icônicas e os **PdMs Especialistas** de *Volo's Guide* e *Mordenkainen's Tome of Foes* em português:
+     - **PdMs de Volo**: *Abjurador (ND 9), Adivinho (ND 8), Aprendiz de Mago (ND 1/4), Arqueiro (ND 3), Arquidruida (ND 12), Bardo (ND 2), Campeão (ND 9), Conjurador (ND 6), Encantador (ND 5), Evocador (ND 9), Ilusionista (ND 3), Mestre em Artes Marciais (ND 3), Mestre Ladrão (ND 5), Necromante (ND 9), Esgrimista / Swashbuckler (ND 3), Senhor da Guerra / Warlord (ND 12), Sacerdote de Guerra (ND 9), Guarda Negro / Blackguard (ND 8)*.
+     - **Monstros de Volo & Tome of Foes**: *Alhoon (ND 10), Cérebros Anciãos / Elder Brain (ND 14), Devorador (ND 13), Bodak (ND 6), Banderhobb (ND 5), Barghest (ND 4), Catoblepas (ND 5), Caveira Flamejante, Flind (ND 9), Leucrotta (ND 3), Neothelid (ND 13), Oblex Adulto (ND 5) & Ancião (ND 10), Cadáver Estelar Mangler/Hulk/Seer/Larva Mage, Eladrin (Outono, Inverno, Primavera, Verão - ND 10), Marut (ND 25), Leviatã (ND 20), Fênix (ND 16), Tempestade Anciã (ND 23), Zariel (ND 26), Demogorgon (ND 26), Orcus (ND 26), Graz'zt (ND 24), Baphomet (ND 23), Yeenoghu (ND 24), Juiblex (ND 23), Zuggtmoy (ND 23)*.
+   - Atualizar o filtro de fontes do Bestiário (`#filter-monster-source` em `src/ui/ui.html`) para permitir filtrar também por `Volo's Guide` e `Tome of Foes`.
 
 ---
 
-## 🧪 Estratégia de Verificação e Testes Automatizados
+## 🛠️ Arquivos Afetados
+- `src/data/backgrounds.js` *(novo arquivo de dados incluído no `builder.js`)*
+- `src/data/equipment.js` *(expansão com Itens Mágicos DMG/Xanathar, Gemas e Objetos de Arte)*
+- `src/data/classes.js` *(adição das subclasses de Xanathar nas 12 classes)*
+- `src/data/species.js` *(adição das raças de Volo e Mordenkainen)*
+- `src/data/monsters.js` *(adição dos PdMs e monstros de Volo e Tome of Foes)*
+- `src/js/players.js` *(integração de Antecedentes, sorteio de traços d8/d6 e bônus raciais das novas espécies)*
+- `src/js/campaigns.js` *(Gerador Oficial de Tesouros, Gemas, Objetos de Arte e Pilhas por ND no Baú Coletivo)*
+- `src/ui/ui.html` *(seletor/sorteador de Antecedentes no modal de ficha, barra de Gerador de Saque DMG no Baú Coletivo e filtro de fonte no Bestiário)*
+- `src/styles/head_css.html` *(estilos visuais para a barra de Gerador de Tesouro DMG e seletor de Antecedentes)*
+- `builder.js` *(inclusão de `src/data/backgrounds.js` na compilação)*
+- `test_runner.js` *(nova **Bateria 128** validando todos os 4 pilares)*
+- `issues/README.md` *(documentação da **ISSUE-159**)*
 
-### Bateria 126 em `test_runner.js`:
-1. **Navegação e Barra Rápida de Heróis**:
-   - Validar que `jumpToPlayerCard` e a estrutura de mini-chips de heróis são gerados corretamente com IDs únicos.
-   - Validar que os badges contadores nas abas da ficha Roll20 calculam com exatidão a quantidade de magias, itens e traços.
-2. **Visualização e Filtragem de Traços**:
-   - Validar que o agrupamento de traços separa corretamente Traços de Espécie/Raça, Habilidades de Classe/Subclasse e Talentos.
-   - Validar que o filtro por categoria (`species`, `class`, `feats`) e a busca por texto filtram os itens esperados.
-   - Validar que as badges de economia de ação (`action`, `bonus`, `reaction`, `passive`) são atribuídas com precisão.
-3. **Visualização e Agrupamento de Magias por Círculo**:
-   - Validar que o agrupador de magias separa corretamente Truques (nível 0) de magias de 1º, 2º e 3º círculos.
-   - Validar que os metadados canônicos (Concentração, Ritual, Tempo de Conjuração) são detectados e formatados.
-   - Validar que a filtragem por círculo específico e a busca de magias retornam os subconjuntos corretos.
-4. **Integridade de Compilação e Sintaxe**:
-   - Executar `node builder.js` e verificar integridade do bundle standalone.
-   - Executar `node test_runner.js` garantindo 100% de aprovação em todos os testes existentes e novos.
+---
+
+## 🛡️ Impactos em Persistência e Compatibilidade
+- 100% retrocompatível com `localStorage` (`dnd_tracker_state_v3`, `dnd_tracker_players_v3`, `dnd_tracker_campaigns_v1`) e sincronização Firebase.
+- Fichas existentes preservam seus antecedentes e subclasses atuais (`subclassIdx` existentes permanecem nos mesmos índices, pois novas subclasses são adicionadas ao final do array `subclasses` de cada classe).
+
+---
+
+## 🧪 Estratégia de Verificação (`node test_runner.js`)
+- **Bateria 128**:
+  1. Validar `BACKGROUNDS_DATA` (13 antecedentes completos, sorteio de traços d8/d6 e aplicação de perícias na ficha).
+  2. Validar `EQUIPMENT_DATA` expandido (Itens Mágicos, Gemas, Objetos de Arte) e as funções do Gerador de Tesouro do DMG (`rollDmgGemToStash`, `rollDmgArtToStash`, `rollDmgMagicItemToStash`, `rollDmgTreasureHoardToStash`).
+  3. Validar as novas subclasses de Xanathar em `CLASSES_DATA` e as novas raças de Volo/Mordenkainen em `SPECIES_DATA`.
+  4. Validar os novos PdMs e criaturas de Volo/Tome of Foes em `BESTIARY_DATA`.
+  5. Compilar via `node builder.js` e executar `node test_runner.js` com 100% de aprovação.
 
 ---
 
 ## 📋 Checklist de Entrega
-- [x] Plano de Implementação aprovado pelo usuário.
-- [x] Implementação dos estilos e layout em `src/styles/head_css.html`.
-- [x] Implementação da navegação e visualização em `src/js/players.js` e `src/ui/ui.html`.
-- [x] Compilação standalone realizada com `node builder.js`.
-- [x] 100% de aprovação na suíte de testes (`node test_runner.js`).
-- [x] Registro detalhado no Quadro de Issues (`issues/README.md`).
-- [x] Commit semântico e push no Git.
+- [x] Plano de Implementação aprovado pelo usuário (`implementation_plan.md`).
+- [x] Pilar 1 implementado: `src/data/backgrounds.js` + integração no modal e ficha (`src/js/players.js`, `src/ui/ui.html`).
+- [x] Pilar 2 implementado: Itens Mágicos, Gemas e Objetos de Arte em `src/data/equipment.js` + Gerador de Saque DMG em `src/js/campaigns.js` e `src/ui/ui.html`.
+- [x] Pilar 3 implementado: Subclasses de Xanathar em `src/data/classes.js` + Raças de Volo/Mordenkainen em `src/data/species.js`.
+- [x] Pilar 4 implementado: PdMs e Monstros de Volo e Tome of Foes em `src/data/monsters.js`.
+- [x] Compilação (`node builder.js`) e testes (`node test_runner.js` - Bateria 128) 100% aprovados.
+- [x] Documentação atualizada em `issues/README.md`.

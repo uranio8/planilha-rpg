@@ -1232,10 +1232,12 @@
           </select>
 
           <!-- FILTRO DE FONTE/LIVRO -->
-          <select id="filter-mon-src" onchange="renderBestiary()" style="max-width: 150px;">
+          <select id="filter-mon-src" onchange="renderBestiary()" style="max-width: 175px;">
             <option value="all">📚 Todas Fontes</option>
             <option value="MM 2024">Livro 2024 (SRD 5.2)</option>
             <option value="MM">Manual 2014 (MM)</option>
+            <option value="Volo's Guide">Guia de Volo (Volo's)</option>
+            <option value="Tome of Foes">Tomo de Mordenkainen</option>
           </select>
 
           <!-- ORDENAÇÃO DOS RESULTADOS -->
@@ -1282,8 +1284,11 @@
     <div id="tab-equipment" class="tab-pane">
       <div class="controls-bar">
         <input type="text" id="filter-eq-q" placeholder="Buscar armas, armaduras, poções ou itens mágicos..." style="max-width: 340px;" oninput="renderEquipment()">
-        <select id="filter-eq-cat" onchange="renderEquipment()" style="max-width: 220px;">
+        <select id="filter-eq-cat" onchange="renderEquipment()" style="max-width: 240px;">
           <option value="all">Todas as Categorias</option>
+          <option value="Itens Mágicos">✨ Itens Mágicos (DMG / Xanathar)</option>
+          <option value="Poções e Elixires">🧪 Poções, Elixires e Venenos</option>
+          <option value="Tesouros & Gemas">💎 Tesouros, Gemas & Objetos de Arte</option>
           <option value="Armaduras e Escudos">Armaduras e Escudos</option>
           <option value="Armas Simples">Armas Simples</option>
           <option value="Armas Marciais">Armas Marciais</option>
@@ -1454,24 +1459,95 @@
                 <button class="btn-secondary" style="padding: 6px 10px; font-size: 11px; color: var(--primary-light); border-color: rgba(245, 158, 11, 0.4);" onclick="splitPartyGold()" title="Dividir igualmente entre os heróis">⚖️ Dividir Ouro</button>
               </div>
             </div>
+
+            <!-- ATALHOS RÁPIDOS DE OURO (1-CLIQUE & INLINE) -->
+            <div class="stash-gold-quick-row">
+              <div style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center;">
+                <span style="font-size: 10px; font-weight: 800; color: var(--text-muted); margin-right: 2px;">⚡ Rápido:</span>
+                <button type="button" class="btn-gold-quick" onclick="quickAdjustPartyGold(10, 'Saque / Recompensa')" title="Adicionar +10 PO ao Baú">+10 PO</button>
+                <button type="button" class="btn-gold-quick" onclick="quickAdjustPartyGold(50, 'Tesouro de Encontro')" title="Adicionar +50 PO ao Baú">+50 PO</button>
+                <button type="button" class="btn-gold-quick" onclick="quickAdjustPartyGold(100, 'Recompensa de Missão')" title="Adicionar +100 PO ao Baú">+100 PO</button>
+                <button type="button" class="btn-gold-quick" onclick="quickAdjustPartyGold(500, 'Tesouro de Chefe / Masmorra')" title="Adicionar +500 PO ao Baú">+500 PO</button>
+                <button type="button" class="btn-gold-quick spend" onclick="quickAdjustPartyGold(-10, 'Gastos em Suprimentos / Estalagem')" title="Gastar 10 PO do Baú">-10 PO</button>
+                <button type="button" class="btn-gold-quick spend" onclick="quickAdjustPartyGold(-50, 'Compra de Equipamentos / Serviços')" title="Gastar 50 PO do Baú">-50 PO</button>
+              </div>
+              <div style="display: flex; gap: 4px; align-items: center; flex: 1; min-width: 210px; max-width: 320px;">
+                <input type="number" id="inp-quick-stash-gold" placeholder="Valor PO (ex: 75 ou -20)" style="width: 95px; padding: 4px 7px; font-size: 11px; height: 28px; background: #070b14;" onkeydown="if(event.key==='Enter') submitInlinePartyGold()">
+                <input type="text" id="inp-quick-stash-gold-reason" placeholder="Motivo (ex: Venda de espólio)" style="flex: 1; padding: 4px 7px; font-size: 11px; height: 28px; background: #070b14;" onkeydown="if(event.key==='Enter') submitInlinePartyGold()">
+                <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 10.5px; height: 28px; border-color: rgba(245,158,11,0.4); color: #fde047; white-space: nowrap;" onclick="submitInlinePartyGold()">💾 Lançar</button>
+              </div>
+            </div>
           </div>
 
           <!-- ITENS COLETIVOS -->
           <div class="card-panel" style="flex: 1;">
             <div class="panel-header">
               <span>🎒 Baú Coletivo & Suprimentos</span>
-              <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="openPartyItemModal()">➕ Adicionar Item</button>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <button class="btn-action" style="padding: 5px 12px; font-size: 11px;" onclick="openPartyItemModal()">➕ Item Detalhado</button>
+              </div>
             </div>
-            <div style="overflow-x: auto; max-height: 280px;">
+
+            <!-- RESUMO VISUAL & FILTROS POR CATEGORIA / PORTADOR -->
+            <div id="stash-summary-bar" class="stash-summary-toolbar"></div>
+
+            <!-- BARRA DE ADIÇÃO RÁPIDA DE RECURSOS (INLINE + PRESETS 1-CLIQUE) -->
+            <div id="stash-quick-add-box" class="stash-quick-add-box">
+              <div class="stash-quick-add-row">
+                <input type="text" id="inp-qadd-stash-name" list="stash-compendium-datalist" placeholder="⚡ Digitar ou buscar item (ex: Poção de Cura, Corda, Rubi)..." oninput="onQuickAddStashNameInput(this.value, 'camp')" onkeydown="if(event.key==='Enter') submitQuickAddPartyItem('camp')">
+                <input type="number" id="inp-qadd-stash-qty" min="1" value="1" title="Quantidade" placeholder="Qtd" onkeydown="if(event.key==='Enter') submitQuickAddPartyItem('camp')">
+                <select id="sel-qadd-stash-cat" title="Categoria do Recurso">
+                  <option value="Equipamento de Aventura">🎒 Equip. Aventura</option>
+                  <option value="Poções">🧪 Poções & Consumíveis</option>
+                  <option value="Tesouros & Gemas">💎 Tesouros & Gemas</option>
+                  <option value="Armas">⚔️ Armas</option>
+                  <option value="Armaduras">🛡️ Armaduras & Escudos</option>
+                  <option value="Itens Mágicos">✨ Itens Mágicos</option>
+                  <option value="Documentos & Pistas">📜 Pergaminhos & Pistas</option>
+                  <option value="Ferramentas">🧰 Ferramentas</option>
+                </select>
+                <select id="sel-qadd-stash-carrier" title="Onde / Com quem está guardado">
+                  <option value="Baú do Grupo">📦 Baú do Grupo</option>
+                </select>
+                <button type="button" class="btn-action" style="padding: 6px 12px; font-size: 11.5px; height: 32px; white-space: nowrap;" onclick="submitQuickAddPartyItem('camp')">➕ Adicionar</button>
+              </div>
+
+              <div class="stash-preset-pills">
+                <span style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Suprimentos 1-Clique:</span>
+                <button type="button" class="btn-stash-preset" onclick="quickAddPresetPartyItem('potion_heal')" title="Adicionar +1 Poção de Cura (2d4+2 PV)">🧪 +Poção de Cura</button>
+                <button type="button" class="btn-stash-preset" onclick="quickAddPresetPartyItem('rations_5')" title="Adicionar +5 Rações de Viagem">🍖 +5x Ração</button>
+                <button type="button" class="btn-stash-preset" onclick="quickAddPresetPartyItem('torches_5')" title="Adicionar +5 Tochas">🔥 +5x Tocha</button>
+                <button type="button" class="btn-stash-preset" onclick="quickAddPresetPartyItem('arrows_20')" title="Adicionar +20 Flechas">🏹 +20x Flechas</button>
+                <button type="button" class="btn-stash-preset" onclick="quickAddPresetPartyItem('art_25gp')" title="Adicionar +1 Objeto de Arte / Gema (25 PO)">💎 +Arte/Gema (25 PO)</button>
+                <button type="button" class="btn-stash-preset" onclick="quickAddPresetPartyItem('scroll_lvl1')" title="Adicionar +1 Pergaminho Mágico">📜 +Pergaminho</button>
+                <button type="button" class="btn-stash-preset" onclick="quickAddPresetPartyItem('healer_kit')" title="Adicionar +1 Kit de Primeiros Socorros (10 usos)">🧰 +Kit de Curandeiro</button>
+              </div>
+
+              <!-- GERADOR OFICIAL DE SAQUE & TESOUROS (GUIA DO MESTRE CAP. 7 - ISSUE-159) -->
+              <div class="stash-preset-pills" style="border-top: 1px dashed rgba(245, 158, 11, 0.25); padding-top: 7px; margin-top: 2px;">
+                <span style="font-size: 10px; font-weight: 800; color: #fcd34d; text-transform: uppercase;">🎲 Gerador DMG:</span>
+                <button type="button" class="btn-stash-preset" style="border-color:rgba(56,189,248,0.35); color:#bae6fd;" onclick="rollDmgGemToStash(50)" title="Sortear Gema Oficial do Guia do Mestre (10 a 100 PO)">💎 +Gema (DMG)</button>
+                <button type="button" class="btn-stash-preset" style="border-color:rgba(245,158,11,0.35); color:#fde68a;" onclick="rollDmgArtToStash(25)" title="Sortear Objeto de Arte Oficial do Guia do Mestre (25 PO)">🎨 +Arte 25 PO</button>
+                <button type="button" class="btn-stash-preset" style="border-color:rgba(245,158,11,0.35); color:#fde68a;" onclick="rollDmgArtToStash(250)" title="Sortear Objeto de Arte Nobre do Guia do Mestre (250 PO)">👑 +Arte 250 PO</button>
+                <button type="button" class="btn-stash-preset" style="border-color:rgba(168,85,247,0.4); color:#e9d5ff;" onclick="rollDmgMagicItemToStash('uncommon')" title="Sortear Item Mágico Incomum Oficial (DMG/Xanathar)">✨ +Item Mágico</button>
+                <button type="button" class="btn-stash-preset" style="border-color:rgba(16,185,129,0.4); color:#a7f3d0;" onclick="rollDmgTreasureHoardToStash('0-4')" title="Sortear Pilha de Tesouro Completa ND 0-4 (Ouro + Gemas/Arte + Item Mágico)">🏆 Pilha ND 0–4</button>
+                <button type="button" class="btn-stash-preset" style="border-color:rgba(16,185,129,0.4); color:#a7f3d0;" onclick="rollDmgTreasureHoardToStash('5-10')" title="Sortear Pilha de Tesouro Completa ND 5-10 (Ouro + Gemas/Arte + Itens Mágicos)">🏆 Pilha ND 5–10</button>
+              </div>
+            </div>
+
+            <!-- DATALIST DE AUTOCOMPLETE DO COMPÊNDIO -->
+            <datalist id="stash-compendium-datalist"></datalist>
+
+            <div style="overflow-x: auto; max-height: 360px; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 8px;">
               <table class="equip-table">
                 <thead>
                   <tr>
-                    <th>Item</th>
-                    <th style="text-align:center;">Qtd</th>
-                    <th style="text-align:center;">Peso</th>
-                    <th>Categoria</th>
-                    <th>Portador / Local</th>
-                    <th style="text-align:right;">Ações</th>
+                    <th style="min-width: 190px;">Item / Recurso</th>
+                    <th style="text-align:center; width: 95px;">Qtd</th>
+                    <th style="text-align:center; width: 75px;">Peso</th>
+                    <th style="width: 150px;">Categoria</th>
+                    <th style="width: 150px;">Portador / Local</th>
+                    <th style="text-align:right; width: 155px;">Ações</th>
                   </tr>
                 </thead>
                 <tbody id="stash-items-tbody"></tbody>
@@ -1740,34 +1816,70 @@
       </div>
 
 
-      <!-- SEÇÃO ORIGEM & ANTECEDENTE (D&D 5E) -->
+      <!-- SEÇÃO ORIGEM & ANTECEDENTE (D&D 5E - ISSUE-159) -->
       <div style="background: #080c16; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px;">
-        <div style="font-size: 11px; font-weight: 800; color: var(--primary-light); text-transform: uppercase;">
-          🎭 Antecedente & Personalidade (D&D 5E)
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+          <div style="font-size: 11px; font-weight: 800; color: var(--primary-light); text-transform: uppercase;">
+            🎭 Antecedente & Personalidade Oficial (D&D 5E)
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" class="btn-secondary" style="padding: 3px 8px; font-size: 10px; border-color: rgba(168,85,247,0.4); color: #e9d5ff;" onclick="rollBackgroundTraitsModal('all')" title="Sortear Traço de Personalidade, Ideal, Vínculo e Defeito das tabelas oficiais d8/d6 do Antecedente">🎲 Sortear Traços (d8/d6)</button>
+            <button type="button" class="btn-secondary" style="padding: 3px 8px; font-size: 10px; border-color: rgba(16,185,129,0.4); color: #a7f3d0;" onclick="applyBackgroundBenefitsModal()" title="Adicionar as 2 Perícias e a Característica Oficial deste Antecedente à ficha">✨ Aplicar Perícias & Característica</button>
+          </div>
         </div>
+        <div id="pm-background-summary-bar" style="font-size: 10.5px; color: #94a3b8; background: rgba(15,23,42,0.75); padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+          Selecione ou digite um Antecedente oficial (ex: <b>Acólito, Soldado, Criminoso, Sábio, Nobre, Forasteiro</b>) para sortear traços d8/d6 e aplicar perícias.
+        </div>
+        <datalist id="pm-backgrounds-datalist">
+          <option value="Acólito">🙏 Acólito (Intuição, Religião)</option>
+          <option value="Artesão de Guilda">🔨 Artesão de Guilda (Intuição, Persuasão)</option>
+          <option value="Artista">🎭 Artista (Acrobacia, Atuação)</option>
+          <option value="Charlatão">🃏 Charlatão (Enganação, Prestidigitação)</option>
+          <option value="Criminoso">🗡️ Criminoso (Enganação, Furtividade)</option>
+          <option value="Eremita">🧘 Eremita (Medicina, Religião)</option>
+          <option value="Forasteiro">🌲 Forasteiro (Atletismo, Sobrevivência)</option>
+          <option value="Herói Popular">🌾 Herói Popular (Adestrar Animais, Sobrevivência)</option>
+          <option value="Marinheiro">⚓ Marinheiro (Atletismo, Percepção)</option>
+          <option value="Morador de Rua">🐀 Morador de Rua (Furtividade, Prestidigitação)</option>
+          <option value="Nobre">👑 Nobre (História, Persuasão)</option>
+          <option value="Sábio">📜 Sábio (Arcanismo, História)</option>
+          <option value="Soldado">⚔️ Soldado (Atletismo, Intimidação)</option>
+        </datalist>
         <div class="form-row">
           <div>
-            <label>Antecedente / Origem</label>
-            <input type="text" id="pm-background" placeholder="Ex: Soldado, Acólito, Sábio, Criminoso, Nobre, Artesão">
+            <label>Antecedente / Origem (13 Oficiais)</label>
+            <input type="text" id="pm-background" list="pm-backgrounds-datalist" placeholder="Ex: Soldado, Acólito, Sábio, Criminoso, Nobre..." oninput="onModalBackgroundChange(this.value)" onchange="onModalBackgroundChange(this.value)">
           </div>
           <div>
-            <label>Traço de Personalidade</label>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <label style="margin:0;">Traço de Personalidade (d8)</label>
+              <button type="button" class="btn-secondary" style="padding:1px 5px; font-size:9px;" onclick="rollBackgroundTraitsModal('personality')" title="Sortear Traço de Personalidade">🎲</button>
+            </div>
             <input type="text" id="pm-personality" placeholder="Ex: Sempre mantenho a calma em perigo; conto histórias engraçadas.">
           </div>
         </div>
         <div class="form-row">
           <div>
-            <label>Ideal</label>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <label style="margin:0;">Ideal (d6)</label>
+              <button type="button" class="btn-secondary" style="padding:1px 5px; font-size:9px;" onclick="rollBackgroundTraitsModal('ideal')" title="Sortear Ideal">🎲</button>
+            </div>
             <input type="text" id="pm-ideal" placeholder="Ex: Proteção: Cuidarei dos indefesos a todo custo.">
           </div>
           <div>
-            <label>Vínculo</label>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <label style="margin:0;">Vínculo (d6)</label>
+              <button type="button" class="btn-secondary" style="padding:1px 5px; font-size:9px;" onclick="rollBackgroundTraitsModal('bond')" title="Sortear Vínculo">🎲</button>
+            </div>
             <input type="text" id="pm-bond" placeholder="Ex: Devo proteger meu clã e minha família.">
           </div>
         </div>
         <div class="form-row">
           <div>
-            <label>Defeito</label>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <label style="margin:0;">Defeito (d6)</label>
+              <button type="button" class="btn-secondary" style="padding:1px 5px; font-size:9px;" onclick="rollBackgroundTraitsModal('flaw')" title="Sortear Defeito">🎲</button>
+            </div>
             <input type="text" id="pm-flaw" placeholder="Ex: Tenho orgulho teimoso e não recuo de brigas.">
           </div>
         </div>
@@ -2979,7 +3091,7 @@
 
   <!-- MODAL: VISUALIZADOR DO BAÚ DO GRUPO / TESOURO COLETIVO -->
   <div id="modal-party-stash-view" class="modal-overlay">
-    <div class="modal-body" style="max-width: 720px; width: 95%;">
+    <div class="modal-body" style="max-width: 820px; width: 96%;">
       <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 20px;">🎒</span>
@@ -2991,38 +3103,64 @@
         <button class="btn-secondary" onclick="closePartyStashModal()">✕</button>
       </div>
 
-      <div style="margin-top: 12px;">
+      <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
         <!-- Card de Ouro da Campanha -->
-        <div style="display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(180,83,9,0.22) 100%); border: 1px solid rgba(245,158,11,0.4); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px;">
-          <div>
-            <div style="font-size: 10px; color: #fef08a; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">Tesouro Coletivo</div>
-            <div style="font-size: 22px; font-weight: 900; color: #fff; font-family: var(--font-mono);" id="party-stash-modal-gold">0 PO</div>
+        <div style="background: linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(180,83,9,0.22) 100%); border: 1px solid rgba(245,158,11,0.4); border-radius: 10px; padding: 10px 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <div style="font-size: 10px; color: #fef08a; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">Tesouro Coletivo</div>
+              <div style="font-size: 22px; font-weight: 900; color: #fff; font-family: var(--font-mono);" id="party-stash-modal-gold">0 PO</div>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="promptAdjustPartyGold('add')">➕ Depositar PO</button>
+              <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="promptAdjustPartyGold('remove')">➖ Retirar PO</button>
+              <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px; color: #facc15;" onclick="splitPartyGold()" title="Dividir o ouro acumulado em partes iguais entre os heróis da campanha">💰 Dividir Ouro</button>
+              <button class="btn-action" style="font-size: 11px; padding: 4px 10px;" onclick="openPartyItemModal()">➕ Item Detalhado</button>
+            </div>
           </div>
-          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="promptAdjustPartyGold('add')">➕ Depositar PO</button>
-            <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="promptAdjustPartyGold('remove')">➖ Retirar PO</button>
-            <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px; color: #facc15;" onclick="splitPartyGold()" title="Dividir o ouro acumulado em partes iguais entre os heróis da campanha">💰 Dividir Ouro</button>
-            <button class="btn-action" style="font-size: 11px; padding: 4px 10px;" onclick="openPartyItemModal()">➕ Item no Baú</button>
+        </div>
+
+        <!-- Resumo e Filtros do Modal -->
+        <div id="modal-stash-summary-bar" class="stash-summary-toolbar"></div>
+
+        <!-- Barra de Adição Rápida no Modal -->
+        <div class="stash-quick-add-box" style="padding: 8px 10px;">
+          <div class="stash-quick-add-row">
+            <input type="text" id="inp-qadd-modal-name" list="stash-compendium-datalist" placeholder="⚡ Adicionar recurso rápido ao baú..." oninput="onQuickAddStashNameInput(this.value, 'modal')" onkeydown="if(event.key==='Enter') submitQuickAddPartyItem('modal')">
+            <input type="number" id="inp-qadd-modal-qty" min="1" value="1" title="Quantidade" placeholder="Qtd" onkeydown="if(event.key==='Enter') submitQuickAddPartyItem('modal')">
+            <select id="sel-qadd-modal-cat" title="Categoria">
+              <option value="Equipamento de Aventura">🎒 Equip. Aventura</option>
+              <option value="Poções">🧪 Poções & Consumíveis</option>
+              <option value="Tesouros & Gemas">💎 Tesouros & Gemas</option>
+              <option value="Armas">⚔️ Armas</option>
+              <option value="Armaduras">🛡️ Armaduras & Escudos</option>
+              <option value="Itens Mágicos">✨ Itens Mágicos</option>
+              <option value="Documentos & Pistas">📜 Pergaminhos & Pistas</option>
+              <option value="Ferramentas">🧰 Ferramentas</option>
+            </select>
+            <select id="sel-qadd-modal-carrier" title="Portador / Local">
+              <option value="Baú do Grupo">📦 Baú do Grupo</option>
+            </select>
+            <button type="button" class="btn-action" style="padding: 5px 10px; font-size: 11px; height: 32px; white-space: nowrap;" onclick="submitQuickAddPartyItem('modal')">➕ Adicionar</button>
           </div>
         </div>
 
         <!-- Tabela de Itens do Baú -->
-        <div style="margin-bottom: 12px;">
-          <div style="font-size: 11px; font-weight: 800; color: var(--primary-light); margin-bottom: 6px;">📦 Itens Guardados no Baú / Carroça</div>
-          <div style="max-height: 240px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px;">
-            <table class="data-table" style="width: 100%; margin: 0; font-size: 11px;">
+        <div>
+          <div style="max-height: 260px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
+            <table class="equip-table" style="width: 100%; margin: 0;">
               <thead>
                 <tr>
-                  <th>Item</th>
-                  <th style="text-align: center; width: 45px;">Qtd</th>
-                  <th style="text-align: center; width: 60px;">Peso</th>
-                  <th>Categoria</th>
-                  <th>Portador</th>
-                  <th style="text-align: right; width: 110px;">Ações</th>
+                  <th style="min-width: 180px;">Item / Recurso</th>
+                  <th style="text-align: center; width: 90px;">Qtd</th>
+                  <th style="text-align: center; width: 70px;">Peso</th>
+                  <th style="width: 140px;">Categoria</th>
+                  <th style="width: 140px;">Portador</th>
+                  <th style="text-align: right; width: 145px;">Ações</th>
                 </tr>
               </thead>
               <tbody id="party-stash-modal-tbody">
-                <tr><td colspan="5" style="text-align:center; padding:15px; color:var(--text-muted);">Carregando baú...</td></tr>
+                <tr><td colspan="6" style="text-align:center; padding:15px; color:var(--text-muted);">Carregando baú...</td></tr>
               </tbody>
             </table>
           </div>
@@ -3055,7 +3193,7 @@
       <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; margin-top: 12px;">
         <div>
           <label>Nome do Item</label>
-          <input type="text" id="inp-pitem-name" placeholder="Ex: Poção de Invisibilidade, 10x Ração de Viagem">
+          <input type="text" id="inp-pitem-name" list="stash-compendium-datalist" oninput="onModalPartyItemNameInput(this.value)" placeholder="Ex: Poção de Invisibilidade, 10x Ração de Viagem">
         </div>
         <div>
           <label>Quantidade</label>

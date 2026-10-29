@@ -6158,6 +6158,336 @@ const BESTIARY_DATA = [
     "hp": 199,
     "speed": "9m",
     "attack": "Ataque Múltiplo . O zumbinseto faz três ataques de pancada. Golpe . Ataque Corpo a Corpo com Arma: +9 para acertar , alcance 1,5 m (5 ft), um alvo. Acerto: 16 (2d10 + 5) de dano de concussão mais 7 (2d6) de dano de trovão."
+  },
+  // ==========================================================================
+  // 🧙‍♂️ PDMS ESPECIALISTAS E CRIATURAS DO GUIA DE VOLO PARA MONSTROS (VOLO'S GUIDE)
+  // ==========================================================================
+  {
+    "name": "Abjurador (PdM Conjurador)",
+    "source": "Volo's Guide",
+    "cr": "9",
+    "ac": 15,
+    "hp": 104,
+    "speed": "9m",
+    "attack": "Proteção Arcana (30 PV). Rajada Arcana . Ataque Mágico: +8 para acertar, alcance 36m. Acerto: 19 (3d10 + 3) de dano de força. Conjuração (Mago Nv 13, CD 16, +8): Contra-mágica, Dissipar Magia, Banimento, Muralha de Força, Globo de Invulnerabilidade."
+  },
+  {
+    "name": "Adivinho (PdM Conjurador)",
+    "source": "Volo's Guide",
+    "cr": "8",
+    "ac": 15,
+    "hp": 90,
+    "speed": "9m",
+    "attack": "Presságio (3/dia: substitui rolagem d20). Rajada Radiante . Ataque Mágico: +7 para acertar, alcance 36m. Acerto: 18 (4d8) de dano radiante. Conjuração (Mago Nv 15, CD 15, +7): Bola de Fogo, Voo, Olho Arcano, Labirinto."
+  },
+  {
+    "name": "Aprendiz de Mago (PdM)",
+    "source": "Volo's Guide",
+    "cr": "1/4",
+    "ac": 10,
+    "hp": 13,
+    "speed": "9m",
+    "attack": "Adaga . Ataque com Arma: +2 para acertar, alcance 1,5m. Acerto: 2 (1d4) perfurante. Raio de Fogo . Ataque Mágico: +4 para acertar, alcance 36m. Acerto: 5 (1d10) de dano de fogo. Magias (CD 12): Mãos Flamejantes, Escudo Arcano, Disfarçar-se."
+  },
+  {
+    "name": "Arqueiro de Elite (PdM)",
+    "source": "Volo's Guide",
+    "cr": "3",
+    "ac": 16,
+    "hp": 75,
+    "speed": "9m",
+    "attack": "Ataque Múltiplo (2 tiros). Arco Longo . Ataque à Distância com Arma: +6 para acertar, alcance 45/180m. Acerto: 8 (1d8 + 4) de dano perfurante. Olho do Arqueiro (3/dia, Ação Bônus): adiciona +1d10 na próxima jogada de ataque ou de dano com arco."
+  },
+  {
+    "name": "Arquidruida (PdM)",
+    "source": "Volo's Guide",
+    "cr": "12",
+    "ac": 16,
+    "hp": 154,
+    "speed": "9m",
+    "attack": "Ataque Múltiplo (3 ataques). Cajado Flamejante . Ataque Corpo a Corpo: +6 para acertar, alcance 1,5m. Acerto: 5 (1d6 + 2) concussão + 10 (3d6) de fogo. Forma Selvagem (Ação Bônus, até ND 6: Mamute ou Elemental). Conjuração (Druida Nv 18, CD 17, +9): Curar Ferimentos, Tempestade de Fogo, Forma de Árvore, Explosão Solar."
+  },
+  {
+    "name": "Bardo Aventureiro (PdM)",
+    "source": "Volo's Guide",
+    "cr": "2",
+    "ac": 15,
+    "hp": 44,
+    "speed": "9m",
+    "attack": "Espada Curta . Ataque com Arma: +4 para acertar, alcance 1,5m. Acerto: 5 (1d6 + 2) perfurante. Arco Curto . Ataque com Arma: +4 para acertar, alcance 24/96m. Acerto: 5 (1d6 + 2) perfurante. Provocação (2/dia, Ação Bônus): concede +1d6 a um aliado ou impõe -1d6 a um inimigo (CD 12). Magias: Palavra Curativa, Onda Trovejante, Invisibilidade."
+  },
+  {
+    "name": "Campeão de Batalha (PdM)",
+    "source": "Volo's Guide",
+    "cr": "9",
+    "ac": 18,
+    "hp": 143,
+    "speed": "9m",
+    "attack": "Ataque Múltiplo (3 ataques). Espada Grande . Ataque Corpo a Corpo com Arma: +9 para acertar, alcance 1,5m. Acerto: 12 (2d6 + 5) de dano cortante mais 7 (2d6) se o Campeão tiver mais da metade dos seus PV. Surto de Ação (1/descanso) e Indomável (2/dia)."
+  },
+  {
+    "name": "Evocador (PdM Conjurador)",
+    "source": "Volo's Guide",
+    "cr": "9",
+    "ac": 15,
+    "hp": 110,
+    "speed": "9m",
+    "attack": "Esculpir Magias (protege aliados em magias de área). Explosão Arcana . Ataque Mágico: +7 para acertar, alcance 36m. Acerto: 22 (4d10) de dano elemental. Conjuração (Mago Nv 12, CD 15, +7): Bola de Fogo (8d6), Relâmpago (8d6), Cone de Frio (8d8), Corrente de Relâmpagos (10d8)."
+  },
+  {
+    "name": "Guarda Negro / Blackguard (PdM)",
+    "source": "Volo's Guide",
+    "cr": "8",
+    "ac": 18,
+    "hp": 153,
+    "speed": "9m",
+    "attack": "Ataque Múltiplo (3 ataques). Glaive . Ataque Corpo a Corpo com Arma: +7 para acertar, alcance 3m. Acerto: 9 (1d10 + 4) de dano cortante + 9 (2d8) necrótico. Aspecto Terrível (1/dia): inimigos a 9m fazem salvaguarda de Sabedoria CD 13 ou ficam Amedrontados por 1 minuto."
+  },
+  {
+    "name": "Mestre em Artes Marciais (PdM Monge)",
+    "source": "Volo's Guide",
+    "cr": "3",
+    "ac": 16,
+    "hp": 60,
+    "speed": "12m",
+    "attack": "Ataque Múltiplo (3 golpes desarmados). Golpe Desarmado . Ataque Corpo a Corpo: +6 para acertar, alcance 1,5m. Acerto: 7 (1d8 + 3) de dano de concussão e pode Derrubar (DES CD 13), Empurrar 4,5m (FOR CD 13) ou Atordoar (CON CD 13)."
+  },
+  {
+    "name": "Mestre Ladrão (PdM Ladino)",
+    "source": "Volo's Guide",
+    "cr": "5",
+    "ac": 16,
+    "hp": 84,
+    "speed": "9m",
+    "attack": "Ataque Múltiplo (3 ataques). Espada Curta . Ataque Corpo a Corpo com Arma: +7 para acertar, alcance 1,5m. Acerto: 7 (1d6 + 4) de dano perfurante mais 14 (4d6) de Ataque Furtivo (1x/turno com vantagem ou aliado adjacente). Esquiva Sobrenatural (Reação: reduz dano à metade)."
+  },
+  {
+    "name": "Necromante (PdM Conjurador)",
+    "source": "Volo's Guide",
+    "cr": "9",
+    "ac": 15,
+    "hp": 110,
+    "speed": "9m",
+    "attack": "Colheita Sombria (recupera PV ao matar com necromancia). Toque Vampírico / Rajada Necrótica . Ataque Mágico: +7 para acertar, alcance 36m. Acerto: 22 (4d10) de dano necrótico. Conjuração (Mago Nv 12, CD 15, +7): Animar Mortos, Praga, Círculo da Morte (8d6), Dança Macabra."
+  },
+  {
+    "name": "Senhor da Guerra / Warlord (PdM)",
+    "source": "Volo's Guide",
+    "cr": "12",
+    "ac": 18,
+    "hp": 229,
+    "speed": "9m",
+    "attack": "Ataque Múltiplo (2 ataques). Espada Grande . Ataque Corpo a Corpo com Arma: +9 para acertar, alcance 1,5m. Acerto: 12 (2d6 + 5) de dano cortante. Ações Lendárias (3/rodada): Comandar Aliado (aliado ataca com reação), Golpe deArma ou Assustar Inimigo (CD 16)."
+  },
+  {
+    "name": "Alhoon (Devorador de Mentes Lich)",
+    "source": "Volo's Guide",
+    "cr": "10",
+    "ac": 15,
+    "hp": 150,
+    "speed": "9m (Voo 4,5m)",
+    "attack": "Toque Arrepiante . Ataque Mágico: +8 para acertar, alcance 1,5m. Acerto: 10 (3d6) de dano espiritual/frio. Rajada Mental (Recarga 5-6) . Cone de 18m: salvaguarda de Inteligência CD 16 ou sofre 22 (4d8 + 4) de dano psíquico e fica Atordoado por 1 minuto. Conjuração (Mago Nv 12, CD 16): Relâmpago, Desintegrar, Globo de Invulnerabilidade."
+  },
+  {
+    "name": "Cérebro Ancião (Elder Brain)",
+    "source": "Volo's Guide",
+    "cr": "14",
+    "ac": 10,
+    "hp": 210,
+    "speed": "1,5m (Natação 3m)",
+    "attack": "Tentáculo . Ataque Corpo a Corpo: +7 para acertar, alcance 9m. Acerto: 20 (4d8 + 2) de dano de concussão e o alvo é Agarrado (CD 15). Rajada Mental (Recarga 5-6) . Criaturas a até 18m fazem salvaguarda de Inteligência CD 18 ou sofrem 32 (5d10 + 5) de dano psíquico e ficam Atordoadas por 1 minuto. Elo Psíquico e Ações Lendárias."
+  },
+  {
+    "name": "Bodak",
+    "source": "Volo's Guide",
+    "cr": "6",
+    "ac": 15,
+    "hp": 58,
+    "speed": "9m",
+    "attack": "Olhar da Morte . Se uma criatura iniciar o turno a até 9m vendo os olhos do Bodak, deve fazer salvaguarda de Constituição CD 13: se falhar por 5 ou mais, cai a 0 PV imediatamente; caso contrário sofre 16 (3d10) de dano psíquico. Punho Necrótico . Ataque Corpo a Corpo: +5 para acertar, alcance 1,5m. Acerto: 4 (1d4 + 2) concussão + 9 (2d8) necrótico."
+  },
+  {
+    "name": "Banderhobb",
+    "source": "Volo's Guide",
+    "cr": "5",
+    "ac": 15,
+    "hp": 84,
+    "speed": "9m",
+    "attack": "Mordida . Ataque Corpo a Corpo: +8 para acertar, alcance 1,5m. Acerto: 22 (5d6 + 5) perfurante e o alvo é Agarrado/Engolido. Língua . Ataque Corpo a Corpo: +8 para acertar, alcance 4,5m. Acerto: 10 (3d6) necrótico e puxa o alvo para 1,5m. Passo das Sombras (Ação Bônus: teletransporte 9m na penumbra)."
+  },
+  {
+    "name": "Catoblepas",
+    "source": "Volo's Guide",
+    "cr": "5",
+    "ac": 14,
+    "hp": 84,
+    "speed": "9m",
+    "attack": "Cauda . Ataque Corpo a Corpo: +7 para acertar, alcance 3m. Acerto: 21 (5d6 + 4) de dano de concussão e CON CD 16 ou fica Atordoado. Raio da Morte (Recarga 5-6) . Alvo a até 9m faz salvaguarda de Constituição CD 16, sofrendo 36 (8d8) de dano necrótico (se falhar por 5+, sofre 64 de dano e morre se chegar a 0 PV)."
+  },
+  {
+    "name": "Devorador (Devourer)",
+    "source": "Volo's Guide",
+    "cr": "13",
+    "ac": 16,
+    "hp": 178,
+    "speed": "9m",
+    "attack": "Ataque Múltiplo (2 garras). Garra . Ataque Corpo a Corpo: +10 para acertar, alcance 1,5m. Acerto: 12 (2d6 + 5) cortante + 21 (6d6) necrótico. Aprisionar Alma (1 alvo a 0 PV): engole o humanoide na caixa torácica causando 13 (3d8) necrótico por turno; se morrer lá dentro, ressuscita como Zumbi ou Carniçal."
+  },
+  {
+    "name": "Flind (Senhor da Guerra Gnoll)",
+    "source": "Volo's Guide",
+    "cr": "9",
+    "ac": 16,
+    "hp": 127,
+    "speed": "9m",
+    "attack": "Ataque Múltiplo (3 ataques de mangual). Mangual da Dor (+9, 1d10+5 concussão + 4d10 psíquico), Mangual da Paralisia (+9, 1d10+5 concussão e CON CD 16 ou Paralisado) e Mangual da Loucura (+9, 1d10+5 concussão e SAB CD 16 ou ataca aliado mais próximo)."
+  },
+  {
+    "name": "Leucrotta",
+    "source": "Volo's Guide",
+    "cr": "3",
+    "ac": 14,
+    "hp": 67,
+    "speed": "15m",
+    "attack": "Ataque Múltiplo (Mordida + Cascos). Mordida . Ataque Corpo a Corpo: +6 para acertar, alcance 1,5m. Acerto: 8 (1d8 + 4) perfurante (no crítico rola o triplo dos dados!). Cascos . Ataque Corpo a Corpo: +6 para acertar. Acerto: 11 (2d6 + 4) concussão."
+  },
+  // ==========================================================================
+  // 🔥 CRIATURAS, ELADRIN E LORDES ABISSAIS/INFERNAIS (TOME OF FOES)
+  // ==========================================================================
+  {
+    "name": "Oblex Adulto",
+    "source": "Tome of Foes",
+    "cr": "5",
+    "ac": 14,
+    "hp": 75,
+    "speed": "6m",
+    "attack": "Ataque Múltiplo (2 pseudópodes + Devorar Memórias). Pseudópode . Ataque Corpo a Corpo: +7 para acertar, alcance 1,5m. Acerto: 7 (1d6 + 4) concussão + 7 (2d6) psíquico. Devorar Memórias . Alvo a 1,5m faz salvaguarda de Sabedoria CD 15 ou sofre 18 (4d8) psíquico e fica drenado de memória (-1d4 em ataques e testes)."
+  },
+  {
+    "name": "Oblex Ancião (Elder Oblex)",
+    "source": "Tome of Foes",
+    "cr": "10",
+    "ac": 16,
+    "hp": 115,
+    "speed": "6m",
+    "attack": "Ataque Múltiplo (2 pseudópodes + Devorar Memórias). Pseudópode . Ataque Corpo a Corpo: +7 para acertar, alcance 1,5m. Acerto: 11 (2d6 + 4) concussão + 9 (2d8) psíquico. Devorar Memórias (SAB CD 16) . Causa 44 (8d10) de dano psíquico e cria simulacros perfeitos das vítimas."
+  },
+  {
+    "name": "Eladrin de Verão (Tome of Foes)",
+    "source": "Tome of Foes",
+    "cr": "10",
+    "ac": 19,
+    "hp": 165,
+    "speed": "15m",
+    "attack": "Presença Amedrontadora (Aura 18m, SAB CD 16). Ataque Múltiplo (2 ataques). Espada Longa Flamejante . Ataque Corpo a Corpo: +9 para acertar, alcance 1,5m. Acerto: 9 (1d8 + 5) cortante + 9 (2d8) de fogo. Passo Feérico (Ação Bônus: teletransporte 9m)."
+  },
+  {
+    "name": "Eladrin de Inverno (Tome of Foes)",
+    "source": "Tome of Foes",
+    "cr": "10",
+    "ac": 19,
+    "hp": 165,
+    "speed": "9m",
+    "attack": "Presença Melancólica (Aura 18m: desvantagem em salvaguardas). Espada Longa Gélida . Ataque Corpo a Corpo: +8 para acertar, alcance 1,5m. Acerto: 8 (1d8 + 4) cortante + 13 (3d8) de frio. Conjuração (CD 16): Nevasca, Cone de Frio, Névoa Obscurecente."
+  },
+  {
+    "name": "Cadáver Estelar Mangler (Star Spawn Mangler)",
+    "source": "Tome of Foes",
+    "cr": "5",
+    "ac": 14,
+    "hp": 71,
+    "speed": "12m (Escalada 12m)",
+    "attack": "Emboscada (vantagem no 1º turno). Rajada de Garras (Recarga 4-6) . O Mangler realiza 6 ataques de garra! Garra . Ataque Corpo a Corpo: +7 para acertar, alcance 1,5m. Acerto: 8 (1d8 + 4) cortante mais 9 (2d8) psíquico se tiver vantagem."
+  },
+  {
+    "name": "Cadáver Estelar Vidente (Star Spawn Seer)",
+    "source": "Tome of Foes",
+    "cr": "13",
+    "ac": 17,
+    "hp": 153,
+    "speed": "9m",
+    "attack": "Ataque Múltiplo (2 ataques). Cajado Cometa . Ataque Corpo a Corpo: +11 para acertar, alcance 1,5m. Acerto: 9 (1d6 + 6) concussão + 18 (4d8) psíquico. Orbe Psíquico . Ataque Mágico: +11 para acertar, alcance 36m. Acerto: 27 (5d10) psíquico. Colapso de Distância (Recarga 6: troca de lugar e causa 6d10 psíquico)."
+  },
+  {
+    "name": "Fênix Elemental (Tome of Foes)",
+    "source": "Tome of Foes",
+    "cr": "16",
+    "ac": 18,
+    "hp": 175,
+    "speed": "6m (Voo 36m)",
+    "attack": "Manto Flamejante (quem tocar sofre 2d10 fogo). Ataque Múltiplo (Bico + Garras Ardentes). Bico . Ataque Corpo a Corpo: +13 para acertar, alcance 4,5m. Acerto: 15 (2d6 + 8) de dano de fogo. Garras Ardentes . Ataque Corpo a Corpo: +13 para acertar. Acerto: 17 (2d8 + 8) de fogo. Morte e Renascimento Flamejante (explode em 22d6 de fogo e renasce de um ovo!)."
+  },
+  {
+    "name": "Leviatã Elemental (Tome of Foes)",
+    "source": "Tome of Foes",
+    "cr": "20",
+    "ac": 17,
+    "hp": 328,
+    "speed": "12m (Natação 36m)",
+    "attack": "Ataque Múltiplo (Pancada + Cauda). Pancada . Ataque Corpo a Corpo: +16 para acertar, alcance 3m. Acerto: 20 (2d10 + 9) concussão + 5 (1d10) ácido. Onda de Maremoto (Recarga 6) . Parede de água de 75m x 9m causa 45 (10d8) de concussão e derruba (FOR CD 24)."
+  },
+  {
+    "name": "Marut (Inevitável de Sigil)",
+    "source": "Tome of Foes",
+    "cr": "25",
+    "ac": 22,
+    "hp": 432,
+    "speed": "12m (Voo 9m)",
+    "attack": "Ataque Múltiplo (2 Pancadas Inerráveis). Pancada Inerrável . O ataque acerta AUTOMATICAMENTE um alvo a até 1,5m, causando exatamente 60 de dano de força e empurrando 1,5m! Édito Flamejante (Recarga 5-6) . Cubo de 18m: cada criatura sofre 45 de dano radiante e fica Atordoada (SAB CD 20)."
+  },
+  {
+    "name": "Zariel (Arquiduquesa de Avernus)",
+    "source": "Tome of Foes",
+    "cr": "26",
+    "ac": 21,
+    "hp": 580,
+    "speed": "15m (Voo 45m)",
+    "attack": "Ataque Múltiplo (3 ataques + Olhar Horrendo). Matalotok / Espada Longa . Ataque Corpo a Corpo: +16 para acertar, alcance 3m. Acerto: 17 (2d8 + 8) cortante + 36 (8d8) de dano de fogo! Toque Imolador (+16, 44 [8d10] necrótico e envenenado). Teletransporte Flamejante e 3 Ações Lendárias."
+  },
+  {
+    "name": "Demogorgon (Príncipe dos Demônios)",
+    "source": "Tome of Foes",
+    "cr": "26",
+    "ac": 22,
+    "hp": 464,
+    "speed": "15m (Natação 15m)",
+    "attack": "Duas Cabeças (2 reações por rodada). Ataque Múltiplo (2 Tentáculos). Tentáculo . Ataque Corpo a Corpo: +17 para acertar, alcance 3m. Acerto: 28 (3d12 + 9) concussão e reduz PV máximo (CON CD 23). Olhar Hipnótico / Olhar da Insanidade (SAB CD 23)."
+  },
+  {
+    "name": "Orcus (Príncipe dos Mortos-Vivos)",
+    "source": "Tome of Foes",
+    "cr": "26",
+    "ac": 17,
+    "hp": 405,
+    "speed": "12m (Voo 12m)",
+    "attack": "Varinha de Orcus (+3). Ataque Múltiplo (2 ataques). Varinha de Orcus . Ataque Corpo a Corpo: +19 para acertar, alcance 3m. Acerto: 21 (3d8 + 8) concussão + 13 (2d12) necrótico. Conjurar Mortos-Vivos (1/dia: invoca até 500 PV de esqueletos, zumbis ou liches!) e Palavra de Poder Matar."
+  },
+  {
+    "name": "Graz'zt (Príncipe Sombrio)",
+    "source": "Tome of Foes",
+    "cr": "24",
+    "ac": 20,
+    "hp": 346,
+    "speed": "12m",
+    "attack": "Ataque Múltiplo (2 ataques). Lâmina da Dor (Espada Grande de Ácido) . Ataque Corpo a Corpo: +13 para acertar, alcance 3m. Acerto: 20 (4d6 + 6) cortante + 14 (4d6) de dano ácido. Conjuração Inata (CD 23): Dominar Pessoa, Coroa da Loucura, Dissipar Magia, Teletransporte."
+  },
+  {
+    "name": "Baphomet (Rei dos Minotauros)",
+    "source": "Tome of Foes",
+    "cr": "23",
+    "ac": 22,
+    "hp": 319,
+    "speed": "12m",
+    "attack": "Ataque Múltiplo (Partidora de Corações + Mordida + Chifres). Partidora de Corações (Glaive) . Ataque Corpo a Corpo: +17 para acertar, alcance 4,5m. Acerto: 24 (2d10 + 13) cortante. Investida (se mover 3m+, Chifres causam +16 [3d10] perfurante e derrubam FOR CD 25)."
+  },
+  {
+    "name": "Yeenoghu (Lorde da Selvageria Gnoll)",
+    "source": "Tome of Foes",
+    "cr": "24",
+    "ac": 22,
+    "hp": 333,
+    "speed": "15m",
+    "attack": "Ataque Múltiplo (3 ataques de mangual). Mangual de Três Cabeças . Ataque Corpo a Corpo: +16 para acertar, alcance 4,5m. Acerto: 21 (2d12 + 8) concussão + efeito adicional (+2d12 força, Paralisia CON CD 17 ou Confusão SAB CD 17). Fúria Sanguinária (ao derrubar criatura a 0 PV, move e morde com ação bônus)."
   }
 ];
 

@@ -36,6 +36,7 @@ const requiredFiles = [
   'src/data/hirelings.js',
   'src/data/bastions.js',
   'src/data/feats.js',
+  'src/data/backgrounds.js',
   'src/js/core.js',
   'src/js/combat.js',
   'src/js/players.js',
@@ -250,6 +251,7 @@ vm.createContext(sandbox);
 const srcDir = path.join(__dirname, 'src');
 const dataRulesXp = fs.readFileSync(path.join(srcDir, 'data', 'rules_xp.js'), 'utf8');
 const dataFeats = fs.readFileSync(path.join(srcDir, 'data', 'feats.js'), 'utf8');
+const dataBackgrounds = fs.readFileSync(path.join(srcDir, 'data', 'backgrounds.js'), 'utf8');
 const dataSpells = fs.readFileSync(path.join(srcDir, 'data', 'spells.js'), 'utf8');
 const dataMonsters = fs.readFileSync(path.join(srcDir, 'data', 'monsters.js'), 'utf8');
 const dataEquip = fs.readFileSync(path.join(srcDir, 'data', 'equipment.js'), 'utf8');
@@ -280,6 +282,7 @@ sandbox.BroadcastChannel = function(name) {
 
 vm.runInContext(dataRulesXp, sandbox);
 vm.runInContext(dataFeats, sandbox);
+vm.runInContext(dataBackgrounds, sandbox);
 vm.runInContext(dataSpells, sandbox);
 vm.runInContext(dataMonsters, sandbox);
 vm.runInContext(dataEquip, sandbox);
@@ -9870,6 +9873,203 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
 
     const uiHtml126 = fs.readFileSync(path.join(__dirname, 'src/ui/ui.html'), 'utf8');
     assert(uiHtml126.includes('id="hero-quick-nav-container"'), 'ui.html possui container #hero-quick-nav-container');
+
+    // =========================================================================
+    // BATERIA 127: ISSUE-158 - BAÚ COLETIVO & SUPRIMENTOS: TABELA 100%, FILTROS,
+    // STEPPERS INLINE, DISTINÇÃO BAÚ VS HERÓI, PRESETS E ADIÇÃO RÁPIDA DE RECURSOS
+    // =========================================================================
+    console.log('\n📦 Bateria 127: ISSUE-158 - Baú Coletivo, Filtros, Steppers e Adição Rápida de Recursos...');
+
+    // 1. Validação de CSS e UI (.equip-table 100%, toolbar, quick-add e presets)
+    assert(headCss126.includes('.equip-table'), 'head_css.html possui regra para .equip-table (corrige tabela espremida e cabeçalho QtdPeso)');
+    assert(headCss126.includes('.stash-summary-toolbar'), 'head_css.html possui estilos para .stash-summary-toolbar');
+    assert(headCss126.includes('.stash-quick-add-box'), 'head_css.html possui estilos para .stash-quick-add-box');
+    assert(headCss126.includes('.stash-qty-stepper'), 'head_css.html possui estilos para .stash-qty-stepper');
+    assert(headCss126.includes('.carrier-badge.is-stash'), 'head_css.html possui estilos para .carrier-badge.is-stash');
+    assert(headCss126.includes('.carrier-badge.is-hero'), 'head_css.html possui estilos para .carrier-badge.is-hero');
+    assert(uiHtml126.includes('id="stash-summary-bar"'), 'ui.html possui #stash-summary-bar');
+    assert(uiHtml126.includes('id="stash-quick-add-box"'), 'ui.html possui #stash-quick-add-box');
+    assert(uiHtml126.includes('id="stash-compendium-datalist"'), 'ui.html possui datalist #stash-compendium-datalist');
+    assert(uiHtml126.includes('quickAddPresetPartyItem'), 'ui.html possui botões de preset rápido quickAddPresetPartyItem');
+    assert(uiHtml126.includes('quickAdjustPartyGold'), 'ui.html possui botões rápidos de ouro quickAdjustPartyGold');
+
+    // 2. Validação de Ícones Semânticos e Portador (Baú vs Herói)
+    assert(sandbox.getPartyItemCategoryIcon('Poções') === '🧪', 'Ícone de Poções é 🧪');
+    assert(sandbox.getPartyItemCategoryIcon('Tesouros & Gemas') === '💎', 'Ícone de Tesouros & Gemas é 💎');
+    assert(sandbox.getPartyItemCategoryIcon('Armas') === '⚔️', 'Ícone de Armas é ⚔️');
+    assert(sandbox.getPartyItemCategoryIcon('Documentos & Pistas') === '📜', 'Ícone de Documentos & Pistas é 📜');
+    assert(sandbox.isCarrierStash('Baú do Grupo') === true, 'isCarrierStash identifica Baú do Grupo como estoque coletivo');
+    assert(sandbox.isCarrierStash('Deraravely') === false, 'isCarrierStash identifica Deraravely como posse de herói');
+
+    // 3. Configuração de Campanha de Teste para Bateria 127
+    vm.runInContext(`
+      const heroDerara127 = {
+        id: 'p_derara_127',
+        name: 'Deraravely',
+        className: 'Paladino',
+        level: 5,
+        inventory: [{ name: 'Espada da Vingança', qty: 1, weight: 1.5, category: 'Armas' }]
+      };
+      PLAYERS.push(heroDerara127);
+
+      const camp127 = getActiveCampaign();
+      if (camp127) {
+        camp127.partyStash = {
+          gold: 100,
+          items: [
+            { id: 'it_pot_127', name: 'Poção de Cura menor', qty: 6, weight: 0.25, category: 'Poções', carrier: 'Baú do Grupo', desc: 'Recupera 2d4+2 PV' },
+            { id: 'it_art_127', name: 'Objetos de arte valendo 25 po', qty: 13, weight: 0.2, category: 'Tesouros & Gemas', carrier: 'Baú do Grupo', desc: '' },
+            { id: 'it_swd_127', name: 'Espada da Vingança', qty: 1, weight: 1.5, category: 'Armas', carrier: 'Deraravely', desc: 'Arma mágica +1' }
+          ],
+          history: []
+        };
+      }
+    `, sandbox);
+
+    // 4. Renderização de Linha da Tabela (Distinção Visual Baú vs Herói + Steppers)
+    const stashItemRow = sandbox.renderPartyStashItemRowHtml({
+      id: 'it_pot_127', name: 'Poção de Cura menor', qty: 6, weight: 0.25, category: 'Poções', carrier: 'Baú do Grupo', desc: 'Recupera 2d4+2 PV'
+    });
+    assert(stashItemRow.includes('carrier-badge is-stash'), 'Linha de item no baú usa classe carrier-badge is-stash');
+    assert(stashItemRow.includes('adjustPartyItemQty(\'it_pot_127\', -1)'), 'Linha possui botão stepper −1 inline');
+    assert(stashItemRow.includes('adjustPartyItemQty(\'it_pot_127\', 1)'), 'Linha possui botão stepper +1 inline');
+    assert(stashItemRow.includes('Recupera 2d4+2 PV'), 'Linha exibe descrição abaixo do nome do item');
+
+    const heroItemRow = sandbox.renderPartyStashItemRowHtml({
+      id: 'it_swd_127', name: 'Espada da Vingança', qty: 1, weight: 1.5, category: 'Armas', carrier: 'Deraravely', desc: 'Arma mágica +1'
+    });
+    assert(heroItemRow.includes('carrier-badge is-hero'), 'Linha de item com herói usa classe carrier-badge is-hero');
+    assert(heroItemRow.includes('returnPartyItemToStash(\'it_swd_127\')'), 'Linha de item com herói exibe botão 🔄 Ao Baú para devolver ao estoque coletivo');
+
+    // 5. Ajuste Inline de Quantidade (Stepper +1 / -1)
+    sandbox.adjustPartyItemQty('it_pot_127', -1);
+    const potQtyAfterMinus = vm.runInContext("getActiveCampaign().partyStash.items.find(x => x.id === 'it_pot_127').qty", sandbox);
+    assert(potQtyAfterMinus === 5, 'adjustPartyItemQty(-1) reduziu Poção de Cura menor de 6 para 5');
+
+    sandbox.adjustPartyItemQty('it_pot_127', 2);
+    const potQtyAfterPlus = vm.runInContext("getActiveCampaign().partyStash.items.find(x => x.id === 'it_pot_127').qty", sandbox);
+    assert(potQtyAfterPlus === 7, 'adjustPartyItemQty(+2) aumentou Poção de Cura menor de 5 para 7');
+
+    // 6. Devolução de Item do Herói para o Baú do Grupo (returnPartyItemToStash)
+    sandbox.returnPartyItemToStash('it_swd_127');
+    const swdCarrierAfterReturn = vm.runInContext("getActiveCampaign().partyStash.items.find(x => x.id === 'it_swd_127').carrier", sandbox);
+    const heroInvHasSword = vm.runInContext("PLAYERS.find(p => p.id === 'p_derara_127').inventory.some(i => i.name === 'Espada da Vingança')", sandbox);
+    assert(swdCarrierAfterReturn === 'Baú do Grupo', 'returnPartyItemToStash alterou portador de Deraravely para Baú do Grupo');
+    assert(heroInvHasSword === false, 'returnPartyItemToStash removeu Espada da Vingança da mochila pessoal de Deraravely');
+
+    // 7. Filtros por Categoria, Localização e Busca Textual
+    sandbox.setPartyStashCategoryFilter('Poções');
+    const filteredPotions = vm.runInContext("filterPartyStashItems(getActiveCampaign().partyStash.items)", sandbox);
+    assert(filteredPotions.length === 1 && filteredPotions[0].id === 'it_pot_127', 'Filtro por categoria Poções retorna apenas as poções');
+
+    sandbox.setPartyStashCategoryFilter('all');
+    sandbox.handlePartyStashSearch('arte');
+    const filteredSearchArt = vm.runInContext("filterPartyStashItems(getActiveCampaign().partyStash.items)", sandbox);
+    assert(filteredSearchArt.length === 1 && filteredSearchArt[0].id === 'it_art_127', 'Busca textual por "arte" encontra os Objetos de arte valendo 25 po');
+    sandbox.handlePartyStashSearch('');
+
+    // 8. Presets de Suprimentos 1-Clique e Ouro Rápido 1-Clique
+    sandbox.quickAddPresetPartyItem('rations_5');
+    const rationsInStash = vm.runInContext("getActiveCampaign().partyStash.items.find(x => x.name.includes('Ração de Viagem'))", sandbox);
+    assert(rationsInStash && rationsInStash.qty === 5 && rationsInStash.weight === 1, 'quickAddPresetPartyItem("rations_5") adicionou 5x Ração de Viagem (1kg/un) ao baú');
+
+    sandbox.quickAdjustPartyGold(50, 'Saque de Goblin');
+    const goldAfterAdd = vm.runInContext("getActiveCampaign().partyStash.gold", sandbox);
+    assert(goldAfterAdd === 150, 'quickAdjustPartyGold(+50) aumentou ouro do baú de 100 para 150 PO');
+
+    sandbox.quickAdjustPartyGold(-25, 'Compra de Suprimentos');
+    const goldAfterSub = vm.runInContext("getActiveCampaign().partyStash.gold", sandbox);
+    assert(goldAfterSub === 125, 'quickAdjustPartyGold(-25) reduziu ouro do baú de 150 para 125 PO');
+
+    // 9. Inferência Inteligente de Metadados do Compêndio
+    const metaPotion = sandbox.lookupCompendiumEquipmentMeta('Poção de Cura Menor (2d4+2)');
+    assert(metaPotion && metaPotion.category === 'Poções' && metaPotion.weight === 0.25, 'lookupCompendiumEquipmentMeta reconhece Poção de Cura Menor com categoria Poções e peso 0.25kg');
+
+    // =========================================================================
+    // 📚 BATERIA 128: ISSUE-159 — INTEGRAÇÃO DOS 8 LIVROS OFICIAIS D&D 5E
+    // =========================================================================
+    console.log('\n📚 Bateria 128: ISSUE-159 - Integração dos 8 Livros Oficiais D&D 5E (Antecedentes, DMG, Xanathar, Volo e Tome of Foes)...');
+
+    // Pilar 1: Antecedentes Interativos (BACKGROUNDS_DATA)
+    const bgCount = vm.runInContext('Array.isArray(BACKGROUNDS_DATA) ? BACKGROUNDS_DATA.length : 0', sandbox);
+    assert(bgCount >= 13, `BACKGROUNDS_DATA carregou os 13 antecedentes oficiais D&D 5E (${bgCount} encontrados)`);
+
+    const acolyteBg = sandbox.findBackgroundData('Acólito');
+    assert(acolyteBg && acolyteBg.id === 'acolito' && acolyteBg.skills.includes('intuicao') && acolyteBg.skills.includes('religiao'), 'findBackgroundData localiza Acólito com perícias Intuição e Religião');
+
+    const criminalBg = sandbox.findBackgroundData('Criminoso');
+    assert(criminalBg && criminalBg.personalityTraits.length === 8 && criminalBg.ideals.length === 6 && criminalBg.bonds.length === 6 && criminalBg.flaws.length === 6, 'Antecedente Criminoso possui 8 traços (d8), 6 ideais (d6), 6 vínculos (d6) e 6 defeitos (d6)');
+
+    const mockEls128 = {
+      'pm-background': { value: 'Sábio' },
+      'pm-personality': { value: '' },
+      'pm-ideal': { value: '' },
+      'pm-bond': { value: '' },
+      'pm-flaw': { value: '' },
+      'pm-features': { value: '' },
+      'pm-gold': { value: '15' },
+      'pm-id': { value: '' },
+      'pm-background-summary-bar': { style: {}, innerHTML: '' }
+    };
+    const prevGetEl128 = sandbox.document.getElementById;
+    sandbox.document.getElementById = (id) => mockEls128[id] || (prevGetEl128 ? prevGetEl128(id) : null);
+
+    const rolledTraits = sandbox.rollBackgroundTraitsModal('all');
+    assert(rolledTraits && rolledTraits.personality && rolledTraits.ideal && rolledTraits.bond && rolledTraits.flaw, 'rollBackgroundTraitsModal("all") sorteia Traço, Ideal, Vínculo e Defeito da tabela oficial do Sábio');
+    assert(mockEls128['pm-personality'].value.length > 5 && mockEls128['pm-flaw'].value.length > 5, 'rollBackgroundTraitsModal preencheu os campos do modal de personagem');
+
+    const appliedBg = sandbox.applyBackgroundBenefitsModal();
+    assert(appliedBg && appliedBg.background === 'Sábio' && appliedBg.skills.includes('arcanismo') && appliedBg.skills.includes('historia'), 'applyBackgroundBenefitsModal concede Arcanismo e História do Sábio');
+    assert(mockEls128['pm-features'].value.includes('Pesquisador'), 'applyBackgroundBenefitsModal adicionou a característica Pesquisador ao campo de Características');
+    sandbox.document.getElementById = prevGetEl128;
+
+    // Pilar 2: Gerador de Tesouros DMG & Itens Mágicos
+    const hasDmgTables = vm.runInContext('typeof DMG_TREASURE_TABLES === "object" && Array.isArray(DMG_TREASURE_TABLES.gems[100]) && Array.isArray(DMG_TREASURE_TABLES.artObjects[250])', sandbox);
+    assert(hasDmgTables, 'DMG_TREASURE_TABLES carregado com tabelas oficiais de Gemas e Objetos de Arte do Guia do Mestre');
+
+    const eqCount128 = vm.runInContext('EQUIPMENT_DATA.length', sandbox);
+    assert(eqCount128 >= 150, `EQUIPMENT_DATA expandido com Gemas, Objetos de Arte, Venenos e Itens Mágicos (${eqCount128} itens)`);
+
+    const rolledGem = sandbox.rollDmgGemToStash(100);
+    assert(rolledGem && rolledGem.name.includes('100 PO'), 'rollDmgGemToStash(100) sorteia gema oficial de 100 PO e adiciona ao Baú do Grupo');
+
+    const rolledArt = sandbox.rollDmgArtToStash(250);
+    assert(rolledArt && rolledArt.name.includes('250 PO'), 'rollDmgArtToStash(250) sorteia objeto de arte oficial de 250 PO e adiciona ao Baú do Grupo');
+
+    const rolledMagic = sandbox.rollDmgMagicItemToStash('uncommon');
+    assert(rolledMagic && rolledMagic.name && rolledMagic.desc, 'rollDmgMagicItemToStash("uncommon") sorteia item mágico oficial para o Baú do Grupo');
+
+    const goldBeforeHoard = vm.runInContext('getActiveCampaign().partyStash.gold', sandbox);
+    const hoardRes = sandbox.rollDmgTreasureHoardToStash('0-4');
+    const goldAfterHoard = vm.runInContext('getActiveCampaign().partyStash.gold', sandbox);
+    assert(hoardRes && hoardRes.goldAdded > 0 && goldAfterHoard > goldBeforeHoard, 'rollDmgTreasureHoardToStash("0-4") gera Pilha de Tesouro ND 0-4 com ouro, gemas/arte e itens mágicos no Baú');
+
+    // Pilar 3: Subclasses de Xanathar & Raças de Volo / Tome of Foes / Multiverse
+    const hexbladeFound = vm.runInContext('CLASSES_DATA.find(c => c.id === "bruxo").subclasses.some(s => s.name.includes("Lâmina Maldita") || s.name.includes("Hexblade"))', sandbox);
+    const gloomStalkerFound = vm.runInContext('CLASSES_DATA.find(c => c.id === "patrulheiro").subclasses.some(s => s.name.includes("Perseguidor Obscuro") || s.name.includes("Gloom Stalker"))', sandbox);
+    const swashbucklerFound = vm.runInContext('CLASSES_DATA.find(c => c.id === "ladino").subclasses.some(s => s.name.includes("Espadachim") || s.name.includes("Swashbuckler"))', sandbox);
+    const forgeDomainFound = vm.runInContext('CLASSES_DATA.find(c => c.id === "clerigo").subclasses.some(s => s.name.includes("Domínio da Forja"))', sandbox);
+    assert(hexbladeFound && gloomStalkerFound && swashbucklerFound && forgeDomainFound, 'Subclasses de Xanathar (Hexblade, Gloom Stalker, Swashbuckler, Domínio da Forja, etc.) integradas em CLASSES_DATA');
+
+    const tabaxiRace = vm.runInContext('SPECIES_DATA.find(s => s.id === "tabaxi")', sandbox);
+    const tortleRace = vm.runInContext('SPECIES_DATA.find(s => s.id === "tortle")', sandbox);
+    const githRace = vm.runInContext('SPECIES_DATA.find(s => s.id === "gith")', sandbox);
+    const eladrinLineage = vm.runInContext('SPECIES_DATA.find(s => s.id === "elfo").lineages.some(l => l.name.includes("Eladrin"))', sandbox);
+    const duergarLineage = vm.runInContext('SPECIES_DATA.find(s => s.id === "anao").lineages.some(l => l.name.includes("Duergar"))', sandbox);
+    assert(tabaxiRace && tortleRace && githRace && eladrinLineage && duergarLineage, 'Raças e sub-raças de Volo, Tome of Foes e Multiverse (Tabaxi, Tortle, Gith, Eladrin, Duergar) integradas em SPECIES_DATA');
+
+    const tabaxiBonus = sandbox.getRacialAbilityBonuses('Tabaxi');
+    assert(tabaxiBonus.dex === 2 && tabaxiBonus.cha === 1, 'getRacialAbilityBonuses("Tabaxi") retorna +2 DES e +1 CAR');
+    const firbolgBonus = sandbox.getRacialAbilityBonuses('Firbolg');
+    assert(firbolgBonus.wis === 2 && firbolgBonus.str === 1, 'getRacialAbilityBonuses("Firbolg") retorna +2 SAB e +1 FOR');
+
+    // Pilar 4: Expansão do Bestiário (Volo's Guide & Tome of Foes)
+    const voloCount = vm.runInContext('BESTIARY_DATA.filter(m => m.source === "Volo\'s Guide").length', sandbox);
+    const mtofCount = vm.runInContext('BESTIARY_DATA.filter(m => m.source === "Tome of Foes").length', sandbox);
+    assert(voloCount >= 18, `Bestiário contém pelo menos 18 criaturas/NPCs do Volo's Guide (${voloCount} encontrados)`);
+    assert(mtofCount >= 14, `Bestiário contém pelo menos 14 criaturas/chefes do Tome of Foes (${mtofCount} encontrados)`);
+    const zarielBoss = vm.runInContext('BESTIARY_DATA.find(m => m.name.includes("Zariel"))', sandbox);
+    assert(zarielBoss && String(zarielBoss.cr) === '26' && zarielBoss.hp === 580, 'Arquidiabo Zariel (ND 26, 580 PV) presente no Bestiário');
 
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;

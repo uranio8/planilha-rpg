@@ -534,8 +534,304 @@ const SPECIES_DATA = [
         description: '• **Aumento no Valor de Habilidade**: Seu valor de **Força aumenta em +1**.\n• **Mortalha Necrótica (3º Nível)**: Como Ação Bônus, manifesta asas esqueléticas aterrorizantes. Criaturas a até 3m devem ser bem-sucedidas em salvaguarda de Carisma ou ficam Amedrontadas até o fim do seu próximo turno. Causa dano Necrótico extra igual ao seu nível 1x/turno.'
       }
     ]
+  },
+  // ==========================================================================
+  // 🐾 RAÇAS DE VOLO'S GUIDE, TOME OF FOES & MONSTERS OF THE MULTIVERSE
+  // ==========================================================================
+  {
+    id: 'tabaxi',
+    name: 'Tabaxi',
+    icon: '🐆',
+    type: 'Humanoide',
+    size: 'Médio',
+    speed: '9 metros (Escalada 9 metros)',
+    abilityScoreSummary: '+2 Destreza, +1 Carisma',
+    description: 'Humanoides felinos originários de terras distantes e exóticas, movidos por uma curiosidade insaciável por relíquias, histórias e segredos esquecidos (Guia de Volo / Multiverse).',
+    traits: [
+      { name: 'Aumento no Valor de Habilidade', type: 'Atributo', description: 'Seu valor de **Destreza aumenta em +2** e seu valor de **Carisma aumenta em +1**.' },
+      { name: 'Visão no Escuro (18 metros)', type: 'Sentido', description: 'Você enxerga na penumbra a até 18m como se fosse luz plena, e na escuridão como se fosse penumbra.' },
+      { name: 'Agilidade Felina', type: 'Movimento Explosivo', description: 'Seus reflexos e agilidade permitem que você **dobre seu deslocamento no seu turno** (custo 0 de ação). Uma vez usado, você não pode usar novamente até passar um turno inteiro movendo 0 metros.' },
+      { name: 'Garras de Gato', type: 'Arma Natural & Escalada', description: 'Você possui **deslocamento de escalada de 9m** e suas garras causam **1d6 + mod de Força de dano cortante** em ataques desarmados.' },
+      { name: 'Talento Felino', type: 'Perícias', description: 'Você possui proficiência nas perícias **Percepção** e **Furtividade**.' },
+      { name: 'Idiomas', type: 'Comunicação', description: 'Você pode falar, ler e escrever **Comum** e um outro idioma à sua escolha.' }
+    ],
+    lineagesTitle: 'Linhagem & Obsessão Tabaxi',
+    lineages: [
+      { name: 'Andarilho de Maztica (Volo\'s Guide)', icon: '🐆', description: '• **Obsessão Felina**: Guiado pelo Senhor Gato para colecionar lendas, relíquias perdidas e segredos de terras distantes.\n• **Atributos Clássicos (Volo)**: +2 Destreza e +1 Carisma.' },
+      { name: 'Tabaxi do Multiverso (Monsters of the Multiverse)', icon: '🐾', description: '• **Atributos Flexíveis**: +2 em um atributo e +1 em outro (ou +1 em três).\n• **Garras Aprimoradas**: Causam 1d6 + Força cortante e concedem escalada de 9m igual à caminhada.' }
+    ]
+  },
+  {
+    id: 'kenku',
+    name: 'Kenku',
+    icon: '🐦‍⬛',
+    type: 'Humanoide',
+    size: 'Médio ou Pequeno',
+    speed: '9 metros',
+    abilityScoreSummary: '+2 Destreza, +1 Sabedoria',
+    description: 'Povo-corvo bípede dotado de memória auditiva perfeita e talento inigualável para imitar vozes, sons e falsificar obras (Guia de Volo / Multiverse).',
+    traits: [
+      { name: 'Aumento no Valor de Habilidade', type: 'Atributo', description: 'Seu valor de **Destreza aumenta em +2** e seu valor de **Sabedoria aumenta em +1**.' },
+      { name: 'Especialista em Falsificação', type: 'Perícia', description: 'Você pode duplicar a escrita e o trabalho artesanal de outras criaturas. Você tem **Vantagem em todos os testes feitos para produzir falsificações ou duplicatas** de objetos existentes.' },
+      { name: 'Recordação Kenku', type: 'Perícias', description: 'Você ganha proficiência em duas perícias à sua escolha e pode usar Reação para ganhar **Vantagem** em um teste de perícia que tenha proficiência (usos iguais ao bônus de proficiência).' },
+      { name: 'Mimetismo', type: 'Imitação Perfeita', description: 'Você pode imitar com perfeição quaisquer sons que já tenha ouvido, incluindo vozes humanas (teste de Intuição resistido por sua Enganação para perceber que é imitação).' }
+    ],
+    lineagesTitle: 'Linhagem & Origem Kenku',
+    lineages: [
+      { name: 'Bando das Sombras (Volo\'s Guide)', icon: '🐦‍⬛', description: '• **Comunicação por Ecos**: Comunica-se combinando sons, vozes e ruídos memorizados com precisão sobrenatural.\n• **Atributos Clássicos (Volo)**: +2 Destreza e +1 Sabedoria.' },
+      { name: 'Kenku Liberto (Monsters of the Multiverse)', icon: '🪶', description: '• **Recordação Kenku**: Pode usar Reação para receber Vantagem em testes de perícia nos quais possui proficiência.' }
+    ]
+  },
+  {
+    id: 'firbolg',
+    name: 'Firbolg',
+    icon: '🌿',
+    type: 'Humanoide (Parente de Gigante)',
+    size: 'Médio (entre 2,10m e 2,40m)',
+    speed: '9 metros',
+    abilityScoreSummary: '+2 Sabedoria, +1 Força',
+    description: 'Guardiões gentis e reclusos das florestas ancestrais, dotados de magia druídica inata e da capacidade de desaparecer entre as árvores (Guia de Volo / Multiverse).',
+    traits: [
+      { name: 'Aumento no Valor de Habilidade', type: 'Atributo', description: 'Seu valor de **Sabedoria aumenta em +2** e seu valor de **Força aumenta em +1**.' },
+      { name: 'Magia Firbolg', type: 'Magia Inata', description: 'Você pode conjurar *Detectar Magia* e *Disfarçar-se* (podendo parecer até 90cm mais baixo) sem gastar espaço de magia (recupera em descanso curto ou longo).' },
+      { name: 'Passo Oculto (Hidden Step)', type: 'Ação Bônus / Invisibilidade', description: 'Com uma **Ação Bônus**, você fica magicamente **Invisível** até o início do seu próximo turno ou até atacar, causar dano ou forçar uma salvaguarda.' },
+      { name: 'Constituição Poderosa', type: 'Capacidade de Carga', description: 'Você conta como uma categoria de tamanho maior (Grande) para determinar sua capacidade de carga e o peso que pode empurrar, arrastar ou erguer.' },
+      { name: 'Fala da Fera e da Folha', type: 'Comunicação Natural', description: 'Você pode comunicar ideias simples para feras e plantas, e tem **Vantagem em testes de Carisma** para influenciá-las.' }
+    ],
+    lineagesTitle: 'Linhagem & Clãs Firbolg',
+    lineages: [
+      { name: 'Guardião da Floresta Antiga (Volo\'s Guide)', icon: '🌲', description: '• **Código da Floresta**: Vive em harmonia invisível com a natureza, usando Passo Oculto e Disfarçar-se para proteger os bosques.\n• **Atributos Clássicos**: +2 Sabedoria e +1 Força.' }
+    ]
+  },
+  {
+    id: 'povo_lagarto',
+    name: 'Povo-Lagarto (Lizardfolk)',
+    icon: '🦎',
+    type: 'Humanoide',
+    size: 'Médio',
+    speed: '9 metros (Natação 9 metros)',
+    abilityScoreSummary: '+2 Constituição, +1 Sabedoria',
+    description: 'Sobreviventes reptilianos pragmáticos dos pântanos, equipados com escamas resistentes, mandíbulas ferozes e artesanato de ossos (Guia de Volo / Multiverse).',
+    traits: [
+      { name: 'Aumento no Valor de Habilidade', type: 'Atributo', description: 'Seu valor de **Constituição aumenta em +2** e seu valor de **Sabedoria aumenta em +1**.' },
+      { name: 'Mordida & Mandíbulas Famintas', type: 'Arma Natural / PV Temp', description: 'Sua mordida causa **1d6 + mod de Força de dano perfurante**. Além disso, com uma **Ação Bônus**, você pode desferir um ataque especial de mordida; se acertar, ganha **PV temporários iguais ao seu bônus de proficiência** (ou mod de Constituição).' },
+      { name: 'Armadura Natural', type: 'Defesa Escamosa', description: 'Quando não estiver usando armadura, sua **CA é 13 + seu modificador de Destreza** (você ainda pode usar escudo).' },
+      { name: 'Prender a Respiração & Natação', type: 'Anfíbio', description: 'Você tem deslocamento de natação de 9m e pode prender a respiração por até **15 minutos**.' },
+      { name: 'Intuição da Natureza', type: 'Perícias', description: 'Você ganha proficiência em duas perícias entre Adestrar Animais, Natureza, Percepção, Furtividade e Sobrevivência.' }
+    ],
+    lineagesTitle: 'Linhagem Povo-Lagarto',
+    lineages: [
+      { name: 'Caçador do Pântano (Volo\'s Guide)', icon: '🦎', description: '• **Artesão Astuto**: Fabrica escudos, dardos e clavas a partir de ossos e carcaças durante descansos curtos.\n• **Mandíbulas Famintas**: Mordida em Ação Bônus que concede PV temporários.' }
+    ]
+  },
+  {
+    id: 'tritao',
+    name: 'Tritão (Triton)',
+    icon: '🔱',
+    type: 'Humanoide Anfíbio',
+    size: 'Médio',
+    speed: '9 metros (Natação 9 metros)',
+    abilityScoreSummary: '+1 Força, +1 Constituição, +1 Carisma',
+    description: 'Nobres protetores das fossas abissais oceânicas que emergiram para combater ameaças elementais na superfície (Guia de Volo / Multiverse).',
+    traits: [
+      { name: 'Aumento no Valor de Habilidade', type: 'Atributo', description: 'Seus valores de **Força, Constituição e Carisma aumentam em +1 cada**.' },
+      { name: 'Anfíbio & Guardião das Profundezas', type: 'Defesa Abissal', description: 'Você respira ar e água, e possui **Resistência a dano de frio**.' },
+      { name: 'Controle do Ar e da Água', type: 'Magia Inata', description: 'Você pode conjurar *Névoa Obscurecente* (1º nv), *Lufada de Vento* (3º nv) e *Muralha de Água* (5º nv) 1x por descanso longo.' },
+      { name: 'Emissário do Mar', type: 'Comunicação', description: 'Você pode comunicar ideias simples para feras que respiram na água.' }
+    ],
+    lineagesTitle: 'Linhagem Tritão',
+    lineages: [
+      { name: 'Protetor dos Protetorados Abissais', icon: '🔱', description: '• **Nobreza Submarina**: Guardiões juramentados contra krakens e fendas do Plano Elemental da Água (+1 FOR, +1 CON, +1 CAR).' }
+    ]
+  },
+  {
+    id: 'aarakocra',
+    name: 'Aarakocra',
+    icon: '🦅',
+    type: 'Humanoide Alado',
+    size: 'Médio',
+    speed: '9 metros (Voo 9m a 15m)',
+    abilityScoreSummary: '+2 Destreza, +1 Sabedoria',
+    description: 'Povo-pássaro originário do Plano Elemental do Ar, patrulhando os picos mais altos com voo ágil e garras afiadas (Monsters of the Multiverse).',
+    traits: [
+      { name: 'Aumento no Valor de Habilidade', type: 'Atributo', description: 'Seu valor de **Destreza aumenta em +2** e seu valor de **Sabedoria aumenta em +1**.' },
+      { name: 'Voo', type: 'Movimento Aéreo', description: 'Graças às suas asas, você possui **deslocamento de voo** desde que não esteja vestindo armadura média ou pesada.' },
+      { name: 'Garras (Talons)', type: 'Arma Natural', description: 'Suas garras causam **1d6 + mod de Força de dano cortante** em ataques desarmados.' },
+      { name: 'Chamado do Vento', type: 'Magia Inata', description: 'A partir do 3º nível, você pode conjurar a magia *Lufada de Vento* sem componentes materiais.' }
+    ],
+    lineagesTitle: 'Linhagem Aarakocra',
+    lineages: [
+      { name: 'Sentinela dos Ventos (Plano do Ar)', icon: '🦅', description: '• **Patrulheiro Celeste**: Domina as correntes térmicas com deslocamento de voo e invocação de *Lufada de Vento*.' }
+    ]
+  },
+  {
+    id: 'genasi',
+    name: 'Genasi',
+    icon: '🔥',
+    type: 'Humanoide Elemental',
+    size: 'Médio',
+    speed: '9 metros',
+    abilityScoreSummary: '+2 Constituição, +1 Atributo da Sub-raça',
+    description: 'Mortais tocados pelo poder dos gênios e dos Planos Elementais do Ar, Terra, Fogo e Água (Monsters of the Multiverse).',
+    traits: [
+      { name: 'Aumento no Valor de Habilidade', type: 'Atributo', description: 'Seu valor de **Constituição aumenta em +2**, além do bônus da sua herança elemental.' },
+      { name: 'Visão no Escuro (18 metros)', type: 'Sentido', description: 'Você enxerga na penumbra a até 18m como luz plena e na escuridão como penumbra.' }
+    ],
+    lineagesTitle: 'Heranças Elementais Genasi',
+    lineages: [
+      { name: 'Genasi do Ar', icon: '💨', description: '• **+1 Destreza**.\n• **Fôlego Infinito**: Pode prender a respiração indefinidamente.\n• **Misturar-se ao Vento**: Conhece *Toque Chocante*, *Queda Suave* (3º nv) e *Levitação* (5º nv), além de **Resistência a dano elétrico**.' },
+      { name: 'Genasi da Terra', icon: '🪨', description: '• **+1 Força**.\n• **Caminhar na Terra**: Ignora terreno difícil de terra ou pedra.\n• **Fundir-se à Pedra**: Conhece *Proteção contra Lâminas* (como Ação Bônus!) e *Passos sem Pegadas* (5º nv).' },
+      { name: 'Genasi do Fogo', icon: '🔥', description: '• **+1 Inteligência**.\n• **Resistência a Fogo**: Você tem **Resistência a dano de fogo**.\n• **Alcançar o Labareda**: Conhece *Produzir Chamas*, *Mãos Flamejantes* (3º nv) e *Lâmina Flamejante* (5º nv).' },
+      { name: 'Genasi da Água', icon: '🌊', description: '• **+1 Sabedoria**.\n• **Anfíbio & Resistência a Ácido**: Respira na água, nada 9m e tem **Resistência a dano ácido**.\n• **Chamar a Onda**: Conhece *Esporro Ácido*, *Criar ou Destruir Água* (3º nv) e *Caminhar na Água* (5º nv).' }
+    ]
+  },
+  {
+    id: 'gith',
+    name: 'Gith (Githyanki & Githzerai)',
+    icon: '🪐',
+    type: 'Humanoide Astral',
+    size: 'Médio',
+    speed: '9 metros',
+    abilityScoreSummary: '+1 Inteligência, +2 Força (Githyanki) ou +2 Sabedoria (Githzerai)',
+    description: 'Povo ancestral libertado da escravidão dos Devoradores de Mentes, dividido entre os guerreiros astrais Githyanki e os monges psíquicos Githzerai (Tome of Foes / Multiverse).',
+    traits: [
+      { name: 'Aumento no Valor de Habilidade', type: 'Atributo', description: 'Seu valor de **Inteligência aumenta em +1**, mais +2 Força (Githyanki) ou +2 Sabedoria (Githzerai).' },
+      { name: 'Resistência Psíquica', type: 'Defesa Mental', description: 'Você tem **Resistência a dano psíquico**.' }
+    ],
+    lineagesTitle: 'Sub-raças Gith',
+    lineages: [
+      { name: 'Githyanki', icon: '⚔️', description: '• **+2 Força**.\n• **Prodígio Astral**: Proficiência em 1 perícia e 1 ferramenta/arma que pode trocar a cada descanso longo.\n• **Psiônicos Githyanki**: Conhece *Mão Mágica* (invisível), *Salto* (3º nv) e *Passo Nebuloso* (5º nv).' },
+      { name: 'Githzerai', icon: '🧘', description: '• **+2 Sabedoria**.\n• **Disciplina Mental**: **Vantagem em salvaguardas contra ser Enfeitiçado e Amedrontado**.\n• **Psiônicos Githzerai**: Conhece *Mão Mágica* (invisível), *Escudo Arcano* (3º nv) e *Detectar Pensamentos* (5º nv).' }
+    ]
+  },
+  {
+    id: 'tortle',
+    name: 'Tortle (Povo-Tartaruga)',
+    icon: '🐢',
+    type: 'Humanoide',
+    size: 'Médio',
+    speed: '9 metros',
+    abilityScoreSummary: '+2 Força, +1 Sabedoria',
+    description: 'Aventureiros nômades que carregam seu próprio lar e proteção nas costas na forma de uma carapaça quase impenetrável (Monsters of the Multiverse).',
+    traits: [
+      { name: 'Aumento no Valor de Habilidade', type: 'Atributo', description: 'Seu valor de **Força aumenta em +2** e seu valor de **Sabedoria aumenta em +1**.' },
+      { name: 'Carapaça Natural (CA 17)', type: 'Defesa Suprema', description: 'Sua carapaça fornece uma **Classe de Armadura base de 17** (modificador de Destreza não afeta esse número; você não pode vestir armaduras, mas **pode usar escudo para chegar a CA 19+**).' },
+      { name: 'Defesa no Casco', type: 'Ação Defensiva', description: 'Com uma Ação, recolha-se no casco: **+4 de bônus na CA** e **Vantagem em salvaguardas de Força e Constituição**.' },
+      { name: 'Garras & Fôlego', type: 'Natural', description: 'Garras causam 1d6 + Força cortante e você pode prender a respiração por até **1 hora**.' }
+    ],
+    lineagesTitle: 'Linhagem Tortle',
+    lineages: [
+      { name: 'Nômade da Península do Focinho', icon: '🐢', description: '• **Carapaça Impenetrável**: CA base fixa de 17 (+2 com escudo = CA 19) e Defesa no Casco (+4 CA).' }
+    ]
+  },
+  {
+    id: 'harengon',
+    name: 'Harengon (Povo-Coelho)',
+    icon: '🐇',
+    type: 'Humanoide Feérico',
+    size: 'Médio ou Pequeno',
+    speed: '9 metros',
+    abilityScoreSummary: '+2 Destreza, +1 Sabedoria',
+    description: 'Originários da Faéria, os Harengon possuem reflexos relâmpago, sorte feérica e saltos prodigiosos que ignoram o perigo (Monsters of the Multiverse).',
+    traits: [
+      { name: 'Aumento no Valor de Habilidade', type: 'Atributo', description: 'Seu valor de **Destreza aumenta em +2** e seu valor de **Sabedoria aumenta em +1**.' },
+      { name: 'Gatilho de Lebre (Hare-Trigger)', type: 'Iniciativa Superior', description: 'Você adiciona seu **bônus de proficiência às suas rolagens de Iniciativa**!' },
+      { name: 'Pés da Sorte', type: 'Reação', description: 'Quando falhar em uma salvaguarda de Destreza, use sua **Reação para rolar 1d4 e somar ao resultado**.' },
+      { name: 'Salto de Coelho', type: 'Ação Bônus', description: 'Com uma **Ação Bônus**, salte uma distância em metros igual a **1,5 × seu bônus de proficiência sem provocar ataques de oportunidade**.' }
+    ],
+    lineagesTitle: 'Linhagem Harengon',
+    lineages: [
+      { name: 'Viajante de Prismeer (Faéria)', icon: '🐇', description: '• **Espírito Livre da Faéria**: Soma o bônus de proficiência à Iniciativa e salta em Ação Bônus sem provocar ataques de oportunidade.' }
+    ]
+  },
+  {
+    id: 'fada',
+    name: 'Fada (Fairy)',
+    icon: '🧚',
+    type: 'Fada',
+    size: 'Pequeno',
+    speed: '9 metros (Voo 9 metros)',
+    abilityScoreSummary: '+2 Destreza, +1 Carisma',
+    description: 'Criaturas aladas nativas da Faéria imbuídas com magia cintilante e voo natural (Monsters of the Multiverse).',
+    traits: [
+      { name: 'Aumento no Valor de Habilidade', type: 'Atributo', description: 'Seu valor de **Destreza aumenta em +2** e seu valor de **Carisma aumenta em +1**.' },
+      { name: 'Voo Feérico', type: 'Voo', description: 'Por causa de suas asas, você possui **deslocamento de voo igual ao seu deslocamento de caminhada** (sem armadura média ou pesada).' },
+      { name: 'Magia de Fada', type: 'Magia Inata', description: 'Você conhece o truque *Druidismo*, *Fogo das Fadas* (3º nv) e *Aumentar/Reduzir* (5º nv).' }
+    ],
+    lineagesTitle: 'Linhagem Fada',
+    lineages: [
+      { name: 'Corte Seelie / Unseelie (Faéria)', icon: '🧚', description: '• **Asas Cintilantes**: Tipo de criatura Fada (imune a *Imobilizar Pessoa*), Voo de 9m e magias *Fogo das Fadas* e *Aumentar/Reduzir*.' }
+    ]
+  },
+  {
+    id: 'metamorfo',
+    name: 'Metamorfo (Changeling)',
+    icon: '🎭',
+    type: 'Fada / Humanoide',
+    size: 'Médio ou Pequeno',
+    speed: '9 metros',
+    abilityScoreSummary: '+2 Carisma, +1 Destreza',
+    description: 'Mestres da transformação física capazes de alterar seu rosto, voz, altura e aparência com um pensamento (Monsters of the Multiverse).',
+    traits: [
+      { name: 'Aumento no Valor de Habilidade', type: 'Atributo', description: 'Seu valor de **Carisma aumenta em +2** e seu valor de **Destreza aumenta em +1**.' },
+      { name: 'Mudar Forma (Shapechanger)', type: 'Ação', description: 'Com uma Ação, você muda sua aparência e sua voz (incluindo altura, peso, traços faciais, cabelo e tamanho entre Médio e Pequeno).' },
+      { name: 'Instinto de Metamorfo', type: 'Perícias Sociais', description: 'Você ganha proficiência em **duas perícias** entre Atuação, Enganação, Intimidação, Intuição e Persuasão.' }
+    ],
+    lineagesTitle: 'Linhagem Metamorfo',
+    lineages: [
+      { name: 'Viajante de Mil Rostos', icon: '🎭', description: '• **Identidade Fluida**: Altera rosto, voz e porte físico (Médio ou Pequeno) com uma Ação, mantendo suas estatísticas de jogo.' }
+    ]
+  },
+  {
+    id: 'yuan_ti',
+    name: 'Yuan-ti',
+    icon: '🐍',
+    type: 'Humanoide Ofídio',
+    size: 'Médio',
+    speed: '9 metros',
+    abilityScoreSummary: '+2 Carisma, +1 Inteligência',
+    description: 'Descendentes de um antigo império que fundiu sua linhagem à das serpentes, adquirindo resistência mágica e imunidade a venenos (Volo\'s Guide / Multiverse).',
+    traits: [
+      { name: 'Aumento no Valor de Habilidade', type: 'Atributo', description: 'Seu valor de **Carisma aumenta em +2** e seu valor de **Inteligência aumenta em +1**.' },
+      { name: 'Resistência à Magia', type: 'Defesa Arcana', description: 'Você possui **Vantagem em testes de resistência contra magias** e outros efeitos mágicos.' },
+      { name: 'Resiliência a Veneno', type: 'Defesa', description: 'Você tem **Vantagem em salvaguardas contra ser Envenenado** e **Resistência (ou Imunidade) a dano de veneno**.' },
+      { name: 'Conjuração Ofídia', type: 'Magia Inata', description: 'Você conhece o truque *Rajada de Veneno*, pode conjurar *Amizade Animal* (sem limite em cobras) e *Sugestão* (3º nv).' }
+    ],
+    lineagesTitle: 'Linhagem Yuan-ti',
+    lineages: [
+      { name: 'Puro-Sangue Ofídio (Volo / Multiverse)', icon: '🐍', description: '• **Sangue Serpentino**: Aparência humana com traços sutis (olhos fendidos, língua bifurcada ou escamas), dotado de Resistência à Magia e Resiliência a Veneno.' }
+    ]
   }
 ];
+
+// Adiciona Sub-raças Clássicas de Tome of Foes (Duergar em Anão, Eladrin e Shadar-kai em Elfo)
+(function enrichExistingSpeciesLineages() {
+  const anao = SPECIES_DATA.find(s => s.id === 'anao');
+  if (anao && Array.isArray(anao.lineages) && !anao.lineages.some(l => l.name.includes('Duergar'))) {
+    anao.lineages.push({
+      name: 'Duergar (Anão Cinzento - Tome of Foes)',
+      icon: '⛏️',
+      description: '• **Aumento no Valor de Habilidade**: **+1 Força**.\n• **Visão no Escuro Superior**: Alcance de **36 metros**.\n• **Resiliência Duergar**: Vantagem contra ilusões, ser Enfeitiçado ou Paralisado.\n• **Magia Duergar**: Conjura *Aumentar/Reduzir* (3º nv) e *Invisibilidade* (5º nv) em si mesmo sem gastar slot.'
+    });
+  }
+  const elfo = SPECIES_DATA.find(s => s.id === 'elfo');
+  if (elfo && Array.isArray(elfo.lineages)) {
+    if (!elfo.lineages.some(l => l.name.includes('Eladrin'))) {
+      elfo.lineages.push({
+        name: 'Eladrin (Elfo das Estações - Tome of Foes)',
+        icon: '🍂',
+        description: '• **Aumento no Valor de Habilidade**: **+1 Carisma**.\n• **Passo Feérico (Fey Step)**: Com uma **Ação Bônus**, teletransporte-se até **9 metros** com efeito adicional da sua estação atual (*Outono*: encanta 2 criaturas; *Inverno*: amedronta 1 alvo; *Primavera*: teletransporta aliado; *Verão*: causa dano de fogo).'
+      });
+    }
+    if (!elfo.lineages.some(l => l.name.includes('Shadar-kai'))) {
+      elfo.lineages.push({
+        name: 'Shadar-kai (Elfo da Umbra - Tome of Foes)',
+        icon: '🐦‍⬛',
+        description: '• **Aumento no Valor de Habilidade**: **+1 Constituição**.\n• **Resistência Necrótica**: Você tem **Resistência a dano necrótico**.\n• **Bênção da Rainha Corvo**: Com uma **Ação Bônus**, teletransporte-se até **9 metros** e ganhe **Resistência a TODO tipo de dano** até o início do seu próximo turno!'
+      });
+    }
+  }
+})();
 
 // Exportação universal para compatibilidade com o sistema
 if (typeof window !== 'undefined') {

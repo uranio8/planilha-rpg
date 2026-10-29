@@ -1,0 +1,110 @@
+=== PÁGINA 1 ===
+RAÇA
+CLASSE E NÍVEL
+NOME DO JOGADOR
+NOME DO PERSONAGEM
+ANTECEDENTE
+PONTOS DE EXPERIÊNCIA
+TENDÊNCIA
+EQUIPAMENTO
+PV Totais
+Força
+Destreza
+Constituição
+Inteligência
+Sabedoria
+Carisma
+PC
+PE
+PL
+PO
+PP
+SABEDORIA PASSIVA (PERCEPÇÃO)
+IDIOMAS E OUTRAS PROFICIÊNCIAS
+ATAQUES E MAGIAS
+CARACTERÍSTICAS E HABILIDADES
+Acrobacia (Des)
+Arcanismo (Int)
+Atletismo (For)
+Atuação (Car)
+Blefar (Car)
+Furtividade (Des)
+História (Int)
+Intimidação (Car)
+Intuição (Sab)
+Investigação (Int)
+Lidar com Animais (Sab)
+Medicina (Sab)
+Natureza (Int)
+Percepção (Sab)
+Persuasão (Car)
+Prestidigitação (Des)
+Religião (Int)
+Sobrevivência (Sab)
+TESTES CONTRA A MORTEDADOS DE VIDA
+NOME
+BÔNUS
+Total
+SUCESSOS
+FRACASSOS
+IDEAIS
+LIGAÇÕES
+DEFEITOS
+TRAÇOS DE PERSONALIDADE
+CLASSE
+ARMD
+PONTOS DE VIDA ATUAIS
+PONTOS DE VIDA TEMPORÁRIOS
+INICIATIVADESLOC.
+BÔNUS DE PROFICIÊNCIA
+FORÇA
+DESTREZA
+CONSTITUIÇÃO
+IN
+TELIGÊNCIA
+SABEDORIA
+CARISMA
+TE
+STES DE RESISTÊNCIA
+INSPIRAÇÃO
+PERÍCIAS
+DANO / TIPO
+TM & © 2014 Wizards of the Coast LLC. Cópia permitida apenas para uso pessoal. Tradução: Johny Robert | johnyrobert@icloud.com
+
+=== PÁGINA 2 ===
+NOME DO PERSONAGEM
+OLHOS
+IDADEPESOALTURA
+CABELOS
+PELE
+NOME
+H
+ISTÓRIA DO PERSONAGEM
+APARÊNCIA 
+DO 
+PERSONAGEM
+OUTRAS CARACTERÍSTICAS E HABILIDADES
+ALIADOS E ORGANIZAÇÕES
+SÍMBOLO
+TESOURO
+TM & © 2014 Wizards of the Coast LLC. Cópia permitida apenas para uso pessoal. Tradução: Johny Robert | johnyrobert@icloud.com
+
+=== PÁGINA 3 ===
+TM & © 20
+14 Wizards of the Coast LLC. Cópia permitida apenas para uso pessoal. Tradução: Johny Robert | johnyrobert@icloud.com
+CLASSE DE CONJURADOR
+MAGIAS CONHECIDAS
+NÍVEL
+MAGIA
+ESPAÇOS USADOSESPAÇOS TOTAL
+1
+0
+2
+36
+7
+8
+9
+4
+5
+HABILIDADE CHAVECD DO TRBÔNUS DE ATAQUE
+TRUQUES

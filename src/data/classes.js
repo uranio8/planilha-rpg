@@ -2055,6 +2055,363 @@ const CLASSES_DATA = [
 ];
 
 // ============================================================================
+// 📘 SUBCLASSES OFICIAIS DO GUIA DE XANATHAR PARA TODAS AS COISAS (CAP. 1)
+// ============================================================================
+const XANATHAR_SUBCLASSES_BY_CLASS = {
+  barbaro: [
+    {
+      name: "Caminho do Guardião Ancestral (Xanathar)",
+      icon: "👻",
+      desc: "Bárbaros que invocam os espíritos de seus ancestrais guerreiros na fúria para proteger seus aliados e punir inimigos.",
+      features: [
+        { level: 3, name: "Protetores Ancestrais", desc: "Enquanto em fúria, a primeira criatura que você atingir com um ataque no seu turno tem **Desvantagem em ataques contra qualquer alvo que não seja você**, e seus aliados têm **Resistência a todo dano** causado pelos ataques daquela criatura até o início do seu próximo turno." },
+        { level: 6, name: "Escudo Espiritual", desc: "Enquanto em fúria, quando outra criatura a até 9m sofrer dano, você pode usar sua **Reação** para reduzir esse dano em **2d6** (3d6 no 10º nível, 4d6 no 14º nível)." },
+        { level: 10, name: "Consultar os Espíritos", desc: "Você pode conjurar *Augúrio* ou *Clarividência* sem gastar espaço de magia (1 vez por descanso curto ou longo)." },
+        { level: 14, name: "Ancestrais Vingativos", desc: "Quando você usar seu Escudo Espiritual para reduzir dano, o atacante sofre uma quantidade de **dano de força igual ao dano que o Escudo Espiritual preveniu**." }
+      ]
+    },
+    {
+      name: "Caminho do Fanático / Zealot (Xanathar)",
+      icon: "☀️",
+      desc: "Guerreiros inspirados por uma divindade cujo fervor religioso os torna quase impossíveis de destruir em batalha.",
+      features: [
+        { level: 3, name: "Fúria Divina & Guerreiro dos Deuses", desc: "Enquanto em fúria, a primeira criatura que você atingir em cada turno sofre **1d6 + metade do seu nível de bárbaro** de dano extra (necrótico ou radiante). Além disso, magias que trazem você de volta à vida (*Revivificar*, *Ressurreição*) **não exigem componentes materiais**." },
+        { level: 6, name: "Foco Fanático", desc: "Se você falhar em um teste de resistência enquanto estiver em fúria, você pode **rolar novamente o teste**, devendo usar o novo resultado (1 vez por fúria)." },
+        { level: 10, name: "Presença Zelosa", desc: "Com uma **Ação Bônus**, você solta um grito de batalha: até 10 criaturas a até 18m ganham **Vantagem em jogadas de ataque e salvaguardas** até o início do seu próximo turno (1x por descanso longo)." },
+        { level: 14, name: "Fúria Além da Morte", desc: "Enquanto estiver em fúria, ter **0 PV não deixa você inconsciente**. Você ainda faz salvaguardas contra a morte, mas só morre se ainda estiver com 0 PV quando sua fúria terminar." }
+      ]
+    }
+  ],
+  bardo: [
+    {
+      name: "Colégio do Glamour (Xanathar)",
+      icon: "✨",
+      desc: "Bardos treinados na magia inebriante da Faéria (Feywild), capazes de maravilhar multidões e proteger aliados com esplendor feérico.",
+      features: [
+        { level: 3, name: "Manto de Inspiração & Performance Fascinante", desc: "Com uma **Ação Bônus**, gaste um dado de Inspiração de Bardo: até seu mod de Carisma em aliados ganham **5 PV temporários** (sobe nos níveis 5, 10 e 15) e podem usar a Reação para **mover até seu deslocamento sem provocar ataques de oportunidade**." },
+        { level: 6, name: "Manto de Majestade", desc: "Com uma Ação Bônus, você assume aparência sobrenatural por 1 minuto e pode conjurar *Comando* como **Ação Bônus** em cada turno sem gastar slot." },
+        { level: 14, name: "Majestade Inquebrável", desc: "Com uma Ação Bônus, criaturas que tentarem atacar você pela primeira vez no turno devem passar em salvaguarda de Carisma ou não poderão atacá-lo." }
+      ]
+    },
+    {
+      name: "Colégio das Espadas (Xanathar)",
+      icon: "⚔️",
+      desc: "Artistas das lâminas que realizam façanhas marciais mortais, usando suas armas como foco de conjuração e manobras de floreio.",
+      features: [
+        { level: 3, name: "Estilo de Luta & Floreio de Lâmina", desc: "Você ganha proficiência com armaduras médias e cimitarras, um Estilo de Luta (*Duelismo* ou *Combate com Duas Armas*) e pode gastar Inspiração de Bardo ao acertar um ataque (+3m de deslocamento no turno) para usar **Floreio Defensivo** (+dado no dano e na sua CA), **Floreio Cortante** (dano em adjacentes) ou **Floreio Móvel** (empurra alvo)." },
+        { level: 6, name: "Ataque Extra", desc: "Você pode atacar **duas vezes**, ao invés de uma, sempre que realizar a ação de Ataque no seu turno." },
+        { level: 14, name: "Floreio do Mestre", desc: "Sempre que você usar uma opção de Floreio de Lâmina, você pode rolar **1d6** e usá-lo em vez de gastar um dado de Inspiração de Bardo." }
+      ]
+    },
+    {
+      name: "Colégio dos Sussurros (Xanathar)",
+      icon: "🕷️",
+      desc: "Agentes infiltrados e manipuladores de segredos que usam suas palavras para plantar terror e roubar sombras.",
+      features: [
+        { level: 3, name: "Lâminas Psíquicas & Palavras de Terror", desc: "Quando atingir uma criatura com ataque com arma, você pode gastar um dado de Inspiração de Bardo para causar **2d6 de dano psíquico adicional** (sobe para 3d6 no nv 5, 5d6 no nv 10 e 8d6 no nv 15)." },
+        { level: 6, name: "Manto de Sussurros", desc: "Quando um humanoide morrer a até 9m, você pode usar sua Reação para capturar sua sombra e assumir sua aparência e memórias superficiais por 1 hora." },
+        { level: 14, name: "Conhecimento das Sombras", desc: "Você sussurra frases mágicas para encantar uma criatura (salvaguarda de Sabedoria), fazendo-a acreditar que você conhece seu segredo mais obscuro e obedecer suas ordens por 8 horas." }
+      ]
+    }
+  ],
+  bruxo: [
+    {
+      name: "O Lâmina Maldita / Hexblade (Xanathar)",
+      icon: "🗡️",
+      desc: "Bruxos que forjaram um pacto com uma entidade misteriosa da Umbra (Shadowfell) manifestada em armas sencientes de poder sombrio.",
+      features: [
+        { level: 1, name: "Maldição da Lâmina Maldita & Guerreiro Maldito", desc: "Você ganha proficiência com **armaduras médias, escudos e armas marciais**, e pode usar seu **modificador de Carisma no lugar de Força ou Destreza** para ataques e dano com sua arma do pacto. Com uma **Ação Bônus**, amaldiçoe 1 alvo por 1 minuto: **+bônus de proficiência no dano**, **acerto crítico com 19 ou 20**, e se o alvo morrer você recupera PV igual ao seu nível de bruxo + mod Carisma." },
+        { level: 6, name: "Espectro Amaldiçoado", desc: "Quando você matar um humanoide, pode erguer seu espírito como um **Espectro** obediente com PV temporários iguais à metade do seu nível de bruxo." },
+        { level: 10, name: "Armadura de Maldições", desc: "Quando o alvo amaldiçoado atingir você com uma jogada de ataque, use sua Reação para rolar **1d6**: com **4 ou mais**, o ataque erra você automaticamente." },
+        { level: 14, name: "Mestre das Maldições", desc: "Quando a criatura amaldiçoada pela sua Maldição da Lâmina Maldita morrer, você pode transferir a maldição imediatamente para outra criatura a até 9m." }
+      ]
+    },
+    {
+      name: "O Celestial (Xanathar)",
+      icon: "👼",
+      desc: "Bruxos vinculados a um poderoso ser dos Planos Superiores (como um Solar, Unicórnio ou Ki-rin), canalizando luz sagrada e cura.",
+      features: [
+        { level: 1, name: "Truques Bônus & Luz de Cura", desc: "Você aprende os truques *Luz* e *Chama Sagrada*. Além disso, possui uma reserva de **1 + seu nível de bruxo dados d6** para curar criaturas a até 18m como **Ação Bônus**." },
+        { level: 6, name: "Alma Radiante", desc: "Você tem **Resistência a dano radiante** e, quando conjurar uma magia que cause dano radiante ou de fogo, adiciona seu **modificador de Carisma** a uma rolagem de dano." },
+        { level: 10, name: "Resiliência Celestial", desc: "Ao terminar um descanso curto ou longo, você ganha **PV temporários** iguais ao seu nível de bruxo + mod Carisma, e até 5 aliados ganham metade disso." },
+        { level: 14, name: "Vingança Ardente", desc: "Quando você fizer uma salvaguarda contra a morte no início do turno, pode erguer-se recuperando **metade do seu PV máximo**, causando **2d8 + mod Carisma de dano radiante** e cegando inimigos a até 9m." }
+      ]
+    }
+  ],
+  clerigo: [
+    {
+      name: "Domínio da Forja (Xanathar)",
+      icon: "🔥",
+      desc: "Clérigos devotos aos deuses da metalurgia e criação artesanal, imbuindo armas e armaduras pesadas com fogo sagrado.",
+      features: [
+        { level: 1, name: "Proficiência Bônus & Bênção da Forja", desc: "Você ganha proficiência com **armaduras pesadas** e ferramentas de ferreiro. Ao fim de um descanso longo, pode tocar 1 armadura ou arma não-mágica para torná-la mágica com **+1 de bônus na CA ou nas jogadas de ataque e dano**." },
+        { level: 2, name: "Canalizar Divindade: Bênção do Artesão", desc: "Realize um ritual de 1 hora para criar um item de metal (arma, armadura ou equipamento) no valor de até 100 PO." },
+        { level: 6, name: "Alma da Forja", desc: "Você ganha **Resistência a dano de fogo** e **+1 de bônus na CA** enquanto estiver vestindo armadura pesada." },
+        { level: 8, name: "Golpe Divino", desc: "Uma vez em cada um dos seus turnos ao atingir com ataque com arma, você causa **+1d8 de dano de fogo** extra (+2d8 no 14º nível)." },
+        { level: 17, name: "Santo da Forja e Fogo", desc: "Você se torna **Imune a dano de fogo** e, enquanto vestir armadura pesada, tem **Resistência a dano de concussão, cortante e perfurante** de ataques não-mágicos." }
+      ]
+    },
+    {
+      name: "Domínio da Sepultura / Grave (Xanathar)",
+      icon: "⚰️",
+      desc: "Guardiões da fronteira entre a vida e a morte, combatendo mortos-vivos e protegendo aqueles cuja hora ainda não chegou.",
+      features: [
+        { level: 1, name: "Círculo da Mortalidade & Olhos da Sepultura", desc: "Quando você conjurar uma magia para restaurar PV a uma criatura com **0 PV**, em vez de rolar os dados, você usa o **valor máximo possível para cada dado**. Além disso, conhece *Poupar os Moribundos* com alcance de **9 metros** e pode conjurá-lo como **Ação Bônus**." },
+        { level: 2, name: "Canalizar Divindade: Caminho para a Sepultura", desc: "Com uma Ação, você amaldiçoa 1 criatura a até 9m: na próxima vez que você ou um aliado a atingir com um ataque, o alvo tem **Vulnerabilidade a todo o dano daquele ataque** (dano dobrado!)." },
+        { level: 6, name: "Sentinela na Porta da Morte", desc: "Com uma **Reação** quando você ou uma criatura a até 9m sofrer um **acerto crítico**, você transforma o crítico em um **acerto normal** (usos iguais ao mod de Sabedoria)." },
+        { level: 8, name: "Conjuração Potente", desc: "Adiciona seu **modificador de Sabedoria** ao dano causado por qualquer truque de clérigo." },
+        { level: 17, name: "Guardião de Almas", desc: "Quando um inimigo morrer a até 18m de você, você ou um aliado recupera PV iguais aos Dados de Vida do inimigo." }
+      ]
+    }
+  ],
+  druida: [
+    {
+      name: "Círculo dos Sonhos (Xanathar)",
+      icon: "🌙",
+      desc: "Druidas ligados à Corte de Verão da Faéria, trazendo cura reconfortante e portais feéricos sob a luz do luar.",
+      features: [
+        { level: 2, name: "Bálsamo da Corte de Verão", desc: "Você possui uma reserva de energia feérica igual a **seu nível de druida em dados d6**. Com uma **Ação Bônus**, cure um aliado a até 36m rolando d6s (o alvo também ganha +1 PV temporário por dado gasto)." },
+        { level: 6, name: "Refúgio de Luar e Sombra", desc: "Durante um descanso curto ou longo, você conjura uma esfera invisível de 9m de raio que concede **+5 em Furtividade e Percepção** e oculta a luz de fogueiras." },
+        { level: 10, name: "Caminhos Ocultos", desc: "Com uma **Ação Bônus**, teletransporte-se até **18 metros** (ou teletransporte um aliado voluntário que você tocar até 9 metros)." },
+        { level: 14, name: "Andarilho nos Sonhos", desc: "Ao terminar um descanso curto, você pode conjurar *Sonho*, *Vidência* ou *Círculo de Teletransporte* (para o último local de descanso longo) sem gastar espaço de magia." }
+      ]
+    },
+    {
+      name: "Círculo do Pastor / Shepherd (Xanathar)",
+      icon: "🦌",
+      desc: "Protetores solenes das feras e criaturas feéricas, conjurando totens espirituais que fortalecem todo o grupo e suas invocações.",
+      features: [
+        { level: 2, name: "Fala da Floresta & Espírito Totêmico", desc: "Com uma **Ação Bônus** (1x por descanso curto/longo), invoque um espírito totêmico em uma aura de 18m por 1 minuto:\n• **Espírito do Urso**: Aliados na aura ganham **5 + nível de druida em PV temporários** e Vantagem em testes/salvaguardas de Força.\n• **Espírito do Falcão**: Você pode usar Reação para conceder Vantagem em um ataque na aura.\n• **Espírito do Unicórnio**: Quando você conjurar uma magia que restaure PV com slot, **cada aliado na aura recupera PV iguais ao seu nível de druida**." },
+        { level: 6, name: "Invocador Poderoso", desc: "Feras e fadas invocadas por suas magias têm **+2 PV por Dado de Vida** e seus ataques naturais contam como **mágicos**." },
+        { level: 10, name: "Espírito Guardião", desc: "Quando uma fera ou fada invocada por você terminar o turno na sua aura do Espírito Totêmico, ela recupera PV iguais à metade do seu nível de druida." },
+        { level: 14, name: "Invocação Fiel", desc: "Se você for reduzido a 0 PV ou incapacitado contra sua vontade, *Conjurar Animais* (9º círculo, 4 feras de ND 2) é ativado automaticamente para protegê-lo." }
+      ]
+    }
+  ],
+  feiticeiro: [
+    {
+      name: "Alma Favorecida / Divine Soul (Xanathar)",
+      icon: "🪽",
+      desc: "Feiticeiros cuja centelha mágica vem de uma fonte divina ou ancestral celestial, tendo acesso tanto à lista de Feiticeiro quanto à de Clérigo.",
+      features: [
+        { level: 1, name: "Magia Divina & Favorecido pelos Deuses", desc: "Você pode aprender magias da **lista de Clérigo** além da lista de Feiticeiro. Além disso, se você falhar em uma salvaguarda ou errar uma jogada de ataque, pode rolar **2d4 e somar ao resultado** (1x por descanso curto ou longo)." },
+        { level: 6, name: "Cura Fortalecida", desc: "Quando você ou um aliado a até 1,5m rolar dados para determinar PV recuperados por uma magia, você pode gastar **1 ponto de feitiçaria para rolar novamente** qualquer número desses dados." },
+        { level: 14, name: "Asas Celestiais", desc: "Com uma **Ação Bônus**, você manifesta um par de asas espectrais concedendo **deslocamento de voo de 9 metros**." },
+        { level: 18, name: "Recuperação Sobrenatural", desc: "Com uma **Ação Bônus** quando tiver menos da metade dos seus PV máximos, você recupera uma quantidade de PV igual à **metade do seu máximo de PV** (1x por descanso longo)." }
+      ]
+    },
+    {
+      name: "Adepto das Sombras / Shadow Magic (Xanathar)",
+      icon: "🌑",
+      desc: "Feiticeiros tocados pelo poder da Umbra (Shadowfell), enxergando através da escuridão mágica e invocando cães de mau agouro.",
+      features: [
+        { level: 1, name: "Olhos do Escuro & Força da Sepultura", desc: "Você tem **Visão no Escuro de 36m** e aprende a magia *Escuridão* (se conjurada com 2 pontos de feitiçaria, você enxerga através dela). Quando o dano reduzir você a 0 PV, faça salvaguarda de Carisma (CD 5 + dano sofrido) para **cair para 1 PV em vez disso**." },
+        { level: 6, name: "Cão de Mau Agouro", desc: "Com uma **Ação Bônus** e 3 pontos de feitiçaria, invoque um Cão Sombrio (Lobo Atroz) que persegue 1 alvo; enquanto o cão estiver a até 1,5m do alvo, o alvo tem **Desvantagem em salvaguardas contra suas magias**." },
+        { level: 14, name: "Caminhar nas Sombras", desc: "Na penumbra ou escuridão, você pode usar uma **Ação Bônus para se teletransportar até 36 metros** para outro espaço em penumbra ou escuridão." },
+        { level: 18, name: "Forma Umbral", desc: "Com uma Ação Bônus e 6 pontos de feitiçaria, assuma forma sombria por 1 minuto: **Resistência a todo dano (exceto força e radiante)** e atravesse objetos e criaturas." }
+      ]
+    },
+    {
+      name: "Feiticeiro da Tempestade (Xanathar)",
+      icon: "⛈️",
+      desc: "Conjuradores cujo poder inato ressoa com oPlano Elemental do Ar, cavalgando os ventos e descarregando relâmpagos.",
+      features: [
+        { level: 1, name: "Magia Tempestuosa", desc: "Antes ou depois de conjurar uma magia de 1º círculo ou superior, você pode usar uma **Ação Bônus para voar 3 metros sem provocar ataques de oportunidade**." },
+        { level: 6, name: "Coração da Tempestade", desc: "Você ganha **Resistência a dano elétrico e trovejante**. Sempre que conjurar magia de 1º círculo+ que cause dano elétrico ou trovejante, criaturas escolhidas a até 3m sofrem dano igual à **metade do seu nível de feiticeiro**." },
+        { level: 14, name: "Fúria da Tempestade", desc: "Quando for atingido por um ataque corpo a corpo, use sua **Reação** para causar dano elétrico igual ao seu nível de feiticeiro no atacante e empurrá-lo 6m." },
+        { level: 18, name: "Alma do Vento", desc: "Você ganha **Imunidade a dano elétrico e trovejante** e **deslocamento de voo mágico de 18 metros**." }
+      ]
+    }
+  ],
+  guerreiro: [
+    {
+      name: "Samurai (Xanathar)",
+      icon: "⚔️",
+      desc: "Guerreiros de determinação implacável cujo espírito inabalável garante precisão mortal e resistência sobre-humana.",
+      features: [
+        { level: 3, name: "Espírito de Luta & Cortesão Elegante", desc: "Com uma **Ação Bônus** no seu turno, você concede a si mesmo **Vantagem em todas as jogadas de ataque com arma até o fim do turno** e ganha **5 PV temporários** (10 no nv 10, 15 no nv 15). Você pode usar esse recurso 3 vezes por descanso longo." },
+        { level: 7, name: "Cortesão Elegante", desc: "Você adiciona seu **modificador de Sabedoria** aos testes de Carisma (Persuasão) e ganha **proficiência em salvaguardas de Sabedoria**." },
+        { level: 10, name: "Espírito Incansável", desc: "Quando você rolar iniciativa e não tiver usos restantes de Espírito de Luta, você **recupera 1 uso**." },
+        { level: 15, name: "Golpe Rápido", desc: "Quando você realizar a ação de Ataque e tiver Vantagem contra um alvo, você pode **abrir mão da Vantagem em um ataque para fazer um ataque adicional com arma** contra o mesmo alvo." },
+        { level: 18, name: "Força Antes da Morte", desc: "Se você sofrer dano que o reduza a 0 PV, pode usar sua Reação para **realizar um turno inteiro completo imediatamente** antes de cair." }
+      ]
+    },
+    {
+      name: "Cavaleiro / Cavalier (Xanathar)",
+      icon: "🐎",
+      desc: "Defensores nobres e mestres da linha de frente, marcando inimigos para impedir que ataquem seus aliados.",
+      features: [
+        { level: 3, name: "Marca Inabalável & Nascido para a Sela", desc: "Quando você atingir uma criatura com um ataque corpo a corpo com arma, pode **marcá-la** até o fim do seu próximo turno. Enquanto estiver a até 1,5m de você, a criatura marcada tem **Desvantagem em qualquer ataque que não tenha você como alvo**. Se ela causar dano a outra pessoa, você pode fazer um ataque corpo a corpo especial com Ação Bônus no próximo turno com Vantagem e dano extra igual à metade do seu nível." },
+        { level: 7, name: "Manobra de Proteção", desc: "Quando você ou uma criatura a até 1,5m for atingida por um ataque, use sua **Reação para rolar 1d8 e somar à CA do alvo**; se mesmo assim acertar, o alvo tem **Resistência ao dano do ataque**." },
+        { level: 10, name: "Manter a Linha", desc: "Criaturas provocam ataques de oportunidade seus mesmo quando se movem apenas 1,5m dentro do seu alcance, e se você acertar um ataque de oportunidade, o deslocamento do alvo cai para 0." },
+        { level: 18, name: "Defensor Vigilante", desc: "Você recebe uma **Reação especial em cada turno do combate** (exceto no seu próprio turno) que pode ser usada exclusivamente para desferir ataques de oportunidade." }
+      ]
+    },
+    {
+      name: "Arqueiro Arcano (Xanathar)",
+      icon: "🏹",
+      desc: "Atiradores de elite que infundem suas flechas com magia élfica ancestral para explodir, prender ou banir seus alvos.",
+      features: [
+        { level: 3, name: "Tiro Arcano (Arcane Shot)", desc: "Duas vezes por descanso curto ou longo, ao acertar um tiro com arco curto ou longo, aplique um efeito mágico: **Flecha Explosiva** (+2d6 de força em área de 3m), **Flecha Aprisionadora** (+2d6 de veneno e reduz velocidade), **Flecha das Sombras** (+2d6 psíquico e cega além de 1,5m) ou **Flecha de Banimento**." },
+        { level: 7, name: "Flecha Mágica & Tiro Curvo", desc: "Todas as suas flechas não-mágicas contam como **mágicas** ao serem disparadas. Além disso, quando você **errar um tiro com arco, pode usar uma Ação Bônus para redirecionar o tiro** contra outro alvo a até 18m do original!" },
+        { level: 15, name: "Tiro Sempre Pronto", desc: "Se você rolar iniciativa e não tiver usos restantes de Tiro Arcano, você **recupera 1 uso**." }
+      ]
+    }
+  ],
+  ladino: [
+    {
+      name: "Espadachim / Swashbuckler (Xanathar)",
+      icon: "🤺",
+      desc: "Duelistas audaciosos e carismáticos que dançam pelo campo de batalha com velocidade, graça e estocadas letais no mano a mano.",
+      features: [
+        { level: 3, name: "Jogo de Pés Elegante & Audácia Rakish", desc: "• **Jogo de Pés Elegante**: Se você fizer um ataque corpo a corpo contra uma criatura no seu turno, aquela criatura **não pode fazer ataques de oportunidade contra você** pelo resto do seu turno.\n• **Audácia Rakish**: Você soma seu **modificador de Carisma às rolagens de Iniciativa**. Além disso, você pode aplicar seu **Ataque Furtivo** mesmo sem aliado adjacente se estiver a até 1,5m do alvo, nenhuma outra criatura estiver a até 1,5m de você e você não tiver Desvantagem." },
+        { level: 9, name: " Panache (Charme Duelista)", desc: "Com uma Ação, faça um teste de Persuasão resistido por Intuição do alvo: se for hostil, ele tem Desvantagem contra outros que não sejam você e não pode fazer ataques de oportunidade contra aliados; se não for hostil, fica Enfeitiçado por 1 minuto." },
+        { level: 13, name: "Manobra Elegante", desc: "Use uma **Ação Bônus** para ganhar Vantagem no próximo teste de Acrobacia ou Atletismo no mesmo turno." },
+        { level: 17, name: "Mestre Duelista", desc: "Se você errar uma jogada de ataque, pode **rolar novamente o ataque com Vantagem** (1x por descanso curto ou longo)." }
+      ]
+    },
+    {
+      name: "Inquiridor / Inquisitive (Xanathar)",
+      icon: "🔍",
+      desc: "Detetives implacáveis que leem cada microexpressão e ponto fraco do oponente para aplicar golpes cirúrgicos.",
+      features: [
+        { level: 3, name: "Ouvido para Enganação & Combate Perspicaz", desc: "Em testes de Intuição para detectar mentiras, qualquer resultado **7 ou menor no d20 conta como 8**. Além disso, com uma **Ação Bônus**, faça um teste de Intuição contra Enganação do alvo: se vencer, você pode usar **Ataque Furtivo contra ele por 1 minuto** mesmo sem vantagem." },
+        { level: 9, name: "Olhar Infalível", desc: "Você tem **Vantagem em testes de Percepção e Investigação** se não se mover mais que metade do seu deslocamento no turno." },
+        { level: 17, name: "Olho para a Fraqueza", desc: "Contra o alvo do seu Combate Perspicaz, seu dano de **Ataque Furtivo aumenta em +3d6**." }
+      ]
+    },
+    {
+      name: "Batedor / Scout (Xanathar)",
+      icon: "🏹",
+      desc: "Exploradores furtivos dos ermos que combinam a precisão mortal do ladino com a mobilidade evasiva do patrulheiro.",
+      features: [
+        { level: 3, name: "Escaramuçador & Sobrevivente", desc: "Você ganha proficiência e **Especialização (dobro de proficiência) em Natureza e Sobrevivência**. Além disso, quando um inimigo terminar o turno a até 1,5m de você, use sua **Reação para mover metade do seu deslocamento sem provocar ataques de oportunidade**." },
+        { level: 9, name: "Mobilidade Superior", desc: "Seu deslocamento de caminhada (e natação/escalada) aumenta em **+3 metros**." },
+        { level: 13, name: "Mestre da Emboscada", desc: "Você tem **Vantagem na Iniciativa** e o primeiro alvo que você atingir na 1ª rodada concede Vantagem para todos os ataques contra ele até o seu próximo turno." },
+        { level: 17, name: "Golpe Súbito", desc: "Quando usar a ação de Ataque, você pode fazer um **ataque adicional com Ação Bônus** que também pode se beneficiar do seu **Ataque Furtivo** (desde que seja contra um segundo alvo diferente!)." }
+      ]
+    }
+  ],
+  mago: [
+    {
+      name: "Mago de Guerra / War Magic (Xanathar)",
+      icon: "🛡️",
+      desc: "Conjuradores de batalha que fundem Abjuração e Evocação para reagir instantaneamente na linha de frente.",
+      features: [
+        { level: 2, name: "Deflexão Arcana & Sagacidade Tática", desc: "• **Deflexão Arcana**: Quando for atingido por um ataque ou falhar em uma salvaguarda, use sua **Reação para ganhar +2 na CA** contra aquele ataque ou **+4 naquela salvaguarda** (até o fim do próximo turno só pode conjurar truques).\n• **Sagacidade Tática**: Você adiciona seu **modificador de Inteligência às rolagens de Iniciativa**." },
+        { level: 6, name: "Surto de Poder", desc: "Armazene cargas de poder (ao dissipar/anular magias ou terminar descanso) para causar dano extra de força igual à metade do seu nível de mago." },
+        { level: 10, name: "Magia Durável", desc: "Enquanto você estiver mantendo **Concentração** em uma magia, você ganha **+2 de bônus na CA e em todos os testes de resistência**." },
+        { level: 14, name: " Mortalha Defletora", desc: "Sempre que usar sua Deflexão Arcana, até 3 criaturas a até 18m sofrem dano de força igual à metade do seu nível de mago." }
+      ]
+    }
+  ],
+  monge: [
+    {
+      name: "Estilo do Kensei (Xanathar)",
+      icon: "⚔️",
+      desc: "Monges que tratam suas armas escolhidas — espada e arco — como extensões caligráficas do próprio corpo e espírito.",
+      features: [
+        { level: 3, name: "Caminho do Kensei", desc: "Escolha 2 armas (1 corpo a corpo e 1 à distância, como Espada Longa e Arco Longo) como **Armas Kensei**:\n• **Aparar Ágil**: Se você fizer um ataque desarmado como parte da ação de Ataque enquanto segura uma arma Kensei corpo a corpo, você ganha **+2 na CA** até o início do seu próximo turno.\n• **Tiro do Kensei**: Com uma **Ação Bônus**, seus ataques à distância com arma Kensei causam **+1d4 de dano extra** neste turno." },
+        { level: 6, name: "Um com a Lâmina", desc: "Suas Armas Kensei contam como **mágicas** e você pode gastar **1 ponto de Ki** ao acertar para causar dano extra igual ao seu dado de Artes Marciais." },
+        { level: 11, name: "Aguçar a Lâmina", desc: "Com uma Ação Bônus, gaste de **1 a 3 pontos de Ki** para conceder à sua arma Kensei um bônus de **+1 a +3 no ataque e dano** por 1 minuto." },
+        { level: 17, name: "Precisão Infalível", desc: "Se você errar uma jogada de ataque com uma arma de monge no seu turno, você pode **rolar novamente o ataque** (1x por turno)." }
+      ]
+    },
+    {
+      name: "Estilo do Mestre Bêbado (Xanathar)",
+      icon: "🍶",
+      desc: "Artistas marciais que imitam os movimentos cambaleantes e imprevisíveis de um bêbado para confundir múltiplos oponentes.",
+      features: [
+        { level: 3, name: "Técnica do Bêbado", desc: "Sempre que você usar **Rajada de Golpes**, você ganha o benefício da ação de **Desengajar** (não provoca ataques de oportunidade) e seu deslocamento aumenta em **+3 metros** até o fim do turno." },
+        { level: 6, name: "Cambaleio", desc: "Quando estiver caído, levantar-se custa apenas **1,5m de movimento**. Além disso, quando um inimigo errar um ataque corpo a corpo contra você, gaste **1 ponto de Ki e sua Reação** para fazer aquele ataque atingir outra criatura a até 1,5m de você!" },
+        { level: 11, name: "Sorte do Bêbado", desc: "Quando você tiver Desvantagem em um ataque, teste ou salvaguarda, gaste **2 pontos de Ki para cancelar a Desvantagem**." },
+        { level: 17, name: "Frenesi Embriagado", desc: "Ao usar Rajada de Golpes, você pode fazer até **5 ataques desarmados** (total de 7 ataques no turno!) desde que cada golpe extra seja contra uma criatura diferente." }
+      ]
+    },
+    {
+      name: "Estilo da Alma Solar (Xanathar)",
+      icon: "☀️",
+      desc: "Monges que canalizam seu Ki interior em rajadas ofuscantes de luz radiante e esferas solares explosivas.",
+      features: [
+        { level: 3, name: "Raio de Sol Radiante", desc: "Você ganha um ataque mágico especial à distância (alcance 9m, usa Destreza e dado de Artes Marciais de **dano radiante**) que pode substituir qualquer ataque e usar Rajada de Golpes (1 Ki para +2 raios)." },
+        { level: 6, name: "Golpe do Arco Ardente", desc: "Após realizar a ação de Ataque, gaste **2 pontos de Ki** para conjurar *Mãos Flamejantes* como **Ação Bônus**." },
+        { level: 11, name: "Explosão Solar Ardente", desc: "Com uma Ação, lance uma esfera radiante a até 45m (raio de 6m): criaturas fazem salvaguarda de Constituição ou sofrem **2d6 de dano radiante** (+2d6 por ponto de Ki gasto, até 8d6)." },
+        { level: 17, name: "Escudo Solar", desc: "Você emite luz plena em 9m; quando for atingido em corpo a corpo, use sua Reação para causar **5 + mod de Sabedoria de dano radiante** ao atacante." }
+      ]
+    }
+  ],
+  paladino: [
+    {
+      name: "Juramento da Conquista (Xanathar)",
+      icon: "👑",
+      desc: "Cavaleiros implacáveis que buscam esmagar as forças do caos e governar com punho de ferro através do medo absoluto.",
+      features: [
+        { level: 3, name: "Canalizar Divindade: Presença Conquistadora & Golpe Guiado", desc: "• **Presença Conquistadora**: Com uma Ação, inimigos a até 9m fazem salvaguarda de Sabedoria ou ficam **Amedrontados** por 1 minuto.\n• **Golpe Guiado**: Quando fizer uma jogada de ataque, use Canalizar Divindade para ganhar **+10 de bônus na rolagem de ataque**." },
+        { level: 7, name: "Aura de Conquista", desc: "Se uma criatura estiver **Amedrontada por você** e dentro da sua aura de 3m (9m no nv 18), o **deslocamento dela é reduzido a 0** e ela sofre **dano psíquico igual à metade do seu nível de paladino** no início do turno dela." },
+        { level: 15, name: "Repreensão Desdenhosa", desc: "Sempre que uma criatura atingir você com um ataque, ela sofre **dano psíquico igual ao seu modificador de Carisma**." },
+        { level: 20, name: "Conquistador Invencível", desc: "Por 1 minuto: você tem **Resistência a todo tipo de dano**, faz **1 ataque adicional** na ação de Ataque e seus golpes acertam **crítico com 19 ou 20**." }
+      ]
+    },
+    {
+      name: "Juramento da Redenção (Xanathar)",
+      icon: "🕊️",
+      desc: "Guardiões da paz que usam a violência apenas como último recurso, absorvendo os ferimentos de seus companheiros.",
+      features: [
+        { level: 3, name: "Canalizar Divindade: Emissário da Paz & Repreender o Violento", desc: "• **Emissário da Paz**: Com uma Ação Bônus, receba **+5 de bônus em testes de Carisma (Persuasão)** por 10 minutos.\n• **Repreender o Violento**: Quando um inimigo a até 9m causar dano a outra criatura que não seja você, use sua **Reação** para forçá-lo a fazer salvaguarda de Sabedoria ou sofrer **dano radiante igual ao dano que ele acabou de causar**." },
+        { level: 7, name: "Aura do Guardião", desc: "Quando uma criatura a até 3m de você (9m no nv 18) sofrer dano, você pode usar sua **Reação para assumir magicamente aquele dano em vez dela**." },
+        { level: 15, name: "Espírito Protetor", desc: "Em combate, no final do seu turno, você **recupera 1d6 + metade do seu nível de paladino em PV** se estiver com menos da metade dos seus PV máximos." }
+      ]
+    }
+  ],
+  patrulheiro: [
+    {
+      name: "Perseguidor Obscuro / Gloom Stalker (Xanathar)",
+      icon: "🦇",
+      desc: "Caçadores do Subterrâneo e dos cantos mais sombrios do mundo, invisíveis na escuridão e letais no primeiro segundo do combate.",
+      features: [
+        { level: 3, name: "Emboscador Terrível & Visão Umbral", desc: "• **Emboscador Terrível**: Você soma seu **modificador de Sabedoria à Iniciativa**. No seu **primeiro turno de cada combate**, seu deslocamento aumenta em **+3m** e, se você usar a ação de Ataque, faz **1 ataque adicional com arma que causa +1d8 de dano extra**.\n• **Visão Umbral**: Você ganha **Visão no Escuro de 18m** (ou +9m se já tiver) e, enquanto estiver na escuridão, você é **Invisível para qualquer criatura que dependa de Visão no Escuro** para vê-lo!" },
+        { level: 7, name: "Mente de Ferro", desc: "Você adquire **proficiência em salvaguardas de Sabedoria** (ou Inteligência/Carisma se já tiver)." },
+        { level: 11, name: "Rajada do Perseguidor", desc: "Uma vez em cada um dos seus turnos, quando você **errar um ataque com arma**, você pode fazer **outro ataque com arma** como parte da mesma ação." },
+        { level: 15, name: "Esquiva Sombria", desc: "Quando uma criatura atacar você e não tiver vantagem, use sua **Reação para impor Desvantagem** naquela jogada de ataque." }
+      ]
+    },
+    {
+      name: "Andarilho do Horizonte (Xanathar)",
+      icon: "🌀",
+      desc: "Guardiões dos portais planares que se teletransportam entre cada golpe e convertem seus ataques em pura energia de força.",
+      features: [
+        { level: 3, name: "Guerreiro Planar & Detectar Portal", desc: "Com uma **Ação Bônus**, escolha 1 criatura a até 9m: na próxima vez que você a atingir neste turno, **todo o dano do ataque se torna dano de força** e o alvo sofre **+1d8 de dano de força extra** (+2d8 no 11º nível)." },
+        { level: 7, name: "Passo Etéreo", desc: "Com uma **Ação Bônus**, você conjura *Forma Etérea* até o fim do turno atual (1x por descanso curto ou longo)." },
+        { level: 11, name: "Ataque Distante", desc: "Quando você usar a ação de Ataque, pode **se teletransportar até 3 metros antes de cada ataque**! Se você atacar pelo menos duas criaturas diferentes com a ação, pode fazer **1 ataque adicional** contra uma terceira criatura." },
+        { level: 15, name: "Defesa Espectral", desc: "Quando você sofrer dano de um ataque, pode usar sua **Reação para receber Resistência a todo o dano daquele ataque**." }
+      ]
+    },
+    {
+      name: "Exterminador de Monstros / Monster Slayer (Xanathar)",
+      icon: "🧛",
+      desc: "Caçadores dedicados a abater vampiros, dragões, demônios e conjuradores, anulando suas defesas sobrenaturais.",
+      features: [
+        { level: 3, name: "Sentido do Caçador & Presa do Exterminador", desc: "Com uma **Ação Bônus**, marque 1 presa a até 18m: a primeira vez em cada turno que você a atingir com ataque com arma, ela sofre **+1d6 de dano extra**. Além disso, você pode descobrir todas as imunidades, resistências e vulnerabilidades de uma criatura." },
+        { level: 7, name: "Defesa Sobrenatural", desc: "Sempre que o alvo da sua Presa do Exterminador forçar você a fazer um teste de resistência (ou escapar de agarrão), você adiciona **+1d6** à sua rolagem." },
+        { level: 11, name: "Nêmesis do Usuário de Magia", desc: "Quando você vir uma criatura a até 18m conjurando uma magia ou se teletransportando, use sua **Reação** para forçá-la a passar em salvaguarda de Sabedoria ou a **magia/teletransporte falha e é desperdiçada**." },
+        { level: 15, name: "Contra-Ataque do Exterminador", desc: "Se a sua presa forçar você a fazer uma salvaguarda, use sua Reação para desferir um ataque com arma contra ela; se o ataque acertar, **você tem sucesso automático na salvaguarda**!" }
+      ]
+    }
+  ]
+};
+
+CLASSES_DATA.forEach(cls => {
+  const extraSubs = XANATHAR_SUBCLASSES_BY_CLASS[cls.id];
+  if (Array.isArray(extraSubs) && Array.isArray(cls.subclasses)) {
+    extraSubs.forEach(sub => {
+      if (!cls.subclasses.some(existing => existing.name === sub.name)) {
+        cls.subclasses.push(sub);
+      }
+    });
+  }
+});
+
+// ============================================================================
 // 🎯 NÍVEIS OFICIAIS DE AUMENTO DE ATRIBUTO / TALENTO (ASI) POR CLASSE
 // ============================================================================
 const CLASS_ASI_LEVELS = {

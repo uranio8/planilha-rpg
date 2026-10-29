@@ -19,6 +19,7 @@ const dataRulesXp = fs.readFileSync(path.join(srcDir, 'data', 'rules_xp.js'), 'u
 const dataHirelings = fs.readFileSync(path.join(srcDir, 'data', 'hirelings.js'), 'utf8');
 const dataBastions = fs.readFileSync(path.join(srcDir, 'data', 'bastions.js'), 'utf8');
 const dataFeats = fs.readFileSync(path.join(srcDir, 'data', 'feats.js'), 'utf8');
+const dataBackgrounds = fs.readFileSync(path.join(srcDir, 'data', 'backgrounds.js'), 'utf8');
 
 // Modular App Logic
 const jsQrCode = fs.readFileSync(path.join(srcDir, 'js', 'qrcode_lib.js'), 'utf8');
@@ -60,6 +61,7 @@ ${dataRulesXp}
 ${dataHirelings}
 ${dataBastions}
 ${dataFeats}
+${dataBackgrounds}
 ${jsAudioSynth}
 ${jsQrCode}
 ${jsCore}

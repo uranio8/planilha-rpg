@@ -13851,6 +13851,298 @@
       color: #cbd5e1;
     }
 
+    /* ==========================================================================
+       🎒 ISSUE-158: OVERHAUL VISUAL DO BAÚ COLETIVO & ADIÇÃO RÁPIDA DE RECURSOS
+       ========================================================================== */
+    .equip-table,
+    .stash-items-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      color: var(--text-main);
+    }
+    .equip-table thead th,
+    .stash-items-table thead th {
+      background: rgba(8, 12, 22, 0.85);
+      color: var(--primary-light);
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 9px 12px;
+      border-bottom: 1px solid rgba(245, 158, 11, 0.28);
+      text-align: left;
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    .equip-table tbody tr,
+    .stash-items-table tbody tr {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      transition: background 0.15s ease;
+    }
+    .equip-table tbody tr:hover,
+    .stash-items-table tbody tr:hover {
+      background: rgba(245, 158, 11, 0.06);
+    }
+    .equip-table tbody td,
+    .stash-items-table tbody td {
+      padding: 9px 12px;
+      vertical-align: middle;
+    }
+
+    /* Barra de Resumo e Filtros do Baú */
+    .stash-summary-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: rgba(8, 12, 22, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+    .stash-filter-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      align-items: center;
+    }
+    .stash-filter-chip {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 16px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .stash-filter-chip:hover {
+      background: rgba(245, 158, 11, 0.14);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #fff;
+    }
+    .stash-filter-chip.active {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(217, 119, 6, 0.2));
+      border-color: var(--primary);
+      color: #fef08a;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.25);
+    }
+    .stash-filter-count {
+      background: rgba(0, 0, 0, 0.45);
+      color: #fbbf24;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 10px;
+    }
+    .stash-search-input {
+      background: #080c16 !important;
+      border: 1px solid var(--border-color) !important;
+      color: #fff !important;
+      font-size: 11.5px !important;
+      padding: 5px 10px !important;
+      border-radius: 7px !important;
+      width: 190px !important;
+      max-width: 100% !important;
+    }
+    .stash-search-input:focus {
+      border-color: var(--primary) !important;
+    }
+
+    /* Adição Rápida Inline & Presets de Suprimentos */
+    .stash-quick-add-box {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(8, 12, 22, 0.9));
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .stash-quick-add-row {
+      display: grid;
+      grid-template-columns: 2fr 70px 1.2fr 1.2fr auto;
+      gap: 6px;
+      align-items: center;
+    }
+    @media (max-width: 768px) {
+      .stash-quick-add-row {
+        grid-template-columns: 1fr 1fr;
+      }
+      .stash-quick-add-row > input:first-child {
+        grid-column: 1 / -1;
+      }
+      .stash-quick-add-row > button {
+        grid-column: 1 / -1;
+      }
+    }
+    .stash-quick-add-row input,
+    .stash-quick-add-row select {
+      padding: 6px 8px !important;
+      font-size: 11.5px !important;
+      height: 32px !important;
+      background: #070b14 !important;
+    }
+    .stash-preset-pills {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 5px;
+    }
+    .btn-stash-preset {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      color: #e2e8f0;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-stash-preset:hover {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: #38bdf8;
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    /* Botões Rápidos de Ouro no Tesouro Coletivo */
+    .stash-gold-quick-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(245, 158, 11, 0.2);
+    }
+    .btn-gold-quick {
+      background: rgba(245, 158, 11, 0.14);
+      border: 1px solid rgba(245, 158, 11, 0.38);
+      color: #fde047;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-gold-quick:hover {
+      background: rgba(245, 158, 11, 0.3);
+      border-color: #fbbf24;
+      color: #fff;
+      transform: translateY(-1px);
+    }
+    .btn-gold-quick.spend {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
+    }
+    .btn-gold-quick.spend:hover {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: #f87171;
+      color: #fff;
+    }
+
+    /* Stepper de Quantidade (- / +) na Tabela do Baú */
+    .stash-qty-stepper {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 2px 4px;
+    }
+    .btn-stash-qty {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.06);
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+    .btn-stash-qty:hover {
+      background: var(--primary);
+      color: #000;
+      border-color: var(--primary-light);
+    }
+    .stash-qty-val {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 800;
+      color: #fff;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    /* Badges Semânticas de Portador e Categoria */
+    .carrier-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .carrier-badge.is-stash {
+      background: rgba(56, 189, 248, 0.15);
+      color: #7dd3fc;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+    }
+    .carrier-badge.is-hero {
+      background: rgba(16, 185, 129, 0.16);
+      color: #6ee7b7;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+    .stash-cat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: #cbd5e1;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 2px 7px;
+      border-radius: 5px;
+      white-space: nowrap;
+    }
+    .stash-item-desc {
+      font-size: 10.5px;
+      color: var(--text-dim);
+      margin-top: 2px;
+      line-height: 1.35;
+    }
+
   </style>
 
 

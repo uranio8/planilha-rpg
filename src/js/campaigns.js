@@ -446,6 +446,224 @@ function renderCampaignSessions(camp) {
   `).join('');
 }
 
+// --- FILTROS, ÍCONES E UTILITÁRIOS DO BAÚ COLETIVO (ISSUE-158) ---
+var activePartyStashFilter = 'all';
+var activePartyStashSearch = '';
+
+const PARTY_ITEM_CATEGORY_ICONS = {
+  'Poções': '🧪',
+  'Tesouros & Gemas': '💎',
+  'Armas': '⚔️',
+  'Armaduras': '🛡️',
+  'Itens Mágicos': '✨',
+  'Documentos & Pistas': '📜',
+  'Ferramentas': '🧰',
+  'Equipamento de Aventura': '🎒',
+  'Geral': '🎒'
+};
+
+function getPartyItemCategoryIcon(category) {
+  if (!category) return '🎒';
+  if (PARTY_ITEM_CATEGORY_ICONS[category]) return PARTY_ITEM_CATEGORY_ICONS[category];
+  const low = String(category).toLowerCase();
+  if (low.includes('poç') || low.includes('poc')) return '🧪';
+  if (low.includes('tesouro') || low.includes('gema') || low.includes('arte')) return '💎';
+  if (low.includes('arma') && !low.includes('armadura')) return '⚔️';
+  if (low.includes('armadura') || low.includes('escudo')) return '🛡️';
+  if (low.includes('mágic') || low.includes('magic')) return '✨';
+  if (low.includes('doc') || low.includes('pergaminho') || low.includes('pista')) return '📜';
+  if (low.includes('ferramenta') || low.includes('kit')) return '🧰';
+  return '🎒';
+}
+
+function isCarrierStash(carrier) {
+  if (!carrier) return true;
+  const c = String(carrier).trim();
+  return c === 'Baú do Grupo' || c === 'Mochila Coletiva' || c === 'Mochila Coletiva / Carroça';
+}
+
+function populateStashCompendiumDatalist() {
+  if (typeof document === 'undefined') return;
+  const dl = document.getElementById('stash-compendium-datalist');
+  if (!dl) return;
+  if (dl.children && dl.children.length > 0) return;
+
+  const presetNames = [
+    'Poção de Cura Menor (2d4+2)',
+    'Poção de Cura Maior (4d4+4)',
+    'Ração de Viagem (1 dia)',
+    'Tocha',
+    'Flechas (20)',
+    'Virotes de Besta (20)',
+    'Objeto de Arte (25 PO)',
+    'Gema Preciosa (50 PO)',
+    'Pergaminho Mágico (1º Círculo)',
+    'Pergaminho Mágico (2º Círculo)',
+    'Kit de Curandeiro',
+    'Ferramentas de Ladrão',
+    'Corda de Cânhamo (15m)',
+    'Pé de Cabra'
+  ];
+
+  const seen = new Set();
+  const optionsHtml = [];
+  presetNames.forEach(name => {
+    seen.add(name.toLowerCase());
+    optionsHtml.push(`<option value="${name.replace(/"/g, '&quot;')}"></option>`);
+  });
+
+  if (typeof EQUIPMENT_DATA !== 'undefined' && Array.isArray(EQUIPMENT_DATA)) {
+    EQUIPMENT_DATA.forEach(eq => {
+      if (eq && eq.name && !seen.has(eq.name.toLowerCase())) {
+        seen.add(eq.name.toLowerCase());
+        optionsHtml.push(`<option value="${String(eq.name).replace(/"/g, '&quot;')}"></option>`);
+      }
+    });
+  }
+
+  dl.innerHTML = optionsHtml.join('');
+}
+
+function populateQuickAddCarrierSelects(camp, campPlayers) {
+  if (typeof document === 'undefined') return;
+  const players = campPlayers || (camp && camp.playerIds && camp.playerIds.length > 0 && typeof PLAYERS !== 'undefined'
+    ? camp.playerIds.map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(Boolean)
+    : (typeof PLAYERS !== 'undefined' ? PLAYERS : [])) || [];
+
+  ['sel-qadd-stash-carrier', 'sel-qadd-modal-carrier'].forEach(selId => {
+    const sel = document.getElementById(selId);
+    if (!sel) return;
+    const prevVal = sel.value || 'Baú do Grupo';
+    sel.innerHTML = `
+      <option value="Baú do Grupo">📦 Baú do Grupo</option>
+      <option value="Mochila Coletiva">🐴 Mochila Coletiva</option>
+      ${players.map(p => `<option value="${p.name}">👤 ${p.name}</option>`).join('')}
+    `;
+    if ([...sel.options || []].some(o => o.value === prevVal)) {
+      sel.value = prevVal;
+    }
+  });
+}
+
+function filterPartyStashItems(items) {
+  const list = Array.isArray(items) ? items : [];
+  const f = activePartyStashFilter || 'all';
+  const q = (activePartyStashSearch || '').trim().toLowerCase();
+
+  return list.filter(it => {
+    if (!it) return false;
+    if (f === 'in_stash' && !isCarrierStash(it.carrier)) return false;
+    if (f === 'with_heroes' && isCarrierStash(it.carrier)) return false;
+    if (f !== 'all' && f !== 'in_stash' && f !== 'with_heroes') {
+      const cat = it.category || 'Equipamento de Aventura';
+      if (cat !== f) return false;
+    }
+    if (q) {
+      const hay = `${it.name || ''} ${it.category || ''} ${it.carrier || ''} ${it.desc || ''}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function renderStashSummaryToolbar(stash, targetElId) {
+  if (typeof document === 'undefined') return;
+  const bar = document.getElementById(targetElId);
+  if (!bar) return;
+
+  const items = Array.isArray(stash?.items) ? stash.items : [];
+  const totalDistinct = items.length;
+  const totalUnits = items.reduce((acc, it) => acc + (parseInt(it.qty, 10) || 1), 0);
+  const totalWeight = items.reduce((acc, it) => {
+    const w = parseFloat(it.weight) || 0;
+    const q = parseInt(it.qty, 10) || 1;
+    return acc + (w * q);
+  }, 0);
+
+  const inStashCount = items.filter(it => isCarrierStash(it.carrier)).length;
+  const withHeroesCount = items.filter(it => !isCarrierStash(it.carrier)).length;
+  const countByCat = (cat) => items.filter(it => (it.category || 'Equipamento de Aventura') === cat).length;
+
+  const chips = [
+    { key: 'all', label: '🌐 Todos', count: totalDistinct },
+    { key: 'in_stash', label: '📦 No Baú', count: inStashCount },
+    { key: 'with_heroes', label: '👤 Com Heróis', count: withHeroesCount },
+    { key: 'Poções', label: '🧪 Poções', count: countByCat('Poções') },
+    { key: 'Tesouros & Gemas', label: '💎 Tesouros', count: countByCat('Tesouros & Gemas') },
+    { key: 'Armas', label: '⚔️ Armas', count: countByCat('Armas') },
+    { key: 'Equipamento de Aventura', label: '🎒 Suprimentos', count: countByCat('Equipamento de Aventura') },
+    { key: 'Documentos & Pistas', label: '📜 Pergaminhos & Pistas', count: countByCat('Documentos & Pistas') }
+  ];
+
+  const searchValEscaped = String(activePartyStashSearch || '').replace(/"/g, '&quot;');
+
+  bar.innerHTML = `
+    <div class="stash-filter-chips">
+      ${chips.map(c => `
+        <button type="button" class="stash-filter-chip ${activePartyStashFilter === c.key ? 'active' : ''}" onclick="setPartyStashCategoryFilter('${c.key}')">
+          <span>${c.label}</span>
+          <span class="chip-count">${c.count}</span>
+        </button>
+      `).join('')}
+    </div>
+    <div class="stash-summary-right">
+      <span class="stash-weight-pill" title="Volume e peso total acumulado no inventário do grupo">⚖️ ${totalUnits} unid. • ${Number(totalWeight.toFixed(1))} kg</span>
+      <input type="text" class="stash-search-input" placeholder="🔍 Filtrar item, herói ou categoria..." value="${searchValEscaped}" oninput="handlePartyStashSearch(this.value)">
+    </div>
+  `;
+}
+
+function renderPartyStashItemRowHtml(it) {
+  const cat = it.category || 'Equipamento de Aventura';
+  const icon = getPartyItemCategoryIcon(cat);
+  const inStash = isCarrierStash(it.carrier);
+  const carrierLabel = inStash ? `📦 ${it.carrier || 'Baú do Grupo'}` : `👤 ${it.carrier}`;
+  const carrierClass = inStash ? 'is-stash' : 'is-hero';
+  const qty = parseInt(it.qty, 10) || 1;
+  const unitW = parseFloat(it.weight) || 0;
+  const totalW = Number((unitW * qty).toFixed(2));
+  const weightDisplay = unitW > 0
+    ? (qty > 1 ? `${totalW} kg <span style="font-size:9px; opacity:0.65;">(${unitW}kg/un)</span>` : `${unitW} kg`)
+    : '-';
+
+  return `
+    <tr>
+      <td>
+        <div class="stash-item-name-cell">
+          <div class="stash-item-title-row">
+            <span style="font-size:14px;">${icon}</span>
+            <b style="color:#fff;">${it.name}</b>
+          </div>
+          ${it.desc ? `<div class="stash-item-desc">${it.desc}</div>` : ''}
+        </div>
+      </td>
+      <td style="text-align:center;">
+        <div class="stash-qty-stepper">
+          <button type="button" class="btn-stash-qty minus" onclick="adjustPartyItemQty('${it.id}', -1)" title="Consumir / Reduzir 1 unidade">−</button>
+          <span class="stash-qty-val">${qty}</span>
+          <button type="button" class="btn-stash-qty plus" onclick="adjustPartyItemQty('${it.id}', 1)" title="Adicionar +1 unidade">+</button>
+        </div>
+      </td>
+      <td style="text-align:center;"><span style="font-size:11px; color:var(--text-dim);">${weightDisplay}</span></td>
+      <td>
+        <span class="stash-cat-pill"><span>${icon}</span> <span>${cat}</span></span>
+      </td>
+      <td>
+        <span class="carrier-badge ${carrierClass}" title="${inStash ? 'Guardado no estoque coletivo do grupo' : 'Em posse de ' + it.carrier}">${carrierLabel}</span>
+      </td>
+      <td style="text-align:right; white-space:nowrap;">
+        ${inStash
+          ? `<button type="button" class="btn-secondary" style="padding:3px 7px; font-size:10px; border-color:rgba(56,189,248,0.35); color:#7dd3fc;" onclick="takePartyItemToPlayer('${it.id}')" title="Transferir do baú para a mochila de um herói">📥 Pegar</button>`
+          : `<button type="button" class="btn-secondary" style="padding:3px 7px; font-size:10px; border-color:rgba(245,158,11,0.38); color:#fcd34d;" onclick="returnPartyItemToStash('${it.id}')" title="Devolver de ${it.carrier} para o Baú do Grupo">🔄 Ao Baú</button>
+             <button type="button" class="btn-secondary" style="padding:3px 6px; font-size:10px;" onclick="takePartyItemToPlayer('${it.id}')" title="Transferir para outro herói">📥</button>`
+        }
+        <button type="button" class="btn-secondary" style="padding:3px 6px; font-size:10px;" onclick="openPartyItemModal('${it.id}')" title="Editar detalhes do item">✏️</button>
+        <button type="button" class="btn-secondary" style="padding:3px 6px; font-size:10px; color:#f87171;" onclick="deletePartyItem('${it.id}')" title="Remover item">🗑️</button>
+      </td>
+    </tr>
+  `;
+}
+
 function renderCampaignPartyStash(camp, campPlayers) {
   const goldDisplay = document.getElementById('stash-gold-amount');
   const itemsTbody = document.getElementById('stash-items-tbody');
@@ -455,24 +673,20 @@ function renderCampaignPartyStash(camp, campPlayers) {
 
   if (goldDisplay) goldDisplay.innerText = `${stash.gold || 0} PO`;
 
+  populateStashCompendiumDatalist();
+  populateQuickAddCarrierSelects(camp, campPlayers);
+  renderStashSummaryToolbar(stash, 'stash-summary-bar');
+
   if (itemsTbody) {
     if (!stash.items || stash.items.length === 0) {
-      itemsTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:15px; color:var(--text-muted);">O baú coletivo está vazio. Adicione itens encontrados na aventura!</td></tr>`;
+      itemsTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--text-muted);">O baú coletivo está vazio. Use a <b>Adição Rápida</b> acima ou os botões de suprimentos para adicionar recursos!</td></tr>`;
     } else {
-      itemsTbody.innerHTML = stash.items.map(it => `
-        <tr>
-          <td><b style="color:#fff;">${it.name}</b></td>
-          <td style="text-align:center;"><span class="badge badge-lvl">${it.qty || 1}</span></td>
-          <td style="text-align:center;"><span style="font-size:10.5px; color:var(--text-dim);">${it.weight ? it.weight + ' kg' : '-'}</span></td>
-          <td><span style="font-size:11px; color:var(--text-muted);">${it.category || 'Geral'}</span></td>
-          <td><span class="carrier-badge">🎒 ${it.carrier || 'Baú do Grupo'}</span></td>
-          <td style="text-align:right;">
-            <button class="btn-secondary" style="padding:3px 6px; font-size:10px;" onclick="takePartyItemToPlayer('${it.id}')" title="Transferir para a mochila de um herói">📥 Pegar</button>
-            <button class="btn-secondary" style="padding:3px 6px; font-size:10px;" onclick="openPartyItemModal('${it.id}')" title="Editar item">✏️</button>
-            <button class="btn-secondary" style="padding:3px 6px; font-size:10px; color:#f87171;" onclick="deletePartyItem('${it.id}')" title="Remover item">🗑️</button>
-          </td>
-        </tr>
-      `).join('');
+      const filtered = filterPartyStashItems(stash.items);
+      if (filtered.length === 0) {
+        itemsTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:16px; color:var(--text-muted);">Nenhum item encontrado para o filtro selecionado. <button type="button" class="btn-secondary" style="padding:2px 8px; font-size:10px; margin-left:6px;" onclick="setPartyStashCategoryFilter('all'); handlePartyStashSearch('');">Limpar Filtros</button></td></tr>`;
+      } else {
+        itemsTbody.innerHTML = filtered.map(it => renderPartyStashItemRowHtml(it)).join('');
+      }
     }
   }
 
@@ -1946,28 +2160,25 @@ function renderPartyStashViewer() {
   const goldEl = document.getElementById('party-stash-modal-gold');
   if (goldEl) goldEl.innerText = `${stash.gold || 0} PO`;
 
+  const campPlayers = (camp.playerIds && camp.playerIds.length > 0 && typeof PLAYERS !== 'undefined'
+    ? camp.playerIds.map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(Boolean)
+    : (typeof PLAYERS !== 'undefined' ? PLAYERS : [])) || [];
+
+  populateStashCompendiumDatalist();
+  populateQuickAddCarrierSelects(camp, campPlayers);
+  renderStashSummaryToolbar(stash, 'modal-stash-summary-bar');
+
   const tbody = document.getElementById('party-stash-modal-tbody');
   if (tbody) {
     if (!stash.items || stash.items.length === 0) {
       tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-muted);">O baú coletivo está vazio.</td></tr>`;
     } else {
-      tbody.innerHTML = stash.items.map(it => `
-        <tr>
-          <td>
-            <b style="color:#fff;">${it.name}</b>
-            ${it.desc ? `<div style="font-size:10px; color:var(--text-dim);">${it.desc}</div>` : ''}
-          </td>
-          <td style="text-align:center;"><span class="badge badge-lvl">${it.qty || 1}</span></td>
-          <td style="text-align:center;"><span style="font-size:10.5px; color:var(--text-dim);">${it.weight ? it.weight + ' kg' : '-'}</span></td>
-          <td><span style="font-size:11px; color:var(--text-muted);">${it.category || 'Geral'}</span></td>
-          <td><span class="carrier-badge">🎒 ${it.carrier || 'Baú do Grupo'}</span></td>
-          <td style="text-align:right;">
-            <button class="btn-secondary" style="padding:2px 6px; font-size:10px;" onclick="takePartyItemToPlayer('${it.id}')" title="Transferir para a mochila de um herói">📥 Pegar</button>
-            <button class="btn-secondary" style="padding:2px 6px; font-size:10px;" onclick="openPartyItemModal('${it.id}')" title="Editar item">✏️</button>
-            <button class="btn-secondary" style="padding:2px 6px; font-size:10px; color:#f87171;" onclick="deletePartyItem('${it.id}')" title="Remover item">🗑️</button>
-          </td>
-        </tr>
-      `).join('');
+      const filtered = filterPartyStashItems(stash.items);
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:16px; color:var(--text-muted);">Nenhum item encontrado para o filtro selecionado. <button type="button" class="btn-secondary" style="padding:2px 8px; font-size:10px; margin-left:6px;" onclick="setPartyStashCategoryFilter('all'); handlePartyStashSearch('');">Limpar Filtros</button></td></tr>`;
+      } else {
+        tbody.innerHTML = filtered.map(it => renderPartyStashItemRowHtml(it)).join('');
+      }
     }
   }
 
@@ -2130,6 +2341,511 @@ function takePartyItemToPlayer(itemId, targetPlayerId = null, qty = null) {
   if (typeof renderPlayers === 'function') renderPlayers();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
   if (typeof addLog === 'function') addLog(`🎒 <b>Baú do Grupo:</b> ${takeQty}x "${it.name}" transferido para a mochila de <b>${targetPlayer.name}</b>.`);
+}
+
+// --- AÇÕES RÁPIDAS, STEPPERS, FILTROS E PRESETS DO BAÚ DO GRUPO (ISSUE-158) ---
+
+function setPartyStashCategoryFilter(filterKey) {
+  activePartyStashFilter = filterKey || 'all';
+  const camp = getActiveCampaign();
+  if (camp) {
+    const campPlayers = (camp.playerIds && camp.playerIds.length > 0 && typeof PLAYERS !== 'undefined'
+      ? camp.playerIds.map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(Boolean)
+      : (typeof PLAYERS !== 'undefined' ? PLAYERS : [])) || [];
+    renderCampaignPartyStash(camp, campPlayers);
+  }
+  renderPartyStashViewer();
+}
+
+function handlePartyStashSearch(query) {
+  activePartyStashSearch = query || '';
+  const camp = getActiveCampaign();
+  if (camp) {
+    const campPlayers = (camp.playerIds && camp.playerIds.length > 0 && typeof PLAYERS !== 'undefined'
+      ? camp.playerIds.map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(Boolean)
+      : (typeof PLAYERS !== 'undefined' ? PLAYERS : [])) || [];
+    renderCampaignPartyStash(camp, campPlayers);
+  }
+  renderPartyStashViewer();
+  if (typeof document !== 'undefined') {
+    const activeEl = document.activeElement;
+    if (!activeEl || !activeEl.classList || !activeEl.classList.contains('stash-search-input')) {
+      const inputs = document.querySelectorAll('.stash-search-input');
+      if (inputs.length > 0) {
+        const inp = inputs[0];
+        inp.focus();
+        try { inp.setSelectionRange(inp.value.length, inp.value.length); } catch (e) {}
+      }
+    }
+  }
+}
+
+function adjustPartyItemQty(itemId, delta) {
+  const camp = getActiveCampaign();
+  if (!camp || !camp.partyStash?.items) return false;
+  camp.partyStash.history = camp.partyStash.history || [];
+
+  const it = camp.partyStash.items.find(x => x.id === itemId);
+  if (!it) return false;
+
+  const d = parseInt(delta, 10) || 0;
+  if (d === 0) return false;
+
+  const oldQty = parseInt(it.qty, 10) || 1;
+  const newQty = oldQty + d;
+
+  if (newQty <= 0) {
+    deletePartyItem(itemId);
+    return true;
+  }
+
+  it.qty = newQty;
+
+  // Se o item estiver com um herói, sincroniza também na mochila dele
+  if (!isCarrierStash(it.carrier) && typeof PLAYERS !== 'undefined') {
+    const hero = PLAYERS.find(p => p.name && p.name.toLowerCase() === String(it.carrier).toLowerCase());
+    if (hero && Array.isArray(hero.inventory)) {
+      const heroItem = hero.inventory.find(i => i.name && i.name.toLowerCase() === String(it.name).toLowerCase());
+      if (heroItem) {
+        heroItem.qty = newQty;
+        if (typeof touchPlayer === 'function') touchPlayer(hero);
+      }
+    }
+  }
+
+  camp.partyStash.history.push({
+    date: new Date().toISOString().split('T')[0],
+    text: `${d > 0 ? '+' + d : d}x ${it.name} (${newQty}x restantes em ${it.carrier || 'Baú do Grupo'})`,
+    type: d > 0 ? 'item_in' : 'item_out'
+  });
+
+  touchPartyStash(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderCampaigns();
+  renderPartyStashViewer();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  return true;
+}
+
+function returnPartyItemToStash(itemId) {
+  const camp = getActiveCampaign();
+  if (!camp || !camp.partyStash?.items) return false;
+  camp.partyStash.history = camp.partyStash.history || [];
+
+  const it = camp.partyStash.items.find(x => x.id === itemId);
+  if (!it) return false;
+
+  const prevCarrier = it.carrier || 'Herói';
+  if (isCarrierStash(prevCarrier)) return false;
+
+  // Remove ou subtrai da mochila pessoal do herói se existir lá
+  if (typeof PLAYERS !== 'undefined') {
+    const hero = PLAYERS.find(p => p.name && p.name.toLowerCase() === String(prevCarrier).toLowerCase());
+    if (hero && Array.isArray(hero.inventory)) {
+      const idx = hero.inventory.findIndex(i => i.name && i.name.toLowerCase() === String(it.name).toLowerCase());
+      if (idx !== -1) {
+        const hQty = parseInt(hero.inventory[idx].qty, 10) || 1;
+        const itQty = parseInt(it.qty, 10) || 1;
+        if (hQty <= itQty) {
+          hero.inventory.splice(idx, 1);
+        } else {
+          hero.inventory[idx].qty = hQty - itQty;
+        }
+        if (typeof touchPlayer === 'function') touchPlayer(hero);
+      }
+    }
+  }
+
+  // Verifica se já existe o mesmo item no Baú do Grupo para mesclar quantidade
+  const existingInStash = camp.partyStash.items.find(x => x.id !== it.id && x.name.toLowerCase() === it.name.toLowerCase() && isCarrierStash(x.carrier));
+  const movedQty = parseInt(it.qty, 10) || 1;
+  if (existingInStash) {
+    existingInStash.qty = (parseInt(existingInStash.qty, 10) || 1) + movedQty;
+    trackDeletedPartyItemId(it.id);
+    camp.partyStash.items = camp.partyStash.items.filter(x => x.id !== it.id);
+  } else {
+    it.carrier = 'Baú do Grupo';
+  }
+
+  camp.partyStash.history.push({
+    date: new Date().toISOString().split('T')[0],
+    text: `🔄 ${movedQty}x ${it.name} devolvido de ${prevCarrier} para o Baú do Grupo`,
+    type: 'item_in'
+  });
+
+  touchPartyStash(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderCampaigns();
+  renderPartyStashViewer();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof addLog === 'function') addLog(`📦 <b>Baú do Grupo:</b> ${movedQty}x "${it.name}" devolvido por <b>${prevCarrier}</b> ao Baú.`);
+  return true;
+}
+
+function lookupCompendiumEquipmentMeta(rawName) {
+  const clean = String(rawName || '').trim().toLowerCase();
+  if (!clean) return null;
+
+  const presetMap = {
+    'poção de cura menor (2d4+2)': { category: 'Poções', weight: 0.25, desc: 'Recupera 2d4 + 2 PV ao beber (1 Ação Bônus / Ação).' },
+    'poção de cura maior (4d4+4)': { category: 'Poções', weight: 0.25, desc: 'Recupera 4d4 + 4 PV ao beber.' },
+    'ração de viagem (1 dia)': { category: 'Equipamento de Aventura', weight: 1, desc: 'Alimento seco de viagem para 1 dia.' },
+    'tocha': { category: 'Equipamento de Aventura', weight: 0.5, desc: 'Ilumina 6m luz plena + 6m penumbra por 1 hora.' },
+    'flechas (20)': { category: 'Armas', weight: 0.5, desc: 'Aljava com 20 flechas para arcos.' },
+    'virotes de besta (20)': { category: 'Armas', weight: 0.75, desc: 'Estojo com 20 virotes para bestas.' },
+    'objeto de arte (25 po)': { category: 'Tesouros & Gemas', weight: 0.2, desc: 'Cálice de prata, estatueta ou joia fina avaliada em 25 PO.' },
+    'gema preciosa (50 po)': { category: 'Tesouros & Gemas', weight: 0.05, desc: 'Pedra preciosa lapidada avaliada em 50 PO.' },
+    'pergaminho mágico (1º círculo)': { category: 'Documentos & Pistas', weight: 0.05, desc: 'Pergaminho contendo magia de 1º círculo.' },
+    'pergaminho mágico (2º círculo)': { category: 'Documentos & Pistas', weight: 0.05, desc: 'Pergaminho contendo magia de 2º círculo.' },
+    'kit de curandeiro': { category: 'Ferramentas', weight: 1.5, desc: '10 usos para estabilizar criaturas a 0 PV sem teste.' },
+    'ferramentas de ladrão': { category: 'Ferramentas', weight: 0.5, desc: 'Gazuas e limas para abrir fechaduras e desarmar armadilhas.' }
+  };
+
+  if (presetMap[clean]) return presetMap[clean];
+
+  if (typeof EQUIPMENT_DATA !== 'undefined' && Array.isArray(EQUIPMENT_DATA)) {
+    const eq = EQUIPMENT_DATA.find(e => e.name && e.name.toLowerCase() === clean);
+    if (eq) {
+      let weight = 0;
+      if (eq.weight) {
+        const match = String(eq.weight).match(/([\d,.]+)/);
+        if (match) weight = parseFloat(match[1].replace(',', '.')) || 0;
+      }
+      let category = 'Equipamento de Aventura';
+      const eqCat = String(eq.category || '').toLowerCase();
+      const eqName = String(eq.name || '').toLowerCase();
+      if (eqName.includes('poção') || eqName.includes('pocao') || eqName.includes('antídoto')) category = 'Poções';
+      else if (eqCat.includes('arma') && !eqCat.includes('armadura')) category = 'Armas';
+      else if (eqCat.includes('armadura') || eqCat.includes('escudo')) category = 'Armaduras';
+      else if (eqCat.includes('ferramenta') || eqCat.includes('kit')) category = 'Ferramentas';
+      else if (eqName.includes('pergaminho') || eqName.includes('livro') || eqName.includes('mapa')) category = 'Documentos & Pistas';
+      else if (eqName.includes('gema') || eqName.includes('joia') || eqName.includes('arte')) category = 'Tesouros & Gemas';
+
+      const descParts = [];
+      if (eq.damage && eq.damage !== '-') descParts.push(`Dano: ${eq.damage}`);
+      if (eq.ac && eq.ac !== '-') descParts.push(`CA: ${eq.ac}`);
+      if (eq.prop && eq.prop !== '-') descParts.push(eq.prop);
+      if (eq.cost) descParts.push(`Custo: ${eq.cost}`);
+
+      return { category, weight, desc: descParts.join(' • ') };
+    }
+  }
+
+  // Inferência inteligente por palavras-chave no nome
+  if (clean.includes('poção') || clean.includes('pocao') || clean.includes('elixir')) {
+    return { category: 'Poções', weight: 0.25, desc: '' };
+  }
+  if (clean.includes('pergaminho') || clean.includes('mapa') || clean.includes('carta') || clean.includes('diário')) {
+    return { category: 'Documentos & Pistas', weight: 0.05, desc: '' };
+  }
+  if (clean.includes('arte') || clean.includes('gema') || clean.includes('rubi') || clean.includes('diamante') || clean.includes('colar') || clean.includes('coroa')) {
+    return { category: 'Tesouros & Gemas', weight: 0.1, desc: '' };
+  }
+  if (clean.includes('espada') || clean.includes('machado') || clean.includes('arco') || clean.includes('adaga') || clean.includes('lança') || clean.includes('flecha')) {
+    return { category: 'Armas', weight: 1.0, desc: '' };
+  }
+  if (clean.includes('armadura') || clean.includes('escudo') || clean.includes('cota')) {
+    return { category: 'Armaduras', weight: 5.0, desc: '' };
+  }
+  return null;
+}
+
+function onQuickAddStashNameInput(val, context = 'camp') {
+  if (typeof document === 'undefined') return;
+  const meta = lookupCompendiumEquipmentMeta(val);
+  if (!meta) return;
+  const selId = context === 'modal' ? 'sel-qadd-modal-cat' : 'sel-qadd-stash-cat';
+  const selEl = document.getElementById(selId);
+  if (selEl && meta.category) {
+    selEl.value = meta.category;
+  }
+}
+
+function onModalPartyItemNameInput(val) {
+  if (typeof document === 'undefined') return;
+  const meta = lookupCompendiumEquipmentMeta(val);
+  if (!meta) return;
+  const catEl = document.getElementById('inp-pitem-cat');
+  const weightEl = document.getElementById('inp-pitem-weight');
+  const descEl = document.getElementById('inp-pitem-desc');
+  if (catEl && meta.category) catEl.value = meta.category;
+  if (weightEl && (!weightEl.value || parseFloat(weightEl.value) === 0) && meta.weight) {
+    weightEl.value = meta.weight;
+  }
+  if (descEl && !descEl.value && meta.desc) {
+    descEl.value = meta.desc;
+  }
+}
+
+function submitQuickAddPartyItem(context = 'camp') {
+  const isModal = context === 'modal';
+  const nameEl = document.getElementById(isModal ? 'inp-qadd-modal-name' : 'inp-qadd-stash-name');
+  const qtyEl = document.getElementById(isModal ? 'inp-qadd-modal-qty' : 'inp-qadd-stash-qty');
+  const catEl = document.getElementById(isModal ? 'sel-qadd-modal-cat' : 'sel-qadd-stash-cat');
+  const carrierEl = document.getElementById(isModal ? 'sel-qadd-modal-carrier' : 'sel-qadd-stash-carrier');
+
+  const name = nameEl ? nameEl.value.trim() : '';
+  if (!name) {
+    if (nameEl) nameEl.focus();
+    return false;
+  }
+
+  const qty = Math.max(1, parseInt(qtyEl ? qtyEl.value : '1', 10) || 1);
+  const meta = lookupCompendiumEquipmentMeta(name);
+  const category = (catEl && catEl.value) ? catEl.value : (meta?.category || 'Equipamento de Aventura');
+  const carrier = (carrierEl && carrierEl.value) ? carrierEl.value : 'Baú do Grupo';
+  const weight = meta?.weight !== undefined ? meta.weight : null;
+  const desc = meta?.desc || '';
+
+  const added = addItemToPartyStash(name, qty, category, desc, carrier, weight);
+  if (!added) return false;
+
+  // Se o destino já for diretamente um herói, sincroniza também na ficha do herói
+  if (!isCarrierStash(carrier) && typeof PLAYERS !== 'undefined') {
+    const hero = PLAYERS.find(p => p.name && p.name.toLowerCase() === String(carrier).toLowerCase());
+    if (hero) {
+      hero.inventory = hero.inventory || [];
+      const existingHeroItem = hero.inventory.find(i => i.name && i.name.toLowerCase() === name.toLowerCase());
+      if (existingHeroItem) {
+        existingHeroItem.qty = (parseInt(existingHeroItem.qty, 10) || 0) + qty;
+      } else {
+        hero.inventory.push({
+          name,
+          qty,
+          equipped: false,
+          weight: weight || 0.5,
+          category,
+          desc
+        });
+      }
+      if (typeof touchPlayer === 'function') touchPlayer(hero);
+      if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+      if (typeof renderPlayers === 'function') renderPlayers();
+    }
+  }
+
+  if (nameEl) nameEl.value = '';
+  if (qtyEl) qtyEl.value = '1';
+  return true;
+}
+
+function quickAddPresetPartyItem(presetKey) {
+  const presets = {
+    'potion_heal': {
+      name: 'Poção de Cura Menor',
+      qty: 1,
+      category: 'Poções',
+      weight: 0.25,
+      desc: 'Recupera 2d4 + 2 PV ao beber.'
+    },
+    'rations_5': {
+      name: 'Ração de Viagem (1 dia)',
+      qty: 5,
+      category: 'Equipamento de Aventura',
+      weight: 1,
+      desc: 'Alimento seco para viagem.'
+    },
+    'torches_5': {
+      name: 'Tocha',
+      qty: 5,
+      category: 'Equipamento de Aventura',
+      weight: 0.5,
+      desc: 'Luz plena 6m + penumbra 6m por 1h.'
+    },
+    'arrows_20': {
+      name: 'Flechas',
+      qty: 20,
+      category: 'Armas',
+      weight: 0.05,
+      desc: 'Munição para arcos curtos e longos.'
+    },
+    'art_25gp': {
+      name: 'Objeto de Arte (25 PO)',
+      qty: 1,
+      category: 'Tesouros & Gemas',
+      weight: 0.2,
+      desc: 'Tesouro artístico avaliado em 25 PO.'
+    },
+    'scroll_lvl1': {
+      name: 'Pergaminho Mágico (1º Círculo)',
+      qty: 1,
+      category: 'Documentos & Pistas',
+      weight: 0.05,
+      desc: 'Pergaminho de magia de 1º círculo.'
+    },
+    'healer_kit': {
+      name: 'Kit de Curandeiro',
+      qty: 1,
+      category: 'Ferramentas',
+      weight: 1.5,
+      desc: '10 usos para estabilizar aliados a 0 PV.'
+    }
+  };
+
+  const p = presets[presetKey];
+  if (!p) return false;
+
+  const carrierEl = (typeof document !== 'undefined') ? document.getElementById('sel-qadd-stash-carrier') : null;
+  const carrier = (carrierEl && carrierEl.value) ? carrierEl.value : 'Baú do Grupo';
+
+  return addItemToPartyStash(p.name, p.qty, p.category, p.desc, carrier, p.weight);
+}
+
+function quickAdjustPartyGold(delta, customReason = null) {
+  const camp = getActiveCampaign();
+  if (!camp) return false;
+  camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+  camp.partyStash.items = camp.partyStash.items || [];
+  camp.partyStash.history = camp.partyStash.history || [];
+
+  const d = parseInt(delta, 10);
+  if (isNaN(d) || d === 0) return false;
+
+  const curGold = parseInt(camp.partyStash.gold, 10) || 0;
+  if (d > 0) {
+    camp.partyStash.gold = curGold + d;
+    const reason = customReason || 'Tesouro / Saque Rápido';
+    camp.partyStash.history.push({
+      date: new Date().toISOString().split('T')[0],
+      text: `+${d} PO (${reason})`,
+      type: 'gold_in'
+    });
+  } else {
+    const absD = Math.abs(d);
+    const actualDeducted = Math.min(curGold, absD);
+    if (actualDeducted <= 0 && curGold === 0) return false;
+    camp.partyStash.gold = Math.max(0, curGold - absD);
+    const reason = customReason || 'Despesa / Suprimentos do Grupo';
+    camp.partyStash.history.push({
+      date: new Date().toISOString().split('T')[0],
+      text: `-${actualDeducted} PO (${reason})`,
+      type: 'gold_out'
+    });
+  }
+
+  touchPartyStash(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderCampaigns();
+  renderPartyStashViewer();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof addLog === 'function') {
+    addLog(`💰 <b>Baú do Grupo:</b> ${d > 0 ? '+' + d : d} PO (${customReason || (d > 0 ? 'Tesouro' : 'Despesa')}). Saldo: ${camp.partyStash.gold} PO.`);
+  }
+  return true;
+}
+
+function submitInlinePartyGold() {
+  if (typeof document === 'undefined') return false;
+  const inp = document.getElementById('inp-quick-stash-gold');
+  if (!inp) return false;
+  const raw = inp.value.trim();
+  if (!raw) return false;
+  const val = parseInt(raw, 10);
+  if (isNaN(val) || val === 0) return false;
+  const ok = quickAdjustPartyGold(val, val > 0 ? 'Ajuste Rápido de Tesouro' : 'Gasto Rápido do Grupo');
+  if (ok) inp.value = '';
+  return ok;
+}
+
+// --- GERADOR OFICIAL DE SAQUE E TESOUROS (GUIA DO MESTRE CAP. 7 - ISSUE-159) ---
+
+function getDmgTablesSafe() {
+  if (typeof DMG_TREASURE_TABLES !== 'undefined' && DMG_TREASURE_TABLES) return DMG_TREASURE_TABLES;
+  return {
+    gems: {
+      10: [{ name: 'Azurita (Gema 10 PO)', desc: 'Pedra azul escuro mosqueado opaco (10 PO)' }],
+      50: [{ name: 'Pedra de Sangue (Gema 50 PO)', desc: 'Cinza escuro com manchas vermelhas (50 PO)' }],
+      100: [{ name: 'Ametista (Gema 100 PO)', desc: 'Cristal púrpura profundo (100 PO)' }]
+    },
+    artObjects: {
+      25: [{ name: 'Jarro de Prata Trabalhado (25 PO)', desc: 'Objeto de arte de 25 PO' }],
+      250: [{ name: 'Cálice de Prata com Pedras da Lua (250 PO)', desc: 'Objeto de arte de 250 PO' }]
+    },
+    magicItems: {
+      minor: [{ name: 'Poção de Cura Menor', category: 'Poções', weight: 0.25, desc: 'Recupera 2d4 + 2 PV.' }],
+      uncommon: [{ name: 'Arma +1', category: 'Armas', weight: 1.5, desc: '+1 ataque e dano.' }],
+      rare: [{ name: 'Espada Língua Flamejante', category: 'Armas', weight: 1.5, desc: '+2d6 fogo.' }]
+    }
+  };
+}
+
+function rollDmgGemToStash(tierValue = 50, qty = 1) {
+  const tables = getDmgTablesSafe();
+  const pool = tables.gems[tierValue] || tables.gems[50] || tables.gems[10];
+  if (!pool || pool.length === 0) return null;
+  const picked = pool[Math.floor(Math.random() * pool.length)];
+  const carrierEl = (typeof document !== 'undefined') ? document.getElementById('sel-qadd-stash-carrier') : null;
+  const carrier = (carrierEl && carrierEl.value) ? carrierEl.value : 'Baú do Grupo';
+  addItemToPartyStash(picked.name, Math.max(1, parseInt(qty, 10) || 1), 'Tesouros & Gemas', picked.desc, carrier, 0.01);
+  return picked;
+}
+
+function rollDmgArtToStash(tierValue = 25, qty = 1) {
+  const tables = getDmgTablesSafe();
+  const pool = tables.artObjects[tierValue] || tables.artObjects[25];
+  if (!pool || pool.length === 0) return null;
+  const picked = pool[Math.floor(Math.random() * pool.length)];
+  const carrierEl = (typeof document !== 'undefined') ? document.getElementById('sel-qadd-stash-carrier') : null;
+  const carrier = (carrierEl && carrierEl.value) ? carrierEl.value : 'Baú do Grupo';
+  addItemToPartyStash(picked.name, Math.max(1, parseInt(qty, 10) || 1), 'Tesouros & Gemas', picked.desc, carrier, 0.3);
+  return picked;
+}
+
+function rollDmgMagicItemToStash(rarity = 'uncommon') {
+  const tables = getDmgTablesSafe();
+  const pool = tables.magicItems[rarity] || tables.magicItems.uncommon || tables.magicItems.minor;
+  if (!pool || pool.length === 0) return null;
+  const picked = pool[Math.floor(Math.random() * pool.length)];
+  const carrierEl = (typeof document !== 'undefined') ? document.getElementById('sel-qadd-stash-carrier') : null;
+  const carrier = (carrierEl && carrierEl.value) ? carrierEl.value : 'Baú do Grupo';
+  addItemToPartyStash(picked.name, 1, picked.category || 'Itens Mágicos', picked.desc, carrier, picked.weight || 0.5);
+  return picked;
+}
+
+function rollDmgTreasureHoardToStash(crTier = '0-4') {
+  const camp = getActiveCampaign();
+  if (!camp) return null;
+
+  const rollDiceSum = (count, sides) => {
+    let s = 0;
+    for (let i = 0; i < count; i++) s += Math.floor(Math.random() * sides) + 1;
+    return s;
+  };
+
+  let goldAdded = 0;
+  let gemsOrArt = null;
+  let magicAdded = [];
+
+  if (crTier === '5-10') {
+    // DMG Hoard CR 5-10 convertida para PO equivalentes + objetos de arte/gemas + 1d3 itens mágicos
+    goldAdded = (rollDiceSum(6, 6) * 100) + (rollDiceSum(3, 6) * 10);
+    const countArt = rollDiceSum(2, 4);
+    gemsOrArt = rollDmgArtToStash(25, countArt);
+    const mCount = Math.floor(Math.random() * 2) + 1;
+    for (let i = 0; i < mCount; i++) {
+      const m = rollDmgMagicItemToStash(i === 0 ? 'uncommon' : 'minor');
+      if (m) magicAdded.push(m.name);
+    }
+  } else {
+    // DMG Hoard CR 0-4: moedas convertidas em PO (~80 a 220 PO) + 2d6 gemas de 10/50 PO ou objetos de arte de 25 PO + 1 item mágico
+    goldAdded = (rollDiceSum(2, 6) * 10) + rollDiceSum(6, 6);
+    const countGems = rollDiceSum(1, 4);
+    gemsOrArt = Math.random() < 0.5 ? rollDmgGemToStash(50, countGems) : rollDmgArtToStash(25, countGems);
+    const m = rollDmgMagicItemToStash('minor');
+    if (m) magicAdded.push(m.name);
+  }
+
+  quickAdjustPartyGold(goldAdded, `Pilha de Tesouro DMG (ND ${crTier})`);
+  return { crTier, goldAdded, gemsOrArt, magicAdded };
 }
 
 // --- NOTAS RÁPIDAS DO MESTRE (DM2 - Ctrl+N) ---
@@ -4421,11 +5137,51 @@ if (typeof module !== 'undefined' && module.exports) {
     calculateBastionStaffWage,
     onBastionStaffIconChange,
     onBastionStaffLevelChange,
-    promoteBastionStaffMember
+    promoteBastionStaffMember,
+    getPartyItemCategoryIcon,
+    isCarrierStash,
+    filterPartyStashItems,
+    renderStashSummaryToolbar,
+    renderPartyStashItemRowHtml,
+    setPartyStashCategoryFilter,
+    handlePartyStashSearch,
+    adjustPartyItemQty,
+    returnPartyItemToStash,
+    lookupCompendiumEquipmentMeta,
+    onQuickAddStashNameInput,
+    onModalPartyItemNameInput,
+    submitQuickAddPartyItem,
+    quickAddPresetPartyItem,
+    quickAdjustPartyGold,
+    submitInlinePartyGold,
+    rollDmgGemToStash,
+    rollDmgArtToStash,
+    rollDmgMagicItemToStash,
+    rollDmgTreasureHoardToStash
   };
 }
 
 if (typeof window !== 'undefined') {
+  window.rollDmgGemToStash = rollDmgGemToStash;
+  window.rollDmgArtToStash = rollDmgArtToStash;
+  window.rollDmgMagicItemToStash = rollDmgMagicItemToStash;
+  window.rollDmgTreasureHoardToStash = rollDmgTreasureHoardToStash;
+  window.getPartyItemCategoryIcon = getPartyItemCategoryIcon;
+  window.isCarrierStash = isCarrierStash;
+  window.filterPartyStashItems = filterPartyStashItems;
+  window.renderStashSummaryToolbar = renderStashSummaryToolbar;
+  window.renderPartyStashItemRowHtml = renderPartyStashItemRowHtml;
+  window.setPartyStashCategoryFilter = setPartyStashCategoryFilter;
+  window.handlePartyStashSearch = handlePartyStashSearch;
+  window.adjustPartyItemQty = adjustPartyItemQty;
+  window.returnPartyItemToStash = returnPartyItemToStash;
+  window.lookupCompendiumEquipmentMeta = lookupCompendiumEquipmentMeta;
+  window.onQuickAddStashNameInput = onQuickAddStashNameInput;
+  window.onModalPartyItemNameInput = onModalPartyItemNameInput;
+  window.submitQuickAddPartyItem = submitQuickAddPartyItem;
+  window.quickAddPresetPartyItem = quickAddPresetPartyItem;
+  window.quickAdjustPartyGold = quickAdjustPartyGold;
+  window.submitInlinePartyGold = submitInlinePartyGold;
   window.sendPlayerItemToPartyStash = sendPlayerItemToPartyStash;
   window.openPartyStashModal = openPartyStashModal;
   window.closePartyStashModal = closePartyStashModal;
