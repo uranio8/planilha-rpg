@@ -11504,6 +11504,132 @@
       color: #c084fc;
       border: 1px solid rgba(168, 85, 247, 0.35);
     }
+    .roll20-atk-badge.badge-hunter {
+      background: rgba(16, 185, 129, 0.18);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+    .roll20-atk-badge.badge-hex {
+      background: rgba(192, 38, 211, 0.18);
+      color: #e879f9;
+      border: 1px solid rgba(192, 38, 211, 0.4);
+    }
+    .roll20-atk-badge.badge-hexblade {
+      background: rgba(14, 165, 233, 0.18);
+      color: #38bdf8;
+      border: 1px solid rgba(14, 165, 233, 0.4);
+    }
+    .roll20-atk-badge.badge-divine-strike {
+      background: rgba(245, 158, 11, 0.18);
+      color: #fde047;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+    .extra-attack-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .roll20-versatile-subtext {
+      font-size: 9.5px;
+      color: #94a3b8;
+      margin-top: 2px;
+      line-height: 1.2;
+    }
+    .btn-versatile-wrap {
+      display: inline-flex;
+      gap: 3px;
+      align-items: center;
+    }
+    .btn-micro.btn-versatile-1h {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
+      font-size: 10px;
+      padding: 2px 6px;
+      font-weight: 700;
+    }
+    .btn-micro.btn-versatile-1h:hover {
+      background: rgba(239, 68, 68, 0.3);
+      border-color: #ef4444;
+      color: #fff;
+    }
+    .btn-micro.btn-versatile-2h {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: rgba(245, 158, 11, 0.35);
+      color: #fde047;
+      font-size: 10px;
+      padding: 2px 6px;
+      font-weight: 700;
+    }
+    .btn-micro.btn-versatile-2h:hover {
+      background: rgba(245, 158, 11, 0.3);
+      border-color: #f59e0b;
+      color: #fff;
+    }
+    .ammo-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 9.5px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      font-weight: 600;
+      margin-left: 4px;
+    }
+    .ammo-chip.ammo-empty {
+      background: rgba(239, 68, 68, 0.18);
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+    .roll20-adv-menu {
+      position: absolute;
+      z-index: 1000;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 4px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 140px;
+    }
+    .roll20-adv-item {
+      background: transparent;
+      border: none;
+      color: #f1f5f9;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 5px;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+    .roll20-adv-item:hover {
+      background: #1e293b;
+    }
+    .roll20-adv-item.adv-item-adv {
+      color: #34d399;
+    }
+    .roll20-adv-item.adv-item-dis {
+      color: #f87171;
+    }
     .roll20-atk-row.is-special-attack {
       background: rgba(255, 255, 255, 0.02);
     }
@@ -51806,7 +51932,220 @@ function getPlayerSpecialClassAttacks(p) {
     });
   }
 
+  // 8. Patrulheiro (Ranger): Marca do Caçador (Hunter's Mark)
+  const rangerLvl = getEffectiveClassLevel(p, 'patrulheiro') || getEffectiveClassLevel(p, 'ranger');
+  const hasHuntersMark = spellsNorm.some(s => s.includes('marca do cacador') || s.includes('hunters mark') || s.includes('hunter mark')) || (rangerLvl >= 1);
+  if (hasHuntersMark) {
+    specialAttacks.push({
+      name: "Marca do Caçador (Hunter's Mark)",
+      badge: '🏹 Marca',
+      badgeClass: 'badge-hunter',
+      type: 'Dano Adicional • Ação Bônus',
+      range: '27m',
+      toHit: '—',
+      toHitVal: 0,
+      hitBonus: '—',
+      bonus: '—',
+      hit: '—',
+      damage: '+1d6',
+      dmg: '+1d6',
+      damageType: 'Dano da Arma',
+      notes: 'Causa +1d6 de dano adicional em cada acerto de arma contra o alvo marcado (Concentração)',
+      isSpecialAttack: true,
+      isDamageBonusOnly: true,
+      rawAttackText: "Marca do Caçador (+0) 1d6 dano extra"
+    });
+  }
+
+  // 9. Bruxo (Warlock): Bruxaria (Hex) & Maldição da Lâmina Maldita
+  const hasHex = spellsNorm.some(s => s.includes('bruxaria') || s.includes('hex')) || (warlockLvl >= 1 && (p.spells || '').toLowerCase().includes('hex'));
+  if (hasHex) {
+    specialAttacks.push({
+      name: 'Bruxaria (Hex)',
+      badge: '💀 Maldição',
+      badgeClass: 'badge-hex',
+      type: 'Dano Adicional • Ação Bônus',
+      range: '27m',
+      toHit: '—',
+      toHitVal: 0,
+      hitBonus: '—',
+      bonus: '—',
+      hit: '—',
+      damage: '+1d6',
+      dmg: '+1d6',
+      damageType: 'Necrótico',
+      notes: 'Causa +1d6 de dano necrótico em cada acerto de ataque contra o alvo amaldiçoado (Concentração)',
+      isSpecialAttack: true,
+      isDamageBonusOnly: true,
+      rawAttackText: 'Bruxaria (+0) 1d6 necrótico'
+    });
+  }
+
+  const subNorm = ((p.subclass || '') + ' ' + (p.className || '')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (subNorm.includes('lamina maldita') || subNorm.includes('hexblade') || ((p.traits || '') + ' ' + (p.features || '')).toLowerCase().includes('hexblade')) {
+    specialAttacks.push({
+      name: 'Maldição da Lâmina Maldita (Hexblade)',
+      badge: '🗡️ Hexblade',
+      badgeClass: 'badge-hexblade',
+      type: 'Dano Adicional • Ação Bônus',
+      range: '9m',
+      toHit: '—',
+      toHitVal: 0,
+      hitBonus: '—',
+      bonus: '—',
+      hit: '—',
+      damage: `+${prof}`,
+      dmg: `+${prof}`,
+      damageType: 'Dano da Arma',
+      notes: `Adiciona +${prof} (Bônus de Proficiência) ao dano contra o alvo amaldiçoado; acertos críticos com 19-20`,
+      isSpecialAttack: true,
+      isDamageBonusOnly: true,
+      rawAttackText: `Maldição da Lâmina Maldita (+0) +${prof} dano extra`
+    });
+  }
+
+  // 10. Clérigo (Cleric): Golpe Divino (Divine Strike)
+  const clericLvl = getEffectiveClassLevel(p, 'clerigo') || getEffectiveClassLevel(p, 'cleric');
+  if (clericLvl >= 8) {
+    const strikeDice = clericLvl >= 14 ? '2d8' : '1d8';
+    specialAttacks.push({
+      name: 'Golpe Divino (Divine Strike)',
+      badge: '⚡ Golpe Divino',
+      badgeClass: 'badge-divine-strike',
+      type: 'Dano Adicional • 1×/Turno',
+      range: 'Corpo a Corpo',
+      toHit: '—',
+      toHitVal: 0,
+      hitBonus: '—',
+      bonus: '—',
+      hit: '—',
+      damage: `+${strikeDice}`,
+      dmg: `+${strikeDice}`,
+      damageType: 'Radiante / Trovoada',
+      notes: `1× por turno ao atingir com ataque de arma: adiciona +${strikeDice} de dano extra`,
+      isSpecialAttack: true,
+      isDamageBonusOnly: true,
+      rawAttackText: `Golpe Divino (+0) ${strikeDice} radiante`
+    });
+  }
+
   return specialAttacks;
+}
+
+// ISSUE-168: Controle de Munição e Projéteis para Armas à Distância
+function getPlayerAmmunitionForItem(p, weaponName, propRaw = '') {
+  if (!p || !p.inventory || !Array.isArray(p.inventory)) return null;
+  const wNorm = (weaponName || '').toLowerCase();
+  const pNorm = (propRaw || '').toLowerCase();
+
+  let ammoType = null;
+  let ammoLabel = '';
+  let ammoIcon = '🏹';
+
+  if (wNorm.includes('arco') || wNorm.includes('bow')) {
+    ammoType = 'arrow';
+    ammoLabel = 'flechas';
+    ammoIcon = '🏹';
+  } else if (wNorm.includes('besta') || wNorm.includes('crossbow')) {
+    ammoType = 'bolt';
+    ammoLabel = 'virotes';
+    ammoIcon = '🎯';
+  } else if (wNorm.includes('funda') || wNorm.includes('sling')) {
+    ammoType = 'bullet';
+    ammoLabel = 'balas';
+    ammoIcon = '🪨';
+  } else if (wNorm.includes('zarabatana') || wNorm.includes('blowgun')) {
+    ammoType = 'needle';
+    ammoLabel = 'agulhas';
+    ammoIcon = '📍';
+  } else if (pNorm.includes('munição') || pNorm.includes('municao')) {
+    ammoType = 'ammo';
+    ammoLabel = 'projéteis';
+    ammoIcon = '🏹';
+  }
+
+  if (!ammoType) return null;
+
+  const ammoItem = p.inventory.find(it => {
+    const iName = (it.name || '').toLowerCase();
+    if (ammoType === 'arrow') return iName.includes('flecha') || iName.includes('arrow');
+    if (ammoType === 'bolt') return iName.includes('virote') || iName.includes('bolt');
+    if (ammoType === 'bullet') return iName.includes('bala') || iName.includes('bullet') || iName.includes('pedra');
+    if (ammoType === 'needle') return iName.includes('agulha') || iName.includes('needle');
+    return iName.includes('munição') || iName.includes('municao');
+  });
+
+  const qty = ammoItem ? (parseInt(ammoItem.qty, 10) || 1) : 0;
+  return {
+    ammoType,
+    ammoLabel,
+    ammoIcon,
+    qty,
+    itemId: ammoItem ? ammoItem.id : null,
+    itemName: ammoItem ? ammoItem.name : (ammoType === 'arrow' ? 'Flechas' : (ammoType === 'bolt' ? 'Virotes' : 'Munição'))
+  };
+}
+
+function consumePlayerAmmunition(p, weaponName, propRaw = '') {
+  if (!p || !p.inventory || !Array.isArray(p.inventory)) return null;
+  const ammoInfo = getPlayerAmmunitionForItem(p, weaponName, propRaw);
+  if (!ammoInfo) return null;
+
+  if (!ammoInfo.itemId) {
+    return { success: false, remaining: 0, label: ammoInfo.ammoLabel, empty: true };
+  }
+  const item = p.inventory.find(it => it.id === ammoInfo.itemId);
+  if (!item || !item.qty || item.qty <= 0) {
+    return { success: false, remaining: 0, label: ammoInfo.ammoLabel, empty: true };
+  }
+  item.qty = Math.max(0, item.qty - 1);
+  if (typeof touchPlayer === 'function') touchPlayer(p);
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+  return { success: true, remaining: item.qty, label: ammoInfo.ammoLabel, empty: item.qty === 0 };
+}
+
+// ISSUE-168: Cálculo do Número de Ataques por Ação (Extra Attack)
+function getPlayerExtraAttacksCount(p) {
+  if (!p) return 1;
+  const classes = typeof getPlayerClassesList === 'function' ? getPlayerClassesList(p) : [];
+  let maxAttacks = 1;
+
+  const checkClassAttacks = (className, level) => {
+    const cNorm = (className || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const lvl = parseInt(level, 10) || 1;
+    if (cNorm.includes('guerreiro') || cNorm.includes('fighter')) {
+      if (lvl >= 20) return 4;
+      if (lvl >= 11) return 3;
+      if (lvl >= 5) return 2;
+    }
+    if (cNorm.includes('barbaro') || cNorm.includes('barbarian') ||
+        cNorm.includes('paladino') || cNorm.includes('paladin') ||
+        cNorm.includes('patrulheiro') || cNorm.includes('ranger') ||
+        cNorm.includes('monge') || cNorm.includes('monk')) {
+      if (lvl >= 5) return 2;
+    }
+    if (cNorm.includes('bardo') || cNorm.includes('bard')) {
+      const sub = ((p.subclass || '') + ' ' + (p.subclassName || '')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if ((sub.includes('valor') || sub.includes('espadas') || sub.includes('swords')) && lvl >= 6) return 2;
+    }
+    if (cNorm.includes('bruxo') || cNorm.includes('warlock')) {
+      const traits = ((p.traits || '') + ' ' + (p.features || '')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if ((traits.includes('lamina sedenta') || traits.includes('thirsting blade')) && lvl >= 5) return 2;
+    }
+    return 1;
+  };
+
+  if (classes.length > 0) {
+    classes.forEach(c => {
+      const atks = checkClassAttacks(c.className, c.level);
+      if (atks > maxAttacks) maxAttacks = atks;
+    });
+  } else {
+    maxAttacks = checkClassAttacks(p.className, p.level);
+  }
+  return maxAttacks;
 }
 
 function getPlayerCalculatedAttacks(p, options = {}) {
@@ -51920,6 +52259,22 @@ function getPlayerCalculatedAttacks(p, options = {}) {
       const finalDmg = `${baseDice}${totalDmgMod !== 0 ? dmgModStr : ''}`;
       const rangeStr = isRanged ? '24/96m' : '1,5m';
 
+      // ISSUE-168: Suporte a dano versátil para armas de 1 mão vs 2 mãos
+      const isVersatile = propRaw.toLowerCase().includes('versátil') || propRaw.toLowerCase().includes('versatile') || (equipMatch && (equipMatch.prop || '').toLowerCase().includes('versátil'));
+      let vDie = null;
+      let vDmg = null;
+      let rawVAttackText = null;
+      if (isVersatile) {
+        const vMatch = (propRaw + ' ' + (equipMatch?.prop || '')).match(/vers[áa]til\s*\(([^)]+)\)/i);
+        vDie = vMatch ? vMatch[1].trim() : (baseDice === '1d8' ? '1d10' : (baseDice === '1d6' ? '1d8' : null));
+        if (vDie) {
+          vDmg = `${vDie}${totalDmgMod !== 0 ? dmgModStr : ''}`;
+          rawVAttackText = `${it.name} (${toHitStr}) ${vDmg} ${dmgType}`;
+        }
+      }
+
+      const ammoInfo = isRanged ? getPlayerAmmunitionForItem(p, it.name, propRaw) : null;
+
       attacks.push({
         name: it.name,
         type: isRanged ? 'Distância' : 'Corpo a Corpo',
@@ -51935,6 +52290,11 @@ function getPlayerCalculatedAttacks(p, options = {}) {
         notes: propRaw || 'Arma equipada',
         isEquipped: true,
         itemIndex: idx,
+        isVersatile: Boolean(isVersatile && vDmg),
+        versatileDice: vDie,
+        versatileDamage: vDmg,
+        rawVersatileAttackText: rawVAttackText,
+        ammo: ammoInfo,
         rawAttackText: `${it.name} (${toHitStr}) ${finalDmg} ${dmgType}`
       });
     });
@@ -52005,6 +52365,7 @@ function getPlayerCalculatedAttacks(p, options = {}) {
       if (typeof calculateWeaponAttackStats === 'function') {
         const stats = calculateWeaponAttackStats(p, equipMatch || cleanName);
         if (stats) {
+          const ammoInfo = stats.isRanged ? getPlayerAmmunitionForItem(p, stats.name, stats.properties) : null;
           attacks.push({
             name: stats.name,
             type: stats.isRanged ? 'Distância' : 'Corpo a Corpo',
@@ -52019,6 +52380,11 @@ function getPlayerCalculatedAttacks(p, options = {}) {
             damageType: stats.damageType,
             notes: stats.properties || 'Arma equipada',
             isEquipped: true,
+            isVersatile: stats.isVersatile,
+            versatileDice: stats.versatileDie,
+            versatileDamage: stats.versatileDamageFormula,
+            rawVersatileAttackText: stats.rawVersatileAttackText,
+            ammo: ammoInfo,
             rawAttackText: stats.formattedText
           });
           return;
@@ -53097,7 +53463,10 @@ function renderPlayers() {
               <!-- ABA 1: COMBATE & AÇÕES -->
               <div class="roll20-tab-panel" style="display: ${activeRoll20Tab === 'combat' ? 'block' : 'none'};">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                  <span class="roll20-panel-title" style="margin: 0; border: none; padding: 0;">⚔️ ATAQUES & ARMAS CALCULADAS</span>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="roll20-panel-title" style="margin: 0; border: none; padding: 0;">⚔️ ATAQUES & ARMAS CALCULADAS</span>
+                    ${(typeof getPlayerExtraAttacksCount === 'function' && getPlayerExtraAttacksCount(p) > 1) ? `<span class="extra-attack-badge" title="Pode realizar ${getPlayerExtraAttacksCount(p)} ataques na ação Atacar">⚔️ ${getPlayerExtraAttacksCount(p)} Ataques / Ação</span>` : ''}
+                  </div>
                   <div style="display: flex; gap: 4px;">
                     <button type="button" class="btn-micro roll20-btn-add-weapon" onclick="openWeaponPickerModal('${p.id}')" title="Adicionar arma rápida do acervo D&D">⚔️ + Arma</button>
                     <button type="button" class="btn-micro roll20-btn-add-item" onclick="openAddPlayerItemModal('${p.id}')" title="Adicionar item ao inventário">➕ Item</button>
@@ -53127,22 +53496,44 @@ function renderPlayers() {
                             </div>
                             <div style="font-size: 9.5px; color: #64748b;">${atk.type} ${atk.notes ? '• ' + atk.notes : ''}</div>
                           </td>
-                          <td style="text-align: center; color: #94a3b8; font-size: 11px;">${atk.range}</td>
+                          <td style="text-align: center; color: #94a3b8; font-size: 11px;">
+                            ${atk.range}
+                            ${atk.ammo ? `
+                              <span class="ammo-chip ${atk.ammo.qty <= 0 ? 'ammo-empty' : ''}" title="${atk.ammo.qty} ${atk.ammo.ammoLabel} no inventário (${atk.ammo.itemName})">
+                                ${atk.ammo.ammoIcon} ${atk.ammo.qty}
+                              </span>
+                            ` : ''}
+                          </td>
                           <td style="text-align: center;">
                             ${atk.isDamageBonusOnly ? `
                               <span style="font-size: 11px; color: #64748b; font-weight: 700;" title="Dano ou bônus adicional aplicado no acerto">—</span>
                             ` : `
-                              <button type="button" class="roll20-btn-roll-atk" onclick="rollPlayerAttack('${p.id}', '${escapeAttr(atk.rawAttackText)}')" title="${(atk.toHit || '').startsWith('CD') ? 'Salvaguarda: ' + atk.toHit : 'Rolar Ataque Completo (d20 ' + atk.toHit + ')'}">
-                                🎲 ${atk.toHit}
-                              </button>
+                              <div style="display: inline-flex; align-items: center; justify-content: center; gap: 2px;">
+                                <button type="button" class="roll20-btn-roll-atk" onclick="rollPlayerAttack('${p.id}', '${escapeAttr(atk.rawAttackText)}')" oncontextmenu="event.preventDefault(); openAttackAdvantageMenu(event, '${p.id}', '${escapeAttr(atk.rawAttackText)}', ${atk.isVersatile ? 'true' : 'false'});" title="${(atk.toHit || '').startsWith('CD') ? 'Salvaguarda: ' + atk.toHit : 'Rolar Ataque Completo (d20 ' + atk.toHit + ') • Botão Direito p/ Vantagem/Desvantagem'}">
+                                  🎲 ${atk.toHit}
+                                </button>
+                                ${!(atk.toHit || '').startsWith('CD') ? `
+                                  <button type="button" class="btn-micro" style="padding: 1px 4px; font-size: 9px; opacity: 0.75; min-width: auto;" onclick="openAttackAdvantageMenu(event, '${p.id}', '${escapeAttr(atk.rawAttackText)}', ${atk.isVersatile ? 'true' : 'false'})" title="Opções de Vantagem / Desvantagem">▾</button>
+                                ` : ''}
+                              </div>
                             `}
                           </td>
                           <td style="color: #f8fafc; font-size: 11px;">
                             <b style="color: #fbbf24;">${atk.damage}</b> <span style="font-size: 10px; color: #94a3b8;">${atk.damageType}</span>
+                            ${atk.isVersatile && atk.versatileDamage ? `
+                              <div class="roll20-versatile-subtext" title="Dano empunhando com 2 mãos">2 Mãos: <b style="color: #f59e0b;">${atk.versatileDamage}</b></div>
+                            ` : ''}
                           </td>
                           <td style="text-align: right; white-space: nowrap;">
                             <div class="attack-actions-cell">
-                              <button type="button" class="btn-micro roll20-btn-damage-only" onclick="rollWeaponDamageOnly('${p.id}', '${escapeAttr(atk.rawAttackText)}')" title="${atk.isDamageBonusOnly ? 'Rolar Dano Extra / Bônus' : 'Rolar Apenas Dano'}">💥</button>
+                              ${atk.isVersatile ? `
+                                <div class="btn-versatile-wrap">
+                                  <button type="button" class="btn-micro btn-versatile-1h" onclick="rollWeaponDamageOnly('${p.id}', '${escapeAttr(atk.rawAttackText)}', false)" title="Rolar dano com 1 mão (${atk.damage})">💥 1M</button>
+                                  <button type="button" class="btn-micro btn-versatile-2h" onclick="rollWeaponDamageOnly('${p.id}', '${escapeAttr(atk.rawVersatileAttackText || atk.rawAttackText)}', false, true)" title="Rolar dano com 2 mãos (${atk.versatileDamage})">💥 2M</button>
+                                </div>
+                              ` : `
+                                <button type="button" class="btn-micro roll20-btn-damage-only" onclick="rollWeaponDamageOnly('${p.id}', '${escapeAttr(atk.rawAttackText)}')" title="${atk.isDamageBonusOnly ? 'Rolar Dano Extra / Bônus' : 'Rolar Apenas Dano'}">💥</button>
+                              `}
                               <button type="button" class="btn-chat-feed" onclick="sharePlayerCalculatedAttackToFeed('${p.id}', ${aIdx})" title="Compartilhar ataque no chat da mesa">💬</button>
                             </div>
                           </td>
@@ -54830,6 +55221,22 @@ function calculateWeaponAttackStats(player, weaponOrName) {
   const dmgFormula = `${die}${totalDmgMod !== 0 ? (totalDmgMod > 0 ? '+' + totalDmgMod : totalDmgMod) : ''}`;
   const hitStr = hitBonus >= 0 ? `+${hitBonus}` : `${hitBonus}`;
 
+  // ISSUE-168: Suporte para armas Versáteis (1 mão vs 2 mãos)
+  const isVersatile = prop.includes('versátil') || prop.includes('versatile');
+  let versatileDie = null;
+  let versatileDamageFormula = null;
+  let versatileText = null;
+  let rawVersatileAttackText = null;
+  if (isVersatile) {
+    const vMatch = prop.match(/vers[áa]til\s*\(([^)]+)\)/i);
+    versatileDie = vMatch ? vMatch[1].trim() : (die === '1d8' ? '1d10' : (die === '1d6' ? '1d8' : null));
+    if (versatileDie) {
+      versatileDamageFormula = `${versatileDie}${totalDmgMod !== 0 ? (totalDmgMod > 0 ? '+' + totalDmgMod : totalDmgMod) : ''}`;
+      versatileText = `${versatileDamageFormula}${dmgType ? ' ' + dmgType : ''}`;
+      rawVersatileAttackText = `${weapon.name.split('(')[0].trim()} (${hitStr}) ${versatileText}`;
+    }
+  }
+
   const simpleName = weapon.name.split('(')[0].trim();
   const fullAttackStr = `${simpleName} (${hitStr}, ${dmgFormula}${dmgType ? ' ' + dmgType : ''})`;
 
@@ -54848,6 +55255,12 @@ function calculateWeaponAttackStats(player, weaponOrName) {
     damageType: dmgType,
     damageFormula: dmgFormula,
     damageText: `${dmgFormula}${dmgType ? ' ' + dmgType : ''}`,
+    isVersatile: Boolean(isVersatile && versatileDamageFormula),
+    versatileDie,
+    versatileDamageFormula,
+    versatileText,
+    rawVersatileAttackText,
+    isRanged,
     attackBonus: hitBonus,
     chosenAttr: keyAttr,
     formattedText: fullAttackStr,
@@ -55138,7 +55551,57 @@ function equipBackpackItemAsAttack(playerId, itemIdx) {
 }
 
 
-function rollPlayerAttack(id, rawAttackText, customD20) {
+function openAttackAdvantageMenu(event, playerId, rawAttackText, isVersatile = false) {
+  if (event) {
+    if (typeof event.preventDefault === 'function') event.preventDefault();
+    if (typeof event.stopPropagation === 'function') event.stopPropagation();
+  }
+  const existing = document.getElementById('roll20-adv-menu-floater');
+  if (existing) existing.remove();
+
+  const menu = document.createElement('div');
+  menu.id = 'roll20-adv-menu-floater';
+  menu.className = 'roll20-adv-menu';
+
+  const x = event ? (event.clientX || event.pageX || 100) : 100;
+  const y = event ? (event.clientY || event.pageY || 100) : 100;
+  const winW = typeof window !== 'undefined' ? window.innerWidth : 800;
+  const winH = typeof window !== 'undefined' ? window.innerHeight : 600;
+  menu.style.left = `${Math.min(winW - 170, Math.max(10, x - 20))}px`;
+  menu.style.top = `${Math.min(winH - 150, Math.max(10, y + 10))}px`;
+
+  menu.innerHTML = `
+    <button type="button" class="roll20-adv-item" onclick="rollPlayerAttack('${playerId}', '${escapeAttr(rawAttackText)}', null, 'normal', ${isVersatile ? 'true' : 'false'}); closeAttackAdvantageMenu();">
+      🎲 Rolagem Normal
+    </button>
+    <button type="button" class="roll20-adv-item adv-item-adv" onclick="rollPlayerAttack('${playerId}', '${escapeAttr(rawAttackText)}', null, 'adv', ${isVersatile ? 'true' : 'false'}); closeAttackAdvantageMenu();">
+      🟢 Com Vantagem (2d20)
+    </button>
+    <button type="button" class="roll20-adv-item adv-item-dis" onclick="rollPlayerAttack('${playerId}', '${escapeAttr(rawAttackText)}', null, 'dis', ${isVersatile ? 'true' : 'false'}); closeAttackAdvantageMenu();">
+      🔴 Com Desvantagem (2d20)
+    </button>
+  `;
+
+  if (typeof document !== 'undefined' && document.body) {
+    document.body.appendChild(menu);
+    const closeHandler = (e) => {
+      if (!menu.contains(e.target)) {
+        closeAttackAdvantageMenu();
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closeHandler), 50);
+  }
+}
+
+function closeAttackAdvantageMenu() {
+  if (typeof document !== 'undefined') {
+    const m = document.getElementById('roll20-adv-menu-floater');
+    if (m) m.remove();
+  }
+}
+
+function rollPlayerAttack(id, rawAttackText, customD20, rollMode = 'normal', isVersatile = false) {
   const p = PLAYERS.find(x => x.id === id);
   if (!p) return;
 
@@ -55156,19 +55619,46 @@ function rollPlayerAttack(id, rawAttackText, customD20) {
   const hitMatch = rawAttackText.match(/([+-]\d+)/);
   const dmgMatch = rawAttackText.match(/(\d+d\d+(?:\s*[+-]\s*\d+)?)/i);
 
-  const hitBonus = hitMatch ? parseInt(hitMatch[1]) : Math.floor((p.str - 10) / 2) + getProfBonus(p.level);
-  const d20 = (customD20 !== null && customD20 !== undefined) ? parseInt(customD20, 10) : (Math.floor(Math.random() * 20) + 1);
-  const totalHit = d20 + hitBonus;
+  const hitBonus = hitMatch ? parseInt(hitMatch[1], 10) : Math.floor(((p.str || 10) - 10) / 2) + getProfBonus(p.level || 1);
 
+  let d20 = 10;
+  let d20_1 = 10;
+  let d20_2 = 10;
+  let hitModeTag = '';
+
+  if (customD20 !== null && customD20 !== undefined) {
+    d20 = parseInt(customD20, 10);
+  } else if (rollMode === 'adv') {
+    d20_1 = Math.floor(Math.random() * 20) + 1;
+    d20_2 = Math.floor(Math.random() * 20) + 1;
+    d20 = Math.max(d20_1, d20_2);
+    hitModeTag = ` [Vantagem: ${d20_1}, ${d20_2} ➔ ${d20}]`;
+  } else if (rollMode === 'dis') {
+    d20_1 = Math.floor(Math.random() * 20) + 1;
+    d20_2 = Math.floor(Math.random() * 20) + 1;
+    d20 = Math.min(d20_1, d20_2);
+    hitModeTag = ` [Desvantagem: ${d20_1}, ${d20_2} ➔ ${d20}]`;
+  } else {
+    d20 = Math.floor(Math.random() * 20) + 1;
+    hitModeTag = ` [${d20}]`;
+  }
+
+  const totalHit = d20 + hitBonus;
   let isCrit = d20 === 20;
   let isFumble = d20 === 1;
 
+  // Dano: se versátil, ajusta dado para 2 mãos
   let dmgFormula = dmgMatch ? dmgMatch[1].replace(/\s+/g, '') : '1d8+3';
+  if (isVersatile) {
+    if (dmgFormula.startsWith('1d8')) dmgFormula = dmgFormula.replace('1d8', '1d10');
+    else if (dmgFormula.startsWith('1d6')) dmgFormula = dmgFormula.replace('1d6', '1d8');
+  }
+
   let dmgParts = dmgFormula.split(/[+-]/);
   let dicePart = dmgParts[0];
-  let dmgMod = dmgFormula.includes('+') ? parseInt(dmgFormula.split('+')[1]) : (dmgFormula.includes('-') ? -parseInt(dmgFormula.split('-')[1]) : 0);
+  let dmgMod = dmgFormula.includes('+') ? parseInt(dmgFormula.split('+')[1], 10) : (dmgFormula.includes('-') ? -parseInt(dmgFormula.split('-')[1], 10) : 0);
 
-  let [diceCount, diceSides] = dicePart.split('d').map(x => parseInt(x));
+  let [diceCount, diceSides] = dicePart.split('d').map(x => parseInt(x, 10));
   diceCount = diceCount || 1;
   diceSides = diceSides || 8;
 
@@ -55183,20 +55673,35 @@ function rollPlayerAttack(id, rawAttackText, customD20) {
   }
   totalDmg += dmgMod;
 
-  const physicalTag = (customD20 !== null && customD20 !== undefined) ? ' 🎲(Mesa)' : '';
-  const hitBreakdown = `d20 [${d20}${physicalTag}] ${hitBonus >= 0 ? '+' : ''}${hitBonus} ➔ <b>${totalHit}</b> para acertar`;
-  const dmgBreakdown = `${diceCount}d${diceSides} [${dmgRolls.join(', ')}] ${dmgMod !== 0 ? (dmgMod > 0 ? '+ ' + dmgMod : '- ' + Math.abs(dmgMod)) : ''} ➔ <b>${totalDmg}</b> de dano`;
+  const weaponName = rawAttackText.split('(')[0].replace(/[⚔️🗡️🏹★✨💢🥋🔥🟣⚡🎯]/g, '').trim() || 'Arma';
 
-  let logMsg = `⚔️ <b>${p.name}</b> atacou: ${hitBreakdown} | ${dmgBreakdown}`;
+  // Desconta munição se for arma com projétil
+  let ammoMsg = '';
+  if (typeof consumePlayerAmmunition === 'function') {
+    const ammoRes = consumePlayerAmmunition(p, weaponName);
+    if (ammoRes) {
+      if (ammoRes.success) {
+        ammoMsg = ` • 🏹 1 ${ammoRes.label} (restam: ${ammoRes.remaining})`;
+      } else if (ammoRes.empty) {
+        ammoMsg = ` • ⚠️ <b>Sem ${ammoRes.label} no inventário!</b>`;
+      }
+    }
+  }
+
+  const physicalTag = (customD20 !== null && customD20 !== undefined) ? ' 🎲(Mesa)' : '';
+  const hitBreakdown = `d20${hitModeTag}${physicalTag} ${hitBonus >= 0 ? '+' : ''}${hitBonus} ➔ <b>${totalHit}</b> para acertar`;
+  const dmgBreakdown = `${diceCount}d${diceSides} [${dmgRolls.join(', ')}] ${dmgMod !== 0 ? (dmgMod > 0 ? '+ ' + dmgMod : '- ' + Math.abs(dmgMod)) : ''} ➔ <b>${totalDmg}</b> de dano${isVersatile ? ' (2 Mãos)' : ''}`;
+
+  let logMsg = `⚔️ <b>${p.name}</b> atacou com <b>${weaponName}${isVersatile ? ' (2 Mãos)' : ''}</b>: ${hitBreakdown} | ${dmgBreakdown}${ammoMsg}`;
   if (isCrit) logMsg = '🔥 <b>ACERTO CRÍTICO!</b> ' + logMsg;
   if (isFumble) logMsg = '💀 <b>FALHA CRÍTICA (Nat 1)!</b> ' + logMsg;
 
   addLog(logMsg);
-  addPlayerActionLog(p.id, '⚔️', `Ataque${physicalTag}: ${rawAttackText} ➔ Acerto ${totalHit} | Dano ${totalDmg}`, 'attack');
+  addPlayerActionLog(p.id, '⚔️', `Ataque ${weaponName}${hitModeTag}${isVersatile ? ' (2M)' : ''}: Acerto ${totalHit} | Dano ${totalDmg}${ammoMsg}`, 'attack');
   if (typeof playFX === 'function') playFX(isCrit ? 'crit' : (isFumble ? 'fumble' : 'sword'));
 
   if (typeof showLiveDiceRoll === 'function') {
-    showLiveDiceRoll(`⚔️ Ataque - ${p.name}`, totalHit, `${hitBreakdown} | Dano: ${totalDmg}`);
+    showLiveDiceRoll(`⚔️ Ataque - ${p.name}`, totalHit, `${hitBreakdown} | Dano: ${totalDmg}`, isCrit, isFumble);
   }
 
   if (typeof broadcastCombatState === 'function') {
@@ -55206,15 +55711,21 @@ function rollPlayerAttack(id, rawAttackText, customD20) {
   const banner = document.getElementById('dice-banner');
   if (banner) {
     banner.style.display = 'block';
-    document.getElementById('dice-total-number').innerText = totalHit;
-    document.getElementById('dice-breakdown-text').innerText = `${p.name}: Acerto ${totalHit} | Dano: ${totalDmg}`;
+    const totalEl = document.getElementById('dice-total-number');
+    const breakEl = document.getElementById('dice-breakdown-text');
+    if (totalEl) totalEl.innerText = totalHit;
+    if (breakEl) breakEl.innerText = `${p.name}: Acerto ${totalHit} | Dano: ${totalDmg}`;
   }
 
+  // Preenche o despachante de dano no combate para conveniência
+  const inpDmg = document.getElementById('inp-damage');
+  if (inpDmg && totalDmg > 0) inpDmg.value = totalDmg;
+
   renderPlayers();
-  return { d20, totalHit, totalDmg, isCrit, isFumble };
+  return { d20, totalHit, totalDmg, isCrit, isFumble, rollMode, isVersatile };
 }
 
-function rollWeaponDamageOnly(id, rawAttackText, isCrit = false) {
+function rollWeaponDamageOnly(id, rawAttackText, isCrit = false, isVersatile = false) {
   const p = PLAYERS.find(x => x.id === id);
   if (!p) return;
 
@@ -55231,6 +55742,11 @@ function rollWeaponDamageOnly(id, rawAttackText, isCrit = false) {
     } else {
       dmgFormula = '1d8+3';
     }
+  }
+
+  if (isVersatile && dmgFormula) {
+    if (dmgFormula.startsWith('1d8')) dmgFormula = dmgFormula.replace('1d8', '1d10');
+    else if (dmgFormula.startsWith('1d6')) dmgFormula = dmgFormula.replace('1d6', '1d8');
   }
 
   let dmgRolls = [];
@@ -55261,14 +55777,14 @@ function rollWeaponDamageOnly(id, rawAttackText, isCrit = false) {
     totalDmg += dmgMod;
   }
 
-  const weaponName = rawAttackText.split('(')[0].trim() || 'Arma';
+  const weaponName = rawAttackText.split('(')[0].replace(/[⚔️🗡️🏹★✨💢🥋🔥🟣⚡🎯]/g, '').trim() || 'Arma';
   const dmgBreakdown = isFixedNumber
     ? `<b>${totalDmg >= 0 ? '+' + totalDmg : totalDmg}</b>`
     : `${diceCount}d${diceSides} [${dmgRolls.join(', ')}] ${dmgMod !== 0 ? (dmgMod > 0 ? '+ ' + dmgMod : '- ' + Math.abs(dmgMod)) : ''} ➔ <b>${totalDmg}</b>`;
-  const logMsg = `💥 <b>${p.name}</b> rolou dano com <b>${weaponName}</b>: ${dmgBreakdown} de dano${isCrit ? ' 🔥 (CRÍTICO!)' : ''}`;
+  const logMsg = `💥 <b>${p.name}</b> rolou dano com <b>${weaponName}${isVersatile ? ' (2 Mãos)' : ''}</b>: ${dmgBreakdown} de dano${isCrit ? ' 🔥 (CRÍTICO!)' : ''}`;
 
   addLog(logMsg);
-  addPlayerActionLog(p.id, '💥', `Dano ${weaponName}: ${totalDmg} (${dmgBreakdown})`, 'damage');
+  addPlayerActionLog(p.id, '💥', `Dano ${weaponName}${isVersatile ? ' (2 Mãos)' : ''}: ${totalDmg} (${dmgBreakdown})`, 'damage');
   if (typeof playFX === 'function') playFX(isCrit ? 'crit' : 'sword');
 
   // Preenche o campo de dano na central de combate se disponível
@@ -55276,17 +55792,19 @@ function rollWeaponDamageOnly(id, rawAttackText, isCrit = false) {
   if (inpDmg && totalDmg > 0) inpDmg.value = totalDmg;
 
   if (typeof showLiveDiceRoll === 'function') {
-    showLiveDiceRoll(`💥 Dano - ${p.name}`, totalDmg, `${weaponName}: ${dmgBreakdown}`, isCrit, false);
+    showLiveDiceRoll(`💥 Dano - ${p.name}`, totalDmg, `${weaponName}${isVersatile ? ' (2M)' : ''}: ${dmgBreakdown}`, isCrit, false);
   }
 
   const banner = document.getElementById('dice-banner');
   if (banner) {
     banner.style.display = 'block';
-    document.getElementById('dice-total-number').innerText = totalDmg;
-    document.getElementById('dice-breakdown-text').innerText = `${p.name} - ${weaponName}: ${totalDmg} Dano`;
+    const totalEl = document.getElementById('dice-total-number');
+    const breakEl = document.getElementById('dice-breakdown-text');
+    if (totalEl) totalEl.innerText = totalDmg;
+    if (breakEl) breakEl.innerText = `${p.name} - ${weaponName}${isVersatile ? ' (2M)' : ''}: ${totalDmg} Dano`;
   }
 
-  return { totalDmg, dmgRolls, diceCount, diceSides, isCrit };
+  return { totalDmg, dmgRolls, diceCount, diceSides, isCrit, isVersatile };
 }
 
 function togglePlayerSlot(id, lvlIdx, slotIdx) {
@@ -65732,6 +66250,11 @@ if (typeof window !== 'undefined') {
   window.updateBatchRewardCalculations = updateBatchRewardCalculations;
   window.distributeBatchRewards = distributeBatchRewards;
   window.syncPlayerCoinsAndGold = syncPlayerCoinsAndGold;
+  window.getPlayerAmmunitionForItem = getPlayerAmmunitionForItem;
+  window.consumePlayerAmmunition = consumePlayerAmmunition;
+  window.getPlayerExtraAttacksCount = getPlayerExtraAttacksCount;
+  window.openAttackAdvantageMenu = openAttackAdvantageMenu;
+  window.closeAttackAdvantageMenu = closeAttackAdvantageMenu;
 
   window.openPlayerCombatModal = openPlayerCombatModal;
   window.closePlayerCombatModal = closePlayerCombatModal;
@@ -67259,7 +67782,12 @@ if (typeof module !== 'undefined' && module.exports) {
     removeSpellFromPlayer,
     buildPlayerSpellsSummary,
     parseSpellNamesFromRawText,
-    syncPlayerCoinsAndGold
+    syncPlayerCoinsAndGold,
+    getPlayerAmmunitionForItem,
+    consumePlayerAmmunition,
+    getPlayerExtraAttacksCount,
+    openAttackAdvantageMenu,
+    closeAttackAdvantageMenu
   };
 }
 

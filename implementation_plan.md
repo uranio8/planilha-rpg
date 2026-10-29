@@ -1,102 +1,103 @@
-# Plano de Implementação — ISSUE-167: Correção Crítica de Persistência de Ouro/Fichas, Resolução de Conflitos de Sincronização (Firebase & BroadcastChannel) e Atualização Imediata no Portal do Jogador
+# Plano de Implementação — ISSUE-168: Overhaul Supremo da Tabela de Ataques e Armas Calculadas (D&D 5E / 2024)
 
-## 1. Contexto & Diagnóstico Completo
+## 1. Contexto & Objetivos
 
-O usuário relatou:
-> *"algumas informações do sistema estão se perdendo como o ouro, mudança na ficha e tal e as informações não estão sendo atualizadas para os jogadores"*
+O usuário solicitou um pacote completo de melhorias de alto nível para a tabela **ARMA / ATAQUE** e para o sistema de combate das fichas de personagens, abrangendo 5 pilares estratégicos:
 
-Após uma investigação profunda em `src/js/players.js`, `src/js/firebase_sync.js`, `src/js/screen_sync.js`, `src/js/campaigns.js` e `src/js/core.js`, identificamos **6 causas raízes interconectadas** que explicam exatamente a perda de moedas, mudanças sobrescritas e falha de recebimento pelos jogadores:
-
----
-
-### Diagnóstico das Causas Raízes:
-
-1. **Dessincronização Crítica entre `p.gold` e `p.coins.gp` (`src/js/core.js:2169` & `src/js/players.js`)**:
-   - O sistema mantém duas propriedades de moedas: `p.gold` (número simples) e `p.coins` (`{ cp, sp, ep, gp, pp }`).
-   - No `loadFromLocalStorage()` de `core.js`, havia a regra:
-     ```javascript
-     if (p.gold !== undefined && p.gold !== p.coins.gp) {
-       p.coins.gp = p.gold; // <--- SOBREESCREVIA O OURO DAS MOEDAS COM O VALOR ANTIGO DE p.gold!
-     }
-     ```
-   - Toda vez que moedas eram alteradas no modal de moedas (`p.coins.gp`), ao recarregar ou sincronizar, o valor antigo de `p.gold` sobrescrevia `p.coins.gp`, revertendo o ouro do herói!
-   - Na função `adjustPlayerGold(id, amount)`, atualizava apenas `p.gold`, esquecendo de atualizar `p.coins.gp`, sem carimbar `touchPlayer(p)`, sem chamar `syncLocalChangesToFirebase(true)` e sem chamar `broadcastStateSync()`.
-
-2. **Rejeição de Alterações do Mestre no Portal do Jogador (`src/js/firebase_sync.js:639`)**:
-   - Quando o Mestre edita uma ficha (ouro, itens, magias, PV, notas), ele publica para a nuvem (`publishedBy: 'master'`).
-   - Porém, no celular/navegador do aluno (`applyCloudDataToLocal`), a lógica de mesclagem continha:
-     ```javascript
-     const isLocalNewer = localPlayerUpdated >= remotePlayerUpdated;
-     ```
-   - Devido ao sinal `>=` e pequenos desvios de relógio (clock skew) entre celular e PC, `isLocalNewer` avaliava como `true` no celular do aluno.
-   - O celular do aluno **rejeitava** o ouro, itens, magias e características enviadas pelo Mestre e mantinha os dados locais antigos (`coins: isLocalNewer ? localChar.coins : remoteP.coins`).
-   - Imediatamente depois, o celular do aluno disparava `executePlayerCloudSave()`, enviando os dados velhos de volta para o Firebase, **sobrescrevendo e revertendo as alterações do Mestre no servidor e na planilha!**
-
-3. **Loop de Sobrescrita do Hash da URL (`#pdata=...`) (`src/js/players.js:11867`)**:
-   - Ao abrir o link compartilhado com `#pdata=...` (WhatsApp / QR Code), os dados embutidos na URL eram importados.
-   - Porém, o `#pdata=` permanecia permanentemente no hash da URL.
-   - A cada F5 ou recarregamento do navegador do jogador, o sistema lia novamente o `#pdata=` estático e antigo da URL e sobrescrevia os heróis atualizados em `PLAYERS`, sem checar se a versão local já era mais recente (`updatedAt`), e sem limpar o hash via `history.replaceState`.
-
-4. **BroadcastChannel Incompleto e Sem Persistência (`src/js/screen_sync.js:145`)**:
-   - Ao receber `STATE_SYNC` via `BroadcastChannel` (segunda aba/segunda tela/mesmo navegador), `PLAYERS` era atualizado na memória, mas `saveToLocalStorage()` **não era chamado**. Se o jogador atualizasse a aba, tudo se perdia.
-   - `updatePlayerPortalBanner()` não era disparado.
-   - O payload do `STATE_SYNC` omitia `campaigns` (Campanhas, Baú do Grupo e Cofre da Guilda), impedindo a sincronização em tempo real de itens e tesouros compartilhados.
-
-5. **Ações Sem Despacho de Sincronização Imediata**:
-   - `distributeBatchRewards()` (recompensas em lote) não chamava `broadcastStateSync()` e chamava o Firebase com debounce em vez de envio imediato.
-   - `adjustPlayerGold()` não chamava sincronização.
-   - `withdrawCoinsFromStash()` e `depositCoinsToStash()` em `campaigns.js` não chamavam `broadcastStateSync()`.
+1. **Dano Versátil Interativo (1 Mão vs 2 Mãos)**: Suporte para armas versáteis (*Espada Longa, Machado de Batalha, Martelo de Guerra, Bordão, Lança, Tridente*), exibindo ambos os danos (`1d8+MOD` e `2 Mãos: 1d10+MOD`) e fornecendo botões dedicados de rolagem de dano (`💥 1M` e `💥 2M`).
+2. **Mais Habilidades Especiais Ofensivas & Ataque Extra**:
+   - *Marca do Caçador (Hunter's Mark)* (`+1d6` dano da arma, Patrulheiro).
+   - *Bruxaria (Hex)* (`+1d6` necrótico, Bruxo).
+   - *Maldição da Lâmina Maldita (Hexblade's Curse)* (`+PB` ao dano, crítico 19-20).
+   - *Golpe Divino (Divine Strike)* (`+1d8` ou `+2d8` dano elemental/radiante, Clérigo Nv 8+).
+   - *Indicador de Ataque Extra (Extra Attack)*: Badge no cabeçalho da tabela informando quantos ataques o herói desfere por Ação (ex: `⚔️ 2 Ataques / Ação`).
+3. **Rolagens de Ataque com Vantagem / Normal / Desvantagem**: Modos contextuais de rolagem rápida (Normal, Vantagem [2d20 maior] e Desvantagem [2d20 menor]).
+4. **Rolagem Conjunta de Ataque + Dano em 1 só Clique (Estilo Roll20 / D&D Beyond)**:
+   - Ao rolar o ataque, já calcula e apresenta o acerto e o dano simultaneamente no feed/chat.
+   - Em caso de **Acerto Crítico (20 natural)**: dobra automaticamente a quantidade de dados de dano e aciona banner dourado épico.
+   - Botão de 1 clique no chat para enviar o dano direto para o despachante de combate.
+5. **Controle e Rastreamento de Munição para Armas à Distância**:
+   - Detecta flechas, virotes e balas no inventário do personagem.
+   - Exibe a contagem de munição restante na linha da arma (ex: `24/96m • 🏹 20 flechas`).
+   - Ao disparar, desconta automaticamente 1 projétil e avisa no chat (com alerta se o estoque estiver zerado).
 
 ---
 
-## 2. Objetivos da Implementação (ISSUE-167)
+## 2. Arquivos e Módulos Afetados
 
-### 2.1 Unificação e Sincronização Canônica de Ouro e Moedas
-- Criar a função canônica `syncPlayerCoinsAndGold(p)`:
-  - Garante que `p.coins` sempre exista com `{ cp, sp, ep, gp, pp }`.
-  - Garante que `p.gold === p.coins.gp` em **100% das leituras e gravações**.
-  - No `loadFromLocalStorage()`, nunca descartar o maior/mais recente valor de ouro entre `p.gold` e `p.coins.gp`.
-  - Atualizar `adjustPlayerGold(id, amount)` para sincronizar `p.coins.gp`, carimbar `touchPlayer(p)`, salvar em `localStorage`, sincronizar no Firebase (`syncLocalChangesToFirebase(true)`) e transmitir via `broadcastStateSync()`.
-
-### 2.2 Resolução Definitiva de Conflitos na Nuvem (`firebase_sync.js`)
-- Blindar a mesclagem remota no Portal do Jogador:
-  - Quando a atualização vem do Mestre (`cloudData.publishedBy === 'master'`):
-    - As alterações do Mestre em `coins`, `gold`, `inventory`, `attacks`, `features`, `spells`, `preparedSpells`, `slots`, `hp`, `maxHp`, `notes` e atributos são **canônicas e têm prioridade absoluta**.
-    - O celular do aluno adota imediatamente as alterações do Mestre sem descartar dados por timestamps de relógio defasados.
-  - Evitar que o Portal do Jogador reenvie dados velhos logo após receber um snapshot do Mestre.
-  - Bloquear loops de ping-pong com proteção de flag `isApplyingCloudUpdate`.
-
-### 2.3 Sanitização da URL no Portal do Jogador (`players.js`)
-- Ao importar uma ficha via `#pdata=...` na inicialização:
-  - Verificar se a ficha local já existente possui dados válidos e mais recentes que os dados embutidos no link.
-  - Limpar o hash da URL via `window.history.replaceState(null, '', window.location.pathname + window.location.search)` imediatamente após a importação inicial, impedindo que F5/reloads futuros regridam a ficha.
-
-### 2.4 Blindagem e Expansão do `BroadcastChannel` (`screen_sync.js`)
-- No `broadcastStateSync()`:
-  - Incluir `campaigns: (typeof CAMPAIGNS_STATE !== 'undefined') ? CAMPAIGNS_STATE : null` no payload transmitido.
-- No `onmessage` do `syncChannel`:
-  - Salvar imediatamente com `saveToLocalStorage()` ao receber novos dados de jogadores e combate.
-  - Chamar `updatePlayerPortalBanner()` e atualizar o Baú do Grupo se `campaigns` estiver presente.
-  - Garantir re-renderização completa e responsiva.
-
----
-
-## 3. Arquivos e Módulos Afetados
-
-| Arquivo | Modificação Planejada |
+| Arquivo | Modificações Previstas |
 |---|---|
-| `src/js/players.js` | Helper `syncPlayerCoinsAndGold(p)`, sanitização do `#pdata=` com `history.replaceState`, chamada de sync completa em `adjustPlayerGold()` e `distributeBatchRewards()`. |
-| `src/js/firebase_sync.js` | Autoridade estrita de `publishedBy === 'master'` sobre moedas, inventário e fichas, eliminação de regressões por clock skew no Portal do Jogador. |
-| `src/js/screen_sync.js` | Inclusão de `campaigns` no `broadcastStateSync()`, persistência automática `saveToLocalStorage()` e chamada de `updatePlayerPortalBanner()` no `onmessage`. |
-| `src/js/core.js` | Harmonização não-destrutiva de `p.gold` e `p.coins.gp` em `loadFromLocalStorage()` (sem sobrescrever valores maiores de moedas). |
-| `src/js/campaigns.js` | Adicionar chamada de `broadcastStateSync()` em transações do Baú do Grupo e Cofre de Bastion. |
-| `test_runner.js` | Adicionar **Bateria 136** testando persistência e sincronização de ouro, preservação de moedas e resolução de conflitos Mestre/Jogador. |
-| `issues/README.md` | Documentar a resolução da **ISSUE-167**. |
+| `src/js/players.js` | Suporte a armas versáteis em `getPlayerCalculatedAttacks` e `rollWeaponDamageOnly`, novas habilidades de classe em `getPlayerSpecialClassAttacks`, indicador de Ataque Extra, desconto de munição em inventário e rolagem de ataque com modos (normal, vantagem, desvantagem). |
+| `src/js/dice_roller.js` / `src/js/combat.js` | Rolagem conjunta de acerto + dano integrado no chat/feed da mesa, duplicação automática de dados no 20 natural e registro de eventos. |
+| `src/styles/head_css.html` | Estilos CSS para botões versáteis (`.btn-versatile-1h`, `.btn-versatile-2h`), badges de munição (`.ammo-chip`), novos badges de habilidades (`.badge-hunter`, `.badge-hex`, `.badge-divine-strike`) e menu popover de vantagem/desvantagem. |
+| `src/ui/ui.html` | Inclusão do badge indicador de Ataque Extra e melhorias na estrutura da tabela de ataques. |
+| `test_runner.js` | Adição da **Bateria 137** validando: cálculo versátil 1M/2M, novas habilidades ofensivas, ataque extra, desconto de munição e rolagens conjuntas. |
+| `issues/README.md` | Documentação oficial da **ISSUE-168**. |
+
+---
+
+## 3. Detalhamento da Implementação
+
+### 3.1 Dano Versátil (1 Mão vs 2 Mãos)
+- Se a nota/propriedade da arma contiver `Versátil (1d10)` ou `Versátil (1d8)`:
+  - `atk.isVersatile = true`
+  - `atk.versatileDice = '1d10'` (ou `'1d8'`)
+  - `atk.versatileDamage = '1d10+MOD'`
+- Na renderização da tabela:
+  - Célula de dano: `<b style="color: #fbbf24;">${atk.damage}</b> <span style="color: #94a3b8;">${atk.damageType}</span> <div class="roll20-versatile-subtext">(2 Mãos: <b style="color: #f59e0b;">${atk.versatileDamage}</b>)</div>`
+  - Célula de ações: exibe botões `💥 1M` e `💥 2M`, permitindo rolar qualquer uma das opções instantaneamente.
+
+### 3.2 Expansão das Habilidades Especiais Ofensivas
+- **Marca do Caçador**: Patrulheiro Nv 1+ ou herói com a magia `Hunter's Mark` adiciona linha de bônus `+1d6` no acerto.
+- **Bruxaria (Hex)**: Bruxo Nv 1+ ou herói com a magia `Hex` adiciona linha de bônus `+1d6` necrótico.
+- **Maldição da Lâmina Maldita**: Adiciona `+PB` de dano e margem de crítico expandida.
+- **Golpe Divino (Clérigo Nv 8+)**: Adiciona `+1d8` (Nv 8-13) ou `+2d8` (Nv 14+) de dano extra.
+- **Cálculo de Ataque Extra**:
+  - Função `getPlayerExtraAttacksCount(p)`: retorna 1, 2, 3 ou 4 ataques por Ação.
+  - Badge renderizado no topo da tabela: `<span class="extra-attack-badge">⚔️ ${extraAttacks} Ataques / Ação</span>`.
+
+### 3.3 Rolagens Rápidas de Acerto (Normal, Vantagem, Desvantagem)
+- Atualização em `rollPlayerAttack(playerId, rawAttackText, rollMode = 'normal')`:
+  - `normal`: Rola `1d20 + MOD`.
+  - `adv`: Rola `2d20` (destaca o maior resultado) `+ MOD`.
+  - `dis`: Rola `2d20` (destaca o menor resultado) `+ MOD`.
+- Botão interativo `🎲 +MOD`: clique simples rola normal; clique com botão direito ou clique longo abre seletor rápido com `Normal`, `Vantagem` e `Desvantagem`.
+
+### 3.4 Rolagem Conjunta de Ataque + Dano (Estilo Roll20 / D&D Beyond)
+- Quando o jogador clica para rolar o ataque, a mensagem no chat exibe:
+  - Resultado da jogada de ataque (ex: `🎲 18 (13 + 5)` vs CA).
+  - Dano total calculado da arma (ex: `💥 9 (1d8+5 cortante)`).
+  - Se tirar **20 Natural**: exibe `✨ ACERTO CRÍTICO!`, dobra os dados de dano (`2d8+5`) e toca o SFX `'crit'`.
+  - Se tirar **1 Natural**: exibe `💀 FALHA CRÍTICA!`.
+  - Botão `💥 Aplicar Dano` embutido no feed para transferir direto ao combate.
+
+### 3.5 Controle de Munição para Armas à Distância
+- Mapeamento de munições por tipo de arma:
+  - Arcos (Arco Curto, Arco Longo) ➔ `Flechas` / `Arrows`
+  - Bestas (Besta Leve, Besta Pesada, Besta de Mão) ➔ `Virotes` / `Crossbow Bolts`
+  - Fundas ➔ `Balas de Funda` / `Sling Bullets`
+  - Zarabatanas ➔ `Agulhas de Zarabatana`
+- Quando o herói ataca com a arma:
+  - Localiza o item no inventário `p.inventory`.
+  - Se quantidade > 0: desconta 1, salva em `localStorage`, sincroniza e notifica `(Munição restante: X)`.
+  - Se quantidade == 0: emite aviso `⚠️ Sem munição no inventário!` sem impedir a rolagem.
 
 ---
 
 ## 4. Estratégia de Verificação e Testes
-1. Executar `node test_ui_integrity.js` garantindo 100% de integridade nos 617 cliques e 11 abas.
-2. Executar `node builder.js` para compilar o HTML standalone atualizado.
-3. Executar `node test_runner.js` garantindo 100% de aprovação (2.435+ testes).
-4. Executar simulação de transações de moedas, edição de fichas e sincronização bidirecional Mestre ➔ Jogador sem perda de dados.
+
+1. **Testes Unitários Automatizados (`test_runner.js`)**:
+   - Adicionar **Bateria 137**:
+     - Arma versátil calcula dano de 1 mão e 2 mãos corretamente.
+     - Patrulheiro Nv 1+ calcula Marca do Caçador com `+1d6`.
+     - Clérigo Nv 8+ calcula Golpe Divino com `+1d8` e Nv 14+ com `+2d8`.
+     - Ataque Extra computa 2 ataques para Guerreiro Nv 5, 3 ataques no Nv 11 e 4 no Nv 20.
+     - Rolagem de ataque com vantagem rola 2d20 e adota o maior.
+     - Rolagem de ataque com desvantagem rola 2d20 e adota o menor.
+     - Disparo com arco consome 1 flecha do inventário.
+2. **Auditoria de UI (`node test_ui_integrity.js`)**:
+   - Garantir 100% de integridade nos 617+ cliques e 11 abas.
+3. **Compilação (`node builder.js`)**:
+   - Gerar `planilha do rpg.html` e `index.html` standalone sem erros.
+4. **Governança de Git**:
+   - Commit atômico e push seguro sem comandos destrutivos.

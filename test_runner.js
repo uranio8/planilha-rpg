@@ -10652,6 +10652,107 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(sandbox.mergedCoins.gp === 999 && sandbox.mergedGold === 999, 'No Portal do Jogador, dados de moedas do Mestre têm autoridade mesmo com clock skew');
     assert(sandbox.mergedInventory.includes('Espada Mágica +1'), 'No Portal do Jogador, itens dados pelo Mestre são adotados prioritariamente');
 
+    // --- Bateria 137: Overhaul Supremo de Armas Versáteis, Ataque Extra, Munição e Rolagens (ISSUE-168) ---
+    console.log('\n--- Bateria 137: Overhaul Supremo da Tabela de Ataques e Combate (ISSUE-168) ---');
+
+    // 1. Dano Versátil (1 Mão vs 2 Mãos)
+    vm.runInContext(`
+      testHeroVersatile = {
+        id: 'p_hero_versatile_test',
+        name: 'Guerreiro da Espada Longa',
+        level: 3,
+        className: 'Guerreiro',
+        str: 16, // +3 MOD
+        dex: 12,
+        inventory: [
+          { id: 'wpn_longsword', name: 'Espada Longa', damage: '1d8 cortante', prop: 'Versátil (1d10)', equipped: true }
+        ]
+      };
+      attacksVersatile = getPlayerCalculatedAttacks(testHeroVersatile);
+      longswordAtk = attacksVersatile.find(a => a.name.includes('Espada Longa'));
+    `, sandbox);
+    assert(sandbox.longswordAtk && sandbox.longswordAtk.isVersatile === true, 'Espada Longa é detectada como arma versátil');
+    assert(sandbox.longswordAtk.damage === '1d8+3', 'Espada Longa calcula dano de 1 mão com 1d8+3');
+    assert(sandbox.longswordAtk.versatileDamage === '1d10+3', 'Espada Longa calcula dano versátil de 2 mãos com 1d10+3');
+
+    // 2. Indicador de Ataques Extras (Extra Attack)
+    vm.runInContext(`
+      fighterLvl1 = { className: 'Guerreiro', level: 1 };
+      fighterLvl5 = { className: 'Guerreiro', level: 5 };
+      fighterLvl11 = { className: 'Guerreiro', level: 11 };
+      fighterLvl20 = { className: 'Guerreiro', level: 20 };
+      paladinLvl5 = { className: 'Paladino', level: 5 };
+      wizardLvl5 = { className: 'Mago', level: 5 };
+
+      atksF1 = getPlayerExtraAttacksCount(fighterLvl1);
+      atksF5 = getPlayerExtraAttacksCount(fighterLvl5);
+      atksF11 = getPlayerExtraAttacksCount(fighterLvl11);
+      atksF20 = getPlayerExtraAttacksCount(fighterLvl20);
+      atksP5 = getPlayerExtraAttacksCount(paladinLvl5);
+      atksW5 = getPlayerExtraAttacksCount(wizardLvl5);
+    `, sandbox);
+    assert(sandbox.atksF1 === 1, 'Guerreiro Nv 1 realiza 1 ataque por ação');
+    assert(sandbox.atksF5 === 2, 'Guerreiro Nv 5 realiza 2 ataques por ação (Ataque Extra)');
+    assert(sandbox.atksF11 === 3, 'Guerreiro Nv 11 realiza 3 ataques por ação');
+    assert(sandbox.atksF20 === 4, 'Guerreiro Nv 20 realiza 4 ataques por ação');
+    assert(sandbox.atksP5 === 2, 'Paladino Nv 5 realiza 2 ataques por ação');
+    assert(sandbox.atksW5 === 1, 'Mago Nv 5 realiza 1 ataque por ação');
+
+    // 3. Novas Habilidades Especiais Ofensivas (Marca do Caçador, Bruxaria, Golpe Divino)
+    vm.runInContext(`
+      testRanger = { id: 'p_ranger', name: 'Ranger Verde', className: 'Patrulheiro', level: 2, str: 10, dex: 16 };
+      rangerSpecials = getPlayerSpecialClassAttacks(testRanger);
+      huntersMark = rangerSpecials.find(s => s.name.includes("Marca do Caçador"));
+
+      testWarlockHex = { id: 'p_hex', name: 'Bruxo Hex', className: 'Bruxo', level: 1, spells: 'Hex, Rajada Mística', str: 10, dex: 10, cha: 16 };
+      warlockSpecials = getPlayerSpecialClassAttacks(testWarlockHex);
+      hexAtk = warlockSpecials.find(s => s.name.includes("Bruxaria"));
+
+      testCleric8 = { id: 'p_cleric', name: 'Clérigo Sagrado', className: 'Clérigo', level: 8, str: 14, wis: 16 };
+      clericSpecials = getPlayerSpecialClassAttacks(testCleric8);
+      divineStrike8 = clericSpecials.find(s => s.name.includes("Golpe Divino"));
+
+      testCleric14 = { id: 'p_cleric14', name: 'Clérigo Elevado', className: 'Clérigo', level: 14, str: 14, wis: 18 };
+      cleric14Specials = getPlayerSpecialClassAttacks(testCleric14);
+      divineStrike14 = cleric14Specials.find(s => s.name.includes("Golpe Divino"));
+    `, sandbox);
+    assert(sandbox.huntersMark && sandbox.huntersMark.damage === '+1d6', 'Patrulheiro Nv 2 calcula Marca do Caçador com +1d6');
+    assert(sandbox.hexAtk && sandbox.hexAtk.damage === '+1d6' && sandbox.hexAtk.damageType === 'Necrótico', 'Bruxo Nv 1 calcula Bruxaria (Hex) com +1d6 Necrótico');
+    assert(sandbox.divineStrike8 && sandbox.divineStrike8.damage === '+1d8', 'Clérigo Nv 8 calcula Golpe Divino com +1d8');
+    assert(sandbox.divineStrike14 && sandbox.divineStrike14.damage === '+2d8', 'Clérigo Nv 14 escala Golpe Divino para +2d8');
+
+    // 4. Controle e Desconto de Munição no Inventário
+    vm.runInContext(`
+      testArcher = {
+        id: 'p_archer_ammo',
+        name: 'Arqueiro da Floresta',
+        level: 3,
+        className: 'Patrulheiro',
+        dex: 16,
+        inventory: [
+          { id: 'it_bow', name: 'Arco Curto', equipped: true },
+          { id: 'it_arrows', name: 'Flechas', qty: 20 }
+        ]
+      };
+      ammoBefore = getPlayerAmmunitionForItem(testArcher, 'Arco Curto');
+      consumeRes = consumePlayerAmmunition(testArcher, 'Arco Curto');
+      ammoAfter = getPlayerAmmunitionForItem(testArcher, 'Arco Curto');
+    `, sandbox);
+    assert(sandbox.ammoBefore && sandbox.ammoBefore.qty === 20, 'Identifica 20 flechas no inventário para o Arco Curto');
+    assert(sandbox.consumeRes && sandbox.consumeRes.success === true && sandbox.consumeRes.remaining === 19, 'consumePlayerAmmunition desconta 1 flecha com sucesso (20 -> 19)');
+    assert(sandbox.ammoAfter && sandbox.ammoAfter.qty === 19, 'Inventário atualizado com 19 flechas restantes');
+
+    // 5. Rolagens de Ataque com Modos (Vantagem / Desvantagem / Crítico)
+    vm.runInContext(`
+      PLAYERS.push(testHeroVersatile);
+      advRoll = rollPlayerAttack('p_hero_versatile_test', 'Espada Longa (+5) 1d8+3 cortante', null, 'adv');
+      disRoll = rollPlayerAttack('p_hero_versatile_test', 'Espada Longa (+5) 1d8+3 cortante', null, 'dis');
+      versatileDmgRoll = rollWeaponDamageOnly('p_hero_versatile_test', 'Espada Longa (+5) 1d8+3 cortante', false, true);
+    `, sandbox);
+    assert(sandbox.advRoll && sandbox.advRoll.rollMode === 'adv', 'rollPlayerAttack suporta e registra modo de Vantagem');
+    assert(sandbox.disRoll && sandbox.disRoll.rollMode === 'dis', 'rollPlayerAttack suporta e registra modo de Desvantagem');
+    assert(sandbox.versatileDmgRoll && sandbox.versatileDmgRoll.isVersatile === true && sandbox.versatileDmgRoll.diceSides === 10, 'rollWeaponDamageOnly rola com 1d10 quando marcado como versátil');
+
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;
     sandbox.document.getElementById = origGetEl;
