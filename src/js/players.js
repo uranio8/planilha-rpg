@@ -8081,7 +8081,7 @@ function renderSpellPickerList() {
   const copyBanner = document.getElementById('picker-copy-banner');
   if (!container) return;
 
-  const p = PLAYERS.find(x => x.id === currentPickerPlayerId);
+  const p = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS)) ? (PLAYERS.find(x => x.id === currentPickerPlayerId) || PLAYERS[0] || null) : null;
   const heroClassKey = p ? getCompatibleClassKey(p.className, p.subclassIdx, p.subclass) : null;
   const heroClassKeys = p ? getPlayerCompatibleClassKeys(p) : [];
   const isWiz = isWizardPlayer(p);
@@ -8196,7 +8196,7 @@ function renderSpellPickerList() {
 
   let spells = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA : [];
 
-  if (isWiz && (pickerMode === 'book' || (pickerMode === 'prep' && (p.spellbookSpells || []).length > 0 && !pickerShowOnlySelected))) {
+  if (isWiz && p && (pickerMode === 'book' || (pickerMode === 'prep' && (p.spellbookSpells || []).length > 0 && !pickerShowOnlySelected))) {
     // No modo 'book', mostra apenas magias que estão no grimório
     if (pickerMode === 'book') {
       spells = spells.filter(s => (p.spellbookSpells || []).includes(s.name));
@@ -8315,7 +8315,7 @@ function renderSpellPickerList() {
   container.innerHTML = filtered.map(s => {
     const isSelected = pickerSelectedSpells.has(s.name);
     const circleLabel = s.level === 0 ? 'Truque' : `${s.level}º Círculo`;
-    const classPills = Array.isArray(s.classes) ? s.classes.slice(0, 3).join(', ') : '';
+    const classPills = Array.isArray(s.classes) ? s.classes.join(', ') : '';
     const castTimeText = s.time || s.castTime || '1 ação';
     const isExpanded = pickerExpandedSpell === s.name;
     const spAct = getSpellActionType(s);
@@ -8398,7 +8398,7 @@ function toggleSpellInPicker(spellName) {
 }
 
 function saveSpellPickerSelection(isSilent = false) {
-  const p = PLAYERS.find(x => x.id === currentPickerPlayerId);
+  const p = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS)) ? (PLAYERS.find(x => x.id === currentPickerPlayerId) || PLAYERS[0] || null) : null;
   if (!p) return;
 
   const selectedArr = Array.from(pickerSelectedSpells);
@@ -13922,6 +13922,15 @@ function toggleAllBatchRewardHeroes(select) {
   updateBatchRewardCalculations();
 }
 
+function selectCurrentCampaignBatchRewardHeroes() {
+  const filtered = (typeof getCurrentlyFilteredPlayers === 'function')
+    ? getCurrentlyFilteredPlayers()
+    : ((typeof getFilteredPlayers === 'function') ? getFilteredPlayers() : (typeof PLAYERS !== 'undefined' ? PLAYERS : []));
+  batchRewardSelectedHeroIds = new Set((filtered || []).map(p => p.id));
+  renderBatchRewardHeroList();
+  updateBatchRewardCalculations();
+}
+
 function setBatchXpQuick(amount) {
   const inpXp = document.getElementById('inp-batch-xp-total');
   if (!inpXp) return;
@@ -15266,6 +15275,7 @@ if (typeof window !== 'undefined') {
   window.renderBatchRewardHeroList = renderBatchRewardHeroList;
   window.toggleBatchRewardHero = toggleBatchRewardHero;
   window.toggleAllBatchRewardHeroes = toggleAllBatchRewardHeroes;
+  window.selectCurrentCampaignBatchRewardHeroes = selectCurrentCampaignBatchRewardHeroes;
   window.setBatchXpQuick = setBatchXpQuick;
   window.updateBatchRewardCalculations = updateBatchRewardCalculations;
   window.distributeBatchRewards = distributeBatchRewards;
@@ -15355,6 +15365,7 @@ if (typeof module !== 'undefined' && module.exports) {
     renderBatchRewardHeroList,
     toggleBatchRewardHero,
     toggleAllBatchRewardHeroes,
+    selectCurrentCampaignBatchRewardHeroes,
     setBatchXpQuick,
     updateBatchRewardCalculations,
     distributeBatchRewards,

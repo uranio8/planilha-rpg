@@ -4358,8 +4358,12 @@ function closeBastionActionModal() {
 function setBastionActionFilter(lvl, btnEl) {
   currentBastionLevelFilter = lvl;
   const chips = document.querySelectorAll('.bastion-filter-chip');
-  chips.forEach(c => c.classList.remove('active'));
-  if (btnEl) btnEl.classList.add('active');
+  if (chips && chips.forEach) {
+    chips.forEach(c => {
+      if (c && c.classList) c.classList.remove('active');
+    });
+  }
+  if (btnEl && btnEl.classList) btnEl.classList.add('active');
   renderBastionActionsList();
 }
 

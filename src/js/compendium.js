@@ -459,9 +459,10 @@ function searchAndFilterMonsters(list, rawQ, srcFilter, crFilter, typeFilter, so
   const matched = [];
 
   list.forEach(m => {
-    const normName = normalizeBestiarySearch(m.name);
-    const normAtk = normalizeBestiarySearch(m.attack);
-    const normSource = normalizeBestiarySearch(m.source);
+    if (!m) return;
+    const normName = normalizeBestiarySearch(m.name || '');
+    const normAtk = normalizeBestiarySearch(m.attack || '');
+    const normSource = normalizeBestiarySearch(m.source || '');
     const fullText = `${normName} ${normAtk} ${normSource}`;
 
     // 1. Filtro de Texto (Nome / Ações)
@@ -535,11 +536,13 @@ function searchAndFilterMonsters(list, rawQ, srcFilter, crFilter, typeFilter, so
 
   // 5. Ordenação dos Resultados
   matched.sort((a, b) => {
+    if (!a || !a.monster) return 1;
+    if (!b || !b.monster) return -1;
     if (sortOrder === 'name-asc') {
-      return a.monster.name.localeCompare(b.monster.name, 'pt-BR');
+      return (a.monster.name || '').localeCompare(b.monster.name || '', 'pt-BR');
     }
     if (sortOrder === 'name-desc') {
-      return b.monster.name.localeCompare(a.monster.name, 'pt-BR');
+      return (b.monster.name || '').localeCompare(a.monster.name || '', 'pt-BR');
     }
     if (sortOrder === 'cr-asc') {
       return parseMonsterCr(a.monster.cr) - parseMonsterCr(b.monster.cr);
@@ -552,9 +555,9 @@ function searchAndFilterMonsters(list, rawQ, srcFilter, crFilter, typeFilter, so
     }
     // Padrão: Relevância (se houver busca ativa) ou ND/Alfabético
     if (rawNorm) {
-      return b.score - a.score || a.monster.name.localeCompare(b.monster.name, 'pt-BR');
+      return b.score - a.score || (a.monster.name || '').localeCompare(b.monster.name || '', 'pt-BR');
     }
-    return a.monster.name.localeCompare(b.monster.name, 'pt-BR');
+    return (a.monster.name || '').localeCompare(b.monster.name || '', 'pt-BR');
   });
 
   return matched;
@@ -616,8 +619,10 @@ function renderBestiary(resetLimit = true) {
   }
 
   let html = visibleList.map(({ monster: m, activeTokens }, idx) => {
-    const renderedName = highlightSearchMatch(m.name, activeTokens);
-    const renderedAtk = highlightSearchMatch(m.attack, activeTokens);
+    const renderedName = highlightSearchMatch(m.name || 'Criatura', activeTokens);
+    const renderedAtk = highlightSearchMatch(m.attack || m.actions || 'Ataque padrão', activeTokens);
+    const safeMonName = String(m.name || 'Criatura').replace(/'/g, "\\'");
+    const safeMonAtk = String(m.attack || m.actions || '+0 (1d4)').replace(/'/g, "\\'");
 
     return `
       <div class="item-card">
@@ -625,14 +630,14 @@ function renderBestiary(resetLimit = true) {
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
             <div>
               <div style="font-size: 15px; font-weight: 800; font-family: var(--font-title); color: #fff;">${renderedName}</div>
-              <div style="font-size: 11px; color: var(--text-muted);">Livro: <span style="color: var(--primary);">${m.source}</span> • Deslocamento: ${m.speed}</div>
+              <div style="font-size: 11px; color: var(--text-muted);">Livro: <span style="color: var(--primary);">${m.source || 'Manual'}</span> • Deslocamento: ${m.speed || '9m'}</div>
             </div>
-            <span class="badge badge-cr">ND ${m.cr}</span>
+            <span class="badge badge-cr">ND ${m.cr || '1'}</span>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: #080c16; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 12px; margin-bottom: 8px;">
-            <div><span style="color: var(--text-dim);">Classe de Armadura:</span> <b style="color: #fff;">${m.ac}</b></div>
-            <div><span style="color: var(--text-dim);">Pontos de Vida:</span> <b style="color: var(--accent-red);">${m.hp} PV</b></div>
+            <div><span style="color: var(--text-dim);">Classe de Armadura:</span> <b style="color: #fff;">${m.ac || 10}</b></div>
+            <div><span style="color: var(--text-dim);">Pontos de Vida:</span> <b style="color: var(--accent-red);">${m.hp || 10} PV</b></div>
           </div>
 
           <div style="font-size: 12px; color: #cbd5e1; line-height: 1.4; margin-bottom: 10px;">
@@ -647,13 +652,13 @@ function renderBestiary(resetLimit = true) {
             <input type="number" id="qty-mon-${idx}" class="monster-qty-input" min="1" max="50" value="1">
             <button type="button" class="monster-qty-btn" onclick="const el=document.getElementById('qty-mon-${idx}'); if(el){ el.value=Math.min(50, (parseInt(el.value)||1)+1); }" title="Aumentar">+</button>
           </div>
-          <button class="btn-action" style="flex: 1; justify-content: center; font-size: 11.5px; padding: 6px 10px; min-width: 95px;" onclick="addMonsterToCombat('${m.name.replace(/'/g, "\\'")}', ${m.ac}, ${m.hp}, '${m.attack.replace(/'/g, "\\'")}', 'qty-mon-${idx}')">
+          <button class="btn-action" style="flex: 1; justify-content: center; font-size: 11.5px; padding: 6px 10px; min-width: 95px;" onclick="addMonsterToCombat('${safeMonName}', ${m.ac || 10}, ${m.hp || 10}, '${safeMonAtk}', 'qty-mon-${idx}')">
             ⚔️ Combate
           </button>
-          <button class="btn-secondary" style="font-size: 11px; padding: 6px 9px; color: var(--primary-light); border-color: rgba(245, 158, 11, 0.4);" onclick="openQuickInitModal('${m.name.replace(/'/g, "\\'")}', ${m.ac}, ${m.hp}, '${m.attack.replace(/'/g, "\\'")}', '${m.cr}')" title="Iniciativa Relâmpago (DM4)">
+          <button class="btn-secondary" style="font-size: 11px; padding: 6px 9px; color: var(--primary-light); border-color: rgba(245, 158, 11, 0.4);" onclick="openQuickInitModal('${safeMonName}', ${m.ac || 10}, ${m.hp || 10}, '${safeMonAtk}', '${m.cr || '1'}')" title="Iniciativa Relâmpago (DM4)">
             ⚡ Relâmpago
           </button>
-          <button class="btn-secondary" style="font-size: 11px; padding: 6px 9px;" onclick="addMonsterToEncounterDraft('${m.name.replace(/'/g, "\\'")}', '${m.cr}', ${m.ac}, ${m.hp}, '${m.attack.replace(/'/g, "\\'")}')" title="Adicionar ao Balanceador de Encontros (DM1)">
+          <button class="btn-secondary" style="font-size: 11px; padding: 6px 9px;" onclick="addMonsterToEncounterDraft('${safeMonName}', '${m.cr || '1'}', ${m.ac || 10}, ${m.hp || 10}, '${safeMonAtk}')" title="Adicionar ao Balanceador de Encontros (DM1)">
             ⚖️ +Encontro
           </button>
         </div>
@@ -2080,11 +2085,11 @@ function updateCustomMonsterCrPreview() {
 function saveCustomMonsterToBestiary(customObj = null) {
   const name = (customObj && customObj.name) || (typeof document !== 'undefined' ? document.getElementById('inp-custom-mon-name')?.value : '') || 'Monstro Customizado do Mestre';
   const type = (customObj && customObj.type) || (typeof document !== 'undefined' ? document.getElementById('sel-custom-mon-type')?.value : 'monstrosity') || 'monstrosity';
-  const hp = parseInt((customObj && customObj.hp) !== undefined ? customObj.hp : (typeof document !== 'undefined' ? document.getElementById('inp-custom-mon-hp')?.value : 135), 10) || 135;
-  const ac = parseInt((customObj && customObj.ac) !== undefined ? customObj.ac : (typeof document !== 'undefined' ? document.getElementById('inp-custom-mon-ac')?.value : 16), 10) || 16;
-  const dpr = parseInt((customObj && customObj.dpr) !== undefined ? customObj.dpr : (typeof document !== 'undefined' ? document.getElementById('inp-custom-mon-dpr')?.value : 35), 10) || 35;
-  const atk = parseInt((customObj && customObj.atk) !== undefined ? customObj.atk : (typeof document !== 'undefined' ? document.getElementById('inp-custom-mon-atk')?.value : 7), 10) || 7;
-  const dc = parseInt((customObj && customObj.dc) !== undefined ? customObj.dc : (typeof document !== 'undefined' ? document.getElementById('inp-custom-mon-dc')?.value : 15), 10) || 15;
+  const hp = parseInt(customObj?.hp !== undefined ? customObj.hp : (typeof document !== 'undefined' ? document.getElementById('inp-custom-mon-hp')?.value : 135), 10) || 135;
+  const ac = parseInt(customObj?.ac !== undefined ? customObj.ac : (typeof document !== 'undefined' ? document.getElementById('inp-custom-mon-ac')?.value : 16), 10) || 16;
+  const dpr = parseInt(customObj?.dpr !== undefined ? customObj.dpr : (typeof document !== 'undefined' ? document.getElementById('inp-custom-mon-dpr')?.value : 35), 10) || 35;
+  const atk = parseInt(customObj?.atk !== undefined ? customObj.atk : (typeof document !== 'undefined' ? document.getElementById('inp-custom-mon-atk')?.value : 7), 10) || 7;
+  const dc = parseInt(customObj?.dc !== undefined ? customObj.dc : (typeof document !== 'undefined' ? document.getElementById('inp-custom-mon-dc')?.value : 15), 10) || 15;
   const actions = (customObj && customObj.actions) || (typeof document !== 'undefined' ? document.getElementById('inp-custom-mon-actions')?.value : '') || `Ataque Principal: +${atk} para atingir (${dpr} de dano médio).`;
 
   const crRes = calculateCustomMonsterCr({ hp, ac, dpr, atk, dc });
@@ -2096,6 +2101,7 @@ function saveCustomMonsterToBestiary(customObj = null) {
     ac,
     hp,
     speed: '9m',
+    attack: actions || `+${atk} (${dpr} de dano)`,
     actions,
     source: 'DMG Custom'
   };

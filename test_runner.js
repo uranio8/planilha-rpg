@@ -10520,6 +10520,19 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(renderedHtml.includes('roll20-atk-badge badge-sneak'), 'HTML renderiza badge temático .badge-sneak');
     assert(renderedHtml.includes('is-special-attack'), 'Linha de ataque especial possui classe .is-special-attack');
 
+    // 🛡️ [Bateria 134] Suíte Completa de Integridade de UI, Navegação e Cliques (ISSUE-165):
+    console.log('\n🛡️ [Bateria 134] Suíte Completa de Integridade de UI, Navegação e Cliques (ISSUE-165):');
+    try {
+      const { execSync } = require('child_process');
+      const integrityOut = execSync('node test_ui_integrity.js', { encoding: 'utf8' });
+      assert(integrityOut.includes('100% DAS AÇÕES E TELAS DA INTERFACE APROVADAS'), 'test_ui_integrity.js executado com sucesso e 100% de aprovação');
+      assert(integrityOut.includes('Abas Validadas:    11/11'), '11/11 abas validadas com sucesso');
+      assert(integrityOut.includes('Modais Validados:  10/10'), '10/10 modais validados com sucesso');
+      assert(integrityOut.includes('Ações de Clique:   617/617 aprovadas'), '617/617 ações de clique em ui.html aprovadas');
+    } catch (e) {
+      assert(false, `test_ui_integrity.js falhou: ${e.message}`);
+    }
+
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;
     sandbox.document.getElementById = origGetEl;
