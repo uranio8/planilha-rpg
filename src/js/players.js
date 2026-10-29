@@ -2918,12 +2918,12 @@ function renderPlayers() {
               
               <!-- ABA 1: COMBATE & AÇÕES -->
               <div class="roll20-tab-panel" style="display: ${activeRoll20Tab === 'combat' ? 'block' : 'none'};">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                  <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="roll20-atk-header-row">
+                  <div class="roll20-atk-title-wrap">
                     <span class="roll20-panel-title" style="margin: 0; border: none; padding: 0;">⚔️ ATAQUES & ARMAS CALCULADAS</span>
                     ${(typeof getPlayerExtraAttacksCount === 'function' && getPlayerExtraAttacksCount(p) > 1) ? `<span class="extra-attack-badge" title="Pode realizar ${getPlayerExtraAttacksCount(p)} ataques na ação Atacar">⚔️ ${getPlayerExtraAttacksCount(p)} Ataques / Ação</span>` : ''}
                   </div>
-                  <div style="display: flex; gap: 4px;">
+                  <div class="roll20-atk-header-actions">
                     <button type="button" class="btn-micro roll20-btn-add-weapon" onclick="openWeaponPickerModal('${p.id}')" title="Adicionar arma rápida do acervo D&D">⚔️ + Arma</button>
                     <button type="button" class="btn-micro roll20-btn-add-item" onclick="openAddPlayerItemModal('${p.id}')" title="Adicionar item ao inventário">➕ Item</button>
                   </div>

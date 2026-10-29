@@ -10795,6 +10795,21 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
       assert(false, `test_agent_simulation.js falhou: ${simErr.message}`);
     }
 
+    // =========================================================================
+    // 📱 BATERIA 139: ISSUE-170 - RESPONSIVIDADE MOBILE-FIRST, ZERO OVERFLOW EM 360-390PX
+    // =========================================================================
+    console.log('\n📱 [Bateria 139] Responsividade Mobile-First, Ausência de Overflow Lateral e Ajuste em 360-390px (ISSUE-170):');
+
+    const headCssContent139 = fs.readFileSync(path.join(srcDir, 'styles', 'head_css.html'), 'utf8');
+    assert(headCssContent139.includes('body.mode-player-portal main {') && headCssContent139.includes('box-sizing: border-box;'), 'CSS base do player portal define box-sizing: border-box em main');
+    assert(headCssContent139.includes('overflow-x: hidden !important;') && headCssContent139.includes('padding: 6px !important;'), 'CSS mobile (@media 500px) ajusta padding e overflow-x do main');
+    assert(headCssContent139.includes('grid-template-columns: repeat(2, minmax(0, 1fr)) !important;'), 'CSS mobile define grade de atributos em 2 colunas com minmax(0, 1fr)');
+    assert(headCssContent139.includes('.roll20-atk-header-row') && headCssContent139.includes('.roll20-atk-title-wrap'), 'CSS inclui classes responsivas para cabeçalho de ataques');
+    assert(headCssContent139.includes('body.mode-player-portal .dm-notes-drawer'), 'CSS oculta drawer de notas do mestre no modo portal do jogador');
+
+    const playersJsContent139 = fs.readFileSync(path.join(srcDir, 'js', 'players.js'), 'utf8');
+    assert(playersJsContent139.includes('roll20-atk-header-row') && playersJsContent139.includes('roll20-atk-title-wrap'), 'players.js utiliza estrutura responsiva no cabeçalho da tabela de ataques');
+
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;
     sandbox.document.getElementById = origGetEl;

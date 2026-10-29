@@ -1,57 +1,51 @@
-# Plano de Implementação — ISSUE-169: Overhaul Visual de Modais/Pop-ups, Correção de Instalações não Solicitadas do Bastião e Suíte de Simulação E2E por Agentes (Mestre, Jogador e Sincronização)
+# 📋 Plano de Implementação - ISSUE-170
 
-## 1. Contexto & Diagnóstico
-
-O usuário solicitou 3 melhorias estratégicas para o sistema:
-
-1. **🎨 Deixar as caixas de pop-up e modais mais bonitas**:
-   - Atualmente, as caixas de modais (`.modal-box`, `.modal-body`, `.modal-content`) possuem um visual escuro básico e plano (`#0f1524`, sem gradientes de profundidade, sombras simples e transições abruptas).
-   - Melhorar para uma estética **Dark Fantasy Premium**:
-     - Fundo com gradiente suave multicamadas (`linear-gradient(180deg, #131c31 0%, #0c1220 100%)`).
-     - Borda acetinada com iluminação periférica dourada/âmbar (`box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(245, 158, 11, 0.2), 0 0 40px rgba(245, 158, 11, 0.08)`).
-     - Animação de entrada suave com efeito spring pop (`animation: modalSpringPop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards`).
-     - Cabeçalhos de modais com tipografia Cinzel, divisores com gradiente dourado e botões `✕` com feedback tátil aprimorado.
-     - Botões de rodapé/ação com micro-brilho e estados `:hover` de alto contraste.
-
-2. **🏰 Correção do Bastião (Construções não Solicitadas)**:
-   - **Diagnóstico da Causa-Raiz**: Em `src/js/campaigns.js:3240`, a função `getCampaignBastion(camp)` continha construções hardcoded no array inicial `specialFacilities`:
-     ```javascript
-     specialFacilities: [
-       { key: "workshop", name: "Oficina de Artesanato", ... },
-       { key: "garden", name: "Jardim de Ervas", ... }
-     ]
-     ```
-   - Toda vez que uma campanha era inicializada ou o bastião era criado, o sistema injetava automaticamente a *Oficina de Artesanato* e o *Jardim de Ervas*, mesmo que o usuário não as tivesse solicitado.
-   - **Solução**:
-     - Inicializar `specialFacilities: []` como array vazio.
-     - O bastião só terá instalações especiais quando o usuário decidir construí-las clicando em **"+ Adicionar Instalação"**.
-     - Blindagem da renderização para exibir um card informativo convidativo quando a fortaleza não possuir instalações.
-
-3. **🤖 Suíte de Testes Automatizados por Agentes (Mestre, Jogador e Sincronização)**:
-   - Criação da suíte `test_agent_simulation.js` simulando uma sessão completa com múltiplos agentes:
-     - **Agente Mestre**: Cria campanha, gerencia bastião limpo, recruta heróis, despacha para combate, aplica dano/cura, distribui XP/ouro e sincroniza via nuvem/broadcast.
-     - **Agente Jogador**: Conecta via Portal do Jogador, recebe dados do mestre em tempo real sem regressões, ataca com armas versáteis (1M/2M) ou à distância (consumindo munição), gasta slots de magia e sincroniza.
-     - **Auditor de Sincronização**: Valida se todas as alterações feitas pelo Mestre aparecem no Jogador e se ações do Jogador aparecem no Combate e no Grid do Mestre.
-   - Integração da **Bateria 138** no `test_runner.js`.
+## 📱 Refinamento Responsivo Mobile-First da Ficha do Jogador, Eliminação de Cortes Laterais e Prevenção de Scroll Horizontal em Celulares
 
 ---
 
-## 2. Arquivos e Módulos Afetados
+### 1. 🎯 Contexto e Objetivos
 
-| Arquivo | Modificações Planejadas |
-|---|---|
-| `src/styles/head_css.html` | Design System dos Modais: `.modal-overlay`, `.modal-box`, `.modal-body`, `.modal-header`, botões de fechar, divisores com glow dourado e animação `modalSpringPop`. |
-| `src/js/campaigns.js` | Inicialização limpa de `specialFacilities: []` em `getCampaignBastion`, prevenindo a inserção automática de instalações não solicitadas. |
-| `test_agent_simulation.js` | Novo script de teste autônomo simulando jornadas completas de Mestre, Jogadores e Auditoria de Sincronização em tempo real. |
-| `test_runner.js` | Adição da **Bateria 138** validando a integridade do Bastião vazio e executando a simulação E2E de agentes. |
-| `issues/README.md` | Registro oficial da **ISSUE-169**. |
+Com base nos testes realizados com o emulador de celular (resolução de 390×844 em alta densidade de pixels Retina 2×, padrão iPhone 14 / Galaxy recente), a aplicação apresentou excelente legibilidade, contraste e usabilidade no Portal do Jogador.
+
+No entanto, em telas estreitas de smartphones (360px a 420px), foram identificados 4 pontos de atrito visual e responsividade:
+1. **Atributos Pares Espremidos**: Na grade `.roll20-abilities-bar` em duas colunas, chips de `SALVA` da coluna da direita (DES, INT, CAR) sofrem aperto lateral ou corte de margem.
+2. **Card de Defesa e Deslocamento (`CLASSE ARM.` e `DESLOC.`)**: O bloco `.roll20-ac-speed-box` encosta rente à borda direita em 390px, demandando `box-sizing: border-box` estrito e padding balanceado.
+3. **Cabeçalho de Ataques Comprimido**: O título `⚔️ ATAQUES & ARMAS CALCULADAS` e os botões rápidos `⚔️ + Arma` e `➕ Item` estão em uma linha rígida horizontal com `justify-content: space-between`, empurrando os botões para fora da tela no celular.
+4. **Navegação de Abas Horizontais**: Tanto as abas principais do topo quanto as sub-abas da ficha (`.roll20-tabs-header`) precisam de rolagem por toque (*touch-action: pan-x*) suave e sem scrollbar invasiva.
 
 ---
 
-## 3. Estratégia de Verificação e Testes
+### 2. 🗂️ Arquivos e Módulos Afetados
 
-1. Executar `node test_agent_simulation.js` validando 100% das etapas dos agentes Mestre e Jogador e a sincronização bidirecional.
-2. Executar `node test_ui_integrity.js` garantindo integridade nos 617 cliques e 11 abas.
-3. Executar `node builder.js` para compilar o HTML standalone atualizado.
-4. Executar `node test_runner.js` garantindo 100% de sucesso em todas as baterias (2.462+ testes).
-5. Commit e push seguro no Git seguindo as diretrizes de `AGENTS.md`.
+1. **`src/styles/head_css.html`**:
+   - Refinamento do breakpoint móvel `@media (max-width: 500px)` e `@media (max-width: 390px)`.
+   - Ajuste em `.roll20-abilities-bar`: `gap: 6px`, `min-width: 0` e `box-sizing: border-box`.
+   - Ajuste em `.roll20-sub-chip`: `min-width: 0`, `padding: 4px 1px`, `overflow: hidden`, texto de salvaguarda responsivo.
+   - Ajuste em `.roll20-ac-speed-box`: padding proporcional (`8px 12px`), alinhamento centrado e respiro lateral.
+   - Classe `.roll20-atk-header-row`: `display: flex; flex-wrap: wrap; gap: 6px; justify-content: space-between; align-items: center;` para o cabeçalho de ataques quebrar em 2 linhas limpas no celular.
+   - Suavização de `.roll20-tabs-header`: `-webkit-overflow-scrolling: touch`, sem quebra de layout e com toque natural.
+2. **`src/js/players.js`**:
+   - Adicionar a classe semântica `.roll20-atk-header-row` no cabeçalho de armas calculadas da ficha.
+3. **`test_runner.js`**:
+   - Adição da **Bateria 139**: Testes de Responsividade Mobile-First, ausência de transbordo horizontal e integridade de layout para telas de 360px a 390px.
+4. **`issues/README.md`**:
+   - Registro da conclusão da **ISSUE-170**.
+
+---
+
+### 3. ⚠️ Riscos e Impactos em Persistência / Sincronização
+
+- **Persistência (`localStorage`)**: **Zero impacto**. Trata-se de aperfeiçoamento de CSS e classes visuais; nenhuma estrutura de dados ou chave de armazenamento é modificada.
+- **Sincronização (Firebase / BroadcastChannel)**: **Zero impacto**. O fluxo de atualização entre mestre e alunos permanece 100% idêntico.
+- **Desktop e Telão**: **Zero impacto**. Todos os ajustes estão isolados em `@media (max-width: 500px)` e classes auxiliares, mantendo a experiência em tablets, notebooks e modo telão intocada.
+
+---
+
+### 4. 🧪 Estratégia de Verificação Automatizada
+
+- [ ] Execução do compilador: `node builder.js`.
+- [ ] Execução da suíte de integridade de UI: `node test_ui_integrity.js` (617/617 cliques).
+- [ ] Execução do runner de testes automatizados: `node test_runner.js` com a **Bateria 139** (100% de sucesso).
+- [ ] Captura de nova screenshot em emulador móvel (390×844) confirmando visualmente a eliminação de qualquer corte lateral.
+- [ ] Commit e push limpos no Git.

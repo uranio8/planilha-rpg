@@ -5036,6 +5036,7 @@
     body.mode-player-portal main {
       max-width: 1520px;
       width: 100%;
+      box-sizing: border-box;
       padding: 14px;
       margin: 0 auto;
     }
@@ -7767,6 +7768,9 @@
     /* --- 7. MODO PORTAL DO ALUNO / JOGADOR (VISÃO LIMITADA DO ALUNO) --- */
     body.mode-player-portal .dm-only-btn,
     body.mode-player-portal .btn-header-backup,
+    body.mode-player-portal .dm-notes-drawer,
+    body.mode-player-portal #dm-quick-notes-drawer,
+    body.mode-player-portal .btn-toggle-dm-notes,
     body.mode-player-portal .player-actions-group .btn-secondary[onclick*="deletePlayerDirect"],
     body.mode-player-portal .player-actions-group .roll20-btn-tool-del,
     body.mode-player-portal .player-actions-group button[onclick*="deletePlayer"],
@@ -11133,22 +11137,99 @@
         grid-template-columns: repeat(3, 1fr);
       }
     }
+    /* Cabeçalho de Ataques Responsivo Mobile-First (ISSUE-170) */
+    .roll20-atk-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .roll20-atk-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .roll20-atk-header-actions {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
     @media (max-width: 500px) {
+      body.mode-player-portal main {
+        padding: 6px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+      }
+      body.mode-player-portal #tab-players {
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
       .roll20-sheet,
       .player-card {
         max-width: 100% !important;
         width: 100% !important;
         box-sizing: border-box !important;
         overflow-x: hidden !important;
-        padding: 10px 8px !important;
+        padding: 8px 6px !important;
         gap: 10px !important;
       }
       body.mode-player-portal .player-card,
       .player-card.portal-view {
-        padding: 12px 8px !important;
+        padding: 8px 6px !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
       }
       .roll20-abilities-bar {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 6px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .roll20-ability-box {
+        padding: 6px 4px !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+      }
+      .roll20-ability-header {
+        font-size: 10.5px !important;
+        padding: 0 2px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .roll20-mod-save-row {
+        display: flex !important;
+        gap: 3px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .roll20-sub-chip {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        padding: 4px 1px !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+      }
+      .roll20-sub-chip .roll20-chip-val {
+        font-size: 13px !important;
+        font-weight: 800 !important;
+      }
+      .roll20-sub-chip .roll20-chip-lbl {
+        font-size: 8.5px !important;
+        white-space: nowrap !important;
+        text-overflow: ellipsis !important;
+        overflow: hidden !important;
       }
       .roll20-ac-speed-box {
         grid-column: 1 / -1 !important;
@@ -11156,7 +11237,32 @@
         flex-direction: row !important;
         justify-content: space-around !important;
         align-items: center !important;
-        padding: 10px 14px !important;
+        padding: 8px 12px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        margin: 2px 0 !important;
+      }
+      .roll20-atk-header-row {
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+      }
+      .roll20-atk-title-wrap {
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        flex-wrap: wrap !important;
+        max-width: 100% !important;
+      }
+      .roll20-atk-header-actions {
+        width: 100% !important;
+        justify-content: flex-end !important;
+      }
+      .roll20-tabs-header {
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+      }
+      .roll20-tabs-header::-webkit-scrollbar {
+        display: none !important;
       }
       /* Previne estufamento de 428px no mobile: 1 carta de magia por linha (ISSUE-140) */
       .player-spells-chips-grid {
@@ -53544,12 +53650,12 @@ function renderPlayers() {
               
               <!-- ABA 1: COMBATE & AÇÕES -->
               <div class="roll20-tab-panel" style="display: ${activeRoll20Tab === 'combat' ? 'block' : 'none'};">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                  <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="roll20-atk-header-row">
+                  <div class="roll20-atk-title-wrap">
                     <span class="roll20-panel-title" style="margin: 0; border: none; padding: 0;">⚔️ ATAQUES & ARMAS CALCULADAS</span>
                     ${(typeof getPlayerExtraAttacksCount === 'function' && getPlayerExtraAttacksCount(p) > 1) ? `<span class="extra-attack-badge" title="Pode realizar ${getPlayerExtraAttacksCount(p)} ataques na ação Atacar">⚔️ ${getPlayerExtraAttacksCount(p)} Ataques / Ação</span>` : ''}
                   </div>
-                  <div style="display: flex; gap: 4px;">
+                  <div class="roll20-atk-header-actions">
                     <button type="button" class="btn-micro roll20-btn-add-weapon" onclick="openWeaponPickerModal('${p.id}')" title="Adicionar arma rápida do acervo D&D">⚔️ + Arma</button>
                     <button type="button" class="btn-micro roll20-btn-add-item" onclick="openAddPlayerItemModal('${p.id}')" title="Adicionar item ao inventário">➕ Item</button>
                   </div>
