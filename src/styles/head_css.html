@@ -14143,6 +14143,668 @@
       line-height: 1.35;
     }
 
+    /* ======================================================================
+       🧙‍♂️ CRIADOR DE PERSONAGENS ESTILO D&D BEYOND (ISSUE-160)
+       ====================================================================== */
+    .ddb-builder-modal {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 92vh;
+      overflow-y: auto;
+    }
+    .ddb-builder-hero-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.85));
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 10px;
+      padding: 8px 14px;
+    }
+    .ddb-hero-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ddb-hero-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #0b1120;
+      border: 2px solid var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      cursor: pointer;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .ddb-hero-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .ddb-hero-name {
+      font-family: var(--font-title);
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.2;
+    }
+    .ddb-hero-sub {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    .ddb-hero-stats-pills {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .ddb-hero-pill {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.14);
+      color: #bae6fd;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+    }
+    .ddb-hero-pill.hp {
+      background: rgba(16, 185, 129, 0.14);
+      color: #a7f3d0;
+      border-color: rgba(16, 185, 129, 0.35);
+    }
+    .ddb-hero-pill.gold {
+      background: rgba(245, 158, 11, 0.14);
+      color: #fde68a;
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+
+    /* Barra de Abas Estilo D&D Beyond (Screenshot 1) */
+    .ddb-builder-nav {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: #141923;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 0 8px;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+    .ddb-step-tab {
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding: 11px 14px 9px 14px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.18s ease;
+    }
+    .ddb-step-tab:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .ddb-step-tab.active {
+      color: #fff;
+      border-bottom-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.08);
+    }
+    .ddb-view-all-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #e2e8f0;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .ddb-view-all-btn:hover,
+    .ddb-view-all-btn.active {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: #38bdf8;
+      color: #fff;
+    }
+
+    /* Stage & Setas Laterais (< / >) */
+    .ddb-builder-stage {
+      position: relative;
+      padding: 2px 28px;
+    }
+    .ddb-side-arrow {
+      position: absolute;
+      top: 120px;
+      width: 24px;
+      height: 44px;
+      border-radius: 6px;
+      background: rgba(56, 189, 248, 0.2);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      color: #e0f2fe;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      z-index: 5;
+    }
+    .ddb-side-arrow:hover {
+      background: #0284c7;
+      color: #fff;
+    }
+    .ddb-side-arrow.left {
+      left: 0;
+    }
+    .ddb-side-arrow.right {
+      right: 0;
+    }
+
+    .ddb-step-pane {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      animation: fadeInDdbPane 0.18s ease;
+    }
+    .ddb-step-pane.active,
+    .ddb-builder-stage.show-all-steps .ddb-step-pane {
+      display: flex;
+    }
+    .ddb-builder-stage.show-all-steps .ddb-step-pane {
+      padding-bottom: 14px;
+      margin-bottom: 14px;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.12);
+    }
+    @keyframes fadeInDdbPane {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .ddb-pane-header {
+      background: rgba(15, 23, 42, 0.65);
+      border-left: 3px solid #38bdf8;
+      padding: 8px 12px;
+      border-radius: 6px;
+    }
+    .ddb-pane-header h3 {
+      margin: 0;
+      font-family: var(--font-title);
+      font-size: 15px;
+      color: #fff;
+    }
+    .ddb-pane-header p {
+      margin: 3px 0 0 0;
+      font-size: 11.5px;
+      color: #94a3b8;
+    }
+
+    /* Cards de Atalho na Aba HOME */
+    .ddb-home-steps-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .ddb-home-step-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #0c1322;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: all 0.16s ease;
+    }
+    .ddb-home-step-card:hover {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.08);
+      transform: translateY(-1px);
+    }
+    .ddb-home-step-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(245, 158, 11, 0.14);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .ddb-home-step-title {
+      font-weight: 800;
+      font-size: 13px;
+      color: #fff;
+    }
+    .ddb-home-step-sub {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+    .ddb-home-step-chevron {
+      margin-left: auto;
+      color: #38bdf8;
+      font-weight: 900;
+      font-size: 15px;
+    }
+
+    /* Cards de Classes & Espécies Estilo D&D Beyond (Screenshots 2 e 4) */
+    .ddb-entity-cards-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 8px;
+      max-height: 280px;
+      overflow-y: auto;
+      padding: 4px 2px;
+    }
+    .ddb-entity-card {
+      background: #0c1322;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 9px 12px;
+      cursor: pointer;
+      transition: all 0.16s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .ddb-entity-card:hover {
+      border-color: rgba(56, 189, 248, 0.5);
+      background: #111b30;
+    }
+    .ddb-entity-card.selected {
+      border-color: #38bdf8;
+      background: linear-gradient(135deg, rgba(2, 132, 199, 0.2), rgba(15, 23, 42, 0.95));
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.22);
+    }
+    .ddb-entity-card-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ddb-entity-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .ddb-entity-title {
+      font-weight: 900;
+      font-size: 13px;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .ddb-entity-meta {
+      font-size: 10.5px;
+      color: #94a3b8;
+    }
+    .ddb-entity-chevron {
+      margin-left: auto;
+      color: #38bdf8;
+      font-weight: 900;
+      font-size: 14px;
+    }
+    .ddb-lineage-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      padding-top: 6px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    }
+    .ddb-lineage-pill {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #cbd5e1;
+      cursor: pointer;
+    }
+    .ddb-lineage-pill:hover,
+    .ddb-lineage-pill.active {
+      background: rgba(56, 189, 248, 0.22);
+      border-color: #38bdf8;
+      color: #fff;
+    }
+
+    /* Seções & Perícias Iniciais da Classe */
+    .ddb-section-card {
+      background: #080c16;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .ddb-section-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .ddb-skills-chip-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .ddb-skill-choice-chip {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #cbd5e1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.14s ease;
+    }
+    .ddb-skill-choice-chip:hover {
+      border-color: rgba(245, 158, 11, 0.5);
+      color: #fff;
+    }
+    .ddb-skill-choice-chip.selected {
+      background: rgba(16, 185, 129, 0.18);
+      border-color: #10b981;
+      color: #a7f3d0;
+    }
+    .ddb-skill-choice-chip.bg-granted {
+      background: rgba(168, 85, 247, 0.18);
+      border-color: #a855f7;
+      color: #e9d5ff;
+    }
+
+    /* Chips Rápidos de Antecedente */
+    .ddb-bg-chips-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    .ddb-bg-chip {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: all 0.14s ease;
+    }
+    .ddb-bg-chip:hover,
+    .ddb-bg-chip.active {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: #f59e0b;
+      color: #fef08a;
+    }
+
+    /* Acordeões Estilo D&D Beyond (Screenshots 3 e 5) */
+    .ddb-accordion {
+      background: #080c16;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-left: 3px solid #10b981;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .ddb-accordion-summary {
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      cursor: pointer;
+      background: rgba(15, 23, 42, 0.8);
+      user-select: none;
+    }
+    .ddb-accordion-summary::-webkit-details-marker {
+      display: none;
+    }
+    .ddb-accordion-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .ddb-accordion-sub {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 1px;
+    }
+    .ddb-accordion-arrow {
+      font-size: 16px;
+      color: #94a3b8;
+      transition: transform 0.2s ease;
+    }
+    .ddb-accordion[open] .ddb-accordion-arrow {
+      transform: rotate(180deg);
+    }
+    .ddb-accordion-body {
+      padding: 12px 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Sugestões Clicáveis de Traços de Personalidade, Ideais, Vínculos e Defeitos */
+    .ddb-trait-field-block {
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .ddb-trait-suggestions-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 6px;
+      max-height: 125px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .ddb-trait-suggestion-chip {
+      text-align: left;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 5px 9px;
+      font-size: 11px;
+      color: #cbd5e1;
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      line-height: 1.35;
+      transition: all 0.14s ease;
+    }
+    .ddb-trait-suggestion-chip:hover {
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.45);
+      color: #fff;
+    }
+    .ddb-trait-suggestion-chip.active {
+      background: rgba(16, 185, 129, 0.16);
+      border-color: #10b981;
+      color: #ecfdf5;
+    }
+    .ddb-trait-suggestion-tag {
+      font-size: 9.5px;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: rgba(245, 158, 11, 0.18);
+      color: #fde68a;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .ddb-trait-suggestion-tag.cls {
+      background: rgba(56, 189, 248, 0.18);
+      color: #bae6fd;
+    }
+
+    /* Equipamento Inicial da Classe (Screenshot 5) */
+    .ddb-equip-mode-toggle {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 8px;
+      background: rgba(15, 23, 42, 0.7);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    .ddb-equip-mode-buttons {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ddb-equip-mode-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 6px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .ddb-equip-mode-btn.active {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: #38bdf8;
+      color: #fff;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+    }
+    .ddb-equip-choice-card {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 9px 12px;
+      margin-bottom: 8px;
+    }
+    .ddb-equip-choice-title {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #fde68a;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    .ddb-equip-option-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      color: #e2e8f0;
+      transition: background 0.12s ease;
+    }
+    .ddb-equip-option-row:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .ddb-equip-option-row input[type="radio"] {
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
+      accent-color: #38bdf8;
+    }
+    .ddb-modal-inventory-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .ddb-inv-item-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      padding: 4px 9px;
+      font-size: 11.5px;
+      color: #e2e8f0;
+    }
+    .ddb-inv-item-del {
+      background: transparent;
+      border: none;
+      color: #f87171;
+      cursor: pointer;
+      font-size: 11px;
+      padding: 0 2px;
+    }
+
+    /* =========================================================================
+       ⚡ ISSUE-163: RESUMOS DIRETOS DE TRAÇOS (FICHA VIRTUAL & IMPRESSÃO A4)
+       ========================================================================= */
+    .feature-direct-summary {
+      background: linear-gradient(90deg, rgba(245, 158, 11, 0.14), rgba(15, 23, 42, 0.6));
+      border-left: 3px solid #f59e0b;
+      border-radius: 5px;
+      padding: 5px 8px;
+      font-size: 11.5px;
+      line-height: 1.4;
+      color: #fef3c7;
+      font-weight: 500;
+      margin-top: 3px;
+    }
+    .feature-usage-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #7dd3fc;
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .a4-feature-tag {
+      display: inline-block;
+      background: #1e293b;
+      color: #fff;
+      font-size: 6.2pt;
+      font-weight: 800;
+      padding: 1px 4px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+    }
+    .a4-feature-usage {
+      display: inline-block;
+      background: #fef3c7;
+      border: 1px solid #d97706;
+      color: #92400e;
+      font-size: 6.2pt;
+      font-weight: 700;
+      padding: 0.5px 4px;
+      border-radius: 3px;
+    }
+
   </style>
 
 

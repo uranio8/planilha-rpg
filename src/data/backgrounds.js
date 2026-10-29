@@ -645,15 +645,114 @@ const BACKGROUNDS_DATA = [
       const norm = String(lbl).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
       return skillKeyMap[norm] || norm;
     });
+    if (Array.isArray(bg.equipment)) {
+      bg.equipmentItems = [...bg.equipment];
+    } else if (typeof bg.equipment === 'string' && bg.equipment.trim()) {
+      const cleaned = bg.equipment.replace(/\.$/, '').replace(/\s+e\s+uma\s+algibeira\s+contendo\s+\d+\s*PO/i, '').replace(/,\s*\d+\s*PO/i, '');
+      const rawParts = cleaned.split(/,\s*(?![^()]*\))|\s+e\s+(?![^()]*\))/);
+      bg.equipmentItems = rawParts.map(part => {
+        let p = part.trim().replace(/^(um|uma|dois|duas)\s+/i, '').trim();
+        if (!p) return '';
+        return p.charAt(0).toUpperCase() + p.slice(1);
+      }).filter(Boolean);
+    } else {
+      bg.equipmentItems = [];
+    }
   });
 })();
 
+// ============================================================================
+// 📜 GUIA DE XANATHAR (CAP. 1): "ESTA É A SUA VIDA" (THIS IS YOUR LIFE - ISSUE-161)
+// ============================================================================
+
+const XANATHAR_LIFE_EVENTS_TABLES = {
+  birthplace: [
+    'Em casa, cercado pela família na vila natal.',
+    'Na casa de um curandeiro, sábio ou parteira local.',
+    'Em uma carruagem ou navio durante uma longa viagem.',
+    'Em um celeiro, estábulo ou acampamento na estrada.',
+    'Em uma caverna remota ou ruína antiga onde seus pais buscaram abrigo.',
+    'No meio de um campo de batalha ou acampamento militar.',
+    'Em um beco ou taverna movimentada de uma grande metrópole.',
+    'Em um templo sagrado ou monastério isolado nas montanhas.',
+    'Na fortaleza ou castelo de um lorde nobre.',
+    'Em um plano extraplanar (Agrestia das Fadas, Umbra ou Plano Elemental) durante uma conjunção rara.'
+  ],
+  parents: [
+    'Você conhece e foi criado por ambos os seus pais biológicos.',
+    'Você foi criado apenas por sua mãe; seu pai desapareceu em uma expedição.',
+    'Você foi criado apenas por seu pai; sua mãe faleceu protegendo a família.',
+    'Você foi criado por seus avós ou tios após seus pais partirem em missão.',
+    'Você foi adotado por uma família de outra raça que o acolheu como filho legítimo.',
+    'Você cresceu em um orfanato ou templo e nunca conheceu seus pais verdadeiros.',
+    'Um de seus pais tinha sangue místico, nobre ou feérico, mas manteve isso em segredo.'
+  ],
+  siblings: [
+    'Filho único — você aprendeu cedo a contar apenas consigo mesmo.',
+    '1 irmão mais velho (aventureiro ou guarda que sempre o protegeu).',
+    '1 irmã mais nova (estudiosa e curiosa, que admira suas histórias).',
+    '2 irmãos (um artesão leal e outro que seguiu caminhos duvidosos no submundo).',
+    'Irmão gêmeo com quem você compartilha um elo quase telepático.',
+    '3 irmãos mais novos pelos quais você assumiu a responsabilidade de sustentar.'
+  ],
+  childhoodMemories: [
+    'Eu ainda sou assombrado pela minha infância, quando era tratado mal pelos meus pares, o que me tornou resiliente.',
+    'Passei a maior parte da minha infância sozinho, explorando florestas e lendo tomos antigos.',
+    'Outros me achavam diferente ou estranho, e por isso eu tinha poucos, porém leais companheiros.',
+    'Eu tinha alguns amigos próximos e vivi uma infância comum, aprendendo um ofício honesto.',
+    'Eu tinha vários amigos e minha infância foi geralmente feliz e cheia de pequenas aventuras.',
+    'Sempre fiz amigos facilmente e todos na vizinhança conheciam meu nome e minhas façanhas.'
+  ],
+  classTraining: {
+    'Bárbaro': 'Minha fúria despertou quando minha terra natal foi ameaçada; desde então canalizo o espírito ancestral em combate.',
+    'Bardo': 'Aprendi a arte da música e das lendas antigas com um mestre itinerante que me revelou a magia oculta nas palavras.',
+    'Bruxo': 'Em um momento de desespero ou ambição ardente, selamos um pacto com uma entidade além do véu mortal.',
+    'Clérigo': 'Uma visão sagrada em um momento de crise despertou minha fé inabalável e me tornou instrumento divino.',
+    'Druida': 'Após sobreviver semanas perdido nos ermos, passei a ouvir os sussurros da natureza e fui iniciado por um círculo antigo.',
+    'Feiticeiro': 'Desde um evento místico na juventude, o poder arcano pulsa em minhas veias como uma tempestade indomável.',
+    'Guerreiro': 'Treinei incansavelmente nas artes marciais em uma academia ou milícia até dominar cada arma e postura de batalha.',
+    'Ladino': 'A necessidade e a astúcia das sombras me ensinaram a abrir fechaduras, caminhar em silêncio e encontrar pontos fracos.',
+    'Mago': 'Anos decifrando pergaminhos sob a tutela de um arquimago exigente abriram minha mente para as fórmulas do multiverso.',
+    'Monge': 'Isolado em um monastério austero, disciplinei corpo e espírito até despertar o fluxo de Ki interior.',
+    'Paladino': 'Diante de uma injustiça imperdoável, fiz um juramento solene no altar de juramento que inflamou minha lâmina com luz.',
+    'Patrulheiro': 'Rastreando feras e invasores nas fronteiras selvagens, tornei-me o guardião silencioso entre a civilização e o caos.'
+  },
+  lifeEvents: [
+    { category: 'Tragédia', text: 'Um ente querido ou mentor desapareceu misteriosamente, deixando apenas um símbolo enigmático para trás.' },
+    { category: 'Sorte Grande (Boon)', text: 'Um aventureiro aposentado reconheceu seu potencial e lhe deixou um mapa antigo e 1d20 PO de reserva.' },
+    { category: 'Encontro Sobrenatural', text: 'Você testemunhou um portal para a Agrestia das Fadas ou os Planos Inferiores se abrir durante um eclipse.' },
+    { category: 'Grande Aventura', text: 'Você sobreviveu a uma emboscada mortal na estrada e conquistou uma cicatriz de honra que lhe rende respeito em tavernas.' },
+    { category: 'Maravilha Arcana', text: 'Você presenciou um fenômeno mágico selvagem ou encontrou uma relíquia adormecida que despertou sua curiosidade.' },
+    { category: 'Amor ou Romantismo', text: 'Você viveu um grande romance com alguém de posição social ou facção oposta, cuja lembrança ainda guia suas escolhas.' },
+    { category: 'Batalha Marcante', text: 'Você lutou em um cerco ou escaramuça importante, salvando companheiros contra todas as probabilidades.' },
+    { category: 'Injustiça & Crime', text: 'Você foi acusado injustamente de um crime que não cometeu e conseguiu escapar jurando limpar seu nome.' }
+  ],
+  allies: [
+    'Capitão Vaelen (Veterano da guarda local que lhe deve a vida após uma emboscada)',
+    'Mestra Lyra das Cinzas (Erudita e alquimista que decifra pergaminhos antigos para você)',
+    'Thoran Martelo-de-Ferro (Ferreiro anão que conserta suas armas e guarda seus segredos)',
+    'Irmã Seraphina (Sacerdotisa itinerante que já curou seus ferimentos sem cobrar nada)',
+    'Garrick "Sombra-Leve" (Informante de taverna que conhece todas as rotas clandestinas da região)',
+    'Lady Elspeth Ravencrest (Nobre simpática à sua causa que oferece salvo-conduto nas cortes)'
+  ],
+  enemies: [
+    'Malakor, o Ceifador (Líder mercenário cujos planos você frustrou no passado)',
+    'Inquisidor Vane (Agente corrupto que busca capturar você ou tomar uma relíquia sua)',
+    'Soraya Lâmina-Negra (Ex-aliada que traiu o grupo por ouro e deixou você para morrer)',
+    'Barão Kaelen Voss (Nobre tirânico que confiscou terras ou bens da sua família)',
+    'Zul\'gar, o Marcado (Chefe de bando de saqueadores que perdeu um olho em duelo contra você)',
+    'Culto da Estrela Carmesim (Seita secreta cujos rituais você interrompeu acidentalmente)'
+  ]
+};
+
 if (typeof window !== 'undefined') {
   window.BACKGROUNDS_DATA = BACKGROUNDS_DATA;
+  window.XANATHAR_LIFE_EVENTS_TABLES = XANATHAR_LIFE_EVENTS_TABLES;
 }
 if (typeof global !== 'undefined') {
   global.BACKGROUNDS_DATA = BACKGROUNDS_DATA;
+  global.XANATHAR_LIFE_EVENTS_TABLES = XANATHAR_LIFE_EVENTS_TABLES;
 }
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { BACKGROUNDS_DATA };
+  module.exports = { BACKGROUNDS_DATA, XANATHAR_LIFE_EVENTS_TABLES };
 }

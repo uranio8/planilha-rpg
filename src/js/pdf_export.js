@@ -59,8 +59,14 @@
         S: 'JavaScript',
         JS: PDFLib.PDFString.of(jsCode)
       });
-      let aaDict = field.acroField.dict.get(PDFLib.PDFName.of('AA'));
-      if (!aaDict) {
+      let aaDict = null;
+      if (typeof field.acroField.dict.lookupMaybe === 'function' && PDFLib.PDFDict) {
+        aaDict = field.acroField.dict.lookupMaybe(PDFLib.PDFName.of('AA'), PDFLib.PDFDict);
+      } else {
+        const rawAa = field.acroField.dict.get(PDFLib.PDFName.of('AA'));
+        if (rawAa && typeof rawAa.set === 'function') aaDict = rawAa;
+      }
+      if (!aaDict || typeof aaDict.set !== 'function') {
         aaDict = pdfDoc.context.obj({});
         field.acroField.dict.set(PDFLib.PDFName.of('AA'), aaDict);
       }
@@ -113,8 +119,787 @@
     field.setText(sanitizeWinAnsi(String(val)));
   }
 
-  // Gera o PDF Editável Interativo com cálculo automático para um personagem do Planilha RPG
+  // Carrega o template oficial ficha.pdf (via DND5E_OFFICIAL_SHEET_B64 no browser ou fs em Node.js)
+  function loadOfficialPdfTemplateBytes() {
+    try {
+      const b64 = (typeof DND5E_OFFICIAL_SHEET_B64 !== 'undefined' && DND5E_OFFICIAL_SHEET_B64)
+        || (typeof window !== 'undefined' && window.DND5E_OFFICIAL_SHEET_B64)
+        || (typeof global !== 'undefined' && global.DND5E_OFFICIAL_SHEET_B64);
+      if (b64 && typeof b64 === 'string' && b64.length > 1000) {
+        if (typeof Buffer !== 'undefined') {
+          return Buffer.from(b64, 'base64');
+        }
+        if (typeof atob === 'function') {
+          const bin = atob(b64);
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          return bytes;
+        }
+      }
+      if (typeof require === 'function') {
+        const fs = require('fs');
+        const path = require('path');
+        const candidates = [
+          typeof __dirname !== 'undefined' ? path.join(__dirname, '..', '..', 'books', 'pdfs', 'ficha.pdf') : '',
+          typeof process !== 'undefined' && process.cwd ? path.join(process.cwd(), 'books', 'pdfs', 'ficha.pdf') : ''
+        ].filter(Boolean);
+        for (const p of candidates) {
+          if (fs.existsSync(p)) {
+            return fs.readFileSync(p);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Aviso ao carregar modelo oficial ficha.pdf:', e);
+    }
+    return null;
+  }
+
+  // Preenche o modelo oficial de 3 páginas (books/pdfs/ficha.pdf) preservando editabilidade e auto-cálculo
+  async function fillOfficialDnd5eSheetPdf(playerData, customTemplateBytes = null) {
+    const PDFLib = getPdfLib();
+    if (!PDFLib) {
+      throw new Error('A biblioteca PDF-Lib não foi encontrada.');
+    }
+    const templateBytes = customTemplateBytes !== null ? customTemplateBytes : loadOfficialPdfTemplateBytes();
+    if (!templateBytes || templateBytes.length < 1000) {
+      return generateProgrammaticEditableDnd5ePdf(playerData);
+    }
+
+    const { PDFDocument, StandardFonts, PDFName } = PDFLib;
+    const doc = await PDFDocument.load(templateBytes);
+    const fontRegular = await doc.embedFont(StandardFonts.Helvetica);
+    const form = doc.getForm();
+    const pages = doc.getPages();
+    const page1 = pages[0];
+    const page2 = pages[1] || pages[0];
+    const page3 = pages[2] || page2;
+
+    const p = playerData || {};
+    const calculationFieldsOrder = [];
+
+    const setOfficialText = (fieldName, val, fontSize = null) => {
+      try {
+        const tf = form.getTextField(fieldName);
+        if (tf) {
+          safeSetText(tf, val);
+          if (fontSize) {
+            try { tf.setFontSize(fontSize); } catch (e) {}
+          }
+          return tf;
+        }
+      } catch (e) {}
+      return null;
+    };
+
+    const setOfficialCheck = (fieldName, checked) => {
+      try {
+        const cb = form.getCheckBox(fieldName);
+        if (cb) {
+          if (checked) cb.check();
+          else cb.uncheck();
+          return cb;
+        }
+      } catch (e) {}
+      return null;
+    };
+
+    const createHiddenTextField = (fieldName, val, targetPage = page1) => {
+      try {
+        let tf = null;
+        try { tf = form.getTextField(fieldName); } catch (e) {}
+        if (!tf) {
+          tf = form.createTextField(fieldName);
+          tf.addToPage(targetPage, { x: -200, y: -200, width: 1, height: 1, borderWidth: 0 });
+        }
+        safeSetText(tf, val);
+        return tf;
+      } catch (e) {
+        return null;
+      }
+    };
+
+    const createHiddenCheckBox = (fieldName, checked, targetPage = page1) => {
+      try {
+        let cb = null;
+        try { cb = form.getCheckBox(fieldName); } catch (e) {}
+        if (!cb) {
+          cb = form.createCheckBox(fieldName);
+          cb.addToPage(targetPage, { x: -200, y: -200, width: 1, height: 1, borderWidth: 0 });
+        }
+        if (checked) cb.check();
+        else cb.uncheck();
+        return cb;
+      } catch (e) {
+        return null;
+      }
+    };
+
+    // Normalização dos dados do personagem
+    const charName = String(p.name || 'Personagem');
+    const charClass = String(p.className || '');
+    const charLevel = Number(p.level) || 1;
+    const charRace = String(p.race || '');
+    const charStudent = String(p.student || '');
+    const charBg = String(p.background || '');
+    const charAlign = String(p.alignment || 'Neutro');
+    const charXp = String(p.xp !== undefined ? p.xp : 0);
+
+    const charStr = Number(p.str) || 10;
+    const charDex = Number(p.dex) || 10;
+    const charCon = Number(p.con) || 10;
+    const charInt = Number(p.int) || 10;
+    const charWis = Number(p.wis) || 10;
+    const charCha = Number(p.cha) || 10;
+
+    const strMod = Math.floor((charStr - 10) / 2);
+    const dexMod = Math.floor((charDex - 10) / 2);
+    const conMod = Math.floor((charCon - 10) / 2);
+    const intMod = Math.floor((charInt - 10) / 2);
+    const wisMod = Math.floor((charWis - 10) / 2);
+    const chaMod = Math.floor((charCha - 10) / 2);
+    const fmtSigned = n => (n >= 0 ? `+${n}` : `${n}`);
+
+    const calcProfInitial = Math.ceil(charLevel / 4) + 1;
+
+    const charHpMax = Number(p.hpMax !== undefined ? p.hpMax : (p.maxHp !== undefined ? p.maxHp : 10)) || 10;
+    const charHpCur = Number(p.hpCurrent !== undefined ? p.hpCurrent : (p.hp !== undefined ? p.hp : charHpMax)) || charHpMax;
+    const charHpTemp = Number(p.hpTemp !== undefined ? p.hpTemp : (p.tempHp !== undefined ? p.tempHp : 0)) || 0;
+
+    const saveProfs = Array.isArray(p.savingThrows) ? p.savingThrows : (Array.isArray(p.saveProficiencies) ? p.saveProficiencies : []);
+    const skillProfs = Array.isArray(p.skills) ? p.skills : (Array.isArray(p.skillProficiencies) ? p.skillProficiencies : []);
+    const normSaveProfs = saveProfs.map(s => String(s).toLowerCase());
+    const normalizedPlayerSkills = skillProfs.map(s => normalizeSkillKey(s));
+
+    const formattedClassLevel = (p.multiclass && typeof p.multiclass === 'string' && p.multiclass.trim())
+      ? `${p.multiclass} (Nv ${charLevel})`
+      : `${charClass} ${charLevel}`.trim();
+
+    // =====================================================
+    // PÁGINA 1: IDENTIDADE, ATRIBUTOS, PERÍCIAS, COMBATE E TRAÇOS
+    // =====================================================
+    setOfficialText('Nome do Personagem', charName);
+    setOfficialText('Classe e Nível', formattedClassLevel);
+    setOfficialText('Antecedente', charBg);
+    setOfficialText('Nome do Jogador', charStudent);
+    setOfficialText('Raça', charRace);
+    setOfficialText('Tendência', charAlign);
+    setOfficialText('Pontos de Experiência', charXp);
+
+    createHiddenTextField('CharacterName', charName);
+    createHiddenTextField('ClassLevel', formattedClassLevel);
+    createHiddenTextField('Background', charBg);
+    createHiddenTextField('PlayerName', charStudent);
+    createHiddenTextField('Race', charRace);
+    createHiddenTextField('Alignment', charAlign);
+    createHiddenTextField('XP', charXp);
+
+    // 6 Atributos e Modificadores (Oficiais + Aliases de Cálculo)
+    const statsDef = [
+      { officialScore: 'STR', officialMod: 'STRmod', aliasScore: 'FOR', aliasMod: 'FOR_MOD', saveCheck: 'RB-STR-R', saveVal: 'Res-STR', key: 'str', val: charStr, mod: strMod },
+      { officialScore: 'DEX', officialMod: 'DEXmod', aliasScore: 'DES', aliasMod: 'DES_MOD', saveCheck: 'RB-DEX-R', saveVal: 'Res-DEX', key: 'dex', val: charDex, mod: dexMod },
+      { officialScore: 'CON', officialMod: 'CONmod', aliasScore: 'CON', aliasMod: 'CON_MOD', saveCheck: 'RB-CON-R', saveVal: 'Res-CON', key: 'con', val: charCon, mod: conMod },
+      { officialScore: 'INT', officialMod: 'INTmod', aliasScore: 'INT', aliasMod: 'INT_MOD', saveCheck: 'RB-INT-R', saveVal: 'Res-INT', key: 'int', val: charInt, mod: intMod },
+      { officialScore: 'WIS', officialMod: 'WISmod', aliasScore: 'SAB', aliasMod: 'SAB_MOD', saveCheck: 'RB-WIS-R', saveVal: 'Res-WIS', key: 'wis', val: charWis, mod: wisMod },
+      { officialScore: 'CHA', officialMod: 'CHAmod', aliasScore: 'CAR', aliasMod: 'CAR_MOD', saveCheck: 'RB-CHA-R', saveVal: 'Res-CHA', key: 'cha', val: charCha, mod: chaMod }
+    ];
+
+    statsDef.forEach(st => {
+      setOfficialText(st.officialScore, String(st.val));
+      const fOffMod = setOfficialText(st.officialMod, fmtSigned(st.mod));
+      if (st.aliasScore !== st.officialScore) {
+        createHiddenTextField(st.aliasScore, String(st.val));
+      }
+      const fAliasMod = createHiddenTextField(st.aliasMod, fmtSigned(st.mod));
+
+      const modCalcJs = `
+        var sField = this.getField("${st.officialScore}") || this.getField("${st.aliasScore}");
+        var score = sField ? Number(sField.value) : 10;
+        if (isNaN(score) || score === 0) score = 10;
+        var mod = Math.floor((score - 10) / 2);
+        event.value = (mod >= 0 ? "+" + mod : "" + mod);
+      `;
+      if (fOffMod) {
+        attachFieldCalculation(doc, PDFLib, fOffMod, modCalcJs);
+        calculationFieldsOrder.push(fOffMod);
+      }
+      if (fAliasMod) {
+        attachFieldCalculation(doc, PDFLib, fAliasMod, modCalcJs);
+        calculationFieldsOrder.push(fAliasMod);
+      }
+    });
+
+    // Inspiração e Bônus de Proficiência
+    setOfficialText('Inspiration', p.inspiration ? '★' : '');
+    const fProf = setOfficialText('ProfBonus', fmtSigned(calcProfInitial));
+    if (fProf) {
+      const profCalcJs = `
+        var clsText = (this.getField("Classe e Nível") ? this.getField("Classe e Nível").value : "") || "";
+        var match = String(clsText).match(/\\d+/g);
+        var lvl = match ? Number(match[match.length - 1]) : ${charLevel};
+        if (!lvl || lvl < 1) lvl = 1;
+        var prof = Math.ceil(lvl / 4) + 1;
+        event.value = "+" + prof;
+      `;
+      attachFieldCalculation(doc, PDFLib, fProf, profCalcJs);
+      calculationFieldsOrder.push(fProf);
+    }
+
+    // Salvaguardas (Saving Throws)
+    statsDef.forEach(st => {
+      const isProf = normSaveProfs.includes(st.key) || normSaveProfs.includes(st.aliasScore.toLowerCase()) || normSaveProfs.includes(st.officialScore.toLowerCase());
+      const totSave = st.mod + (isProf ? calcProfInitial : 0);
+      setOfficialCheck(st.saveCheck, isProf);
+      const fSave = setOfficialText(st.saveVal, fmtSigned(totSave));
+      createHiddenCheckBox(`Check_Save_${st.aliasScore}`, isProf);
+      const fAliasSave = createHiddenTextField(`Save_${st.aliasScore}`, fmtSigned(totSave));
+
+      const saveJs = `
+        var mod = Number((this.getField("${st.officialMod}") || this.getField("${st.aliasMod}")).value) || 0;
+        var prof = Number(this.getField("ProfBonus").value) || 2;
+        var chk = this.getField("${st.saveCheck}");
+        var isProf = chk && chk.value !== "Off" && chk.value !== "off" && chk.value !== false;
+        var tot = mod + (isProf ? prof : 0);
+        event.value = (tot >= 0 ? "+" + tot : "" + tot);
+      `;
+      if (fSave) {
+        attachFieldCalculation(doc, PDFLib, fSave, saveJs);
+        calculationFieldsOrder.push(fSave);
+      }
+      if (fAliasSave) {
+        attachFieldCalculation(doc, PDFLib, fAliasSave, saveJs);
+        calculationFieldsOrder.push(fAliasSave);
+      }
+    });
+
+    // 18 Perícias Oficiais em ficha.pdf + Aliases de Compatibilidade
+    const officialSkillFields = {
+      acrobatics: { check: 'RB-Acrobacia', text: 'Acrobatics', modField: 'DEXmod' },
+      animalHandling: { check: 'RB-Lidar-com-Animais', text: 'Lidar-com-Animais', modField: 'WISmod' },
+      arcana: { check: 'RB-Arcanismo', text: 'Arcanismo', modField: 'INTmod' },
+      athletics: { check: 'RB-Atletismo', text: 'Atletismo', modField: 'STRmod' },
+      performance: { check: 'RB-Atuação', text: 'Atuação', modField: 'CHAmod' },
+      deception: { check: 'RB-Blefar', text: 'Blefar', modField: 'CHAmod' },
+      stealth: { check: 'RB-Furtividade', text: 'Furtividade', modField: 'DEXmod' },
+      history: { check: 'RB-História', text: 'História', modField: 'INTmod' },
+      intimidation: { check: 'RB-Intimidação', text: 'Intimidação', modField: 'CHAmod' },
+      insight: { check: 'RB-Intuição', text: 'Intuição', modField: 'WISmod' },
+      investigation: { check: 'RB-Investigação', text: 'Investigação', modField: 'INTmod' },
+      medicine: { check: 'RB-Medicina', text: 'Medicina', modField: 'WISmod' },
+      nature: { check: 'RB-Natureza', text: 'Natureza', modField: 'INTmod' },
+      perception: { check: 'RB-Percepção', text: 'Percepção', modField: 'WISmod' },
+      persuasion: { check: 'RB-Persuasão', text: 'Persuasão', modField: 'CHAmod' },
+      sleightOfHand: { check: 'RB-Prestidigitação', text: 'Prestidigitação', modField: 'DEXmod' },
+      religion: { check: 'RB-Religião', text: 'Religião', modField: 'INTmod' },
+      survival: { check: 'RB-Sobrevivência', text: 'Sobrevivência', modField: 'WISmod' }
+    };
+
+    const attrModLookup = { str: strMod, dex: dexMod, con: conMod, int: intMod, wis: wisMod, cha: chaMod };
+
+    DND_SKILLS_MAPPING.forEach(sk => {
+      const targetAliases = [sk.key, sk.pt, ...(sk.aliases || [])].map(a => normalizeSkillKey(a));
+      const isSkillProf = normalizedPlayerSkills.some(ps => targetAliases.includes(ps));
+      const baseMod = attrModLookup[sk.attrKey] || 0;
+      const totSkill = baseMod + (isSkillProf ? calcProfInitial : 0);
+
+      const offMap = officialSkillFields[sk.key];
+      if (offMap) {
+        setOfficialCheck(offMap.check, isSkillProf);
+        const fOffSkill = setOfficialText(offMap.text, fmtSigned(totSkill));
+        if (fOffSkill) {
+          const skJs = `
+            var mod = Number(this.getField("${offMap.modField}").value) || 0;
+            var prof = Number(this.getField("ProfBonus").value) || 2;
+            var chk = this.getField("${offMap.check}");
+            var isProf = chk && chk.value !== "Off" && chk.value !== "off" && chk.value !== false;
+            var tot = mod + (isProf ? prof : 0);
+            event.value = (tot >= 0 ? "+" + tot : "" + tot);
+          `;
+          attachFieldCalculation(doc, PDFLib, fOffSkill, skJs);
+          calculationFieldsOrder.push(fOffSkill);
+        }
+      }
+
+      createHiddenCheckBox(`Check_Skill_${sk.key}`, isSkillProf);
+      const fAliasSkill = createHiddenTextField(`Skill_${sk.key}`, fmtSigned(totSkill));
+      if (fAliasSkill) {
+        calculationFieldsOrder.push(fAliasSkill);
+      }
+    });
+
+    // Sentidos Passivos (Percepção, Investigação e Intuição)
+    const isPercepProf = normalizedPlayerSkills.some(ps => ['perception', 'percepcao'].includes(ps));
+    const isInvestProf = normalizedPlayerSkills.some(ps => ['investigation', 'investigacao'].includes(ps));
+    const isInsightProf = normalizedPlayerSkills.some(ps => ['insight', 'intuicao'].includes(ps));
+    const passPercVal = 10 + wisMod + (isPercepProf ? calcProfInitial : 0);
+    const passInvestVal = 10 + intMod + (isInvestProf ? calcProfInitial : 0);
+    const passInsightVal = 10 + wisMod + (isInsightProf ? calcProfInitial : 0);
+
+    const fPassive = setOfficialText('Passive', String(passPercVal));
+    if (fPassive) {
+      const passJs = `
+        var perc = Number(this.getField("Percepção").value) || 0;
+        event.value = 10 + perc;
+      `;
+      attachFieldCalculation(doc, PDFLib, fPassive, passJs);
+      calculationFieldsOrder.push(fPassive);
+    }
+    createHiddenTextField('Passive_Perception', String(passPercVal));
+    createHiddenTextField('Passive_Investigation', String(passInvestVal));
+    createHiddenTextField('Passive_Insight', String(passInsightVal));
+
+    // Combate, PV, Dados de Vida e Salvaguardas contra a Morte
+    const charInitVal = (p.initiative !== undefined && !Number.isNaN(Number(p.initiative)))
+      ? fmtSigned(Number(p.initiative))
+      : fmtSigned(dexMod);
+
+    setOfficialText('AC', String(p.ac || 10));
+    setOfficialText('Iniciativa', charInitVal);
+    setOfficialText('Deslocamento', String(p.speed || '9m'));
+    setOfficialText('PV', String(charHpMax));
+    setOfficialText('PV TOTAL', String(charHpCur));
+    setOfficialText('PV Temporários', charHpTemp > 0 ? String(charHpTemp) : '');
+
+    const spentHd = Number(p.spentHitDice) || 0;
+    const baseHdFormula = p.hitDice ? `${p.hitDice}` : `${charLevel}d8`;
+    const remHd = Math.max(0, charLevel - spentHd);
+    setOfficialText('Dados de Vida', baseHdFormula);
+    setOfficialText('Dados de Vida0', `${remHd}/${charLevel}`);
+
+    const curSuccess = Number(p.deathSaves?.success || (p.death_saves?.success)) || 0;
+    const curFail = Number(p.deathSaves?.fail || (p.death_saves?.fail)) || 0;
+    setOfficialCheck('Check Box 1', curSuccess >= 1);
+    setOfficialCheck('Check Box 2', curSuccess >= 2);
+    setOfficialCheck('Check Box 3', curSuccess >= 3);
+    setOfficialCheck('Check Box 4', curFail >= 1);
+    setOfficialCheck('Check Box 5', curFail >= 2);
+    setOfficialCheck('Check Box 6', curFail >= 3);
+
+    createHiddenCheckBox('DeathSave_S1', curSuccess >= 1);
+    createHiddenCheckBox('DeathSave_S2', curSuccess >= 2);
+    createHiddenCheckBox('DeathSave_S3', curSuccess >= 3);
+    createHiddenCheckBox('DeathSave_F1', curFail >= 1);
+    createHiddenCheckBox('DeathSave_F2', curFail >= 2);
+    createHiddenCheckBox('DeathSave_F3', curFail >= 3);
+
+    // Armas e Ataques (Arma 1..3 + Ataques e Magias)
+    let initialAttacks = [];
+    if (typeof getPlayerCalculatedAttacks === 'function') {
+      try {
+        const calced = getPlayerCalculatedAttacks(p);
+        if (Array.isArray(calced) && calced.length > 0) {
+          initialAttacks = calced.map(a => ({ name: a.name || '', bonus: a.hit || a.bonus || '', damage: a.dmg || a.damage || '' }));
+        }
+      } catch (e) {}
+    }
+    if (initialAttacks.length === 0) {
+      if (Array.isArray(p.attacks)) {
+        initialAttacks = p.attacks.map(atk => {
+          if (typeof atk === 'string') {
+            const m = atk.match(/^([^(]+)(?:\(([^,]+),\s*([^)]+)\))?/);
+            return m ? { name: m[1].trim(), bonus: (m[2] || '').trim(), damage: (m[3] || '').trim() } : { name: atk.trim(), bonus: '', damage: '' };
+          }
+          return atk || { name: '', bonus: '', damage: '' };
+        });
+      } else if (typeof p.attacks === 'string' && p.attacks.trim()) {
+        const parts = p.attacks.split(/(?:\||\n|;)/).map(s => s.trim()).filter(Boolean);
+        initialAttacks = parts.map(pt => {
+          const m = pt.match(/^([^(]+)(?:\(([^,]+),\s*([^)]+)\))?/);
+          if (m && m[2]) {
+            return { name: m[1].trim(), bonus: (m[2] || '').trim(), damage: (m[3] || '').trim() };
+          }
+          const colonM = pt.match(/^([^:]+):\s*([+-]\d+)[^,]*,\s*(.+)$/);
+          if (colonM) {
+            return { name: colonM[1].trim(), bonus: colonM[2].trim(), damage: colonM[3].trim() };
+          }
+          return { name: pt.trim(), bonus: '', damage: '' };
+        });
+      }
+    }
+    if (initialAttacks.length === 0 && Array.isArray(p.inventory)) {
+      const equippedWeaps = p.inventory.filter(it => it && it.equipped && /espada|arco|machado|adaga|martelo|lanca|lança|cajado|besta|maca|maça|rapiera/i.test(it.name || ''));
+      equippedWeaps.slice(0, 3).forEach(it => {
+        const isFinesseOrRanged = /arco|adaga|besta|rapiera/i.test(it.name || '');
+        const wMod = isFinesseOrRanged ? dexMod : strMod;
+        initialAttacks.push({
+          name: it.name,
+          bonus: fmtSigned(calcProfInitial + wMod),
+          damage: it.desc ? it.desc.split('.')[0] : `1d8 ${fmtSigned(wMod)}`
+        });
+      });
+    }
+
+    for (let i = 0; i < 3; i++) {
+      const atk = initialAttacks[i] || { name: '', bonus: '', damage: '' };
+      setOfficialText(`Arma ${i + 1}`, atk.name || '', 8);
+      setOfficialText(`Bônus ${i + 1}`, atk.bonus || '', 8);
+      setOfficialText(`Dano / Tipo ${i + 1}`, atk.damage || '', 7.5);
+    }
+
+    const extraAtks = initialAttacks.slice(3).map(a => `• ${a.name}${a.bonus ? ` (${a.bonus}` : ''}${a.damage ? `, ${a.damage})` : (a.bonus ? ')' : '')}`);
+    const atkNotesLines = [];
+    if (extraAtks.length > 0) atkNotesLines.push(extraAtks.join('\n'));
+    if (p.attackNotes) atkNotesLines.push(String(p.attackNotes));
+    else if (typeof p.attacks === 'string' && p.attacks.trim()) atkNotesLines.push(p.attacks.trim());
+    setOfficialText('Ataques e Magias', atkNotesLines.join('\n'), 7.5);
+
+    // Idiomas e Outras Proficiências
+    const resolveLangFn = (typeof getPlayerLanguagesString === 'function')
+      ? getPlayerLanguagesString
+      : (typeof window !== 'undefined' && typeof window.getPlayerLanguagesString === 'function' ? window.getPlayerLanguagesString : null);
+    const langStr = resolveLangFn ? resolveLangFn(p) : (p.languages || 'Comum');
+    const profLines = [
+      `Idiomas: ${langStr}`,
+      `Armaduras: ${p.armorProficiencies || 'Padrão da Classe'}`,
+      `Armas: ${p.weaponProficiencies || 'Padrão da Classe'}`
+    ];
+    if (p.tools) profLines.push(`Ferramentas: ${p.tools}`);
+    profLines.push(`Sentidos Passivos: Percepção ${passPercVal} | Investigação ${passInvestVal} | Intuição ${passInsightVal}`);
+    setOfficialText('Idiomas e outras Proficiências', profLines.join('\n'), 7.5);
+
+    // Equipamento e Moedas
+    const coins = p.coins || { cp: 0, sp: 0, ep: 0, gp: p.gold || 0, pp: 0 };
+    const cpVal = Number(coins.cp !== undefined ? coins.cp : (p.cp || 0)) || 0;
+    const spVal = Number(coins.sp !== undefined ? coins.sp : (p.sp || 0)) || 0;
+    const epVal = Number(coins.ep !== undefined ? coins.ep : (p.ep || 0)) || 0;
+    const gpVal = Number(coins.gp !== undefined ? coins.gp : (p.gold || p.gp || 0)) || 0;
+    const ppVal = Number(coins.pp !== undefined ? coins.pp : (p.pp || 0)) || 0;
+
+    const rawEquip = Array.isArray(p.equipment) ? p.equipment : (Array.isArray(p.inventory) ? p.inventory : []);
+    let equipLines = [];
+    if (rawEquip.length > 0) {
+      equipLines = rawEquip.map(eq => {
+        if (typeof eq === 'string') return `• ${eq}`;
+        return `• ${eq.name || 'Item'}${eq.qty && eq.qty > 1 ? ` (x${eq.qty})` : ''}${eq.equipped ? ' [Equipado]' : ''}`;
+      });
+    } else if (typeof p.inventory === 'string' && p.inventory.trim()) {
+      equipLines = [p.inventory.trim()];
+    }
+    const coinsSummary = `Moedas: ${gpVal} PO | ${spVal} PP | ${cpVal} PC${epVal ? ` | ${epVal} PE` : ''}${ppVal ? ` | ${ppVal} PL` : ''}`;
+    setOfficialText('Equipamento', [coinsSummary, ...equipLines].filter(Boolean).join('\n'), 7.5);
+
+    // Personalidade, Ideais, Ligações e Defeitos
+    setOfficialText('Traços de Personalidade', p.personality || '', 7.5);
+    setOfficialText('Ideais', p.ideals || p.ideal || '', 7.5);
+    setOfficialText('Ligações', p.bonds || p.bond || '', 7.5);
+    setOfficialText('Defeitos', p.flaws || p.flaw || '', 7.5);
+
+    // =====================================================
+    // TRAÇOS E HABILIDADES DIRETOS E OBJETIVOS (PÁG. 1 + TRANSBORDO PÁG. 2)
+    // =====================================================
+    const resolveFeaturesFn = (typeof getPlayerAllFeaturesAndTraits === 'function')
+      ? getPlayerAllFeaturesAndTraits
+      : (typeof window !== 'undefined' && typeof window.getPlayerAllFeaturesAndTraits === 'function' ? window.getPlayerAllFeaturesAndTraits : null);
+
+    let allFeats = [];
+    if (resolveFeaturesFn) {
+      allFeats = resolveFeaturesFn(p) || [];
+    } else {
+      // Fallback autônomo para chamada direta em Node.js sem players.js no escopo global
+      let quickRulesRef = (typeof TRAIT_QUICK_RULES !== 'undefined' && TRAIT_QUICK_RULES) || null;
+      if (!quickRulesRef && typeof require === 'function') {
+        try { quickRulesRef = require('../data/trait_quick_rules.js').TRAIT_QUICK_RULES; } catch (e) {}
+      }
+      const rawItems = [];
+      if (Array.isArray(p.features)) {
+        p.features.forEach(f => rawItems.push(typeof f === 'string' ? f : (f.name || '')));
+      } else if (typeof p.features === 'string' && p.features.trim()) {
+        p.features.split(/(?:\n|,)/).map(s => s.trim()).filter(Boolean).forEach(s => rawItems.push(s));
+      }
+      rawItems.forEach(itemName => {
+        const normKey = String(itemName).split('(')[0].trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const rule = quickRulesRef ? (quickRulesRef[normKey] || null) : null;
+        if (rule) {
+          const summaryResolved = String(rule.summary || '')
+            .replace(/\{tempHpObscuro\}/g, String(Math.max(1, chaMod + charLevel)))
+            .replace(/\{chaModSigned\}/g, fmtSigned(chaMod))
+            .replace(/\{level\}/g, String(charLevel));
+          allFeats.push({ name: itemName, tag: rule.tag || 'Passivo', usage: rule.usage || '', desc: summaryResolved });
+        } else {
+          allFeats.push({ name: itemName, tag: 'Passivo', usage: '', desc: '' });
+        }
+      });
+    }
+
+    const formattedTraitBlocks = allFeats.map(feat => {
+      const tagPart = feat.tag ? feat.tag : '';
+      const usagePart = feat.usage ? feat.usage : '';
+      const metaBracket = [tagPart, usagePart].filter(Boolean).join(' • ');
+      const descText = (feat.shortDesc || feat.desc || '').replace(/\*\*/g, '').trim();
+      return `• ${feat.name}${metaBracket ? ` [${metaBracket}]` : ''}${descText ? `\n  ${descText}` : ''}`;
+    });
+
+    const p1Traits = [];
+    const p2OverflowTraits = [];
+    let currentLen = 0;
+    const maxP1Chars = 1350;
+
+    formattedTraitBlocks.forEach((block, idx) => {
+      if (idx < 8 && (currentLen + block.length) <= maxP1Chars) {
+        p1Traits.push(block);
+        currentLen += block.length + 2;
+      } else {
+        p2OverflowTraits.push(block);
+      }
+    });
+
+    const p1TraitsText = p1Traits.join('\n\n') || (typeof p.features === 'string' ? p.features : '');
+    const fullTraitsText = formattedTraitBlocks.join('\n\n') || p1TraitsText;
+
+    setOfficialText('Caracteristicas e Habilidades', p1TraitsText, p1TraitsText.length > 900 ? 7 : 8);
+    createHiddenTextField('Features_Traits', fullTraitsText);
+
+    // =====================================================
+    // PÁGINA 2: APARÊNCIA, HISTÓRIA, OUTRAS CARACTERÍSTICAS & TESOURO
+    // =====================================================
+    setOfficialText('Idade', p.age || '');
+    setOfficialText('Altura', p.height || '');
+    setOfficialText('Peso', p.weight || '');
+    setOfficialText('Olhos', p.eyes || '');
+    setOfficialText('Pele', p.skin || '');
+    setOfficialText('Cabelos', p.hair || '');
+    setOfficialText('Aliados e Organizações', p.allies || p.organizations || '', 8);
+    setOfficialText('Nome da Facção', p.faction || '');
+
+    let backstoryContent = Array.isArray(p.playerNotes)
+      ? p.playerNotes.join('\n')
+      : String(p.backstory || p.notes || p.playerNotes || '');
+    if (Array.isArray(p.conditions) && p.conditions.length > 0) {
+      backstoryContent = `[CONDIÇÕES ATIVAS EM MESA: ${p.conditions.join(', ')}]\n\n` + backstoryContent;
+    }
+    setOfficialText('História do Personagem', backstoryContent, 8);
+    createHiddenTextField('Character_Backstory', backstoryContent, page2);
+
+    const p2ExtraBlocks = [];
+    if (p2OverflowTraits.length > 0) {
+      p2ExtraBlocks.push('=== CONTINUAÇÃO DOS TRAÇOS E HABILIDADES ===\n' + p2OverflowTraits.join('\n\n'));
+    }
+    if (p.otherFeatures) p2ExtraBlocks.push(String(p.otherFeatures));
+    setOfficialText('Outras Características e Habilidades', p2ExtraBlocks.join('\n\n'), 7.5);
+
+    const treasureText = [
+      coinsSummary,
+      p.treasure ? String(p.treasure) : ''
+    ].filter(Boolean).join('\n\n');
+    setOfficialText('Tesouro', treasureText, 8);
+
+    // =====================================================
+    // PÁGINA 3: GRIMÓRIO OFICIAL (TRUQUES + CÍRCULOS 1 A 9)
+    // =====================================================
+    const cLow = charClass.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    let defaultSpellAb = 'INT';
+    if (cLow.includes('clerigo') || cLow.includes('druida') || cLow.includes('patrulheiro') || cLow.includes('ranger') || cLow.includes('monge')) {
+      defaultSpellAb = 'SAB';
+    } else if (cLow.includes('bardo') || cLow.includes('bruxo') || cLow.includes('warlock') || cLow.includes('feiticeiro') || cLow.includes('paladino')) {
+      defaultSpellAb = 'CAR';
+    }
+    const sAb = String(p.spellAbility || defaultSpellAb).toUpperCase();
+    let spellKeyMod = intMod;
+    if (sAb.includes('FOR') || sAb.includes('STR')) spellKeyMod = strMod;
+    else if (sAb.includes('DES') || sAb.includes('DEX')) spellKeyMod = dexMod;
+    else if (sAb.includes('CON')) spellKeyMod = conMod;
+    else if (sAb.includes('INT')) spellKeyMod = intMod;
+    else if (sAb.includes('SAB') || sAb.includes('WIS')) spellKeyMod = wisMod;
+    else if (sAb.includes('CAR') || sAb.includes('CHA')) spellKeyMod = chaMod;
+
+    const calcSpellDc = 8 + calcProfInitial + spellKeyMod;
+    const calcSpellAtk = fmtSigned(calcProfInitial + spellKeyMod);
+
+    setOfficialText('Classe de Conjurador', p.spellcastingClass || charClass || '');
+    setOfficialText('SpellcastingAbility', sAb);
+    const fOffSpellDc = setOfficialText('SpellSaveDC', String(calcSpellDc));
+    const fOffSpellAtk = setOfficialText('SpellAtkBonus', calcSpellAtk);
+
+    createHiddenTextField('Spellcasting_Class', p.spellcastingClass || charClass || '', page3);
+    createHiddenTextField('Spellcasting_Ability', sAb, page3);
+    const fAliasSpellDc = createHiddenTextField('Spell_Save_DC', String(calcSpellDc), page3);
+    const fAliasSpellAtk = createHiddenTextField('Spell_Attack_Bonus', calcSpellAtk, page3);
+
+    const dcJs = `
+      var prof = Number(this.getField("ProfBonus").value) || 2;
+      var abField = this.getField("SpellcastingAbility") || this.getField("Spellcasting_Ability");
+      var ab = (abField ? abField.value : "INT").toUpperCase().trim();
+      var mod = 0;
+      if (ab.indexOf("FOR") >= 0 || ab.indexOf("STR") >= 0) mod = Number((this.getField("STRmod") || this.getField("FOR_MOD")).value) || 0;
+      else if (ab.indexOf("DES") >= 0 || ab.indexOf("DEX") >= 0) mod = Number((this.getField("DEXmod") || this.getField("DES_MOD")).value) || 0;
+      else if (ab.indexOf("CON") >= 0) mod = Number((this.getField("CONmod") || this.getField("CON_MOD")).value) || 0;
+      else if (ab.indexOf("INT") >= 0) mod = Number((this.getField("INTmod") || this.getField("INT_MOD")).value) || 0;
+      else if (ab.indexOf("SAB") >= 0 || ab.indexOf("WIS") >= 0) mod = Number((this.getField("WISmod") || this.getField("SAB_MOD")).value) || 0;
+      else if (ab.indexOf("CAR") >= 0 || ab.indexOf("CHA") >= 0) mod = Number((this.getField("CHAmod") || this.getField("CAR_MOD")).value) || 0;
+      event.value = 8 + prof + mod;
+    `;
+    if (fOffSpellDc) {
+      attachFieldCalculation(doc, PDFLib, fOffSpellDc, dcJs);
+      calculationFieldsOrder.push(fOffSpellDc);
+    }
+    if (fAliasSpellDc) {
+      attachFieldCalculation(doc, PDFLib, fAliasSpellDc, dcJs);
+      calculationFieldsOrder.push(fAliasSpellDc);
+    }
+    if (fOffSpellAtk) calculationFieldsOrder.push(fOffSpellAtk);
+    if (fAliasSpellAtk) calculationFieldsOrder.push(fAliasSpellAtk);
+
+    // Espaços de Magia (1º ao 9º Círculo)
+    const rawSlots = Array.isArray(p.slots) ? p.slots : [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    const rawSlotsUsed = Array.isArray(p.slotsUsed) ? p.slotsUsed : [0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+    for (let lvl = 1; lvl <= 9; lvl++) {
+      const totVal = rawSlots[lvl - 1] > 0 ? String(rawSlots[lvl - 1]) : '';
+      const useVal = rawSlotsUsed[lvl - 1] > 0 ? String(rawSlotsUsed[lvl - 1]) : '';
+      const offTotName = `Total de Espaços Nível ${lvl}`;
+      const offUseName = lvl === 1 ? 'Espaços Usados' : `Espaços Usados${lvl - 2}`;
+
+      setOfficialText(offTotName, totVal);
+      setOfficialText(offUseName, useVal);
+
+      createHiddenTextField(`Slot_Lvl_${lvl}_Total`, totVal, page3);
+      createHiddenTextField(`Slot_Lvl_${lvl}_Used`, useVal, page3);
+    }
+
+    // Resolução de Magias do Personagem por Círculo (0 a 9)
+    const spellsByCircle = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [] };
+    const seenSpells = new Set();
+    const spellsCatalog = (typeof SPELLS_DATA !== 'undefined' && Array.isArray(SPELLS_DATA)) ? SPELLS_DATA : [];
+    const prepList = Array.isArray(p.preparedSpells) ? p.preparedSpells.map(s => String(s).toLowerCase().trim()) : [];
+
+    const registerSpellEntry = (spItem, defaultPrepared = false) => {
+      if (!spItem) return;
+      let spName = '';
+      let spLevel = null;
+      let isPrep = defaultPrepared;
+
+      if (typeof spItem === 'string') {
+        spName = spItem.replace(/^[•\-\*]\s*/, '').trim();
+      } else if (typeof spItem === 'object') {
+        spName = String(spItem.name || '').trim();
+        if (spItem.level !== undefined && spItem.level !== null) spLevel = Number(spItem.level);
+        if (spItem.prepared !== undefined) isPrep = !!spItem.prepared;
+      }
+      if (!spName) return;
+      const key = spName.toLowerCase();
+      if (seenSpells.has(key)) return;
+      seenSpells.add(key);
+
+      if (prepList.includes(key)) isPrep = true;
+
+      const catEntry = spellsCatalog.find(s => s.name && s.name.toLowerCase() === key);
+      if (spLevel === null || Number.isNaN(spLevel)) {
+        spLevel = catEntry && catEntry.level !== undefined ? Number(catEntry.level) : 1;
+      }
+      const circle = Math.max(0, Math.min(9, spLevel));
+      const shortMeta = catEntry
+        ? `${catEntry.name}${catEntry.damage ? ` (${catEntry.damage})` : ''}`
+        : spName;
+      spellsByCircle[circle].push({ name: shortMeta, prepared: isPrep });
+    };
+
+    if (typeof getPlayerKnownSpells === 'function') {
+      try {
+        const known = getPlayerKnownSpells(p);
+        if (Array.isArray(known)) known.forEach(s => registerSpellEntry(s, true));
+      } catch (e) {}
+    }
+    if (Array.isArray(p.preparedSpells)) {
+      p.preparedSpells.forEach(s => registerSpellEntry(s, true));
+    }
+    if (Array.isArray(p.spells)) {
+      p.spells.forEach(s => registerSpellEntry(s, true));
+    } else if (typeof p.spells === 'string' && p.spells.trim()) {
+      p.spells.split(/(?:\n|,|;)/).map(s => s.trim()).filter(Boolean).forEach(s => registerSpellEntry(s, true));
+    }
+
+    // Truques (Círculo 0): Turques, Turques0..Turques6
+    const cantripFields = ['Turques', 'Turques0', 'Turques1', 'Turques2', 'Turques3', 'Turques4', 'Turques5', 'Turques6'];
+    spellsByCircle[0].slice(0, cantripFields.length).forEach((sp, idx) => {
+      setOfficialText(cantripFields[idx], sp.name, 8);
+    });
+
+    // Círculos 1 a 9: mapeamento exato dos campos Magia e Check Box do ficha.pdf
+    const circleFieldMap = {
+      1: {
+        spells: ['Magia', 'Magia0', 'Magia1', 'Magia2', 'Magia3', 'Magia4', 'Magia5', 'Magia6', 'Magia7', 'Magia8', 'Magia9', 'Magia10', 'Magia11'],
+        checks: ['Check Box 0', 'Check Box 7', 'Check Box 8', 'Check Box 9', 'Check Box 10', 'Check Box 11', 'Check Box 12', 'Check Box 13', 'Check Box 14', 'Check Box 15', 'Check Box 16', 'Check Box 17', 'Check Box 18']
+      },
+      2: {
+        spells: ['Magia12', 'Magia13', 'Magia14', 'Magia15', 'Magia16', 'Magia17', 'Magia18', 'Magia19', 'Magia20', 'Magia21', 'Magia22', 'Magia23', 'Magia24'],
+        checks: ['Check Box 19', 'Check Box 20', 'Check Box 21', 'Check Box 22', 'Check Box 23', 'Check Box 24', 'Check Box 25', 'Check Box 26', 'Check Box 27', 'Check Box 28', 'Check Box 29', 'Check Box 30', 'Check Box 31']
+      },
+      3: {
+        spells: ['Magia25', 'Magia26', 'Magia27', 'Magia28', 'Magia29', 'Magia30', 'Magia31', 'Magia32', 'Magia33', 'Magia34', 'Magia35', 'Magia36', 'Magia37'],
+        checks: ['Check Box 32', 'Check Box 33', 'Check Box 34', 'Check Box 35', 'Check Box 36', 'Check Box 37', 'Check Box 38', 'Check Box 39', 'Check Box 40', 'Check Box 41', 'Check Box 42', 'Check Box 43', 'Check Box 44']
+      },
+      4: {
+        spells: ['Magia38', 'Magia39', 'Magia40', 'Magia41', 'Magia42', 'Magia43', 'Magia44', 'Magia45', 'Magia46', 'Magia47', 'Magia48', 'Magia49', 'Magia50'],
+        checks: ['Check Box 45', 'Check Box 46', 'Check Box 47', 'Check Box 48', 'Check Box 49', 'Check Box 50', 'Check Box 51', 'Check Box 52', 'Check Box 53', 'Check Box 54', 'Check Box 55', 'Check Box 56', 'Check Box 57']
+      },
+      5: {
+        spells: ['Magia51', 'Magia52', 'Magia53', 'Magia54', 'Magia55', 'Magia56', 'Magia57', 'Magia58', 'Magia59'],
+        checks: ['Check Box 58', 'Check Box 59', 'Check Box 60', 'Check Box 61', 'Check Box 62', 'Check Box 63', 'Check Box 64', 'Check Box 65', 'Check Box 66']
+      },
+      6: {
+        spells: ['Magia60', 'Magia61', 'Magia62', 'Magia63', 'Magia64', 'Magia65', 'Magia66', 'Magia67', 'Magia68'],
+        checks: ['Check Box 67', 'Check Box 68', 'Check Box 69', 'Check Box 70', 'Check Box 71', 'Check Box 72', 'Check Box 73', 'Check Box 74', 'Check Box 75']
+      },
+      7: {
+        spells: ['Magia69', 'Magia70', 'Magia71', 'Magia72', 'Magia73', 'Magia74', 'Magia75', 'Magia76', 'Magia77'],
+        checks: ['Check Box 76', 'Check Box 77', 'Check Box 78', 'Check Box 79', 'Check Box 80', 'Check Box 81', 'Check Box 82', 'Check Box 83', 'Check Box 84']
+      },
+      8: {
+        spells: ['Magia78', 'Magia79', 'Magia80', 'Magia81', 'Magia82', 'Magia83', 'Magia84'],
+        checks: ['Check Box 85', 'Check Box 86', 'Check Box 87', 'Check Box 88', 'Check Box 89', 'Check Box 90', 'Check Box 91']
+      },
+      9: {
+        spells: ['Magia85', 'Magia86', 'Magia87', 'Magia88', 'Magia89', 'Magia90', 'Magia91'],
+        checks: ['Check Box 92', 'Check Box 93', 'Check Box 94', 'Check Box 95', 'Check Box 96', 'Check Box 97', 'Check Box 98']
+      }
+    };
+
+    for (let lvl = 1; lvl <= 9; lvl++) {
+      const list = spellsByCircle[lvl] || [];
+      const map = circleFieldMap[lvl];
+      if (!map) continue;
+      list.slice(0, map.spells.length).forEach((sp, idx) => {
+        setOfficialText(map.spells[idx], sp.name, 7.5);
+        setOfficialCheck(map.checks[idx], !!sp.prepared);
+      });
+    }
+
+    // Definir Ordem de Cálculo Oficial (/CO)
+    try {
+      if (form.acroForm && form.acroForm.dict && calculationFieldsOrder.length > 0) {
+        form.acroForm.dict.set(
+          PDFName.of('CO'),
+          doc.context.obj(calculationFieldsOrder.map(f => f.acroField.ref))
+        );
+      }
+    } catch (e) {}
+
+    try {
+      form.updateFieldAppearances(fontRegular);
+    } catch (e) {}
+
+    const pdfBytes = await doc.save({ useObjectStreams: false });
+    return pdfBytes;
+  }
+
+  // Gera o PDF Editável Interativo (usa o modelo oficial ficha.pdf de 3 páginas com fallback para o gerador programático)
   async function generateEditableDnd5ePdf(playerData) {
+    if (playerData && playerData._forceFallbackPdf) {
+      return generateProgrammaticEditableDnd5ePdf(playerData);
+    }
+    const tpl = loadOfficialPdfTemplateBytes();
+    if (tpl && tpl.length > 1000) {
+      try {
+        return await fillOfficialDnd5eSheetPdf(playerData, tpl);
+      } catch (e) {
+        console.warn('Fallback para gerador programático de PDF:', e);
+      }
+    }
+    return generateProgrammaticEditableDnd5ePdf(playerData);
+  }
+
+  // Gerador programático de fallback caso o modelo oficial não esteja disponível
+  async function generateProgrammaticEditableDnd5ePdf(playerData) {
     const PDFLib = getPdfLib();
     if (!PDFLib) {
       throw new Error('A biblioteca PDF-Lib não foi encontrada. Verifique sua conexão com a internet para carregar o módulo.');
@@ -963,6 +1748,9 @@
   targets.forEach(t => {
     t.DND_SKILLS_MAPPING = DND_SKILLS_MAPPING;
     t.attachFieldCalculation = attachFieldCalculation;
+    t.loadOfficialPdfTemplateBytes = loadOfficialPdfTemplateBytes;
+    t.fillOfficialDnd5eSheetPdf = fillOfficialDnd5eSheetPdf;
+    t.generateProgrammaticEditableDnd5ePdf = generateProgrammaticEditableDnd5ePdf;
     t.generateEditableDnd5ePdf = generateEditableDnd5ePdf;
     t.exportPlayerEditablePdf = exportPlayerEditablePdf;
     t.exportCurrentModalPlayerEditablePdf = exportCurrentModalPlayerEditablePdf;
@@ -972,6 +1760,9 @@
     module.exports = {
       DND_SKILLS_MAPPING,
       attachFieldCalculation,
+      loadOfficialPdfTemplateBytes,
+      fillOfficialDnd5eSheetPdf,
+      generateProgrammaticEditableDnd5ePdf,
       generateEditableDnd5ePdf,
       exportPlayerEditablePdf,
       exportCurrentModalPlayerEditablePdf

@@ -2184,6 +2184,13 @@ function loadFromLocalStorage() {
         if (!p.customAttacks || !Array.isArray(p.customAttacks)) p.customAttacks = [];
         if (!p.preparedSpells || !Array.isArray(p.preparedSpells)) p.preparedSpells = [];
         if (!p.spellbookSpells || !Array.isArray(p.spellbookSpells)) p.spellbookSpells = [];
+        // ISSUE-162: Limpa magias órfãs em spellbookSpells/knownSpells que já foram desmarcadas de preparedSpells
+        const isWizOnLoad = ((p.className || '').toLowerCase().includes('mago') || (p.className || '').toLowerCase().includes('wizard'));
+        if (!isWizOnLoad && (p.preparedSpells.length > 0 || p._spellsSyncedFromPicker)) {
+          const validSet = new Set([...p.preparedSpells, ...(Array.isArray(p.unpreparedSpells) ? p.unpreparedSpells : [])]);
+          p.spellbookSpells = Array.from(validSet);
+          if (Array.isArray(p.knownSpells)) p.knownSpells = Array.from(validSet);
+        }
 
         return p;
       });

@@ -2429,13 +2429,754 @@ function getClassAsiLevels(className) {
   return CLASS_ASI_LEVELS.default;
 }
 
+// ============================================================================
+// 🎒 EQUIPAMENTOS INICIAIS, PERÍCIAS & SUGESTÕES POR CLASSE (PHB D&D 5E - ISSUE-160)
+// ============================================================================
+const CLASS_STARTING_EQUIPMENT = {
+  barbaro: {
+    className: "Bárbaro",
+    startingGoldFormula: "2d4 × 10 PO",
+    diceCount: 2,
+    diceSides: 4,
+    multiplier: 10,
+    avgGold: 50,
+    skillCount: 2,
+    skillOptions: ["adestramento", "atletismo", "intimidacao", "natureza", "percepcao", "sobrevivencia"],
+    choices: [
+      {
+        id: "barb_wpn_1",
+        title: "Escolha 1 — Arma Principal Pesada",
+        options: [
+          { key: "a", label: "(a) Um Machado Grande (1d12 cortante)", weapons: ["Machado Grande"], items: [] },
+          { key: "b", label: "(b) Uma Espada Grande (2d6 cortante)", weapons: ["Espada Grande"], items: [] },
+          { key: "c", label: "(c) Um Malho (2d6 concussão)", weapons: ["Malho"], items: [] }
+        ]
+      },
+      {
+        id: "barb_wpn_2",
+        title: "Escolha 2 — Armas Secundárias",
+        options: [
+          { key: "a", label: "(a) Duas Machadinhas (1d6 cortante, arremesso)", weapons: ["Machadinha"], items: [{ name: "Machadinha", qty: 2, weight: 2, category: "Armas" }] },
+          { key: "b", label: "(b) Uma Azagaia & Clava Grande", weapons: ["Clava Grande"], items: [{ name: "Azagaia", qty: 1, weight: 2, category: "Armas" }] }
+        ]
+      }
+    ],
+    fixedEquipment: [
+      { name: "Pacote de Explorador", qty: 1, weight: 10, category: "Pacotes de Equipamento" },
+      { name: "Azagaia", qty: 4, weight: 2, category: "Armas" }
+    ],
+    fixedWeapons: ["Azagaia"],
+    fixedArmor: "none",
+    fixedShield: false,
+    traitSuggestions: {
+      personality: [
+        "Resolvo meus problemas com ação direta: palavras demais só atrasam a batalha.",
+        "Sinto-me mais confortável dormindo sob as estrelas do que em estalagens luxuosas.",
+        "Tenho um código de honra tribal rígido e respeito qualquer oponente digno."
+      ],
+      ideal: [
+        "Força Primordial: Os mais fortes devem proteger aqueles que não podem se defender. (Bom)",
+        "Liberdade Selvagem: Nenhuma corrente ou tirano jamais me domará. (Caótico)"
+      ],
+      bond: [
+        "Meu totem espiritual e a memória da minha tribo guiam cada golpe do meu machado.",
+        "Jurei vingança contra o monstro ou senhor da guerra que destruiu meu clã."
+      ],
+      flaw: [
+        "Quando minha fúria desperta, é difícil me convencer a recuar de um combate.",
+        "Desconfio profundamente de magia arcana e das intrigas das grandes cidades."
+      ]
+    }
+  },
+  bardo: {
+    className: "Bardo",
+    startingGoldFormula: "5d4 × 10 PO",
+    diceCount: 5,
+    diceSides: 4,
+    multiplier: 10,
+    avgGold: 125,
+    skillCount: 3,
+    skillOptions: ["atletismo", "acrobacia", "furtividade", "prestidigitacao", "arcanismo", "historia", "investigacao", "natureza", "religiao", "adestramento", "intuicao", "medicina", "percepcao", "sobrevivencia", "atuacao", "enganacao", "intimidacao", "persuasao"],
+    choices: [
+      {
+        id: "bard_wpn_1",
+        title: "Escolha 1 — Arma de Esgrima",
+        options: [
+          { key: "a", label: "(a) Uma Rapieira (1d8 perfurante, acuidade)", weapons: ["Rapieira"], items: [] },
+          { key: "b", label: "(b) Uma Espada Longa (1d8 cortante, versátil)", weapons: ["Espada Longa"], items: [] },
+          { key: "c", label: "(c) Um Arco Curto e 20 Flechas", weapons: ["Arco Curto"], items: [{ name: "Flechas (20)", qty: 1, weight: 1, category: "Munições" }] }
+        ]
+      },
+      {
+        id: "bard_pack",
+        title: "Escolha 2 — Pacote de Viagem",
+        options: [
+          { key: "a", label: "(a) Pacote de Diplomata", weapons: [], items: [{ name: "Pacote de Diplomata", qty: 1, weight: 8, category: "Pacotes de Equipamento" }] },
+          { key: "b", label: "(b) Pacote de Artista", weapons: [], items: [{ name: "Pacote de Artista", qty: 1, weight: 8, category: "Pacotes de Equipamento" }] }
+        ]
+      },
+      {
+        id: "bard_inst",
+        title: "Escolha 3 — Instrumento Musical (Foco)",
+        options: [
+          { key: "a", label: "(a) Um Alaúde", weapons: [], items: [{ name: "Alaúde (Instrumento Musical)", qty: 1, weight: 2, category: "Ferramentas" }] },
+          { key: "b", label: "(b) Uma Flauta", weapons: [], items: [{ name: "Flauta (Instrumento Musical)", qty: 1, weight: 1, category: "Ferramentas" }] },
+          { key: "c", label: "(c) Uma Lira", weapons: [], items: [{ name: "Lira (Instrumento Musical)", qty: 1, weight: 2, category: "Ferramentas" }] }
+        ]
+      }
+    ],
+    fixedEquipment: [
+      { name: "Adaga", qty: 1, weight: 1, category: "Armas" }
+    ],
+    fixedWeapons: ["Adaga"],
+    fixedArmor: "armadura de couro",
+    fixedShield: false,
+    traitSuggestions: {
+      personality: [
+        "Transformo cada encontro perigoso em uma estrofe épica para minha próxima balada.",
+        "Tenho sempre um elogio galante ou uma piada afiada na ponta da língua."
+      ],
+      ideal: [
+        "Inspiração: A música e as histórias têm o poder de mudar corações e derrubar tiranos. (Bom)",
+        "Criatividade: O mundo precisa de novas canções e feitos lendários. (Caótico)"
+      ],
+      bond: [
+        "Meu instrumento musical é uma relíquia preciosa passada pelo meu mentor.",
+        "Busco compor a obra-prima definitiva sobre os feitos do nosso grupo."
+      ],
+      flaw: [
+        "Faço qualquer coisa por fama, aplausos ou um bom rumor na corte.",
+        "Não consigo resistir a zombar de um vilão pomposo, mesmo quando estou em desvantagem."
+      ]
+    }
+  },
+  bruxo: {
+    className: "Bruxo",
+    startingGoldFormula: "4d4 × 10 PO",
+    diceCount: 4,
+    diceSides: 4,
+    multiplier: 10,
+    avgGold: 100,
+    skillCount: 2,
+    skillOptions: ["arcanismo", "enganacao", "historia", "intimidacao", "investigacao", "natureza", "religiao"],
+    choices: [
+      {
+        id: "warlock_wpn_1",
+        title: "Escolha 1 — Arma Inicial",
+        options: [
+          { key: "a", label: "(a) Uma Besta Leve e 20 Virotes", weapons: ["Besta Leve"], items: [{ name: "Virotes de Besta (20)", qty: 1, weight: 1.5, category: "Munições" }] },
+          { key: "b", label: "(b) Um Cajado / Bordão Arcano", weapons: ["Bordão"], items: [] }
+        ]
+      },
+      {
+        id: "warlock_focus",
+        title: "Escolha 2 — Foco de Conjuração",
+        options: [
+          { key: "a", label: "(a) Uma Bolsa de Componentes", weapons: [], items: [{ name: "Bolsa de Componentes", qty: 1, weight: 2, category: "Focos e Itens Arcanos" }] },
+          { key: "b", label: "(b) Um Foco Arcano (Orbe / Cristal)", weapons: [], items: [{ name: "Foco Arcano (Orbe)", qty: 1, weight: 1.5, category: "Focos e Itens Arcanos" }] }
+        ]
+      },
+      {
+        id: "warlock_pack",
+        title: "Escolha 3 — Pacote de Equipamento",
+        options: [
+          { key: "a", label: "(a) Pacote de Estudioso", weapons: [], items: [{ name: "Pacote de Estudioso", qty: 1, weight: 5, category: "Pacotes de Equipamento" }] },
+          { key: "b", label: "(b) Pacote de Aventureiro", weapons: [], items: [{ name: "Pacote de Aventureiro", qty: 1, weight: 10, category: "Pacotes de Equipamento" }] }
+        ]
+      }
+    ],
+    fixedEquipment: [
+      { name: "Adaga", qty: 2, weight: 1, category: "Armas" }
+    ],
+    fixedWeapons: ["Adaga"],
+    fixedArmor: "armadura de couro",
+    fixedShield: false,
+    traitSuggestions: {
+      personality: [
+        "Às vezes sussurro para sombras vazias quando penso que ninguém está ouvindo.",
+        "Encaro mistérios sobrenaturais com fascínio frio onde outros sentiriam pavor."
+      ],
+      ideal: [
+        "Conhecimento Proibido: Nenhum segredo cósmico deve permanecer trancado. (Neutro)",
+        "Ambição: O pacto foi apenas o primeiro degrau rumo ao meu verdadeiro destino. (Qualquer)"
+      ],
+      bond: [
+        "Meu Patrono exige tarefas enigmáticas em troca do poder que corre em minhas veias.",
+        "Fiz este pacto para salvar alguém que amo de um destino terrível."
+      ],
+      flaw: [
+        "A voz do meu Patrono ecoa em meus sonhos e me tenta a tomar atalhos perigosos.",
+        "Guardo segredos até mesmo dos meus aliados mais próximos."
+      ]
+    }
+  },
+  clerigo: {
+    className: "Clérigo",
+    startingGoldFormula: "5d4 × 10 PO",
+    diceCount: 5,
+    diceSides: 4,
+    multiplier: 10,
+    avgGold: 125,
+    skillCount: 2,
+    skillOptions: ["historia", "intuicao", "medicina", "persuasao", "religiao"],
+    choices: [
+      {
+        id: "cleric_wpn_1",
+        title: "Escolha 1 — Arma Sagrada",
+        options: [
+          { key: "a", label: "(a) Uma Maça (1d6 concussão)", weapons: ["Maça"], items: [] },
+          { key: "b", label: "(b) Um Martelo de Guerra (1d8 concussão, se proficiente)", weapons: ["Martelo de Guerra"], items: [] }
+        ]
+      },
+      {
+        id: "cleric_armor",
+        title: "Escolha 2 — Armadura Inicial",
+        options: [
+          { key: "a", label: "(a) Cota de Escamas (CA 14 + DES máx +2)", weapons: [], armor: "cota de escamas", items: [] },
+          { key: "b", label: "(b) Armadura de Couro (CA 11 + DES)", weapons: [], armor: "armadura de couro", items: [] },
+          { key: "c", label: "(c) Cota de Malha (CA 16, se proficiente)", weapons: [], armor: "cota de malha", items: [] }
+        ]
+      },
+      {
+        id: "cleric_wpn_2",
+        title: "Escolha 3 — Arma Secundária",
+        options: [
+          { key: "a", label: "(a) Uma Besta Leve e 20 Virotes", weapons: ["Besta Leve"], items: [{ name: "Virotes de Besta (20)", qty: 1, weight: 1.5, category: "Munições" }] },
+          { key: "b", label: "(b) Uma Azagaia Sagrada", weapons: ["Azagaia"], items: [] }
+        ]
+      },
+      {
+        id: "cleric_pack",
+        title: "Escolha 4 — Pacote de Equipamento",
+        options: [
+          { key: "a", label: "(a) Pacote de Sacerdote", weapons: [], items: [{ name: "Pacote de Sacerdote", qty: 1, weight: 8, category: "Pacotes de Equipamento" }] },
+          { key: "b", label: "(b) Pacote de Explorador", weapons: [], items: [{ name: "Pacote de Explorador", qty: 1, weight: 10, category: "Pacotes de Equipamento" }] }
+        ]
+      }
+    ],
+    fixedEquipment: [
+      { name: "Símbolo Sagrado (Relicário / Amuleto)", qty: 1, weight: 1, category: "Focos e Itens Arcanos" }
+    ],
+    fixedWeapons: [],
+    fixedArmor: "cota de escamas",
+    fixedShield: true,
+    traitSuggestions: {
+      personality: [
+        "Enxergo presságios divinos em cada evento e ofereço preces pelos feridos e caídos.",
+        "Mantenho a serenidade inabalável diante do perigo, confiando na luz da minha divindade."
+      ],
+      ideal: [
+        "Misericórdia: Curar os aflitos e proteger os inocentes é a maior das orações. (Bom)",
+        "Fé: Minha divindade guia meus passos; cumprir Sua vontade está acima de tudo. (Leal)"
+      ],
+      bond: [
+        "Carrego um símbolo sagrado consagrado no templo onde fui iniciado.",
+        "Devo purificar um santuário ancestral profanado pelas forças das trevas."
+      ],
+      flaw: [
+        "Julgo com severidade aqueles que não demonstram devoção ou respeito pelo sagrado.",
+        "Confio demais na hierarquia do meu templo, mesmo quando há sinais de corrupção."
+      ]
+    }
+  },
+  druida: {
+    className: "Druida",
+    startingGoldFormula: "2d4 × 10 PO",
+    diceCount: 2,
+    diceSides: 4,
+    multiplier: 10,
+    avgGold: 50,
+    skillCount: 2,
+    skillOptions: ["arcanismo", "adestramento", "intuicao", "medicina", "natureza", "percepcao", "religiao", "sobrevivencia"],
+    choices: [
+      {
+        id: "druid_offhand",
+        title: "Escolha 1 — Escudo ou Arma Simples",
+        options: [
+          { key: "a", label: "(a) Um Escudo de Madeira (+2 CA)", weapons: [], shield: true, items: [] },
+          { key: "b", label: "(b) Uma Lança de Madeira (1d6 perfurante)", weapons: ["Lança"], shield: false, items: [] }
+        ]
+      },
+      {
+        id: "druid_wpn_1",
+        title: "Escolha 2 — Arma Druídica",
+        options: [
+          { key: "a", label: "(a) Uma Cimitarra (1d6 cortante, acuidade)", weapons: ["Cimitarra"], items: [] },
+          { key: "b", label: "(b) Um Bordão Druídico (1d6/1d8 concussão)", weapons: ["Bordão"], items: [] }
+        ]
+      }
+    ],
+    fixedEquipment: [
+      { name: "Pacote de Explorador", qty: 1, weight: 10, category: "Pacotes de Equipamento" },
+      { name: "Foco Druídico (Cajado de Teixo / Visco)", qty: 1, weight: 1, category: "Focos e Itens Arcanos" }
+    ],
+    fixedWeapons: [],
+    fixedArmor: "armadura de couro",
+    fixedShield: false,
+    traitSuggestions: {
+      personality: [
+        "Observo o comportamento das aves e o vento antes de tomar qualquer decisão importante.",
+        "Trato animais e plantas com a mesma cortesia que muitos reservam à nobreza."
+      ],
+      ideal: [
+        "Equilíbrio Natural: O ciclo de vida, morte e renovação da natureza deve ser preservado. (Neutro)",
+        "Proteção Silvestre: As matas antigas precisam de guardiões contra a ganância. (Bom)"
+      ],
+      bond: [
+        "Um bosque sagrado onde fui iniciado está ameaçado por uma praga antinatural.",
+        "Um espírito animal salvou minha vida na infância e caminha ao meu lado."
+      ],
+      flaw: [
+        "Tenho dificuldade em compreender leis urbanas, etiquetas da corte e moedas de metal.",
+        "Lembro-me de cada ofensa contra a natureza e raramente perdoo predadores cruéis."
+      ]
+    }
+  },
+  feiticeiro: {
+    className: "Feiticeiro",
+    startingGoldFormula: "3d4 × 10 PO",
+    diceCount: 3,
+    diceSides: 4,
+    multiplier: 10,
+    avgGold: 75,
+    skillCount: 2,
+    skillOptions: ["arcanismo", "enganacao", "intuicao", "intimidacao", "persuasao", "religiao"],
+    choices: [
+      {
+        id: "sorc_wpn_1",
+        title: "Escolha 1 — Arma Inicial",
+        options: [
+          { key: "a", label: "(a) Uma Besta Leve e 20 Virotes", weapons: ["Besta Leve"], items: [{ name: "Virotes de Besta (20)", qty: 1, weight: 1.5, category: "Munições" }] },
+          { key: "b", label: "(b) Um Bordão Arcano", weapons: ["Bordão"], items: [] }
+        ]
+      },
+      {
+        id: "sorc_focus",
+        title: "Escolha 2 — Foco de Conjuração",
+        options: [
+          { key: "a", label: "(a) Uma Bolsa de Componentes", weapons: [], items: [{ name: "Bolsa de Componentes", qty: 1, weight: 2, category: "Focos e Itens Arcanos" }] },
+          { key: "b", label: "(b) Um Foco Arcano (Cristal / Varinha)", weapons: [], items: [{ name: "Foco Arcano (Cristal)", qty: 1, weight: 1, category: "Focos e Itens Arcanos" }] }
+        ]
+      },
+      {
+        id: "sorc_pack",
+        title: "Escolha 3 — Pacote de Equipamento",
+        options: [
+          { key: "a", label: "(a) Pacote de Aventureiro", weapons: [], items: [{ name: "Pacote de Aventureiro", qty: 1, weight: 10, category: "Pacotes de Equipamento" }] },
+          { key: "b", label: "(b) Pacote de Explorador", weapons: [], items: [{ name: "Pacote de Explorador", qty: 1, weight: 10, category: "Pacotes de Equipamento" }] }
+        ]
+      }
+    ],
+    fixedEquipment: [
+      { name: "Adaga", qty: 2, weight: 1, category: "Armas" }
+    ],
+    fixedWeapons: ["Adaga"],
+    fixedArmor: "none",
+    fixedShield: false,
+    traitSuggestions: {
+      personality: [
+        "Pequenas faíscas ou brisas mágicas escapam de mim quando fico emocionado.",
+        "Confio no meu instinto inato muito mais do que em livros empoeirados."
+      ],
+      ideal: [
+        "Autodomínio: Meu poder é uma tempestade viva que devo aprender a guiar. (Leal)",
+        "Expressão Livre: A magia existe para ser sentida e liberada sem amarras. (Caótico)"
+      ],
+      bond: [
+        "Minha linhagem carrega uma marca ancestral dracônica ou mística que busco desvendar.",
+        "Alguém se sacrificou para me proteger quando meu poder despertou pela primeira vez."
+      ],
+      flaw: [
+        "Quando subestimam minha capacidade, sou tentado a responder com poder excessivo.",
+        "Temo perder o controle da magia que pulsa no meu sangue."
+      ]
+    }
+  },
+  guerreiro: {
+    className: "Guerreiro",
+    startingGoldFormula: "5d4 × 10 PO",
+    diceCount: 5,
+    diceSides: 4,
+    multiplier: 10,
+    avgGold: 125,
+    skillCount: 2,
+    skillOptions: ["acrobacia", "adestramento", "atletismo", "historia", "intuicao", "intimidacao", "percepcao", "sobrevivencia"],
+    choices: [
+      {
+        id: "fighter_armor",
+        title: "Escolha 1 — Armadura & Arco",
+        options: [
+          { key: "a", label: "(a) Cota de Malha (CA 16, Armadura Pesada)", weapons: [], armor: "cota de malha", items: [] },
+          { key: "b", label: "(b) Armadura de Couro, Arco Longo e 20 Flechas", weapons: ["Arco Longo"], armor: "armadura de couro", items: [{ name: "Flechas (20)", qty: 1, weight: 1, category: "Munições" }] }
+        ]
+      },
+      {
+        id: "fighter_wpn_1",
+        title: "Escolha 2 — Armas Marciais & Escudo",
+        options: [
+          { key: "a", label: "(a) Espada Longa e um Escudo (+2 CA)", weapons: ["Espada Longa"], shield: true, items: [] },
+          { key: "b", label: "(b) Machado de Batalha e um Escudo (+2 CA)", weapons: ["Machado de Batalha"], shield: true, items: [] },
+          { key: "c", label: "(c) Espada Grande (2d6) e Machado de Batalha (Duas Armas Marciais)", weapons: ["Espada Grande", "Machado de Batalha"], shield: false, items: [] }
+        ]
+      },
+      {
+        id: "fighter_wpn_2",
+        title: "Escolha 3 — Arma à Distância",
+        options: [
+          { key: "a", label: "(a) Uma Besta Leve e 20 Virotes", weapons: ["Besta Leve"], items: [{ name: "Virotes de Besta (20)", qty: 1, weight: 1.5, category: "Munições" }] },
+          { key: "b", label: "(b) Duas Machadinhas de Arremesso", weapons: ["Machadinha"], items: [{ name: "Machadinha", qty: 2, weight: 2, category: "Armas" }] }
+        ]
+      },
+      {
+        id: "fighter_pack",
+        title: "Escolha 4 — Pacote de Equipamento",
+        options: [
+          { key: "a", label: "(a) Pacote de Aventureiro (Masmorra)", weapons: [], items: [{ name: "Pacote de Aventureiro", qty: 1, weight: 10, category: "Pacotes de Equipamento" }] },
+          { key: "b", label: "(b) Pacote de Explorador", weapons: [], items: [{ name: "Pacote de Explorador", qty: 1, weight: 10, category: "Pacotes de Equipamento" }] }
+        ]
+      }
+    ],
+    fixedEquipment: [],
+    fixedWeapons: [],
+    fixedArmor: "cota de malha",
+    fixedShield: true,
+    traitSuggestions: {
+      personality: [
+        "Avalio entradas, saídas e posições táticas em toda sala em que entro.",
+        "Cuido das minhas armas e armadura todos os dias com disciplina impecável."
+      ],
+      ideal: [
+        "Honra Marcial: Nunca abandono um companheiro na linha de frente. (Leal)",
+        "Glória: Quero testar minha lâmina contra os maiores campeões do reino. (Neutro)"
+      ],
+      bond: [
+        "Minha arma principal pertenceu a um veterano que me ensinou a arte da guerra.",
+        "Luto para proteger aqueles que não têm força para empunhar um escudo."
+      ],
+      flaw: [
+        "Prefiro enfrentar um problema de frente com aço na mão do que esperar por diplomacia.",
+        "Um fracasso tático do meu passado ainda pesa sobre minhas decisões."
+      ]
+    }
+  },
+  ladino: {
+    className: "Ladino",
+    startingGoldFormula: "4d4 × 10 PO",
+    diceCount: 4,
+    diceSides: 4,
+    multiplier: 10,
+    avgGold: 100,
+    skillCount: 4,
+    skillOptions: ["acrobacia", "atletismo", "atuacao", "enganacao", "furtividade", "intimidacao", "intuicao", "investigacao", "percepcao", "persuasao", "prestidigitacao"],
+    choices: [
+      {
+        id: "rogue_wpn_1",
+        title: "Escolha 1 — Arma Principal de Precisão",
+        options: [
+          { key: "a", label: "(a) Uma Rapieira (1d8 perfurante, acuidade)", weapons: ["Rapieira"], items: [] },
+          { key: "b", label: "(b) Uma Espada Curta (1d6 perfurante, leve, acuidade)", weapons: ["Espada Curta"], items: [] }
+        ]
+      },
+      {
+        id: "rogue_wpn_2",
+        title: "Escolha 2 — Arco ou Segunda Lâmina",
+        options: [
+          { key: "a", label: "(a) Um Arco Curto e Aljava com 20 Flechas", weapons: ["Arco Curto"], items: [{ name: "Flechas (20)", qty: 1, weight: 1, category: "Munições" }] },
+          { key: "b", label: "(b) Uma Segunda Espada Curta", weapons: ["Espada Curta"], items: [{ name: "Espada Curta", qty: 1, weight: 2, category: "Armas" }] }
+        ]
+      },
+      {
+        id: "rogue_pack",
+        title: "Escolha 3 — Pacote de Equipamento",
+        options: [
+          { key: "a", label: "(a) Pacote de Assaltante", weapons: [], items: [{ name: "Pacote de Assaltante", qty: 1, weight: 8, category: "Pacotes de Equipamento" }] },
+          { key: "b", label: "(b) Pacote de Aventureiro", weapons: [], items: [{ name: "Pacote de Aventureiro", qty: 1, weight: 10, category: "Pacotes de Equipamento" }] },
+          { key: "c", label: "(c) Pacote de Explorador", weapons: [], items: [{ name: "Pacote de Explorador", qty: 1, weight: 10, category: "Pacotes de Equipamento" }] }
+        ]
+      }
+    ],
+    fixedEquipment: [
+      { name: "Adaga", qty: 2, weight: 1, category: "Armas" },
+      { name: "Ferramentas de Ladrão", qty: 1, weight: 1, category: "Ferramentas" }
+    ],
+    fixedWeapons: ["Adaga"],
+    fixedArmor: "armadura de couro",
+    fixedShield: false,
+    traitSuggestions: {
+      personality: [
+        "Sempre tenho um plano de fuga pronto e sento-me de costas para a parede.",
+        "Observo bolsas, fechaduras e segredos alheios por puro hábito profissional."
+      ],
+      ideal: [
+        "Astúcia: A mente afiada vence qualquer armadura pesada. (Caótico)",
+        "Lealdade deBeco: Nunca traio aqueles que dividem o risco comigo. (Bom)"
+      ],
+      bond: [
+        "Devo um favor antigo a uma guilda ou mentor que me tirou das ruas.",
+        "Busco recuperar uma relíquia que me foi roubada em um golpe traiçoeiro."
+      ],
+      flaw: [
+        "Quando vejo um tesouro trancado ou proibido, minhas mãos agem antes do bom senso.",
+        "Tenho dificuldade em confiar plenamente em autoridades ou guardas."
+      ]
+    }
+  },
+  mago: {
+    className: "Mago",
+    startingGoldFormula: "4d4 × 10 PO",
+    diceCount: 4,
+    diceSides: 4,
+    multiplier: 10,
+    avgGold: 100,
+    skillCount: 2,
+    skillOptions: ["arcanismo", "historia", "intuicao", "investigacao", "medicina", "religiao"],
+    choices: [
+      {
+        id: "wiz_wpn_1",
+        title: "Escolha 1 — Arma Inicial",
+        options: [
+          { key: "a", label: "(a) Um Bordão / Cajado (1d6 concussão)", weapons: ["Bordão"], items: [] },
+          { key: "b", label: "(b) Uma Adaga (1d4 perfurante, acuidade)", weapons: ["Adaga"], items: [] }
+        ]
+      },
+      {
+        id: "wiz_focus",
+        title: "Escolha 2 — Foco de Conjuração",
+        options: [
+          { key: "a", label: "(a) Uma Bolsa de Componentes", weapons: [], items: [{ name: "Bolsa de Componentes", qty: 1, weight: 2, category: "Focos e Itens Arcanos" }] },
+          { key: "b", label: "(b) Um Foco Arcano (Cajado / Varinha / Orbe)", weapons: [], items: [{ name: "Foco Arcano (Cajado)", qty: 1, weight: 2, category: "Focos e Itens Arcanos" }] }
+        ]
+      },
+      {
+        id: "wiz_pack",
+        title: "Escolha 3 — Pacote de Equipamento",
+        options: [
+          { key: "a", label: "(a) Pacote de Estudioso", weapons: [], items: [{ name: "Pacote de Estudioso", qty: 1, weight: 5, category: "Pacotes de Equipamento" }] },
+          { key: "b", label: "(b) Pacote de Explorador", weapons: [], items: [{ name: "Pacote de Explorador", qty: 1, weight: 10, category: "Pacotes de Equipamento" }] }
+        ]
+      }
+    ],
+    fixedEquipment: [
+      { name: "Grimório Encadernado", qty: 1, weight: 3, category: "Focos e Itens Arcanos" }
+    ],
+    fixedWeapons: [],
+    fixedArmor: "none",
+    fixedShield: false,
+    traitSuggestions: {
+      personality: [
+        "Tomo notas detalhadas sobre cada criatura mágica ou runa antiga que encontramos.",
+        "Costumo explicar teorias arcanas complexas no meio de situações cotidianas."
+      ],
+      ideal: [
+        "Erudição: O conhecimento é a força mais pura e duradoura do multiverso. (Neutro)",
+        "Progresso Arcano: A magia deve ser estudada com método e sabedoria. (Leal)"
+      ],
+      bond: [
+        "Meu grimório é a obra da minha vida; protegê-lo é proteger minha própria alma.",
+        "Procuro páginas perdidas de um tratado arcano deixado pelo meu mestre."
+      ],
+      flaw: [
+        "Não resisto a investigar um artefato ou tomo antigo, mesmo que pareça amaldiçoado.",
+        "Às vezes subestimo soluções simples por buscar explicações complexas demais."
+      ]
+    }
+  },
+  monge: {
+    className: "Monge",
+    startingGoldFormula: "5d4 PO",
+    diceCount: 5,
+    diceSides: 4,
+    multiplier: 1,
+    avgGold: 13,
+    skillCount: 2,
+    skillOptions: ["acrobacia", "atletismo", "furtividade", "historia", "intuicao", "religiao"],
+    choices: [
+      {
+        id: "monk_wpn_1",
+        title: "Escolha 1 — Arma Monástica",
+        options: [
+          { key: "a", label: "(a) Uma Espada Curta (1d6 perfurante)", weapons: ["Espada Curta"], items: [] },
+          { key: "b", label: "(b) Um Bordão Monástico (1d6/1d8 concussão)", weapons: ["Bordão"], items: [] }
+        ]
+      },
+      {
+        id: "monk_pack",
+        title: "Escolha 2 — Pacote de Equipamento",
+        options: [
+          { key: "a", label: "(a) Pacote de Aventureiro", weapons: [], items: [{ name: "Pacote de Aventureiro", qty: 1, weight: 10, category: "Pacotes de Equipamento" }] },
+          { key: "b", label: "(b) Pacote de Explorador", weapons: [], items: [{ name: "Pacote de Explorador", qty: 1, weight: 10, category: "Pacotes de Equipamento" }] }
+        ]
+      }
+    ],
+    fixedEquipment: [
+      { name: "Dardos", qty: 10, weight: 0.25, category: "Armas" }
+    ],
+    fixedWeapons: ["Dardo"],
+    fixedArmor: "none",
+    fixedShield: false,
+    traitSuggestions: {
+      personality: [
+        "Começo cada manhã com exercícios respiratórios e meditação silenciosa.",
+        "Falo com calma concisa e observo a postura das pessoas antes de suas palavras."
+      ],
+      ideal: [
+        "Harmonia Interior: Dominar a si mesmo é vencer a batalha antes do primeiro golpe. (Leal)",
+        "Proteção: Meu treinamento existe para defender os indefesos contra a opressão. (Bom)"
+      ],
+      bond: [
+        "Honro os ensinamentos do mosteiro onde aprendi a canalizar meu Ki.",
+        "Busco restaurar a paz de uma relíquia ou tradição roubada da minha ordem."
+      ],
+      flaw: [
+        "Sou excessivamente rigoroso comigo mesmo e com a falta de disciplina alheia.",
+        "Tenho dificuldade em aceitar ajuda quando acredito que o teste é apenas meu."
+      ]
+    }
+  },
+  paladino: {
+    className: "Paladino",
+    startingGoldFormula: "5d4 × 10 PO",
+    diceCount: 5,
+    diceSides: 4,
+    multiplier: 10,
+    avgGold: 125,
+    skillCount: 2,
+    skillOptions: ["atletismo", "intuicao", "intimidacao", "medicina", "persuasao", "religiao"],
+    choices: [
+      {
+        id: "pal_wpn_1",
+        title: "Escolha 1 — Arma Marcial & Escudo",
+        options: [
+          { key: "a", label: "(a) Uma Espada Longa e um Escudo (+2 CA)", weapons: ["Espada Longa"], shield: true, items: [] },
+          { key: "b", label: "(b) Um Martelo de Guerra e um Escudo (+2 CA)", weapons: ["Martelo de Guerra"], shield: true, items: [] },
+          { key: "c", label: "(c) Uma Espada Grande (2d6) e Machado de Batalha", weapons: ["Espada Grande", "Machado de Batalha"], shield: false, items: [] }
+        ]
+      },
+      {
+        id: "pal_wpn_2",
+        title: "Escolha 2 — Armas Secundárias",
+        options: [
+          { key: "a", label: "(a) Cinco Azagaias de Arremesso", weapons: ["Azagaia"], items: [{ name: "Azagaia", qty: 5, weight: 2, category: "Armas" }] },
+          { key: "b", label: "(b) Uma Maça Sagrada", weapons: ["Maça"], items: [] }
+        ]
+      },
+      {
+        id: "pal_pack",
+        title: "Escolha 3 — Pacote de Equipamento",
+        options: [
+          { key: "a", label: "(a) Pacote de Sacerdote", weapons: [], items: [{ name: "Pacote de Sacerdote", qty: 1, weight: 8, category: "Pacotes de Equipamento" }] },
+          { key: "b", label: "(b) Pacote de Explorador", weapons: [], items: [{ name: "Pacote de Explorador", qty: 1, weight: 10, category: "Pacotes de Equipamento" }] }
+        ]
+      }
+    ],
+    fixedEquipment: [
+      { name: "Símbolo Sagrado (Emblema / Amuleto)", qty: 1, weight: 1, category: "Focos e Itens Arcanos" }
+    ],
+    fixedWeapons: [],
+    fixedArmor: "cota de malha",
+    fixedShield: true,
+    traitSuggestions: {
+      personality: [
+        "Minha palavra é um juramento inquebrável; coloco-me sempre entre o perigo e meus aliados.",
+        "Inspiro coragem nos momentos mais sombrios através do exemplo e da retidão."
+      ],
+      ideal: [
+        "Justiça & Proteção: Ser o escudo dos fracos e a espada contra a tirania. (Bom)",
+        "Juramento Sagrado: A honra e o dever são a luz que guia todas as minhas ações. (Leal)"
+      ],
+      bond: [
+        "Jurei defender meu grupo e cumprir a missão sagrada da minha ordem.",
+        "Um mal antigo ameaça minha terra natal, e não descansarei até erradicá-lo."
+      ],
+      flaw: [
+        "Não tolero covardia ou mentiras, mesmo quando a situação pede sutileza.",
+        "Assumo a culpa e o fardo de todos os fracassos do meu grupo sobre meus ombros."
+      ]
+    }
+  },
+  patrulheiro: {
+    className: "Patrulheiro",
+    startingGoldFormula: "5d4 × 10 PO",
+    diceCount: 5,
+    diceSides: 4,
+    multiplier: 10,
+    avgGold: 125,
+    skillCount: 3,
+    skillOptions: ["adestramento", "atletismo", "furtividade", "intuicao", "investigacao", "natureza", "percepcao", "sobrevivencia"],
+    choices: [
+      {
+        id: "ranger_armor",
+        title: "Escolha 1 — Armadura de Caça",
+        options: [
+          { key: "a", label: "(a) Cota de Escamas (CA 14 + DES máx +2)", weapons: [], armor: "cota de escamas", items: [] },
+          { key: "b", label: "(b) Armadura de Couro (CA 11 + DES, sem desvantagem em Furtividade)", weapons: [], armor: "armadura de couro", items: [] }
+        ]
+      },
+      {
+        id: "ranger_wpn_1",
+        title: "Escolha 2 — Armas Corpo a Corpo",
+        options: [
+          { key: "a", label: "(a) Duas Espadas Curtas (Combate com Duas Armas)", weapons: ["Espada Curta"], items: [{ name: "Espada Curta", qty: 2, weight: 2, category: "Armas" }] },
+          { key: "b", label: "(b) Duas Machadinhas", weapons: ["Machadinha"], items: [{ name: "Machadinha", qty: 2, weight: 2, category: "Armas" }] }
+        ]
+      },
+      {
+        id: "ranger_pack",
+        title: "Escolha 3 — Pacote de Equipamento",
+        options: [
+          { key: "a", label: "(a) Pacote de Explorador", weapons: [], items: [{ name: "Pacote de Explorador", qty: 1, weight: 10, category: "Pacotes de Equipamento" }] },
+          { key: "b", label: "(b) Pacote de Aventureiro", weapons: [], items: [{ name: "Pacote de Aventureiro", qty: 1, weight: 10, category: "Pacotes de Equipamento" }] }
+        ]
+      }
+    ],
+    fixedEquipment: [
+      { name: "Arco Longo", qty: 1, weight: 2, category: "Armas" },
+      { name: "Flechas (20)", qty: 1, weight: 1, category: "Munições" }
+    ],
+    fixedWeapons: ["Arco Longo"],
+    fixedArmor: "armadura de couro",
+    fixedShield: false,
+    traitSuggestions: {
+      personality: [
+        "Leio pegadas, galhos quebrados e mudanças no vento como quem lê um livro aberto.",
+        "Falo pouco, mas estou sempre alerta nas fronteiras enquanto o grupo descansa."
+      ],
+      ideal: [
+        "Vigilância da Fronteira: Proteger os viajantes e povoados dos monstros das terras ermas. (Bom)",
+        "Autossuficiência: A natureza recompensa quem sabe se adaptar e respeitar suas leis. (Neutro)"
+      ],
+      bond: [
+        "Conheço as trilhas da minha região natal e jurei mantê-las seguras contra invasores.",
+        "Rastreio um predador lendário que deixou cicatrizes na minha história."
+      ],
+      flaw: [
+        "Prefiro agir sozinho na vanguarda e às vezes esqueço de avisar o grupo antes de avançar.",
+        "Sou implacável e rancoroso contra meus inimigos favoritos."
+      ]
+    }
+  }
+};
+
+function getClassStartingEquipmentData(className) {
+  if (!className) return CLASS_STARTING_EQUIPMENT.guerreiro;
+  const norm = String(className).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  if (CLASS_STARTING_EQUIPMENT[norm]) return CLASS_STARTING_EQUIPMENT[norm];
+  for (const [k, val] of Object.entries(CLASS_STARTING_EQUIPMENT)) {
+    if (norm.includes(k) || k.includes(norm)) return val;
+  }
+  return CLASS_STARTING_EQUIPMENT.guerreiro;
+}
+
 // Exportação universal para compatibilidade com o sistema
 if (typeof window !== 'undefined') {
   window.CLASSES_DATA = CLASSES_DATA;
   window.CLASS_ASI_LEVELS = CLASS_ASI_LEVELS;
   window.getClassAsiLevels = getClassAsiLevels;
+  window.CLASS_STARTING_EQUIPMENT = CLASS_STARTING_EQUIPMENT;
+  window.getClassStartingEquipmentData = getClassStartingEquipmentData;
 }
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { CLASSES_DATA, CLASS_ASI_LEVELS, getClassAsiLevels };
+  module.exports = { CLASSES_DATA, CLASS_ASI_LEVELS, getClassAsiLevels, CLASS_STARTING_EQUIPMENT, getClassStartingEquipmentData };
 }
+
 

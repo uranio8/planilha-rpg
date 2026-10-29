@@ -2014,11 +2014,123 @@ if (typeof window !== 'undefined' && typeof window.addEventListener === 'functio
   window.executeOmnisearchItem = executeOmnisearchItem;
 }
 
+// ==========================================================================
+// 🐉 ITEM 8: OFICINA DE CRIAÇÃO DE MONSTROS & CALCULADORA OFICIAL DE ND (DMG P. 274 - ISSUE-161)
+// ==========================================================================
+
+function calculateCustomMonsterCr(stats = {}) {
+  const table = (typeof DMG_MONSTER_CR_TABLE !== 'undefined' && Array.isArray(DMG_MONSTER_CR_TABLE)) ? DMG_MONSTER_CR_TABLE : [];
+  if (table.length === 0) {
+    return { defensiveCr: '1', offensiveCr: '1', finalCr: '1', xp: 200, profBonus: 2 };
+  }
+
+  const hp = Math.max(1, parseInt(stats.hp, 10) || 1);
+  const ac = Math.max(5, parseInt(stats.ac, 10) || 13);
+  const dpr = Math.max(0, parseInt(stats.dpr, 10) || 0);
+  const atk = parseInt(stats.attackBonus !== undefined ? stats.attackBonus : stats.atk, 10) || 3;
+  const saveDc = parseInt(stats.saveDc !== undefined ? stats.saveDc : stats.dc, 10) || 13;
+
+  // 1. ND Defensivo base pelo PV
+  let defIdx = table.findIndex(row => hp >= row.hpMin && hp <= row.hpMax);
+  if (defIdx === -1) defIdx = hp > 805 ? table.length - 1 : 0;
+  const expectedAc = table[defIdx].ac;
+  const acDiffSteps = Math.trunc((ac - expectedAc) / 2);
+  defIdx = Math.max(0, Math.min(table.length - 1, defIdx + acDiffSteps));
+
+  // 2. ND Ofensivo base pelo DPR
+  let offIdx = table.findIndex(row => dpr >= row.dprMin && dpr <= row.dprMax);
+  if (offIdx === -1) offIdx = dpr > 302 ? table.length - 1 : 0;
+  const expectedAtk = table[offIdx].atk;
+  const expectedDc = table[offIdx].saveDc;
+  const atkSteps = Math.trunc((atk - expectedAtk) / 2);
+  const dcSteps = Math.trunc((saveDc - expectedDc) / 2);
+  const offAdjust = Math.abs(dcSteps) > Math.abs(atkSteps) ? dcSteps : atkSteps;
+  offIdx = Math.max(0, Math.min(table.length - 1, offIdx + offAdjust));
+
+  // 3. Média entre índice Defensivo e Ofensivo
+  const finalIdx = Math.max(0, Math.min(table.length - 1, Math.round((defIdx + offIdx) / 2)));
+  const finalRow = table[finalIdx];
+
+  return {
+    defensiveCr: table[defIdx].cr,
+    offensiveCr: table[offIdx].cr,
+    finalCr: finalRow.cr,
+    crNum: finalRow.crNum,
+    xp: finalRow.xp,
+    profBonus: finalRow.prof
+  };
+}
+
+function updateCustomMonsterCrPreview() {
+  if (typeof document === 'undefined') return null;
+  const hp = parseInt(document.getElementById('inp-custom-mon-hp')?.value, 10) || 135;
+  const ac = parseInt(document.getElementById('inp-custom-mon-ac')?.value, 10) || 16;
+  const dpr = parseInt(document.getElementById('inp-custom-mon-dpr')?.value, 10) || 35;
+  const atk = parseInt(document.getElementById('inp-custom-mon-atk')?.value, 10) || 7;
+  const dc = parseInt(document.getElementById('inp-custom-mon-dc')?.value, 10) || 15;
+
+  const res = calculateCustomMonsterCr({ hp, ac, dpr, atk, dc });
+  const lbl = document.getElementById('lbl-custom-mon-cr-result');
+  if (lbl && res) {
+    lbl.innerHTML = `🛡️ <b>ND Defensivo:</b> ${res.defensiveCr} | ⚔️ <b>ND Ofensivo:</b> ${res.offensiveCr} ➔ 🏆 <b style="color: #fde047;">ND Final Oficial: ${res.finalCr} (${res.xp.toLocaleString()} XP • Prof +${res.profBonus})</b>`;
+  }
+  return res;
+}
+
+function saveCustomMonsterToBestiary(customObj = null) {
+  const name = (customObj && customObj.name) || (typeof document !== 'undefined' ? document.getElementById('inp-custom-mon-name')?.value : '') || 'Monstro Customizado do Mestre';
+  const type = (customObj && customObj.type) || (typeof document !== 'undefined' ? document.getElementById('sel-custom-mon-type')?.value : 'monstrosity') || 'monstrosity';
+  const hp = parseInt((customObj && customObj.hp) !== undefined ? customObj.hp : (typeof document !== 'undefined' ? document.getElementById('inp-custom-mon-hp')?.value : 135), 10) || 135;
+  const ac = parseInt((customObj && customObj.ac) !== undefined ? customObj.ac : (typeof document !== 'undefined' ? document.getElementById('inp-custom-mon-ac')?.value : 16), 10) || 16;
+  const dpr = parseInt((customObj && customObj.dpr) !== undefined ? customObj.dpr : (typeof document !== 'undefined' ? document.getElementById('inp-custom-mon-dpr')?.value : 35), 10) || 35;
+  const atk = parseInt((customObj && customObj.atk) !== undefined ? customObj.atk : (typeof document !== 'undefined' ? document.getElementById('inp-custom-mon-atk')?.value : 7), 10) || 7;
+  const dc = parseInt((customObj && customObj.dc) !== undefined ? customObj.dc : (typeof document !== 'undefined' ? document.getElementById('inp-custom-mon-dc')?.value : 15), 10) || 15;
+  const actions = (customObj && customObj.actions) || (typeof document !== 'undefined' ? document.getElementById('inp-custom-mon-actions')?.value : '') || `Ataque Principal: +${atk} para atingir (${dpr} de dano médio).`;
+
+  const crRes = calculateCustomMonsterCr({ hp, ac, dpr, atk, dc });
+  const newMonster = {
+    name: String(name).trim(),
+    type,
+    cr: crRes.finalCr,
+    xp: crRes.xp,
+    ac,
+    hp,
+    speed: '9m',
+    actions,
+    source: 'DMG Custom'
+  };
+
+  if (typeof BESTIARY_DATA !== 'undefined' && Array.isArray(BESTIARY_DATA)) {
+    BESTIARY_DATA.unshift(newMonster);
+  }
+  if (typeof renderBestiary === 'function') renderBestiary();
+  if (typeof playFX === 'function') playFX('sword');
+  if (typeof showToast === 'function') {
+    showToast(`🐉 "${newMonster.name}" (ND ${newMonster.cr} • ${newMonster.xp} XP) salvo no Bestiário!`, 'success');
+  }
+
+  return newMonster;
+}
+
+if (typeof window !== 'undefined') {
+  window.calculateCustomMonsterCr = calculateCustomMonsterCr;
+  window.updateCustomMonsterCrPreview = updateCustomMonsterCrPreview;
+  window.saveCustomMonsterToBestiary = saveCustomMonsterToBestiary;
+}
+if (typeof global !== 'undefined') {
+  global.calculateCustomMonsterCr = calculateCustomMonsterCr;
+  global.updateCustomMonsterCrPreview = updateCustomMonsterCrPreview;
+  global.saveCustomMonsterToBestiary = saveCustomMonsterToBestiary;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports.toggleOmnisearchModal = toggleOmnisearchModal;
   module.exports.handleOmnisearchInput = handleOmnisearchInput;
   module.exports.DND_CONDITIONS_OMNI = DND_CONDITIONS_OMNI;
   module.exports.APP_TABS_OMNI = APP_TABS_OMNI;
+  module.exports.calculateCustomMonsterCr = calculateCustomMonsterCr;
+  module.exports.updateCustomMonsterCrPreview = updateCustomMonsterCrPreview;
+  module.exports.saveCustomMonsterToBestiary = saveCustomMonsterToBestiary;
 }
 
 

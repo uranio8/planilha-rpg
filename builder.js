@@ -20,6 +20,14 @@ const dataHirelings = fs.readFileSync(path.join(srcDir, 'data', 'hirelings.js'),
 const dataBastions = fs.readFileSync(path.join(srcDir, 'data', 'bastions.js'), 'utf8');
 const dataFeats = fs.readFileSync(path.join(srcDir, 'data', 'feats.js'), 'utf8');
 const dataBackgrounds = fs.readFileSync(path.join(srcDir, 'data', 'backgrounds.js'), 'utf8');
+const dataTraitQuickRules = fs.readFileSync(path.join(srcDir, 'data', 'trait_quick_rules.js'), 'utf8');
+
+// Official Fillable D&D 5E Sheet PDF Template (base64 for standalone offline use)
+const officialPdfPath = path.join(rootDir, 'books', 'pdfs', 'ficha.pdf');
+const officialPdfB64 = fs.existsSync(officialPdfPath)
+  ? fs.readFileSync(officialPdfPath).toString('base64')
+  : '';
+const dataOfficialPdfB64 = `const DND5E_OFFICIAL_SHEET_B64 = "${officialPdfB64}";\nif (typeof window !== 'undefined') window.DND5E_OFFICIAL_SHEET_B64 = DND5E_OFFICIAL_SHEET_B64;\nif (typeof global !== 'undefined') global.DND5E_OFFICIAL_SHEET_B64 = DND5E_OFFICIAL_SHEET_B64;`;
 
 // Modular App Logic
 const jsQrCode = fs.readFileSync(path.join(srcDir, 'js', 'qrcode_lib.js'), 'utf8');
@@ -62,6 +70,8 @@ ${dataHirelings}
 ${dataBastions}
 ${dataFeats}
 ${dataBackgrounds}
+${dataTraitQuickRules}
+${dataOfficialPdfB64}
 ${jsAudioSynth}
 ${jsQrCode}
 ${jsCore}

@@ -37,6 +37,7 @@ const requiredFiles = [
   'src/data/bastions.js',
   'src/data/feats.js',
   'src/data/backgrounds.js',
+  'src/data/trait_quick_rules.js',
   'src/js/core.js',
   'src/js/combat.js',
   'src/js/players.js',
@@ -252,6 +253,7 @@ const srcDir = path.join(__dirname, 'src');
 const dataRulesXp = fs.readFileSync(path.join(srcDir, 'data', 'rules_xp.js'), 'utf8');
 const dataFeats = fs.readFileSync(path.join(srcDir, 'data', 'feats.js'), 'utf8');
 const dataBackgrounds = fs.readFileSync(path.join(srcDir, 'data', 'backgrounds.js'), 'utf8');
+const dataTraitQuickRules = fs.readFileSync(path.join(srcDir, 'data', 'trait_quick_rules.js'), 'utf8');
 const dataSpells = fs.readFileSync(path.join(srcDir, 'data', 'spells.js'), 'utf8');
 const dataMonsters = fs.readFileSync(path.join(srcDir, 'data', 'monsters.js'), 'utf8');
 const dataEquip = fs.readFileSync(path.join(srcDir, 'data', 'equipment.js'), 'utf8');
@@ -283,6 +285,7 @@ sandbox.BroadcastChannel = function(name) {
 vm.runInContext(dataRulesXp, sandbox);
 vm.runInContext(dataFeats, sandbox);
 vm.runInContext(dataBackgrounds, sandbox);
+vm.runInContext(dataTraitQuickRules, sandbox);
 vm.runInContext(dataSpells, sandbox);
 vm.runInContext(dataMonsters, sandbox);
 vm.runInContext(dataEquip, sandbox);
@@ -6779,7 +6782,7 @@ console.log('\n⭐ 92. Testes de Talentos (Feats) D&D 5E, Progressão por Nível
 
 const featsModule = require('./src/data/feats.js');
 assert(Array.isArray(featsModule.FEATS_DATA), 'FEATS_DATA exportado como array');
-assert(featsModule.FEATS_DATA.length === 42, `FEATS_DATA possui exatamente 42 talentos oficiais do PHB 5E (possui ${featsModule.FEATS_DATA.length})`);
+assert(featsModule.FEATS_DATA.length >= 42, `FEATS_DATA possui todos os talentos oficiais do PHB + Xanathar (possui ${featsModule.FEATS_DATA.length})`);
 assert(typeof featsModule.findFeatById === 'function', 'Função findFeatById exportada');
 assert(typeof featsModule.findFeatByName === 'function', 'Função findFeatByName exportada');
 assert(typeof featsModule.checkFeatPrerequisites === 'function', 'Função checkFeatPrerequisites exportada');
@@ -10070,6 +10073,305 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(mtofCount >= 14, `Bestiário contém pelo menos 14 criaturas/chefes do Tome of Foes (${mtofCount} encontrados)`);
     const zarielBoss = vm.runInContext('BESTIARY_DATA.find(m => m.name.includes("Zariel"))', sandbox);
     assert(zarielBoss && String(zarielBoss.cr) === '26' && zarielBoss.hp === 580, 'Arquidiabo Zariel (ND 26, 580 PV) presente no Bestiário');
+
+    // =========================================================================
+    // 🧙‍♂️ BATERIA 129: ISSUE-160 — CRIADOR DE PERSONAGENS ESTILO D&D BEYOND
+    // =========================================================================
+    console.log('\n🧙‍♂️ Bateria 129: ISSUE-160 - Criador de Personagens Estilo D&D Beyond (Abas, Sugestões Clicáveis & Equipamentos Iniciais)...');
+
+    // 1. Verifica presença das 6 abas e acordeões no HTML compilado (ui.html)
+    assert(uiHtml126.includes('id="ddb-builder-nav"') && uiHtml126.includes('data-step="home"') && uiHtml126.includes('data-step="class"') && uiHtml126.includes('data-step="background"') && uiHtml126.includes('data-step="species"') && uiHtml126.includes('data-step="abilities"') && uiHtml126.includes('data-step="equipment"'), 'Barra de navegação estilo D&D Beyond possui as 6 abas (HOME, 1. CLASSE, 2. ANTECEDENTE, 3. RAÇA, 4. ATRIBUTOS, 5. EQUIPAMENTO)');
+
+    // 2. Navegação entre etapas (switchPlayerModalStep, nextPlayerModalStep, prevPlayerModalStep)
+    assert(sandbox.switchPlayerModalStep('home') === 'home', 'switchPlayerModalStep("home") posiciona na aba HOME');
+    assert(sandbox.nextPlayerModalStep() === 'class', 'nextPlayerModalStep() avança de HOME para 1. CLASSE');
+    assert(sandbox.nextPlayerModalStep() === 'background', 'nextPlayerModalStep() avança de 1. CLASSE para 2. ANTECEDENTE');
+    assert(sandbox.nextPlayerModalStep() === 'species', 'nextPlayerModalStep() avança de 2. ANTECEDENTE para 3. RAÇA / ESPÉCIE');
+    assert(sandbox.nextPlayerModalStep() === 'abilities', 'nextPlayerModalStep() avança de 3. RAÇA para 4. ATRIBUTOS');
+    assert(sandbox.nextPlayerModalStep() === 'equipment', 'nextPlayerModalStep() avança de 4. ATRIBUTOS para 5. EQUIPAMENTO');
+    assert(sandbox.prevPlayerModalStep() === 'abilities', 'prevPlayerModalStep() retorna de 5. EQUIPAMENTO para 4. ATRIBUTOS');
+
+    // 3. Base de Equipamentos Iniciais e Perícias por Classe (CLASS_STARTING_EQUIPMENT)
+    const classEquipKeys = vm.runInContext('Object.keys(CLASS_STARTING_EQUIPMENT)', sandbox);
+    assert(classEquipKeys.length === 12, `CLASS_STARTING_EQUIPMENT possui as 12 classes oficiais do Livro do Jogador (${classEquipKeys.length})`);
+
+    const fighterStartData = sandbox.getClassStartingEquipmentData('Guerreiro');
+    assert(fighterStartData && fighterStartData.startingGoldFormula === '5d4 × 10 PO' && fighterStartData.choices.length === 4, 'getClassStartingEquipmentData("Guerreiro") retorna 4 escolhas de equipamento inicial e fórmula 5d4 × 10 PO');
+
+    const rogueStartData = sandbox.getClassStartingEquipmentData('Ladino');
+    assert(rogueStartData && rogueStartData.skillCount === 4 && rogueStartData.fixedEquipment.some(e => e.name.includes('Ferramentas de Ladrão')), 'getClassStartingEquipmentData("Ladino") concede 4 perícias e Ferramentas de Ladrão fixas');
+
+    // 4. Sugestões Clicáveis de Traços (Antecedente + Classe) e Preenchimento 1-Clique
+    const mockEls129 = {
+      'pm-background': { value: 'Soldado' },
+      'pm-class-select': { value: 'Guerreiro', options: [{ value: 'Guerreiro' }, { value: 'Mago' }] },
+      'pm-class': { value: 'Guerreiro' },
+      'pm-personality': { value: '' },
+      'pm-ideal': { value: '' },
+      'pm-bond': { value: '' },
+      'pm-flaw': { value: '' },
+      'pm-armor-select': { value: 'none' },
+      'pm-shield-check': { checked: false },
+      'pm-gold': { value: '15' }
+    };
+    const prevGetEl129 = sandbox.document.getElementById;
+    sandbox.document.getElementById = (id) => mockEls129[id] || (prevGetEl129 ? prevGetEl129(id) : null);
+
+    const traitSug = sandbox.getModalTraitSuggestionsData();
+    assert(traitSug && traitSug.personality.length >= 10 && traitSug.ideal.length >= 8, 'getModalTraitSuggestionsData combina sugestões do Antecedente (8 traços d8) + sugestões temáticas da Classe');
+    assert(traitSug.personality.some(s => s.sourceType === 'bg') && traitSug.personality.some(s => s.sourceType === 'cls'), 'Sugestões incluem tags tanto do Antecedente quanto da Classe');
+
+    const pickedTrait = sandbox.pickModalTraitSuggestion('personality', traitSug.personality[0].text);
+    assert(pickedTrait === traitSug.personality[0].text && mockEls129['pm-personality'].value === traitSug.personality[0].text, 'pickModalTraitSuggestion preenche instantaneamente o campo de Traço de Personalidade');
+
+    // 5. Seleção Interativa de Perícias da Classe (toggleModalClassSkillChoice)
+    vm.runInContext('window._modalSelectedClassSkills = []', sandbox);
+    sandbox.toggleModalClassSkillChoice('atletismo');
+    sandbox.toggleModalClassSkillChoice('intimidacao');
+    sandbox.toggleModalClassSkillChoice('percepcao'); // Guerreiro tem limite 2, deve substituir a mais antiga (atletismo)
+    const selSkills129 = vm.runInContext('window._modalSelectedClassSkills', sandbox);
+    assert(selSkills129.length === 2 && selSkills129.includes('intimidacao') && selSkills129.includes('percepcao'), 'toggleModalClassSkillChoice respeita o limite de escolhas de perícias da classe (2 para Guerreiro)');
+
+    // 6. Aplicação de Equipamento Inicial por Classe (applyModalStartingEquipmentToSheet) e Rolagem de Ouro
+    sandbox.selectModalStartingEquipOption('fighter_armor', 'a'); // Cota de Malha
+    sandbox.selectModalStartingEquipOption('fighter_wpn_1', 'a'); // Espada Longa e Escudo
+    sandbox.selectModalStartingEquipOption('fighter_wpn_2', 'a'); // Besta Leve e 20 Virotes
+    sandbox.selectModalStartingEquipOption('fighter_pack', 'a');  // Pacote de Aventureiro
+
+    const appliedEquip = sandbox.applyModalStartingEquipmentToSheet();
+    assert(appliedEquip && appliedEquip.armor === 'cota de malha' && appliedEquip.shield === true, 'applyModalStartingEquipmentToSheet equipa Cota de Malha e Escudo para Guerreiro (opções a)');
+    assert(appliedEquip.weapons.includes('Espada Longa') && appliedEquip.weapons.includes('Besta Leve'), 'applyModalStartingEquipmentToSheet equipa Espada Longa e Besta Leve');
+    assert(appliedEquip.inventory.some(it => it.name.includes('Pacote de Aventureiro')) && appliedEquip.inventory.some(it => it.name.includes('Insígnia de patente')), 'applyModalStartingEquipmentToSheet adiciona o Pacote da Classe e os itens do Antecedente Soldado à mochila');
+
+    const rolledStartGold = sandbox.rollModalStartingClassGold();
+    assert(rolledStartGold >= 50 && rolledStartGold <= 200 && Number(mockEls129['pm-gold'].value) === rolledStartGold, `rollModalStartingClassGold rola 5d4 × 10 PO para Guerreiro (${rolledStartGold} PO) e atualiza #pm-gold`);
+
+    sandbox.document.getElementById = prevGetEl129;
+
+    // =========================================================================
+    // ⚗️ BATERIA 130: ISSUE-161 — MECÂNICAS AVANÇADAS XANATHAR & GUIA DO MESTRE
+    // =========================================================================
+    console.log('\n⚗️ Bateria 130: ISSUE-161 - 7 Sistemas Oficiais (Esta é a Sua Vida, Talentos Raciais, Magias Xanathar, Loucura/Ferimentos, Armadilhas, Facções/Dádivas e Oficina de Monstros)...');
+
+    // 1. Item 1: Gerador "Esta é a Sua Vida" (Guia de Xanathar Cap. 1)
+    const mockEls130 = {
+      'pm-class-select': { value: 'Paladino' },
+      'pm-backstory': { value: '' },
+      'pm-allies': { value: '' },
+      'pm-enemies': { value: '' }
+    };
+    const prevGetEl130 = sandbox.document.getElementById;
+    sandbox.document.getElementById = (id) => mockEls130[id] || (prevGetEl130 ? prevGetEl130(id) : null);
+
+    const lifePathRes = sandbox.rollXanatharLifePathModal('all');
+    assert(lifePathRes && lifePathRes.birthplace && lifePathRes.parents && lifePathRes.ally && lifePathRes.enemy, 'rollXanatharLifePathModal("all") gera local de nascimento, família, aliado e inimigo');
+    assert(mockEls130['pm-backstory'].value.includes('Origem & Família') && mockEls130['pm-backstory'].value.includes('Paladino') && mockEls130['pm-allies'].value.length > 5 && mockEls130['pm-enemies'].value.length > 5, 'rollXanatharLifePathModal preencheu #pm-backstory, #pm-allies e #pm-enemies');
+    sandbox.document.getElementById = prevGetEl130;
+
+    // 2. Item 3: 15 Talentos Raciais Exclusivos de Xanathar
+    const racialFeatsCount = vm.runInContext('FEATS_DATA.filter(f => f.source === "Xanathar\'s Guide").length', sandbox);
+    assert(racialFeatsCount === 15, `FEATS_DATA contém os 15 Talentos Raciais oficiais do Guia de Xanathar (${racialFeatsCount})`);
+    const elvenAccCheckPass = sandbox.checkFeatPrerequisites({ race: 'Elfo (Alto Elfo)', dex: 16 }, 'precisao_elfica');
+    const elvenAccCheckFail = sandbox.checkFeatPrerequisites({ race: 'Anão da Colina', dex: 16 }, 'precisao_elfica');
+    assert(elvenAccCheckPass.met === true && elvenAccCheckFail.met === false, 'checkFeatPrerequisites valida pré-requisito racial de Precisão Élfica (Elfo passa, Anão bloqueia)');
+
+    // 3. Item 4: 25 Magias Exclusivas de Xanathar
+    const xanatharSpellsCount = vm.runInContext('SPELLS_DATA.filter(s => s.source === "Xanathar\'s Guide").length', sandbox);
+    const hasTollTheDead = vm.runInContext('SPELLS_DATA.some(s => s.name.includes("Pedágio dos Mortos"))', sandbox);
+    const hasShadowBlade = vm.runInContext('SPELLS_DATA.some(s => s.name.includes("Lâmina das Sombras"))', sandbox);
+    const hasThunderStep = vm.runInContext('SPELLS_DATA.some(s => s.name.includes("Passo Trovejante"))', sandbox);
+    assert(xanatharSpellsCount === 25 && hasTollTheDead && hasShadowBlade && hasThunderStep, `SPELLS_DATA contém as 25 magias de Xanathar (${xanatharSpellsCount}), incluindo Pedágio dos Mortos, Lâmina das Sombras e Passo Trovejante`);
+
+    // 4. Item 5: Loucura, Ferimentos Persistentes e Choque de Sistema (DMG Cap. 8 & 9)
+    vm.runInContext('state.combatants = [{ id: "comb_trauma_1", name: "Sir Roland", type: "player", hp: 30, maxHp: 30, conditions: [], notes: "" }]', sandbox);
+    const madnessRes = sandbox.rollCombatTraumaEffect('shortMadness', 'comb_trauma_1');
+    const injuryRes = sandbox.rollCombatTraumaEffect('lingeringInjury', 'comb_trauma_1');
+    const shockRes = sandbox.rollCombatTraumaEffect('systemShock', 'comb_trauma_1');
+    assert(madnessRes && madnessRes.effectText && injuryRes && injuryRes.entry.name && shockRes && shockRes.effectText, 'rollCombatTraumaEffect sorteia e aplica Loucura, Ferimento Persistente (d20) e Choque de Sistema (d10)');
+
+    // 5. Item 6: Gerador e Disparador de Armadilhas de Masmorra (DMG Cap. 5)
+    vm.runInContext('state.combatants[0].hp = 50', sandbox);
+    const trapRes = sandbox.triggerDmgTrapOnTargets('fire_breathing_statue', '1-4', 'dangerous', 'comb_trauma_1');
+    const hpAfterTrap = vm.runInContext('state.combatants[0].hp', sandbox);
+    assert(trapRes && trapRes.formula === '2d10' && trapRes.dc === 13 && trapRes.damage >= 2 && hpAfterTrap === 50 - trapRes.damage, 'triggerDmgTrapOnTargets dispara Estátua Sopradora de Fogo (2d10, CD 13) e desconta PV do alvo');
+
+    // 6. Item 7: Renome de Facções, Bênçãos Divinas & Dádivas Épicas (DMG Cap. 1 & 7)
+    const renownScore = sandbox.adjustCampaignFactionRenown('harpers', 10);
+    const harperRank = sandbox.getFactionRankTitle('harpers', renownScore);
+    assert(renownScore >= 10 && harperRank.includes('Vela Brilhante'), `adjustCampaignFactionRenown atualiza Renome nos Harpistas (${renownScore}) e promove para "${harperRank}"`);
+
+    const heroForGift = vm.runInContext('PLAYERS[0]', sandbox);
+    const conBeforeGift = heroForGift.con || 10;
+    const giftRes = sandbox.grantSupernaturalGiftToHero(heroForGift.id, 'blessing_health');
+    const conAfterGift = vm.runInContext('PLAYERS[0].con', sandbox);
+    assert(giftRes && giftRes.giftName.includes('Bênção de Saúde') && conAfterGift === Math.min(22, conBeforeGift + 2), 'grantSupernaturalGiftToHero concede Bênção de Saúde (+2 CON) e registra nas características do herói');
+
+    // 7. Item 8: Oficina de Criação de Monstros & Calculadora Oficial de ND (DMG p. 274)
+    const crCalc = sandbox.calculateCustomMonsterCr({ hp: 135, ac: 15, dpr: 35, atk: 6, dc: 15 });
+    assert(crCalc && crCalc.defensiveCr === '5' && crCalc.offensiveCr === '5' && crCalc.finalCr === '5' && crCalc.xp === 1800, 'calculateCustomMonsterCr calcula ND Defensivo 5, Ofensivo 5 e ND Final 5 (1.800 XP) segundo a tabela oficial do DMG');
+
+    const savedCustomMon = sandbox.saveCustomMonsterToBestiary({ name: 'Guardião de Obsidiana', type: 'construct', hp: 180, ac: 18, dpr: 55, atk: 8, dc: 16 });
+    const foundCustomMon = vm.runInContext('BESTIARY_DATA.find(m => m.name === "Guardião de Obsidiana")', sandbox);
+    assert(savedCustomMon && foundCustomMon && foundCustomMon.source === 'DMG Custom', 'saveCustomMonsterToBestiary calcula o ND e salva o monstro customizado no Bestiário');
+
+    // =========================================================================
+    // 🔮 BATERIA 131: SINCRONIZAÇÃO DE MAGIAS DESMARCADAS & ESPAÇOS DE PACTO (ISSUE-162)
+    // =========================================================================
+    console.log('\n🔮 131. Testes de Sincronização de Magias Desmarcadas na Ficha & Espaços de Pacto (ISSUE-162):');
+
+    // 1. Auto-reparo de fichas com magias órfãs presas em spellbookSpells/knownSpells (ex.: Proteção contra o Bem e Mal desmarcada em preparedSpells)
+    vm.runInContext(`
+      const clakerBuggy = {
+        id: 'p_claker_bug_162',
+        name: 'Claker',
+        className: 'Bruxo',
+        level: 5,
+        cha: 20,
+        slots: [0, 0, 2, 0, 0],
+        slotsUsed: [0, 0, 0, 0, 0],
+        preparedSpells: ['Mãos Flamejantes', 'Raio de Bruxa', 'Rajada Mística'],
+        spellbookSpells: ['Mãos Flamejantes', 'Proteção contra o Bem e Mal', 'Raio de Bruxa', 'Rajada Mística'],
+        knownSpells: ['Mãos Flamejantes', 'Proteção contra o Bem e Mal', 'Raio de Bruxa', 'Rajada Mística'],
+        spells: 'Truques: Rajada Mística\\nPreparadas: Mãos Flamejantes, Proteção contra o Bem e Mal, Raio de Bruxa'
+      };
+      PLAYERS.push(clakerBuggy);
+      globalThis.__clakerKnown162 = getPlayerKnownSpells(clakerBuggy);
+    `, sandbox);
+    const clakerKnown162 = vm.runInContext('globalThis.__clakerKnown162', sandbox);
+    const clakerBook162 = vm.runInContext('PLAYERS.find(p => p.id === "p_claker_bug_162").spellbookSpells', sandbox);
+    assert(!clakerKnown162.includes('Proteção contra o Bem e Mal'), 'getPlayerKnownSpells purga automaticamente magia órfã ("Proteção contra o Bem e Mal") que não está em preparedSpells');
+    assert(!clakerBook162.includes('Proteção contra o Bem e Mal') && clakerKnown162.length === 3, 'spellbookSpells é higienizado imediatamente para conter apenas as 3 magias ativas');
+
+    // 2. Desmarcar magia no modal Gerenciar Magias (openSpellPickerModal -> toggleSpellInPicker -> saveSpellPickerSelection)
+    vm.runInContext(`
+      openSpellPickerModal('p_claker_bug_162');
+      toggleSpellInPicker('Raio de Bruxa'); // Desmarca Raio de Bruxa
+      saveSpellPickerSelection(true);
+      globalThis.__clakerAfterUncheck162 = getPlayerKnownSpells(PLAYERS.find(p => p.id === 'p_claker_bug_162'));
+    `, sandbox);
+    const clakerAfterUncheck162 = vm.runInContext('globalThis.__clakerAfterUncheck162', sandbox);
+    const clakerSpellsStr162 = vm.runInContext('PLAYERS.find(p => p.id === "p_claker_bug_162").spells', sandbox);
+    assert(!clakerAfterUncheck162.includes('Raio de Bruxa') && clakerAfterUncheck162.includes('Mãos Flamejantes'), 'Desmarcar "Raio de Bruxa" no Gerenciar Magias e salvar remove a magia definitivamente da ficha');
+    assert(!clakerSpellsStr162.includes('Raio de Bruxa'), 'Resumo textual p.spells atualizado sem a magia desmarcada');
+
+    // 3. Remoção direta com 1 clique pelo botão ✕ no card da magia (removeSpellFromPlayer)
+    vm.runInContext(`
+      removeSpellFromPlayer('p_claker_bug_162', 'Mãos Flamejantes');
+      globalThis.__clakerAfterDirectRemove162 = getPlayerKnownSpells(PLAYERS.find(p => p.id === 'p_claker_bug_162'));
+    `, sandbox);
+    const clakerAfterDirectRemove162 = vm.runInContext('globalThis.__clakerAfterDirectRemove162', sandbox);
+    assert(!clakerAfterDirectRemove162.includes('Mãos Flamejantes') && clakerAfterDirectRemove162.length === 1, 'removeSpellFromPlayer remove "Mãos Flamejantes" com 1 clique de todas as listas da ficha');
+
+    // 4. Desmarcar TODAS as magias limpa inclusive p.spells (não ressuscita a última magia)
+    vm.runInContext(`
+      openSpellPickerModal('p_claker_bug_162');
+      toggleSpellInPicker('Rajada Mística');
+      saveSpellPickerSelection(true);
+      globalThis.__clakerEmpty162 = getPlayerKnownSpells(PLAYERS.find(p => p.id === 'p_claker_bug_162'));
+    `, sandbox);
+    const clakerEmpty162 = vm.runInContext('globalThis.__clakerEmpty162', sandbox);
+    const clakerEmptyStr162 = vm.runInContext('PLAYERS.find(p => p.id === "p_claker_bug_162").spells', sandbox);
+    assert(clakerEmpty162.length === 0 && clakerEmptyStr162 === '', 'Desmarcar todas as magias resulta em 0 magias na ficha e limpa p.spells ("")');
+
+    // 5. Renderização de indicador de Espaços de Pacto no 1º Círculo para Bruxos Nv 5 (em vez de "Sem espaços")
+    vm.runInContext(`
+      const pWarlockRender = PLAYERS.find(p => p.id === 'p_claker_bug_162');
+      pWarlockRender.preparedSpells = ['Mãos Flamejantes'];
+      pWarlockRender.activeCardTab = 'spells';
+      activePortalPlayerId = null;
+      renderPlayers();
+      globalThis.__warlockGridHtml162 = document.getElementById('grid-players')?.innerHTML || '';
+    `, sandbox);
+    const warlockGridHtml162 = vm.runInContext('globalThis.__warlockGridHtml162', sandbox);
+    assert(warlockGridHtml162.includes('Espaços de Pacto (2/2 de 3º Círc.)'), 'Cabeçalho de 1º Círculo do Bruxo Nv 5 exibe "🔮 Espaços de Pacto (2/2 de 3º Círc.)" em vez de "Sem espaços"');
+    assert(warlockGridHtml162.includes('removeSpellFromPlayer('), 'Card de magia na ficha inclui botão rápido ✕ (removeSpellFromPlayer)');
+
+    // =========================================================================
+    // 📄 Bateria 132: Ficha Oficial em PDF (ficha.pdf) & Traços Diretos e Objetivos (ISSUE-163)
+    // =========================================================================
+    console.log('\n📄 [Bateria 132] Ficha Oficial em PDF (ficha.pdf) & Traços Diretos e Objetivos (ISSUE-163):');
+
+    // 1. Verificar embutimento do modelo ficha.pdf e do dicionário TRAIT_QUICK_RULES
+    assert(compiledHtml.includes('DND5E_OFFICIAL_SHEET_B64'), 'Bundle compilado possui o template oficial DND5E_OFFICIAL_SHEET_B64 embutido');
+    assert(compiledHtml.includes('TRAIT_QUICK_RULES'), 'Bundle compilado possui o dicionário TRAIT_QUICK_RULES embutido');
+
+    const quickRulesCount = vm.runInContext('Object.keys(TRAIT_QUICK_RULES || {}).length', sandbox);
+    assert(quickRulesCount >= 60, `Dicionário TRAIT_QUICK_RULES contém ${quickRulesCount} regras diretas e objetivas mapeadas`);
+
+    // 2. Testar Claker (Bruxo 5 / Tiefling, Carisma 20): resumos diretos, sem texto de livro repetitivo e com valores calculados
+    vm.runInContext(`
+      const claker163 = {
+        id: 'p_claker_163',
+        name: 'Claker',
+        student: 'João',
+        className: 'Bruxo',
+        subclass: 'O Corruptor (The Fiend)',
+        subclassIdx: 0,
+        level: 5,
+        race: 'Tiefling',
+        background: 'Sábio',
+        alignment: 'Caótico e Neutro',
+        str: 8, dex: 16, con: 15, int: 11, wis: 10, cha: 20,
+        hp: 38, maxHp: 38, ac: 14, speed: '9m',
+        saveProficiencies: ['wis', 'cha'],
+        skillProficiencies: ['arcanismo', 'intimidacao', 'enganacao', 'historia'],
+        slots: [0, 0, 2, 0, 0, 0, 0, 0, 0],
+        slotsUsed: [0, 0, 1, 0, 0, 0, 0, 0, 0],
+        preparedSpells: ['Rajada Mística', 'Mãos Flamejantes', 'Bola de Fogo'],
+        features: 'Bênção do Obscuro, Sorte do Obscuro',
+        inventory: [{ name: 'Cajado Arcano', qty: 1, weight: '2.0', equipped: true }],
+        coins: { cp: 10, sp: 25, ep: 0, gp: 150, pp: 2 }
+      };
+      globalThis.__clakerTraits163 = getPlayerAllFeaturesAndTraits(claker163);
+      globalThis.__clakerLang163 = getPlayerLanguagesString(claker163);
+      globalThis.__clakerRef163 = claker163;
+    `, sandbox);
+
+    const clakerTraits163 = vm.runInContext('globalThis.__clakerTraits163', sandbox);
+    const clakerLang163 = vm.runInContext('globalThis.__clakerLang163', sandbox);
+
+    assert(Array.isArray(clakerTraits163) && clakerTraits163.length >= 6, 'getPlayerAllFeaturesAndTraits retorna lista estruturada de traços de Claker');
+    const bencaoTrait = clakerTraits163.find(t => t.name.toLowerCase().includes('bênção do obscuro') || t.name.toLowerCase().includes('bencao do obscuro'));
+    assert(!!bencaoTrait && bencaoTrait.desc.includes('+10 PV temporários'), 'Bênção do Obscuro exibe valor calculado direto "+10 PV temporários" (CAR +5 + Nv 5)');
+    assert(bencaoTrait.tag === 'Passivo' && bencaoTrait.usage.includes('0 PV'), 'Bênção do Obscuro possui tag Passivo e gatilho "Ao reduzir hostil a 0 PV"');
+
+    const bencaoCount = clakerTraits163.filter(t => t.name.toLowerCase().includes('bênção do obscuro') || t.name.toLowerCase().includes('bencao do obscuro')).length;
+    assert(bencaoCount === 1, 'Linha customizada "Bênção do Obscuro, Sorte do Obscuro" não duplica Bênção do Obscuro');
+
+    const sorteTrait = clakerTraits163.find(t => t.name.toLowerCase().includes('sorte do obscuro'));
+    assert(!!sorteTrait && sorteTrait.desc.includes('+1d10'), 'Sorte do Obscuro é extraída da linha customizada e enriquecida com resumo direto (+1d10)');
+
+    const pactoTrait = clakerTraits163.find(t => t.name.toLowerCase().includes('magia de pacto'));
+    assert(!!pactoTrait && pactoTrait.desc.includes('CD 16') && pactoTrait.desc.includes('+8'), 'Magia de Pacto exibe CD 16 e Ataque +8 calculados para Carisma 20 no Nv 5');
+
+    const patronoTrait = clakerTraits163.find(t => t.name.toLowerCase().includes('patrono'));
+    assert(!!patronoTrait && patronoTrait.desc.includes('O Corruptor') && !patronoTrait.desc.includes('Grande Antigo'), 'Patrono Transcendente mostra apenas o patrono escolhido ("O Corruptor") sem listar os outros patronos');
+
+    const hasIdiomasTrait = clakerTraits163.some(t => t.name.toLowerCase() === 'idiomas');
+    assert(!hasIdiomasTrait, 'Traço genérico "Idiomas" foi removido da lista de traços de combate/habilidades');
+    assert(clakerLang163.includes('Comum') && clakerLang163.includes('Infernal'), 'getPlayerLanguagesString extrai automaticamente "Comum, Infernal" para Tiefling');
+
+    // 3. Testar Preenchimento do Modelo Oficial de 3 Páginas (books/pdfs/ficha.pdf)
+    const clakerRef163 = vm.runInContext('globalThis.__clakerRef163', sandbox);
+    const clakerPdfBytes163 = await pdfLibModule.fillOfficialDnd5eSheetPdf(clakerRef163);
+    assert(clakerPdfBytes163 && clakerPdfBytes163.length > 400000, 'fillOfficialDnd5eSheetPdf gera PDF baseado no modelo oficial ficha.pdf');
+
+    const clakerDoc163 = await PDFDocument.load(clakerPdfBytes163);
+    assert(clakerDoc163.getPageCount() === 3, 'PDF oficial gerado possui exatamente as 3 páginas do modelo ficha.pdf');
+
+    const clakerForm163 = clakerDoc163.getForm();
+    assert(clakerForm163.getTextField('Nome do Personagem').getText() === 'Claker', 'Campo oficial "Nome do Personagem" preenchido na Página 1');
+    assert(clakerForm163.getTextField('Classe e Nível').getText() === 'Bruxo 5', 'Campo oficial "Classe e Nível" preenchido na Página 1');
+    assert(clakerForm163.getTextField('CHA').getText() === '20' && clakerForm163.getTextField('CHAmod').getText() === '+5', 'Campos oficiais CHA (20) e CHAmod (+5) preenchidos');
+    assert(clakerForm163.getCheckBox('RB-Intimidação').isChecked() && clakerForm163.getTextField('Intimidação').getText() === '+8', 'Perícia oficial Intimidação marcada e calculada (+8)');
+    assert(clakerForm163.getTextField('Caracteristicas e Habilidades').getText().includes('+10 PV temporários'), 'Campo oficial "Caracteristicas e Habilidades" contém os resumos diretos calculados');
+    assert(clakerForm163.getTextField('SpellSaveDC').getText() === '16' && clakerForm163.getTextField('SpellAtkBonus').getText() === '+8', 'Cabeçalho do Grimório na Página 3 possui CD 16 e Ataque +8');
+    assert(clakerForm163.getTextField('Total de Espaços Nível 3').getText() === '2', 'Página 3 registra os 2 espaços de 3º círculo do Bruxo');
+
+    // 4. Testar Transbordo Automático para "Outras Características e Habilidades" na Página 2 e Fallback
+    const fallbackBytes163 = await pdfLibModule.generateEditableDnd5ePdf({ ...clakerRef163, _forceFallbackPdf: true });
+    const fallbackDoc163 = await PDFDocument.load(fallbackBytes163);
+    assert(fallbackDoc163.getPageCount() === 2, 'Fallback programático continua funcional quando solicitado (_forceFallbackPdf)');
 
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;

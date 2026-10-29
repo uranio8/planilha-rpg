@@ -695,19 +695,24 @@ function applyCloudDataToLocal(cloudData) {
                 ? localChar.slots
                 : ((Array.isArray(remoteP.slots) && remoteP.slots.some(s => s > 0)) ? remoteP.slots : ((typeof ensurePlayerSpellSlots === 'function') ? ensurePlayerSpellSlots(localChar || remoteP) : (localChar.slots || remoteP.slots))),
               slotsUsed: keepLocalSlots ? localChar.slotsUsed : (remoteP.slotsUsed || localChar.slotsUsed || [0, 0, 0, 0, 0, 0, 0, 0, 0]),
-              preparedSpells: (remoteP.preparedSpells && remoteP.preparedSpells.length > 0)
-                ? remoteP.preparedSpells
-                : (localChar.preparedSpells || []),
-              spellbookSpells: Array.from(new Set([
-                ...(Array.isArray(localChar.spellbookSpells) ? localChar.spellbookSpells : []),
-                ...(Array.isArray(remoteP.spellbookSpells) ? remoteP.spellbookSpells : [])
-              ])),
+              preparedSpells: (isLocalNewer && Array.isArray(localChar.preparedSpells) && (localChar.preparedSpells.length > 0 || localChar._spellsSyncedFromPicker))
+                ? localChar.preparedSpells
+                : ((remoteP.preparedSpells && (remoteP.preparedSpells.length > 0 || remoteP._spellsSyncedFromPicker))
+                  ? remoteP.preparedSpells
+                  : (localChar.preparedSpells || [])),
+              spellbookSpells: (isLocalNewer && Array.isArray(localChar.spellbookSpells) && (localChar.spellbookSpells.length > 0 || localChar._spellsSyncedFromPicker))
+                ? localChar.spellbookSpells
+                : ((Array.isArray(remoteP.spellbookSpells) && (remoteP.spellbookSpells.length > 0 || remoteP._spellsSyncedFromPicker))
+                  ? remoteP.spellbookSpells
+                  : (localChar.spellbookSpells || [])),
               customSpells: (remoteP.customSpells && remoteP.customSpells.length > 0)
                 ? remoteP.customSpells
                 : (localChar.customSpells || []),
-              spells: (remoteP.spells && remoteP.spells.trim().length > 0)
-                ? remoteP.spells
-                : (localChar.spells || ''),
+              spells: (isLocalNewer && (localChar.spells !== undefined && localChar._spellsSyncedFromPicker))
+                ? localChar.spells
+                : ((remoteP.spells && remoteP.spells.trim().length > 0)
+                  ? remoteP.spells
+                  : (localChar.spells || '')),
               featureCharges: keepLocalFeatures ? localChar.featureCharges : (remoteP.featureCharges || localChar.featureCharges || []),
               // Mantém inventário mais recente entre ambos
               inventory: (isLocalNewer && localChar.inventory && localChar.inventory.length > 0)
@@ -842,20 +847,20 @@ function applyCloudDataToLocal(cloudData) {
               });
             }
 
-            // ISSUE-141: Blindagem de Magias Preparadas e Grimório para o Herói do Jogador
-            // O jogador é autoridade sobre seu próprio grimório e magias preparadas; snapshots remotos vazios nunca apagam
+            // ISSUE-141 & ISSUE-162: Blindagem de Magias Preparadas e Grimório contra snapshots vazios sem ressuscitar magias removidas
             const isMyPortalHero = (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId === remoteP.id);
             if (isMyPortalHero || clientRole === 'player') {
               if (Array.isArray(currentLocal.preparedSpells) && currentLocal.preparedSpells.length > 0) {
-                if (!Array.isArray(remoteP.preparedSpells) || remoteP.preparedSpells.length === 0) {
+                if ((!Array.isArray(remoteP.preparedSpells) || remoteP.preparedSpells.length === 0) && !remoteP._spellsSyncedFromPicker) {
                   mergedPlayer.preparedSpells = [...currentLocal.preparedSpells];
                 }
               }
               if (Array.isArray(currentLocal.spellbookSpells) && currentLocal.spellbookSpells.length > 0) {
-                const combinedBook = new Set([...currentLocal.spellbookSpells, ...(Array.isArray(remoteP.spellbookSpells) ? remoteP.spellbookSpells : [])]);
-                mergedPlayer.spellbookSpells = Array.from(combinedBook);
+                if ((!Array.isArray(remoteP.spellbookSpells) || remoteP.spellbookSpells.length === 0) && !remoteP._spellsSyncedFromPicker) {
+                  mergedPlayer.spellbookSpells = [...currentLocal.spellbookSpells];
+                }
               }
-              if (currentLocal.spells && (!remoteP.spells || remoteP.spells.trim().length === 0)) {
+              if (currentLocal.spells && (!remoteP.spells || remoteP.spells.trim().length === 0) && !remoteP._spellsSyncedFromPicker) {
                 mergedPlayer.spells = currentLocal.spells;
               }
             }

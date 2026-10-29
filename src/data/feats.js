@@ -627,6 +627,256 @@ const FEATS_DATA = [
       "Ao fazer um ataque, teste de perícia ou salvaguarda, pode gastar 1 ponto para **rolar 1d20 adicional** e escolher o resultado.",
       "Quando um inimigo atacar você, gaste 1 ponto para rolar 1d20 e forçar o atacante a usar o seu dado se for menor."
     ]
+  },
+  // ==========================================================================
+  // 📜 TALENTOS RACIAIS EXCLUSIVOS (GUIA DE XANATHAR - ISSUE-161)
+  // ==========================================================================
+  {
+    id: "precisao_elfica",
+    name: "Precisão Élfica",
+    nameEn: "Elven Accuracy",
+    source: "Xanathar's Guide",
+    icon: "🏹",
+    category: "Talento Racial",
+    prereq: "Elfo ou Meio-Elfo",
+    racePrereq: ["elfo", "meio-elfo", "drow", "eladrin", "shadar-kai"],
+    summary: "A mira infalível dos elfos permite rolar um terceiro d20 sempre que tiver vantagem.",
+    statBonus: { options: ["dex", "int", "wis", "cha"], amount: 1 },
+    benefits: [
+      "Aumente sua **Destreza, Inteligência, Sabedoria ou Carisma em +1** (até o máximo de 20).",
+      "Sempre que você tiver **Vantagem** em uma jogada de ataque usando Destreza, Inteligência, Sabedoria ou Carisma, você pode **rerrolar um dos dados d20** uma vez (super-vantagem com 3d20)."
+    ]
+  },
+  {
+    id: "sorte_abundante",
+    name: "Sorte Abundante",
+    nameEn: "Bountiful Luck",
+    source: "Xanathar's Guide",
+    icon: "🍀",
+    category: "Talento Racial",
+    prereq: "Halfling",
+    racePrereq: ["halfling"],
+    summary: "Compartilhe a sorte lendária do seu povo com seus aliados em momentos críticos.",
+    statBonus: null,
+    benefits: [
+      "Quando um aliado que você possa ver a até **9 metros (30 pés)** rolar um **1** no d20 em uma jogada de ataque, teste de atributo ou salvaguarda, você pode usar sua **Reação** para permitir que o aliado rerrole o dado.",
+      "Quando você usa essa habilidade, não pode usar seu traço racial *Sortudo* até o final do seu próximo turno."
+    ]
+  },
+  {
+    id: "chamas_de_phlegethos",
+    name: "Chamas de Phlegethos",
+    nameEn: "Flames of Phlegethos",
+    source: "Xanathar's Guide",
+    icon: "🔥",
+    category: "Talento Racial",
+    prereq: "Tiefling",
+    racePrereq: ["tiefling"],
+    summary: "Domine o fogo infernal dos Nove Infernos, envolvendo seu corpo em chamas retaliatórias.",
+    statBonus: { options: ["int", "cha"], amount: 1 },
+    benefits: [
+      "Aumente sua **Inteligência ou Carisma em +1** (até o máximo de 20).",
+      "Ao rolar dano de **Fogo** com uma magia que você conjurar, você pode **rerrolar qualquer resultado 1** nos dados de dano de fogo.",
+      "Sempre que conjurar uma magia que cause dano de fogo, chamas envolvem você até o fim do seu próximo turno (luz plena a 9m, e qualquer criatura a até 1,5m que o atinja corpo a corpo sofre **1d4 de dano de fogo**)."
+    ]
+  },
+  {
+    id: "constituicao_infernal",
+    name: "Constituição Infernal",
+    nameEn: "Infernal Constitution",
+    source: "Xanathar's Guide",
+    icon: "😈",
+    category: "Talento Racial",
+    prereq: "Tiefling",
+    racePrereq: ["tiefling"],
+    summary: "Sangue abissal espesso que protege contra o frio congelante e venenos mortais.",
+    statBonus: { options: ["con"], amount: 1 },
+    benefits: [
+      "Aumente sua **Constituição em +1** (até o máximo de 20).",
+      "Você adquire **Resistência a dano de Frio e de Veneno**.",
+      "Você tem **Vantagem em salvaguardas** para evitar ou encerrar a condição **Envenenado**."
+    ]
+  },
+  {
+    id: "fortitude_enanica",
+    name: "Fortitude Enânica",
+    nameEn: "Dwarven Fortitude",
+    source: "Xanathar's Guide",
+    icon: "🛡️",
+    category: "Talento Racial",
+    prereq: "Anão",
+    racePrereq: ["anao", "anão", "duergar"],
+    summary: "O sangue de pedra dos anões permite recuperar fôlego e vida ao se esquivar em combate.",
+    statBonus: { options: ["con"], amount: 1 },
+    benefits: [
+      "Aumente sua **Constituição em +1** (até o máximo de 20).",
+      "Sempre que você realizar a ação **Esquivar (Dodge)** em combate, você pode gastar **um Dado de Vida** para se curar imediatamente (role o dado + seu modificador de Constituição)."
+    ]
+  },
+  {
+    id: "furia_orc",
+    name: "Fúria Orc",
+    nameEn: "Orcish Fury",
+    source: "Xanathar's Guide",
+    icon: "🪓",
+    category: "Talento Racial",
+    prereq: "Meio-Orc ou Orc",
+    racePrereq: ["orc", "meio-orc"],
+    summary: "Canalize a fúria implacável de Gruumsh em golpes devastadores e contra-ataques à beira da morte.",
+    statBonus: { options: ["str", "con"], amount: 1 },
+    benefits: [
+      "Aumente sua **Força ou Constituição em +1** (até o máximo de 20).",
+      "Quando atingir com um ataque usando uma arma simples ou marcial, você pode rolar **um dado de dano adicional da arma** e somá-lo como dano extra (1x por descanso curto ou longo).",
+      "Imediatamente após usar seu traço *Resistência Implacável*, você pode usar sua **Reação** para realizar um ataque com arma."
+    ]
+  },
+  {
+    id: "prodigio",
+    name: "Prodígio",
+    nameEn: "Prodigy",
+    source: "Xanathar's Guide",
+    icon: "🎓",
+    category: "Talento Racial",
+    prereq: "Humano, Meio-Elfo ou Meio-Orc",
+    racePrereq: ["humano", "meio-elfo", "meio-orc", "orc"],
+    summary: "Facilidade inata para dominar novas perícias, ferramentas, idiomas e Especialização.",
+    statBonus: null,
+    benefits: [
+      "Você ganha proficiência em **uma Perícia** à sua escolha, **uma Ferramenta** à sua escolha e fluência em **um Idioma** à sua escolha.",
+      "**Especialização (Expertise):** Escolha uma perícia na qual você tenha proficiência. Seu bônus de proficiência é **dobrado** para qualquer teste que use essa perícia."
+    ]
+  },
+  {
+    id: "segunda_chance",
+    name: "Segunda Chance",
+    nameEn: "Second Chance",
+    source: "Xanathar's Guide",
+    icon: "🎲",
+    category: "Talento Racial",
+    prereq: "Halfling",
+    racePrereq: ["halfling"],
+    summary: "A sorte favorece você quando um inimigo tenta acertá-lo, forçando-o a rerrolar o ataque.",
+    statBonus: { options: ["dex", "con", "cha"], amount: 1 },
+    benefits: [
+      "Aumente sua **Destreza, Constituição ou Carisma em +1** (até o máximo de 20).",
+      "Quando uma criatura que você possa ver atingir você com uma jogada de ataque, você pode usar sua **Reação** para forçar aquela criatura a **rerrolar o ataque** (1x por combate ou descanso curto)."
+    ]
+  },
+  {
+    id: "agachamento_agil",
+    name: "Agachamento Ágil",
+    nameEn: "Squat Nimbleness",
+    source: "Xanathar's Guide",
+    icon: "🥾",
+    category: "Talento Racial",
+    prereq: "Anão ou uma raça Pequena (Halfling, Gnomo, Goblin, Kobold)",
+    racePrereq: ["anao", "anão", "duergar", "halfling", "gnomo", "goblin", "kobold", "fada", "harengon"],
+    summary: "Passos surpreendentemente velozes e facilidade para escapar de agarrões.",
+    statBonus: { options: ["str", "dex"], amount: 1 },
+    benefits: [
+      "Aumente sua **Força ou Destreza em +1** (até o máximo de 20).",
+      "Aumente seu **Deslocamento de caminhada em +1,5 metro (+5 pés)**.",
+      "Você ganha proficiência na perícia **Acrobacia ou Atletismo** (à sua escolha).",
+      "Você tem **Vantagem** em qualquer teste de Força (Atletismo) ou Destreza (Acrobacia) para escapar de estar **Agarrado (Grappled)**."
+    ]
+  },
+  {
+    id: "alta_magia_drow",
+    name: "Alta Magia Drow",
+    nameEn: "Drow High Magic",
+    source: "Xanathar's Guide",
+    icon: "🕷️",
+    category: "Talento Racial",
+    prereq: "Elfo (Drow)",
+    racePrereq: ["elfo", "drow"],
+    summary: "Desbloqueie os segredos místicos mais profundos da nobreza de Menzoberranzan.",
+    statBonus: null,
+    benefits: [
+      "Você aprende a magia *Detectar Magia* e pode conjurá-la **à vontade**, sem gastar espaço de magia.",
+      "Você também aprende *Levitação* e *Dissipar Magia*, podendo conjurar cada uma delas 1x por descanso longo sem gastar espaço de magia (Carisma é o atributo de conjuração)."
+    ]
+  },
+  {
+    id: "teletransporte_feerico",
+    name: "Teletransporte Feérico",
+    nameEn: "Fey Teleportation",
+    source: "Xanathar's Guide",
+    icon: "✨",
+    category: "Talento Racial",
+    prereq: "Elfo (Alto Elfo ou Eladrin)",
+    racePrereq: ["elfo", "eladrin"],
+    summary: "Estudos sobre a Agrestia das Fadas permitem que você atravesse o espaço num piscar de olhos.",
+    statBonus: { options: ["int", "cha"], amount: 1 },
+    benefits: [
+      "Aumente sua **Inteligência ou Carisma em +1** (até o máximo de 20).",
+      "Você aprende a falar, ler e escrever **Silvestre**.",
+      "Você aprende a magia *Passo Nebuloso (Misty Step)* e pode conjurá-la 1x sem gastar espaço de magia, recuperando o uso após um **Descanso Curto ou Longo**."
+    ]
+  },
+  {
+    id: "magia_da_floresta",
+    name: "Magia da Floresta",
+    nameEn: "Wood Elf Magic",
+    source: "Xanathar's Guide",
+    icon: "🌿",
+    category: "Talento Racial",
+    prereq: "Elfo (Elfo da Floresta)",
+    racePrereq: ["elfo"],
+    summary: "Harmonia mística com as matas antigas, concedendo truques druídicos e furtividade em grupo.",
+    statBonus: null,
+    benefits: [
+      "Você aprende **um truque de Druida** à sua escolha.",
+      "Você aprende as magias *Passos Largos (Longstrider)* e *Passos sem Pegadas (Pass without Trace)*, podendo conjurar cada uma 1x por descanso longo sem gastar espaço de magia (Sabedoria é o atributo de conjuração)."
+    ]
+  },
+  {
+    id: "couro_de_dragao",
+    name: "Couro de Dragão",
+    nameEn: "Dragon Hide",
+    source: "Xanathar's Guide",
+    icon: "🐲",
+    category: "Talento Racial",
+    prereq: "Draconato",
+    racePrereq: ["draconato"],
+    summary: "Escamas endurecidas e garras retráteis manifestam a herança dos dragões ancestrais.",
+    statBonus: { options: ["str", "con", "cha"], amount: 1 },
+    benefits: [
+      "Aumente sua **Força, Constituição ou Carisma em +1** (até o máximo de 20).",
+      "Enquanto não estiver vestindo armadura, sua **CA base é 13 + seu modificador de Destreza** (você ainda pode usar escudo).",
+      "Você possui **garras retráteis** que causam **1d4 + seu modificador de Força** de dano cortante em ataques desarmados."
+    ]
+  },
+  {
+    id: "temor_draconico",
+    name: "Temor Dracônico",
+    nameEn: "Dragon Fear",
+    source: "Xanathar's Guide",
+    icon: "🦁",
+    category: "Talento Racial",
+    prereq: "Draconato",
+    racePrereq: ["draconato"],
+    summary: "Canalize seu Sopro de Dragão em um rugido aterrorizante que paralisa o coração dos inimigos.",
+    statBonus: { options: ["str", "con", "cha"], amount: 1 },
+    benefits: [
+      "Aumente sua **Força, Constituição ou Carisma em +1** (até o máximo de 20).",
+      "Em vez de exalar energia destrutiva, você pode gastar um uso do seu *Sopro de Dragão* para rugir. Cada criatura à sua escolha a até **9 metros (30 pés)** deve passar em uma salvaguarda de Sabedoria (**CD 8 + Bônus de Proficiência + mod Carisma**) ou ficará **Amedrontada** por 1 minuto."
+    ]
+  },
+  {
+    id: "desvanecer",
+    name: "Desvanecer",
+    nameEn: "Fade Away",
+    source: "Xanathar's Guide",
+    icon: "💨",
+    category: "Talento Racial",
+    prereq: "Gnomo",
+    racePrereq: ["gnomo"],
+    summary: "Ilusões gnômicas reflexivas tornam você invisível imediatamente após sofrer dano.",
+    statBonus: { options: ["dex", "int"], amount: 1 },
+    benefits: [
+      "Aumente sua **Destreza ou Inteligência em +1** (até o máximo de 20).",
+      "Imediatamente após sofrer dano, você pode usar sua **Reação** para se tornar magicamente **Invisível** até o final do seu próximo turno (ou até atacar, causar dano ou forçar uma salvaguarda). Recupera após um **Descanso Curto ou Longo**."
+    ]
   }
 ];
 
@@ -707,6 +957,18 @@ function checkFeatPrerequisites(player, feat) {
     const hasSpells = (player.preparedSpells && player.preparedSpells.length > 0) || (player.slots && player.slots.some(s => s > 0));
     if (!isCasterClass && !hasSpells) {
       return { met: false, reason: 'Exige capacidade de conjurar pelo menos uma magia' };
+    }
+  }
+
+  // 6. Pré-requisito Racial (Talentos Raciais de Xanathar)
+  if (Array.isArray(f.racePrereq) && f.racePrereq.length > 0 && player.race) {
+    const normPlayerRace = String(player.race).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const raceMatch = f.racePrereq.some(r => {
+      const normReq = String(r).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return normPlayerRace.includes(normReq) || normReq.includes(normPlayerRace);
+    });
+    if (!raceMatch) {
+      return { met: false, reason: `Exige Raça/Espécie: ${f.prereq} (atual: ${player.race})` };
     }
   }
 

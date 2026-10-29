@@ -268,6 +268,51 @@
               <button id="btn-crit-damage" class="btn-action" style="background: linear-gradient(135deg, #f59e0b, #b45309); color: #000; font-weight: 800;" onclick="applyCombatAction('crit')">🔥 Crítico</button>
             </div>
           </div>
+
+          <!-- 🧠 TRAUMA DE COMBATE & 🪤 ARMADILHAS DE MASMORRA (DMG CAP. 5, 8 & 9 - ISSUE-161) -->
+          <div class="card-panel" style="padding: 10px 12px; border-color: rgba(168, 85, 247, 0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+              <span style="font-family: var(--font-title); font-size: 12.5px; font-weight: 800; color: #e9d5ff;">🧠 Loucura, Ferimentos & Armadilhas (Guia do Mestre)</span>
+              <span style="font-size: 10px; color: var(--text-muted);">Aplica ao Alvo selecionado acima</span>
+            </div>
+
+            <!-- LINHA 1: LOUCURA, FERIMENTO PERSISTENTE E CHOQUE DE SISTEMA -->
+            <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px;">
+              <button type="button" class="btn-secondary" style="font-size: 10.5px; padding: 4px 8px; border-color: rgba(168,85,247,0.4); color: #d8b4fe;" onclick="rollCombatTraumaEffect('shortMadness')" title="Rolar Loucura de Curto Prazo (d100, 1d10 min)">🌀 Loucura Curta</button>
+              <button type="button" class="btn-secondary" style="font-size: 10.5px; padding: 4px 8px; border-color: rgba(168,85,247,0.4); color: #c084fc;" onclick="rollCombatTraumaEffect('longMadness')" title="Rolar Loucura de Longo Prazo (d100, 1d10×10h)">🌑 Loucura Longa</button>
+              <button type="button" class="btn-secondary" style="font-size: 10.5px; padding: 4px 8px; border-color: rgba(236,72,153,0.4); color: #f472b6;" onclick="rollCombatTraumaEffect('indefiniteMadness')" title="Rolar Loucura Indefinida (d100, Defeito Permanente)">👁️ Loucura Indefinida</button>
+              <button type="button" class="btn-secondary" style="font-size: 10.5px; padding: 4px 8px; border-color: rgba(239,68,68,0.45); color: #fca5a5;" onclick="rollCombatTraumaEffect('lingeringInjury')" title="Rolar Ferimento Persistente (d20 DMG p. 272)">🩸 Ferimento (d20)</button>
+              <button type="button" class="btn-secondary" style="font-size: 10.5px; padding: 4px 8px; border-color: rgba(245,158,11,0.45); color: #fde68a;" onclick="rollCombatTraumaEffect('systemShock')" title="Rolar Choque de Sistema / Dano Maciço (d10 DMG p. 273)">⚡ Dano Maciço (d10)</button>
+            </div>
+
+            <!-- LINHA 2: GERADOR E DISPARADOR DE ARMADILHAS DMG -->
+            <div style="border-top: 1px dashed rgba(148,163,184,0.2); padding-top: 8px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <select id="sel-dmg-trap" style="flex: 2; min-width: 150px; font-size: 11px; padding: 4px 6px;">
+                <option value="hidden_pit">🪤 Fosso Oculto (Concussão)</option>
+                <option value="spiked_pit">🪤 Fosso com Estacas Envenenadas</option>
+                <option value="poison_darts">🎯 Dardos Envenenados</option>
+                <option value="rolling_sphere">🪨 Esfera de Pedra Rolante</option>
+                <option value="fire_breathing_statue">🐉 Estátua Sopradora de Fogo</option>
+                <option value="glyph_of_warding">✨ Glifo de Vigilância Explosivo</option>
+                <option value="scything_blade">⚔️ Lâmina Ceifadora de Pêndulo</option>
+                <option value="collapsing_roof">🏛️ Teto Desmoronante</option>
+                <option value="falling_net">🕸️ Rede de Ferro Suspensa</option>
+                <option value="rune_of_fear">💀 Runa de Pavor Abissal</option>
+              </select>
+              <select id="sel-dmg-trap-tier" style="width: 95px; font-size: 11px; padding: 4px 6px;" title="Patamar de Nível do Grupo">
+                <option value="1-4">Nv 1–4</option>
+                <option value="5-10">Nv 5–10</option>
+                <option value="11-16">Nv 11–16</option>
+                <option value="17-20">Nv 17–20</option>
+              </select>
+              <select id="sel-dmg-trap-severity" style="width: 120px; font-size: 11px; padding: 4px 6px;" title="Severidade da Armadilha (DMG p. 121)">
+                <option value="setback">🟢 Contratempo</option>
+                <option value="dangerous" selected>🟡 Perigosa</option>
+                <option value="deadly">💀 Mortal</option>
+              </select>
+              <button type="button" class="btn-action" style="padding: 5px 10px; font-size: 11px; font-weight: 800; background: linear-gradient(135deg, #d97706, #b45309);" onclick="triggerDmgTrapOnTargets()">🪤 Disparar</button>
+            </div>
+          </div>
         </div>
 
         <!-- COL 3: HISTÓRICO E ENIGMA (RECOLHÍVEL NO MODO FOCO) -->
@@ -1277,6 +1322,78 @@
         </button>
       </div>
 
+      <!-- 🐉 OFICINA DE CRIAÇÃO DE MONSTROS & CALCULADORA OFICIAL DE ND (DMG P. 274 - ISSUE-161) -->
+      <details id="dmg-monster-workshop-panel" class="ddb-accordion" style="margin-bottom: 14px;">
+        <summary class="ddb-accordion-summary">
+          <div>
+            <div class="ddb-accordion-title">⚗️ Oficina de Criação de Monstros & Calculadora Oficial de ND (Guia do Mestre p. 274)</div>
+            <div class="ddb-accordion-sub">Calcule automaticamente ND Defensivo, ND Ofensivo e XP ou salve uma nova criatura customizada no Bestiário</div>
+          </div>
+          <span class="ddb-accordion-arrow">⌄</span>
+        </summary>
+        <div class="ddb-accordion-body">
+          <div class="form-row">
+            <div style="flex: 2;">
+              <label>Nome do Monstro / Chefe</label>
+              <input type="text" id="inp-custom-mon-name" placeholder="Ex: Dragão das Sombras Ancião">
+            </div>
+            <div>
+              <label>Tipo de Criatura</label>
+              <select id="sel-custom-mon-type">
+                <option value="monstrosity">🌲 Monstruosidade</option>
+                <option value="undead">💀 Morto-Vivo</option>
+                <option value="fiend">👹 Corruptor / Demônio</option>
+                <option value="dragon">🐉 Dragão</option>
+                <option value="humanoid">🧙 Humanoide</option>
+                <option value="aberration">👁️ Aberração</option>
+                <option value="construct">🤖 Constructo</option>
+                <option value="giant">🧌 Gigante</option>
+                <option value="elemental">🌀 Elemental</option>
+                <option value="fey">🧚 Feérico</option>
+                <option value="beast">🐺 Fera</option>
+              </select>
+            </div>
+            <div>
+              <label>PV Efetivo (Pontos de Vida)</label>
+              <input type="number" id="inp-custom-mon-hp" value="135" min="1" oninput="updateCustomMonsterCrPreview()">
+            </div>
+            <div>
+              <label>CA (Classe de Armadura)</label>
+              <input type="number" id="inp-custom-mon-ac" value="16" min="5" oninput="updateCustomMonsterCrPreview()">
+            </div>
+          </div>
+
+          <div class="form-row" style="margin-top: 8px; align-items: flex-end;">
+            <div>
+              <label>Dano por Rodada (DPR Médio)</label>
+              <input type="number" id="inp-custom-mon-dpr" value="35" min="0" oninput="updateCustomMonsterCrPreview()">
+            </div>
+            <div>
+              <label>Bônus de Ataque (+X)</label>
+              <input type="number" id="inp-custom-mon-atk" value="7" oninput="updateCustomMonsterCrPreview()">
+            </div>
+            <div>
+              <label>CD de Salvaguarda (Opcional)</label>
+              <input type="number" id="inp-custom-mon-dc" value="15" oninput="updateCustomMonsterCrPreview()">
+            </div>
+            <div style="flex: 2;">
+              <label>Ações e Ataques (Ex: Mordida +7, 2d10+4)</label>
+              <input type="text" id="inp-custom-mon-actions" placeholder="Ataque Múltiplo. Mordida: +7 para atingir (2d10+4 perfurante)...">
+            </div>
+          </div>
+
+          <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: #070b14; padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.25);">
+            <div id="lbl-custom-mon-cr-result" style="font-size: 12px; color: #e2e8f0;">
+              🛡️ <b>ND Defensivo:</b> 5 | ⚔️ <b>ND Ofensivo:</b> 5 ➔ 🏆 <b style="color: #fde047;">ND Final Oficial: 5 (1.800 XP)</b>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn-secondary" style="font-size: 11.5px; padding: 6px 12px;" onclick="updateCustomMonsterCrPreview()">🧮 Recalcular ND</button>
+              <button type="button" class="btn-action" style="font-size: 11.5px; padding: 6px 14px; font-weight: 800;" onclick="saveCustomMonsterToBestiary()">💾 Salvar Monstro no Bestiário</button>
+            </div>
+          </div>
+        </div>
+      </details>
+
       <div id="grid-bestiary" class="cards-grid"></div>
     </div>
 
@@ -1563,6 +1680,34 @@
               <div id="stash-history-list" style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px;"></div>
             </div>
           </div>
+
+          <!-- 🏛️ RENOME DE FACÇÕES, BÊNÇÃOS DOS DEUSES & DÁDIVAS ÉPICAS (DMG CAP. 1 & 7 - ISSUE-161) -->
+          <div class="card-panel" style="border-color: rgba(245, 158, 11, 0.3);">
+            <div class="panel-header">
+              <span>🏛️ Facções & Renome + ✨ Bênçãos e Dádivas Épicas (Guia do Mestre)</span>
+              <span class="badge badge-gold">DMG Cap. 1 & 7</span>
+            </div>
+
+            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
+              Acompanhe o prestígio e a patente do grupo nas 5 grandes facções e conceda Bênçãos Sobrenaturais ou Dádivas Épicas diretamente à ficha dos heróis.
+            </div>
+
+            <div id="camp-factions-renown-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin-bottom: 12px;"></div>
+
+            <div style="border-top: 1px solid var(--border-color); padding-top: 10px; display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap;">
+              <div style="flex: 1; min-width: 150px;">
+                <label>Herói Agraciado</label>
+                <select id="sel-gift-hero"></select>
+              </div>
+              <div style="flex: 2; min-width: 220px;">
+                <label>Bênção Divina / Amuleto / Dádiva Épica (DMG)</label>
+                <select id="sel-supernatural-gift"></select>
+              </div>
+              <button type="button" class="btn-action" style="padding: 7px 14px; font-size: 11.5px; font-weight: 800; background: linear-gradient(135deg, #f59e0b, #d97706); color: #000;" onclick="grantSupernaturalGiftToHero()">
+                ✨ Conceder Dádiva ao Herói
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- SEÇÃO DE NPCS CONTRATADOS & FOLHA DE PAGAMENTO DO GRUPO (OLD DRAGON 2 / 5E 100% PO) -->
@@ -1710,365 +1855,746 @@
     </div>
   </div>
 
-  <!-- MODAL: PLAYER SHEET (D&D 5E) -->
+  <!-- MODAL: PLAYER SHEET (D&D 5E - D&D BEYOND CHARACTER BUILDER - ISSUE-160) -->
   <div id="modal-player" class="modal-overlay">
-    <div class="modal-body" style="max-width: 880px; width: 92vw;">
-      <div class="panel-header">
-        <span id="player-modal-heading">Editar Ficha de Personagem</span>
-        <button class="btn-secondary" onclick="closePlayerModal()">✕</button>
+    <div class="modal-body ddb-builder-modal" style="max-width: 880px; width: 95vw;">
+      <div class="panel-header" style="margin-bottom: 6px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 20px;">🧙‍♂️</span>
+          <div>
+            <span id="player-modal-heading" style="font-family: var(--font-title); font-size: 16px; font-weight: 800; color: #fff;">Criar / Editar Ficha de Personagem</span>
+            <div style="font-size: 10.5px; color: var(--text-muted);">Criador de Personagens Passo a Passo D&D 5E (Estilo D&D Beyond)</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <button type="button" class="ddb-view-all-btn" id="btn-ddb-toggle-all" onclick="togglePlayerModalAllSteps()" title="Alternar entre navegação por abas passo a passo ou visão completa em página única">📋 Ver Tudo</button>
+          <button class="btn-secondary" onclick="closePlayerModal()">✕</button>
+        </div>
       </div>
       <input type="hidden" id="pm-id">
 
-      <div class="form-row">
-        <div>
-          <label>Avatar / Emoji / Foto</label>
-          <div style="display: flex; gap: 4px;">
-            <input type="text" id="pm-avatar" placeholder="Ex: 🧙" value="👤" style="width: 70px; text-align: center;">
-            <button class="btn-secondary" type="button" onclick="openAvatarModal(document.getElementById('pm-id').value)" style="flex: 1; font-size: 11px;">🎨 Escolher Avatar</button>
-          </div>
-        </div>
-        <div><label>Nome do Aluno(a)</label><input type="text" id="pm-student" placeholder="Ex: Arthur Lima"></div>
-        <div><label>Nome do Personagem</label><input type="text" id="pm-name" placeholder="Ex: Valerius Martelo Negro"></div>
-        <div>
-          <label>Raça (D&D 5E)</label>
-          <div style="display:flex; gap:4px;">
-            <select id="pm-race-select" onchange="onPlayerModalClassOrLevelChange()" style="flex:1;"></select>
-            <input type="hidden" id="pm-race">
-          </div>
-        </div>
-      </div>
-
-      <div class="form-row" style="background: #080c16; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); align-items: flex-end;">
-        <div style="flex: 2;">
-          <label>Classe (D&D 5E)</label>
-          <select id="pm-class-select" onchange="onPlayerModalClassOrLevelChange()"></select>
-          <input type="hidden" id="pm-class">
-        </div>
-        <div style="flex: 2;">
-          <label>Subclasse / Especialização</label>
-          <select id="pm-subclass-select" onchange="onPlayerModalClassOrLevelChange()"></select>
-          <input type="hidden" id="pm-fighting-style">
-        </div>
-        <div style="flex: 1;">
-          <label>Nível (1-20)</label>
-          <div style="display: flex; gap: 4px;">
-            <input type="number" id="pm-level" min="1" max="20" value="1" oninput="onPlayerModalClassOrLevelChange()">
-            <button class="btn-action" style="padding: 4px 8px; font-size: 11px;" type="button" onclick="autoLevelUpPrompt()" title="Subir de Nível Automaticamente">⭐ Subir</button>
-          </div>
-        </div>
-        <div>
-          <label>Dado de Vida</label>
-          <input type="text" id="pm-hitdice" placeholder="Ex: 1d10" value="1d10">
-        </div>
-        <div>
-          <button class="btn-secondary" style="padding: 7px 10px; font-size: 11px; white-space: nowrap; border-color: rgba(245,158,11,0.5); color: #fef08a; font-weight: 700;" type="button" onclick="openPlayerClassesModal(document.getElementById('pm-id').value)" title="Gerenciar todas as classes e níveis do personagem">
-            🔀 Multiclasse
-          </button>
-        </div>
-      </div>
-
-      <div class="form-row" style="background: #080c16; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); align-items: flex-end;">
-        <div style="flex: 2;">
-          <label>🛡️ Armadura Equipada</label>
-          <select id="pm-armor-select" onchange="updateModalCalculatedAc()">
-            <option value="none">Nenhuma (Sem Armadura / Defesa Natural)</option>
-            <optgroup label="Armaduras Leves">
-              <option value="armadura acolchoada">Armadura Acolchoada (CA 11 + DES)</option>
-              <option value="armadura de couro">Armadura de Couro (CA 11 + DES)</option>
-              <option value="armadura de couro batido">Armadura de Couro Batido (CA 12 + DES)</option>
-            </optgroup>
-            <optgroup label="Armaduras Médias">
-              <option value="gibao de peles">Gibão de Peles (CA 12 + DES máx +2)</option>
-              <option value="camisa de cota de malha">Camisão de Cota de Malha (CA 13 + DES máx +2)</option>
-              <option value="cota de escamas">Cota de Escamas (CA 14 + DES máx +2)</option>
-              <option value="peitoral">Peitoral (CA 14 + DES máx +2)</option>
-              <option value="meia-armadura">Meia-Armadura (CA 15 + DES máx +2)</option>
-            </optgroup>
-            <optgroup label="Armaduras Pesadas">
-              <option value="cota de aneis">Cota de Anéis (CA 14)</option>
-              <option value="cota de malha">Cota de Malha (CA 16)</option>
-              <option value="cota de talas">Cota de Talas (CA 17)</option>
-              <option value="armadura de placas">Armadura de Placas (CA 18)</option>
-            </optgroup>
-          </select>
-        </div>
-        <div style="display: flex; align-items: center; padding-bottom: 6px;">
-          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; font-weight: 700; color: #e2e8f0; margin: 0;">
-            <input type="checkbox" id="pm-shield-check" onchange="updateModalCalculatedAc()" style="cursor: pointer; width: 16px; height: 16px;">
-            🛡️ Escudo (+2 CA)
-          </label>
-        </div>
-        <div style="flex: 1;">
-          <label>CA Resultante <span style="font-size:10px; color:var(--accent-gold); font-weight:normal;">(Auto 5E)</span></label>
-          <input type="number" id="pm-ac" value="16" title="Classe de Armadura calculada automaticamente pelas regras do D&D 5E">
-          <div id="pm-ca-formula" class="modal-ca-formula-pill" title="Fórmula de CA">🛡️ 10 + DES</div>
-        </div>
-        <div style="flex: 1;">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <label style="margin:0;">PV Máximo</label>
-            <button type="button" class="modal-hp-suggest-btn" id="btn-suggest-hp" onclick="applySuggestedHpModal()" title="Aplicar PV sugerido pelas regras oficiais 5E">💡 Sugerir</button>
-          </div>
-          <input type="number" id="pm-maxhp" value="12">
-        </div>
-        <div style="flex: 1;"><label>Deslocamento</label><input type="text" id="pm-speed" value="9m"></div>
-        <div style="flex: 1;"><label>Ouro (PO)</label><input type="number" id="pm-gold" value="15"></div>
-        <div style="flex: 1;"><label>XP</label><input type="number" id="pm-xp" value="0"></div>
-      </div>
-
-
-      <!-- SEÇÃO ORIGEM & ANTECEDENTE (D&D 5E - ISSUE-159) -->
-      <div style="background: #080c16; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-          <div style="font-size: 11px; font-weight: 800; color: var(--primary-light); text-transform: uppercase;">
-            🎭 Antecedente & Personalidade Oficial (D&D 5E)
-          </div>
-          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <button type="button" class="btn-secondary" style="padding: 3px 8px; font-size: 10px; border-color: rgba(168,85,247,0.4); color: #e9d5ff;" onclick="rollBackgroundTraitsModal('all')" title="Sortear Traço de Personalidade, Ideal, Vínculo e Defeito das tabelas oficiais d8/d6 do Antecedente">🎲 Sortear Traços (d8/d6)</button>
-            <button type="button" class="btn-secondary" style="padding: 3px 8px; font-size: 10px; border-color: rgba(16,185,129,0.4); color: #a7f3d0;" onclick="applyBackgroundBenefitsModal()" title="Adicionar as 2 Perícias e a Característica Oficial deste Antecedente à ficha">✨ Aplicar Perícias & Característica</button>
-          </div>
-        </div>
-        <div id="pm-background-summary-bar" style="font-size: 10.5px; color: #94a3b8; background: rgba(15,23,42,0.75); padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
-          Selecione ou digite um Antecedente oficial (ex: <b>Acólito, Soldado, Criminoso, Sábio, Nobre, Forasteiro</b>) para sortear traços d8/d6 e aplicar perícias.
-        </div>
-        <datalist id="pm-backgrounds-datalist">
-          <option value="Acólito">🙏 Acólito (Intuição, Religião)</option>
-          <option value="Artesão de Guilda">🔨 Artesão de Guilda (Intuição, Persuasão)</option>
-          <option value="Artista">🎭 Artista (Acrobacia, Atuação)</option>
-          <option value="Charlatão">🃏 Charlatão (Enganação, Prestidigitação)</option>
-          <option value="Criminoso">🗡️ Criminoso (Enganação, Furtividade)</option>
-          <option value="Eremita">🧘 Eremita (Medicina, Religião)</option>
-          <option value="Forasteiro">🌲 Forasteiro (Atletismo, Sobrevivência)</option>
-          <option value="Herói Popular">🌾 Herói Popular (Adestrar Animais, Sobrevivência)</option>
-          <option value="Marinheiro">⚓ Marinheiro (Atletismo, Percepção)</option>
-          <option value="Morador de Rua">🐀 Morador de Rua (Furtividade, Prestidigitação)</option>
-          <option value="Nobre">👑 Nobre (História, Persuasão)</option>
-          <option value="Sábio">📜 Sábio (Arcanismo, História)</option>
-          <option value="Soldado">⚔️ Soldado (Atletismo, Intimidação)</option>
-        </datalist>
-        <div class="form-row">
+      <!-- RESUMO DINÂMICO DO PERSONAGEM EM CONSTRUÇÃO -->
+      <div id="ddb-builder-hero-bar" class="ddb-builder-hero-bar">
+        <div class="ddb-hero-left">
+          <div class="ddb-hero-avatar" id="ddb-hero-avatar-preview" onclick="openAvatarModal(document.getElementById('pm-id').value)" title="Clique para escolher Avatar">👤</div>
           <div>
-            <label>Antecedente / Origem (13 Oficiais)</label>
-            <input type="text" id="pm-background" list="pm-backgrounds-datalist" placeholder="Ex: Soldado, Acólito, Sábio, Criminoso, Nobre..." oninput="onModalBackgroundChange(this.value)" onchange="onModalBackgroundChange(this.value)">
-          </div>
-          <div>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <label style="margin:0;">Traço de Personalidade (d8)</label>
-              <button type="button" class="btn-secondary" style="padding:1px 5px; font-size:9px;" onclick="rollBackgroundTraitsModal('personality')" title="Sortear Traço de Personalidade">🎲</button>
-            </div>
-            <input type="text" id="pm-personality" placeholder="Ex: Sempre mantenho a calma em perigo; conto histórias engraçadas.">
+            <div class="ddb-hero-name" id="ddb-hero-name-preview">Novo Aventureiro</div>
+            <div class="ddb-hero-sub" id="ddb-hero-sub-preview">Humano • Guerreiro Nv 1 • Aventureiro</div>
           </div>
         </div>
-        <div class="form-row">
-          <div>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <label style="margin:0;">Ideal (d6)</label>
-              <button type="button" class="btn-secondary" style="padding:1px 5px; font-size:9px;" onclick="rollBackgroundTraitsModal('ideal')" title="Sortear Ideal">🎲</button>
-            </div>
-            <input type="text" id="pm-ideal" placeholder="Ex: Proteção: Cuidarei dos indefesos a todo custo.">
-          </div>
-          <div>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <label style="margin:0;">Vínculo (d6)</label>
-              <button type="button" class="btn-secondary" style="padding:1px 5px; font-size:9px;" onclick="rollBackgroundTraitsModal('bond')" title="Sortear Vínculo">🎲</button>
-            </div>
-            <input type="text" id="pm-bond" placeholder="Ex: Devo proteger meu clã e minha família.">
-          </div>
-        </div>
-        <div class="form-row">
-          <div>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <label style="margin:0;">Defeito (d6)</label>
-              <button type="button" class="btn-secondary" style="padding:1px 5px; font-size:9px;" onclick="rollBackgroundTraitsModal('flaw')" title="Sortear Defeito">🎲</button>
-            </div>
-            <input type="text" id="pm-flaw" placeholder="Ex: Tenho orgulho teimoso e não recuo de brigas.">
-          </div>
-        </div>
-        <div>
-          <label>História & Biografia</label>
-          <textarea id="pm-backstory" rows="2" placeholder="Histórico narrativo, origens e motivações na campanha..."></textarea>
+        <div class="ddb-hero-stats-pills">
+          <span class="ddb-hero-pill" id="ddb-hero-pill-ac" title="Classe de Armadura Calculada">🛡️ CA 16</span>
+          <span class="ddb-hero-pill hp" id="ddb-hero-pill-hp" title="Pontos de Vida Máximos">❤️ PV 12</span>
+          <span class="ddb-hero-pill gold" id="ddb-hero-pill-gold" title="Ouro Inicial">🪙 15 PO</span>
         </div>
       </div>
 
-      <div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-          <label style="margin:0;">6 Atributos D&D (Geração Oficial & Bônus Raciais Automáticos)</label>
-          <span style="font-size:10px; color:var(--text-muted);">Modificador oficial: (Total - 10) / 2</span>
+      <!-- BARRA DE ABAS ESTILO D&D BEYOND -->
+      <div class="ddb-builder-nav" id="ddb-builder-nav">
+        <button type="button" class="ddb-step-tab active" data-step="home" onclick="switchPlayerModalStep('home')">⚙️ HOME</button>
+        <button type="button" class="ddb-step-tab" data-step="class" onclick="switchPlayerModalStep('class')">1. CLASSE</button>
+        <button type="button" class="ddb-step-tab" data-step="background" onclick="switchPlayerModalStep('background')">2. ANTECEDENTE</button>
+        <button type="button" class="ddb-step-tab" data-step="species" onclick="switchPlayerModalStep('species')">3. RAÇA / ESPÉCIE</button>
+        <button type="button" class="ddb-step-tab" data-step="abilities" onclick="switchPlayerModalStep('abilities')">4. ATRIBUTOS</button>
+        <button type="button" class="ddb-step-tab" data-step="equipment" onclick="switchPlayerModalStep('equipment')">5. EQUIPAMENTO</button>
+      </div>
+
+      <!-- CONTAINER DE ETAPAS COM SETAS LATERAIS (< / >) -->
+      <div class="ddb-builder-stage">
+        <button type="button" class="ddb-side-arrow left" id="btn-ddb-side-prev" onclick="prevPlayerModalStep()" title="Etapa Anterior">❮</button>
+        <button type="button" class="ddb-side-arrow right" id="btn-ddb-side-next" onclick="nextPlayerModalStep()" title="Próxima Etapa">❯</button>
+
+        <!-- ============================================================ -->
+        <!-- ⚙️ ABA 0: HOME (IDENTIDADE, JOGADOR, NÍVEL & MEDALHAS)       -->
+        <!-- ============================================================ -->
+        <div id="ddb-pane-home" class="ddb-step-pane active" data-step="home">
+          <div class="ddb-pane-header">
+            <h3>⚙️ Identidade & Configurações do Personagem</h3>
+            <p>Defina o nome do seu herói, o jogador responsável, o avatar e o nível inicial antes de avançar pelas etapas de criação.</p>
+          </div>
+
+          <div class="form-row" style="background: #080c16; padding: 12px; border-radius: 10px; border: 1px solid var(--border-color);">
+            <div style="flex: 1.2;">
+              <label>Avatar / Emoji / Foto</label>
+              <div style="display: flex; gap: 6px;">
+                <input type="text" id="pm-avatar" placeholder="Ex: 🧙" value="👤" style="width: 70px; text-align: center; font-size: 16px;" oninput="updateDdbHeroSummaryBar()">
+                <button class="btn-secondary" type="button" onclick="openAvatarModal(document.getElementById('pm-id').value)" style="flex: 1; font-size: 11px;">🎨 Escolher Avatar</button>
+              </div>
+            </div>
+            <div style="flex: 1.5;">
+              <label>Nome do Personagem</label>
+              <input type="text" id="pm-name" placeholder="Ex: Valerius Martelo Negro" oninput="updateDdbHeroSummaryBar()">
+            </div>
+            <div style="flex: 1.3;">
+              <label>Nome do Aluno(a) / Jogador</label>
+              <input type="text" id="pm-student" placeholder="Ex: Arthur Lima" oninput="updateDdbHeroSummaryBar()">
+            </div>
+          </div>
+
+          <div class="form-row" style="background: #080c16; padding: 12px; border-radius: 10px; border: 1px solid var(--border-color);">
+            <div style="flex: 1;">
+              <label>Nível do Personagem (1–20)</label>
+              <div style="display: flex; gap: 6px;">
+                <input type="number" id="pm-level" min="1" max="20" value="1" oninput="onPlayerModalClassOrLevelChange()">
+                <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" type="button" onclick="autoLevelUpPrompt()" title="Subir de Nível Automaticamente">⭐ Subir Nv</button>
+              </div>
+            </div>
+            <div style="flex: 1;">
+              <label>Pontos de Experiência (XP)</label>
+              <input type="number" id="pm-xp" value="0">
+            </div>
+            <div style="flex: 2;">
+              <label>🏅 Conquistas & Medalhas Escolares (Separadas por vírgula)</label>
+              <input type="text" id="pm-badges" placeholder="Ex: 🏆 MVP do Combate, 🧩 Solucionador de Enigmas, ⭐ Presença 100%">
+            </div>
+          </div>
+
+          <!-- GUIA RÁPIDO DE ETAPAS ESTILO D&D BEYOND -->
+          <div class="ddb-home-steps-grid">
+            <div class="ddb-home-step-card" onclick="switchPlayerModalStep('class')">
+              <span class="ddb-home-step-icon">⚔️</span>
+              <div>
+                <div class="ddb-home-step-title">1. Escolher Classe</div>
+                <div class="ddb-home-step-sub" id="ddb-home-card-class">12 Classes Oficiais, Subclasses & Perícias</div>
+              </div>
+              <span class="ddb-home-step-chevron">❯</span>
+            </div>
+            <div class="ddb-home-step-card" onclick="switchPlayerModalStep('background')">
+              <span class="ddb-home-step-icon">🎭</span>
+              <div>
+                <div class="ddb-home-step-title">2. Antecedente & Traços</div>
+                <div class="ddb-home-step-sub" id="ddb-home-card-bg">13 Origens + Sugestões Clicáveis de Traços</div>
+              </div>
+              <span class="ddb-home-step-chevron">❯</span>
+            </div>
+            <div class="ddb-home-step-card" onclick="switchPlayerModalStep('species')">
+              <span class="ddb-home-step-icon">🧬</span>
+              <div>
+                <div class="ddb-home-step-title">3. Raça / Espécie</div>
+                <div class="ddb-home-step-sub" id="ddb-home-card-race">Raças, Sub-raças & Traços Raciais</div>
+              </div>
+              <span class="ddb-home-step-chevron">❯</span>
+            </div>
+            <div class="ddb-home-step-card" onclick="switchPlayerModalStep('abilities')">
+              <span class="ddb-home-step-icon">💪</span>
+              <div>
+                <div class="ddb-home-step-title">4. Atributos & Magias</div>
+                <div class="ddb-home-step-sub" id="ddb-home-card-stats">4d6, Array Padrão, PV & Espaços de Magia</div>
+              </div>
+              <span class="ddb-home-step-chevron">❯</span>
+            </div>
+            <div class="ddb-home-step-card" style="grid-column: 1 / -1;" onclick="switchPlayerModalStep('equipment')">
+              <span class="ddb-home-step-icon">🎒</span>
+              <div>
+                <div class="ddb-home-step-title">5. Equipamento Inicial ou Ouro</div>
+                <div class="ddb-home-step-sub" id="ddb-home-card-equip">Escolhas (a)/(b) de Armas, Armaduras e Pacotes da Classe</div>
+              </div>
+              <span class="ddb-home-step-chevron">❯</span>
+            </div>
+          </div>
         </div>
 
-        <div id="pm-race-summary-bar" class="pm-race-summary-bar">
-          <span style="font-size: 14px;">🧬</span>
-          <span id="pm-race-summary-text" style="font-size: 11px; color: #cbd5e1;">Selecione uma raça para calcular os bônus raciais canônicos de D&D 5E.</span>
+        <!-- ============================================================ -->
+        <!-- ⚔️ ABA 1: 1. CLASSE (LISTA VISUAL, SUBCLASSE & PERÍCIAS)     -->
+        <!-- ============================================================ -->
+        <div id="ddb-pane-class" class="ddb-step-pane" data-step="class">
+          <div class="ddb-pane-header">
+            <h3>1. Escolher Classe (5e Core Rules & Guia de Xanathar)</h3>
+            <p>Opções oficiais de personagem do <i>Livro do Jogador (PHB)</i> e <i>Guia de Xanathar sobre Tudo</i>. Clique em uma classe abaixo ou selecione na barra rápida.</p>
+          </div>
+
+          <div class="form-row" style="background: #080c16; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); align-items: flex-end;">
+            <div style="flex: 2;">
+              <label>Classe Selecionada (D&D 5E)</label>
+              <select id="pm-class-select" onchange="onPlayerModalClassOrLevelChange()"></select>
+              <input type="hidden" id="pm-class">
+            </div>
+            <div style="flex: 2;">
+              <label>Subclasse / Especialização</label>
+              <select id="pm-subclass-select" onchange="onPlayerModalClassOrLevelChange()"></select>
+              <input type="hidden" id="pm-fighting-style">
+            </div>
+            <div style="flex: 1;">
+              <label>Dado de Vida</label>
+              <input type="text" id="pm-hitdice" placeholder="Ex: 1d10" value="1d10">
+            </div>
+            <div>
+              <button class="btn-secondary" style="padding: 7px 10px; font-size: 11px; white-space: nowrap; border-color: rgba(245,158,11,0.5); color: #fef08a; font-weight: 700;" type="button" onclick="openPlayerClassesModal(document.getElementById('pm-id').value)" title="Gerenciar todas as classes e níveis do personagem">
+                🔀 Multiclasse
+              </button>
+            </div>
+          </div>
+
+          <!-- LISTA DE CARDS DE CLASSE ESTILO D&D BEYOND -->
+          <div id="ddb-class-cards-list" class="ddb-entity-cards-list"></div>
+
+          <!-- SELETOR INTERATIVO DE PERÍCIAS DA CLASSE -->
+          <div id="ddb-class-skills-box" class="ddb-section-card">
+            <div class="ddb-section-card-header">
+              <span>🎯 Perícias Iniciais da Classe</span>
+              <span id="ddb-class-skills-counter" class="badge badge-gold">Escolha 2</span>
+            </div>
+            <div id="ddb-class-skills-picker" class="ddb-skills-chip-grid"></div>
+          </div>
+
+          <!-- PREVIEW DE HABILIDADES DESBLOQUEADAS DA CLASSE -->
+          <div class="ddb-section-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <label style="margin:0; font-weight:800; color:#fff;">🌳 Habilidades Desbloqueadas da Classe (Automático pelo Nível)</label>
+              <span style="font-size:10px; color:var(--primary-light);">Regras Completas & Tópicos</span>
+            </div>
+            <div id="pm-features-preview" style="max-height: 220px; overflow-y: auto; background: #080c16; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px; scrollbar-width: thin; scrollbar-color: rgba(245, 158, 11, 0.3) transparent;"></div>
+            <div style="margin-top: 8px;">
+              <label>Características & Talentos Adicionais</label>
+              <textarea id="pm-features" rows="2" placeholder="Ex: Alerta (+5 iniciativa), Resistência a Fogo"></textarea>
+            </div>
+          </div>
         </div>
 
-        <div class="stat-dice-presets-bar">
-          <button type="button" class="btn-action" style="padding: 4px 9px; font-size: 11px; background: linear-gradient(135deg, #7c3aed, #6d28d9); font-weight: 700;" onclick="rollAttributes4d6Modal()" title="Rolar 4d6 e descartar o menor para cada atributo">🎲 Rolar 4d6 (Drop Lowest)</button>
-          <button type="button" class="btn-secondary" style="padding: 4px 9px; font-size: 11px; border-color: rgba(59, 130, 246, 0.4); color: #93c5fd; font-weight: 600;" onclick="applyStandardArrayModal()" title="Aplicar array padrão oficial (15, 14, 13, 12, 10, 8)">📊 Array Padrão (15, 14, 13, 12, 10, 8)</button>
-          <button type="button" class="btn-secondary" style="padding: 4px 9px; font-size: 11px; border-color: rgba(245, 158, 11, 0.4); color: #fde68a; font-weight: 600;" onclick="optimizeAttributesForClassModal()" title="Reordenar os atributos atuais priorizando os atributos principais da classe">⚡ Otimizar p/ Classe</button>
+        <!-- ============================================================ -->
+        <!-- 🎭 ABA 2: 2. ANTECEDENTE & SUGESTÕES DE TRAÇOS               -->
+        <!-- ============================================================ -->
+        <div id="ddb-pane-background" class="ddb-step-pane" data-step="background">
+          <div class="ddb-pane-header">
+            <h3>2. Escolher Origem: Antecedente & Traços Pessoais</h3>
+            <p>Escolha um dos 13 Antecedentes oficiais do Livro do Jogador e clique nas sugestões de Traços de Personalidade, Ideais, Vínculos e Defeitos para preencher sua ficha.</p>
+          </div>
+
+          <div style="background: #080c16; padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+              <div style="font-size: 11px; font-weight: 800; color: var(--primary-light); text-transform: uppercase;">
+                🎭 Antecedente Oficial (D&D 5E)
+              </div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="btn-secondary" style="padding: 4px 10px; font-size: 10.5px; border-color: rgba(168,85,247,0.4); color: #e9d5ff;" onclick="rollBackgroundTraitsModal('all')" title="Sortear Traço de Personalidade, Ideal, Vínculo e Defeito das tabelas oficiais d8/d6 do Antecedente">🎲 Sortear Todos os Traços (d8/d6)</button>
+                <button type="button" class="btn-secondary" style="padding: 4px 10px; font-size: 10.5px; border-color: rgba(16,185,129,0.4); color: #a7f3d0;" onclick="applyBackgroundBenefitsModal()" title="Adicionar as 2 Perícias e a Característica Oficial deste Antecedente à ficha">✨ Aplicar Perícias & Característica</button>
+              </div>
+            </div>
+
+            <datalist id="pm-backgrounds-datalist">
+              <option value="Acólito">🙏 Acólito (Intuição, Religião)</option>
+              <option value="Artesão de Guilda">🔨 Artesão de Guilda (Intuição, Persuasão)</option>
+              <option value="Artista">🎭 Artista (Acrobacia, Atuação)</option>
+              <option value="Charlatão">🃏 Charlatão (Enganação, Prestidigitação)</option>
+              <option value="Criminoso">🗡️ Criminoso (Enganação, Furtividade)</option>
+              <option value="Eremita">🧘 Eremita (Medicina, Religião)</option>
+              <option value="Forasteiro">🌲 Forasteiro (Atletismo, Sobrevivência)</option>
+              <option value="Herói Popular">🌾 Herói Popular (Adestrar Animais, Sobrevivência)</option>
+              <option value="Marinheiro">⚓ Marinheiro (Atletismo, Percepção)</option>
+              <option value="Morador de Rua">🐀 Morador de Rua (Furtividade, Prestidigitação)</option>
+              <option value="Nobre">👑 Nobre (História, Persuasão)</option>
+              <option value="Sábio">📜 Sábio (Arcanismo, História)</option>
+              <option value="Soldado">⚔️ Soldado (Atletismo, Intimidação)</option>
+            </datalist>
+
+            <!-- CHIPS RÁPIDOS DOS 13 ANTECEDENTES -->
+            <div id="ddb-background-quick-chips" class="ddb-bg-chips-bar"></div>
+
+            <div class="form-row">
+              <div style="flex: 1;">
+                <label>Antecedente Selecionado (ou digite um personalizado)</label>
+                <input type="text" id="pm-background" list="pm-backgrounds-datalist" placeholder="Ex: Soldado, Acólito, Sábio, Criminoso, Nobre..." oninput="onModalBackgroundChange(this.value)" onchange="onModalBackgroundChange(this.value)">
+              </div>
+            </div>
+
+            <div id="pm-background-summary-bar" style="font-size: 11px; color: #94a3b8; background: rgba(15,23,42,0.75); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+              Selecione ou clique em um Antecedente oficial acima para visualizar seus benefícios, perícias e sugestões de traços.
+            </div>
+          </div>
+
+          <!-- ACORDEÕES ESTILO D&D BEYOND (SCREENSHOT 3) -->
+          <!-- 1. Personal Characteristics (COM SUGESTÕES CLICÁVEIS) -->
+          <details class="ddb-accordion" open>
+            <summary class="ddb-accordion-summary">
+              <div>
+                <div class="ddb-accordion-title">Características Pessoais & Sugestões Clicáveis</div>
+                <div class="ddb-accordion-sub">Traços de Personalidade • Ideais • Vínculos • Defeitos (Clique em uma sugestão abaixo para preencher!)</div>
+              </div>
+              <span class="ddb-accordion-arrow">⌄</span>
+            </summary>
+            <div class="ddb-accordion-body">
+              <!-- TRAÇO DE PERSONALIDADE -->
+              <div class="ddb-trait-field-block">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
+                  <label style="margin:0; color:#f8fafc; font-weight:700;">💬 Traço de Personalidade (d8)</label>
+                  <button type="button" class="btn-secondary" style="padding:2px 8px; font-size:10px;" onclick="rollBackgroundTraitsModal('personality')" title="Sortear Traço de Personalidade">🎲 Sortear d8</button>
+                </div>
+                <input type="text" id="pm-personality" placeholder="Digite ou clique em uma das sugestões abaixo...">
+                <div id="ddb-suggestions-personality" class="ddb-trait-suggestions-list"></div>
+              </div>
+
+              <!-- IDEAL -->
+              <div class="ddb-trait-field-block">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
+                  <label style="margin:0; color:#f8fafc; font-weight:700;">🌟 Ideal (d6)</label>
+                  <button type="button" class="btn-secondary" style="padding:2px 8px; font-size:10px;" onclick="rollBackgroundTraitsModal('ideal')" title="Sortear Ideal">🎲 Sortear d6</button>
+                </div>
+                <input type="text" id="pm-ideal" placeholder="Digite ou clique em um dos ideais sugeridos abaixo...">
+                <div id="ddb-suggestions-ideal" class="ddb-trait-suggestions-list"></div>
+              </div>
+
+              <!-- VÍNCULO -->
+              <div class="ddb-trait-field-block">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
+                  <label style="margin:0; color:#f8fafc; font-weight:700;">🔗 Vínculo (d6)</label>
+                  <button type="button" class="btn-secondary" style="padding:2px 8px; font-size:10px;" onclick="rollBackgroundTraitsModal('bond')" title="Sortear Vínculo">🎲 Sortear d6</button>
+                </div>
+                <input type="text" id="pm-bond" placeholder="Digite ou clique em um dos vínculos sugeridos abaixo...">
+                <div id="ddb-suggestions-bond" class="ddb-trait-suggestions-list"></div>
+              </div>
+
+              <!-- DEFEITO -->
+              <div class="ddb-trait-field-block">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
+                  <label style="margin:0; color:#f8fafc; font-weight:700;">⚠️ Defeito (d6)</label>
+                  <button type="button" class="btn-secondary" style="padding:2px 8px; font-size:10px;" onclick="rollBackgroundTraitsModal('flaw')" title="Sortear Defeito">🎲 Sortear d6</button>
+                </div>
+                <input type="text" id="pm-flaw" placeholder="Digite ou clique em um dos defeitos sugeridos abaixo...">
+                <div id="ddb-suggestions-flaw" class="ddb-trait-suggestions-list"></div>
+              </div>
+            </div>
+          </details>
+
+          <!-- 2. Character Details -->
+          <details class="ddb-accordion">
+            <summary class="ddb-accordion-summary">
+              <div>
+                <div class="ddb-accordion-title">Detalhes do Personagem</div>
+                <div class="ddb-accordion-sub">Tendência / Alinhamento • Fé / Divindade • Estilo de Vida</div>
+              </div>
+              <span class="ddb-accordion-arrow">⌄</span>
+            </summary>
+            <div class="ddb-accordion-body">
+              <div class="form-row">
+                <div>
+                  <label>Tendência / Alinhamento</label>
+                  <select id="pm-alignment">
+                    <option value="Leal e Bom">👼 Leal e Bom (Lawful Good)</option>
+                    <option value="Neutro e Bom" selected>🕊️ Neutro e Bom (Neutral Good)</option>
+                    <option value="Caótico e Bom">🏹 Caótico e Bom (Chaotic Good)</option>
+                    <option value="Leal e Neutro">⚖️ Leal e Neutro (Lawful Neutral)</option>
+                    <option value="Neutro">🌿 Neutro Verdadeiro (True Neutral)</option>
+                    <option value="Caótico e Neutro">🎲 Caótico e Neutro (Chaotic Neutral)</option>
+                    <option value="Leal e Mau">👑 Leal e Mau (Lawful Evil)</option>
+                    <option value="Neutro e Mau">🐍 Neutro e Mau (Neutral Evil)</option>
+                    <option value="Caótico e Mau">🔥 Caótico e Mau (Chaotic Evil)</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Fé / Divindade / Patrono</label>
+                  <input type="text" id="pm-faith" placeholder="Ex: Pelor, Bahamut, Mystra, Raven Queen...">
+                </div>
+                <div>
+                  <label>Estilo de Vida</label>
+                  <select id="pm-lifestyle">
+                    <option value="Miserável">Miserável (0 PO/dia)</option>
+                    <option value="Esquálido">Esquálido (1 PP/dia)</option>
+                    <option value="Pobre">Pobre (2 PP/dia)</option>
+                    <option value="Modesto" selected>Modesto (1 PO/dia)</option>
+                    <option value="Confortável">Confortável (2 PO/dia)</option>
+                    <option value="Rico">Rico (4 PO/dia)</option>
+                    <option value="Aristocrático">Aristocrático (10+ PO/dia)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <!-- 3. Physical Characteristics -->
+          <details class="ddb-accordion">
+            <summary class="ddb-accordion-summary">
+              <div>
+                <div class="ddb-accordion-title">Características Físicas</div>
+                <div class="ddb-accordion-sub">Cabelo • Pele • Olhos • Altura • Peso • Idade • Gênero</div>
+              </div>
+              <span class="ddb-accordion-arrow">⌄</span>
+            </summary>
+            <div class="ddb-accordion-body">
+              <div class="form-row">
+                <div><label>Gênero / Pronomes</label><input type="text" id="pm-gender" placeholder="Ex: Masculino, Feminino..."></div>
+                <div><label>Idade</label><input type="text" id="pm-age" placeholder="Ex: 28 anos"></div>
+                <div><label>Altura</label><input type="text" id="pm-height" placeholder="Ex: 1,78m"></div>
+                <div><label>Peso</label><input type="text" id="pm-weight" placeholder="Ex: 82 kg"></div>
+              </div>
+              <div class="form-row" style="margin-top: 6px;">
+                <div><label>Olhos</label><input type="text" id="pm-eyes" placeholder="Ex: Verdes, Âmbar..."></div>
+                <div><label>Pele</label><input type="text" id="pm-skin" placeholder="Ex: Bronzeada, Pálida..."></div>
+                <div><label>Cabelos</label><input type="text" id="pm-hair" placeholder="Ex: Negros longos, Ruivos..."></div>
+              </div>
+            </div>
+          </details>
+
+          <!-- 4. Notes & Backstory + Xanathar "This Is Your Life" (ISSUE-161) -->
+          <details class="ddb-accordion" open>
+            <summary class="ddb-accordion-summary">
+              <div>
+                <div class="ddb-accordion-title">Notas, Biografia & "Esta é a Sua Vida" (Guia de Xanathar)</div>
+                <div class="ddb-accordion-sub">Origem Familiar • Eventos de Vida • Aliados • Inimigos • História de Fundo</div>
+              </div>
+              <span class="ddb-accordion-arrow">⌄</span>
+            </summary>
+            <div class="ddb-accordion-body">
+              <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 8px; padding: 10px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 6px;">
+                  <span style="font-size: 11.5px; font-weight: 800; color: #e9d5ff;">📜 Gerador Oficial "Esta é a Sua Vida" (Xanathar Cap. 1)</span>
+                  <span style="font-size: 10px; color: #cbd5e1;">Sorteia nascimento, família, treinamento da classe, eventos e rivais</span>
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <button type="button" class="btn-action" style="padding: 5px 11px; font-size: 11px; font-weight: 800; background: linear-gradient(135deg, #7c3aed, #6d28d9);" onclick="rollXanatharLifePathModal('all')">🎲 Gerar Vida Completa (Xanathar)</button>
+                  <button type="button" class="btn-secondary" style="padding: 5px 9px; font-size: 10.5px; border-color: rgba(168,85,247,0.4); color: #d8b4fe;" onclick="rollXanatharLifePathModal('origin')">👶 Origem & Infância</button>
+                  <button type="button" class="btn-secondary" style="padding: 5px 9px; font-size: 10.5px; border-color: rgba(56,189,248,0.4); color: #7dd3fc;" onclick="rollXanatharLifePathModal('event')">⚡ +Evento de Vida</button>
+                  <button type="button" class="btn-secondary" style="padding: 5px 9px; font-size: 10.5px; border-color: rgba(245,158,11,0.4); color: #fde68a;" onclick="rollXanatharLifePathModal('relations')">🤝 Aliado & Inimigo</button>
+                </div>
+              </div>
+
+              <div class="form-row" style="margin-bottom: 8px;">
+                <div>
+                  <label>🤝 Aliados & Contatos</label>
+                  <input type="text" id="pm-allies" placeholder="Ex: Capitão Vaelen, Mestra Lyra...">
+                </div>
+                <div>
+                  <label>⚔️ Inimigos & Rivais</label>
+                  <input type="text" id="pm-enemies" placeholder="Ex: Malakor o Ceifador, Inquisidor Vane...">
+                </div>
+              </div>
+
+              <div>
+                <label>📖 História & Biografia</label>
+                <textarea id="pm-backstory" rows="4" placeholder="Histórico narrativo, origens e motivações na campanha..."></textarea>
+              </div>
+            </div>
+          </details>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px;">
-          <!-- FORÇA -->
-          <div class="stat-box-editor">
-            <span class="stat-box-editor-label">FOR</span>
-            <span style="font-size: 9px; color: #64748b;">Base</span>
-            <input type="number" id="pm-base-str" class="stat-base-input" value="15" min="1" max="30" oninput="updateModalAttributeModifiers()">
-            <span class="stat-race-bonus-pill" id="pm-race-bonus-str">+0 Raça</span>
-            <div class="stat-final-value-wrap">
-              <span class="stat-final-value" id="pm-final-str">15</span>
-              <input type="hidden" id="pm-str" value="15">
-            </div>
-            <span class="stat-mod-pill" id="pm-mod-str">+2</span>
+        <!-- ============================================================ -->
+        <!-- 🧬 ABA 3: 3. RAÇA / ESPÉCIE (CARDS & SUB-RAÇAS)              -->
+        <!-- ============================================================ -->
+        <div id="ddb-pane-species" class="ddb-step-pane" data-step="species">
+          <div class="ddb-pane-header">
+            <h3>3. Escolher Raça / Espécie (5e Core Rules & Suplementos)</h3>
+            <p>Escolha a espécie e sub-raça do seu personagem para aplicar automaticamente os bônus de atributos raciais, deslocamento e traços.</p>
           </div>
 
-          <!-- DESTREZA -->
-          <div class="stat-box-editor">
-            <span class="stat-box-editor-label">DES</span>
-            <span style="font-size: 9px; color: #64748b;">Base</span>
-            <input type="number" id="pm-base-dex" class="stat-base-input" value="14" min="1" max="30" oninput="updateModalAttributeModifiers()">
-            <span class="stat-race-bonus-pill" id="pm-race-bonus-dex">+0 Raça</span>
-            <div class="stat-final-value-wrap">
-              <span class="stat-final-value" id="pm-final-dex">14</span>
-              <input type="hidden" id="pm-dex" value="14" oninput="updateModalCalculatedAc()">
+          <div class="form-row" style="background: #080c16; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); align-items: center;">
+            <div style="flex: 2;">
+              <label>Raça / Sub-raça Selecionada (D&D 5E)</label>
+              <div style="display:flex; gap:6px;">
+                <select id="pm-race-select" onchange="onPlayerModalClassOrLevelChange()" style="flex:1;"></select>
+                <input type="hidden" id="pm-race">
+              </div>
             </div>
-            <span class="stat-mod-pill" id="pm-mod-dex">+2</span>
+            <div style="flex: 2;">
+              <div id="pm-race-summary-bar" class="pm-race-summary-bar" style="margin: 0;">
+                <span style="font-size: 14px;">🧬</span>
+                <span id="pm-race-summary-text" style="font-size: 11px; color: #cbd5e1;">Selecione uma raça para calcular os bônus raciais canônicos de D&D 5E.</span>
+              </div>
+            </div>
           </div>
 
-          <!-- CONSTITUIÇÃO -->
-          <div class="stat-box-editor">
-            <span class="stat-box-editor-label">CON</span>
-            <span style="font-size: 9px; color: #64748b;">Base</span>
-            <input type="number" id="pm-base-con" class="stat-base-input" value="13" min="1" max="30" oninput="updateModalAttributeModifiers()">
-            <span class="stat-race-bonus-pill" id="pm-race-bonus-con">+0 Raça</span>
-            <div class="stat-final-value-wrap">
-              <span class="stat-final-value" id="pm-final-con">13</span>
-              <input type="hidden" id="pm-con" value="13" oninput="updateModalCalculatedAc()">
-            </div>
-            <span class="stat-mod-pill" id="pm-mod-con">+1</span>
+          <!-- LISTA DE ESPÉCIES E SUB-RAÇAS ESTILO D&D BEYOND (SCREENSHOT 4) -->
+          <div id="ddb-species-cards-list" class="ddb-entity-cards-list"></div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- 💪 ABA 4: 4. ATRIBUTOS, PV & MAGIAS                          -->
+        <!-- ============================================================ -->
+        <div id="ddb-pane-abilities" class="ddb-step-pane" data-step="abilities">
+          <div class="ddb-pane-header">
+            <h3>4. Definir Atributos, Pontos de Vida & Conjuração</h3>
+            <p>Role 4d6 descartando o menor, use o Array Padrão (15, 14, 13, 12, 10, 8) ou otimize automaticamente os valores para a sua classe.</p>
           </div>
 
-          <!-- INTELIGÊNCIA -->
-          <div class="stat-box-editor">
-            <span class="stat-box-editor-label">INT</span>
-            <span style="font-size: 9px; color: #64748b;">Base</span>
-            <input type="number" id="pm-base-int" class="stat-base-input" value="12" min="1" max="30" oninput="updateModalAttributeModifiers()">
-            <span class="stat-race-bonus-pill" id="pm-race-bonus-int">+0 Raça</span>
-            <div class="stat-final-value-wrap">
-              <span class="stat-final-value" id="pm-final-int">12</span>
-              <input type="hidden" id="pm-int" value="12">
+          <div class="ddb-section-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <label style="margin:0; font-weight:800; color:#fff;">🎲 6 Atributos D&D (Geração Oficial & Bônus Raciais Automáticos)</label>
+              <span style="font-size:10px; color:var(--text-muted);">Modificador oficial: (Total - 10) / 2</span>
             </div>
-            <span class="stat-mod-pill" id="pm-mod-int">+1</span>
+
+            <div class="stat-dice-presets-bar">
+              <button type="button" class="btn-action" style="padding: 5px 11px; font-size: 11px; background: linear-gradient(135deg, #7c3aed, #6d28d9); font-weight: 700;" onclick="rollAttributes4d6Modal()" title="Rolar 4d6 e descartar o menor para cada atributo">🎲 Rolar 4d6 (Drop Lowest)</button>
+              <button type="button" class="btn-secondary" style="padding: 5px 11px; font-size: 11px; border-color: rgba(59, 130, 246, 0.4); color: #93c5fd; font-weight: 600;" onclick="applyStandardArrayModal()" title="Aplicar array padrão oficial (15, 14, 13, 12, 10, 8)">📊 Array Padrão (15, 14, 13, 12, 10, 8)</button>
+              <button type="button" class="btn-secondary" style="padding: 5px 11px; font-size: 11px; border-color: rgba(245, 158, 11, 0.4); color: #fde68a; font-weight: 600;" onclick="optimizeAttributesForClassModal()" title="Reordenar os atributos atuais priorizando os atributos principais da classe">⚡ Otimizar p/ Classe</button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px;">
+              <!-- FORÇA -->
+              <div class="stat-box-editor">
+                <span class="stat-box-editor-label">FOR</span>
+                <span style="font-size: 9px; color: #64748b;">Base</span>
+                <input type="number" id="pm-base-str" class="stat-base-input" value="15" min="1" max="30" oninput="updateModalAttributeModifiers()">
+                <span class="stat-race-bonus-pill" id="pm-race-bonus-str">+0 Raça</span>
+                <div class="stat-final-value-wrap">
+                  <span class="stat-final-value" id="pm-final-str">15</span>
+                  <input type="hidden" id="pm-str" value="15">
+                </div>
+                <span class="stat-mod-pill" id="pm-mod-str">+2</span>
+              </div>
+
+              <!-- DESTREZA -->
+              <div class="stat-box-editor">
+                <span class="stat-box-editor-label">DES</span>
+                <span style="font-size: 9px; color: #64748b;">Base</span>
+                <input type="number" id="pm-base-dex" class="stat-base-input" value="14" min="1" max="30" oninput="updateModalAttributeModifiers()">
+                <span class="stat-race-bonus-pill" id="pm-race-bonus-dex">+0 Raça</span>
+                <div class="stat-final-value-wrap">
+                  <span class="stat-final-value" id="pm-final-dex">14</span>
+                  <input type="hidden" id="pm-dex" value="14" oninput="updateModalCalculatedAc()">
+                </div>
+                <span class="stat-mod-pill" id="pm-mod-dex">+2</span>
+              </div>
+
+              <!-- CONSTITUIÇÃO -->
+              <div class="stat-box-editor">
+                <span class="stat-box-editor-label">CON</span>
+                <span style="font-size: 9px; color: #64748b;">Base</span>
+                <input type="number" id="pm-base-con" class="stat-base-input" value="13" min="1" max="30" oninput="updateModalAttributeModifiers()">
+                <span class="stat-race-bonus-pill" id="pm-race-bonus-con">+0 Raça</span>
+                <div class="stat-final-value-wrap">
+                  <span class="stat-final-value" id="pm-final-con">13</span>
+                  <input type="hidden" id="pm-con" value="13" oninput="updateModalCalculatedAc()">
+                </div>
+                <span class="stat-mod-pill" id="pm-mod-con">+1</span>
+              </div>
+
+              <!-- INTELIGÊNCIA -->
+              <div class="stat-box-editor">
+                <span class="stat-box-editor-label">INT</span>
+                <span style="font-size: 9px; color: #64748b;">Base</span>
+                <input type="number" id="pm-base-int" class="stat-base-input" value="12" min="1" max="30" oninput="updateModalAttributeModifiers()">
+                <span class="stat-race-bonus-pill" id="pm-race-bonus-int">+0 Raça</span>
+                <div class="stat-final-value-wrap">
+                  <span class="stat-final-value" id="pm-final-int">12</span>
+                  <input type="hidden" id="pm-int" value="12">
+                </div>
+                <span class="stat-mod-pill" id="pm-mod-int">+1</span>
+              </div>
+
+              <!-- SABEDORIA -->
+              <div class="stat-box-editor">
+                <span class="stat-box-editor-label">SAB</span>
+                <span style="font-size: 9px; color: #64748b;">Base</span>
+                <input type="number" id="pm-base-wis" class="stat-base-input" value="10" min="1" max="30" oninput="updateModalAttributeModifiers()">
+                <span class="stat-race-bonus-pill" id="pm-race-bonus-wis">+0 Raça</span>
+                <div class="stat-final-value-wrap">
+                  <span class="stat-final-value" id="pm-final-wis">10</span>
+                  <input type="hidden" id="pm-wis" value="10" oninput="updateModalCalculatedAc()">
+                </div>
+                <span class="stat-mod-pill" id="pm-mod-wis">+0</span>
+              </div>
+
+              <!-- CARISMA -->
+              <div class="stat-box-editor">
+                <span class="stat-box-editor-label">CAR</span>
+                <span style="font-size: 9px; color: #64748b;">Base</span>
+                <input type="number" id="pm-base-cha" class="stat-base-input" value="8" min="1" max="30" oninput="updateModalAttributeModifiers()">
+                <span class="stat-race-bonus-pill" id="pm-race-bonus-cha">+0 Raça</span>
+                <div class="stat-final-value-wrap">
+                  <span class="stat-final-value" id="pm-final-cha">8</span>
+                  <input type="hidden" id="pm-cha" value="8">
+                </div>
+                <span class="stat-mod-pill neg" id="pm-mod-cha">-1</span>
+              </div>
+            </div>
           </div>
 
-          <!-- SABEDORIA -->
-          <div class="stat-box-editor">
-            <span class="stat-box-editor-label">SAB</span>
-            <span style="font-size: 9px; color: #64748b;">Base</span>
-            <input type="number" id="pm-base-wis" class="stat-base-input" value="10" min="1" max="30" oninput="updateModalAttributeModifiers()">
-            <span class="stat-race-bonus-pill" id="pm-race-bonus-wis">+0 Raça</span>
-            <div class="stat-final-value-wrap">
-              <span class="stat-final-value" id="pm-final-wis">10</span>
-              <input type="hidden" id="pm-wis" value="10" oninput="updateModalCalculatedAc()">
+          <!-- PV MÁXIMO & DESLOCAMENTO -->
+          <div class="form-row" style="background: #080c16; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="flex: 1;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <label style="margin:0;">❤️ PV Máximo (Pontos de Vida)</label>
+                <button type="button" class="modal-hp-suggest-btn" id="btn-suggest-hp" onclick="applySuggestedHpModal()" title="Aplicar PV sugerido pelas regras oficiais 5E">💡 Sugerir</button>
+              </div>
+              <input type="number" id="pm-maxhp" value="12" oninput="updateDdbHeroSummaryBar()">
             </div>
-            <span class="stat-mod-pill" id="pm-mod-wis">+0</span>
+            <div style="flex: 1;">
+              <label>🏃 Deslocamento</label>
+              <input type="text" id="pm-speed" value="9m">
+            </div>
           </div>
 
-          <!-- CARISMA -->
-          <div class="stat-box-editor">
-            <span class="stat-box-editor-label">CAR</span>
-            <span style="font-size: 9px; color: #64748b;">Base</span>
-            <input type="number" id="pm-base-cha" class="stat-base-input" value="8" min="1" max="30" oninput="updateModalAttributeModifiers()">
-            <span class="stat-race-bonus-pill" id="pm-race-bonus-cha">+0 Raça</span>
-            <div class="stat-final-value-wrap">
-              <span class="stat-final-value" id="pm-final-cha">8</span>
-              <input type="hidden" id="pm-cha" value="8">
+          <!-- ESPAÇOS DE MAGIA & GRIMÓRIO -->
+          <div class="ddb-section-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <label style="margin:0; font-weight:800; color:#fff;">🔮 Espaços de Magia (Círculos 1º ao 9º - Calculados Automaticamente)</label>
+              <span style="font-size:10px; color:var(--accent-purple);">Slots Arcanos / Divinos</span>
             </div>
-            <span class="stat-mod-pill neg" id="pm-mod-cha">-1</span>
+            <div id="pm-non-caster-box" class="modal-non-caster-notice" style="display: none;">
+              <span>⚔️ Esta classe não utiliza espaços de magia arcanos/divinos.</span>
+              <button type="button" class="btn-secondary" style="font-size:10px; padding:2px 7px;" onclick="toggleManualSlotsModal()">Mostrar Slots</button>
+            </div>
+            <div id="pm-slots-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(62px, 1fr)); gap: 6px; background: #080c16; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div class="pm-slot-card"><span class="pm-slot-label">1º Círc.</span><input type="number" id="pm-slot-1" class="pm-slot-input" value="0" min="0" max="9"></div>
+              <div class="pm-slot-card"><span class="pm-slot-label">2º Círc.</span><input type="number" id="pm-slot-2" class="pm-slot-input" value="0" min="0" max="9"></div>
+              <div class="pm-slot-card"><span class="pm-slot-label">3º Círc.</span><input type="number" id="pm-slot-3" class="pm-slot-input" value="0" min="0" max="9"></div>
+              <div class="pm-slot-card"><span class="pm-slot-label">4º Círc.</span><input type="number" id="pm-slot-4" class="pm-slot-input" value="0" min="0" max="9"></div>
+              <div class="pm-slot-card"><span class="pm-slot-label">5º Círc.</span><input type="number" id="pm-slot-5" class="pm-slot-input" value="0" min="0" max="9"></div>
+              <div class="pm-slot-card"><span class="pm-slot-label">6º Círc.</span><input type="number" id="pm-slot-6" class="pm-slot-input" value="0" min="0" max="9"></div>
+              <div class="pm-slot-card"><span class="pm-slot-label">7º Círc.</span><input type="number" id="pm-slot-7" class="pm-slot-input" value="0" min="0" max="9"></div>
+              <div class="pm-slot-card"><span class="pm-slot-label">8º Círc.</span><input type="number" id="pm-slot-8" class="pm-slot-input" value="0" min="0" max="9"></div>
+              <div class="pm-slot-card"><span class="pm-slot-label">9º Círc.</span><input type="number" id="pm-slot-9" class="pm-slot-input" value="0" min="0" max="9"></div>
+            </div>
+            <div style="margin-top: 8px;">
+              <label>Anotações de Magias / Truques Iniciais</label>
+              <textarea id="pm-spells" rows="2" placeholder="Ex: Raio de Fogo, Mísseis Mágicos, Escudo Arcano..."></textarea>
+            </div>
           </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- 🛡️ ABA 5: 5. EQUIPAMENTO (STARTING EQUIPMENT OR GOLD)        -->
+        <!-- ============================================================ -->
+        <div id="ddb-pane-equipment" class="ddb-step-pane" data-step="equipment">
+          <div class="ddb-pane-header">
+            <h3>5. Escolher Equipamento (Choose Equipment)</h3>
+            <p>Escolha entre receber o <b>Equipamento Inicial da Classe e Antecedente</b> (escolhas oficiais do Livro do Jogador) ou rolar <b>Ouro Inicial</b>.</p>
+          </div>
+
+          <!-- ACORDEÃO 1: STARTING EQUIPMENT (SCREENSHOT 5) -->
+          <details class="ddb-accordion" open>
+            <summary class="ddb-accordion-summary">
+              <div>
+                <div class="ddb-accordion-title">Equipamento Inicial (Starting Equipment)</div>
+                <div class="ddb-accordion-sub">Opções oficiais de armas, armaduras e pacotes da sua Classe e Antecedente</div>
+              </div>
+              <span class="ddb-accordion-arrow">⌄</span>
+            </summary>
+            <div class="ddb-accordion-body">
+              <div class="ddb-equip-mode-toggle">
+                <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 800;">Escolher:</span>
+                <div class="ddb-equip-mode-buttons">
+                  <button type="button" class="ddb-equip-mode-btn active" id="btn-ddb-equip-mode-items" onclick="setModalStartingEquipmentMode('equipment')">🎒 EQUIPAMENTO</button>
+                  <span style="font-size: 11px; color: #64748b; font-weight: 800;">OU</span>
+                  <button type="button" class="ddb-equip-mode-btn" id="btn-ddb-equip-mode-gold" onclick="setModalStartingEquipmentMode('gold')">🪙 OURO INICIAL</button>
+                </div>
+              </div>
+
+              <!-- MODO 1: ESCOLHAS (A)/(B) DE EQUIPAMENTO DA CLASSE -->
+              <div id="ddb-starting-equipment-box"></div>
+
+              <!-- MODO 2: ROLAGEM DE RIQUEZA INICIAL DA CLASSE -->
+              <div id="ddb-starting-gold-box" style="display: none;"></div>
+            </div>
+          </details>
+
+          <!-- ACORDEÃO 2: ARMADURA, ESCUDO & ARMAS EQUIPADAS -->
+          <details class="ddb-accordion" open>
+            <summary class="ddb-accordion-summary">
+              <div>
+                <div class="ddb-accordion-title">Armadura, Escudo & Armas Equipadas</div>
+                <div class="ddb-accordion-sub">Cálculo automático de Classe de Armadura (CA), Bônus de Acerto e Dano</div>
+              </div>
+              <span class="ddb-accordion-arrow">⌄</span>
+            </summary>
+            <div class="ddb-accordion-body">
+              <div class="form-row" style="background: #080c16; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); align-items: flex-end; margin-bottom: 10px;">
+                <div style="flex: 2;">
+                  <label>🛡️ Armadura Equipada</label>
+                  <select id="pm-armor-select" onchange="updateModalCalculatedAc()">
+                    <option value="none">Nenhuma (Sem Armadura / Defesa Natural)</option>
+                    <optgroup label="Armaduras Leves">
+                      <option value="armadura acolchoada">Armadura Acolchoada (CA 11 + DES)</option>
+                      <option value="armadura de couro">Armadura de Couro (CA 11 + DES)</option>
+                      <option value="armadura de couro batido">Armadura de Couro Batido (CA 12 + DES)</option>
+                    </optgroup>
+                    <optgroup label="Armaduras Médias">
+                      <option value="gibao de peles">Gibão de Peles (CA 12 + DES máx +2)</option>
+                      <option value="camisa de cota de malha">Camisão de Cota de Malha (CA 13 + DES máx +2)</option>
+                      <option value="cota de escamas">Cota de Escamas (CA 14 + DES máx +2)</option>
+                      <option value="peitoral">Peitoral (CA 14 + DES máx +2)</option>
+                      <option value="meia-armadura">Meia-Armadura (CA 15 + DES máx +2)</option>
+                    </optgroup>
+                    <optgroup label="Armaduras Pesadas">
+                      <option value="cota de aneis">Cota de Anéis (CA 14)</option>
+                      <option value="cota de malha">Cota de Malha (CA 16)</option>
+                      <option value="cota de talas">Cota de Talas (CA 17)</option>
+                      <option value="armadura de placas">Armadura de Placas (CA 18)</option>
+                    </optgroup>
+                  </select>
+                </div>
+                <div style="display: flex; align-items: center; padding-bottom: 6px;">
+                  <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; font-weight: 700; color: #e2e8f0; margin: 0;">
+                    <input type="checkbox" id="pm-shield-check" onchange="updateModalCalculatedAc()" style="cursor: pointer; width: 16px; height: 16px;">
+                    🛡️ Escudo (+2 CA)
+                  </label>
+                </div>
+                <div style="flex: 1;">
+                  <label>CA Resultante <span style="font-size:10px; color:var(--accent-gold); font-weight:normal;">(Auto 5E)</span></label>
+                  <input type="number" id="pm-ac" value="16" title="Classe de Armadura calculada automaticamente pelas regras do D&D 5E" oninput="updateDdbHeroSummaryBar()">
+                  <div id="pm-ca-formula" class="modal-ca-formula-pill" title="Fórmula de CA">🛡️ 10 + DES</div>
+                </div>
+              </div>
+
+              <!-- SEÇÃO DINÂMICA DE ARMAS & ATAQUES (D&D 5E) -->
+              <div class="modal-weapons-section">
+                <div class="modal-weapons-header">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <label style="margin: 0; font-weight: 800; color: #fff;">⚔️ Ataques & Armas Equipadas</label>
+                    <span style="font-size: 10px; color: var(--accent-gold); font-weight: normal;">(Auto 5E: Acerto & Dano vinculados)</span>
+                  </div>
+                  <div style="display: flex; gap: 6px; align-items: center;">
+                    <button type="button" class="btn-secondary" style="padding: 2px 7px; font-size: 10.5px;" onclick="toggleManualAttacksInputModal()" title="Alternar edição manual de texto">✏️ Modo Texto</button>
+                    <button type="button" class="btn-action" style="padding: 3px 8px; font-size: 11px; background: linear-gradient(135deg, #0284c7, #0369a1);" onclick="openWeaponPickerModal(null, 'modal')" title="Explorar catálogo completo de armas D&D 5E">🔍 Catálogo</button>
+                  </div>
+                </div>
+
+                <!-- BARRA DE ADIÇÃO RÁPIDA DE ARMAS -->
+                <div class="modal-weapon-picker-bar">
+                  <span style="font-size: 11px; font-weight: 700; color: var(--text-dim); white-space: nowrap;">Equipar Arma:</span>
+                  <select id="pm-quick-weapon-select" style="flex: 1; min-width: 170px; font-size: 11px; padding: 4px 6px;"></select>
+                  <button type="button" class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="addModalEquippedWeaponFromSelect()">➕ Equipar</button>
+                </div>
+
+                <!-- CARDS DE ARMAS EQUIPADAS COM ACERTO E DANO CALCULADOS -->
+                <div id="pm-weapons-grid" class="modal-weapon-cards-grid"></div>
+
+                <!-- CAMPO DE TEXTO SINCRONIZADO / MODO MANUAL -->
+                <div id="pm-attacks-text-wrapper" style="margin-top: 4px; display: none;">
+                  <label style="font-size: 10px; color: var(--text-muted); margin-bottom: 2px; display: block;">Texto Formatado de Ataques (Sincronizado automaticamente):</label>
+                  <input type="text" id="pm-attacks" placeholder="Ex: Machado Grande (+4, 1d12+2 cortante)" oninput="onModalAttacksManualInput()">
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <!-- ACORDEÃO 3: INVENTÁRIO ATUAL & MOEDAS (CURRENT INVENTORY & CURRENCY) -->
+          <details class="ddb-accordion" open>
+            <summary class="ddb-accordion-summary">
+              <div>
+                <div class="ddb-accordion-title" id="ddb-current-inv-heading">Inventário & Moedas (Current Inventory & Currency)</div>
+                <div class="ddb-accordion-sub">Itens na mochila inicial e Ouro (PO) do personagem</div>
+              </div>
+              <span class="ddb-accordion-arrow">⌄</span>
+            </summary>
+            <div class="ddb-accordion-body">
+              <div class="form-row" style="align-items: flex-end; margin-bottom: 10px;">
+                <div style="flex: 1;">
+                  <label>🪙 Ouro Inicial (PO)</label>
+                  <input type="number" id="pm-gold" value="15" oninput="updateDdbHeroSummaryBar()">
+                </div>
+                <div style="flex: 2;">
+                  <label>➕ Adicionar Item Extra à Mochila</label>
+                  <div style="display: flex; gap: 6px;">
+                    <input type="text" id="ddb-inp-extra-item" placeholder="Ex: Poção de Cura, Corda de Cânhamo (15m), Tocha..." onkeydown="if(event.key==='Enter') addExtraItemToModalInventory()">
+                    <button type="button" class="btn-secondary" style="white-space: nowrap; font-size: 11px;" onclick="addExtraItemToModalInventory()">➕ Adicionar Item</button>
+                  </div>
+                </div>
+              </div>
+              <div id="ddb-modal-inventory-list" class="ddb-modal-inventory-list"></div>
+            </div>
+          </details>
         </div>
       </div>
 
-      <div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-          <label style="margin:0;">Espaços de Magia (Círculos 1º ao 9º - Calculados Automaticamente)</label>
-          <span style="font-size:10px; color:var(--accent-purple);">🔮 Slots Arcanos</span>
+      <!-- RODAPÉ DE NAVEGAÇÃO ENTRE ETAPAS & SALVAMENTO -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 12px; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button id="btn-del-player" class="btn-secondary" style="color: #f87171; border-color: rgba(248, 113, 113, 0.3);" onclick="deletePlayerSheet()">🗑️ Excluir Ficha</button>
+          <button type="button" id="btn-ddb-prev-step" class="btn-secondary" onclick="prevPlayerModalStep()" style="display: none;">◀ Etapa Anterior</button>
         </div>
-        <div id="pm-non-caster-box" class="modal-non-caster-notice" style="display: none;">
-          <span>⚔️ Esta classe não utiliza espaços de magia arcanos/divinos.</span>
-          <button type="button" class="btn-secondary" style="font-size:10px; padding:2px 7px;" onclick="toggleManualSlotsModal()">Mostrar Slots</button>
-        </div>
-        <div id="pm-slots-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(62px, 1fr)); gap: 6px; background: #080c16; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color);">
-          <div class="pm-slot-card"><span class="pm-slot-label">1º Círc.</span><input type="number" id="pm-slot-1" class="pm-slot-input" value="0" min="0" max="9"></div>
-          <div class="pm-slot-card"><span class="pm-slot-label">2º Círc.</span><input type="number" id="pm-slot-2" class="pm-slot-input" value="0" min="0" max="9"></div>
-          <div class="pm-slot-card"><span class="pm-slot-label">3º Círc.</span><input type="number" id="pm-slot-3" class="pm-slot-input" value="0" min="0" max="9"></div>
-          <div class="pm-slot-card"><span class="pm-slot-label">4º Círc.</span><input type="number" id="pm-slot-4" class="pm-slot-input" value="0" min="0" max="9"></div>
-          <div class="pm-slot-card"><span class="pm-slot-label">5º Círc.</span><input type="number" id="pm-slot-5" class="pm-slot-input" value="0" min="0" max="9"></div>
-          <div class="pm-slot-card"><span class="pm-slot-label">6º Círc.</span><input type="number" id="pm-slot-6" class="pm-slot-input" value="0" min="0" max="9"></div>
-          <div class="pm-slot-card"><span class="pm-slot-label">7º Círc.</span><input type="number" id="pm-slot-7" class="pm-slot-input" value="0" min="0" max="9"></div>
-          <div class="pm-slot-card"><span class="pm-slot-label">8º Círc.</span><input type="number" id="pm-slot-8" class="pm-slot-input" value="0" min="0" max="9"></div>
-          <div class="pm-slot-card"><span class="pm-slot-label">9º Círc.</span><input type="number" id="pm-slot-9" class="pm-slot-input" value="0" min="0" max="9"></div>
-        </div>
-      </div>
-
-      <!-- Preview de Habilidades Desbloqueadas -->
-      <div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-          <label style="margin:0;">🌳 Habilidades Desbloqueadas da Classe (Automático pelo Nível)</label>
-          <span style="font-size:10px; color:var(--primary-light);">Regras Completas & Tópicos</span>
-        </div>
-        <div id="pm-features-preview" style="max-height: 240px; overflow-y: auto; background: #080c16; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px; scrollbar-width: thin; scrollbar-color: rgba(245, 158, 11, 0.3) transparent;"></div>
-      </div>
-
-      <!-- SEÇÃO DINÂMICA DE ARMAS & ATAQUES (D&D 5E) -->
-      <div class="modal-weapons-section">
-        <div class="modal-weapons-header">
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <label style="margin: 0; font-weight: 800; color: #fff;">⚔️ Ataques & Armas Equipadas</label>
-            <span style="font-size: 10px; color: var(--accent-gold); font-weight: normal;">(Auto 5E: Acerto & Dano vinculados)</span>
-          </div>
-          <div style="display: flex; gap: 6px; align-items: center;">
-            <button type="button" class="btn-secondary" style="padding: 2px 7px; font-size: 10.5px;" onclick="toggleManualAttacksInputModal()" title="Alternar edição manual de texto">✏️ Modo Texto</button>
-            <button type="button" class="btn-action" style="padding: 3px 8px; font-size: 11px; background: linear-gradient(135deg, #0284c7, #0369a1);" onclick="openWeaponPickerModal(null, 'modal')" title="Explorar catálogo completo de armas D&D 5E">🔍 Catálogo</button>
-          </div>
-        </div>
-
-        <!-- BARRA DE ADIÇÃO RÁPIDA DE ARMAS -->
-        <div class="modal-weapon-picker-bar">
-          <span style="font-size: 11px; font-weight: 700; color: var(--text-dim); white-space: nowrap;">Equipar Arma:</span>
-          <select id="pm-quick-weapon-select" style="flex: 1; min-width: 170px; font-size: 11px; padding: 4px 6px;"></select>
-          <button type="button" class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="addModalEquippedWeaponFromSelect()">➕ Equipar</button>
-        </div>
-
-        <!-- CARDS DE ARMAS EQUIPADAS COM ACERTO E DANO CALCULADOS -->
-        <div id="pm-weapons-grid" class="modal-weapon-cards-grid"></div>
-
-        <!-- CAMPO DE TEXTO SINCRONIZADO / MODO MANUAL -->
-        <div id="pm-attacks-text-wrapper" style="margin-top: 4px; display: none;">
-          <label style="font-size: 10px; color: var(--text-muted); margin-bottom: 2px; display: block;">Texto Formatado de Ataques (Sincronizado automaticamente):</label>
-          <input type="text" id="pm-attacks" placeholder="Ex: Machado Grande (+4, 1d12+2 cortante)" oninput="onModalAttacksManualInput()">
-        </div>
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-        <div>
-          <label>Características & Talentos Adicionais</label>
-          <textarea id="pm-features" rows="2" placeholder="Ex: Alerta (+5 iniciativa), Resistência a Fogo"></textarea>
-        </div>
-        <div>
-          <label>Anotações de Magias / Equipamentos</label>
-          <textarea id="pm-spells" rows="2" placeholder="Ex: 2 Poções de Cura, Foco Arcano"></textarea>
-        </div>
-      </div>
-
-      <div>
-        <label>🏅 Conquistas & Medalhas Escolares (Separadas por vírgula)</label>
-        <input type="text" id="pm-badges" placeholder="Ex: 🏆 MVP do Combate, 🧩 Solucionador de Enigmas, 🛡️ Herói Protetor, ⭐ Presença 100%">
-      </div>
-
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 12px;">
-        <button id="btn-del-player" class="btn-secondary" style="color: #f87171; border-color: rgba(248, 113, 113, 0.3);" onclick="deletePlayerSheet()">Excluir Ficha</button>
-        <div style="display: flex; gap: 8px;">
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button type="button" id="btn-ddb-next-step" class="btn-secondary" style="border-color: rgba(56, 189, 248, 0.5); color: #bae6fd; font-weight: 700;" onclick="nextPlayerModalStep()">Próxima Etapa: 1. Classe ▶</button>
           <button class="btn-secondary" onclick="closePlayerModal()">Cancelar</button>
-          <button class="btn-action" onclick="savePlayerSheet()">Salvar Ficha</button>
+          <button class="btn-action" onclick="savePlayerSheet()">💾 Salvar Ficha</button>
         </div>
       </div>
     </div>

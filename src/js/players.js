@@ -8,7 +8,7 @@ if (typeof window !== 'undefined') {
 
 function touchPlayer(playerOrId) {
   if (!playerOrId) return null;
-  const p = (typeof playerOrId === 'string') 
+  const p = (typeof playerOrId === 'string')
     ? (typeof PLAYERS !== 'undefined' ? PLAYERS.find(x => x.id === playerOrId) : null)
     : playerOrId;
   if (p) {
@@ -1089,7 +1089,7 @@ function getPlayerCalculatedAttacks(p) {
 
       const isRanged = propRaw.toLowerCase().includes('distância') || propRaw.toLowerCase().includes('munição') || propRaw.toLowerCase().includes('alcance') || it.name.toLowerCase().includes('arco') || it.name.toLowerCase().includes('besta');
       const isFinesse = propRaw.toLowerCase().includes('acuidade') || propRaw.toLowerCase().includes('finesse');
-      
+
       let attrMod = strMod;
       if (isRanged) {
         attrMod = dexMod;
@@ -1142,7 +1142,7 @@ function getPlayerCalculatedAttacks(p) {
 
       const toHit = prof + attrMod;
       const toHitStr = toHit >= 0 ? `+${toHit}` : `${toHit}`;
-      
+
       let baseDice = '1d6';
       let dmgType = 'Concussão';
       if (dmgRaw && /^\d+d\d+/i.test(dmgRaw)) {
@@ -1233,13 +1233,13 @@ function getPlayerCalculatedAttacks(p) {
         const eBase = eNorm.split('(')[0].trim();
         return eNorm === normClean || eBase === normClean || eNorm.includes(normClean) || normClean.includes(eBase);
       });
-      
+
       // Auto-reconciliação: se a arma não existe no inventário do herói, adiciona-a como equipada
       const existingInInv = p.inventory.find(it => {
         const itNorm = (it.name || '').toLowerCase().trim();
         const itBase = itNorm.split('(')[0].trim();
         return itNorm === normClean || itBase === normClean || itNorm.includes(normClean) || normClean.includes(itBase) ||
-               (equipMatch && (itNorm === equipMatch.name.toLowerCase() || itBase === equipMatch.name.toLowerCase().split('(')[0].trim()));
+          (equipMatch && (itNorm === equipMatch.name.toLowerCase() || itBase === equipMatch.name.toLowerCase().split('(')[0].trim()));
       });
       if (!existingInInv) {
         if (p.inventory.length === 0) {
@@ -1588,7 +1588,7 @@ function onPlayerCampaignFilterChange() {
   if (sel && typeof localStorage !== 'undefined') {
     try {
       localStorage.setItem('dnd5e_player_filter_campaign', sel.value);
-    } catch(e) {}
+    } catch (e) { }
   }
   renderPlayers();
 }
@@ -1598,7 +1598,7 @@ function filterPlayersByCampaign(campaignId) {
   if (typeof localStorage !== 'undefined') {
     try {
       localStorage.setItem('dnd5e_player_filter_campaign', val);
-    } catch(e) {}
+    } catch (e) { }
   }
   const sel = typeof document !== 'undefined' ? document.getElementById('filter-player-campaign') : null;
   if (sel) {
@@ -1684,7 +1684,7 @@ function renderHeroQuickNav(filteredPlayers) {
     const isCritical = hpPct <= 25;
     const isWounded = hpPct < 100;
     const hpStatusClass = isCritical ? 'hp-critical' : (isWounded ? 'hp-warning' : 'hp-healthy');
-    const avatarHtml = p.avatar 
+    const avatarHtml = p.avatar
       ? `<img src="${p.avatar}" alt="${escapeAttr(p.name)}" class="hero-quick-avatar" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'hero-quick-avatar\\'>🧙</div>';">`
       : `<div class="hero-quick-avatar">🧙</div>`;
 
@@ -1711,10 +1711,10 @@ function jumpToPlayerCard(playerId) {
   }
   if (card.classList) {
     card.classList.remove('hero-card-highlight');
-    try { void card.offsetWidth; } catch (e) {}
+    try { void card.offsetWidth; } catch (e) { }
     card.classList.add('hero-card-highlight');
     setTimeout(() => {
-      try { card.classList.remove('hero-card-highlight'); } catch (e) {}
+      try { card.classList.remove('hero-card-highlight'); } catch (e) { }
     }, 2200);
   }
 }
@@ -2189,21 +2189,21 @@ function renderPlayers() {
         <!-- 2. BARRA DE ATRIBUTOS & SALVAGUARDAS UNIFICADOS (ABILITIES ROLL20) -->
         <div class="roll20-abilities-bar">
           ${[
-            { key: 'str', label: 'STR' },
-            { key: 'dex', label: 'DEX' },
-            { key: 'con', label: 'CON' },
-            { key: 'int', label: 'INT' },
-            { key: 'wis', label: 'WIS' },
-            { key: 'cha', label: 'CHA' }
-          ].map(attr => {
-            const raw = p[attr.key] || 10;
-            const baseMod = Math.floor((raw - 10) / 2);
-            const isSaveProf = (p.saveProficiencies || []).includes(attr.key);
-            const saveMod = baseMod + (isSaveProf ? prof : 0);
-            const modSign = baseMod >= 0 ? `+${baseMod}` : `${baseMod}`;
-            const saveSign = saveMod >= 0 ? `+${saveMod}` : `${saveMod}`;
+        { key: 'str', label: 'STR' },
+        { key: 'dex', label: 'DEX' },
+        { key: 'con', label: 'CON' },
+        { key: 'int', label: 'INT' },
+        { key: 'wis', label: 'WIS' },
+        { key: 'cha', label: 'CHA' }
+      ].map(attr => {
+        const raw = p[attr.key] || 10;
+        const baseMod = Math.floor((raw - 10) / 2);
+        const isSaveProf = (p.saveProficiencies || []).includes(attr.key);
+        const saveMod = baseMod + (isSaveProf ? prof : 0);
+        const modSign = baseMod >= 0 ? `+${baseMod}` : `${baseMod}`;
+        const saveSign = saveMod >= 0 ? `+${saveMod}` : `${saveMod}`;
 
-            return `
+        return `
               <div class="roll20-ability-box">
                 <div class="roll20-ability-header">
                   <span>${attr.label}</span>
@@ -2221,7 +2221,7 @@ function renderPlayers() {
                 </div>
               </div>
             `;
-          }).join('')}
+      }).join('')}
 
           <!-- BLOCO LATERAL AC / SPEED -->
           <div class="roll20-ac-speed-box">
@@ -2252,16 +2252,16 @@ function renderPlayers() {
               <!-- TABELA ROLL20 DE PERÍCIAS -->
               <div class="roll20-skills-list">
                 ${(() => {
-                  const skillsList = typeof DND5E_SKILLS !== 'undefined' ? DND5E_SKILLS : [];
-                  return skillsList.map(sk => {
-                    const isProf = (p.skillProficiencies || []).includes(sk.key);
-                    const isExpert = (p.skillExpertises || []).includes(sk.key);
-                    const baseMod = Math.floor(((p[sk.attr] || 10) - 10) / 2);
-                    const profBonus = isExpert ? (prof * 2) : (isProf ? prof : 0);
-                    const totalMod = baseMod + profBonus;
-                    const modStr = totalMod >= 0 ? `+${totalMod}` : `${totalMod}`;
-                    const dotClass = isExpert ? 'expert' : (isProf ? 'active' : '');
-                    return `
+        const skillsList = typeof DND5E_SKILLS !== 'undefined' ? DND5E_SKILLS : [];
+        return skillsList.map(sk => {
+          const isProf = (p.skillProficiencies || []).includes(sk.key);
+          const isExpert = (p.skillExpertises || []).includes(sk.key);
+          const baseMod = Math.floor(((p[sk.attr] || 10) - 10) / 2);
+          const profBonus = isExpert ? (prof * 2) : (isProf ? prof : 0);
+          const totalMod = baseMod + profBonus;
+          const modStr = totalMod >= 0 ? `+${totalMod}` : `${totalMod}`;
+          const dotClass = isExpert ? 'expert' : (isProf ? 'active' : '');
+          return `
                       <div class="roll20-skill-item" onclick="rollPlayerSkill('${p.id}', '${sk.key}')" title="Rolar teste de ${sk.name} (${modStr})${isExpert ? ' • Especialista (+2x PB)' : (isProf ? ' • Proficiente' : '')}">
                         <div class="roll20-skill-left">
                           <span class="roll20-prof-dot ${dotClass}"></span>
@@ -2271,8 +2271,8 @@ function renderPlayers() {
                         <span class="roll20-skill-bonus ${isProf ? 'is-prof' : ''}">${modStr}</span>
                       </div>
                     `;
-                  }).join('');
-                })()}
+        }).join('');
+      })()}
               </div>
 
               <!-- BLOCO DE TREINAMENTOS E IDIOMAS -->
@@ -2402,11 +2402,11 @@ function renderPlayers() {
 
                 <!-- HUD DE CONJURAÇÃO -->
                 ${(() => {
-                  const castStats = getPlayerSpellcastingStats(p);
-                  if (!castStats.isCaster && (!p.preparedSpells || p.preparedSpells.length === 0) && (!p.slots || !p.slots.some(s => s > 0))) {
-                    return '<div style="color: var(--text-dim); font-size: 11px; padding: 8px; text-align: center; font-style: italic;">Este personagem não possui habilidades de conjuração configuradas.</div>';
-                  }
-                  return `
+        const castStats = getPlayerSpellcastingStats(p);
+        if (!castStats.isCaster && (!p.preparedSpells || p.preparedSpells.length === 0) && (!p.slots || !p.slots.some(s => s > 0))) {
+          return '<div style="color: var(--text-dim); font-size: 11px; padding: 8px; text-align: center; font-style: italic;">Este personagem não possui habilidades de conjuração configuradas.</div>';
+        }
+        return `
                     <div class="spellcasting-hud-bar">
                       <div class="spell-stat-chip" title="CD de Salvaguarda de Magia: Inimigos devem tirar ${castStats.saveDc} ou mais no d20 para resistir às suas magias (${castStats.formula})">
                         <span class="spell-stat-label">CD DA MAGIA</span>
@@ -2422,7 +2422,7 @@ function renderPlayers() {
                       </div>
                     </div>
                   `;
-                })()}
+      })()}
 
                 <!-- SLOTS DE MAGIA -->
                 ${slotsHtml}
@@ -2430,73 +2430,74 @@ function renderPlayers() {
                 <!-- TODAS AS MAGIAS CONHECIDAS E SELETOR DE PREPARAÇÃO DA SESSÃO -->
                 <div style="margin-top: 8px;">
                   ${(() => {
-                    const allKnown = typeof getPlayerKnownSpells === 'function' ? getPlayerKnownSpells(p) : ((p.preparedSpells || []));
-                    const prepInfo = typeof getMaxPreparedSpells === 'function' ? getMaxPreparedSpells(p) : { isKnownCaster: false, maxLeveled: 0, formula: '' };
-                    const curPrepFilter = (typeof sheetSpellFilters !== 'undefined' && sheetSpellFilters[p.id]) ? sheetSpellFilters[p.id] : 'all';
-                    const curCircleFilter = sheetSpellCircleFilters[p.id] || 'all';
-                    const curSearchQuery = (sheetSpellSearchQueries[p.id] || '').trim().toLowerCase();
+        if (typeof ensurePlayerSpellSlots === 'function') ensurePlayerSpellSlots(p);
+        const allKnown = typeof getPlayerKnownSpells === 'function' ? getPlayerKnownSpells(p) : ((p.preparedSpells || []));
+        const prepInfo = typeof getMaxPreparedSpells === 'function' ? getMaxPreparedSpells(p) : { isKnownCaster: false, maxLeveled: 0, formula: '' };
+        const curPrepFilter = (typeof sheetSpellFilters !== 'undefined' && sheetSpellFilters[p.id]) ? sheetSpellFilters[p.id] : 'all';
+        const curCircleFilter = sheetSpellCircleFilters[p.id] || 'all';
+        const curSearchQuery = (sheetSpellSearchQueries[p.id] || '').trim().toLowerCase();
 
-                    const prepLeveledCount = allKnown.filter(sName => {
-                      const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
-                      const isCantrip = sp ? sp.level === 0 : false;
-                      return !isCantrip && (p.preparedSpells || []).includes(sName);
-                    }).length;
+        const prepLeveledCount = allKnown.filter(sName => {
+          const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+          const isCantrip = sp ? sp.level === 0 : false;
+          return !isCantrip && (p.preparedSpells || []).includes(sName);
+        }).length;
 
-                    const prepTotalCount = allKnown.filter(sName => {
-                      const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
-                      const isCantrip = sp ? sp.level === 0 : false;
-                      return isCantrip || (p.preparedSpells || []).includes(sName);
-                    }).length;
+        const prepTotalCount = allKnown.filter(sName => {
+          const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+          const isCantrip = sp ? sp.level === 0 : false;
+          return isCantrip || (p.preparedSpells || []).includes(sName);
+        }).length;
 
-                    let list = allKnown;
-                    if (curPrepFilter === 'prepared') {
-                      list = list.filter(sName => {
-                        const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
-                        const isCantrip = sp ? sp.level === 0 : false;
-                        return isCantrip || (p.preparedSpells || []).includes(sName);
-                      });
-                    }
+        let list = allKnown;
+        if (curPrepFilter === 'prepared') {
+          list = list.filter(sName => {
+            const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+            const isCantrip = sp ? sp.level === 0 : false;
+            return isCantrip || (p.preparedSpells || []).includes(sName);
+          });
+        }
 
-                    if (curSearchQuery) {
-                      list = list.filter(sName => {
-                        const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
-                        const nameMatches = sName.toLowerCase().includes(curSearchQuery);
-                        const schoolMatches = sp && sp.school && sp.school.toLowerCase().includes(curSearchQuery);
-                        const descMatches = sp && sp.desc && sp.desc.toLowerCase().includes(curSearchQuery);
-                        return nameMatches || schoolMatches || descMatches;
-                      });
-                    }
+        if (curSearchQuery) {
+          list = list.filter(sName => {
+            const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+            const nameMatches = sName.toLowerCase().includes(curSearchQuery);
+            const schoolMatches = sp && sp.school && sp.school.toLowerCase().includes(curSearchQuery);
+            const descMatches = sp && sp.desc && sp.desc.toLowerCase().includes(curSearchQuery);
+            return nameMatches || schoolMatches || descMatches;
+          });
+        }
 
-                    // Dicionário por nível de magia: 0 = Truques, 1 a 9 = Círculos
-                    const spellsByLevel = {};
-                    for (let i = 0; i <= 9; i++) spellsByLevel[i] = [];
+        // Dicionário por nível de magia: 0 = Truques, 1 a 9 = Círculos
+        const spellsByLevel = {};
+        for (let i = 0; i <= 9; i++) spellsByLevel[i] = [];
 
-                    list.forEach(sName => {
-                      const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
-                      const lvl = sp ? (sp.level != null ? sp.level : 1) : 1;
-                      const validLvl = Math.max(0, Math.min(9, lvl));
-                      spellsByLevel[validLvl].push({ name: sName, data: sp });
-                    });
+        list.forEach(sName => {
+          const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+          const lvl = sp ? (sp.level != null ? sp.level : 1) : 1;
+          const validLvl = Math.max(0, Math.min(9, lvl));
+          spellsByLevel[validLvl].push({ name: sName, data: sp });
+        });
 
-                    // Lista de círculos disponíveis para filtrar
-                    const availableCircles = [];
-                    if (spellsByLevel[0].length > 0 || allKnown.some(sName => {
-                      const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
-                      return sp && sp.level === 0;
-                    })) {
-                      availableCircles.push(0);
-                    }
-                    for (let lvl = 1; lvl <= 9; lvl++) {
-                      const maxSlots = (p.slots || [])[lvl - 1] || 0;
-                      if (spellsByLevel[lvl].length > 0 || maxSlots > 0) {
-                        availableCircles.push(lvl);
-                      }
-                    }
+        // Lista de círculos disponíveis para filtrar
+        const availableCircles = [];
+        if (spellsByLevel[0].length > 0 || allKnown.some(sName => {
+          const sp = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+          return sp && sp.level === 0;
+        })) {
+          availableCircles.push(0);
+        }
+        for (let lvl = 1; lvl <= 9; lvl++) {
+          const maxSlots = (p.slots || [])[lvl - 1] || 0;
+          if (spellsByLevel[lvl].length > 0 || maxSlots > 0) {
+            availableCircles.push(lvl);
+          }
+        }
 
-                    let prepBarHtml = '';
-                    if (prepInfo.isPreparedCaster || (!prepInfo.isKnownCaster && prepInfo.maxLeveled > 0)) {
-                      const isOver = prepInfo.maxLeveled > 0 && prepLeveledCount > prepInfo.maxLeveled;
-                      prepBarHtml = `
+        let prepBarHtml = '';
+        if (prepInfo.isPreparedCaster || (!prepInfo.isKnownCaster && prepInfo.maxLeveled > 0)) {
+          const isOver = prepInfo.maxLeveled > 0 && prepLeveledCount > prepInfo.maxLeveled;
+          prepBarHtml = `
                         <div class="sheet-spells-prep-bar">
                           <div class="sheet-spells-prep-info">
                             <span>🔮 <b>Preparadas para a Sessão:</b> <b class="prep-count-num ${isOver ? 'over' : ''}">${prepLeveledCount} / ${prepInfo.maxLeveled}</b> <span style="color:#94a3b8; font-size:10.5px;">(${prepInfo.formula})</span></span>
@@ -2507,8 +2508,8 @@ function renderPlayers() {
                           </div>
                         </div>
                       `;
-                    } else if (prepInfo.isKnownCaster) {
-                      prepBarHtml = `
+        } else if (prepInfo.isKnownCaster) {
+          prepBarHtml = `
                         <div class="sheet-spells-prep-bar">
                           <div class="sheet-spells-prep-info">
                             <span>🔮 <b>Magias Conhecidas (${prepInfo.className}):</b> <b class="prep-count-num">${allKnown.length} ${prepInfo.maxLeveled ? '/ ' + prepInfo.maxLeveled : ''}</b></span>
@@ -2518,56 +2519,57 @@ function renderPlayers() {
                           </div>
                         </div>
                       `;
-                    }
+        }
 
-                    const spellToolbarHtml = `
+        const spellToolbarHtml = `
                       <div class="spells-toolbar">
                         <div class="spell-circle-chips">
                           <button type="button" class="spell-circle-chip ${curCircleFilter === 'all' ? 'active' : ''}" onclick="setPlayerSpellCircleFilter('${p.id}', 'all')">🌐 Todos (${list.length})</button>
                           ${availableCircles.map(lvl => {
-                            const countInCircle = spellsByLevel[lvl].length;
-                            const label = lvl === 0 ? '✨ Truques' : `🔮 ${lvl}º Círc.`;
-                            return `<button type="button" class="spell-circle-chip ${curCircleFilter === String(lvl) ? 'active' : ''}" onclick="setPlayerSpellCircleFilter('${p.id}', '${lvl}')">${label} (${countInCircle})</button>`;
-                          }).join('')}
+          const countInCircle = spellsByLevel[lvl].length;
+          const label = lvl === 0 ? '✨ Truques' : `🔮 ${lvl}º Círc.`;
+          return `<button type="button" class="spell-circle-chip ${curCircleFilter === String(lvl) ? 'active' : ''}" onclick="setPlayerSpellCircleFilter('${p.id}', '${lvl}')">${label} (${countInCircle})</button>`;
+        }).join('')}
                         </div>
                         <input type="text" class="spell-search-input" id="inp-spell-search-${p.id}" placeholder="🔍 Filtrar magias por nome, escola ou efeito..." value="${escapeAttr(sheetSpellSearchQueries[p.id] || '')}" oninput="handlePlayerSpellSearch('${p.id}', this.value)">
                       </div>
                     `;
 
-                    const renderSpellCard = (sItem) => {
-                      const sName = sItem.name;
-                      const sp = sItem.data;
-                      const isCantrip = sp && sp.level === 0;
-                      const lvlBadge = sp ? (isCantrip ? 'Truque' : `${sp.level}º Círc.`) : 'Magia';
-                      const school = sp ? sp.school : '';
-                      const range = sp ? sp.range : '';
-                      const diceInfo = typeof getSpellDiceInfo === 'function' ? getSpellDiceInfo(sp || sName, p) : null;
-                      const isPrep = isCantrip || (p.preparedSpells || []).includes(sName);
+        const renderSpellCard = (sItem) => {
+          const sName = sItem.name;
+          const sp = sItem.data;
+          const isCantrip = sp && sp.level === 0;
+          const lvlBadge = sp ? (isCantrip ? 'Truque' : `${sp.level}º Círc.`) : 'Magia';
+          const school = sp ? sp.school : '';
+          const range = sp ? sp.range : '';
+          const diceInfo = typeof getSpellDiceInfo === 'function' ? getSpellDiceInfo(sp || sName, p) : null;
+          const isPrep = isCantrip || (p.preparedSpells || []).includes(sName);
 
-                      // Detecção Canônica 5E: Concentração, Ritual, Tempo
-                      const descLower = (sp ? (sp.desc || '') : '').toLowerCase();
-                      const isConc = sp ? (sp.concentration || descLower.includes('concentraç')) : false;
-                      const isRitual = sp ? (sp.ritual || descLower.includes('ritual')) : false;
-                      const castTimeRaw = sp ? (sp.casting_time || sp.castTime || '') : '';
-                      let castTimeTag = '';
-                      if (castTimeRaw) {
-                        const ctLower = castTimeRaw.toLowerCase();
-                        if (ctLower.includes('bônus') || ctLower.includes('bonus')) {
-                          castTimeTag = '<span class="spell-tag-badge casttime" title="Tempo: Ação Bônus">⚡ Bônus</span>';
-                        } else if (ctLower.includes('reação') || ctLower.includes('reacao')) {
-                          castTimeTag = '<span class="spell-tag-badge casttime" title="Tempo: Reação">🛡️ Reação</span>';
-                        } else if (ctLower.includes('ação') || ctLower.includes('acao')) {
-                          castTimeTag = '<span class="spell-tag-badge casttime" title="Tempo: 1 Ação">⚔️ 1 Ação</span>';
-                        }
-                      }
+          // Detecção Canônica 5E: Concentração, Ritual, Tempo
+          const descLower = (sp ? (sp.desc || '') : '').toLowerCase();
+          const isConc = sp ? (sp.concentration || descLower.includes('concentraç')) : false;
+          const isRitual = sp ? (sp.ritual || descLower.includes('ritual')) : false;
+          const castTimeRaw = sp ? (sp.casting_time || sp.castTime || '') : '';
+          let castTimeTag = '';
+          if (castTimeRaw) {
+            const ctLower = castTimeRaw.toLowerCase();
+            if (ctLower.includes('bônus') || ctLower.includes('bonus')) {
+              castTimeTag = '<span class="spell-tag-badge casttime" title="Tempo: Ação Bônus">⚡ Bônus</span>';
+            } else if (ctLower.includes('reação') || ctLower.includes('reacao')) {
+              castTimeTag = '<span class="spell-tag-badge casttime" title="Tempo: Reação">🛡️ Reação</span>';
+            } else if (ctLower.includes('ação') || ctLower.includes('acao')) {
+              castTimeTag = '<span class="spell-tag-badge casttime" title="Tempo: 1 Ação">⚔️ 1 Ação</span>';
+            }
+          }
 
-                      return `
+          return `
                         <div class="spell-action-chip player-spell-card-tactile ${isPrep ? 'is-prep' : 'is-unprep'}" onclick="openSpellQuickView('${escapeAttr(sName)}', '${p.id}', event)">
                           <div class="spell-chip-top">
                             <div class="spell-chip-name" title="${escapeAttr(sName)}">${sName}</div>
                             <div style="display:flex; align-items:center; gap:4px;">
                               <button type="button" class="btn-chat-feed" onclick="event.stopPropagation(); openSpellQuickView('${escapeAttr(sName)}', '${p.id}', event)" title="Ver o que a magia faz (Descrição completa)">💬</button>
                               <span class="spell-chip-lvl ${isCantrip ? 'cantrip' : 'leveled'}">${lvlBadge}</span>
+                              <button type="button" class="btn-chat-feed" style="color:#f87171; border-color:rgba(248,113,113,0.3); padding:1px 5px; font-size:10px;" onclick="event.stopPropagation(); removeSpellFromPlayer('${p.id}', '${escapeAttr(sName)}', event)" title="Remover esta magia da ficha">✕</button>
                             </div>
                           </div>
                           <div class="spell-chip-subinfo">
@@ -2604,43 +2606,56 @@ function renderPlayers() {
                           </div>
                         </div>
                       `;
-                    };
+        };
 
-                    let circlesToRender = curCircleFilter === 'all' 
-                      ? availableCircles 
-                      : [parseInt(curCircleFilter, 10)];
+        let circlesToRender = curCircleFilter === 'all'
+          ? availableCircles
+          : [parseInt(curCircleFilter, 10)];
 
-                    let groupsHtml = '';
-                    circlesToRender.forEach(lvl => {
-                      const circleSpells = spellsByLevel[lvl] || [];
-                      if (circleSpells.length === 0 && curCircleFilter === 'all') return;
+        let groupsHtml = '';
+        circlesToRender.forEach(lvl => {
+          const circleSpells = spellsByLevel[lvl] || [];
+          if (circleSpells.length === 0 && curCircleFilter === 'all') return;
 
-                      let circleTitle = lvl === 0 ? '✨ Truques & Preces Básicas' : `🔮 ${lvl}º Círculo`;
-                      let slotsBarHtml = '';
+          let circleTitle = lvl === 0 ? '✨ Truques & Preces Básicas' : `🔮 ${lvl}º Círculo`;
+          let slotsBarHtml = '';
 
-                      if (lvl === 0) {
-                        slotsBarHtml = `
+          if (lvl === 0) {
+            slotsBarHtml = `
                           <div class="spell-circle-slots-bar">
                             <span style="font-size:10px; color:#6ee7b7; font-weight:600;">Infinito / À Vontade</span>
                           </div>
                         `;
-                      } else {
-                        const maxSlots = (p.slots || [])[lvl - 1] || 0;
-                        const usedSlots = (p.slotsUsed || [])[lvl - 1] || 0;
-                        const avail = Math.max(0, maxSlots - usedSlots);
+          } else {
+            const maxSlots = (p.slots || [])[lvl - 1] || 0;
+            const usedSlots = (p.slotsUsed || [])[lvl - 1] || 0;
+            const avail = Math.max(0, maxSlots - usedSlots);
 
-                        slotsBarHtml = `
+            let fallbackZeroSlotsHtml = '<span style="font-size:9.5px; color:#94a3b8;">Sem espaços</span>';
+            if (maxSlots === 0 && Array.isArray(p.slots)) {
+              const higherSlotIdx = p.slots.findIndex((cnt, idx) => idx > (lvl - 1) && (cnt || 0) > 0);
+              if (higherSlotIdx >= 0) {
+                const pactLvl = higherSlotIdx + 1;
+                const pactMax = p.slots[higherSlotIdx] || 0;
+                const pactUsed = (p.slotsUsed || [])[higherSlotIdx] || 0;
+                const pactAvail = Math.max(0, pactMax - pactUsed);
+                const isWarlock = ((p.className || '').toLowerCase().includes('bruxo') || (p.className || '').toLowerCase().includes('warlock') || (Array.isArray(p.multiclass) && p.multiclass.some(m => (m.className || '').toLowerCase().includes('bruxo'))));
+                fallbackZeroSlotsHtml = `<span style="font-size:10px; color:#c084fc; font-weight:600;" title="Conjura usando espaço de ${pactLvl}º Círculo">${isWarlock ? '🔮 Espaços de Pacto' : '🔮 Usa Círc. Superior'} (${pactAvail}/${pactMax} de ${pactLvl}º Círc.)</span>`;
+              }
+            }
+
+            slotsBarHtml = `
                           <div class="spell-circle-slots-bar" title="Espaços de ${lvl}º Círculo: ${avail}/${maxSlots} disponíveis">
                             ${maxSlots > 0 ? Array.from({ length: maxSlots }).map((_, slotIdx) => {
-                              const isSpent = slotIdx < usedSlots;
-                              return `<div class="spell-circle-slot-bubble ${isSpent ? 'spent' : 'available'}" onclick="togglePlayerCircleSlot('${p.id}', ${lvl - 1}, ${slotIdx}, event)" title="${isSpent ? 'Espaço Gasto (Clique para restaurar)' : 'Espaço Disponível (Clique para gastar)'}"></div>`;
-                            }).join('') : '<span style="font-size:9.5px; color:#94a3b8;">Sem espaços</span>'}
+              const isSpent = slotIdx < usedSlots;
+              return `<div class="spell-circle-slot-bubble ${isSpent ? 'spent' : 'available'}" onclick="togglePlayerCircleSlot('${p.id}', ${lvl - 1}, ${slotIdx}, event)" title="${isSpent ? 'Espaço Gasto (Clique para restaurar)' : 'Espaço Disponível (Clique para gastar)'}"></div>`;
+            }).join('') : fallbackZeroSlotsHtml}
                             <span class="spell-circle-slot-count-text">${maxSlots > 0 ? `${avail}/${maxSlots} slots` : ''}</span>
                           </div>
                         `;
-                      }
+          }
 
-                      groupsHtml += `
+          groupsHtml += `
                         <div class="spell-circle-group">
                           <div class="spell-circle-header">
                             <div class="spell-circle-title">
@@ -2658,29 +2673,29 @@ function renderPlayers() {
                           `}
                         </div>
                       `;
-                    });
+        });
 
-                    if (!groupsHtml) {
-                      groupsHtml = `
+        if (!groupsHtml) {
+          groupsHtml = `
                         <div style="text-align: center; padding: 20px; background: rgba(0,0,0,0.25); border: 1px dashed var(--border-color); border-radius: 8px; font-size: 11.5px; color: var(--text-dim); margin-top: 6px;">
-                          ${curSearchQuery ? `Nenhuma magia encontrada para o termo <b>"${escapeAttr(curSearchQuery)}"</b>.` : (curPrepFilter === 'prepared' 
-                            ? 'Nenhuma magia foi preparada ainda para esta sessão.<br><span style="font-size:10.5px; color:#cbd5e1;">Mude para <b>"🌐 Todas as Conhecidas"</b> acima para escolher as que deseja preparar.</span>' 
-                            : 'Nenhuma magia cadastrada ou conhecida no momento.<br><span style="font-size:10.5px; color:#cbd5e1;">Clique no botão abaixo para escolher do compêndio D&D 5E.</span>')}
+                          ${curSearchQuery ? `Nenhuma magia encontrada para o termo <b>"${escapeAttr(curSearchQuery)}"</b>.` : (curPrepFilter === 'prepared'
+              ? 'Nenhuma magia foi preparada ainda para esta sessão.<br><span style="font-size:10.5px; color:#cbd5e1;">Mude para <b>"🌐 Todas as Conhecidas"</b> acima para escolher as que deseja preparar.</span>'
+              : 'Nenhuma magia cadastrada ou conhecida no momento.<br><span style="font-size:10.5px; color:#cbd5e1;">Clique no botão abaixo para escolher do compêndio D&D 5E.</span>')}
                           <div style="margin-top: 8px;">
                             <button type="button" class="btn-action" style="font-size: 11px; padding: 4px 10px;" onclick="openSpellPickerModal('${p.id}')">✨ Escolher Magias</button>
                           </div>
                         </div>
                       `;
-                    }
+        }
 
-                    return `
+        return `
                       ${prepBarHtml}
                       ${spellToolbarHtml}
                       <div class="player-spells-grouped-container">
                         ${groupsHtml}
                       </div>
                     `;
-                  })()}
+      })()}
                 </div>
               </div>
 
@@ -2727,16 +2742,16 @@ function renderPlayers() {
                 <!-- LISTA DE ITENS DO INVENTÁRIO -->
                 <div style="display: flex; flex-direction: column; gap: 6px; min-height: 380px; max-height: 640px; overflow-y: auto; padding-right: 4px;">
                   ${(p.inventory && p.inventory.length > 0) ? p.inventory.map((it, idx) => {
-                    const actionInfo = typeof getItemActionInfo === 'function' ? getItemActionInfo(it.name) : { icon: '⚡', label: 'Usar', isConsumable: false };
-                    const itemQty = parseInt(it.qty, 10) || 0;
-                    const catLower = (it.category || '').toLowerCase();
-                    const nameLower = (it.name || '').toLowerCase();
-                    const isArmorOrShield = catLower.includes('armadura') || catLower.includes('escudo') || nameLower.includes('armadura') || nameLower.includes('escudo');
-                    const isWeapon = catLower.includes('arma') || catLower.includes('weapon') || (typeof isPlayerWeaponItem === 'function' && isPlayerWeaponItem(it.name));
-                    const isConsumable = !!(actionInfo.isConsumable && !isArmorOrShield && !isWeapon);
-                    const cleanWeightStr = typeof formatCleanItemWeight === 'function' ? formatCleanItemWeight(it.weight) : (it.weight ? String(it.weight).replace(/\s*kg/gi, '').trim() + ' kg' : '');
-                    const weightDisplay = cleanWeightStr ? ` • ${cleanWeightStr}` : '';
-                    return `
+        const actionInfo = typeof getItemActionInfo === 'function' ? getItemActionInfo(it.name) : { icon: '⚡', label: 'Usar', isConsumable: false };
+        const itemQty = parseInt(it.qty, 10) || 0;
+        const catLower = (it.category || '').toLowerCase();
+        const nameLower = (it.name || '').toLowerCase();
+        const isArmorOrShield = catLower.includes('armadura') || catLower.includes('escudo') || nameLower.includes('armadura') || nameLower.includes('escudo');
+        const isWeapon = catLower.includes('arma') || catLower.includes('weapon') || (typeof isPlayerWeaponItem === 'function' && isPlayerWeaponItem(it.name));
+        const isConsumable = !!(actionInfo.isConsumable && !isArmorOrShield && !isWeapon);
+        const cleanWeightStr = typeof formatCleanItemWeight === 'function' ? formatCleanItemWeight(it.weight) : (it.weight ? String(it.weight).replace(/\s*kg/gi, '').trim() + ' kg' : '');
+        const weightDisplay = cleanWeightStr ? ` • ${cleanWeightStr}` : '';
+        return `
                       <div class="inventory-item-row ${it.equipped ? 'equipped' : ''}">
                         <div class="inventory-item-info" style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 6px; cursor: pointer;" onclick="openItemQuickView('${p.id}', ${idx})" title="Clique para ver o que este item faz">
                           <span style="font-weight: 700; color: #fff;">${it.equipped ? '⚔️ ' : ''}${it.name}${it.attuned ? ' <span title="Item Mágico Sintonizado" style="color:#38bdf8; font-size:10px;">💎</span>' : ''}</span>
@@ -2764,7 +2779,7 @@ function renderPlayers() {
                         </div>
                       </div>
                     `;
-                  }).join('') : `
+      }).join('') : `
                     <div style="text-align: center; padding: 16px; color: var(--text-dim); font-size: 11px; font-style: italic;">
                       A mochila está vazia. Clique em <b>➕ Item</b> para adicionar equipamentos.
                     </div>
@@ -2783,11 +2798,11 @@ function renderPlayers() {
                 </div>
 
                 ${(() => {
-                  const catFilter = sheetTraitCategoryFilters[p.id] || 'all';
-                  const searchQuery = (sheetTraitSearchQueries[p.id] || '').trim().toLowerCase();
-                  const isExpAll = !!sheetTraitExpandedAll[p.id];
+        const catFilter = sheetTraitCategoryFilters[p.id] || 'all';
+        const searchQuery = (sheetTraitSearchQueries[p.id] || '').trim().toLowerCase();
+        const isExpAll = !!sheetTraitExpandedAll[p.id];
 
-                  const toolbarHtml = `
+        const toolbarHtml = `
                     <div class="traits-toolbar">
                       <div class="trait-filter-chips">
                         <button type="button" class="trait-filter-chip ${catFilter === 'all' ? 'active' : ''}" onclick="setPlayerTraitCategoryFilter('${p.id}', 'all')">🌐 Todos (${totalTraitsCount})</button>
@@ -2802,22 +2817,22 @@ function renderPlayers() {
                     </div>
                   `;
 
-                  const showSpecies = catFilter === 'all' || catFilter === 'species';
-                  const showClass = catFilter === 'all' || catFilter === 'class';
-                  const showFeats = catFilter === 'all' || catFilter === 'feats';
+        const showSpecies = catFilter === 'all' || catFilter === 'species';
+        const showClass = catFilter === 'all' || catFilter === 'class';
+        const showFeats = catFilter === 'all' || catFilter === 'feats';
 
-                  const featsHtml = showFeats && typeof renderPlayerFeatsSection === 'function' 
-                    ? renderPlayerFeatsSection(p, searchQuery, isExpAll, sheetTraitOpenItems) : '';
-                  const racialHtml = showSpecies && typeof renderPlayerRacialTraits === 'function' 
-                    ? renderPlayerRacialTraits(p, searchQuery, isExpAll, sheetTraitOpenItems) : '';
-                  const classHtml = showClass 
-                    ? (searchQuery || isExpAll || (sheetTraitOpenItems && sheetTraitOpenItems.size > 0)
-                        ? renderPlayerUnlockedFeatures(p, 'all', searchQuery, isExpAll, sheetTraitOpenItems)
-                        : renderPlayerUnlockedFeatures(p, 'all')) : '';
+        const featsHtml = showFeats && typeof renderPlayerFeatsSection === 'function'
+          ? renderPlayerFeatsSection(p, searchQuery, isExpAll, sheetTraitOpenItems) : '';
+        const racialHtml = showSpecies && typeof renderPlayerRacialTraits === 'function'
+          ? renderPlayerRacialTraits(p, searchQuery, isExpAll, sheetTraitOpenItems) : '';
+        const classHtml = showClass
+          ? (searchQuery || isExpAll || (sheetTraitOpenItems && sheetTraitOpenItems.size > 0)
+            ? renderPlayerUnlockedFeatures(p, 'all', searchQuery, isExpAll, sheetTraitOpenItems)
+            : renderPlayerUnlockedFeatures(p, 'all')) : '';
 
-                  const otherFeatures = p.features ? `<div style="font-size: 11px; color: var(--text-dim); margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.07); padding-top: 6px;"><b>Outras Características:</b> ${typeof formatFeatureSnippet === 'function' ? formatFeatureSnippet(p.features) : p.features}</div>` : '';
+        const otherFeatures = p.features ? `<div style="font-size: 11px; color: var(--text-dim); margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.07); padding-top: 6px;"><b>Outras Características:</b> ${typeof formatFeatureSnippet === 'function' ? formatFeatureSnippet(p.features) : p.features}</div>` : '';
 
-                  return `
+        return `
                     ${toolbarHtml}
                     ${featsHtml}
                     <div class="roll20-traits-container" style="margin-top: 10px;">
@@ -2826,7 +2841,7 @@ function renderPlayers() {
                     </div>
                     ${otherFeatures}
                   `;
-                })()}
+      })()}
               </div>
 
               <!-- ABA 5: NOTAS PRIVADAS -->
@@ -2882,7 +2897,7 @@ function renderPlayers() {
                 <!-- CARD DE LIMITE POR CARISMA DO HERÓI -->
                 <div class="party-stash-quickbar" style="margin-bottom: 10px;">
                   <div class="stash-info">
-                    <span>👑 <b>Liderança (Carisma ${p.cha || 10}):</b> Limite de Ajudantes: <b style="color: #fef08a;">${(typeof calculateHirelingCharismaLimit === 'function' ? calculateHirelingCharismaLimit(p.cha) : (p.cha > 8 ? Math.max(0, Math.floor((p.cha - 10)/2) + 1) : 0))}</b></span>
+                    <span>👑 <b>Liderança (Carisma ${p.cha || 10}):</b> Limite de Ajudantes: <b style="color: #fef08a;">${(typeof calculateHirelingCharismaLimit === 'function' ? calculateHirelingCharismaLimit(p.cha) : (p.cha > 8 ? Math.max(0, Math.floor((p.cha - 10) / 2) + 1) : 0))}</b></span>
                     <span style="font-size: 10.5px; color: var(--text-dim);">(Atual: ${(p.hirelings || []).filter(h => h.type === 'helper').length} ajudantes)</span>
                   </div>
                   <div style="font-size: 10px; color: ${(p.cha || 10) <= 8 ? '#f87171' : '#34d399'};">
@@ -2898,9 +2913,9 @@ function renderPlayers() {
                       Clique em <b>➕ Contratar Lacaio</b> para admitir tocheiros, escolta militar ou aprendizes de classe!
                     </div>
                   ` : p.hirelings.map(h => {
-                    const statusClass = h.status === 'fled' ? 'status-pill-fled' : (h.status === 'injured' ? 'status-pill-injured' : (h.status === 'away' ? 'status-pill-away' : 'status-pill-acting'));
-                    const statusLabel = h.status === 'fled' ? '🏃 Fugiu' : (h.status === 'injured' ? '🔴 Ferido' : (h.status === 'away' ? '🟡 Missão' : '🟢 Ativo'));
-                    return `
+        const statusClass = h.status === 'fled' ? 'status-pill-fled' : (h.status === 'injured' ? 'status-pill-injured' : (h.status === 'away' ? 'status-pill-away' : 'status-pill-acting'));
+        const statusLabel = h.status === 'fled' ? '🏃 Fugiu' : (h.status === 'injured' ? '🔴 Ferido' : (h.status === 'away' ? '🟡 Missão' : '🟢 Ativo'));
+        return `
                       <div class="hireling-card ${h.status === 'fled' ? 'fled' : ''}" style="margin-bottom: 4px;">
                         <div class="hireling-header">
                           <div>
@@ -2943,7 +2958,7 @@ function renderPlayers() {
                         </div>
                       </div>
                     `;
-                  }).join('')}
+      }).join('')}
                 </div>
 
                 <!-- 🏰 SALAS SOB GESTÃO DESTE HERÓI NO BASTIÃO DO GRUPO (D&D 2024 / 5.5) -->
@@ -2954,27 +2969,27 @@ function renderPlayers() {
                   </div>
 
                   ${(() => {
-                    const activeCamp = (typeof getActiveCampaign === 'function') ? getActiveCampaign() : null;
-                    const bastion = (activeCamp && typeof getCampaignBastion === 'function') ? getCampaignBastion(activeCamp) : null;
-                    if (!bastion) {
-                      return `<div style="font-size: 11px; color: var(--text-dim); font-style: italic;">Nenhum Bastião ativo na campanha vinculada.</div>`;
-                    }
-                    const myFacilities = (bastion.specialFacilities || []).filter(f => String(f.patronId) === String(p.id));
-                    if (myFacilities.length === 0) {
-                      return `
+        const activeCamp = (typeof getActiveCampaign === 'function') ? getActiveCampaign() : null;
+        const bastion = (activeCamp && typeof getCampaignBastion === 'function') ? getCampaignBastion(activeCamp) : null;
+        if (!bastion) {
+          return `<div style="font-size: 11px; color: var(--text-dim); font-style: italic;">Nenhum Bastião ativo na campanha vinculada.</div>`;
+        }
+        const myFacilities = (bastion.specialFacilities || []).filter(f => String(f.patronId) === String(p.id));
+        if (myFacilities.length === 0) {
+          return `
                         <div style="font-size: 11px; color: var(--text-dim); background: rgba(0,0,0,0.25); padding: 8px 10px; border-radius: 6px; border: 1px dashed rgba(255,255,255,0.1);">
                           📍 ${p.name} ainda não possui salas atribuídas no <b>${bastion.name}</b>.<br>
                           Acesse a aba <b>Campanhas</b> para vincular uma sala especial a este herói!
                         </div>
                       `;
-                    }
-                    return `
+        }
+        return `
                       <div style="display: flex; flex-direction: column; gap: 6px;">
                         ${myFacilities.map(f => {
-                          const cat = (typeof BASTION_SPECIAL_FACILITIES_CATALOG !== 'undefined') ? BASTION_SPECIAL_FACILITIES_CATALOG[f.key] : null;
-                          const icon = cat ? cat.icon : '🏛️';
-                          const order = f.currentOrder;
-                          return `
+          const cat = (typeof BASTION_SPECIAL_FACILITIES_CATALOG !== 'undefined') ? BASTION_SPECIAL_FACILITIES_CATALOG[f.key] : null;
+          const icon = cat ? cat.icon : '🏛️';
+          const order = f.currentOrder;
+          return `
                             <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 6px; padding: 8px 10px; font-size: 11px;">
                               <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <span style="font-weight: 800; color: #fff;">${icon} ${f.name}</span>
@@ -2985,10 +3000,10 @@ function renderPlayers() {
                               </div>
                             </div>
                           `;
-                        }).join('')}
+        }).join('')}
                       </div>
                     `;
-                  })()}
+      })()}
                 </div>
               </div>
 
@@ -3010,9 +3025,9 @@ function renderPlayers() {
               </div>
               <div class="player-conds-chips" style="margin-top: 4px;">
                 ${(p.conditions && p.conditions.length > 0) ? p.conditions.map(cId => {
-                  const condObj = (typeof CONDITIONS_LIST !== 'undefined' ? CONDITIONS_LIST.find(c => c.id === cId) : null) || { name: cId, desc: '' };
-                  return `<span class="player-cond-chip" onclick="togglePlayerCondition('${p.id}', '${cId}')" title="${escapeAttr(condObj.desc || '')} • Clique para remover">${condObj.name} ✕</span>`;
-                }).join('') : '<span style="color: var(--text-dim); font-size: 10px; font-style: italic;">Normal (Sem condições ativas)</span>'}
+        const condObj = (typeof CONDITIONS_LIST !== 'undefined' ? CONDITIONS_LIST.find(c => c.id === cId) : null) || { name: cId, desc: '' };
+        return `<span class="player-cond-chip" onclick="togglePlayerCondition('${p.id}', '${cId}')" title="${escapeAttr(condObj.desc || '')} • Clique para remover">${condObj.name} ✕</span>`;
+      }).join('') : '<span style="color: var(--text-dim); font-size: 10px; font-style: italic;">Normal (Sem condições ativas)</span>'}
               </div>
             </div>
 
@@ -3097,7 +3112,7 @@ function triggerHapticFeedback(pattern = [15]) {
   if (typeof window !== 'undefined' && 'navigator' in window && typeof navigator.vibrate === 'function') {
     try {
       navigator.vibrate(pattern);
-    } catch (e) {}
+    } catch (e) { }
   }
 }
 
@@ -3208,7 +3223,7 @@ function breakPlayerConcentration() {
 function toggleCombatFocusMode() {
   triggerHapticFeedback([20]);
   if (typeof document === 'undefined' || !document.body || !document.body.classList) return;
-  
+
   let isFocus = false;
   if (typeof document.body.classList.toggle === 'function') {
     isFocus = document.body.classList.toggle('combat-focus-mode');
@@ -3224,7 +3239,7 @@ function toggleCombatFocusMode() {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('dnd_combat_focus_mode', isFocus ? 'true' : 'false');
     }
-  } catch (e) {}
+  } catch (e) { }
 
   updateMobileVitalThumbHud();
   if (typeof showToast === 'function') {
@@ -3869,10 +3884,10 @@ function isWeaponProficient(player, weapon) {
   const wName = (weapon.name || '').toLowerCase();
 
   // Bárbaro, Guerreiro, Paladino, Patrulheiro: proficiência com todas as armas simples e marciais
-  if (cls.includes('guerreiro') || cls.includes('fighter') || 
-      cls.includes('barbaro') || cls.includes('bárbaro') || cls.includes('barbarian') || 
-      cls.includes('paladino') || cls.includes('paladin') || 
-      cls.includes('patrulheiro') || cls.includes('ranger')) {
+  if (cls.includes('guerreiro') || cls.includes('fighter') ||
+    cls.includes('barbaro') || cls.includes('bárbaro') || cls.includes('barbarian') ||
+    cls.includes('paladino') || cls.includes('paladin') ||
+    cls.includes('patrulheiro') || cls.includes('ranger')) {
     return true;
   }
 
@@ -4075,7 +4090,7 @@ function getPlayerBonusHpPerLevel(player, className) {
   }
 
   // 2. Feiticeiro da Linhagem Dracônica - Resiliência Dracônica: +1 PV por nível de Feiticeiro
-  const isDraconicSorcerer = (cls.includes('feiticeiro') || cls.includes('sorcerer')) && 
+  const isDraconicSorcerer = (cls.includes('feiticeiro') || cls.includes('sorcerer')) &&
     (sub.includes('drac') || (player.subclassIdx === 0 && (cls.includes('feiticeiro') || cls.includes('sorcerer'))) || features.includes('resiliência dracônica') || features.includes('resiliencia draconica') || features.includes('linhagem dracônica') || features.includes('linhagem draconica'));
   if (isDraconicSorcerer) {
     bonus += 1;
@@ -5570,7 +5585,7 @@ function getMaxPreparedSpells(p) {
       max,
       maxLeveled: max,
       maxCantrips: cantrips,
-      formula: isUnlocked 
+      formula: isUnlocked
         ? `Tabela D&D 5E de Cavaleiro Místico Nv ${lvl} = ${max} magias conhecidas`
         : `Ganha conjuração de magias no Nível 3`,
       isPreparedCaster: false,
@@ -5589,7 +5604,7 @@ function getMaxPreparedSpells(p) {
       max,
       maxLeveled: max,
       maxCantrips: cantrips,
-      formula: isUnlocked 
+      formula: isUnlocked
         ? `Tabela D&D 5E de Trapaceiro Arcano Nv ${lvl} = ${max} magias conhecidas`
         : `Ganha conjuração de magias no Nível 3`,
       isPreparedCaster: false,
@@ -5718,41 +5733,88 @@ function setSheetSpellFilter(playerId, filter) {
   if (typeof renderPlayers === 'function') renderPlayers();
 }
 
+function buildPlayerSpellsSummary(spellList) {
+  if (!Array.isArray(spellList) || spellList.length === 0) return '';
+  const cantrips = [];
+  const leveled = [];
+  spellList.forEach(sName => {
+    if (!sName || typeof sName !== 'string') return;
+    const clean = sName.trim();
+    if (!clean) return;
+    const s = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(x => x.name.toLowerCase() === clean.toLowerCase()) : null;
+    if (s && s.level === 0) cantrips.push(s.name);
+    else leveled.push(s ? s.name : clean);
+  });
+  let summary = '';
+  if (cantrips.length > 0) summary += `Truques: ${cantrips.join(', ')}\n`;
+  if (leveled.length > 0) summary += `Preparadas: ${leveled.join(', ')}`;
+  return summary.trim();
+}
+
+function parseSpellNamesFromRawText(rawSpellsText) {
+  const result = [];
+  if (!rawSpellsText || typeof rawSpellsText !== 'string' || typeof SPELLS_DATA === 'undefined') return result;
+  const cleanedLines = rawSpellsText
+    .replace(/truques\s*:/gi, ',')
+    .replace(/preparadas\s*:/gi, ',')
+    .replace(/magias\s*:/gi, ',')
+    .split(/[\n,;]+/)
+    .map(tok => tok.trim().toLowerCase())
+    .filter(Boolean);
+
+  cleanedLines.forEach(token => {
+    const exact = SPELLS_DATA.find(sp => sp.name.toLowerCase() === token);
+    if (exact) {
+      if (!result.includes(exact.name)) result.push(exact.name);
+      return;
+    }
+    if (typeof SPELL_PHRASE_ALIASES !== 'undefined' && SPELL_PHRASE_ALIASES[token]) {
+      const targetPt = SPELL_PHRASE_ALIASES[token].toLowerCase();
+      const aliased = SPELLS_DATA.find(sp => sp.name.toLowerCase() === targetPt);
+      if (aliased && !result.includes(aliased.name)) result.push(aliased.name);
+    }
+  });
+  return result;
+}
+
 function getPlayerKnownSpells(p) {
   if (!p) return [];
   const knownSet = new Set();
+  const isWiz = typeof isWizardPlayer === 'function' ? isWizardPlayer(p) : false;
+  const hasInitializedPrep = Array.isArray(p.preparedSpells) && (p.preparedSpells.length > 0 || p._spellsSyncedFromPicker === true);
 
-  if (Array.isArray(p.preparedSpells)) {
-    p.preparedSpells.forEach(s => { if (s && typeof s === 'string') knownSet.add(s.trim()); });
-  }
-  if (Array.isArray(p.spellbookSpells)) {
-    p.spellbookSpells.forEach(s => { if (s && typeof s === 'string') knownSet.add(s.trim()); });
-  }
-  if (Array.isArray(p.knownSpells)) {
-    p.knownSpells.forEach(s => { if (s && typeof s === 'string') knownSet.add(s.trim()); });
-  }
-
-  // Reconciliação se p.spells tiver texto
-  if (p.spells && typeof p.spells === 'string' && typeof SPELLS_DATA !== 'undefined') {
-    const rawText = p.spells.toLowerCase();
-    SPELLS_DATA.forEach(sp => {
-      const spNameLower = sp.name.toLowerCase();
-      if (rawText.includes(spNameLower)) {
-        knownSet.add(sp.name);
-      } else if (typeof SPELL_PHRASE_ALIASES !== 'undefined') {
-        for (const [alias, ptName] of Object.entries(SPELL_PHRASE_ALIASES)) {
-          if (ptName === spNameLower && rawText.includes(alias)) {
-            knownSet.add(sp.name);
-            break;
-          }
-        }
+  if (hasInitializedPrep) {
+    p.preparedSpells.forEach(s => { if (s && typeof s === 'string' && s.trim()) knownSet.add(s.trim()); });
+    if (Array.isArray(p.unpreparedSpells)) {
+      p.unpreparedSpells.forEach(s => { if (s && typeof s === 'string' && s.trim()) knownSet.add(s.trim()); });
+    }
+    if (isWiz && Array.isArray(p.spellbookSpells)) {
+      p.spellbookSpells.forEach(s => { if (s && typeof s === 'string' && s.trim()) knownSet.add(s.trim()); });
+    }
+  } else {
+    // Inicialização de ficha legada (quando preparedSpells ainda não foi populado)
+    if (p.spells && typeof p.spells === 'string') {
+      parseSpellNamesFromRawText(p.spells).forEach(s => knownSet.add(s));
+    }
+    if (knownSet.size === 0) {
+      if (Array.isArray(p.spellbookSpells)) {
+        p.spellbookSpells.forEach(s => { if (s && typeof s === 'string' && s.trim()) knownSet.add(s.trim()); });
       }
-    });
+      if (Array.isArray(p.knownSpells)) {
+        p.knownSpells.forEach(s => { if (s && typeof s === 'string' && s.trim()) knownSet.add(s.trim()); });
+      }
+    }
+    if (knownSet.size > 0 && (!Array.isArray(p.preparedSpells) || p.preparedSpells.length === 0)) {
+      p.preparedSpells = Array.from(knownSet);
+    }
   }
 
   const list = Array.from(knownSet);
-  // Persiste em p.spellbookSpells para segurança contra perdas
+  // Mantém spellbookSpells e knownSpells limpos e sincronizados (sem ressuscitar magias desmarcadas)
   p.spellbookSpells = [...list];
+  if (Array.isArray(p.knownSpells)) {
+    p.knownSpells = [...list];
+  }
 
   // Ordenação por círculo e nome
   list.sort((a, b) => {
@@ -5767,13 +5829,52 @@ function getPlayerKnownSpells(p) {
   return list;
 }
 
+function removeSpellFromPlayer(playerId, spellName, e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p || !spellName) return;
+
+  const targetLower = spellName.trim().toLowerCase();
+  if (Array.isArray(p.preparedSpells)) {
+    p.preparedSpells = p.preparedSpells.filter(s => (s || '').trim().toLowerCase() !== targetLower);
+  }
+  if (Array.isArray(p.unpreparedSpells)) {
+    p.unpreparedSpells = p.unpreparedSpells.filter(s => (s || '').trim().toLowerCase() !== targetLower);
+  }
+  if (Array.isArray(p.spellbookSpells)) {
+    p.spellbookSpells = p.spellbookSpells.filter(s => (s || '').trim().toLowerCase() !== targetLower);
+  }
+  if (Array.isArray(p.knownSpells)) {
+    p.knownSpells = p.knownSpells.filter(s => (s || '').trim().toLowerCase() !== targetLower);
+  }
+  p._spellsSyncedFromPicker = true;
+  p.spells = buildPlayerSpellsSummary(p.preparedSpells || []);
+
+  p.updatedAt = Date.now();
+  p.updatedBy = typeof localClientId !== 'undefined' ? localClientId : 'local';
+
+  if (typeof touchPlayer === 'function') touchPlayer(p);
+  if (typeof addLog === 'function') addLog(`🗑️ <b>${p.name}</b> removeu a magia <b>${spellName}</b> de sua ficha.`);
+  if (typeof showToast === 'function') showToast(`🗑️ Magia "${spellName}" removida da ficha`, 'info');
+  renderPlayers();
+  if (typeof renderCombat === 'function') renderCombat();
+  saveToLocalStorage();
+  if (typeof executePlayerCloudSave === 'function' && typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId === p.id) {
+    executePlayerCloudSave();
+  } else if (typeof syncLocalChangesToFirebase === 'function') {
+    syncLocalChangesToFirebase(true);
+  }
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+}
+
 function togglePlayerSpellPrepared(playerId, spellName) {
   const p = PLAYERS.find(x => x.id === playerId);
   if (!p) return;
   p.preparedSpells = p.preparedSpells || [];
+  p.unpreparedSpells = Array.isArray(p.unpreparedSpells) ? p.unpreparedSpells : [];
   if (!p.spellbookSpells) p.spellbookSpells = [];
 
-  // Garante que a magia continue em spellbookSpells (nunca some da ficha do herói!)
+  // Garante que a magia continue em spellbookSpells (nunca some da ficha do herói ao apenas alternar preparo!)
   if (!p.spellbookSpells.includes(spellName)) {
     p.spellbookSpells.push(spellName);
   }
@@ -5781,27 +5882,19 @@ function togglePlayerSpellPrepared(playerId, spellName) {
   const isPrep = p.preparedSpells.includes(spellName);
   if (isPrep) {
     p.preparedSpells = p.preparedSpells.filter(s => s !== spellName);
+    if (!p.unpreparedSpells.includes(spellName)) p.unpreparedSpells.push(spellName);
     if (typeof addLog === 'function') addLog(`💤 <b>${p.name}</b> desmarcou a magia <b>${spellName}</b> das preparadas da sessão.`);
     if (typeof showToast === 'function') showToast(`💤 "${spellName}" desmarcada das preparadas`, 'info');
   } else {
     p.preparedSpells.push(spellName);
+    p.unpreparedSpells = p.unpreparedSpells.filter(s => s !== spellName);
     if (typeof playFX === 'function') playFX('heal');
     if (typeof addLog === 'function') addLog(`⭐ <b>${p.name}</b> preparou a magia <b>${spellName}</b> para a sessão.`);
     if (typeof showToast === 'function') showToast(`⭐ "${spellName}" preparada para a sessão!`, 'success');
   }
 
-  // Atualiza p.spells com resumo formatado
-  const cantrips = [];
-  const leveled = [];
-  p.preparedSpells.forEach(sName => {
-    const s = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(x => x.name.toLowerCase() === sName.toLowerCase()) : null;
-    if (s && s.level === 0) cantrips.push(sName);
-    else leveled.push(sName);
-  });
-  let summary = '';
-  if (cantrips.length > 0) summary += `Truques: ${cantrips.join(', ')}\n`;
-  if (leveled.length > 0) summary += `Preparadas: ${leveled.join(', ')}`;
-  if (summary) p.spells = summary.trim();
+  p._spellsSyncedFromPicker = true;
+  p.spells = buildPlayerSpellsSummary(p.preparedSpells);
 
   // Carimbo temporal e autoria para precedência no sync (ISSUE-141)
   p.updatedAt = Date.now();
@@ -6286,7 +6379,7 @@ function formatPlayerFeatureForDisplay(feature, p, clsItem = null) {
   const normCls = String((clsItem ? clsItem.className : p.className) || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const normDesc = String(desc || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-    // 0. Estilo de Luta
+  // 0. Estilo de Luta
   if (normName.includes('estilo de luta') || normName.includes('fighting style')) {
     const curStyleKey = p.fightingStyle || '';
     const styleObj = (typeof FIGHTING_STYLES !== 'undefined' && FIGHTING_STYLES[curStyleKey]) ? FIGHTING_STYLES[curStyleKey] : null;
@@ -6409,6 +6502,264 @@ function formatPlayerFeatureForDisplay(feature, p, clsItem = null) {
   return f;
 }
 
+// --- ⚡ RESUMO DIRETO E OBJETIVO DE TRAÇOS E HABILIDADES (ISSUE-163) ---
+function normalizeTraitLookupKey(str) {
+  if (!str) return '';
+  return String(str)
+    .split('(')[0]
+    .split('—')[0]
+    .split('-')[0]
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+function getPlayerLanguagesString(p) {
+  if (!p) return 'Comum';
+  if (typeof p.languages === 'string' && p.languages.trim()) return p.languages.trim();
+  if (Array.isArray(p.languages) && p.languages.length > 0) return p.languages.join(', ');
+  if (p.race && typeof findSpeciesData === 'function') {
+    const sp = findSpeciesData(p.race);
+    if (sp && Array.isArray(sp.traits)) {
+      const langTrait = sp.traits.find(t => t.name && t.name.toLowerCase().includes('idioma'));
+      if (langTrait) {
+        const raw = (langTrait.description || langTrait.desc || '').replace(/\*\*/g, '');
+        const m = raw.match(/escrever\s+([^.]+)\./i);
+        if (m && m[1]) return m[1].replace(/\s+e\s+/gi, ', ').trim();
+      }
+    }
+  }
+  return 'Comum';
+}
+
+function getPlayerTraitQuickSummary(feature, p, clsItem = null) {
+  if (!feature) return { name: '', tag: 'Passivo', usage: '', summary: '' };
+  const rawName = String(feature.name || '').trim();
+  const rawDesc = String(feature.desc || feature.description || '').trim();
+  const pObj = p || {};
+
+  const pLvl = parseInt(clsItem ? clsItem.level : (pObj.level || 1)) || 1;
+  const totalLvl = parseInt(pObj.level) || pLvl;
+  const strVal = typeof getPlayerAttr === 'function' ? getPlayerAttr(pObj, 'for') : (parseInt(pObj.str) || 10);
+  const dexVal = typeof getPlayerAttr === 'function' ? getPlayerAttr(pObj, 'des') : (parseInt(pObj.dex) || 10);
+  const conVal = typeof getPlayerAttr === 'function' ? getPlayerAttr(pObj, 'con') : (parseInt(pObj.con) || 10);
+  const intVal = typeof getPlayerAttr === 'function' ? getPlayerAttr(pObj, 'int') : (parseInt(pObj.int) || 10);
+  const wisVal = typeof getPlayerAttr === 'function' ? getPlayerAttr(pObj, 'sab') : (parseInt(pObj.wis) || 10);
+  const chaVal = typeof getPlayerAttr === 'function' ? getPlayerAttr(pObj, 'car') : (parseInt(pObj.cha) || 10);
+
+  const strMod = Math.floor((strVal - 10) / 2);
+  const dexMod = Math.floor((dexVal - 10) / 2);
+  const conMod = Math.floor((conVal - 10) / 2);
+  const intMod = Math.floor((intVal - 10) / 2);
+  const wisMod = Math.floor((wisVal - 10) / 2);
+  const chaMod = Math.floor((chaVal - 10) / 2);
+  const prof = typeof getProfBonus === 'function' ? getProfBonus(totalLvl) : (Math.ceil(totalLvl / 4) + 1);
+
+  const clsName = String((clsItem ? clsItem.className : pObj.className) || '').trim();
+  const normCls = clsName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  // Subclasse escolhida pelo jogador
+  let subclassName = pObj.subclass || '';
+  if (!subclassName && clsName && typeof findClassData === 'function') {
+    const cd = findClassData(clsName);
+    const subIdx = clsItem && clsItem.subclassIdx !== undefined ? clsItem.subclassIdx : (pObj.subclassIdx || 0);
+    if (cd && Array.isArray(cd.subclasses) && cd.subclasses[subIdx]) {
+      subclassName = cd.subclasses[subIdx].name;
+    }
+  }
+  if (!subclassName) subclassName = 'Subclasse escolhida';
+
+  // Habilidade de conjuração e CD
+  let spellMod = intMod;
+  let spellAttrLabel = 'Inteligência';
+  if (normCls.includes('clerigo') || normCls.includes('druida') || normCls.includes('patrulheiro') || normCls.includes('ranger') || normCls.includes('monge')) {
+    spellMod = wisMod;
+    spellAttrLabel = 'Sabedoria';
+  } else if (normCls.includes('bardo') || normCls.includes('bruxo') || normCls.includes('warlock') || normCls.includes('feiticeiro') || normCls.includes('paladino')) {
+    spellMod = chaMod;
+    spellAttrLabel = 'Carisma';
+  }
+  const spellDc = 8 + prof + spellMod;
+  const spellAtkVal = prof + spellMod;
+  const spellAtk = (spellAtkVal >= 0 ? '+' : '') + spellAtkVal;
+  const chaSpellDc = 8 + prof + chaMod;
+
+  // Estilo de luta
+  let fightingStyleSummary = 'Escolha 1 estilo marcial (+2 ataque à distância, +1 CA de armadura, +2 dano em 1 mão, etc.).';
+  if (pObj.fightingStyle && typeof FIGHTING_STYLES !== 'undefined' && FIGHTING_STYLES[pObj.fightingStyle]) {
+    const st = FIGHTING_STYLES[pObj.fightingStyle];
+    fightingStyleSummary = `${st.name}: ${st.desc}`;
+  }
+
+  // Legado Infernal por nível
+  let infernalLegacySummary = 'Conhece o truque Taumaturgia (à vontade).';
+  if (totalLvl >= 5) {
+    infernalLegacySummary = `Taumaturgia (à vontade) • Repreensão Infernal em 2º círc. (1×/Descanso Longo, Reação, CD ${chaSpellDc}) • Escuridão (1×/Descanso Longo).`;
+  } else if (totalLvl >= 3) {
+    infernalLegacySummary = `Taumaturgia (à vontade) • Repreensão Infernal em 2º círc. (1×/Descanso Longo, Reação, CD ${chaSpellDc}).`;
+  }
+
+  // Defesa sem Armadura (Bárbaro vs Monge)
+  const isMonkUnarmored = normCls.includes('monge') || rawDesc.toLowerCase().includes('sabedoria');
+  const unarmoredAc = isMonkUnarmored
+    ? `${10 + dexMod + wisMod} (10 + DES ${dexMod >= 0 ? '+' : ''}${dexMod} + SAB ${wisMod >= 0 ? '+' : ''}${wisMod})`
+    : `${10 + dexMod + conMod} (10 + DES ${dexMod >= 0 ? '+' : ''}${dexMod} + CON ${conMod >= 0 ? '+' : ''}${conMod})`;
+
+  const vars = {
+    level: pLvl,
+    totalLevel: totalLvl,
+    prof: prof,
+    halfProf: Math.floor(prof / 2),
+    halfProfCeil: Math.ceil(prof / 2),
+    doubleProf: prof * 2,
+    strModNum: strMod,
+    dexModNum: dexMod,
+    conModNum: conMod,
+    intModNum: intMod,
+    wisModNum: wisMod,
+    chaModNum: chaMod,
+    chaModSigned: (chaMod >= 0 ? '+' : '') + chaMod,
+    subclassName: subclassName,
+    spellAttrLabel: spellAttrLabel,
+    spellDc: spellDc,
+    spellAtk: spellAtk,
+    chaSpellDc: chaSpellDc,
+    fightingStyleSummary: fightingStyleSummary,
+    infernalLegacySummary: infernalLegacySummary,
+    unarmoredAc: unarmoredAc,
+    draconicAc: 13 + dexMod,
+    rageUses: pLvl >= 20 ? 'Ilimitado' : (pLvl >= 17 ? 6 : (pLvl >= 12 ? 5 : (pLvl >= 6 ? 4 : (pLvl >= 3 ? 3 : 2)))),
+    rageDmg: pLvl >= 16 ? '+4' : (pLvl >= 9 ? '+3' : '+2'),
+    brutalDice: pLvl >= 17 ? 3 : (pLvl >= 13 ? 2 : 1),
+    bardicDie: pLvl >= 15 ? '1d12' : (pLvl >= 10 ? '1d10' : (pLvl >= 5 ? '1d8' : '1d6')),
+    bardicUses: Math.max(1, chaMod),
+    bardicRest: pLvl >= 5 ? 'Descanso Curto' : 'Descanso Longo',
+    songOfRestDie: pLvl >= 17 ? '1d12' : (pLvl >= 13 ? '1d10' : (pLvl >= 9 ? '1d8' : '1d6')),
+    pactSlots: pLvl >= 17 ? 4 : (pLvl >= 11 ? 3 : (pLvl >= 2 ? 2 : 1)),
+    pactCircle: Math.min(5, Math.ceil(pLvl / 2)),
+    invocationsCount: pLvl >= 18 ? 8 : (pLvl >= 15 ? 7 : (pLvl >= 12 ? 6 : (pLvl >= 9 ? 5 : (pLvl >= 7 ? 4 : (pLvl >= 5 ? 3 : (pLvl >= 2 ? 2 : 0)))))),
+    tempHpObscuro: Math.max(1, chaMod + pLvl),
+    channelUses: pLvl >= 18 ? 3 : (pLvl >= 6 ? 2 : 1),
+    destroyUndeadCr: pLvl >= 17 ? '4' : (pLvl >= 14 ? '3' : (pLvl >= 11 ? '2' : (pLvl >= 8 ? '1' : '1/2'))),
+    preserveLifePool: 5 * pLvl,
+    wisUses: Math.max(1, wisMod),
+    wildShapeHours: Math.max(1, Math.floor(pLvl / 2)),
+    moonDruidCr: pLvl >= 6 ? Math.floor(pLvl / 3) : 1,
+    arcaneRecoveryLevels: Math.ceil(pLvl / 2),
+    arcaneWardHp: (2 * pLvl) + intMod,
+    actionSurgeUses: pLvl >= 17 ? 2 : 1,
+    indomitableUses: pLvl >= 17 ? 3 : (pLvl >= 13 ? 2 : 1),
+    maneuverDc: 8 + prof + Math.max(strMod, dexMod),
+    sneakDice: Math.ceil(pLvl / 2) + 'd6',
+    martialDie: pLvl >= 17 ? '1d10' : (pLvl >= 11 ? '1d8' : (pLvl >= 5 ? '1d6' : '1d4')),
+    kiDc: 8 + prof + wisMod,
+    monkSpeedBonus: pLvl >= 18 ? 9 : (pLvl >= 14 ? 7.5 : (pLvl >= 10 ? 6 : (pLvl >= 6 ? 4.5 : 3))),
+    slowFallRed: 5 * pLvl,
+    divineSenseUses: 1 + Math.max(0, chaMod),
+    layOnHands: 5 * pLvl,
+    auraBonus: Math.max(1, chaMod),
+    breathSaveDc: 8 + prof + conMod,
+    breathDamage: totalLvl >= 16 ? '5d6' : (totalLvl >= 11 ? '4d6' : (totalLvl >= 6 ? '3d6' : '2d6'))
+  };
+
+  const replaceVars = str => {
+    if (!str) return '';
+    return String(str).replace(/\{([a-zA-Z0-9_]+)\}/g, (_, k) => (vars[k] !== undefined ? String(vars[k]) : ''));
+  };
+
+  const lookupKey = normalizeTraitLookupKey(rawName);
+  const fullNormKey = rawName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+  // Caso especial: ASI
+  if (feature.isAsi || fullNormKey.includes('aumento no valor de habilidade') || fullNormKey.includes('aumento no valor de atributo') || fullNormKey.startsWith('aumento de habilidade')) {
+    const asiLvl = feature.asiLevel || feature.level || 4;
+    const asiKey = `${clsName.toLowerCase()}_lvl_${asiLvl}`;
+    const choice = (pObj.asiChoices && pObj.asiChoices[asiKey]) || null;
+    if (choice) {
+      return {
+        name: `ASI Nv ${asiLvl}: ${choice.label}`,
+        tag: 'Passivo',
+        usage: 'Ativo na ficha',
+        summary: `Escolha de ${asiLvl}º nível aplicada: ${choice.label}.`
+      };
+    }
+    return {
+      name: `Aumento de Atributo / Talento (Nv ${asiLvl})`,
+      tag: 'Passivo',
+      usage: 'Marco de Nível',
+      summary: '+2 em um atributo, +1 em dois atributos ou 1 Talento oficial.'
+    };
+  }
+
+  // Busca no dicionário TRAIT_QUICK_RULES
+  const dict = (typeof TRAIT_QUICK_RULES !== 'undefined' && TRAIT_QUICK_RULES) ? TRAIT_QUICK_RULES : null;
+  let rule = null;
+  if (dict) {
+    rule = dict[lookupKey] || dict[fullNormKey] || null;
+    if (!rule) {
+      const matchedKey = Object.keys(dict).find(k => lookupKey.startsWith(k) || k.startsWith(lookupKey));
+      if (matchedKey && lookupKey.length >= 4) {
+        rule = dict[matchedKey];
+      }
+    }
+  }
+
+  // Busca em FEATS_DATA se for talento
+  if (!rule && typeof FEATS_DATA !== 'undefined' && Array.isArray(FEATS_DATA)) {
+    const foundFeat = FEATS_DATA.find(ft => normalizeTraitLookupKey(ft.name) === lookupKey);
+    if (foundFeat) {
+      const cleanSummary = String(foundFeat.summary || foundFeat.description || '').replace(/\*\*/g, '').split('\n')[0];
+      return {
+        name: foundFeat.name,
+        tag: 'Talento',
+        usage: foundFeat.prerequisite ? `Pré-req: ${foundFeat.prerequisite}` : 'Passivo / Ativo',
+        summary: cleanSummary
+      };
+    }
+  }
+
+  if (rule) {
+    return {
+      name: rawName,
+      tag: replaceVars(rule.tag || 'Passivo'),
+      usage: replaceVars(rule.usage || ''),
+      summary: replaceVars(rule.summary || '')
+    };
+  }
+
+  // Fallback inteligente: determina tag de ação, extrai recarga e enxuga o texto
+  const actType = typeof getFeatureActionType === 'function' ? getFeatureActionType({ name: rawName, desc: rawDesc }, pObj) : 'passive';
+  const tagLabel = actType === 'bonus' ? 'Ação Bônus' : (actType === 'reaction' ? 'Reação' : (actType === 'action' ? 'Ação' : 'Passivo'));
+
+  let usage = '';
+  const lowDesc = rawDesc.toLowerCase();
+  if (lowDesc.includes('descanso curto ou longo')) usage = '1×/Descanso Curto';
+  else if (lowDesc.includes('descanso longo')) usage = 'Descanso Longo';
+  else if (lowDesc.includes('descanso curto')) usage = 'Descanso Curto';
+
+  let cleanText = rawDesc
+    .replace(/<[^>]+>/g, '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/^(no|a partir do)\s+\d+[º°]\s+n[ií]vel,\s*/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (cleanText.length > 180) {
+    const firstSentence = cleanText.split(/(?<=[.!])\s+/)[0];
+    cleanText = firstSentence && firstSentence.length <= 200 ? firstSentence : (cleanText.slice(0, 177).trim() + '...');
+  }
+
+  return {
+    name: rawName,
+    tag: tagLabel,
+    usage: usage,
+    summary: cleanText
+  };
+}
+
 const PLAYER_FEATURES_CACHE = {};
 
 function registerFeatureForModal(name, desc, type, source) {
@@ -6507,76 +6858,79 @@ function renderPlayerUnlockedFeatures(p, actionFilter = 'all', textFilter = '', 
         </div>
         <div class="unlocked-features-list">
           ${matching.map(f => {
-            const formatted = formatPlayerFeatureForDisplay(f, p, clsItem);
-            const actType = getFeatureActionType(f, p);
-            const actTagLabel = actType === 'bonus' ? 'Bônus' : (actType === 'reaction' ? 'Reação' : (actType === 'action' ? 'Ação' : 'Passiva'));
-            const actBadgeHtml = `<span class="action-economy-tag ${actType}">${actTagLabel}</span>`;
+        const formatted = formatPlayerFeatureForDisplay(f, p, clsItem);
+        const actType = getFeatureActionType(f, p);
+        const actTagLabel = actType === 'bonus' ? 'Bônus' : (actType === 'reaction' ? 'Reação' : (actType === 'action' ? 'Ação' : 'Passiva'));
+        const actBadgeHtml = `<span class="action-economy-tag ${actType}">${actTagLabel}</span>`;
 
-            const isFightingStyleFeature = f.name && f.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes('estilo de luta');
-            let fightingStyleActionHtml = '';
-            if (isFightingStyleFeature) {
-              const curStyle = p.fightingStyle || '';
-              const styleObj = (typeof FIGHTING_STYLES !== 'undefined' && FIGHTING_STYLES[curStyle]) ? FIGHTING_STYLES[curStyle] : null;
-              fightingStyleActionHtml = '<div class="feature-fighting-style-box" onclick="event.stopPropagation();">' +
-                '<div class="feature-fighting-style-header">' +
-                  '<span>⚔️ Escolha de Especialidade Marcial:</span>' +
-                  (styleObj ? '<span class="feature-active-style-badge">' + styleObj.icon + ' ' + styleObj.name + '</span>' : '<span style="color:#f87171; font-size:10px;">⚠️ Escolha Pendente</span>') +
-                '</div>' +
-                '<select class="feature-inline-select" onchange="setPlayerFightingStyle(\'' + p.id + '\', this.value, event)" title="Selecione o seu Estilo de Luta para aplicar bônus imediatos na ficha">' +
-                  '<option value="">-- Selecione o Estilo de Luta --</option>' +
-                  Object.values(FIGHTING_STYLES).map(st => '<option value="' + st.id + '" ' + (curStyle === st.id ? 'selected' : '') + '>' + st.icon + ' ' + st.name + ': ' + st.desc + '</option>').join('') +
-                '</select>' +
+        const isFightingStyleFeature = f.name && f.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes('estilo de luta');
+        let fightingStyleActionHtml = '';
+        if (isFightingStyleFeature) {
+          const curStyle = p.fightingStyle || '';
+          const styleObj = (typeof FIGHTING_STYLES !== 'undefined' && FIGHTING_STYLES[curStyle]) ? FIGHTING_STYLES[curStyle] : null;
+          fightingStyleActionHtml = '<div class="feature-fighting-style-box" onclick="event.stopPropagation();">' +
+            '<div class="feature-fighting-style-header">' +
+            '<span>⚔️ Escolha de Especialidade Marcial:</span>' +
+            (styleObj ? '<span class="feature-active-style-badge">' + styleObj.icon + ' ' + styleObj.name + '</span>' : '<span style="color:#f87171; font-size:10px;">⚠️ Escolha Pendente</span>') +
+            '</div>' +
+            '<select class="feature-inline-select" onchange="setPlayerFightingStyle(\'' + p.id + '\', this.value, event)" title="Selecione o seu Estilo de Luta para aplicar bônus imediatos na ficha">' +
+            '<option value="">-- Selecione o Estilo de Luta --</option>' +
+            Object.values(FIGHTING_STYLES).map(st => '<option value="' + st.id + '" ' + (curStyle === st.id ? 'selected' : '') + '>' + st.icon + ' ' + st.name + ': ' + st.desc + '</option>').join('') +
+            '</select>' +
+            '</div>';
+        }
+
+        // Box de Aumento no Valor de Habilidade / Talento por Marco de Nível (ISSUE-143)
+        const isAsiFeature = f.isAsi || (f.name && f.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes('aumento no valor de'));
+        let asiActionHtml = '';
+        if (isAsiFeature) {
+          const asiLvl = f.asiLevel || f.level || 4;
+          const clsKey = (clsItem ? clsItem.className : (p.className || '')).toLowerCase();
+          const asiKey = `${clsKey}_lvl_${asiLvl}`;
+          const choice = (p.asiChoices && p.asiChoices[asiKey]) || null;
+          if (choice) {
+            asiActionHtml = '<div class="feature-asi-box" onclick="event.stopPropagation();">' +
+              '<div class="feature-asi-header">' +
+              '<span>📈 Marco do ' + asiLvl + 'º Nível:</span>' +
+              '<span class="feature-asi-status-badge active">✅ ' + choice.label + '</span>' +
+              '</div>' +
+              '<div style="display:flex; justify-content:flex-end; margin-top:4px;">' +
+              '<button type="button" class="btn-secondary feature-asi-btn" onclick="openAsiChoiceModal(\'' + p.id + '\', ' + asiLvl + ', \'' + clsItem.className + '\')" title="Alterar a escolha deste nível">' +
+              '✏️ Alterar Escolha' +
+              '</button>' +
+              '</div>' +
               '</div>';
-            }
+          } else {
+            asiActionHtml = '<div class="feature-asi-box pending" onclick="event.stopPropagation();">' +
+              '<div class="feature-asi-header">' +
+              '<span>📈 Marco do ' + asiLvl + 'º Nível:</span>' +
+              '<span class="feature-asi-status-badge pending">⚠️ Escolha Pendente</span>' +
+              '</div>' +
+              '<div style="display:flex; justify-content:flex-end; margin-top:4px;">' +
+              '<button type="button" class="btn-action feature-asi-btn" onclick="openAsiChoiceModal(\'' + p.id + '\', ' + asiLvl + ', \'' + clsItem.className + '\')" title="Fazer a escolha de Atributo ou Talento">' +
+              '📈 Escolher Atributo ou Talento' +
+              '</button>' +
+              '</div>' +
+              '</div>';
+          }
+        }
 
-            // Box de Aumento no Valor de Habilidade / Talento por Marco de Nível (ISSUE-143)
-            const isAsiFeature = f.isAsi || (f.name && f.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes('aumento no valor de'));
-            let asiActionHtml = '';
-            if (isAsiFeature) {
-              const asiLvl = f.asiLevel || f.level || 4;
-              const clsKey = (clsItem ? clsItem.className : (p.className || '')).toLowerCase();
-              const asiKey = `${clsKey}_lvl_${asiLvl}`;
-              const choice = (p.asiChoices && p.asiChoices[asiKey]) || null;
-              if (choice) {
-                asiActionHtml = '<div class="feature-asi-box" onclick="event.stopPropagation();">' +
-                  '<div class="feature-asi-header">' +
-                    '<span>📈 Marco do ' + asiLvl + 'º Nível:</span>' +
-                    '<span class="feature-asi-status-badge active">✅ ' + choice.label + '</span>' +
-                  '</div>' +
-                  '<div style="display:flex; justify-content:flex-end; margin-top:4px;">' +
-                    '<button type="button" class="btn-secondary feature-asi-btn" onclick="openAsiChoiceModal(\'' + p.id + '\', ' + asiLvl + ', \'' + clsItem.className + '\')" title="Alterar a escolha deste nível">' +
-                      '✏️ Alterar Escolha' +
-                    '</button>' +
-                  '</div>' +
-                '</div>';
-              } else {
-                asiActionHtml = '<div class="feature-asi-box pending" onclick="event.stopPropagation();">' +
-                  '<div class="feature-asi-header">' +
-                    '<span>📈 Marco do ' + asiLvl + 'º Nível:</span>' +
-                    '<span class="feature-asi-status-badge pending">⚠️ Escolha Pendente</span>' +
-                  '</div>' +
-                  '<div style="display:flex; justify-content:flex-end; margin-top:4px;">' +
-                    '<button type="button" class="btn-action feature-asi-btn" onclick="openAsiChoiceModal(\'' + p.id + '\', ' + asiLvl + ', \'' + clsItem.className + '\')" title="Fazer a escolha de Atributo ou Talento">' +
-                      '📈 Escolher Atributo ou Talento' +
-                    '</button>' +
-                  '</div>' +
-                '</div>';
-              }
-            }
+        const featKey = registerFeatureForModal(formatted.name, formatted.desc, formatted.type || (actTagLabel + ' de Classe'), formatted.source || clsItem.className);
+        const rawBaseName = (f.name ? f.name.split('(')[0] : (formatted.name ? formatted.name.split('(')[0] : '')).trim();
+        const featCleanName = rawBaseName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+        const accordionKey = `${p.id}_class_${featCleanName}`;
+        const isOpen = isExpandedAll || (openItemsSet && openItemsSet.has(accordionKey));
+        const quickInfo = typeof getPlayerTraitQuickSummary === 'function' ? getPlayerTraitQuickSummary(f, p, clsItem) : null;
+        const quickUsageBadge = (quickInfo && quickInfo.usage) ? `<span class="feature-usage-pill">⏱️ ${quickInfo.usage}</span>` : '';
 
-            const featKey = registerFeatureForModal(formatted.name, formatted.desc, formatted.type || (actTagLabel + ' de Classe'), formatted.source || clsItem.className);
-            const rawBaseName = (f.name ? f.name.split('(')[0] : (formatted.name ? formatted.name.split('(')[0] : '')).trim();
-            const featCleanName = rawBaseName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
-            const accordionKey = `${p.id}_class_${featCleanName}`;
-            const isOpen = isExpandedAll || (openItemsSet && openItemsSet.has(accordionKey));
-
-            return `
+        return `
             <div class="unlocked-feature-item feature-class ${isOpen ? 'open' : ''}" onclick="togglePlayerFeatureAccordion('${accordionKey}', event)" title="Clique para expandir / recolher detalhes">
               <div style="display:flex; justify-content:space-between; align-items:center; gap: 4px;">
                 <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                   <span class="feature-chevron ${isOpen ? 'open' : ''}">${isOpen ? '▼' : '▶'}</span>
                   <span style="font-weight:700; color:#fff; font-size:12px;">${formatted.name}</span>
                   ${actBadgeHtml}
+                  ${quickUsageBadge}
                 </div>
                 <div style="display:flex; align-items:center; gap:4px;">
                   <button type="button" class="btn-chat-feed" onclick="event.stopPropagation(); openPlayerFeatureModalByKey('${featKey}')" title="Ver detalhes completos em pop-up">💬</button>
@@ -6584,7 +6938,7 @@ function renderPlayerUnlockedFeatures(p, actionFilter = 'all', textFilter = '', 
                 </div>
               </div>
               <div class="feature-snippet">
-                ${formatFeatureSnippet(formatted.desc)}
+                ${quickInfo && quickInfo.summary ? `<div class="feature-direct-summary">⚡ ${quickInfo.summary}</div>` : formatFeatureSnippet(formatted.desc)}
               </div>
               <div class="feature-full-desc ${isOpen ? 'open' : ''}">
                 ${typeof highlightInlineRules === 'function' ? highlightInlineRules(formatted.desc) : formatted.desc}
@@ -6593,7 +6947,7 @@ function renderPlayerUnlockedFeatures(p, actionFilter = 'all', textFilter = '', 
               ${asiActionHtml}
             </div>
             `;
-          }).join('')}
+      }).join('')}
         </div>
       `;
     }
@@ -6635,20 +6989,23 @@ function renderPlayerRacialTraits(p, textFilter = '', isExpandedAll = false, ope
     </div>
     <div class="unlocked-features-list">
       ${traits.map(t => {
-        const desc = t.description || t.desc || '';
-        const featKey = registerFeatureForModal(t.name, desc, t.type || 'Traço Racial', sp.name);
-        const rawTraitBaseName = (t.name ? t.name.split('(')[0] : '').trim();
-        const traitCleanName = rawTraitBaseName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
-        const accordionKey = `${p.id}_race_${traitCleanName}`;
-        const isOpen = isExpandedAll || (openItemsSet && openItemsSet.has(accordionKey));
+    const desc = t.description || t.desc || '';
+    const featKey = registerFeatureForModal(t.name, desc, t.type || 'Traço Racial', sp.name);
+    const rawTraitBaseName = (t.name ? t.name.split('(')[0] : '').trim();
+    const traitCleanName = rawTraitBaseName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+    const accordionKey = `${p.id}_race_${traitCleanName}`;
+    const isOpen = isExpandedAll || (openItemsSet && openItemsSet.has(accordionKey));
+    const quickInfo = typeof getPlayerTraitQuickSummary === 'function' ? getPlayerTraitQuickSummary({ name: t.name, desc: desc, type: t.type }, p) : null;
+    const quickUsageBadge = (quickInfo && quickInfo.usage) ? `<span class="feature-usage-pill">⏱️ ${quickInfo.usage}</span>` : '';
 
-        return `
+    return `
         <div class="unlocked-feature-item feature-species ${isOpen ? 'open' : ''}" onclick="togglePlayerFeatureAccordion('${accordionKey}', event)" title="Clique para expandir / recolher detalhes do traço racial">
           <div style="display:flex; justify-content:space-between; align-items:center; gap: 4px;">
             <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
               <span class="feature-chevron ${isOpen ? 'open' : ''}">${isOpen ? '▼' : '▶'}</span>
               <span style="font-weight:700; color:#fff; font-size:12px;">${t.name}</span>
-              <span class="action-economy-tag passive">${t.type || 'Racial'}</span>
+              <span class="action-economy-tag passive">${(quickInfo && quickInfo.tag) ? quickInfo.tag : (t.type || 'Racial')}</span>
+              ${quickUsageBadge}
             </div>
             <div style="display:flex; align-items:center; gap:4px;">
               <button type="button" class="btn-chat-feed" onclick="event.stopPropagation(); openPlayerFeatureModalByKey('${featKey}')" title="Ver detalhes do traço em pop-up">💬</button>
@@ -6656,14 +7013,14 @@ function renderPlayerRacialTraits(p, textFilter = '', isExpandedAll = false, ope
             </div>
           </div>
           <div class="feature-snippet">
-            ${typeof formatFeatureSnippet === 'function' ? formatFeatureSnippet(desc) : desc}
+            ${quickInfo && quickInfo.summary ? `<div class="feature-direct-summary">⚡ ${quickInfo.summary}</div>` : (typeof formatFeatureSnippet === 'function' ? formatFeatureSnippet(desc) : desc)}
           </div>
           <div class="feature-full-desc ${isOpen ? 'open' : ''}">
             ${typeof highlightInlineRules === 'function' ? highlightInlineRules(desc) : desc}
           </div>
         </div>
         `;
-      }).join('')}
+  }).join('')}
     </div>
   `;
 }
@@ -7248,6 +7605,7 @@ function getPlayerCompatibleClassKeys(p) {
 
 let currentPickerPlayerId = null;
 let pickerSelectedSpells = new Set();
+let pickerInitialSpells = new Set();
 let pickerSearchQuery = '';
 let pickerClassFilter = 'auto';
 let pickerCircleFilter = 'all';
@@ -7267,17 +7625,13 @@ function openSpellPickerModal(playerId) {
   pickerMode = 'prep';
   pickerHasChanges = false;
 
-  // Se preparedSpells já existe, usa; senão tenta extrair de p.spells
-  let initialSpells = Array.isArray(p.preparedSpells) ? [...p.preparedSpells] : [];
-  if (initialSpells.length === 0 && p.spells && typeof SPELLS_DATA !== 'undefined') {
-    const rawText = (p.spells || '').toLowerCase();
-    SPELLS_DATA.forEach(s => {
-      if (rawText.includes(s.name.toLowerCase())) {
-        initialSpells.push(s.name);
-      }
-    });
-  }
+  // Sincroniza e obtém as magias da ficha para que os checkboxes reflitam fielmente a ficha
+  const knownOnSheet = typeof getPlayerKnownSpells === 'function' ? getPlayerKnownSpells(p) : [];
+  let initialSpells = (Array.isArray(p.preparedSpells) && (p.preparedSpells.length > 0 || p._spellsSyncedFromPicker))
+    ? [...p.preparedSpells]
+    : [...knownOnSheet];
 
+  pickerInitialSpells = new Set(initialSpells);
   pickerSelectedSpells = new Set(initialSpells);
   pickerSearchQuery = '';
   pickerClassFilter = 'auto';
@@ -7482,8 +7836,8 @@ function renderSpellPickerList() {
     if (pickerClassFilter === 'auto') {
       if (heroClassKeys.length > 0) {
         // Mostra magias das classes do herói (incluindo multiclasse) OU qualquer magia já selecionada pelo herói (patrono, raça, talento, etc.)
-        spells = spells.filter(s => 
-          pickerSelectedSpells.has(s.name) || 
+        spells = spells.filter(s =>
+          pickerSelectedSpells.has(s.name) ||
           (Array.isArray(s.classes) && heroClassKeys.some(k => s.classes.includes(k)))
         );
       } else if (pickerSelectedSpells.size > 0) {
@@ -7672,28 +8026,36 @@ function saveSpellPickerSelection(isSilent = false) {
   const p = PLAYERS.find(x => x.id === currentPickerPlayerId);
   if (!p) return;
 
-  p.preparedSpells = Array.from(pickerSelectedSpells);
-  
-  // Assegura que todas as magias escolhidas fiquem guardadas no repertório permanente (p.spellbookSpells)
-  if (!Array.isArray(p.spellbookSpells)) p.spellbookSpells = [];
-  p.preparedSpells.forEach(sName => {
-    if (!p.spellbookSpells.includes(sName)) {
-      p.spellbookSpells.push(sName);
+  const selectedArr = Array.from(pickerSelectedSpells);
+  const removedInModal = Array.from(pickerInitialSpells || []).filter(s => !pickerSelectedSpells.has(s));
+
+  p.preparedSpells = selectedArr;
+  p._spellsSyncedFromPicker = true;
+
+  if (Array.isArray(p.unpreparedSpells)) {
+    p.unpreparedSpells = p.unpreparedSpells.filter(s => pickerSelectedSpells.has(s));
+  }
+
+  const isWiz = typeof isWizardPlayer === 'function' ? isWizardPlayer(p) : false;
+  if (isWiz) {
+    if (!Array.isArray(p.spellbookSpells)) p.spellbookSpells = [];
+    if (removedInModal.length > 0 || pickerMode === 'book') {
+      p.spellbookSpells = p.spellbookSpells.filter(s => !removedInModal.includes(s));
     }
-  });
+    selectedArr.forEach(sName => {
+      if (!p.spellbookSpells.includes(sName)) {
+        p.spellbookSpells.push(sName);
+      }
+    });
+  } else {
+    p.spellbookSpells = [...selectedArr, ...(p.unpreparedSpells || [])];
+  }
 
-  const cantrips = [];
-  const leveled = [];
-  p.preparedSpells.forEach(sName => {
-    const s = typeof SPELLS_DATA !== 'undefined' ? SPELLS_DATA.find(x => x.name.toLowerCase() === sName.toLowerCase()) : null;
-    if (s && s.level === 0) cantrips.push(sName);
-    else leveled.push(sName);
-  });
+  if (Array.isArray(p.knownSpells)) {
+    p.knownSpells = [...p.spellbookSpells];
+  }
 
-  let summary = '';
-  if (cantrips.length > 0) summary += `Truques: ${cantrips.join(', ')}\n`;
-  if (leveled.length > 0) summary += `Preparadas: ${leveled.join(', ')}`;
-  if (summary) p.spells = summary.trim();
+  p.spells = buildPlayerSpellsSummary(p.preparedSpells);
 
   pickerHasChanges = false;
   const modal = document.getElementById('modal-spell-picker');
@@ -7764,7 +8126,7 @@ function castPlayerSpellPrompt(playerId, spellName) {
   document.getElementById('cast-spell-desc').innerHTML = sp ? sp.desc.replace(/\n/g, '<br>') : 'Sem descrição detalhada.';
 
   const slotsOptionsContainer = document.getElementById('cast-slot-options');
-  
+
   // Se p.slots não existir ou estiver zerado, auto-calcula para conjuradores
   if ((!p.slots || p.slots.every(s => s === 0)) && typeof calculateMulticlassSpellSlots === 'function') {
     const calc = calculateMulticlassSpellSlots(p);
@@ -8311,7 +8673,7 @@ function getRacialAndClassSpeed(raceName, className, level, armorKey = 'none') {
 
   // Pequenas raças ou lentas oficiais 5E
   if (normRace.includes('anão') || normRace.includes('anao') || normRace.includes('dwarf') ||
-      normRace.includes('halfling') || normRace.includes('gnomo') || normRace.includes('gnome')) {
+    normRace.includes('halfling') || normRace.includes('gnomo') || normRace.includes('gnome')) {
     baseSpeed = 7.5;
   } else if (normRace.includes('floresta') || normRace.includes('bosque') || normRace.includes('wood elf')) {
     baseSpeed = 10.5;
@@ -8501,7 +8863,7 @@ function renderModalEquippedWeapons() {
           <button type="button" class="modal-weapon-del-btn" onclick="removeModalWeapon(${idx})" title="Desequipar arma">✕</button>
         </div>
         <div class="modal-weapon-stats-row">
-          <span class="modal-weapon-badge-hit" title="Acerto baseado em ${keyAttrLabel} (${stats.attrMod >= 0 ? '+' : ''}${stats.attrMod}) ${isProf ? '+ Proficiência (+'+stats.pb+')' : ''}">
+          <span class="modal-weapon-badge-hit" title="Acerto baseado em ${keyAttrLabel} (${stats.attrMod >= 0 ? '+' : ''}${stats.attrMod}) ${isProf ? '+ Proficiência (+' + stats.pb + ')' : ''}">
             🎯 Acerto: <b>${stats.hitStr}</b>
           </span>
           <span class="modal-weapon-badge-dmg" title="Fórmula oficial de dano 5E">
@@ -8668,6 +9030,14 @@ function onPlayerModalClassOrLevelChange(preserveSlotsIfSet = false) {
       previewBox.innerHTML = `<span style="color:var(--text-dim); font-size:11px;">Nenhuma habilidade de classe listada para este nível.</span>`;
     }
   }
+
+  // ISSUE-160: Sincroniza os painéis interativos do D&D Beyond Character Builder
+  if (typeof renderModalClassBuilderCards === 'function') renderModalClassBuilderCards();
+  if (typeof renderModalClassSkillsPicker === 'function') renderModalClassSkillsPicker();
+  if (typeof renderModalSpeciesBuilderCards === 'function') renderModalSpeciesBuilderCards();
+  if (typeof renderModalTraitSuggestions === 'function') renderModalTraitSuggestions();
+  if (typeof renderModalStartingEquipmentChoices === 'function') renderModalStartingEquipmentChoices();
+  if (typeof updateDdbHeroSummaryBar === 'function') updateDdbHeroSummaryBar();
 }
 
 function updateModalCalculatedAc() {
@@ -8742,7 +9112,7 @@ function updateModalAttributeModifiers() {
   const raceSel = document.getElementById('pm-race-select');
   const raceInput = document.getElementById('pm-race');
   const raceName = raceSel ? (raceSel.value === 'custom' ? (raceInput ? raceInput.value : 'Humano') : raceSel.value) : (raceInput ? raceInput.value : 'Humano');
-  const rBonuses = typeof getRacialAbilityBonuses === 'function' ? getRacialAbilityBonuses(raceName) : { str:0, dex:0, con:0, int:0, wis:0, cha:0, label: 'Nenhum (+0)' };
+  const rBonuses = typeof getRacialAbilityBonuses === 'function' ? getRacialAbilityBonuses(raceName) : { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0, label: 'Nenhum (+0)' };
 
   // Atualiza barra de resumo do bônus racial
   const summaryEl = document.getElementById('pm-race-summary-text');
@@ -8948,6 +9318,28 @@ function openPlayerModal(id) {
     const avatarInp = document.getElementById('pm-avatar');
     if (avatarInp) avatarInp.value = p.avatar || '👤';
 
+    // ISSUE-160: Campos de Detalhes & Características Físicas (D&D Beyond)
+    const setValIfEl = (elId, val) => {
+      const el = document.getElementById(elId);
+      if (el) el.value = val || '';
+    };
+    setValIfEl('pm-alignment', p.alignment || 'Neutro e Bom');
+    setValIfEl('pm-faith', p.faith || '');
+    setValIfEl('pm-lifestyle', p.lifestyle || 'Modesto');
+    setValIfEl('pm-gender', p.gender || '');
+    setValIfEl('pm-age', p.age || '');
+    setValIfEl('pm-height', p.height || '');
+    setValIfEl('pm-weight', p.weight || '');
+    setValIfEl('pm-eyes', p.eyes || '');
+    setValIfEl('pm-skin', p.skin || '');
+    setValIfEl('pm-hair', p.hair || '');
+
+    if (typeof window !== 'undefined') {
+      window._modalSelectedClassSkills = Array.isArray(p.skillProficiencies) ? [...p.skillProficiencies] : [];
+      window._modalStartingInventory = Array.isArray(p.inventory) ? JSON.parse(JSON.stringify(p.inventory)) : [];
+      window._modalStartingEquipChoices = {};
+    }
+
     const fsSel = document.getElementById('pm-fighting-style');
     if (fsSel) {
       fsSel.value = p.fightingStyle || '';
@@ -9003,7 +9395,7 @@ function openPlayerModal(id) {
 
     // Novos campos de Origem & Background (P3)
     const bgInp = document.getElementById('pm-background');
-    if (bgInp) bgInp.value = 'Aventureiro';
+    if (bgInp) bgInp.value = 'Soldado';
     const persInp = document.getElementById('pm-personality');
     if (persInp) persInp.value = '';
     const idealInp = document.getElementById('pm-ideal');
@@ -9016,6 +9408,28 @@ function openPlayerModal(id) {
     if (storyInp) storyInp.value = '';
     const avatarInp = document.getElementById('pm-avatar');
     if (avatarInp) avatarInp.value = '👤';
+
+    // ISSUE-160: Limpa campos de Detalhes & Características Físicas
+    const setValIfEl = (elId, val) => {
+      const el = document.getElementById(elId);
+      if (el) el.value = val || '';
+    };
+    setValIfEl('pm-alignment', 'Neutro e Bom');
+    setValIfEl('pm-faith', '');
+    setValIfEl('pm-lifestyle', 'Modesto');
+    setValIfEl('pm-gender', '');
+    setValIfEl('pm-age', '');
+    setValIfEl('pm-height', '');
+    setValIfEl('pm-weight', '');
+    setValIfEl('pm-eyes', '');
+    setValIfEl('pm-skin', '');
+    setValIfEl('pm-hair', '');
+
+    if (typeof window !== 'undefined') {
+      window._modalSelectedClassSkills = [];
+      window._modalStartingInventory = [];
+      window._modalStartingEquipChoices = {};
+    }
 
     const fsSel = document.getElementById('pm-fighting-style');
     if (fsSel) fsSel.value = '';
@@ -9038,6 +9452,9 @@ function openPlayerModal(id) {
   if (typeof window !== 'undefined') window._modalPendingBackgroundSkills = [];
   if (typeof onModalBackgroundChange === 'function') {
     onModalBackgroundChange(document.getElementById('pm-background')?.value || '');
+  }
+  if (typeof initDdbCharacterBuilderModal === 'function') {
+    initDdbCharacterBuilderModal();
   }
 
   if (modal) modal.classList.add('open');
@@ -9147,7 +9564,7 @@ function savePlayerSheet() {
         'sabedoria': 'wis', 'wisdom': 'wis',
         'carisma': 'cha', 'charisma': 'cha'
       };
-      defaultSaves = clsObj.savingThrows.map(s => saveMap[s.toLowerCase()] || s.toLowerCase()).filter(s => ['str','dex','con','int','wis','cha'].includes(s));
+      defaultSaves = clsObj.savingThrows.map(s => saveMap[s.toLowerCase()] || s.toLowerCase()).filter(s => ['str', 'dex', 'con', 'int', 'wis', 'cha'].includes(s));
     }
   }
 
@@ -9249,6 +9666,26 @@ function savePlayerSheet() {
     });
   }
 
+  // ISSUE-160: Mescla itens do Equipamento Inicial / Mochila do Modal
+  if (typeof window !== 'undefined' && Array.isArray(window._modalStartingInventory)) {
+    window._modalStartingInventory.forEach((stItem, idx) => {
+      if (!stItem || !stItem.name) return;
+      const normName = String(stItem.name).toLowerCase().trim();
+      const alreadyExists = currentInv.find(it => String(it.name || '').toLowerCase().trim() === normName);
+      if (!alreadyExists) {
+        currentInv.push({
+          id: stItem.id || ('item_st_' + Date.now() + '_' + idx),
+          name: stItem.name,
+          category: stItem.category || 'Equipamento de Aventura',
+          qty: parseInt(stItem.qty, 10) || 1,
+          weight: stItem.weight !== undefined ? stItem.weight : 1,
+          cost: stItem.cost || '1 PO',
+          equipped: !!stItem.equipped
+        });
+      }
+    });
+  }
+
   let currentPrepared = existing && Array.isArray(existing.preparedSpells) ? [...existing.preparedSpells] : [];
   let currentBook = existing && Array.isArray(existing.spellbookSpells) ? [...existing.spellbookSpells] : [...currentPrepared];
   const spellsInputVal = document.getElementById('pm-spells') ? document.getElementById('pm-spells').value.trim() : '';
@@ -9320,7 +9757,8 @@ function savePlayerSheet() {
     skillProficiencies: (() => {
       const baseSkills = existing && Array.isArray(existing.skillProficiencies) ? [...existing.skillProficiencies] : [];
       const pendingBg = (typeof window !== 'undefined' && Array.isArray(window._modalPendingBackgroundSkills)) ? window._modalPendingBackgroundSkills : [];
-      pendingBg.forEach(sk => {
+      const selectedCls = (typeof window !== 'undefined' && Array.isArray(window._modalSelectedClassSkills)) ? window._modalSelectedClassSkills : [];
+      [...pendingBg, ...selectedCls].forEach(sk => {
         if (sk && !baseSkills.includes(sk)) baseSkills.push(sk);
       });
       return baseSkills;
@@ -9337,6 +9775,16 @@ function savePlayerSheet() {
     bond: bondVal,
     flaw: flawVal,
     backstory: storyVal,
+    alignment: document.getElementById('pm-alignment')?.value || (existing ? existing.alignment || 'Neutro e Bom' : 'Neutro e Bom'),
+    faith: document.getElementById('pm-faith')?.value?.trim() || (existing ? existing.faith || '' : ''),
+    lifestyle: document.getElementById('pm-lifestyle')?.value || (existing ? existing.lifestyle || 'Modesto' : 'Modesto'),
+    gender: document.getElementById('pm-gender')?.value?.trim() || (existing ? existing.gender || '' : ''),
+    age: document.getElementById('pm-age')?.value?.trim() || (existing ? existing.age || '' : ''),
+    height: document.getElementById('pm-height')?.value?.trim() || (existing ? existing.height || '' : ''),
+    weight: document.getElementById('pm-weight')?.value?.trim() || (existing ? existing.weight || '' : ''),
+    eyes: document.getElementById('pm-eyes')?.value?.trim() || (existing ? existing.eyes || '' : ''),
+    skin: document.getElementById('pm-skin')?.value?.trim() || (existing ? existing.skin || '' : ''),
+    hair: document.getElementById('pm-hair')?.value?.trim() || (existing ? existing.hair || '' : ''),
     baseAttributes: {
       str: parseInt(document.getElementById('pm-base-str')?.value) || (parseInt(document.getElementById('pm-str').value) || 10),
       dex: parseInt(document.getElementById('pm-base-dex')?.value) || (parseInt(document.getElementById('pm-dex').value) || 10),
@@ -9418,7 +9866,7 @@ function trackDeletedPlayerId(id) {
       if (list.length > 100) list = list.slice(-100);
       localStorage.setItem('dnd5e_deleted_player_ids', JSON.stringify(list));
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 function deletePlayerDirect(id) {
@@ -9637,13 +10085,34 @@ function getPlayerAllFeaturesAndTraits(p) {
   const list = [];
   const addedNames = new Set();
 
-  function addEntry(category, name, desc) {
+  function addEntry(category, name, desc, clsItem = null, rawFeatureObj = null) {
     if (!name) return;
     const cleanName = String(name).trim();
-    const key = cleanName.toLowerCase();
-    if (addedNames.has(key)) return;
-    addedNames.add(key);
-    list.push({ category: category || 'Habilidade', name: cleanName, desc: desc ? String(desc).trim() : '' });
+    const baseKey = typeof normalizeTraitLookupKey === 'function'
+      ? normalizeTraitLookupKey(cleanName)
+      : cleanName.toLowerCase();
+    const fullKey = cleanName.toLowerCase();
+    if (!baseKey || addedNames.has(baseKey) || addedNames.has(fullKey)) return;
+    addedNames.add(baseKey);
+    addedNames.add(fullKey);
+
+    const featInput = rawFeatureObj || { name: cleanName, desc: desc || '' };
+    const quick = typeof getPlayerTraitQuickSummary === 'function'
+      ? getPlayerTraitQuickSummary(featInput, p, clsItem)
+      : { name: cleanName, tag: 'Passivo', usage: '', summary: desc || '' };
+
+    const shortDesc = (quick && quick.summary) ? quick.summary : (desc ? String(desc).trim() : '');
+    const displayName = (quick && quick.name) ? quick.name : cleanName;
+
+    list.push({
+      category: category || 'Habilidade',
+      name: displayName,
+      tag: (quick && quick.tag) || 'Passivo',
+      usage: (quick && quick.usage) || '',
+      shortDesc: shortDesc,
+      fullDesc: desc ? String(desc).trim() : shortDesc,
+      desc: shortDesc
+    });
   }
 
   // 1. Habilidades Oficiais de Classe por Nível (incluindo Multiclasse)
@@ -9655,12 +10124,20 @@ function getPlayerAllFeaturesAndTraits(p) {
     classesList.forEach(c => {
       const unlocked = getUnlockedClassFeatures(c.className, c.level, c.subclassIdx || 0);
       unlocked.forEach(f => {
+        const fNameNorm = String(f.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const isAsi = f.isAsi || fNameNorm.includes('aumento no valor de habilidade') || fNameNorm.includes('aumento no valor de atributo');
+        if (isAsi) {
+          const asiLvl = f.asiLevel || f.level || 4;
+          const asiKey = `${String(c.className || '').toLowerCase()}_lvl_${asiLvl}`;
+          const choice = (p.asiChoices && p.asiChoices[asiKey]) || null;
+          if (!choice) return; // Omite marcos genéricos de ASI sem escolha específica para não poluir a ficha
+        }
         let detail = f.desc || f.description || '';
         if (f.name && f.name.toLowerCase().includes('estilo de luta') && p.fightingStyle) {
           const st = (typeof FIGHTING_STYLES !== 'undefined') ? FIGHTING_STYLES[p.fightingStyle] : null;
           if (st) detail = `Especialidade: ${st.name}. ${st.desc}`;
         }
-        addEntry(`Classe (${c.className} Nv ${f.level || c.level})`, f.name, detail);
+        addEntry(`Classe (${c.className} Nv ${f.level || c.level})`, f.name, detail, c, f);
       });
     });
   }
@@ -9670,8 +10147,9 @@ function getPlayerAllFeaturesAndTraits(p) {
     const sp = findSpeciesData(p.race);
     if (sp && Array.isArray(sp.traits)) {
       sp.traits.forEach(t => {
-        if (t.name && t.name.toLowerCase().includes('aumento no valor')) return;
-        addEntry(`Raça (${sp.name})`, t.name, t.description || t.desc || '');
+        const tLow = (t.name || '').toLowerCase();
+        if (tLow.includes('aumento no valor') || tLow === 'idiomas' || tLow.startsWith('idiomas ')) return;
+        addEntry(`Raça (${sp.name})`, t.name, t.description || t.desc || '', null, { name: t.name, desc: t.description || t.desc || '', type: t.type });
       });
     }
   }
@@ -9690,10 +10168,16 @@ function getPlayerAllFeaturesAndTraits(p) {
     const lines = p.features.split('\n').map(l => l.trim()).filter(Boolean);
     lines.forEach(l => {
       const cleanLine = l.replace(/^[•\-\*✦]\s*/, '');
-      const parts = cleanLine.split(/:(.+)/);
-      const name = parts[0] ? parts[0].trim() : cleanLine;
-      const desc = parts[1] ? parts[1].trim() : '';
-      addEntry('Personalizado', name, desc);
+      if (!cleanLine.includes(':') && cleanLine.includes(',')) {
+        cleanLine.split(',').map(s => s.trim()).filter(Boolean).forEach(subName => {
+          addEntry('Personalizado', subName, '');
+        });
+      } else {
+        const parts = cleanLine.split(/:(.+)/);
+        const name = parts[0] ? parts[0].trim() : cleanLine;
+        const desc = parts[1] ? parts[1].trim() : '';
+        addEntry('Personalizado', name, desc);
+      }
     });
   } else if (Array.isArray(p.features) && p.features.length > 0) {
     p.features.forEach(f => {
@@ -9717,7 +10201,7 @@ function printPlayerSheet(id) {
   }
 
   const prof = getProfBonus(p.level);
-  
+
   // Atributos e Modificadores
   const strVal = parseInt(p.str) || 10;
   const dexVal = parseInt(p.dex) || 10;
@@ -9849,8 +10333,8 @@ function printPlayerSheet(id) {
   const spellAtkBonus = fmtMod(prof + spellMod);
 
   // Espaços de Magia
-  const slots = Array.isArray(p.slots) ? p.slots : [0,0,0,0,0,0,0,0,0];
-  const slotsUsed = Array.isArray(p.slotsUsed) ? p.slotsUsed : [0,0,0,0,0,0,0,0,0];
+  const slots = Array.isArray(p.slots) ? p.slots : [0, 0, 0, 0, 0, 0, 0, 0, 0];
+  const slotsUsed = Array.isArray(p.slotsUsed) ? p.slotsUsed : [0, 0, 0, 0, 0, 0, 0, 0, 0];
   const hasSpells = slots.some(s => s > 0) || (Array.isArray(p.preparedSpells) && p.preparedSpells.length > 0) || !!p.spells;
 
   // Ataques & Armas
@@ -9971,7 +10455,7 @@ function printPlayerSheet(id) {
           <div class="a4-bordered-box" style="margin-top: 6px;">
             <div class="a4-box-title">Outras Proficiências & Idiomas</div>
             <div class="a4-box-content-sm">
-              <div><b>Idiomas:</b> ${p.languages || 'Comum'}</div>
+              <div><b>Idiomas:</b> ${typeof getPlayerLanguagesString === 'function' ? getPlayerLanguagesString(p) : (p.languages || 'Comum')}</div>
               <div><b>Armaduras:</b> ${p.armorProficiencies || 'Todas / Padrão da Classe'}</div>
               <div><b>Armas:</b> ${p.weaponProficiencies || 'Simples e Marciais'}</div>
               ${p.tools ? `<div><b>Ferramentas:</b> ${p.tools}</div>` : ''}
@@ -10084,15 +10568,15 @@ function printPlayerSheet(id) {
               <div class="a4-box-title">Espaços de Magia (Spell Slots)</div>
               <div class="a4-spell-slots-grid">
                 ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(lvl => {
-                  const maxSlot = slots[lvl - 1] || 0;
-                  const usedSlot = slotsUsed[lvl - 1] || 0;
-                  const remSlot = Math.max(0, maxSlot - usedSlot);
-                  if (maxSlot === 0 && lvl > 3) return '';
-                  let slotCircles = '';
-                  for (let sc = 0; sc < maxSlot; sc++) {
-                    slotCircles += (sc < remSlot ? '○ ' : '● ');
-                  }
-                  return `
+    const maxSlot = slots[lvl - 1] || 0;
+    const usedSlot = slotsUsed[lvl - 1] || 0;
+    const remSlot = Math.max(0, maxSlot - usedSlot);
+    if (maxSlot === 0 && lvl > 3) return '';
+    let slotCircles = '';
+    for (let sc = 0; sc < maxSlot; sc++) {
+      slotCircles += (sc < remSlot ? '○ ' : '● ');
+    }
+    return `
                     <div class="a4-slot-pill ${maxSlot > 0 ? 'active' : ''}">
                       <div class="a4-slot-lvl">Nv ${lvl}</div>
                       <div class="a4-slot-dots">
@@ -10100,7 +10584,7 @@ function printPlayerSheet(id) {
                       </div>
                     </div>
                   `;
-                }).join('')}
+  }).join('')}
               </div>
             </div>
           ` : ''}
@@ -10112,21 +10596,23 @@ function printPlayerSheet(id) {
             <div class="a4-box-title">Características de Classe & Talentos</div>
             <div class="a4-features-content">
               ${(() => {
-                const allFeats = getPlayerAllFeaturesAndTraits(p);
-                if (allFeats.length === 0) {
-                  return '<div style="color: #666; font-size: 7.5pt; font-style: italic;">Nenhuma característica especial registrada.</div>';
-                }
-                return allFeats.map(feat => `
+      const allFeats = getPlayerAllFeaturesAndTraits(p);
+      if (allFeats.length === 0) {
+        return '<div style="color: #666; font-size: 7.5pt; font-style: italic;">Nenhuma característica especial registrada.</div>';
+      }
+      return allFeats.map(feat => `
                   <div class="a4-feature-item">
                     <div class="a4-feature-item-header">
                       <span class="a4-feature-bullet">✦</span>
                       <b class="a4-feature-name">${feat.name}</b>
+                      ${feat.tag ? `<span class="a4-feature-tag">${feat.tag}</span>` : ''}
+                      ${feat.usage ? `<span class="a4-feature-usage">${feat.usage}</span>` : ''}
                       ${feat.category ? `<span class="a4-feature-category">${feat.category}</span>` : ''}
                     </div>
                     ${feat.desc ? `<div class="a4-feature-desc">${feat.desc.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')}</div>` : ''}
                   </div>
                 `).join('');
-              })()}
+    })()}
             </div>
           </div>
         </div>
@@ -10219,8 +10705,8 @@ function printPlayerSheet(id) {
                 </thead>
                 <tbody>
                   ${inventory.length > 0 ? inventory.map(it => {
-                    const cleanW = String(it.weight || '').replace(/\s*kg/gi, '').trim();
-                    return `
+      const cleanW = String(it.weight || '').replace(/\s*kg/gi, '').trim();
+      return `
                       <tr>
                         <td style="text-align: center; font-weight: bold;">${it.qty || 1}x</td>
                         <td><b>${it.name}</b></td>
@@ -10228,7 +10714,7 @@ function printPlayerSheet(id) {
                         <td style="text-align: center; font-size: 7pt;">${it.equipped ? '🛡️ Equipado' : 'Mochila'}</td>
                       </tr>
                     `;
-                  }).join('') : `
+    }).join('') : `
                     <tr>
                       <td colspan="4" style="text-align: center; color: #666; padding: 10px;">Mochila vazia.</td>
                     </tr>
@@ -10271,28 +10757,28 @@ function printPlayerSheet(id) {
             <div class="a4-box-title">Grimório & Magias Conhecidas</div>
             <div class="a4-spellbook-list">
               ${(() => {
-                const spellsArr = (Array.isArray(p.preparedSpells) && p.preparedSpells.length > 0)
-                  ? p.preparedSpells
-                  : (Array.isArray(p.spells) && p.spells.length > 0 ? p.spells : []);
+      const spellsArr = (Array.isArray(p.preparedSpells) && p.preparedSpells.length > 0)
+        ? p.preparedSpells
+        : (Array.isArray(p.spells) && p.spells.length > 0 ? p.spells : []);
 
-                if (spellsArr.length > 0) {
-                  return spellsArr.map(s => {
-                    const sName = typeof s === 'string' ? s : (s.name || 'Magia');
-                    const sLvl = typeof s === 'object' && s.level !== undefined ? (s.level === 0 ? 'Truque' : `Nv ${s.level}`) : '';
-                    return `
+      if (spellsArr.length > 0) {
+        return spellsArr.map(s => {
+          const sName = typeof s === 'string' ? s : (s.name || 'Magia');
+          const sLvl = typeof s === 'object' && s.level !== undefined ? (s.level === 0 ? 'Truque' : `Nv ${s.level}`) : '';
+          return `
                       <div class="a4-spell-entry">
                         <span class="a4-spell-entry-bullet">✦</span>
                         <span class="a4-spell-entry-name">${sName}</span>
                         ${sLvl ? `<span class="a4-spell-entry-lvl">${sLvl}</span>` : ''}
                       </div>
                     `;
-                  }).join('');
-                }
-                if (typeof p.spells === 'string' && p.spells.trim()) {
-                  return `<div style="font-size: 8pt; line-height: 1.4;">${p.spells.replace(/\n/g, '<br>')}</div>`;
-                }
-                return '<div style="color: #666; font-size: 7.5pt;">Nenhuma magia preparada.</div>';
-              })()}
+        }).join('');
+      }
+      if (typeof p.spells === 'string' && p.spells.trim()) {
+        return `<div style="font-size: 8pt; line-height: 1.4;">${p.spells.replace(/\n/g, '<br>')}</div>`;
+      }
+      return '<div style="color: #666; font-size: 7.5pt;">Nenhuma magia preparada.</div>';
+    })()}
             </div>
           </div>
 
@@ -10301,10 +10787,10 @@ function printPlayerSheet(id) {
             <div class="a4-box-title">Diário de Missões & Anotações</div>
             <div class="a4-notes-lines">
               ${typeof p.playerNotes === 'string' && p.playerNotes.trim()
-                ? p.playerNotes.replace(/\n/g, '<br>')
-                : (Array.isArray(p.playerNotes) && p.playerNotes.length > 0
-                    ? p.playerNotes.join('<br>')
-                    : `
+      ? p.playerNotes.replace(/\n/g, '<br>')
+      : (Array.isArray(p.playerNotes) && p.playerNotes.length > 0
+        ? p.playerNotes.join('<br>')
+        : `
                         <div class="a4-ruled-line"></div>
                         <div class="a4-ruled-line"></div>
                         <div class="a4-ruled-line"></div>
@@ -10808,7 +11294,7 @@ function initPlayerPortalMode(playerId) {
       localStorage.setItem('dnd5e_auth_player_id', p.id);
       localStorage.setItem('dnd5e_session_role', 'player');
     }
-  } catch(e) {}
+  } catch (e) { }
   if (typeof document !== 'undefined' && document.body && document.body.classList) {
     document.body.classList.add('mode-player-portal');
   }
@@ -10853,7 +11339,7 @@ function _executeExitPortalToMaster() {
       localStorage.removeItem('dnd5e_auth_player_id');
       localStorage.setItem('dnd5e_session_role', 'master');
     }
-  } catch(e) {}
+  } catch (e) { }
   if (typeof document !== 'undefined' && document.body && document.body.classList) {
     document.body.classList.remove('mode-player-portal');
   }
@@ -10890,14 +11376,14 @@ function handleWelcomeSelect(role) {
     if (typeof setClientRole === 'function') setClientRole('player');
     try {
       if (typeof localStorage !== 'undefined') localStorage.setItem('dnd5e_session_role', 'player');
-    } catch (e) {}
+    } catch (e) { }
     closeWelcomeScreen();
     openPlayerLoginModal();
   } else if (role === 'master') {
     const onMasterSuccess = () => {
       try {
         if (typeof localStorage !== 'undefined') localStorage.setItem('dnd5e_session_role', 'master');
-      } catch (e) {}
+      } catch (e) { }
       if (typeof clientRole !== 'undefined') clientRole = 'master';
       if (typeof setClientRole === 'function') setClientRole('master');
       closeWelcomeScreen();
@@ -10920,7 +11406,7 @@ function resumeLastPlayerSession() {
       dismissPlayerReturnBanner();
       initPlayerPortalMode(savedId);
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 function dismissPlayerReturnBanner() {
@@ -10948,7 +11434,7 @@ function openRoomQrCodeModal() {
   } else {
     const imgEl = document.getElementById('img-room-qrcode');
     if (imgEl && imgEl.tagName && imgEl.tagName.toLowerCase() === 'img') {
-      imgEl.onerror = function() {
+      imgEl.onerror = function () {
         this.onerror = null;
         this.src = `https://quickchart.io/qr?size=240&text=${encodeURIComponent(lobbyUrl)}`;
       };
@@ -10991,7 +11477,7 @@ function checkPlayerPortalUrl() {
           localStorage.removeItem('dnd5e_master_session_exp');
           localStorage.removeItem('dnd5e_session_role');
         }
-      } catch (e) {}
+      } catch (e) { }
       if (typeof showToast === 'function') {
         showToast('🔑 PIN do Mestre foi resetado com sucesso.', 'warning');
       }
@@ -11056,7 +11542,7 @@ function checkPlayerPortalUrl() {
         lastPlayerId = localStorage.getItem('dnd5e_last_portal_player_id');
         savedRole = localStorage.getItem('dnd5e_session_role');
       }
-    } catch (e) {}
+    } catch (e) { }
 
     if (lastPlayerId) {
       const savedHero = Array.isArray(PLAYERS) ? PLAYERS.find(p => p.id === lastPlayerId) : null;
@@ -11299,7 +11785,7 @@ function selectLoginCharacter(playerId) {
       const currentRoom = (typeof getStoredFirebaseRoom === 'function') ? getStoredFirebaseRoom() : 'turma_principal';
       localStorage.setItem('dnd5e_last_portal_room', currentRoom);
     }
-  } catch (e) {}
+  } catch (e) { }
 
   if (typeof dismissPlayerReturnBanner === 'function') {
     dismissPlayerReturnBanner();
@@ -12189,9 +12675,9 @@ function renderLevelUpWizardStep() {
             </div>
             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px;">
               ${attrNames.map(a => {
-                const isSelected = asi.singleAttr === a.key;
-                const pInfo = getPreviewAttr(a.key, 2);
-                return `
+          const isSelected = asi.singleAttr === a.key;
+          const pInfo = getPreviewAttr(a.key, 2);
+          return `
                   <button type="button" class="btn-secondary asi-attr-btn ${isSelected ? 'active' : ''}" 
                           onclick="setLevelUpAsiSingle('${a.key}')" 
                           style="display: flex; flex-direction: column; align-items: center; padding: 8px 6px; gap: 3px; border-radius: 8px; border: 1.5px solid ${isSelected ? 'var(--accent-gold)' : 'rgba(255,255,255,0.1)'}; background: ${isSelected ? 'rgba(245,158,11,0.15)' : 'rgba(0,0,0,0.2)'};">
@@ -12202,7 +12688,7 @@ function renderLevelUpWizardStep() {
                     </span>
                   </button>
                 `;
-              }).join('')}
+        }).join('')}
             </div>
             <div style="margin-top: 10px; padding: 8px 12px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
               <span style="font-size: 12px; color: #e2e8f0;">
@@ -13577,9 +14063,9 @@ function hasPlayerFeat(p, featIdOrName) {
   if (!p) return false;
   const target = String(featIdOrName || '').toLowerCase().trim();
   const feats = getPlayerFeats(p);
-  const found = feats.some(f => 
-    f.id.toLowerCase() === target || 
-    f.name.toLowerCase() === target || 
+  const found = feats.some(f =>
+    f.id.toLowerCase() === target ||
+    f.name.toLowerCase() === target ||
     (f.nameEn && f.nameEn.toLowerCase() === target)
   );
   if (found) return true;
@@ -13705,7 +14191,7 @@ function grantFeatToPlayer(playerId, featId, options = {}) {
       const oldVal = p[chosenStat];
       const newVal = Math.min(20, oldVal + (f.statBonus.amount || 1));
       p[chosenStat] = newVal;
-      
+
       // Se Constituição aumentou, concede PV retroativo
       if (chosenStat === 'con') {
         const oldMod = Math.floor((oldVal - 10) / 2);
@@ -13876,12 +14362,12 @@ function renderPlayerFeatsSection(p, textFilter = '', isExpandedAll = false, ope
   return `
     <div class="player-feats-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; margin-bottom: 12px;">
       ${feats.map(f => {
-        let tag = '';
-        if (f.chosenStat) tag = `<span class="feat-badge-pill purple">+1 ${f.chosenStat.toUpperCase()}</span>`;
-        else if (f.initiativeBonus) tag = `<span class="feat-badge-pill gold">+${f.initiativeBonus} Init</span>`;
-        else if (f.hpPerLevel) tag = `<span class="feat-badge-pill green">+2 PV/nv</span>`;
+    let tag = '';
+    if (f.chosenStat) tag = `<span class="feat-badge-pill purple">+1 ${f.chosenStat.toUpperCase()}</span>`;
+    else if (f.initiativeBonus) tag = `<span class="feat-badge-pill gold">+${f.initiativeBonus} Init</span>`;
+    else if (f.hpPerLevel) tag = `<span class="feat-badge-pill green">+2 PV/nv</span>`;
 
-        return `
+    return `
           <div class="player-feat-card" onclick="openFeatDetailModal('${f.id}')" title="Clique para ler regras completas" style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(250, 204, 21, 0.25); border-left: 3px solid #facc15; border-radius: 8px; padding: 8px 10px; cursor: pointer; transition: all 0.2s;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
               <div style="display: flex; align-items: center; gap: 8px;">
@@ -13898,7 +14384,7 @@ function renderPlayerFeatsSection(p, textFilter = '', isExpandedAll = false, ope
             </div>
           </div>
         `;
-      }).join('')}
+  }).join('')}
     </div>
   `;
 }
@@ -13992,8 +14478,8 @@ function renderMasterGrantFeatList() {
   listContainer.innerHTML = filtered.map(f => {
     const alreadyHas = hasPlayerFeat(p, f.id);
     const prereqCheck = typeof checkFeatPrerequisites === 'function' ? checkFeatPrerequisites(p, f) : { met: true, reason: 'Nenhum' };
-    const prereqBadge = !prereqCheck.met 
-      ? `<span style="color: #f87171; font-size: 10px; font-weight: 700;">⚠️ ${prereqCheck.reason}</span>` 
+    const prereqBadge = !prereqCheck.met
+      ? `<span style="color: #f87171; font-size: 10px; font-weight: 700;">⚠️ ${prereqCheck.reason}</span>`
       : (f.prereq && f.prereq.toLowerCase() !== 'nenhum' ? `<span style="color: #38bdf8; font-size: 10px;">Requisito: ${f.prereq}</span>` : '<span style="color: #34d399; font-size: 10px;">Sem pré-requisitos</span>');
 
     return `
@@ -14119,8 +14605,8 @@ function updateAsiStatsDistributionView() {
   const radios = (typeof document !== 'undefined' && document.getElementsByName)
     ? Array.from(document.getElementsByName('asi_stat_dist_type'))
     : ((typeof document !== 'undefined' && document.querySelectorAll)
-        ? Array.from(document.querySelectorAll('input[name="asi_stat_dist_type"]'))
-        : []);
+      ? Array.from(document.querySelectorAll('input[name="asi_stat_dist_type"]'))
+      : []);
   let type = 'single';
   for (const r of radios) {
     if (r && r.checked) { type = r.value; break; }
@@ -14172,13 +14658,13 @@ function updateAsiStatsPreview() {
     </div>
     <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; text-align: center;">
       ${attrs.map(a => {
-        const cur = p[a.key] || 10;
-        const gain = gains[a.key] || 0;
-        const next = Math.min(20, cur + gain);
-        const curMod = Math.floor((cur - 10) / 2);
-        const nextMod = Math.floor((next - 10) / 2);
-        const changed = gain > 0;
-        return `
+    const cur = p[a.key] || 10;
+    const gain = gains[a.key] || 0;
+    const next = Math.min(20, cur + gain);
+    const curMod = Math.floor((cur - 10) / 2);
+    const nextMod = Math.floor((next - 10) / 2);
+    const changed = gain > 0;
+    return `
           <div style="background: ${changed ? 'rgba(250, 204, 21, 0.15)' : 'rgba(15, 23, 42, 0.6)'}; border: 1px solid ${changed ? 'rgba(250, 204, 21, 0.4)' : 'rgba(255,255,255,0.08)'}; border-radius: 6px; padding: 6px 2px;">
             <div style="font-size: 10px; font-weight: 800; color: #94a3b8;">${a.label}</div>
             <div style="font-size: 14px; font-weight: 800; color: ${changed ? '#facc15' : '#fff'};">${next}</div>
@@ -14187,7 +14673,7 @@ function updateAsiStatsPreview() {
             </div>
           </div>
         `;
-      }).join('')}
+  }).join('')}
     </div>
   `;
 }
@@ -14244,9 +14730,9 @@ function filterAsiModalFeats() {
         </div>
         <div style="font-size: 11px; color: #cbd5e1; margin-top: 4px; line-height: 1.35;">${f.summary}</div>
         <div style="margin-top: 4px;">
-          ${!prereqCheck.met 
-            ? `<span style="font-size: 10px; color: #f87171; font-weight: 700;">⚠️ ${prereqCheck.reason}</span>` 
-            : (hasPrereq ? `<span style="font-size: 10px; color: #38bdf8;">Requisito: ${f.prereq}</span>` : '<span style="font-size: 10px; color: #34d399;">Sem pré-requisitos</span>')}
+          ${!prereqCheck.met
+        ? `<span style="font-size: 10px; color: #f87171; font-weight: 700;">⚠️ ${prereqCheck.reason}</span>`
+        : (hasPrereq ? `<span style="font-size: 10px; color: #38bdf8;">Requisito: ${f.prereq}</span>` : '<span style="font-size: 10px; color: #34d399;">Sem pré-requisitos</span>')}
         </div>
       </div>
     `;
@@ -14824,6 +15310,13 @@ function onModalBackgroundChange(bgVal) {
   const query = bgVal !== undefined ? bgVal : (typeof document !== 'undefined' ? (document.getElementById('pm-background')?.value || '') : '');
   const bg = findBackgroundData(query);
   const bar = typeof document !== 'undefined' ? document.getElementById('pm-background-summary-bar') : null;
+
+  if (typeof renderModalBackgroundQuickChips === 'function') renderModalBackgroundQuickChips();
+  if (typeof renderModalTraitSuggestions === 'function') renderModalTraitSuggestions();
+  if (typeof renderModalClassSkillsPicker === 'function') renderModalClassSkillsPicker();
+  if (typeof renderModalStartingEquipmentChoices === 'function') renderModalStartingEquipmentChoices();
+  if (typeof updateDdbHeroSummaryBar === 'function') updateDdbHeroSummaryBar();
+
   if (!bar) return bg;
 
   if (!bg) {
@@ -14834,6 +15327,7 @@ function onModalBackgroundChange(bgVal) {
 
   bar.style.display = 'block';
   const skillsStr = Array.isArray(bg.skillLabels) ? bg.skillLabels.join(' & ') : '';
+  const equipStr = Array.isArray(bg.equipment) ? bg.equipment.join(', ') : '';
   bar.innerHTML = `
     <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;">
       <span style="color: #fbbf24; font-weight: 800;">${bg.icon || '📜'} ${bg.name} (${bg.nameEn || ''})</span>
@@ -14842,6 +15336,7 @@ function onModalBackgroundChange(bgVal) {
     <div style="margin-top: 3px; color: #cbd5e1; font-size: 10px;">
       <b>Característica (${bg.featureName}):</b> ${bg.featureDesc}
     </div>
+    ${equipStr ? `<div style="margin-top: 3px; color: #94a3b8; font-size: 9.5px;"><b>🎒 Equipamento de Origem:</b> ${equipStr} (${bg.startingGold || 10} PO)</div>` : ''}
   `;
   return bg;
 }
@@ -14935,6 +15430,856 @@ function applyBackgroundBenefitsModal() {
   };
 }
 
+// ============================================================================
+// 🧙‍♂️ ISSUE-160: CRIADOR DE PERSONAGENS ESTILO D&D BEYOND (ABAS, SUGESTÕES & EQUIPAMENTOS)
+// ============================================================================
+const DDB_BUILDER_STEPS = [
+  { key: 'home', label: '⚙️ HOME' },
+  { key: 'class', label: '1. Classe' },
+  { key: 'background', label: '2. Antecedente' },
+  { key: 'species', label: '3. Raça / Espécie' },
+  { key: 'abilities', label: '4. Atributos' },
+  { key: 'equipment', label: '5. Equipamento' }
+];
+
+let activeDdbBuilderStep = 'home';
+let ddbShowAllSteps = false;
+let activeDdbEquipMode = 'equipment';
+
+function initDdbCharacterBuilderModal() {
+  ddbShowAllSteps = false;
+  activeDdbEquipMode = 'equipment';
+  const stage = typeof document !== 'undefined' ? document.querySelector('.ddb-builder-stage') : null;
+  if (stage) stage.classList.remove('show-all-steps');
+  const toggleBtn = typeof document !== 'undefined' ? document.getElementById('btn-ddb-toggle-all') : null;
+  if (toggleBtn) {
+    toggleBtn.classList.remove('active');
+    toggleBtn.textContent = '📋 Ver Tudo';
+  }
+  renderModalClassBuilderCards();
+  renderModalClassSkillsPicker();
+  renderModalBackgroundQuickChips();
+  renderModalTraitSuggestions();
+  renderModalSpeciesBuilderCards();
+  renderModalStartingEquipmentChoices();
+  renderModalStartingInventoryList();
+  updateDdbHeroSummaryBar();
+  switchPlayerModalStep('home');
+}
+
+function switchPlayerModalStep(stepKey) {
+  const valid = DDB_BUILDER_STEPS.find(s => s.key === stepKey) ? stepKey : 'home';
+  activeDdbBuilderStep = valid;
+
+  if (typeof document === 'undefined') return activeDdbBuilderStep;
+
+  const tabs = document.querySelectorAll('#ddb-builder-nav .ddb-step-tab');
+  tabs.forEach(t => {
+    if (t.dataset.step === valid) t.classList.add('active');
+    else t.classList.remove('active');
+  });
+
+  const panes = document.querySelectorAll('.ddb-builder-stage .ddb-step-pane');
+  panes.forEach(p => {
+    if (p.dataset.step === valid) p.classList.add('active');
+    else p.classList.remove('active');
+  });
+
+  const idx = DDB_BUILDER_STEPS.findIndex(s => s.key === valid);
+  const prevBtn = document.getElementById('btn-ddb-prev-step');
+  const nextBtn = document.getElementById('btn-ddb-next-step');
+  const sidePrev = document.getElementById('btn-ddb-side-prev');
+  const sideNext = document.getElementById('btn-ddb-side-next');
+
+  if (prevBtn) {
+    if (idx > 0) {
+      prevBtn.style.display = 'inline-flex';
+      prevBtn.textContent = `◀ ${DDB_BUILDER_STEPS[idx - 1].label}`;
+    } else {
+      prevBtn.style.display = 'none';
+    }
+  }
+  if (nextBtn) {
+    if (idx >= 0 && idx < DDB_BUILDER_STEPS.length - 1) {
+      nextBtn.style.display = 'inline-flex';
+      nextBtn.textContent = `Próxima Etapa: ${DDB_BUILDER_STEPS[idx + 1].label} ▶`;
+    } else {
+      nextBtn.style.display = 'none';
+    }
+  }
+  if (sidePrev) sidePrev.style.display = idx > 0 ? 'flex' : 'none';
+  if (sideNext) sideNext.style.display = idx < DDB_BUILDER_STEPS.length - 1 ? 'flex' : 'none';
+
+  updateDdbHeroSummaryBar();
+  return activeDdbBuilderStep;
+}
+
+function nextPlayerModalStep() {
+  const idx = DDB_BUILDER_STEPS.findIndex(s => s.key === activeDdbBuilderStep);
+  if (idx >= 0 && idx < DDB_BUILDER_STEPS.length - 1) {
+    return switchPlayerModalStep(DDB_BUILDER_STEPS[idx + 1].key);
+  }
+  return activeDdbBuilderStep;
+}
+
+function prevPlayerModalStep() {
+  const idx = DDB_BUILDER_STEPS.findIndex(s => s.key === activeDdbBuilderStep);
+  if (idx > 0) {
+    return switchPlayerModalStep(DDB_BUILDER_STEPS[idx - 1].key);
+  }
+  return activeDdbBuilderStep;
+}
+
+function togglePlayerModalAllSteps() {
+  ddbShowAllSteps = !ddbShowAllSteps;
+  if (typeof document !== 'undefined') {
+    const stage = document.querySelector('.ddb-builder-stage');
+    const toggleBtn = document.getElementById('btn-ddb-toggle-all');
+    if (stage) {
+      if (ddbShowAllSteps) stage.classList.add('show-all-steps');
+      else stage.classList.remove('show-all-steps');
+    }
+    if (toggleBtn) {
+      toggleBtn.classList.toggle('active', ddbShowAllSteps);
+      toggleBtn.textContent = ddbShowAllSteps ? '🧭 Modo Abas' : '📋 Ver Tudo';
+    }
+  }
+  return ddbShowAllSteps;
+}
+
+function updateDdbHeroSummaryBar() {
+  if (typeof document === 'undefined') return;
+  const nameVal = document.getElementById('pm-name')?.value?.trim() || 'Novo Aventureiro';
+  const studentVal = document.getElementById('pm-student')?.value?.trim() || '';
+  const avatarVal = document.getElementById('pm-avatar')?.value?.trim() || '👤';
+  const classSel = document.getElementById('pm-class-select');
+  const classVal = (classSel && classSel.value !== 'custom') ? classSel.value : (document.getElementById('pm-class')?.value || 'Guerreiro');
+  const raceSel = document.getElementById('pm-race-select');
+  const raceVal = (raceSel && raceSel.value !== 'custom') ? raceSel.value : (document.getElementById('pm-race')?.value || 'Humano');
+  const lvlVal = parseInt(document.getElementById('pm-level')?.value, 10) || 1;
+  const bgVal = document.getElementById('pm-background')?.value?.trim() || 'Aventureiro';
+  const acVal = parseInt(document.getElementById('pm-ac')?.value, 10) || 10;
+  const hpVal = parseInt(document.getElementById('pm-maxhp')?.value, 10) || 10;
+  const goldVal = parseInt(document.getElementById('pm-gold')?.value, 10) || 0;
+
+  const avatarEl = document.getElementById('ddb-hero-avatar-preview');
+  if (avatarEl) {
+    if (avatarVal.startsWith('data:image') || avatarVal.startsWith('http')) {
+      avatarEl.innerHTML = `<img src="${avatarVal}" alt="Avatar">`;
+    } else {
+      avatarEl.textContent = avatarVal;
+    }
+  }
+  const nameEl = document.getElementById('ddb-hero-name-preview');
+  if (nameEl) nameEl.textContent = studentVal ? `${nameVal} (${studentVal})` : nameVal;
+
+  const subEl = document.getElementById('ddb-hero-sub-preview');
+  if (subEl) subEl.textContent = `${raceVal} • ${classVal} Nv ${lvlVal} • ${bgVal}`;
+
+  const pillAc = document.getElementById('ddb-hero-pill-ac');
+  if (pillAc) pillAc.textContent = `🛡️ CA ${acVal}`;
+  const pillHp = document.getElementById('ddb-hero-pill-hp');
+  if (pillHp) pillHp.textContent = `❤️ PV ${hpVal}`;
+  const pillGold = document.getElementById('ddb-hero-pill-gold');
+  if (pillGold) pillGold.textContent = `🪙 ${goldVal} PO`;
+
+  const cardClass = document.getElementById('ddb-home-card-class');
+  if (cardClass) cardClass.textContent = `Selecionada: ${classVal} (Nv ${lvlVal})`;
+  const cardBg = document.getElementById('ddb-home-card-bg');
+  if (cardBg) cardBg.textContent = `Origem: ${bgVal}`;
+  const cardRace = document.getElementById('ddb-home-card-race');
+  if (cardRace) cardRace.textContent = `Espécie: ${raceVal}`;
+}
+
+function renderModalClassBuilderCards() {
+  if (typeof document === 'undefined' || typeof CLASSES_DATA === 'undefined') return;
+  const listEl = document.getElementById('ddb-class-cards-list');
+  if (!listEl) return;
+
+  const classSel = document.getElementById('pm-class-select');
+  const curClass = (classSel && classSel.value !== 'custom') ? classSel.value : (document.getElementById('pm-class')?.value || 'Guerreiro');
+  const normCur = String(curClass).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+  listEl.innerHTML = CLASSES_DATA.map(cls => {
+    const normCls = String(cls.name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    const isSel = normCls === normCur || normCur.includes(normCls);
+    const hdShort = (cls.hitDie || 'd8').split(' ')[0];
+    const savesStr = Array.isArray(cls.savingThrows) ? cls.savingThrows.join(', ') : '';
+    const subCount = Array.isArray(cls.subclasses) ? cls.subclasses.length : 0;
+
+    return `
+      <div class="ddb-entity-card ${isSel ? 'selected' : ''}" onclick="selectModalClassCard('${cls.name.replace(/'/g, "\\'")}')">
+        <div class="ddb-entity-card-top">
+          <div class="ddb-entity-icon">${cls.icon || '⚔️'}</div>
+          <div>
+            <div class="ddb-entity-title">${cls.name}</div>
+            <div class="ddb-entity-meta">Livro do Jogador (2014) • ${hdShort} • ${subCount} Subclasses</div>
+          </div>
+          <span class="ddb-entity-chevron">${isSel ? '✓' : '❯'}</span>
+        </div>
+        ${isSel ? `
+          <div style="font-size: 10.5px; color: #cbd5e1; border-top: 1px dashed rgba(255,255,255,0.12); padding-top: 5px; line-height: 1.35;">
+            <div><b>Papel:</b> ${cls.role || '-'} | <b>Salvaguardas:</b> ${savesStr}</div>
+            <div style="color: #94a3b8; margin-top: 2px;">${cls.summary || ''}</div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function selectModalClassCard(className) {
+  if (!className) return;
+  if (typeof document !== 'undefined') {
+    const classSel = document.getElementById('pm-class-select');
+    const classInp = document.getElementById('pm-class');
+    if (classSel) {
+      const match = Array.from(classSel.options).find(o => o.value.toLowerCase() === className.toLowerCase());
+      if (match) classSel.value = match.value;
+    }
+    if (classInp) classInp.value = className;
+    if (typeof window !== 'undefined') window._modalStartingEquipChoices = {};
+    onPlayerModalClassOrLevelChange();
+  }
+  return className;
+}
+
+const DND5E_SKILL_LABELS_MAP = {
+  atletismo: 'Atletismo (FOR)',
+  acrobacia: 'Acrobacia (DES)',
+  furtividade: 'Furtividade (DES)',
+  prestidigitacao: 'Prestidigitação (DES)',
+  arcanismo: 'Arcanismo (INT)',
+  historia: 'História (INT)',
+  investigacao: 'Investigação (INT)',
+  natureza: 'Natureza (INT)',
+  religiao: 'Religião (INT)',
+  adestramento: 'Adestrar Animais (SAB)',
+  intuicao: 'Intuição (SAB)',
+  medicina: 'Medicina (SAB)',
+  percepcao: 'Percepção (SAB)',
+  sobrevivencia: 'Sobrevivência (SAB)',
+  atuacao: 'Atuação (CAR)',
+  enganacao: 'Enganação (CAR)',
+  intimidacao: 'Intimidação (CAR)',
+  persuasao: 'Persuasão (CAR)'
+};
+
+function renderModalClassSkillsPicker() {
+  if (typeof document === 'undefined') return;
+  const pickerEl = document.getElementById('ddb-class-skills-picker');
+  const counterEl = document.getElementById('ddb-class-skills-counter');
+  if (!pickerEl) return;
+
+  const classSel = document.getElementById('pm-class-select');
+  const curClass = (classSel && classSel.value !== 'custom') ? classSel.value : (document.getElementById('pm-class')?.value || 'Guerreiro');
+  const clsEq = typeof getClassStartingEquipmentData === 'function' ? getClassStartingEquipmentData(curClass) : null;
+  if (!clsEq) return;
+
+  const maxSkills = clsEq.skillCount || 2;
+  const options = Array.isArray(clsEq.skillOptions) ? clsEq.skillOptions : [];
+  if (typeof window !== 'undefined' && !Array.isArray(window._modalSelectedClassSkills)) {
+    window._modalSelectedClassSkills = [];
+  }
+  const selected = (typeof window !== 'undefined' && Array.isArray(window._modalSelectedClassSkills)) ? window._modalSelectedClassSkills : [];
+
+  const bgVal = document.getElementById('pm-background')?.value || '';
+  const bg = findBackgroundData(bgVal);
+  const bgSkills = (bg && Array.isArray(bg.skills)) ? bg.skills : [];
+
+  const chosenClassCount = selected.filter(sk => options.includes(sk) && !bgSkills.includes(sk)).length;
+  if (counterEl) {
+    counterEl.textContent = `${chosenClassCount} / ${maxSkills} escolhidas`;
+  }
+
+  pickerEl.innerHTML = options.map(skKey => {
+    const label = DND5E_SKILL_LABELS_MAP[skKey] || skKey;
+    const isFromBg = bgSkills.includes(skKey);
+    const isSelected = selected.includes(skKey) || isFromBg;
+    return `
+      <button type="button" class="ddb-skill-choice-chip ${isFromBg ? 'bg-granted' : (isSelected ? 'selected' : '')}"
+              onclick="toggleModalClassSkillChoice('${skKey}')"
+              title="${isFromBg ? 'Já concedida pelo Antecedente (' + (bg ? bg.name : '') + ')' : 'Clique para selecionar perícia da classe'}">
+        <span>${isSelected ? '✓' : '○'}</span>
+        <span>${label}</span>
+        ${isFromBg ? `<small style="font-size:9px; opacity:0.85;">(Antecedente)</small>` : ''}
+      </button>
+    `;
+  }).join('');
+}
+
+function toggleModalClassSkillChoice(skillKey) {
+  if (!skillKey || typeof window === 'undefined') return [];
+  if (!Array.isArray(window._modalSelectedClassSkills)) window._modalSelectedClassSkills = [];
+
+  const classSel = typeof document !== 'undefined' ? document.getElementById('pm-class-select') : null;
+  const curClass = (classSel && classSel.value !== 'custom') ? classSel.value : (typeof document !== 'undefined' ? (document.getElementById('pm-class')?.value || 'Guerreiro') : 'Guerreiro');
+  const clsEq = typeof getClassStartingEquipmentData === 'function' ? getClassStartingEquipmentData(curClass) : { skillCount: 2, skillOptions: [] };
+  const maxSkills = clsEq.skillCount || 2;
+  const allowed = Array.isArray(clsEq.skillOptions) ? clsEq.skillOptions : [];
+
+  const idx = window._modalSelectedClassSkills.indexOf(skillKey);
+  if (idx >= 0) {
+    window._modalSelectedClassSkills.splice(idx, 1);
+  } else {
+    const currentInPool = window._modalSelectedClassSkills.filter(k => allowed.includes(k));
+    if (currentInPool.length >= maxSkills) {
+      const oldest = currentInPool[0];
+      const oldIdx = window._modalSelectedClassSkills.indexOf(oldest);
+      if (oldIdx >= 0) window._modalSelectedClassSkills.splice(oldIdx, 1);
+    }
+    window._modalSelectedClassSkills.push(skillKey);
+  }
+
+  renderModalClassSkillsPicker();
+  return window._modalSelectedClassSkills;
+}
+
+function renderModalBackgroundQuickChips() {
+  if (typeof document === 'undefined' || typeof BACKGROUNDS_DATA === 'undefined') return;
+  const container = document.getElementById('ddb-background-quick-chips');
+  if (!container) return;
+
+  const curBgVal = (document.getElementById('pm-background')?.value || '').trim().toLowerCase();
+  container.innerHTML = BACKGROUNDS_DATA.map(bg => {
+    const isAct = curBgVal === bg.name.toLowerCase() || curBgVal === (bg.id || '').toLowerCase();
+    return `
+      <button type="button" class="ddb-bg-chip ${isAct ? 'active' : ''}" onclick="selectModalBackgroundChip('${bg.name.replace(/'/g, "\\'")}')" title="${bg.name}: Perícias ${(bg.skillLabels || []).join(' & ')}">
+        ${bg.icon || '📜'} ${bg.name}
+      </button>
+    `;
+  }).join('');
+}
+
+function selectModalBackgroundChip(bgName) {
+  if (!bgName) return;
+  if (typeof document !== 'undefined') {
+    const inp = document.getElementById('pm-background');
+    if (inp) inp.value = bgName;
+  }
+  onModalBackgroundChange(bgName);
+  return bgName;
+}
+
+function getModalTraitSuggestionsData() {
+  const bgVal = typeof document !== 'undefined' ? (document.getElementById('pm-background')?.value || 'Soldado') : 'Soldado';
+  const bg = findBackgroundData(bgVal) || (typeof BACKGROUNDS_DATA !== 'undefined' && BACKGROUNDS_DATA[0] ? BACKGROUNDS_DATA[0] : null);
+
+  const classSel = typeof document !== 'undefined' ? document.getElementById('pm-class-select') : null;
+  const curClass = (classSel && classSel.value !== 'custom') ? classSel.value : (typeof document !== 'undefined' ? (document.getElementById('pm-class')?.value || 'Guerreiro') : 'Guerreiro');
+  const clsEq = typeof getClassStartingEquipmentData === 'function' ? getClassStartingEquipmentData(curClass) : null;
+
+  const buildList = (bgArr, clsArr) => {
+    const items = [];
+    if (bg && Array.isArray(bgArr)) {
+      bgArr.forEach(text => items.push({ sourceType: 'bg', sourceName: bg.name, text }));
+    }
+    if (clsEq && Array.isArray(clsArr)) {
+      clsArr.forEach(text => items.push({ sourceType: 'cls', sourceName: clsEq.className, text }));
+    }
+    return items;
+  };
+
+  return {
+    personality: buildList(bg ? bg.personalityTraits : [], clsEq && clsEq.traitSuggestions ? clsEq.traitSuggestions.personality : []),
+    ideal: buildList(bg ? bg.ideals : [], clsEq && clsEq.traitSuggestions ? clsEq.traitSuggestions.ideal : []),
+    bond: buildList(bg ? bg.bonds : [], clsEq && clsEq.traitSuggestions ? clsEq.traitSuggestions.bond : []),
+    flaw: buildList(bg ? bg.flaws : [], clsEq && clsEq.traitSuggestions ? clsEq.traitSuggestions.flaw : [])
+  };
+}
+
+function renderModalTraitSuggestions() {
+  if (typeof document === 'undefined') return;
+  const data = getModalTraitSuggestionsData();
+  const fieldMap = [
+    { key: 'personality', inpId: 'pm-personality', boxId: 'ddb-suggestions-personality' },
+    { key: 'ideal', inpId: 'pm-ideal', boxId: 'ddb-suggestions-ideal' },
+    { key: 'bond', inpId: 'pm-bond', boxId: 'ddb-suggestions-bond' },
+    { key: 'flaw', inpId: 'pm-flaw', boxId: 'ddb-suggestions-flaw' }
+  ];
+
+  fieldMap.forEach(f => {
+    const box = document.getElementById(f.boxId);
+    if (!box) return;
+    const curVal = (document.getElementById(f.inpId)?.value || '').trim();
+    const list = data[f.key] || [];
+    box.innerHTML = list.map((item, idx) => {
+      const isAct = curVal && curVal === item.text;
+      const safeText = item.text.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      return `
+        <button type="button" class="ddb-trait-suggestion-chip ${isAct ? 'active' : ''}"
+                onclick="pickModalTraitSuggestion('${f.key}', '${safeText}')">
+          <span class="ddb-trait-suggestion-tag ${item.sourceType === 'cls' ? 'cls' : ''}">${item.sourceType === 'cls' ? '⚔️ ' : '📜 '}${item.sourceName}</span>
+          <span>${item.text}</span>
+        </button>
+      `;
+    }).join('');
+  });
+}
+
+function pickModalTraitSuggestion(fieldKey, textValue) {
+  const idMap = {
+    personality: 'pm-personality',
+    ideal: 'pm-ideal',
+    bond: 'pm-bond',
+    flaw: 'pm-flaw'
+  };
+  const targetId = idMap[fieldKey];
+  if (!targetId) return null;
+  if (typeof document !== 'undefined') {
+    const inp = document.getElementById(targetId);
+    if (inp) inp.value = textValue;
+  }
+  renderModalTraitSuggestions();
+  if (typeof showToast === 'function') {
+    showToast('✨ Sugestão de traço aplicada na ficha!', 'success');
+  }
+  return textValue;
+}
+
+function renderModalSpeciesBuilderCards() {
+  if (typeof document === 'undefined' || typeof SPECIES_DATA === 'undefined') return;
+  const listEl = document.getElementById('ddb-species-cards-list');
+  if (!listEl) return;
+
+  const raceSel = document.getElementById('pm-race-select');
+  const curRace = (raceSel && raceSel.value !== 'custom') ? raceSel.value : (document.getElementById('pm-race')?.value || 'Humano');
+  const normCur = String(curRace).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+  listEl.innerHTML = SPECIES_DATA.map(sp => {
+    const normSp = String(sp.name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    const lineages = Array.isArray(sp.lineages) ? sp.lineages : [];
+    const hasLineageMatch = lineages.some(l => normCur === String(l.name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim());
+    const isSel = normSp === normCur || normCur.includes(normSp) || hasLineageMatch;
+    const srcLabel = sp.source || 'Livro do Jogador (2014)';
+
+    return `
+      <div class="ddb-entity-card ${isSel ? 'selected' : ''}" onclick="selectModalSpeciesCard('${sp.name.replace(/'/g, "\\'")}')">
+        <div class="ddb-entity-card-top">
+          <div class="ddb-entity-icon">${sp.icon || '🧬'}</div>
+          <div>
+            <div class="ddb-entity-title">${sp.name} ${lineages.length > 1 ? `<span style="color:#94a3b8; font-weight:700;">(${lineages.length})</span>` : ''}</div>
+            <div class="ddb-entity-meta">${srcLabel} • ${sp.abilityScoreSummary || ''}</div>
+          </div>
+          <span class="ddb-entity-chevron">${isSel ? '✓' : '❯'}</span>
+        </div>
+        ${isSel ? `
+          <div class="ddb-lineage-pills" onclick="event.stopPropagation()">
+            ${lineages.map(lin => {
+      const isLinAct = normCur === String(lin.name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+      return `<button type="button" class="ddb-lineage-pill ${isLinAct ? 'active' : ''}" onclick="selectModalSpeciesCard('${lin.name.replace(/'/g, "\\'")}', '${sp.name.replace(/'/g, "\\'")}')">${lin.icon || '✨'} ${lin.name}</button>`;
+    }).join('')}
+          </div>
+          <div style="font-size: 10px; color: #cbd5e1; margin-top: 4px; line-height: 1.35;">
+            <b>Deslocamento:</b> ${sp.speed || '9 metros'} | <b>Traços:</b> ${(sp.traits || []).map(t => t.name).join(', ')}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function selectModalSpeciesCard(raceOrLineageName, parentSpeciesName) {
+  if (!raceOrLineageName) return null;
+  if (typeof document !== 'undefined') {
+    const raceSel = document.getElementById('pm-race-select');
+    const raceInp = document.getElementById('pm-race');
+    if (raceSel) {
+      const targetLookup = parentSpeciesName || raceOrLineageName;
+      const match = Array.from(raceSel.options).find(o => o.value.toLowerCase() === targetLookup.toLowerCase());
+      if (match) raceSel.value = match.value;
+    }
+    if (raceInp) raceInp.value = raceOrLineageName;
+
+    // Se selecionou uma sub-raça específica (ex: Alto Elfo, Anão da Montanha), garante que getRacialAbilityBonuses a utilize
+    if (parentSpeciesName && raceSel && raceOrLineageName !== parentSpeciesName) {
+      let opt = Array.from(raceSel.options).find(o => o.value.toLowerCase() === raceOrLineageName.toLowerCase());
+      if (!opt) {
+        opt = document.createElement('option');
+        opt.value = raceOrLineageName;
+        opt.textContent = `✨ ${raceOrLineageName}`;
+        raceSel.appendChild(opt);
+      }
+      raceSel.value = raceOrLineageName;
+    }
+    onPlayerModalClassOrLevelChange();
+    updateModalAttributeModifiers();
+    updateModalCalculatedAc();
+  }
+  return raceOrLineageName;
+}
+
+function setModalStartingEquipmentMode(mode) {
+  activeDdbEquipMode = (mode === 'gold') ? 'gold' : 'equipment';
+  if (typeof document !== 'undefined') {
+    const btnItems = document.getElementById('btn-ddb-equip-mode-items');
+    const btnGold = document.getElementById('btn-ddb-equip-mode-gold');
+    const boxItems = document.getElementById('ddb-starting-equipment-box');
+    const boxGold = document.getElementById('ddb-starting-gold-box');
+
+    if (btnItems) btnItems.classList.toggle('active', activeDdbEquipMode === 'equipment');
+    if (btnGold) btnGold.classList.toggle('active', activeDdbEquipMode === 'gold');
+    if (boxItems) boxItems.style.display = activeDdbEquipMode === 'equipment' ? 'block' : 'none';
+    if (boxGold) boxGold.style.display = activeDdbEquipMode === 'gold' ? 'block' : 'none';
+  }
+  renderModalStartingEquipmentChoices();
+  return activeDdbEquipMode;
+}
+
+function renderModalStartingEquipmentChoices() {
+  if (typeof document === 'undefined') return;
+  const equipBox = document.getElementById('ddb-starting-equipment-box');
+  const goldBox = document.getElementById('ddb-starting-gold-box');
+  if (!equipBox && !goldBox) return;
+
+  const classSel = document.getElementById('pm-class-select');
+  const curClass = (classSel && classSel.value !== 'custom') ? classSel.value : (document.getElementById('pm-class')?.value || 'Guerreiro');
+  const clsEq = typeof getClassStartingEquipmentData === 'function' ? getClassStartingEquipmentData(curClass) : null;
+  if (!clsEq) return;
+
+  const bgVal = document.getElementById('pm-background')?.value || 'Soldado';
+  const bg = findBackgroundData(bgVal);
+
+  if (typeof window !== 'undefined' && (!window._modalStartingEquipChoices || typeof window._modalStartingEquipChoices !== 'object')) {
+    window._modalStartingEquipChoices = {};
+  }
+  const choiceState = (typeof window !== 'undefined' && window._modalStartingEquipChoices) ? window._modalStartingEquipChoices : {};
+
+  if (equipBox) {
+    const choicesHtml = (clsEq.choices || []).map(ch => {
+      const selectedKey = choiceState[ch.id] || (ch.options && ch.options[0] ? ch.options[0].key : 'a');
+      choiceState[ch.id] = selectedKey;
+      return `
+        <div class="ddb-equip-choice-card">
+          <div class="ddb-equip-choice-title">⚔️ ${clsEq.className} — ${ch.title}</div>
+          ${(ch.options || []).map(opt => `
+            <label class="ddb-equip-option-row">
+              <input type="radio" name="ddb_eq_${ch.id}" value="${opt.key}" ${selectedKey === opt.key ? 'checked' : ''}
+                     onchange="selectModalStartingEquipOption('${ch.id}', '${opt.key}')">
+              <span>${opt.label}</span>
+            </label>
+          `).join('')}
+        </div>
+      `;
+    }).join('');
+
+    const fixedItemsNames = (clsEq.fixedEquipment || []).map(it => `${it.qty > 1 ? it.qty + 'x ' : ''}${it.name}`);
+    if (clsEq.fixedArmor && clsEq.fixedArmor !== 'none') fixedItemsNames.unshift(`Armadura: ${clsEq.fixedArmor}`);
+    if (clsEq.fixedShield) fixedItemsNames.push('Escudo (+2 CA)');
+
+    const bgEquipNames = bg && Array.isArray(bg.equipmentItems) ? bg.equipmentItems : (bg && Array.isArray(bg.equipment) ? bg.equipment : []);
+
+    equipBox.innerHTML = `
+      <div style="margin-top: 8px;">
+        ${choicesHtml}
+        <div class="ddb-equip-choice-card" style="border-color: rgba(16, 185, 129, 0.3);">
+          <div class="ddb-equip-choice-title" style="color: #6ee7b7;">🎒 Equipamento Fixo da Classe (${clsEq.className}) & Antecedente (${bg ? bg.name : bgVal})</div>
+          <div style="font-size: 11.5px; color: #cbd5e1; line-height: 1.45;">
+            <div>• <b>Itens da Classe:</b> ${fixedItemsNames.length > 0 ? fixedItemsNames.join(', ') : 'Conforme escolhas acima'}</div>
+            ${bg ? `<div>• <b>Itens do Antecedente (${bg.name}):</b> ${bgEquipNames.join(', ')} + <b>${bg.startingGold || 10} PO</b></div>` : ''}
+          </div>
+        </div>
+        <button type="button" class="btn-action" style="width: 100%; justify-content: center; padding: 9px 14px; font-size: 12.5px; font-weight: 800; background: linear-gradient(135deg, #10b981, #059669);" onclick="applyModalStartingEquipmentToSheet()">
+          🎒 Aplicar Equipamento Inicial Selecionado na Ficha
+        </button>
+      </div>
+    `;
+  }
+
+  if (goldBox) {
+    goldBox.innerHTML = `
+      <div class="ddb-equip-choice-card" style="text-align: center; padding: 16px;">
+        <div style="font-size: 13px; font-weight: 800; color: #fde68a;">🪙 Riqueza Inicial Oficial por Classe (${clsEq.className})</div>
+        <div style="font-size: 12px; color: #cbd5e1; margin: 6px 0 12px 0;">
+          Fórmula do Livro do Jogador: <b style="color:#fff;">${clsEq.startingGoldFormula}</b> (Média: ${clsEq.avgGold} PO)
+        </div>
+        <button type="button" class="btn-action" style="padding: 8px 18px; font-size: 12px; font-weight: 800;" onclick="rollModalStartingClassGold()">
+          🎲 Rolar Ouro Inicial (${clsEq.startingGoldFormula})
+        </button>
+      </div>
+    `;
+  }
+}
+
+function selectModalStartingEquipOption(choiceId, optionKey) {
+  if (!choiceId || !optionKey) return;
+  if (typeof window !== 'undefined') {
+    if (!window._modalStartingEquipChoices) window._modalStartingEquipChoices = {};
+    window._modalStartingEquipChoices[choiceId] = optionKey;
+  }
+  return optionKey;
+}
+
+function applyModalStartingEquipmentToSheet() {
+  const classSel = typeof document !== 'undefined' ? document.getElementById('pm-class-select') : null;
+  const curClass = (classSel && classSel.value !== 'custom') ? classSel.value : (typeof document !== 'undefined' ? (document.getElementById('pm-class')?.value || 'Guerreiro') : 'Guerreiro');
+  const clsEq = typeof getClassStartingEquipmentData === 'function' ? getClassStartingEquipmentData(curClass) : null;
+  if (!clsEq) return null;
+
+  const choiceState = (typeof window !== 'undefined' && window._modalStartingEquipChoices) ? window._modalStartingEquipChoices : {};
+  let chosenArmor = clsEq.fixedArmor || 'none';
+  let chosenShield = !!clsEq.fixedShield;
+  const chosenWeapons = Array.isArray(clsEq.fixedWeapons) ? [...clsEq.fixedWeapons] : [];
+  const chosenItems = Array.isArray(clsEq.fixedEquipment) ? JSON.parse(JSON.stringify(clsEq.fixedEquipment)) : [];
+
+  (clsEq.choices || []).forEach(ch => {
+    const selKey = choiceState[ch.id] || (ch.options && ch.options[0] ? ch.options[0].key : 'a');
+    const opt = (ch.options || []).find(o => o.key === selKey) || (ch.options && ch.options[0]);
+    if (!opt) return;
+    if (opt.armor) chosenArmor = opt.armor;
+    if (opt.shield !== undefined) chosenShield = !!opt.shield;
+    if (Array.isArray(opt.weapons)) {
+      opt.weapons.forEach(w => {
+        if (w && !chosenWeapons.includes(w)) chosenWeapons.push(w);
+      });
+    }
+    if (Array.isArray(opt.items)) {
+      opt.items.forEach(it => chosenItems.push({ ...it }));
+    }
+  });
+
+  // Inclui os itens do Antecedente selecionado
+  const bgVal = typeof document !== 'undefined' ? (document.getElementById('pm-background')?.value || 'Soldado') : 'Soldado';
+  const bg = findBackgroundData(bgVal);
+  const bgItemsList = bg && Array.isArray(bg.equipmentItems) ? bg.equipmentItems : (bg && Array.isArray(bg.equipment) ? bg.equipment : []);
+  bgItemsList.forEach(eqName => {
+    chosenItems.push({
+      name: eqName,
+      qty: 1,
+      weight: 1,
+      category: 'Equipamento de Aventura',
+      equipped: false
+    });
+  });
+
+  // Atualiza Armadura e Escudo no DOM
+  if (typeof document !== 'undefined') {
+    const armorSel = document.getElementById('pm-armor-select');
+    if (armorSel) armorSel.value = chosenArmor || 'none';
+    const shieldChk = document.getElementById('pm-shield-check');
+    if (shieldChk) shieldChk.checked = !!chosenShield;
+    const goldInp = document.getElementById('pm-gold');
+    if (goldInp && bg && bg.startingGold) {
+      goldInp.value = bg.startingGold;
+    }
+  }
+
+  modalEquippedWeapons = [...chosenWeapons];
+  if (typeof window !== 'undefined') {
+    window._modalStartingInventory = chosenItems;
+  }
+
+  updateModalCalculatedAc();
+  renderModalEquippedWeapons();
+  renderModalStartingInventoryList();
+  updateDdbHeroSummaryBar();
+
+  if (typeof playFX === 'function') playFX('sword');
+  if (typeof showToast === 'function') {
+    showToast(`🎒 Equipamento inicial de ${clsEq.className} aplicado (Armas: ${chosenWeapons.join(', ') || 'Padrão'}, Itens na mochila: ${chosenItems.length})!`, 'success');
+  }
+
+  return {
+    className: clsEq.className,
+    armor: chosenArmor,
+    shield: chosenShield,
+    weapons: modalEquippedWeapons,
+    inventory: chosenItems
+  };
+}
+
+function rollModalStartingClassGold() {
+  const classSel = typeof document !== 'undefined' ? document.getElementById('pm-class-select') : null;
+  const curClass = (classSel && classSel.value !== 'custom') ? classSel.value : (typeof document !== 'undefined' ? (document.getElementById('pm-class')?.value || 'Guerreiro') : 'Guerreiro');
+  const clsEq = typeof getClassStartingEquipmentData === 'function' ? getClassStartingEquipmentData(curClass) : null;
+  if (!clsEq) return 0;
+
+  let sum = 0;
+  const count = clsEq.diceCount || 4;
+  const sides = clsEq.diceSides || 4;
+  const mult = clsEq.multiplier || 10;
+  for (let i = 0; i < count; i++) {
+    sum += Math.floor(Math.random() * sides) + 1;
+  }
+  const totalGold = sum * mult;
+
+  if (typeof document !== 'undefined') {
+    const goldInp = document.getElementById('pm-gold');
+    if (goldInp) goldInp.value = totalGold;
+  }
+  updateDdbHeroSummaryBar();
+  if (typeof playFX === 'function') playFX('dice');
+  if (typeof showToast === 'function') {
+    showToast(`🪙 Ouro inicial rolado (${clsEq.startingGoldFormula}): ${totalGold} PO!`, 'success');
+  }
+  return totalGold;
+}
+
+function renderModalStartingInventoryList() {
+  if (typeof document === 'undefined') return;
+  const listEl = document.getElementById('ddb-modal-inventory-list');
+  const headingEl = document.getElementById('ddb-current-inv-heading');
+  if (!listEl) return;
+
+  const items = (typeof window !== 'undefined' && Array.isArray(window._modalStartingInventory)) ? window._modalStartingInventory : [];
+  let totalWeight = 0;
+  items.forEach(it => {
+    totalWeight += (parseFloat(it.weight) || 0) * (parseInt(it.qty, 10) || 1);
+  });
+
+  if (headingEl) {
+    headingEl.textContent = `Inventário & Moedas (${items.length} itens na mochila • Peso: ${totalWeight.toFixed(1)} kg)`;
+  }
+
+  if (items.length === 0) {
+    listEl.innerHTML = `<span style="font-size: 11px; color: var(--text-muted);">Nenhum item extra na mochila ainda. Clique em "🎒 Aplicar Equipamento Inicial Selecionado na Ficha" acima ou adicione itens manualmente.</span>`;
+    return;
+  }
+
+  listEl.innerHTML = items.map((it, idx) => `
+    <span class="ddb-inv-item-pill">
+      <span>📦 ${it.qty > 1 ? `<b>${it.qty}x</b> ` : ''}${it.name}</span>
+      <button type="button" class="ddb-inv-item-del" onclick="removeModalStartingInventoryItem(${idx})" title="Remover item">✕</button>
+    </span>
+  `).join('');
+}
+
+function addExtraItemToModalInventory(itemNameParam) {
+  const rawName = itemNameParam !== undefined ? itemNameParam : (typeof document !== 'undefined' ? (document.getElementById('ddb-inp-extra-item')?.value || '') : '');
+  const cleanName = String(rawName).trim();
+  if (!cleanName) return null;
+
+  if (typeof window !== 'undefined') {
+    if (!Array.isArray(window._modalStartingInventory)) window._modalStartingInventory = [];
+    const eqMatch = (typeof EQUIPMENT_DATA !== 'undefined' && Array.isArray(EQUIPMENT_DATA))
+      ? EQUIPMENT_DATA.find(e => e.name.toLowerCase() === cleanName.toLowerCase())
+      : null;
+    window._modalStartingInventory.push({
+      name: eqMatch ? eqMatch.name : cleanName,
+      qty: 1,
+      weight: eqMatch && eqMatch.weight ? parseFloat(eqMatch.weight) || 1 : 1,
+      category: eqMatch && eqMatch.category ? eqMatch.category : 'Equipamento de Aventura',
+      equipped: false
+    });
+  }
+
+  if (typeof document !== 'undefined') {
+    const inp = document.getElementById('ddb-inp-extra-item');
+    if (inp) inp.value = '';
+  }
+  renderModalStartingInventoryList();
+  return cleanName;
+}
+
+function removeModalStartingInventoryItem(index) {
+  if (typeof window !== 'undefined' && Array.isArray(window._modalStartingInventory)) {
+    if (index >= 0 && index < window._modalStartingInventory.length) {
+      window._modalStartingInventory.splice(index, 1);
+    }
+  }
+  renderModalStartingInventoryList();
+}
+
+// ==========================================================================
+// 📜 ITEM 1: GERADOR INTERATIVO "ESTA É A SUA VIDA" (XANATHAR CAP. 1 - ISSUE-161)
+// ==========================================================================
+
+function rollXanatharLifePathModal(mode = 'all') {
+  const tables = (typeof XANATHAR_LIFE_EVENTS_TABLES !== 'undefined') ? XANATHAR_LIFE_EVENTS_TABLES : null;
+  if (!tables) return null;
+
+  const pick = (arr) => Array.isArray(arr) && arr.length > 0 ? arr[Math.floor(Math.random() * arr.length)] : '';
+  const classSel = typeof document !== 'undefined' ? document.getElementById('pm-class-select') : null;
+  const curClass = (classSel && classSel.value !== 'custom') ? classSel.value : (typeof document !== 'undefined' ? (document.getElementById('pm-class')?.value || 'Guerreiro') : 'Guerreiro');
+
+  const birthplace = pick(tables.birthplace);
+  const parents = pick(tables.parents);
+  const siblings = pick(tables.siblings);
+  const childhood = pick(tables.childhoodMemories);
+  const classOrigin = (tables.classTraining && tables.classTraining[curClass]) ? tables.classTraining[curClass] : 'Despertou sua vocação de aventureiro enfrentando perigos reais.';
+  const event1 = pick(tables.lifeEvents);
+  const event2 = pick(tables.lifeEvents.filter(e => e !== event1)) || event1;
+  const ally = pick(tables.allies);
+  const enemy = pick(tables.enemies);
+
+  const backstoryEl = typeof document !== 'undefined' ? document.getElementById('pm-backstory') : null;
+  const alliesEl = typeof document !== 'undefined' ? document.getElementById('pm-allies') : null;
+  const enemiesEl = typeof document !== 'undefined' ? document.getElementById('pm-enemies') : null;
+
+  if (mode === 'all' || mode === 'origin') {
+    const originParagraph = `• Origem & Família: Nascido ${birthplace.charAt(0).toLowerCase() + birthplace.slice(1)} ${parents} Irmãos: ${siblings}\n• Infância: ${childhood}\n• Vocação (${curClass}): ${classOrigin}`;
+    if (backstoryEl) {
+      if (mode === 'all' || !backstoryEl.value.trim()) {
+        const eventsBlock = mode === 'all' && event1
+          ? `\n• Eventos de Vida (${event1.category}): ${event1.text}${event2 ? `\n• Marco Adicional (${event2.category}): ${event2.text}` : ''}`
+          : '';
+        backstoryEl.value = originParagraph + eventsBlock;
+      } else {
+        backstoryEl.value = backstoryEl.value.trim() + '\n' + originParagraph;
+      }
+    }
+  } else if (mode === 'event' && event1) {
+    const evLine = `• Evento de Vida (${event1.category}): ${event1.text}`;
+    if (backstoryEl) {
+      backstoryEl.value = backstoryEl.value.trim() ? `${backstoryEl.value.trim()}\n${evLine}` : evLine;
+    }
+  }
+
+  if (mode === 'all' || mode === 'relations') {
+    if (alliesEl && ally) alliesEl.value = ally;
+    if (enemiesEl && enemy) enemiesEl.value = enemy;
+  }
+
+  if (typeof playFX === 'function') playFX('dice');
+  if (typeof showToast === 'function') {
+    showToast('📜 História "Esta é a Sua Vida" (Guia de Xanathar) gerada na ficha!', 'success');
+  }
+
+  return {
+    birthplace,
+    parents,
+    siblings,
+    childhood,
+    classOrigin,
+    event: event1 ? `${event1.category}: ${event1.text}` : '',
+    ally,
+    enemy,
+    backstory: backstoryEl ? backstoryEl.value : ''
+  };
+}
+
+if (typeof window !== 'undefined') {
+  window.initDdbCharacterBuilderModal = initDdbCharacterBuilderModal;
+  window.switchPlayerModalStep = switchPlayerModalStep;
+  window.nextPlayerModalStep = nextPlayerModalStep;
+  window.prevPlayerModalStep = prevPlayerModalStep;
+  window.togglePlayerModalAllSteps = togglePlayerModalAllSteps;
+  window.updateDdbHeroSummaryBar = updateDdbHeroSummaryBar;
+  window.renderModalClassBuilderCards = renderModalClassBuilderCards;
+  window.selectModalClassCard = selectModalClassCard;
+  window.renderModalClassSkillsPicker = renderModalClassSkillsPicker;
+  window.toggleModalClassSkillChoice = toggleModalClassSkillChoice;
+  window.renderModalBackgroundQuickChips = renderModalBackgroundQuickChips;
+  window.selectModalBackgroundChip = selectModalBackgroundChip;
+  window.getModalTraitSuggestionsData = getModalTraitSuggestionsData;
+  window.renderModalTraitSuggestions = renderModalTraitSuggestions;
+  window.pickModalTraitSuggestion = pickModalTraitSuggestion;
+  window.renderModalSpeciesBuilderCards = renderModalSpeciesBuilderCards;
+  window.selectModalSpeciesCard = selectModalSpeciesCard;
+  window.setModalStartingEquipmentMode = setModalStartingEquipmentMode;
+  window.renderModalStartingEquipmentChoices = renderModalStartingEquipmentChoices;
+  window.selectModalStartingEquipOption = selectModalStartingEquipOption;
+  window.applyModalStartingEquipmentToSheet = applyModalStartingEquipmentToSheet;
+  window.rollModalStartingClassGold = rollModalStartingClassGold;
+  window.renderModalStartingInventoryList = renderModalStartingInventoryList;
+  window.addExtraItemToModalInventory = addExtraItemToModalInventory;
+  window.removeModalStartingInventoryItem = removeModalStartingInventoryItem;
+  window.rollXanatharLifePathModal = rollXanatharLifePathModal;
+  window.removeSpellFromPlayer = removeSpellFromPlayer;
+  window.buildPlayerSpellsSummary = buildPlayerSpellsSummary;
+  window.parseSpellNamesFromRawText = parseSpellNamesFromRawText;
+}
+
 if (typeof global !== 'undefined') {
   global.renderPlayerRacialTraits = renderPlayerRacialTraits;
   global.renderPlayerUnlockedFeatures = renderPlayerUnlockedFeatures;
@@ -14960,6 +16305,35 @@ if (typeof global !== 'undefined') {
   global.onModalBackgroundChange = onModalBackgroundChange;
   global.rollBackgroundTraitsModal = rollBackgroundTraitsModal;
   global.applyBackgroundBenefitsModal = applyBackgroundBenefitsModal;
+  global.initDdbCharacterBuilderModal = initDdbCharacterBuilderModal;
+  global.switchPlayerModalStep = switchPlayerModalStep;
+  global.nextPlayerModalStep = nextPlayerModalStep;
+  global.prevPlayerModalStep = prevPlayerModalStep;
+  global.togglePlayerModalAllSteps = togglePlayerModalAllSteps;
+  global.updateDdbHeroSummaryBar = updateDdbHeroSummaryBar;
+  global.renderModalClassBuilderCards = renderModalClassBuilderCards;
+  global.selectModalClassCard = selectModalClassCard;
+  global.renderModalClassSkillsPicker = renderModalClassSkillsPicker;
+  global.toggleModalClassSkillChoice = toggleModalClassSkillChoice;
+  global.renderModalBackgroundQuickChips = renderModalBackgroundQuickChips;
+  global.selectModalBackgroundChip = selectModalBackgroundChip;
+  global.getModalTraitSuggestionsData = getModalTraitSuggestionsData;
+  global.renderModalTraitSuggestions = renderModalTraitSuggestions;
+  global.pickModalTraitSuggestion = pickModalTraitSuggestion;
+  global.renderModalSpeciesBuilderCards = renderModalSpeciesBuilderCards;
+  global.selectModalSpeciesCard = selectModalSpeciesCard;
+  global.setModalStartingEquipmentMode = setModalStartingEquipmentMode;
+  global.renderModalStartingEquipmentChoices = renderModalStartingEquipmentChoices;
+  global.selectModalStartingEquipOption = selectModalStartingEquipOption;
+  global.applyModalStartingEquipmentToSheet = applyModalStartingEquipmentToSheet;
+  global.rollModalStartingClassGold = rollModalStartingClassGold;
+  global.renderModalStartingInventoryList = renderModalStartingInventoryList;
+  global.addExtraItemToModalInventory = addExtraItemToModalInventory;
+  global.removeModalStartingInventoryItem = removeModalStartingInventoryItem;
+  global.rollXanatharLifePathModal = rollXanatharLifePathModal;
+  global.removeSpellFromPlayer = removeSpellFromPlayer;
+  global.buildPlayerSpellsSummary = buildPlayerSpellsSummary;
+  global.parseSpellNamesFromRawText = parseSpellNamesFromRawText;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -15009,7 +16383,36 @@ if (typeof module !== 'undefined' && module.exports) {
     findBackgroundData,
     onModalBackgroundChange,
     rollBackgroundTraitsModal,
-    applyBackgroundBenefitsModal
+    applyBackgroundBenefitsModal,
+    initDdbCharacterBuilderModal,
+    switchPlayerModalStep,
+    nextPlayerModalStep,
+    prevPlayerModalStep,
+    togglePlayerModalAllSteps,
+    updateDdbHeroSummaryBar,
+    renderModalClassBuilderCards,
+    selectModalClassCard,
+    renderModalClassSkillsPicker,
+    toggleModalClassSkillChoice,
+    renderModalBackgroundQuickChips,
+    selectModalBackgroundChip,
+    getModalTraitSuggestionsData,
+    renderModalTraitSuggestions,
+    pickModalTraitSuggestion,
+    renderModalSpeciesBuilderCards,
+    selectModalSpeciesCard,
+    setModalStartingEquipmentMode,
+    renderModalStartingEquipmentChoices,
+    selectModalStartingEquipOption,
+    applyModalStartingEquipmentToSheet,
+    rollModalStartingClassGold,
+    renderModalStartingInventoryList,
+    addExtraItemToModalInventory,
+    removeModalStartingInventoryItem,
+    rollXanatharLifePathModal,
+    removeSpellFromPlayer,
+    buildPlayerSpellsSummary,
+    parseSpellNamesFromRawText
   };
 }
 

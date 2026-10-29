@@ -1465,6 +1465,155 @@ function renderCombatantMiniActions(c) {
   return `<div class="combatant-mini-actions">${actionButtons.join('')}</div>`;
 }
 
+// ==========================================================================
+// 🧠 ITEM 5: LOUCURA, FERIMENTOS PERSISTENTES & CHOQUE DE SISTEMA (DMG CAP. 8 & 9 - ISSUE-161)
+// ==========================================================================
+
+function rollCombatTraumaEffect(type = 'shortMadness', targetIdParam = null) {
+  const tables = (typeof DMG_COMBAT_TRAUMA_TABLES !== 'undefined') ? DMG_COMBAT_TRAUMA_TABLES : null;
+  if (!tables) return null;
+
+  const combatState = typeof state !== 'undefined' ? state : (typeof STATE !== 'undefined' ? STATE : null);
+  const targetId = targetIdParam || (typeof document !== 'undefined' ? document.getElementById('sel-target')?.value : null) || (combatState && combatState.combatants && combatState.combatants[0] ? combatState.combatants[0].id : null);
+  const target = (combatState && Array.isArray(combatState.combatants)) ? combatState.combatants.find(c => c.id === targetId) : null;
+  const targetName = target ? target.name : 'Aventureiro';
+
+  let list = [];
+  let labelTitle = '';
+  if (type === 'shortMadness') {
+    list = tables.shortTermMadness || [];
+    labelTitle = '🌀 Loucura de Curto Prazo (1d10 min)';
+  } else if (type === 'longMadness') {
+    list = tables.longTermMadness || [];
+    labelTitle = '🌑 Loucura de Longo Prazo (1d10×10h)';
+  } else if (type === 'indefiniteMadness') {
+    list = tables.indefiniteMadness || [];
+    labelTitle = '👁️ Loucura Indefinida (Permanente)';
+  } else if (type === 'lingeringInjury') {
+    list = tables.lingeringInjuries || [];
+    labelTitle = '🩸 Ferimento Persistente (d20)';
+  } else if (type === 'systemShock') {
+    list = tables.systemShock || [];
+    labelTitle = '⚡ Choque de Sistema / Dano Maciço (d10)';
+  }
+
+  if (!Array.isArray(list) || list.length === 0) return null;
+  const entry = list[Math.floor(Math.random() * list.length)];
+  const effectText = entry.name ? `${entry.name}: ${entry.desc}` : entry.text;
+
+  if (target) {
+    if (!Array.isArray(target.conditions)) target.conditions = [];
+    if (entry.condition && !target.conditions.includes(entry.condition)) {
+      target.conditions.push(entry.condition);
+    }
+    if (type === 'systemShock' && (entry.d10 === 1 || entry.d10 === 2)) {
+      target.hp = 0;
+    }
+    target.notes = target.notes ? `${target.notes} | ${labelTitle}: ${entry.name || entry.text}` : `${labelTitle}: ${entry.name || entry.text}`;
+
+    // Sincroniza na ficha do jogador se for player
+    if (target.type === 'player' && typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS)) {
+      const p = PLAYERS.find(x => x.id === target.playerId || x.name === target.name);
+      if (p) {
+        p.hp = target.hp;
+        if (!Array.isArray(p.conditions)) p.conditions = [];
+        if (entry.condition && !p.conditions.includes(entry.condition)) {
+          p.conditions.push(entry.condition);
+        }
+        if (type === 'indefiniteMadness') {
+          p.flaw = p.flaw ? `${p.flaw} | Loucura: ${entry.text}` : `Loucura: ${entry.text}`;
+        }
+        if (typeof renderPlayers === 'function') renderPlayers();
+      }
+    }
+  }
+
+  if (typeof addLog === 'function') {
+    addLog(`${labelTitle} em <b>${targetName}</b>: <i>${effectText}</i>`);
+  }
+  if (typeof renderCombat === 'function') renderCombat();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof playFX === 'function') playFX('fumble');
+  if (typeof showToast === 'function') {
+    showToast(`${labelTitle} aplicado em ${targetName}!`, 'warning');
+  }
+
+  return {
+    type,
+    targetName,
+    entry,
+    effectText,
+    condition: entry.condition || null
+  };
+}
+
+// ==========================================================================
+// 🪤 ITEM 6: GERADOR E DISPARADOR DE ARMADILHAS DE MASMORRA (DMG CAP. 5 - ISSUE-161)
+// ==========================================================================
+
+function triggerDmgTrapOnTargets(trapIdParam = null, tierParam = null, severityParam = null, targetIdParam = null) {
+  const traps = (typeof DMG_TRAPS_DATA !== 'undefined' && Array.isArray(DMG_TRAPS_DATA)) ? DMG_TRAPS_DATA : [];
+  const sevMap = (typeof DMG_TRAP_SEVERITY_STATS !== 'undefined') ? DMG_TRAP_SEVERITY_STATS : {};
+
+  const trapId = trapIdParam || (typeof document !== 'undefined' ? document.getElementById('sel-dmg-trap')?.value : 'hidden_pit') || 'hidden_pit';
+  const tier = tierParam || (typeof document !== 'undefined' ? document.getElementById('sel-dmg-trap-tier')?.value : '1-4') || '1-4';
+  const severityKey = severityParam || (typeof document !== 'undefined' ? document.getElementById('sel-dmg-trap-severity')?.value : 'dangerous') || 'dangerous';
+
+  const trap = traps.find(t => t.id === trapId) || traps[0] || { id: 'hidden_pit', name: 'Fosso Oculto', damageType: 'concussão', saveOrAtk: 'Salvaguarda DES' };
+  const sev = sevMap[severityKey] || sevMap.dangerous || { label: 'Perigosa', dc: 13, attackBonus: 7, damageByTier: { '1-4': '2d10' } };
+  const formula = (sev.damageByTier && sev.damageByTier[tier]) ? sev.damageByTier[tier] : '2d10';
+
+  const m = String(formula).match(/(\d+)d(\d+)/i);
+  const diceCount = m ? parseInt(m[1], 10) : 2;
+  const diceSides = m ? parseInt(m[2], 10) : 10;
+  let totalDamage = 0;
+  for (let i = 0; i < diceCount; i++) {
+    totalDamage += Math.floor(Math.random() * diceSides) + 1;
+  }
+
+  const combatState = typeof state !== 'undefined' ? state : (typeof STATE !== 'undefined' ? STATE : null);
+  const targetId = targetIdParam || (typeof document !== 'undefined' ? document.getElementById('sel-target')?.value : null) || (combatState && combatState.combatants && combatState.combatants[0] ? combatState.combatants[0].id : null);
+  const target = (combatState && Array.isArray(combatState.combatants)) ? combatState.combatants.find(c => c.id === targetId) : null;
+
+  if (target) {
+    target.hp = Math.max(0, (parseInt(target.hp, 10) || 0) - totalDamage);
+    if (target.type === 'player' && typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS)) {
+      const p = PLAYERS.find(x => x.id === target.playerId || x.name === target.name);
+      if (p) {
+        p.hp = target.hp;
+        if (typeof renderPlayers === 'function') renderPlayers();
+      }
+    }
+  }
+
+  if (typeof document !== 'undefined') {
+    const dmgInp = document.getElementById('inp-damage');
+    if (dmgInp) dmgInp.value = totalDamage;
+  }
+
+  const targetLabel = target ? target.name : 'Grupo';
+  if (typeof addLog === 'function') {
+    addLog(`🪤 <b>ARMADILHA DISPARADA: ${trap.name}</b> [${sev.label} • Patamar ${tier} • CD ${sev.dc} / Ataque +${sev.attackBonus}] causou <b>${totalDamage} de dano (${formula} ${trap.damageType})</b> em <b>${targetLabel}</b>!`);
+  }
+  if (typeof renderCombat === 'function') renderCombat();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof playFX === 'function') playFX('damage');
+  if (typeof showToast === 'function') {
+    showToast(`🪤 ${trap.name}: ${totalDamage} de dano (${formula}) em ${targetLabel}!`, 'error');
+  }
+
+  return {
+    trapName: trap.name,
+    tier,
+    severity: severityKey,
+    dc: sev.dc,
+    attackBonus: sev.attackBonus,
+    formula,
+    damage: totalDamage,
+    targetName: targetLabel
+  };
+}
+
 if (typeof window !== 'undefined') {
   window.promptCombatantDamageHeal = promptCombatantDamageHeal;
   window.closeCombatDamageHealModal = closeCombatDamageHealModal;
@@ -1479,6 +1628,13 @@ if (typeof window !== 'undefined') {
   window.toggleCombatQuickCondition = toggleCombatQuickCondition;
   window.toggleCombatantAction = toggleCombatantAction;
   window.renderCombatantMiniActions = renderCombatantMiniActions;
+  window.rollCombatTraumaEffect = rollCombatTraumaEffect;
+  window.triggerDmgTrapOnTargets = triggerDmgTrapOnTargets;
+}
+
+if (typeof global !== 'undefined') {
+  global.rollCombatTraumaEffect = rollCombatTraumaEffect;
+  global.triggerDmgTrapOnTargets = triggerDmgTrapOnTargets;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -1505,7 +1661,9 @@ if (typeof module !== 'undefined' && module.exports) {
     closeCombatQuickConditions,
     toggleCombatQuickCondition,
     toggleCombatantAction,
-    renderCombatantMiniActions
+    renderCombatantMiniActions,
+    rollCombatTraumaEffect,
+    triggerDmgTrapOnTargets
   };
 }
 

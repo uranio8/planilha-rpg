@@ -272,6 +272,11 @@ function renderCampaigns() {
 
   // 5. Renderiza Bastião Coletivo do Grupo (D&D 2024 / 5.5 em PO - ISSUE-118)
   renderCampaignBastion(camp, campPlayers);
+
+  // 6. Renderiza Renome de Facções, Bênçãos & Dádivas Épicas (DMG Cap. 1 & 7 - ISSUE-161)
+  if (typeof renderCampaignFactionsAndGifts === 'function') {
+    renderCampaignFactionsAndGifts(camp, campPlayers);
+  }
 }
 
 // --- DASHBOARD DE VISÃO GERAL DA CAMPANHA (DM3) ---
@@ -5042,6 +5047,140 @@ function promptUpgradeBastionWalls() {
 
 
 // Vincula em window para uso no browser
+// ==========================================================================
+// 🏛️ ITEM 7: FACÇÕES & RENOME, BÊNÇÃOS DOS DEUSES & DÁDIVAS ÉPICAS (DMG CAP. 1 & 7 - ISSUE-161)
+// ==========================================================================
+
+function getFactionRankTitle(factionId, renownScore = 0) {
+  const factions = (typeof DMG_FACTIONS_DATA !== 'undefined' && Array.isArray(DMG_FACTIONS_DATA)) ? DMG_FACTIONS_DATA : [];
+  const fac = factions.find(f => f.id === factionId);
+  if (!fac || !Array.isArray(fac.ranks)) return 'Não Iniciado';
+
+  const score = Math.max(0, parseInt(renownScore, 10) || 0);
+  let currentTitle = 'Simpatizante (Sem Patente)';
+  fac.ranks.forEach(r => {
+    if (score >= r.renown) {
+      currentTitle = r.title;
+    }
+  });
+  return currentTitle;
+}
+
+function adjustCampaignFactionRenown(factionId, delta = 1) {
+  const camp = getActiveCampaign();
+  if (!camp || !factionId) return 0;
+
+  if (!camp.factionRenown || typeof camp.factionRenown !== 'object') {
+    camp.factionRenown = {};
+  }
+  const prev = parseInt(camp.factionRenown[factionId], 10) || 0;
+  const next = Math.max(0, prev + (parseInt(delta, 10) || 0));
+  camp.factionRenown[factionId] = next;
+
+  const rankTitle = getFactionRankTitle(factionId, next);
+  touchCampaign(camp);
+  saveCampaignsState();
+  renderCampaignFactionsAndGifts(camp, getCampaignPlayers(camp));
+
+  const factions = (typeof DMG_FACTIONS_DATA !== 'undefined' && Array.isArray(DMG_FACTIONS_DATA)) ? DMG_FACTIONS_DATA : [];
+  const fac = factions.find(f => f.id === factionId);
+  if (typeof showToast === 'function' && fac) {
+    showToast(`${fac.icon} ${fac.name}: Renome ${next} (${rankTitle})`, 'info');
+  }
+
+  return next;
+}
+
+function renderCampaignFactionsAndGifts(campParam = null, campPlayersParam = null) {
+  const camp = campParam || getActiveCampaign();
+  if (!camp || typeof document === 'undefined') return;
+  const campPlayers = campPlayersParam || getCampaignPlayers(camp);
+
+  if (!camp.factionRenown || typeof camp.factionRenown !== 'object') {
+    camp.factionRenown = {};
+  }
+
+  const gridEl = document.getElementById('camp-factions-renown-grid');
+  const factions = (typeof DMG_FACTIONS_DATA !== 'undefined' && Array.isArray(DMG_FACTIONS_DATA)) ? DMG_FACTIONS_DATA : [];
+  if (gridEl && factions.length > 0) {
+    gridEl.innerHTML = factions.map(f => {
+      const score = parseInt(camp.factionRenown[f.id], 10) || 0;
+      const rankTitle = getFactionRankTitle(f.id, score);
+      return `
+        <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(148, 163, 184, 0.22); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 12px; font-weight: 800; color: #f8fafc;">${f.icon} ${f.name}</span>
+            <span class="badge badge-gold">${score} Renome</span>
+          </div>
+          <div style="font-size: 10.5px; color: #38bdf8; font-weight: 700;">🎖️ Patente: ${rankTitle}</div>
+          <div style="display: flex; gap: 4px; margin-top: 4px;">
+            <button type="button" class="btn-secondary" style="padding: 2px 7px; font-size: 10px;" onclick="adjustCampaignFactionRenown('${f.id}', -1)">−1</button>
+            <button type="button" class="btn-secondary" style="padding: 2px 7px; font-size: 10px; color: #34d399; border-color: rgba(16,185,129,0.35);" onclick="adjustCampaignFactionRenown('${f.id}', 1)">+1 Renome</button>
+            <button type="button" class="btn-secondary" style="padding: 2px 7px; font-size: 10px; color: #fde047; border-color: rgba(245,158,11,0.35);" onclick="adjustCampaignFactionRenown('${f.id}', 5)">+5</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  const selHero = document.getElementById('sel-gift-hero');
+  if (selHero) {
+    const allHeroes = campPlayers.length > 0 ? campPlayers : (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS) ? PLAYERS : []);
+    selHero.innerHTML = allHeroes.map(p => `<option value="${p.id}">${p.name} (${p.className} Nv ${p.level || 1})</option>`).join('');
+  }
+
+  const selGift = document.getElementById('sel-supernatural-gift');
+  const gifts = (typeof DMG_SUPERNATURAL_GIFTS_DATA !== 'undefined' && Array.isArray(DMG_SUPERNATURAL_GIFTS_DATA)) ? DMG_SUPERNATURAL_GIFTS_DATA : [];
+  if (selGift && gifts.length > 0) {
+    selGift.innerHTML = gifts.map(g => `<option value="${g.id}">[${g.type}] ${g.name}</option>`).join('');
+  }
+}
+
+function grantSupernaturalGiftToHero(heroIdParam = null, giftIdParam = null) {
+  const gifts = (typeof DMG_SUPERNATURAL_GIFTS_DATA !== 'undefined' && Array.isArray(DMG_SUPERNATURAL_GIFTS_DATA)) ? DMG_SUPERNATURAL_GIFTS_DATA : [];
+  const heroId = heroIdParam || (typeof document !== 'undefined' ? document.getElementById('sel-gift-hero')?.value : null) || (typeof PLAYERS !== 'undefined' && PLAYERS[0] ? PLAYERS[0].id : null);
+  const giftId = giftIdParam || (typeof document !== 'undefined' ? document.getElementById('sel-supernatural-gift')?.value : null) || (gifts[0] ? gifts[0].id : null);
+
+  const hero = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS)) ? PLAYERS.find(p => String(p.id) === String(heroId)) : null;
+  const gift = gifts.find(g => g.id === giftId) || gifts[0];
+  if (!hero || !gift) return null;
+
+  if (!Array.isArray(hero.supernaturalGifts)) hero.supernaturalGifts = [];
+  if (!hero.supernaturalGifts.includes(gift.id)) {
+    hero.supernaturalGifts.push(gift.id);
+    if (gift.statBonus && gift.statBonus.attr) {
+      const attr = gift.statBonus.attr;
+      hero[attr] = Math.min(22, (parseInt(hero[attr], 10) || 10) + (gift.statBonus.amount || 2));
+    }
+    if (gift.acBonus) {
+      hero.ac = (parseInt(hero.ac, 10) || 10) + gift.acBonus;
+    }
+  }
+
+  const giftLine = `✨ [${gift.type}] ${gift.name}: ${gift.desc}`;
+  if (!String(hero.features || '').includes(gift.name)) {
+    hero.features = hero.features ? `${hero.features}\n${giftLine}` : giftLine;
+  }
+
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof addLog === 'function') {
+    addLog(`✨ <b>${hero.name}</b> recebeu a recompensa sobrenatural <b>${gift.name}</b> (${gift.type})!`);
+  }
+  if (typeof playFX === 'function') playFX('heal');
+  if (typeof showToast === 'function') {
+    showToast(`✨ ${gift.name} concedida a ${hero.name}!`, 'success');
+  }
+
+  return {
+    heroId: hero.id,
+    heroName: hero.name,
+    giftId: gift.id,
+    giftName: gift.name,
+    giftType: gift.type
+  };
+}
+
 if (typeof window !== 'undefined') {
   window.touchCampaign = touchCampaign;
   window.trackDeletedCampaignId = trackDeletedCampaignId;
@@ -5049,6 +5188,17 @@ if (typeof window !== 'undefined') {
   window.trackDeletedPartyItemId = trackDeletedPartyItemId;
   window.getDeletedPartyItemIds = getDeletedPartyItemIds;
   window.updateAllPartyStashElements = updateAllPartyStashElements;
+  window.getFactionRankTitle = getFactionRankTitle;
+  window.adjustCampaignFactionRenown = adjustCampaignFactionRenown;
+  window.renderCampaignFactionsAndGifts = renderCampaignFactionsAndGifts;
+  window.grantSupernaturalGiftToHero = grantSupernaturalGiftToHero;
+}
+
+if (typeof global !== 'undefined') {
+  global.getFactionRankTitle = getFactionRankTitle;
+  global.adjustCampaignFactionRenown = adjustCampaignFactionRenown;
+  global.renderCampaignFactionsAndGifts = renderCampaignFactionsAndGifts;
+  global.grantSupernaturalGiftToHero = grantSupernaturalGiftToHero;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -5078,6 +5228,10 @@ if (typeof module !== 'undefined' && module.exports) {
     updateHirelingMission,
     updateHirelingStatus,
     dismissCampaignHireling,
+    getFactionRankTitle,
+    adjustCampaignFactionRenown,
+    renderCampaignFactionsAndGifts,
+    grantSupernaturalGiftToHero,
     payCampaignHirelingsPayroll,
     rollCampaignHirelingsMorale,
     rollSingleHirelingMorale,
