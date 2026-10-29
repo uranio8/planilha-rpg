@@ -1577,9 +1577,9 @@ function getPlayerExtraAttacksCount(p) {
       if (lvl >= 5) return 2;
     }
     if (cNorm.includes('barbaro') || cNorm.includes('barbarian') ||
-        cNorm.includes('paladino') || cNorm.includes('paladin') ||
-        cNorm.includes('patrulheiro') || cNorm.includes('ranger') ||
-        cNorm.includes('monge') || cNorm.includes('monk')) {
+      cNorm.includes('paladino') || cNorm.includes('paladin') ||
+      cNorm.includes('patrulheiro') || cNorm.includes('ranger') ||
+      cNorm.includes('monge') || cNorm.includes('monk')) {
       if (lvl >= 5) return 2;
     }
     if (cNorm.includes('bardo') || cNorm.includes('bard')) {
@@ -11128,8 +11128,8 @@ function printPlayerSheet(id) {
   const attacksText = calcedAttacksList.length > 0
     ? calcedAttacksList.map(a => `<b>${a.name}</b> ${a.toHit && a.toHit !== '—' ? '(' + a.toHit + ')' : ''} — <span style="color:#d97706;">${a.damage}</span> ${a.damageType || ''}${a.notes ? ` <i>(${a.notes})</i>` : ''}`).join('<br>')
     : (typeof p.attacks === 'string'
-        ? p.attacks.replace(/\n/g, '<br>')
-        : (Array.isArray(p.attacks) ? p.attacks.map(a => typeof a === 'string' ? a : (a.name || '')).filter(Boolean).join('<br>') : 'Nenhum ataque registrado.'));
+      ? p.attacks.replace(/\n/g, '<br>')
+      : (Array.isArray(p.attacks) ? p.attacks.map(a => typeof a === 'string' ? a : (a.name || '')).filter(Boolean).join('<br>') : 'Nenhum ataque registrado.'));
 
   const container = document.getElementById('print-sheet-content');
   if (!container) return;

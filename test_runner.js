@@ -6429,11 +6429,19 @@ assert(bastionTest !== null && typeof bastionTest === 'object', 'Bastião foi in
 assert(bastionTest.level === 5, 'Bastião inicia no Nível 5');
 assert(bastionTest.turnCount === 1, 'Bastião inicia na Semana / Turno 1');
 assert(bastionTest.defenders === 4, 'Bastião possui 4 defensores iniciais');
-assert(bastionTest.specialFacilities.length >= 2, 'Bastião possui instalações iniciais atribuídas');
+assert(Array.isArray(bastionTest.specialFacilities) && bastionTest.specialFacilities.length === 0, 'Bastião inicia limpo sem instalações forçadas indesejadas (ISSUE-169)');
 
 // 4. Execução de Ordem de Fabricação de Item com Débito no Baú
 vm.runInContext(`
-  const smithyFac = b86.specialFacilities.find(f => f.key === 'smithy') || b86.specialFacilities[0];
+  // Jogador/Mestre constrói a Ferraria explicitamente (sem construções automáticas indesejadas)
+  b86.specialFacilities.push({
+    id: 'fac_smithy_test',
+    key: 'smithy',
+    name: 'Ferraria',
+    levelReq: 5,
+    assignedHeroId: 'p_hero_borin'
+  });
+  const smithyFac = b86.specialFacilities.find(f => f.key === 'smithy');
   smithyFac.currentOrder = {
     actionKey: 'craft_metal',
     name: 'Forjar Armas & Armaduras de Metal',
@@ -10752,6 +10760,40 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(sandbox.advRoll && sandbox.advRoll.rollMode === 'adv', 'rollPlayerAttack suporta e registra modo de Vantagem');
     assert(sandbox.disRoll && sandbox.disRoll.rollMode === 'dis', 'rollPlayerAttack suporta e registra modo de Desvantagem');
     assert(sandbox.versatileDmgRoll && sandbox.versatileDmgRoll.isVersatile === true && sandbox.versatileDmgRoll.diceSides === 10, 'rollWeaponDamageOnly rola com 1d10 quando marcado como versátil');
+
+    // =========================================================================
+    // 🏛️ BATERIA 138: ISSUE-169 - OVERHAUL DE MODAIS, BASTIÕES LIMPOS E SIMULAÇÃO DE AGENTES
+    // =========================================================================
+    console.log('\n🏛️ [Bateria 138] Modais Premium, Correção de Bastiões e Simulação de Agentes (ISSUE-169):');
+
+    // 1. Verificação de Bastião Limpo (Sem instalações automáticas prévias)
+    vm.runInContext(`
+      const testCampClean = {
+        id: 'camp_b138_test',
+        name: 'Campanha Sem Bastião Forçado',
+        desc: 'Teste de bastião sem construções automáticas'
+      };
+      cleanBastionObj = getCampaignBastion(testCampClean);
+    `, sandbox);
+    assert(sandbox.cleanBastionObj && Array.isArray(sandbox.cleanBastionObj.specialFacilities) && sandbox.cleanBastionObj.specialFacilities.length === 0, 'getCampaignBastion inicializa specialFacilities como array vazio ([])');
+    assert(sandbox.cleanBastionObj.level === 5, 'Bastião inicializado no nível 5 conforme padrão das regras 2024');
+
+    // 2. Verificação dos estilos CSS modernos dos Pop-ups e Modais
+    const headCssContent138 = fs.readFileSync(path.join(srcDir, 'styles', 'head_css.html'), 'utf8');
+    assert(headCssContent138.includes('.modal-overlay'), 'CSS inclui estilização de .modal-overlay');
+    assert(headCssContent138.includes('modalSpringPop'), 'CSS inclui animação suave @keyframes modalSpringPop para modais');
+    assert(headCssContent138.includes('linear-gradient(180deg, #131c31 0%, #0c1220 100%)'), 'CSS inclui fundo gradiente dark fantasy nos modais');
+    assert(headCssContent138.includes('rgba(245, 158, 11, 0.25)') || headCssContent138.includes('rgba(245, 158, 11, 0.28)'), 'CSS inclui realce e iluminação de borda dourada nos pop-ups');
+
+    // 3. Execução da Suíte de Simulação Autônoma por Agentes (test_agent_simulation.js)
+    try {
+      const { execSync } = require('child_process');
+      const simOut = execSync('node test_agent_simulation.js', { encoding: 'utf8' });
+      assert(simOut.includes('SIMULAÇÃO COMPLETA DE AGENTES APROVADA COM SUCESSO'), 'test_agent_simulation.js executado com sucesso');
+      assert(simOut.includes('15/15 verificações aprovadas'), '15/15 etapas do Mestre, Jogador e Sincronização aprovadas com 100%');
+    } catch (simErr) {
+      assert(false, `test_agent_simulation.js falhou: ${simErr.message}`);
+    }
 
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;

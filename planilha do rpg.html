@@ -947,14 +947,17 @@
     .badge-cls { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
     .badge-sch { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
 
-    /* MODAL */
+    /* ===================================================
+       🎨 DESIGN SYSTEM DARK FANTASY: MODAIS & POP-UPS (ISSUE-169)
+       =================================================== */
     .modal-overlay,
     .modal {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(4, 6, 10, 0.85);
-      backdrop-filter: blur(6px);
+      background: radial-gradient(circle at 50% 30%, rgba(15, 23, 42, 0.78) 0%, rgba(3, 7, 18, 0.92) 100%);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       z-index: 12000;
       align-items: center;
       justify-content: center;
@@ -963,51 +966,130 @@
     }
     .modal-overlay.open,
     .modal.open { display: flex; }
+    
     .modal-body,
-    .modal-box {
-      background: #0f1524;
-      border: 1px solid var(--border-color);
-      border-radius: 14px;
+    .modal-box,
+    .modal-content {
+      background: linear-gradient(180deg, #131c31 0%, #0c1220 100%);
+      border: 1px solid rgba(245, 158, 11, 0.28);
+      border-radius: 16px;
       max-width: 680px;
       width: 100%;
       max-height: 90vh;
       max-height: calc(100vh - 60px);
       max-height: 90dvh;
       overflow-y: auto;
-      padding: 20px;
+      padding: 22px;
       display: flex;
       flex-direction: column;
       gap: 14px;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.05), 0 0 35px rgba(245, 158, 11, 0.12);
+      animation: modalSpringPop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      position: relative;
+    }
+
+    @keyframes modalSpringPop {
+      0% { opacity: 0; transform: scale(0.95) translateY(6px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Scrollbar estilizada dos modais */
+    .modal-body::-webkit-scrollbar,
+    .modal-box::-webkit-scrollbar,
+    .modal-content::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .modal-body::-webkit-scrollbar-track,
+    .modal-box::-webkit-scrollbar-track,
+    .modal-content::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 4px;
+    }
+    .modal-body::-webkit-scrollbar-thumb,
+    .modal-box::-webkit-scrollbar-thumb,
+    .modal-content::-webkit-scrollbar-thumb {
+      background: rgba(245, 158, 11, 0.3);
+      border-radius: 4px;
+    }
+    .modal-body::-webkit-scrollbar-thumb:hover,
+    .modal-box::-webkit-scrollbar-thumb:hover,
+    .modal-content::-webkit-scrollbar-thumb:hover {
+      background: var(--primary);
     }
 
     .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid var(--border-color);
-      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(245, 158, 11, 0.22);
+      padding-bottom: 12px;
       gap: 10px;
     }
 
+    .modal-header h2,
+    .modal-header h3,
+    .modal-header .modal-title {
+      font-family: var(--font-title);
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      background: linear-gradient(to right, #ffffff, #fde047);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+    }
+
     .modal-close {
-      background: transparent;
-      border: 1px solid var(--border-color);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       color: var(--text-muted);
-      border-radius: 6px;
-      width: 28px;
-      height: 28px;
+      border-radius: 8px;
+      width: 32px;
+      height: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
+      font-size: 15px;
+      font-weight: 700;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      flex-shrink: 0;
     }
     .modal-close:hover {
-      background: rgba(239, 68, 68, 0.2);
-      border-color: #ef4444;
-      color: #ef4444;
+      background: rgba(239, 68, 68, 0.22);
+      border-color: rgba(239, 68, 68, 0.5);
+      color: #f87171;
+      transform: scale(1.08);
+    }
+
+    /* Inputs e Selects em modais com acabamento refinado */
+    .modal-box input:not([type="checkbox"]):not([type="radio"]),
+    .modal-box select,
+    .modal-box textarea,
+    .modal-body input:not([type="checkbox"]):not([type="radio"]),
+    .modal-body select,
+    .modal-body textarea {
+      background: rgba(8, 12, 22, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      color: #f8fafc;
+      padding: 8px 12px;
+      font-size: 13px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .modal-box input:not([type="checkbox"]):not([type="radio"]):focus,
+    .modal-box select:focus,
+    .modal-box textarea:focus,
+    .modal-body input:not([type="checkbox"]):not([type="radio"]):focus,
+    .modal-body select:focus,
+    .modal-body textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+      outline: none;
     }
 
     /* MODAL DE HABILIDADES, CARACTERÍSTICAS & REGRAS (HUD PREMIUM) */
@@ -52121,9 +52203,9 @@ function getPlayerExtraAttacksCount(p) {
       if (lvl >= 5) return 2;
     }
     if (cNorm.includes('barbaro') || cNorm.includes('barbarian') ||
-        cNorm.includes('paladino') || cNorm.includes('paladin') ||
-        cNorm.includes('patrulheiro') || cNorm.includes('ranger') ||
-        cNorm.includes('monge') || cNorm.includes('monk')) {
+      cNorm.includes('paladino') || cNorm.includes('paladin') ||
+      cNorm.includes('patrulheiro') || cNorm.includes('ranger') ||
+      cNorm.includes('monge') || cNorm.includes('monk')) {
       if (lvl >= 5) return 2;
     }
     if (cNorm.includes('bardo') || cNorm.includes('bard')) {
@@ -61672,8 +61754,8 @@ function printPlayerSheet(id) {
   const attacksText = calcedAttacksList.length > 0
     ? calcedAttacksList.map(a => `<b>${a.name}</b> ${a.toHit && a.toHit !== '—' ? '(' + a.toHit + ')' : ''} — <span style="color:#d97706;">${a.damage}</span> ${a.damageType || ''}${a.notes ? ` <i>(${a.notes})</i>` : ''}`).join('<br>')
     : (typeof p.attacks === 'string'
-        ? p.attacks.replace(/\n/g, '<br>')
-        : (Array.isArray(p.attacks) ? p.attacks.map(a => typeof a === 'string' ? a : (a.name || '')).filter(Boolean).join('<br>') : 'Nenhum ataque registrado.'));
+      ? p.attacks.replace(/\n/g, '<br>')
+      : (Array.isArray(p.attacks) ? p.attacks.map(a => typeof a === 'string' ? a : (a.name || '')).filter(Boolean).join('<br>') : 'Nenhum ataque registrado.'));
 
   const container = document.getElementById('print-sheet-content');
   if (!container) return;
@@ -75556,30 +75638,7 @@ function getCampaignBastion(camp) {
       defenders: 4,
       bank: { gold: 0, history: [] },
       staff: [],
-      specialFacilities: [
-        {
-          id: "fac_" + Date.now() + "_ws",
-          key: "workshop",
-          name: "Oficina de Artesanato",
-          patronId: defaultOwnerId,
-          managerNpcId: null,
-          managerNpcName: null,
-          managerNpcRole: null,
-          currentOrder: null,
-          status: "active"
-        },
-        {
-          id: "fac_" + (Date.now() + 1) + "_gd",
-          key: "garden",
-          name: "Jardim de Ervas",
-          patronId: secondOwnerId,
-          managerNpcId: null,
-          managerNpcName: null,
-          managerNpcRole: null,
-          currentOrder: null,
-          status: "active"
-        }
-      ],
+      specialFacilities: [], // ISSUE-169: Inicializa sem instalações automáticas (apenas adicionadas sob demanda pelo usuário)
       activeBuffs: [],
       history: [
         {
@@ -75665,8 +75724,11 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
 
   if (!bastion.specialFacilities || bastion.specialFacilities.length === 0) {
     html += `
-      <div style="grid-column: 1 / -1; text-align: center; padding: 24px; color: #94a3b8; font-size: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
-        Nenhuma instalação especial construída. Clique em <b>"🏗️ Adicionar Instalação Especial"</b> para começar!
+      <div style="grid-column: 1 / -1; text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 13px; background: rgba(15, 23, 42, 0.4); border: 1px dashed rgba(245, 158, 11, 0.25); border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+        <span style="font-size: 28px;">🏰</span>
+        <div><b>Sua fortaleza ainda não possui salas ou instalações construídas.</b></div>
+        <div style="font-size: 11px; color: #64748b; max-width: 460px;">Expanda seu bastião construindo salas como Forja, Laboratório Alquímico, Jardim, Biblioteca, Aposentos ou Santuário.</div>
+        <button type="button" class="btn-primary" style="margin-top: 6px; padding: 6px 14px; font-size: 12px;" onclick="openAddBastionFacilityModal()">🏗️ Construir Primeira Instalação</button>
       </div>
     `;
   } else {

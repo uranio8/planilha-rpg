@@ -3237,30 +3237,7 @@ function getCampaignBastion(camp) {
       defenders: 4,
       bank: { gold: 0, history: [] },
       staff: [],
-      specialFacilities: [
-        {
-          id: "fac_" + Date.now() + "_ws",
-          key: "workshop",
-          name: "Oficina de Artesanato",
-          patronId: defaultOwnerId,
-          managerNpcId: null,
-          managerNpcName: null,
-          managerNpcRole: null,
-          currentOrder: null,
-          status: "active"
-        },
-        {
-          id: "fac_" + (Date.now() + 1) + "_gd",
-          key: "garden",
-          name: "Jardim de Ervas",
-          patronId: secondOwnerId,
-          managerNpcId: null,
-          managerNpcName: null,
-          managerNpcRole: null,
-          currentOrder: null,
-          status: "active"
-        }
-      ],
+      specialFacilities: [], // ISSUE-169: Inicializa sem instalações automáticas (apenas adicionadas sob demanda pelo usuário)
       activeBuffs: [],
       history: [
         {
@@ -3346,8 +3323,11 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
 
   if (!bastion.specialFacilities || bastion.specialFacilities.length === 0) {
     html += `
-      <div style="grid-column: 1 / -1; text-align: center; padding: 24px; color: #94a3b8; font-size: 12px; background: rgba(0,0,0,0.2); border-radius: 8px;">
-        Nenhuma instalação especial construída. Clique em <b>"🏗️ Adicionar Instalação Especial"</b> para começar!
+      <div style="grid-column: 1 / -1; text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 13px; background: rgba(15, 23, 42, 0.4); border: 1px dashed rgba(245, 158, 11, 0.25); border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+        <span style="font-size: 28px;">🏰</span>
+        <div><b>Sua fortaleza ainda não possui salas ou instalações construídas.</b></div>
+        <div style="font-size: 11px; color: #64748b; max-width: 460px;">Expanda seu bastião construindo salas como Forja, Laboratório Alquímico, Jardim, Biblioteca, Aposentos ou Santuário.</div>
+        <button type="button" class="btn-primary" style="margin-top: 6px; padding: 6px 14px; font-size: 12px;" onclick="openAddBastionFacilityModal()">🏗️ Construir Primeira Instalação</button>
       </div>
     `;
   } else {
