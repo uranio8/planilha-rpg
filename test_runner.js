@@ -10536,7 +10536,7 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
       assert(integrityOut.includes('100% DAS AÇÕES E TELAS DA INTERFACE APROVADAS'), 'test_ui_integrity.js executado com sucesso e 100% de aprovação');
       assert(integrityOut.includes('Abas Validadas:    11/11'), '11/11 abas validadas com sucesso');
       assert(integrityOut.includes('Modais Validados:  10/10'), '10/10 modais validados com sucesso');
-      assert(integrityOut.includes('Ações de Clique:   617/617 aprovadas'), '617/617 ações de clique em ui.html aprovadas');
+      assert(integrityOut.includes('aprovadas (0 falhas)'), 'Todas as ações de clique em ui.html aprovadas sem falhas');
     } catch (e) {
       assert(false, `test_ui_integrity.js falhou: ${e.message}`);
     }
@@ -10809,6 +10809,97 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
 
     const playersJsContent139 = fs.readFileSync(path.join(srcDir, 'js', 'players.js'), 'utf8');
     assert(playersJsContent139.includes('roll20-atk-header-row') && playersJsContent139.includes('roll20-atk-title-wrap'), 'players.js utiliza estrutura responsiva no cabeçalho da tabela de ataques');
+
+    // =========================================================================
+    // ⚔️ BATERIA 140: ISSUE-171 - OVERHAUL E MODERNIZAÇÃO DA ABA DE COMBATE (VTT STYLE)
+    // =========================================================================
+    console.log('\n⚔️ [Bateria 140] Overhaul e Modernização da Aba de Combate VTT (ISSUE-171):');
+
+    // 1. Avaliador Matemático Seguro de PV
+    assert(typeof sandbox.evalCombatHpMath === 'function', 'sandbox exporta evalCombatHpMath');
+    assert(sandbox.evalCombatHpMath(25, 40, '+10') === 35, 'evalCombatHpMath soma PV relativo com +10');
+    assert(sandbox.evalCombatHpMath(25, 40, '+25') === 40, 'evalCombatHpMath limita soma ao maxHp (+25 -> 40)');
+    assert(sandbox.evalCombatHpMath(25, 40, '-8') === 17, 'evalCombatHpMath subtrai dano relativo com -8');
+    assert(sandbox.evalCombatHpMath(25, 40, '-35') === 0, 'evalCombatHpMath limita dano a 0 PV (-35 -> 0)');
+    assert(sandbox.evalCombatHpMath(20, 40, '/2') === 10, 'evalCombatHpMath reduz PV pela metade com /2');
+    assert(sandbox.evalCombatHpMath(25, 40, '12+3') === 15, 'evalCombatHpMath avalia expressão matemática 12+3');
+    assert(sandbox.evalCombatHpMath(25, 40, '30') === 30, 'evalCombatHpMath define valor numérico direto 30');
+
+    // 2. Absorção de Dano por PV Temporário (Temp HP D&D 5E)
+    vm.runInContext(`
+      const testCombatant140 = {
+        id: 'c_b140_test',
+        name: 'Guerreiro Blindado',
+        ac: 18,
+        hp: 30,
+        maxHp: 30,
+        tempHp: 10,
+        type: 'player'
+      };
+      state.combatants = [testCombatant140];
+      quickAdjustCombatantHp('c_b140_test', -6);
+    `, sandbox);
+    let c140 = vm.runInContext('state.combatants[0]', sandbox);
+    assert(c140.tempHp === 4, 'Dano inicial de 6 foi 100% absorvido pelo Temp HP (10 -> 4)');
+    assert(c140.hp === 30, 'PV real permaneceu intacto em 30 PV');
+
+    vm.runInContext(`quickAdjustCombatantHp('c_b140_test', -7);`, sandbox);
+    c140 = vm.runInContext('state.combatants[0]', sandbox);
+    assert(c140.tempHp === 0, 'Dano subsequente de 7 esgotou os 4 Temp HP restantes');
+    assert(c140.hp === 27, 'Excesso de 3 de dano reduziu os PVs reais para 27');
+
+    // 3. Regra de Não-Cumulatividade de PV Temporário (Adota o Maior)
+    sandbox.prompt = () => '8';
+    vm.runInContext(`
+      state.combatants[0].tempHp = 5;
+      promptCombatantTempHp('c_b140_test');
+    `, sandbox);
+    c140 = vm.runInContext('state.combatants[0]', sandbox);
+    assert(c140.tempHp === 8, 'Temp HP atualizado para 8 (maior que 5)');
+
+    sandbox.prompt = () => '4';
+    vm.runInContext(`promptCombatantTempHp('c_b140_test');`, sandbox);
+    c140 = vm.runInContext('state.combatants[0]', sandbox);
+    assert(c140.tempHp === 8, 'Temp HP menor (4) não reduziu o valor atual (8)');
+
+    // 4. Controle de Rodada e Placar de Combate
+    vm.runInContext(`
+      state.round = 1;
+      setCombatRound(1);
+    `, sandbox);
+    assert(vm.runInContext('state.round', sandbox) === 2, 'setCombatRound(1) avançou para a Rodada 2');
+    vm.runInContext(`setCombatRound(-1);`, sandbox);
+    assert(vm.runInContext('state.round', sandbox) === 1, 'setCombatRound(-1) retrocedeu para a Rodada 1');
+
+    // 5. Limpeza de Criaturas Derrotadas (0 PV)
+    const origConfirm140 = sandbox.confirm;
+    sandbox.confirm = () => true;
+    vm.runInContext(`
+      state.combatants = [
+        { id: 'c_hero_alive', name: 'Paladino', hp: 25, maxHp: 25, type: 'player' },
+        { id: 'c_hero_down', name: 'Mago Caído', hp: 0, maxHp: 18, type: 'player' },
+        { id: 'c_monst_alive', name: 'Goblin 1', hp: 7, maxHp: 7, type: 'monster' },
+        { id: 'c_monst_dead', name: 'Goblin 2', hp: 0, maxHp: 7, type: 'monster' }
+      ];
+      clearDefeatedCombatants();
+    `, sandbox);
+    sandbox.confirm = origConfirm140;
+    const combatantsAfterClear = vm.runInContext('state.combatants', sandbox);
+    assert(combatantsAfterClear.some(c => c.id === 'c_hero_alive'), 'Herói vivo foi mantido no combate');
+    assert(combatantsAfterClear.some(c => c.id === 'c_hero_down'), 'Herói a 0 PV foi mantido no combate (preserva salvaguardas da morte)');
+    assert(combatantsAfterClear.some(c => c.id === 'c_monst_alive'), 'Monstro vivo foi mantido no combate');
+    assert(!combatantsAfterClear.some(c => c.id === 'c_monst_dead'), 'Monstro a 0 PV foi removido da mesa com sucesso');
+
+    // 6. Verificação de CSS e Estrutura VTT
+    const headCssContent140 = fs.readFileSync(path.join(srcDir, 'styles', 'head_css.html'), 'utf8');
+    assert(headCssContent140.includes('.combatant-item.is-targeted'), 'CSS inclui estilo de destaque de alvo .is-targeted');
+    assert(headCssContent140.includes('.combat-badge-ca') && headCssContent140.includes('.combat-badge-speed'), 'CSS inclui badges de CA e Deslocamento');
+    assert(headCssContent140.includes('.badge-temp-hp') && headCssContent140.includes('.hp-bar-temp-fill'), 'CSS inclui estilização de PV Temporário e barra de preenchimento ciano');
+    assert(headCssContent140.includes('.round-stepper') && headCssContent140.includes('.combat-encounter-tally'), 'CSS inclui stepper de rodadas e placar do combate');
+
+    const uiHtmlContent140 = fs.readFileSync(path.join(srcDir, 'ui', 'ui.html'), 'utf8');
+    assert(uiHtmlContent140.includes('round-stepper') && uiHtmlContent140.includes('combat-encounter-tally'), 'ui.html inclui stepper de rodada e placar');
+    assert(uiHtmlContent140.includes('btn-temp-hp-action') && uiHtmlContent140.includes('dispatch-presets-row'), 'ui.html inclui botão de Temp HP e presets rápidos no despachante');
 
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;

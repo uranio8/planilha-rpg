@@ -1,5 +1,157 @@
 // src_js_combat.js - Initiative, combat rounds, attacks, damage dispatcher and dice rolling
 
+// =========================================================================
+// 🧮 AVALIAÇÃO MATEMÁTICA SEGURA E MANIPULAÇÃO ÁGIL DE PV (ISSUE-171)
+// =========================================================================
+function evaluateSimpleMath(expr) {
+  try {
+    if (typeof expr === 'number') return expr;
+    const sanitized = String(expr || '').replace(/[^0-9\+\-\*\/\.\(\)\s]/g, '');
+    if (!sanitized) return 0;
+    const res = Function(`"use strict"; return (${sanitized});`)();
+    return typeof res === 'number' && !isNaN(res) ? Math.round(res) : 0;
+  } catch (e) {
+    return parseInt(expr, 10) || 0;
+  }
+}
+
+function evalCombatHpMath(currentHp, maxHp, inputVal) {
+  if (typeof inputVal !== 'string') inputVal = String(inputVal !== undefined && inputVal !== null ? inputVal : '');
+  const trimmed = inputVal.trim();
+  if (!trimmed) return currentHp;
+
+  // Ajuste relativo positivo (ex: +12, + 5)
+  if (trimmed.startsWith('+')) {
+    const rawNum = trimmed.slice(1).trim();
+    const val = evaluateSimpleMath(rawNum);
+    return Math.min(maxHp, currentHp + Math.abs(val));
+  }
+
+  // Ajuste relativo negativo (ex: -8, - 15)
+  if (trimmed.startsWith('-')) {
+    const rawNum = trimmed.slice(1).trim();
+    const val = evaluateSimpleMath(rawNum);
+    return Math.max(0, currentHp - Math.abs(val));
+  }
+
+  // Metade ou divisão (ex: /2)
+  if (trimmed.startsWith('/')) {
+    const div = parseFloat(trimmed.slice(1).trim()) || 2;
+    return Math.max(0, Math.floor(currentHp / div));
+  }
+
+  // Expressões aritméticas (ex: 15+5, 20-3)
+  if (/[\+\-\*\/]/.test(trimmed)) {
+    const val = evaluateSimpleMath(trimmed);
+    return Math.max(0, Math.min(maxHp, val));
+  }
+
+  // Número simples
+  const parsed = parseInt(trimmed, 10);
+  if (isNaN(parsed)) return currentHp;
+  return Math.max(0, Math.min(maxHp, parsed));
+}
+
+// =========================================================================
+// 🎯 SELEÇÃO ÁGIL DE ALVO E ATALHOS DE COMBATE (ISSUE-171)
+// =========================================================================
+function selectCombatantAsTarget(id, evt) {
+  if (evt && evt.target && (evt.target.closest('button') || evt.target.closest('input') || evt.target.closest('textarea') || evt.target.closest('.cond-tag') || evt.target.closest('.combatant-notes-details'))) {
+    return;
+  }
+  const selTar = document.getElementById('sel-target');
+  if (selTar) {
+    selTar.value = id;
+    highlightSelectedTargetCard(id);
+    const tar = state.combatants.find(c => c.id === id);
+    if (tar && typeof showToast === 'function') {
+      showToast(`🎯 Alvo selecionado: ${tar.name}`, 'info');
+    }
+  }
+}
+
+function highlightSelectedTargetCard(targetId) {
+  const items = document.querySelectorAll('.combatant-item');
+  items.forEach(el => {
+    if (el.getAttribute('data-combatant-id') === targetId) {
+      el.classList.add('is-targeted');
+    } else {
+      el.classList.remove('is-targeted');
+    }
+  });
+}
+
+function setDispatchDamageValue(val) {
+  const inp = document.getElementById('inp-damage');
+  if (!inp) return;
+  if (val === 'max') {
+    const tarId = document.getElementById('sel-target')?.value;
+    const tar = state.combatants.find(c => c.id === tarId);
+    inp.value = tar ? tar.hp : '10';
+  } else {
+    inp.value = val;
+  }
+  inp.focus();
+}
+
+function setCombatRound(delta) {
+  const newRound = Math.max(1, (state.round || 1) + delta);
+  if (newRound === state.round) return;
+  state.round = newRound;
+  addLog(`🔄 Rodada de combate ajustada para <b>Rodada ${state.round}</b>.`);
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+  renderCombat();
+}
+
+function clearDefeatedCombatants() {
+  const defeatedCount = state.combatants.filter(c => c.hp === 0 && c.type !== 'player').length;
+  if (defeatedCount === 0) {
+    if (typeof showToast === 'function') showToast('Nenhum monstro/inimigo derrotado (0 PV) para remover.', 'info');
+    return;
+  }
+  if (!confirm(`Remover ${defeatedCount} criatura(s) derrotada(s) (0 PV) do combate? (Alunos/jogadores serão mantidos)`)) {
+    return;
+  }
+  state.combatants = state.combatants.filter(c => !(c.hp === 0 && c.type !== 'player'));
+  if (state.turnIndex >= state.combatants.length) {
+    state.turnIndex = Math.max(0, state.combatants.length - 1);
+  }
+  addLog(`🧹 <b>${defeatedCount} criatura(s) derrotada(s)</b> foram removidas da mesa.`);
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+  renderCombat();
+  if (typeof showToast === 'function') showToast(`${defeatedCount} criaturas derrotadas removidas.`, 'success');
+}
+
+function promptCombatantTempHp(id) {
+  const c = state.combatants.find(x => x.id === id);
+  if (!c) return;
+  const raw = prompt(`🛡️ Conceder PV Temporário: ${c.name}\n\nPV Atual: ${c.hp}/${c.maxHp} | Temp Atual: ${c.tempHp || 0}\n\nDigite a quantidade de PV Temporário:`, '5');
+  if (raw === null) return;
+  const num = Math.abs(evaluateSimpleMath(raw)) || 0;
+  if (num === 0) return;
+  const prevTemp = c.tempHp || 0;
+  c.tempHp = Math.max(prevTemp, num);
+  addLog(`🛡️ <b>${c.name}</b> recebeu <b>+${num} PV Temporários</b> (Total Temp: ${c.tempHp}).`);
+  if (typeof playFX === 'function') playFX('shield');
+  if (typeof showToast === 'function') showToast(`🛡️ ${c.name}: +${num} PV Temp (${c.tempHp} total)`, 'info');
+
+  if (c.type === 'player' && typeof PLAYERS !== 'undefined') {
+    const pl = typeof findPlayerForCombatant === 'function'
+      ? findPlayerForCombatant(c, PLAYERS)
+      : PLAYERS.find(p => (c.playerId && p.id === c.playerId) || c.name.includes(p.name));
+    if (pl) {
+      pl.tempHp = c.tempHp;
+      if (typeof touchPlayer === 'function') touchPlayer(pl);
+      if (typeof renderPlayers === 'function') renderPlayers();
+    }
+  }
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+  renderCombat();
+}
+
 function renderCombat() {
   const list = document.getElementById('list-combatants');
   const selAtt = document.getElementById('sel-attacker');
@@ -12,8 +164,28 @@ function renderCombat() {
   if (roundLbl) roundLbl.innerText = state.round;
   if (cntLbl) cntLbl.innerText = `${state.combatants.length} ativos`;
 
+  // Placar do combate (Heróis, Inimigos e Derrotados)
+  const heroesCount = state.combatants.filter(c => c.type === 'player' && c.hp > 0).length;
+  const monstersCount = state.combatants.filter(c => c.type !== 'player' && c.hp > 0).length;
+  const defeatedCount = state.combatants.filter(c => c.hp === 0).length;
+
+  const tallyHeroesEl = document.getElementById('tally-heroes');
+  const tallyMonstersEl = document.getElementById('tally-monsters');
+  const tallyDefeatedWrap = document.getElementById('tally-defeated-wrap');
+  if (tallyHeroesEl) tallyHeroesEl.innerText = `👥 ${heroesCount} Heróis`;
+  if (tallyMonstersEl) tallyMonstersEl.innerText = `👾 ${monstersCount} Inimigos`;
+  if (tallyDefeatedWrap) {
+    if (defeatedCount > 0) {
+      tallyDefeatedWrap.style.display = 'inline-flex';
+      tallyDefeatedWrap.innerHTML = `<span style="opacity:0.4; margin: 0 2px;">•</span><button class="btn-micro-defeated" onclick="clearDefeatedCombatants()" title="Clique para remover ${defeatedCount} criatura(s) derrotada(s)">💀 ${defeatedCount} Derrotados ✕</button>`;
+    } else {
+      tallyDefeatedWrap.style.display = 'none';
+      tallyDefeatedWrap.innerHTML = '';
+    }
+  }
+
   // Preenche selects do despachante
-  const options = state.combatants.map((c, i) => `<option value="${c.id}">${c.name} (${c.hp}/${c.maxHp} PV)</option>`).join('');
+  const options = state.combatants.map((c, i) => `<option value="${c.id}">${c.name} (${c.hp}/${c.maxHp} PV${c.tempHp > 0 ? ' +' + c.tempHp + 'T' : ''})</option>`).join('');
   if (selAtt) selAtt.innerHTML = options;
   if (selTar) selTar.innerHTML = options;
 
@@ -42,7 +214,11 @@ function renderCombat() {
   list.innerHTML = state.combatants.map((c, i) => {
     const isActive = i === state.turnIndex;
     const isOnDeck = (state.combatants.length > 1) && (i === (state.turnIndex + 1) % state.combatants.length);
+    const isTarget = selTar && selTar.value === c.id;
+    c.tempHp = Math.max(0, parseInt(c.tempHp) || 0);
+
     const hpPct = Math.max(0, Math.min(100, Math.round((c.hp / c.maxHp) * 100)));
+    const tempHpPct = c.maxHp > 0 ? Math.min(100, Math.round((c.tempHp / c.maxHp) * 100)) : 0;
     const hpColor = hpPct > 50 ? 'var(--accent-green)' : (hpPct > 25 ? '#eab308' : 'var(--accent-red)');
     const isDying = c.hp === 0;
     const isBloodied = c.hp > 0 && hpPct <= 50;
@@ -50,7 +226,7 @@ function renderCombat() {
 
     const condsBadges = (c.conditions || []).map(condId => {
       const found = CONDITIONS_LIST.find(x => x.id === condId);
-      return `<span class="cond-tag" onclick="removeCond('${c.id}', '${condId}')" title="${found ? found.desc : ''}">${found ? found.name : condId} ✕</span>`;
+      return `<span class="cond-tag" onclick="event.stopPropagation(); removeCond('${c.id}', '${condId}')" title="${found ? found.desc : ''}">${found ? found.name : condId} ✕</span>`;
     }).join('');
 
     let slotsMiniHtml = '';
@@ -81,45 +257,52 @@ function renderCombat() {
     }
 
     return `
-      <div class="combatant-item ${isActive ? 'glow' : ''} ${isOnDeck ? 'combatant-on-deck' : ''} ${isDying ? 'dying' : (isBloodied ? 'bloodied' : '')} ${isCritical ? 'hp-critical' : ''}">
+      <div class="combatant-item ${isActive ? 'glow' : ''} ${isOnDeck ? 'combatant-on-deck' : ''} ${isTarget ? 'is-targeted' : ''} ${isDying ? 'dying' : (isBloodied ? 'bloodied' : '')} ${isCritical ? 'hp-critical' : ''}" data-combatant-id="${c.id}" onclick="selectCombatantAsTarget('${c.id}', event)">
         <div class="combatant-header">
-          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-            <button class="btn-secondary" style="padding: 1px 6px; font-weight: 800; font-family: var(--font-mono); color: var(--primary); font-size: 13px; cursor: pointer; border: 1px dashed rgba(245,158,11,0.5);" onclick="editCombatantInit('${c.id}')" title="Clique para editar a Iniciativa">${c.init}</button>
+          <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
+            <button class="btn-secondary" style="padding: 1px 6px; font-weight: 800; font-family: var(--font-mono); color: var(--primary); font-size: 13px; cursor: pointer; border: 1px dashed rgba(245,158,11,0.5);" onclick="event.stopPropagation(); editCombatantInit('${c.id}')" title="Clique para editar a Iniciativa">🎲 ${c.init}</button>
             <span class="combatant-name" style="${isDying ? 'text-decoration: line-through; color: var(--accent-red);' : ''}">${c.name}</span>
             ${isOnDeck ? '<span class="badge-on-deck" title="Próximo na ordem de iniciativa">⏳ Próximo</span>' : ''}
             ${c.type === 'player' ? '<span class="badge badge-cls">Aluno</span>' : '<span class="badge badge-cr">Monstro</span>'}
+            <span class="combat-badge-ca" title="Classe de Armadura">🛡️ ${c.ac} CA</span>
+            <span class="combat-badge-speed" title="Deslocamento">👟 ${c.speed || 9}m</span>
+            ${c.tempHp > 0 ? `<span class="badge-temp-hp" title="PV Temporário (absorve dano antes do PV real)">🛡️ +${c.tempHp} Temp</span>` : ''}
             ${isDying ? '<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border-color: #ef4444; font-size: 10px;">💀 0 PV</span>' : (isBloodied ? '<span class="badge" style="background: rgba(234, 179, 8, 0.2); color: #eab308; border-color: #eab308; font-size: 10px;">🩸 Sangrando</span>' : '')}
           </div>
           <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
-            <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px;" onclick="openCombatQuickConditions(event, '${c.id}')" title="Condições Rápidas (Caído, Cego, etc.)">⚡ Status</button>
-            <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px;" onclick="editCombatantInit('${c.id}')" title="Editar Iniciativa">🎲</button>
-            <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px;" onclick="openCondModal('${c.id}')" title="Adicionar Condições / Status">🏷️</button>
-            <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px; color: #f87171;" onclick="removeCombatant('${c.id}')" title="Remover do Combate">✕</button>
+            <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px;" onclick="event.stopPropagation(); openCombatQuickConditions(event, '${c.id}')" title="Condições Rápidas (Caído, Cego, etc.)">⚡ Status</button>
+            <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px;" onclick="event.stopPropagation(); editCombatantInit('${c.id}')" title="Editar Iniciativa">🎲</button>
+            <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px;" onclick="event.stopPropagation(); openCondModal('${c.id}')" title="Adicionar Condições / Status">🏷️</button>
+            <button class="btn-secondary" style="padding: 2px 6px; font-size: 10px; color: #f87171;" onclick="event.stopPropagation(); removeCombatant('${c.id}')" title="Remover do Combate">✕</button>
           </div>
         </div>
 
         <div class="combatant-stats-row">
           <div class="combatant-stats-meta">
-            <span>CA: <b style="color: #fff;">${c.ac}</b></span>
-            <span>•</span>
-            <span class="combatant-hp-inline" onclick="enableInlineHpEdit('${c.id}', event)" title="Clique para editar PV diretamente">
-              PV: <b style="color: ${hpColor};" id="hp-val-${c.id}">${c.hp}</b> / ${c.maxHp} <span style="font-size: 10px; opacity: 0.7;">✏️</span>
+            <span class="combatant-hp-inline" onclick="event.stopPropagation(); enableInlineHpEdit('${c.id}', event)" title="Clique para editar PV diretamente (aceita -8, +12, /2, etc.)">
+              PV: <b style="color: ${hpColor};" id="hp-val-${c.id}">${c.hp}</b> / ${c.maxHp}
+              ${c.tempHp > 0 ? `<b style="color: #38bdf8; font-size: 11px;"> (+${c.tempHp} Temp)</b>` : ''}
+              <span style="font-size: 10px; opacity: 0.7;">✏️</span>
             </span>
           </div>
 
           <div class="combatant-actions-pill">
-            <button class="btn-hp-adj minus" style="width: 22px; height: 22px; font-size: 10px; padding: 0;" onclick="quickAdjustCombatantHp('${c.id}', -5)" title="Subtrair 5 PV">-5</button>
-            <button class="btn-hp-adj minus" style="width: 22px; height: 22px; font-size: 10px; padding: 0;" onclick="quickAdjustCombatantHp('${c.id}', -1)" title="Subtrair 1 PV">-1</button>
-            <button class="btn-hp-adj plus" style="width: 22px; height: 22px; font-size: 10px; padding: 0;" onclick="quickAdjustCombatantHp('${c.id}', 1)" title="Adicionar 1 PV">+1</button>
-            <button class="btn-hp-adj plus" style="width: 22px; height: 22px; font-size: 10px; padding: 0;" onclick="quickAdjustCombatantHp('${c.id}', 5)" title="Adicionar 5 PV">+5</button>
-            <button class="btn-dmg-heal-trigger" onclick="promptCombatantDamageHeal('${c.id}')" title="Digitar valor de Dano ou Cura">⚡ Dano/Cura</button>
+            <button class="btn-hp-adj minus" style="min-width: 20px; height: 22px; font-size: 9.5px; padding: 0 3px;" onclick="event.stopPropagation(); quickAdjustCombatantHp('${c.id}', -10)" title="Subtrair 10 PV">-10</button>
+            <button class="btn-hp-adj minus" style="min-width: 20px; height: 22px; font-size: 9.5px; padding: 0 3px;" onclick="event.stopPropagation(); quickAdjustCombatantHp('${c.id}', -5)" title="Subtrair 5 PV">-5</button>
+            <button class="btn-hp-adj minus" style="min-width: 20px; height: 22px; font-size: 9.5px; padding: 0 3px;" onclick="event.stopPropagation(); quickAdjustCombatantHp('${c.id}', -1)" title="Subtrair 1 PV">-1</button>
+            <button class="btn-hp-adj plus" style="min-width: 20px; height: 22px; font-size: 9.5px; padding: 0 3px;" onclick="event.stopPropagation(); quickAdjustCombatantHp('${c.id}', 1)" title="Adicionar 1 PV">+1</button>
+            <button class="btn-hp-adj plus" style="min-width: 20px; height: 22px; font-size: 9.5px; padding: 0 3px;" onclick="event.stopPropagation(); quickAdjustCombatantHp('${c.id}', 5)" title="Adicionar 5 PV">+5</button>
+            <button class="btn-hp-adj plus" style="min-width: 20px; height: 22px; font-size: 9.5px; padding: 0 3px;" onclick="event.stopPropagation(); quickAdjustCombatantHp('${c.id}', 10)" title="Adicionar 10 PV">+10</button>
+            <button class="btn-hp-adj temphp" style="min-width: 22px; height: 22px; font-size: 9.5px; padding: 0 4px;" onclick="event.stopPropagation(); promptCombatantTempHp('${c.id}')" title="Definir PV Temporário">🛡️ Temp</button>
+            <button class="btn-dmg-heal-trigger" onclick="event.stopPropagation(); promptCombatantDamageHeal('${c.id}')" title="Digitar valor de Dano ou Cura">⚡ Dano/Cura</button>
           </div>
         </div>
 
         ${slotsMiniHtml}
 
-        <div class="hp-bar-bg" style="margin-top: 4px;">
+        <div class="hp-bar-bg" style="margin-top: 4px; position: relative;">
           <div class="hp-bar-fill" style="width: ${hpPct}%; background-color: ${hpColor};"></div>
+          ${c.tempHp > 0 ? `<div class="hp-bar-temp-fill" style="width: ${tempHpPct}%;" title="PV Temporário: ${c.tempHp}"></div>` : ''}
         </div>
 
         ${typeof renderCombatantMiniActions === 'function' ? renderCombatantMiniActions(c) : ''}
@@ -704,7 +887,8 @@ function rollMonsterInit() {
 function applyCombatAction(type, customNarrative = null) {
   const attId = document.getElementById('sel-attacker')?.value;
   const tarId = document.getElementById('sel-target')?.value;
-  const dmg = parseInt(document.getElementById('inp-damage')?.value) || 0;
+  const rawDmg = document.getElementById('inp-damage')?.value;
+  const dmg = Math.abs(evaluateSimpleMath(rawDmg)) || 0;
 
   const att = state.combatants.find(c => c.id === attId);
   const tar = state.combatants.find(c => c.id === tarId);
@@ -712,11 +896,34 @@ function applyCombatAction(type, customNarrative = null) {
   if (!tar) { alert('Selecione um alvo válido!'); return; }
 
   const prevHp = tar.hp;
+  tar.tempHp = Math.max(0, parseInt(tar.tempHp) || 0);
   let narrativeBanner = '';
 
-  if (type === 'damage' || type === 'crit') {
-    tar.hp = Math.max(0, tar.hp - dmg);
-    let msg = `[R${state.round}] ⚔️ <b>${att ? att.name : 'Atacante'}</b> causou <b>${dmg}</b> de dano em <b>${tar.name}</b> (${prevHp} ➔ ${tar.hp} PV)`;
+  if (type === 'temphp') {
+    const prevTemp = tar.tempHp || 0;
+    tar.tempHp = Math.max(prevTemp, dmg);
+    let msg = `[R${state.round}] 🛡️ <b>${tar.name}</b> recebeu <b>+${dmg} PV Temporários</b> (Total Temp: ${tar.tempHp})`;
+    narrativeBanner = `🛡️ <b>${tar.name}</b> recebeu uma barreira de <b>${tar.tempHp} PV Temporários</b>!`;
+    addLog(msg);
+    if (typeof playFX === 'function') playFX('shield');
+    if (typeof showToast === 'function') showToast(`🛡️ ${tar.name}: +${dmg} PV Temp (${tar.tempHp} total)`, 'info');
+  } else if (type === 'damage' || type === 'crit') {
+    let effDmg = dmg;
+    let tempAbsorbed = 0;
+    if (tar.tempHp > 0) {
+      if (effDmg <= tar.tempHp) {
+        tar.tempHp -= effDmg;
+        tempAbsorbed = effDmg;
+        effDmg = 0;
+      } else {
+        tempAbsorbed = tar.tempHp;
+        effDmg -= tar.tempHp;
+        tar.tempHp = 0;
+      }
+    }
+    tar.hp = Math.max(0, tar.hp - effDmg);
+    const tempNotice = tempAbsorbed > 0 ? ` [${tempAbsorbed} absorvido por Temp HP]` : '';
+    let msg = `[R${state.round}] ⚔️ <b>${att ? att.name : 'Atacante'}</b> causou <b>${dmg}</b> de dano${tempNotice} em <b>${tar.name}</b> (${prevHp} ➔ ${tar.hp} PV)`;
     if (customNarrative) {
       msg = `${customNarrative} • ` + msg;
     }
@@ -776,13 +983,14 @@ function applyCombatAction(type, customNarrative = null) {
     }
   }
 
-  // Sincroniza PV e Death Saves de volta para a ficha do jogador caso seja um Aluno
+  // Sincroniza PV e Temp HP de volta para a ficha do jogador caso seja um Aluno
   if (tar.type === 'player' && typeof PLAYERS !== 'undefined') {
     const pl = typeof findPlayerForCombatant === 'function'
       ? findPlayerForCombatant(tar, PLAYERS)
       : PLAYERS.find(p => (tar.playerId && p.id === tar.playerId) || tar.name.includes(p.name));
     if (pl) {
       pl.hp = tar.hp;
+      pl.tempHp = tar.tempHp || 0;
       if (type === 'heal' && tar.hp > 0) {
         pl.deathSaves = { success: 0, fail: 0 };
       }
@@ -801,8 +1009,8 @@ function applyCombatAction(type, customNarrative = null) {
 
 function applyHalfDamage() {
   const inp = document.getElementById('inp-damage');
-  const val = parseInt(inp?.value, 10);
-  if (isNaN(val) || val <= 0) {
+  const val = Math.abs(evaluateSimpleMath(inp?.value)) || 0;
+  if (val <= 0) {
     alert('Digite o valor do dano base primeiro!');
     return;
   }
@@ -813,8 +1021,8 @@ function applyHalfDamage() {
 
 function applyDoubleDamage() {
   const inp = document.getElementById('inp-damage');
-  const val = parseInt(inp?.value, 10);
-  if (isNaN(val) || val <= 0) {
+  const val = Math.abs(evaluateSimpleMath(inp?.value)) || 0;
+  if (val <= 0) {
     alert('Digite o valor do dano base primeiro!');
     return;
   }
@@ -969,12 +1177,28 @@ function quickAdjustCombatantHp(id, delta) {
   const c = state.combatants.find(x => x.id === id);
   if (!c) return;
   const prev = c.hp;
+  c.tempHp = Math.max(0, parseInt(c.tempHp) || 0);
+
   if (delta < 0) {
-    c.hp = Math.max(0, c.hp + delta);
+    let dmg = Math.abs(delta);
+    let tempAbsorbed = 0;
+    if (c.tempHp > 0) {
+      if (dmg <= c.tempHp) {
+        c.tempHp -= dmg;
+        tempAbsorbed = dmg;
+        dmg = 0;
+      } else {
+        tempAbsorbed = c.tempHp;
+        dmg -= c.tempHp;
+        c.tempHp = 0;
+      }
+    }
+    c.hp = Math.max(0, c.hp - dmg);
     if (typeof triggerHapticFeedback === 'function') {
       triggerHapticFeedback(c.hp === 0 ? [50, 70, 50] : [25]);
     }
-    addLog(`⚔️ <b>${c.name}</b> sofreu ${Math.abs(delta)} de dano rápido (${prev} ➔ ${c.hp} PV)`);
+    const tempNotice = tempAbsorbed > 0 ? ` [${tempAbsorbed} absorvido por Temp HP]` : '';
+    addLog(`⚔️ <b>${c.name}</b> sofreu ${Math.abs(delta)} de dano rápido${tempNotice} (${prev} ➔ ${c.hp} PV)`);
     if (typeof playFX === 'function') playFX('sword');
     if (typeof showToast === 'function') {
       const toastType = c.hp === 0 ? 'error' : (c.hp <= c.maxHp * 0.25 ? 'warning' : 'info');
@@ -1003,6 +1227,7 @@ function quickAdjustCombatantHp(id, delta) {
       : PLAYERS.find(p => (c.playerId && p.id === c.playerId) || c.name.includes(p.name));
     if (pl) {
       pl.hp = c.hp;
+      pl.tempHp = c.tempHp || 0;
       if (typeof touchPlayer === 'function') touchPlayer(pl);
       if (typeof renderPlayers === 'function') renderPlayers();
     }
@@ -1024,6 +1249,7 @@ function promptCombatantDamageHeal(id) {
     const elName = document.getElementById('cdh-combatant-name');
     const elSub = document.getElementById('cdh-combatant-sub');
     const elHp = document.getElementById('cdh-combatant-hp');
+    const elTemp = document.getElementById('cdh-combatant-temp-hp');
     const elInput = document.getElementById('cdh-hp-val');
 
     if (elId) elId.value = c.id;
@@ -1034,6 +1260,15 @@ function promptCombatantDamageHeal(id) {
       const color = pct > 50 ? 'var(--accent-green)' : (pct > 25 ? '#eab308' : 'var(--accent-red)');
       elHp.style.color = color;
       elHp.innerText = `${c.hp} / ${c.maxHp} PV`;
+    }
+    if (elTemp) {
+      c.tempHp = Math.max(0, parseInt(c.tempHp) || 0);
+      if (c.tempHp > 0) {
+        elTemp.style.display = 'inline-flex';
+        elTemp.innerText = `+${c.tempHp} Temp`;
+      } else {
+        elTemp.style.display = 'none';
+      }
     }
     if (elInput) {
       elInput.value = '5';
@@ -1046,13 +1281,13 @@ function promptCombatantDamageHeal(id) {
   }
 
   // Fallback se modal não estiver no DOM
-  const rawVal = prompt(`⚡ Ajuste de Vida: ${c.name} (Atual: ${c.hp}/${c.maxHp} PV)\n\nDigite a quantidade de PV:\n(Ex: 12)`, '5');
+  const rawVal = prompt(`⚡ Ajuste de Vida: ${c.name} (Atual: ${c.hp}/${c.maxHp} PV)\n\nDigite a quantidade de PV (ou expressão):\n(Ex: 12, -8, +15)`, '5');
   if (rawVal === null) return;
-  const num = parseInt(rawVal, 10);
-  if (isNaN(num) || num === 0) return;
+  const num = evaluateSimpleMath(rawVal);
+  if (num === 0) return;
 
-  if (num < 0) {
-    quickAdjustCombatantHp(id, num);
+  if (rawVal.trim().startsWith('-') || num < 0) {
+    quickAdjustCombatantHp(id, -Math.abs(num));
     return;
   }
 
@@ -1074,13 +1309,38 @@ function submitCombatDamageHeal(type) {
   if (!elId || !elInput) return;
 
   const id = elId.value;
-  const num = Math.abs(parseInt(elInput.value, 10)) || 0;
+  const c = state.combatants.find(x => x.id === id);
+  if (!c) {
+    closeCombatDamageHealModal();
+    return;
+  }
+
+  let raw = String(elInput.value || '').trim();
+  if (raw.toLowerCase() === 'max') {
+    raw = String(c.maxHp);
+  }
+  const num = Math.abs(evaluateSimpleMath(raw)) || 0;
   if (!id || num === 0) {
     closeCombatDamageHealModal();
     return;
   }
 
-  const delta = type === 'damage' ? -num : num;
+  if (type === 'temphp') {
+    promptCombatantTempHp(id);
+    closeCombatDamageHealModal();
+    return;
+  }
+
+  let finalDmg = num;
+  if (type === 'half_damage') {
+    finalDmg = Math.max(1, Math.floor(num / 2));
+    type = 'damage';
+  } else if (type === 'double_damage') {
+    finalDmg = Math.max(1, num * 2);
+    type = 'damage';
+  }
+
+  const delta = type === 'damage' ? -finalDmg : finalDmg;
   quickAdjustCombatantHp(id, delta);
   closeCombatDamageHealModal();
 }
@@ -1347,7 +1607,7 @@ function enableInlineHpEdit(combatantId, evt) {
   if (parentSpan.querySelector('input')) return;
 
   const curHp = c.hp;
-  parentSpan.innerHTML = `PV: <input type="number" min="0" max="${c.maxHp}" value="${curHp}" class="inline-hp-input" id="inp-inline-hp-${combatantId}" onfocus="this.select()" onclick="event.stopPropagation();this.select()" onblur="saveInlineHpEdit('${combatantId}', this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"> / ${c.maxHp}`;
+  parentSpan.innerHTML = `PV: <input type="text" inputmode="numeric" value="${curHp}" class="inline-hp-input" id="inp-inline-hp-${combatantId}" placeholder="Ex: -8, +12" onfocus="this.select()" onclick="event.stopPropagation();this.select()" onblur="saveInlineHpEdit('${combatantId}', this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"> / ${c.maxHp}`;
   const inp = document.getElementById(`inp-inline-hp-${combatantId}`);
   if (inp) {
     inp.focus();
@@ -1358,13 +1618,8 @@ function enableInlineHpEdit(combatantId, evt) {
 function saveInlineHpEdit(combatantId, newVal) {
   const c = state.combatants.find(x => x.id === combatantId);
   if (!c) return;
-  const parsed = parseInt(newVal, 10);
-  if (isNaN(parsed)) {
-    renderCombat();
-    return;
-  }
   const oldHp = c.hp;
-  c.hp = Math.max(0, Math.min(c.maxHp, parsed));
+  c.hp = evalCombatHpMath(c.hp, c.maxHp, newVal);
   if (c.hp !== oldHp) {
     addLog(`✏️ PV de <b>${c.name}</b> ajustado para <b>${c.hp}/${c.maxHp}</b>.`);
     if (c.type === 'player' && typeof PLAYERS !== 'undefined') {
@@ -1630,11 +1885,27 @@ if (typeof window !== 'undefined') {
   window.renderCombatantMiniActions = renderCombatantMiniActions;
   window.rollCombatTraumaEffect = rollCombatTraumaEffect;
   window.triggerDmgTrapOnTargets = triggerDmgTrapOnTargets;
+  window.evalCombatHpMath = evalCombatHpMath;
+  window.evaluateSimpleMath = evaluateSimpleMath;
+  window.selectCombatantAsTarget = selectCombatantAsTarget;
+  window.highlightSelectedTargetCard = highlightSelectedTargetCard;
+  window.setDispatchDamageValue = setDispatchDamageValue;
+  window.setCombatRound = setCombatRound;
+  window.clearDefeatedCombatants = clearDefeatedCombatants;
+  window.promptCombatantTempHp = promptCombatantTempHp;
 }
 
 if (typeof global !== 'undefined') {
   global.rollCombatTraumaEffect = rollCombatTraumaEffect;
   global.triggerDmgTrapOnTargets = triggerDmgTrapOnTargets;
+  global.evalCombatHpMath = evalCombatHpMath;
+  global.evaluateSimpleMath = evaluateSimpleMath;
+  global.selectCombatantAsTarget = selectCombatantAsTarget;
+  global.highlightSelectedTargetCard = highlightSelectedTargetCard;
+  global.setDispatchDamageValue = setDispatchDamageValue;
+  global.setCombatRound = setCombatRound;
+  global.clearDefeatedCombatants = clearDefeatedCombatants;
+  global.promptCombatantTempHp = promptCombatantTempHp;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -1663,7 +1934,15 @@ if (typeof module !== 'undefined' && module.exports) {
     toggleCombatantAction,
     renderCombatantMiniActions,
     rollCombatTraumaEffect,
-    triggerDmgTrapOnTargets
+    triggerDmgTrapOnTargets,
+    evalCombatHpMath,
+    evaluateSimpleMath,
+    selectCombatantAsTarget,
+    highlightSelectedTargetCard,
+    setDispatchDamageValue,
+    setCombatRound,
+    clearDefeatedCombatants,
+    promptCombatantTempHp
   };
 }
 

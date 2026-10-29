@@ -10840,6 +10840,7 @@ function addPlayerToCombat(id) {
     existing.ac = p.ac;
     existing.hp = currentHp;
     existing.maxHp = p.maxHp;
+    existing.tempHp = p.tempHp || p.hpTemp || 0;
     existing.actions = p.attacks;
     addLog(`⚔️ <b>${p.name}</b> foi atualizado no combate (Iniciativa: ${initRoll}, PV: ${currentHp}/${p.maxHp})`);
   } else {
@@ -10851,6 +10852,7 @@ function addPlayerToCombat(id) {
       ac: p.ac,
       hp: currentHp,
       maxHp: p.maxHp,
+      tempHp: p.tempHp || p.hpTemp || 0,
       type: 'player',
       conditions: [],
       actions: p.attacks

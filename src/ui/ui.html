@@ -175,9 +175,19 @@
     <!-- TAB 1: COMBATE -->
     <div id="tab-combat" class="tab-pane active">
       <div class="controls-bar">
-        <!-- CLUSTER 1: FLUXO DE TURNO -->
+        <!-- CLUSTER 1: FLUXO DE TURNO & PLACAR VTT -->
         <div class="combat-bar-cluster cluster-turn">
-          <div class="round-badge">RODADA <span id="lbl-round">1</span></div>
+          <div class="round-stepper">
+            <button class="round-step-btn" onclick="setCombatRound(-1)" title="Retroceder 1 Rodada">⏮️</button>
+            <div class="round-badge">RODADA <span id="lbl-round">1</span></div>
+            <button class="round-step-btn" onclick="setCombatRound(1)" title="Avançar 1 Rodada">⏭️</button>
+          </div>
+          <div id="combat-encounter-tally" class="combat-encounter-tally" title="Resumo tático do combate">
+            <span id="tally-heroes" title="Alunos/Heróis Vivos">👥 0 Heróis</span>
+            <span style="opacity:0.4;">•</span>
+            <span id="tally-monsters" title="Monstros/Inimigos Vivos">👾 0 Monstros</span>
+            <span id="tally-defeated-wrap" style="display:none;"></span>
+          </div>
           <div id="combat-difficulty-badge" class="diff-meter diff-trivial">Encontro: Trivial</div>
           <div class="turn-timer-box" title="Cronômetro do Turno (Auto-reset a cada rodada)">
             <button id="btn-timer-toggle" class="btn-secondary" style="padding: 2px 6px; font-size: 10px; border-radius: 4px;" onclick="toggleTurnTimer()" title="Iniciar / Pausar Temporizador">▶️</button>
@@ -209,6 +219,7 @@
               <button class="dropdown-item" onclick="rollMonsterInit(); closeCombatOptionsDropdown();">🎲 Inic. dos Monstros</button>
               <button class="dropdown-item" onclick="openEncounterBuilderModal(); closeCombatOptionsDropdown();">⚖️ Balanceador DMG</button>
               <button class="dropdown-item" onclick="openPlayerView(); closeCombatOptionsDropdown();">📺 Modo Telão</button>
+              <button class="dropdown-item" onclick="clearDefeatedCombatants(); closeCombatOptionsDropdown();">💀 Limpar Derrotados (0 PV)</button>
               <div class="dropdown-sep"></div>
               <button class="dropdown-item" onclick="resetCombat(); closeCombatOptionsDropdown();">🔄 Reiniciar Rodada 1</button>
               <button class="dropdown-item danger" onclick="clearCombat(); closeCombatOptionsDropdown();">🗑️ Limpar Combate</button>
@@ -252,19 +263,30 @@
                 <select id="sel-attacker"></select>
               </div>
               <div>
-                <label>Alvo</label>
-                <select id="sel-target"></select>
+                <label>Alvo <span id="lbl-target-tip" style="font-size:10px; color:#38bdf8; font-weight:normal;">(clique no card)</span></label>
+                <select id="sel-target" onchange="highlightSelectedTargetCard(this.value)"></select>
               </div>
               <div>
-                <label>Valor de Dano / Cura</label>
-                <input type="number" id="inp-damage" placeholder="Ex: 14" min="0">
+                <label>Valor de Dano / Cura / Temp</label>
+                <input type="text" inputmode="numeric" id="inp-damage" placeholder="Ex: 14 ou -8 ou 2d6+3" min="0">
               </div>
             </div>
+            <!-- PRESETS RÁPIDOS DE VALOR -->
+            <div class="dispatch-presets-row">
+              <span style="font-size: 10px; color: var(--text-muted); font-weight: 700;">Atalhos:</span>
+              <button type="button" class="btn-secondary" style="font-size: 10px; padding: 2px 7px; min-height: 22px;" onclick="setDispatchDamageValue('1')">1</button>
+              <button type="button" class="btn-secondary" style="font-size: 10px; padding: 2px 7px; min-height: 22px;" onclick="setDispatchDamageValue('5')">5</button>
+              <button type="button" class="btn-secondary" style="font-size: 10px; padding: 2px 7px; min-height: 22px;" onclick="setDispatchDamageValue('10')">10</button>
+              <button type="button" class="btn-secondary" style="font-size: 10px; padding: 2px 7px; min-height: 22px;" onclick="setDispatchDamageValue('15')">15</button>
+              <button type="button" class="btn-secondary" style="font-size: 10px; padding: 2px 7px; min-height: 22px;" onclick="setDispatchDamageValue('20')">20</button>
+              <button type="button" class="btn-secondary" style="font-size: 10px; padding: 2px 7px; min-height: 22px;" onclick="setDispatchDamageValue('max')">Max PV</button>
+            </div>
             <div style="display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap;">
-              <button id="btn-full-damage" class="btn-action" style="flex: 1; min-width: 105px; background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff;" onclick="applyCombatAction('damage')">⚔️ Dano Cheio</button>
+              <button id="btn-full-damage" class="btn-action" style="flex: 1; min-width: 100px; background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff;" onclick="applyCombatAction('damage')">⚔️ Dano Cheio</button>
               <button id="btn-half-damage" class="btn-secondary" style="padding: 7px 10px; font-size: 11px; font-weight: 700; color: #38bdf8; border-color: rgba(56,189,248,0.4);" onclick="applyHalfDamage()" title="Aplica metade do valor digitado (Resistência ou Sucesso em Teste de Salvaguarda)">🛡️ ½ Dano (Save)</button>
               <button id="btn-double-damage" class="btn-secondary" style="padding: 7px 10px; font-size: 11px; font-weight: 700; color: #f59e0b; border-color: rgba(245,158,11,0.4);" onclick="applyDoubleDamage()" title="Aplica o dobro do valor digitado (Vulnerabilidade a Dano)">💥 x2 (Vuln.)</button>
-              <button id="btn-heal-action" class="btn-action" style="flex: 1; min-width: 85px; background: linear-gradient(135deg, #10b981, #047857); color: #fff;" onclick="applyCombatAction('heal')">💚 Curar</button>
+              <button id="btn-heal-action" class="btn-action" style="flex: 1; min-width: 80px; background: linear-gradient(135deg, #10b981, #047857); color: #fff;" onclick="applyCombatAction('heal')">💚 Curar</button>
+              <button id="btn-temp-hp-action" class="btn-secondary" style="padding: 7px 10px; font-size: 11px; font-weight: 700; color: #38bdf8; border-color: rgba(56,189,248,0.5); background: rgba(56,189,248,0.12);" onclick="applyCombatAction('temphp')" title="Concede PV Temporário (não acumula, adota o maior valor)">🛡️ +PV Temp</button>
               <button id="btn-crit-damage" class="btn-action" style="background: linear-gradient(135deg, #f59e0b, #b45309); color: #000; font-weight: 800;" onclick="applyCombatAction('crit')">🔥 Crítico</button>
             </div>
           </div>
@@ -5612,28 +5634,44 @@
             <div id="cdh-combatant-name" style="font-size: 14px; font-weight: 800; color: #fff;">Combatente</div>
             <div id="cdh-combatant-sub" style="font-size: 11px; color: var(--text-muted);">PV Atual</div>
           </div>
-          <div id="cdh-combatant-hp" style="font-size: 16px; font-weight: 800; font-family: var(--font-mono); color: var(--accent-green);">-- / --</div>
+          <div style="text-align: right;">
+            <div id="cdh-combatant-hp" style="font-size: 16px; font-weight: 800; font-family: var(--font-mono); color: var(--accent-green);">-- / --</div>
+            <div id="cdh-combatant-temp-hp" class="badge-temp-hp" style="display: none; margin-top: 2px;">+0 Temp</div>
+          </div>
         </div>
 
         <div>
-          <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Quantidade de Pontos de Vida (PV):</label>
-          <input type="number" id="cdh-hp-val" placeholder="Ex: 8" min="1" step="1" value="5" style="width: 100%; font-size: 18px; font-weight: 800; text-align: center; padding: 8px; font-family: var(--font-mono);">
+          <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Quantidade ou Fórmula (Ex: 8, -5, +12 ou 2d6+3):</label>
+          <input type="text" inputmode="numeric" id="cdh-hp-val" placeholder="Ex: 8 ou -5 ou 10+2" value="5" style="width: 100%; font-size: 18px; font-weight: 800; text-align: center; padding: 8px; font-family: var(--font-mono);">
         </div>
 
-        <div style="display: flex; gap: 4px; justify-content: center;">
-          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; min-height: 32px;" onclick="document.getElementById('cdh-hp-val').value = '1'">1</button>
-          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; min-height: 32px;" onclick="document.getElementById('cdh-hp-val').value = '5'">5</button>
-          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; min-height: 32px;" onclick="document.getElementById('cdh-hp-val').value = '10'">10</button>
-          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; min-height: 32px;" onclick="document.getElementById('cdh-hp-val').value = '15'">15</button>
-          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; min-height: 32px;" onclick="document.getElementById('cdh-hp-val').value = '20'">20</button>
+        <div style="display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;">
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; min-height: 28px;" onclick="document.getElementById('cdh-hp-val').value = '1'">1</button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; min-height: 28px;" onclick="document.getElementById('cdh-hp-val').value = '5'">5</button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; min-height: 28px;" onclick="document.getElementById('cdh-hp-val').value = '10'">10</button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; min-height: 28px;" onclick="document.getElementById('cdh-hp-val').value = '15'">15</button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; min-height: 28px;" onclick="document.getElementById('cdh-hp-val').value = '20'">20</button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 8px; min-height: 28px;" onclick="document.getElementById('cdh-hp-val').value = 'max'">Max</button>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;">
-          <button type="button" class="btn-action" style="background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; font-weight: 800; min-height: 42px; font-size: 13px;" onclick="submitCombatDamageHeal('damage')">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;">
+          <button type="button" class="btn-action" style="background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; font-weight: 800; min-height: 40px; font-size: 13px;" onclick="submitCombatDamageHeal('damage')">
             ⚔️ Aplicar Dano
           </button>
-          <button type="button" class="btn-action" style="background: linear-gradient(135deg, #10b981, #047857); color: #fff; font-weight: 800; min-height: 42px; font-size: 13px;" onclick="submitCombatDamageHeal('heal')">
+          <button type="button" class="btn-action" style="background: linear-gradient(135deg, #10b981, #047857); color: #fff; font-weight: 800; min-height: 40px; font-size: 13px;" onclick="submitCombatDamageHeal('heal')">
             💚 Aplicar Cura
+          </button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 2px;">
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 6px 4px; color: #38bdf8; border-color: rgba(56,189,248,0.4);" onclick="submitCombatDamageHeal('half_damage')" title="Metade do dano">
+            🛡️ ½ Dano
+          </button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 6px 4px; color: #f59e0b; border-color: rgba(245,158,11,0.4);" onclick="submitCombatDamageHeal('double_damage')" title="Dobro do dano">
+            💥 2× Dano
+          </button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 6px 4px; color: #38bdf8; border-color: #38bdf8; background: rgba(56,189,248,0.12);" onclick="submitCombatDamageHeal('temphp')" title="Concede PV Temporário">
+            🛡️ +PV Temp
           </button>
         </div>
       </div>

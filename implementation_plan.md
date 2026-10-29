@@ -1,51 +1,66 @@
-# 📋 Plano de Implementação - ISSUE-170
+# 📋 Plano de Implementação: Overhaul e Modernização da Aba de Combate (ISSUE-171)
 
-## 📱 Refinamento Responsivo Mobile-First da Ficha do Jogador, Eliminação de Cortes Laterais e Prevenção de Scroll Horizontal em Celulares
-
----
-
-### 1. 🎯 Contexto e Objetivos
-
-Com base nos testes realizados com o emulador de celular (resolução de 390×844 em alta densidade de pixels Retina 2×, padrão iPhone 14 / Galaxy recente), a aplicação apresentou excelente legibilidade, contraste e usabilidade no Portal do Jogador.
-
-No entanto, em telas estreitas de smartphones (360px a 420px), foram identificados 4 pontos de atrito visual e responsividade:
-1. **Atributos Pares Espremidos**: Na grade `.roll20-abilities-bar` em duas colunas, chips de `SALVA` da coluna da direita (DES, INT, CAR) sofrem aperto lateral ou corte de margem.
-2. **Card de Defesa e Deslocamento (`CLASSE ARM.` e `DESLOC.`)**: O bloco `.roll20-ac-speed-box` encosta rente à borda direita em 390px, demandando `box-sizing: border-box` estrito e padding balanceado.
-3. **Cabeçalho de Ataques Comprimido**: O título `⚔️ ATAQUES & ARMAS CALCULADAS` e os botões rápidos `⚔️ + Arma` e `➕ Item` estão em uma linha rígida horizontal com `justify-content: space-between`, empurrando os botões para fora da tela no celular.
-4. **Navegação de Abas Horizontais**: Tanto as abas principais do topo quanto as sub-abas da ficha (`.roll20-tabs-header`) precisam de rolagem por toque (*touch-action: pan-x*) suave e sem scrollbar invasiva.
-
----
-
-### 2. 🗂️ Arquivos e Módulos Afetados
-
-1. **`src/styles/head_css.html`**:
-   - Refinamento do breakpoint móvel `@media (max-width: 500px)` e `@media (max-width: 390px)`.
-   - Ajuste em `.roll20-abilities-bar`: `gap: 6px`, `min-width: 0` e `box-sizing: border-box`.
-   - Ajuste em `.roll20-sub-chip`: `min-width: 0`, `padding: 4px 1px`, `overflow: hidden`, texto de salvaguarda responsivo.
-   - Ajuste em `.roll20-ac-speed-box`: padding proporcional (`8px 12px`), alinhamento centrado e respiro lateral.
-   - Classe `.roll20-atk-header-row`: `display: flex; flex-wrap: wrap; gap: 6px; justify-content: space-between; align-items: center;` para o cabeçalho de ataques quebrar em 2 linhas limpas no celular.
-   - Suavização de `.roll20-tabs-header`: `-webkit-overflow-scrolling: touch`, sem quebra de layout e com toque natural.
-2. **`src/js/players.js`**:
-   - Adicionar a classe semântica `.roll20-atk-header-row` no cabeçalho de armas calculadas da ficha.
-3. **`test_runner.js`**:
-   - Adição da **Bateria 139**: Testes de Responsividade Mobile-First, ausência de transbordo horizontal e integridade de layout para telas de 360px a 390px.
-4. **`issues/README.md`**:
-   - Registro da conclusão da **ISSUE-170**.
+## 📌 Contexto e Objetivos
+O usuário solicitou melhorias profundas na **Aba de Combate**, focando em:
+1. **Layout e Hierarquia Visual**: Interface inspirada nos principais VTTs modernos (**Foundry VTT**, **D&D Beyond Encounter Tracker**, **Owlbear Rodeo** e **Roll20**).
+2. **Facilidade de Manipulação de Valores**:
+   - Ajuste ultra-rápido de PV com suporte a operações matemáticas diretas no input (`-8`, `+12`, `/2`, etc.), eliminando atritos durante sessões agitadas.
+   - Suporte nativo e oficial D&D 5E a **PV Temporário (Temp HP)** com barra/chip visual azul elétrico/ciano, absorvendo dano antes do PV real.
+   - Seleção de Alvo por 1 Clique (clicar no card de um combatente define-o imediatamente como Alvo do despachante ou foca seus detalhes, sem precisar caçar nomes em dropdowns).
+3. **Card de Combatente Redesenhado (Foundry VTT Style)**:
+   - Badges destacadas com ícones: `🛡️ CA`, `👟 Deslocamento`, `🎲 Iniciativa`, `PV/MaxPV`.
+   - Barra de PV dinâmica com transição suave, estado *Sangrando* (<= 50%) e *Crítico/Caído* (0 PV / Death Saves).
+   - Chips táteis de Condições com remoção e adição rápida.
+4. **Despachante de Dano & Cura Inteligente**:
+   - Botões pré-formatados: `⚔️ Dano Cheio`, `🛡️ ½ Dano (Save/Resist.)`, `💥 2× (Vulnerável)`, `💚 Curar`, `🛡️ +PV Temp`.
+   - Atalhos numéricos rápidos (`1`, `5`, `10`, `20`, `Max`).
+5. **Barra de Controle de Rodada e Turno (Encounter Header)**:
+   - Contador de rodada com botões táteis de avançar/retroceder (`⏮️`, `⏭️ Rodada`).
+   - Placar rápido do encontro (ex: `👥 4 Heróis Ativos` vs `👾 3 Inimigos | 💀 1 Derrotado`).
+   - Botão rápido para remover criaturas derrotadas (0 PV) com 1 clique.
 
 ---
 
-### 3. ⚠️ Riscos e Impactos em Persistência / Sincronização
+## 🏗️ Módulos e Arquivos Afetados
 
-- **Persistência (`localStorage`)**: **Zero impacto**. Trata-se de aperfeiçoamento de CSS e classes visuais; nenhuma estrutura de dados ou chave de armazenamento é modificada.
-- **Sincronização (Firebase / BroadcastChannel)**: **Zero impacto**. O fluxo de atualização entre mestre e alunos permanece 100% idêntico.
-- **Desktop e Telão**: **Zero impacto**. Todos os ajustes estão isolados em `@media (max-width: 500px)` e classes auxiliares, mantendo a experiência em tablets, notebooks e modo telão intocada.
+1. **`src/js/combat.js`**:
+   - Suporte a `tempHp` (PV temporário) em combatentes e sincronização com fichas (`PLAYERS`).
+   - Avaliação matemática em inputs de PV (ex: suporte a strings do tipo `"-12"`, `"+15"`, `"10+5"`).
+   - Função `setCombatTarget(combatantId)` para selecionar alvo com 1 clique direto na lista.
+   - Botões e despachante com suporte a dano absorvido por PV temporário e adição de Temp HP.
+   - Botão de limpar combatentes derrotados (`clearDefeatedCombatants`).
+   - Atualização da função `renderCombat()` e `renderCombatantCard()` com o novo layout VTT.
+
+2. **`src/styles/head_css.html`**:
+   - Estilização moderna inspirada no Foundry VTT para `.combatant-item` (Glassmorphism dark fantasy, bordas neon temáticas para turno ativo/próximo).
+   - Estilo para barra e badge de **PV Temporário** (`.temp-hp-bar`, `.temp-hp-badge`).
+   - Estilização do cabeçalho da rodada (`.combat-flow-header`), placar de combatentes e controles de turno.
+   - Grid responsivo para a lista de combatentes e painel de ações.
+
+3. **`src/ui/ui.html`**:
+   - Atualização da estrutura HTML do `#tab-combat` para acomodar os novos botões, placar e controles modernos.
+
+4. **`test_runner.js`**:
+   - Adição da **Bateria 140: Overhaul da Aba de Combate e Manipulação VTT (ISSUE-171)**.
+   - Validação de cálculos matemáticos no input de PV, absorção de dano por Temp HP, seleção rápida de alvo e integridade de UI.
 
 ---
 
-### 4. 🧪 Estratégia de Verificação Automatizada
+## 🛡️ Impactos e Compatibilidade
 
-- [ ] Execução do compilador: `node builder.js`.
-- [ ] Execução da suíte de integridade de UI: `node test_ui_integrity.js` (617/617 cliques).
-- [ ] Execução do runner de testes automatizados: `node test_runner.js` com a **Bateria 139** (100% de sucesso).
-- [ ] Captura de nova screenshot em emulador móvel (390×844) confirmando visualmente a eliminação de qualquer corte lateral.
-- [ ] Commit e push limpos no Git.
+- **Persistência (`localStorage`)**:
+  - A chave `dnd_tracker_state_v3` continuará 100% compatível, adicionando `tempHp: number` defensivamente (`c.tempHp = c.tempHp || 0`).
+  - Sincronização bidirecional entre `state.combatants` e `PLAYERS` preservará tanto PV quanto PV Temporário.
+- **Modo Telão (`screen_sync.js`) e Sincronização na Nuvem (`firebase_sync.js`)**:
+  - As atualizações de PV e Temp HP serão propagadas de forma transparente via `broadcastStateSync()`.
+
+---
+
+## 🧪 Estratégia de Verificação
+
+1. **Testes Automatizados**:
+   - Executar `node test_runner.js` garantindo que todos os 2476+ testes existentes e os novos da Bateria 140 passem com 100% de sucesso.
+   - Executar `node test_ui_integrity.js` garantindo que todos os botões e abas funcionem sem exceções.
+2. **Verificação Manual e Visual**:
+   - Compilar via `node builder.js`.
+   - Validar visualmente o novo layout moderno, botões de atalho, absorção de Temp HP e alternância de turno.
