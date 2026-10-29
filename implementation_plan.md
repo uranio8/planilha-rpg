@@ -1,53 +1,58 @@
-# Plano de Implementação — ISSUE-165: Suíte Completa de Integridade de UI (`test_ui_integrity.js`), Correção de Botões Órfãos e Agente QA Tester
+# Plano de Implementação — ISSUE-166: Localização dos Atributos D&D 5E para Português (FOR, DES, CON, INT, SAB, CAR) com Nomes Completos e Tooltips Intuitivos
 
 ## 1. Contexto & Diagnóstico
-Para garantir que **todas as funcionalidades do sistema sejam testadas sempre que fizermos mudanças nele**, realizamos uma auditoria em larga escala em todos os 617 elementos com ações de clique (`onclick`) declarados em `src/ui/ui.html`.
+Atualmente, nos cards de personagens da aba **Fichas** (`renderPlayers()` em `src/js/players.js`), a barra superior de habilidades (`.roll20-abilities-bar`) exibe as siglas em inglês herdadas do D&D original:
+- `STR` (Strength)
+- `DEX` (Dexterity)
+- `CON` (Constitution)
+- `INT` (Intelligence)
+- `WIS` (Wisdom)
+- `CHA` (Charisma)
+Além disso, os botões de rolagem utilizam labels e tooltips em inglês como `Save`, `Rolar Teste de STR (+3)` e `Rolar Salvaguarda de STR (+5)`.
 
-A varredura revelou pequenos pontos de vulnerabilidade onde certas chamadas de botão causavam erros silenciosos no console ou referências indefinidas:
-1. O botão `#btn-batch-reward-select-camp` chamava `selectCurrentCampaignBatchRewardHeroes()`, que não estava implementada no código (`is not defined`).
-2. O botão `#btn-modal-print-editable-pdf` chamava `exportCurrentModalPlayerEditablePdf()`, cujo módulo `pdf_export.js` não estava sendo importado no simulador de cliques.
-3. A função `setBastionActionFilter` tentava acessar `btnEl.classList.add()` sem verificar se `btnEl` e `classList` existiam.
-4. O botão de salvar monstro customizado (`saveCustomMonsterToBestiary`) e o modo de transcrição de magias (`switchPickerMode('copy')`) careciam de verificações defensivas quando chamados fora de contexto.
+Isso causa atrito e dificuldade de compreensão imediata para mestres e jogadores (especialmente iniciantes ou mesas em língua portuguesa), que conhecem os atributos pelas siglas canônicas nacionais da 5ª Edição:
+- **FOR** — Força
+- **DES** — Destreza
+- **CON** — Constituição
+- **INT** — Inteligência
+- **SAB** — Sabedoria
+- **CAR** — Carisma
 
 ---
 
 ## 2. Objetivos da Implementação
 
-### 2.1 Agente QA Tester Especializado (`qa-tester`)
-- Subagente autônomo já registrado no sistema (`qa-tester`) com ferramentas de inspeção, execução de comandos e diagnóstico para rodar as suítes e verificar a integridade da aplicação após qualquer mudança.
+### 2.1 Tradução e Padronização das Siglas e Nomes Canônicos
+Substituir as siglas em inglês por siglas e nomes em português nas caixas de atributos (`.roll20-ability-box`) da ficha:
+- `str` ➔ Sigla: **FOR** | Nome Completo: **Força**
+- `dex` ➔ Sigla: **DES** | Nome Completo: **Destreza**
+- `con` ➔ Sigla: **CON** | Nome Completo: **Constituição**
+- `int` ➔ Sigla: **INT** | Nome Completo: **Inteligência**
+- `wis` ➔ Sigla: **SAB** | Nome Completo: **Sabedoria**
+- `cha` ➔ Sigla: **CAR** | Nome Completo: **Carisma**
 
-### 2.2 Suíte Completa de Testes de Integridade de UI (`test_ui_integrity.js`)
-- Criar o script independente `test_ui_integrity.js` que:
-  1. Carrega todos os módulos de dados (`src/data/*`) e scripts (`src/js/*`), incluindo `pdf_export.js`, `trait_quick_rules.js`, `bastions.js`, `hirelings.js` e `feats.js`.
-  2. Inicializa o estado completo da aplicação (`initApp()`, `renderPlayers()`, `renderCombat()`, `renderCampaigns()`, `renderBestiary()`, etc.).
-  3. Testa a alternância de **todas as 11 abas do sistema** (`switchTab`) garantindo renderização limpa.
-  4. Executa **todas as 617+ ações `onclick` de `ui.html`**, verificando se alguma função quebra ou gera exceção não tratada.
-  5. Testa a abertura e fechamento de **todos os 25+ modais** do sistema.
-  6. Valida que `console.error` não registre erros fatais durante as execuções.
-
-### 2.3 Correções Defensivas nos Módulos `src/`
-- `src/js/players.js`: Implementar `selectCurrentCampaignBatchRewardHeroes()` para selecionar apenas os heróis da campanha ativa no modal de recompensas em lote.
-- `src/js/players.js`: Adicionar guarda defensiva em `switchPickerMode` caso nenhum herói de magia esteja selecionado.
-- `src/js/campaigns.js`: Adicionar verificação opcional `btnEl && btnEl.classList` em `setBastionActionFilter`.
-- `src/js/compendium.js`: Adicionar tratamento defensivo em `saveCustomMonsterToBestiary` para validar campos do formulário antes de ler propriedades.
+### 2.2 Clareza Visual e Tooltips Explicativos
+- Exibir a sigla canônica em destaque com título/tooltip do nome completo correspondente (ex: `title="Força (FOR)"`).
+- Atualizar os chips de rolagem rápida:
+  - `Mod` ➔ Rola teste de atributo com tooltip claro: `"Rolar Teste de Força (FOR: +3)"`.
+  - `Save` ➔ Atualizado para **`Salva`** (Salvaguarda / Teste de Resistência) com indicação `"Rolar Salvaguarda de Força (FOR: +5) • Proficiente"`.
+- Manter total retrocompatibilidade com as chaves internas de dados (`p.str`, `p.dex`, etc.) e funções de rolagem (`rollPlayerAttr`, `rollPlayerSavingThrow`), alterando apenas a camada de apresentação visual.
 
 ---
 
-## 3. Arquivos Afetados
+## 3. Arquivos e Módulos Afetados
 
-| Arquivo | Descrição das Alterações |
+| Arquivo | Modificação Planejada |
 |---|---|
-| `test_ui_integrity.js` *(novo/atualizado)* | Script de auditoria global de integridade de UI, cliques, abas e modais. |
-| `src/js/players.js` | Implementação de `selectCurrentCampaignBatchRewardHeroes` e blindagem em `switchPickerMode`. |
-| `src/js/campaigns.js` | Blindagem defensiva em `setBastionActionFilter`. |
-| `src/js/compendium.js` | Validação defensiva em `saveCustomMonsterToBestiary`. |
-| `test_runner.js` | **Bateria 134**: Integração da validação de integridade de UI na suíte principal. |
-| `issues/README.md` | Registro formal da ISSUE-165. |
+| `src/js/players.js` | Atualizar o mapeamento de habilidades em `renderPlayers()` para `{ key, label: 'FOR'|'DES'|'CON'|'INT'|'SAB'|'CAR', fullName: 'Força'|... }`, tooltips em português e chip `Salva`. |
+| `src/styles/head_css.html` | Ajustes visuais finos (se necessário) para a tipografia e espaçamento dos headers de atributos. |
+| `test_runner.js` | Adicionar **Bateria 135** validando a presença e renderização das siglas em português (FOR, DES, CON, INT, SAB, CAR), tooltips e o chip `Salva` nos cards de jogadores. |
+| `issues/README.md` | Registrar a conclusão da **ISSUE-166**. |
 
 ---
 
-## 4. Validação e Testes
-- Executar `node test_ui_integrity.js` (validando 100% de aprovação nas 617+ ações sem falhas).
-- Executar `node builder.js`.
-- Executar `node test_runner.js` (validando aprovação de todas as baterias).
-- Invocação de teste com o subagente `qa-tester`.
+## 4. Estratégia de Verificação e Testes
+1. Executar `node test_ui_integrity.js` para garantir que os 617 cliques e 11 abas permaneçam 100% íntegros.
+2. Executar `node builder.js` para compilar o `planilha do rpg.html` e `index.html`.
+3. Executar `node test_runner.js` garantindo que todos os 2.421+ testes aprovem sem regressões.
+4. Validar visualmente a clareza e legibilidade dos novos rótulos na interface.

@@ -2535,12 +2535,12 @@ function renderPlayers() {
         <!-- 2. BARRA DE ATRIBUTOS & SALVAGUARDAS UNIFICADOS (ABILITIES ROLL20) -->
         <div class="roll20-abilities-bar">
           ${[
-        { key: 'str', label: 'STR' },
-        { key: 'dex', label: 'DEX' },
-        { key: 'con', label: 'CON' },
-        { key: 'int', label: 'INT' },
-        { key: 'wis', label: 'WIS' },
-        { key: 'cha', label: 'CHA' }
+        { key: 'str', label: 'FOR', name: 'Força' },
+        { key: 'dex', label: 'DES', name: 'Destreza' },
+        { key: 'con', label: 'CON', name: 'Constituição' },
+        { key: 'int', label: 'INT', name: 'Inteligência' },
+        { key: 'wis', label: 'SAB', name: 'Sabedoria' },
+        { key: 'cha', label: 'CAR', name: 'Carisma' }
       ].map(attr => {
         const raw = p[attr.key] || 10;
         const baseMod = Math.floor((raw - 10) / 2);
@@ -2551,18 +2551,18 @@ function renderPlayers() {
 
         return `
               <div class="roll20-ability-box">
-                <div class="roll20-ability-header">
-                  <span>${attr.label}</span>
+                <div class="roll20-ability-header" title="${attr.name} (${attr.label})">
+                  <span style="font-weight: 800; letter-spacing: 0.5px;">${attr.label}</span>
                   <span class="roll20-ability-val">${raw}</span>
                 </div>
                 <div class="roll20-mod-save-row">
-                  <div class="roll20-sub-chip" onclick="rollPlayerAttr('${p.id}', '${attr.key}')" title="Rolar Teste de ${attr.label} (${modSign})">
+                  <div class="roll20-sub-chip" onclick="rollPlayerAttr('${p.id}', '${attr.key}')" title="Rolar Teste de ${attr.name} (${attr.label}: ${modSign})">
                     <span class="roll20-chip-val">${modSign}</span>
                     <span class="roll20-chip-lbl">Mod</span>
                   </div>
-                  <div class="roll20-sub-chip ${isSaveProf ? 'proficient' : ''}" onclick="rollPlayerSavingThrow('${p.id}', '${attr.key}')" title="Rolar Salvaguarda de ${attr.label} (${saveSign})${isSaveProf ? ' • Proficiente' : ''}">
+                  <div class="roll20-sub-chip ${isSaveProf ? 'proficient' : ''}" onclick="rollPlayerSavingThrow('${p.id}', '${attr.key}')" title="Rolar Salvaguarda de ${attr.name} (${attr.label}: ${saveSign})${isSaveProf ? ' • Proficiente' : ''}">
                     <span class="roll20-chip-val">${saveSign}</span>
-                    <span class="roll20-chip-lbl">Save</span>
+                    <span class="roll20-chip-lbl">${isSaveProf ? '★ Salva' : 'Salva'}</span>
                   </div>
                 </div>
               </div>
@@ -2571,12 +2571,12 @@ function renderPlayers() {
 
           <!-- BLOCO LATERAL AC / SPEED -->
           <div class="roll20-ac-speed-box">
-            <div class="roll20-ac-row" title="${escapeAttr(acInfo.details)}">
-              <span>ARMOR CLASS</span>
+            <div class="roll20-ac-row" title="${escapeAttr(acInfo.details || 'Classe de Armadura (CA)')}">
+              <span title="Classe de Armadura (CA)">CLASSE ARM.</span>
               <span class="roll20-ac-shield">${displayAc}</span>
             </div>
-            <div class="roll20-speed-row">
-              <span>SPEED</span>
+            <div class="roll20-speed-row" title="Deslocamento por rodada">
+              <span title="Deslocamento">DESLOC.</span>
               <span style="font-weight: 800; color: #fff;">${p.speed || '9m'}</span>
             </div>
           </div>

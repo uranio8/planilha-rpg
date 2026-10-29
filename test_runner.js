@@ -10533,6 +10533,41 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
       assert(false, `test_ui_integrity.js falhou: ${e.message}`);
     }
 
+    // 🇧🇷 [Bateria 135] Localização dos Atributos D&D 5E para Português (ISSUE-166):
+    console.log('\n🇧🇷 [Bateria 135] Localização dos Atributos D&D 5E para Português (ISSUE-166):');
+    vm.runInContext(`
+      PLAYERS = [{
+        id: 'p_pt_test_hero',
+        name: 'Guerreiro de Teste',
+        level: 3,
+        className: 'Guerreiro',
+        str: 16,
+        dex: 14,
+        con: 15,
+        int: 10,
+        wis: 12,
+        cha: 8,
+        saveProficiencies: ['str', 'con'],
+        speed: '9m'
+      }];
+      renderPlayers();
+    `, sandbox);
+    const heroCardHtml = sandbox.document.getElementById('grid-players')?.innerHTML || '';
+    assert(heroCardHtml.includes('>FOR</span>'), 'Card do jogador exibe sigla FOR (Força)');
+    assert(heroCardHtml.includes('>DES</span>'), 'Card do jogador exibe sigla DES (Destreza)');
+    assert(heroCardHtml.includes('>CON</span>'), 'Card do jogador exibe sigla CON (Constituição)');
+    assert(heroCardHtml.includes('>INT</span>'), 'Card do jogador exibe sigla INT (Inteligência)');
+    assert(heroCardHtml.includes('>SAB</span>'), 'Card do jogador exibe sigla SAB (Sabedoria)');
+    assert(heroCardHtml.includes('>CAR</span>'), 'Card do jogador exibe sigla CAR (Carisma)');
+    assert(!heroCardHtml.includes('>STR</span>') && !heroCardHtml.includes('>DEX</span>') && !heroCardHtml.includes('>WIS</span>') && !heroCardHtml.includes('>CHA</span>'), 'Card do jogador não exibe siglas em inglês');
+    assert(heroCardHtml.includes('title="Força (FOR)"'), 'Card contém tooltip "Força (FOR)"');
+    assert(heroCardHtml.includes('title="Destreza (DES)"'), 'Card contém tooltip "Destreza (DES)"');
+    assert(heroCardHtml.includes('title="Sabedoria (SAB)"'), 'Card contém tooltip "Sabedoria (SAB)"');
+    assert(heroCardHtml.includes('title="Carisma (CAR)"'), 'Card contém tooltip "Carisma (CAR)"');
+    assert(heroCardHtml.includes('★ Salva') || heroCardHtml.includes('Salva'), 'Chip de salvaguarda renomeado de Save para Salva');
+    assert(heroCardHtml.includes('CLASSE ARM.'), 'Bloco lateral exibe CLASSE ARM. em vez de ARMOR CLASS');
+    assert(heroCardHtml.includes('DESLOC.'), 'Bloco lateral exibe DESLOC. em vez de SPEED');
+
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;
     sandbox.document.getElementById = origGetEl;
