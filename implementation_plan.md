@@ -1,101 +1,88 @@
-# 📋 Plano de Implementação: Auditoria e Correção de Traços Raciais/Classes e Espaços de Magia (Claker e Demais Heróis) - ISSUE-173
+# Plano de Implementação - Sistema Oficial de Invocações Místicas do Bruxo (D&D 5E) [ISSUE-174]
 
-## 📌 Contexto & Diagnóstico
+## 1. Contexto e Objetivo
+O usuário solicitou disponibilizar as possíveis **Invocações Místicas (Eldritch Invocations)** que o Bruxo pode escolher.
+Atualmente no sistema:
+- O Bruxo calcula a quantidade de invocações por nível (`classes.js` e `players.js`), mas não existe um catálogo de dados oficial com as invocações nem um seletor visual no Criador/Editor de Personagens (`#modal-player`) ou na aba de Classes.
+- Personagens como Claker e Caim possuem invocações digitadas apenas em texto livre, sem validação de pré-requisitos (nível de bruxo, truque *Rajada Mística*, Dádiva do Pacto da Lâmina/Tomo/Corrente) nem facilidade de escolha com 1 clique.
 
-O usuário solicitou:
-> *"verifique se o traço dos personagens estão de acordo com os traços das classes e raças, vi que os slots de magias de um dos personagens (o claker) está errado. Entre na planilha e verifique se esta com problema"*
-
-Após auditoria detalhada nos dados padrão (`src/js/core.js`), nas bases oficiais (`src/data/classes.js`, `src/data/species.js`, `src/data/trait_quick_rules.js`) e nos módulos de renderização (`src/js/players.js`), foram identificadas as seguintes inconsistências:
-
-### 1. Diagnóstico dos Espaços de Magia (Slots) do Claker:
-- **Classe & Nível**: Claker é Bruxo (Warlock) Nível 5, Patrono Corruptor (The Fiend), Tiefling.
-- **Regra Oficial D&D 5E (Pact Magic)**:
-  - Um Bruxo Nível 5 possui **2 Espaços de Magia de 3º Círculo** (`[0, 0, 2, 0, 0, 0, 0, 0, 0]`).
-  - No D&D 5E, o Bruxo **não possui slots de 1º nem de 2º círculo**. Todas as suas magias aprendidas (como *Raio de Bruxa*, *Mãos Flamejantes*, *Despedaçar*) são conjuradas no 3º círculo (*upcasting*), gastando 1 dos seus 2 slots de pacto de 3º círculo, que recarregam em Descanso Curto (Short Rest).
-- **Problema na Interface & Ficha**:
-  1. **Ausência de Bolhas Interativas nos Círculos 1 e 2**: Na aba de Magias de Claker, como `slots[0] = 0` e `slots[1] = 0`, o cabeçalho exibe apenas o texto informativo `🔮 Espaços de Pacto (2/2 de 3º Círc.)`, **mas nenhuma bolha de slot clicável**. Se o jogador ou mestre quiser marcar o gasto do slot diretamente no bloco do 1º ou 2º círculo onde a magia está listada, não há controle interativo, dando a forte impressão visual de que os slots estão "zerados/quebrados" para aquelas magias.
-  2. **Modal de Edição (#modal-player)**: O modal exibe campos numéricos diretos para 1º ao 9º círculo. Claker aparece com 1º Círc = 0, 2º Círc = 0, 3º Círc = 2. Para jogadores ou mestres habituados com conjuradores tradicionais (Mago/Clérigo/Bardo), ver "0" no 1º e 2º círculo parece um erro evidente.
-  3. **Array de Slots Truncado**: Em `core.js`, o array de slots de Claker possui apenas 5 elementos `[0, 0, 2, 0, 0]` em vez dos 9 elementos canônicos do D&D 5E.
-  4. **Suporte Flexível de Mesa (Regra Oficial de Pacto vs Conjurador Clássico)**: Caso a mesa jogue com conjuração tradicional para o Bruxo (`[4, 3, 2, 0, 0, 0, 0, 0, 0]`) ou mantenha a regra oficial de Pact Magic (`[0, 0, 2, 0, 0, 0, 0, 0, 0]`), a ficha deve exibir gemas de pacto clicáveis em todos os círculos válidos com identificação clara `🔮 Espaço de Pacto (3º Círculo)`.
-
-### 2. Diagnóstico dos Traços de Classe e Raça de Todos os Personagens:
-- **Yoshigake Kira (Paladino Nv 5, Humano)**:
-  - `p.features` atual possui `"Retomar o Fôlego (1d10+1 PV)"` $\rightarrow$ **ERRO GRAVE**: *Retomar o Fôlego* é característica exclusiva de Guerreiro (Fighter), não existe em Paladino!
-  - Correção: Substituir pelas características canônicas de Paladino: *Sentido Divino (5/dia)*, *Cura pelas Mãos (25 PV)*, *Estilo de Luta*, *Destruição Divina*, *Saúde Divina*, *Canalizar Divindade (Arma Sagrada / Expulsar o Profano)*, *Ataque Extra*. Raça Humano: *Versatilidade Humana*.
-- **Deraravely (Guerreiro 4 / Bárbaro 1 Nv 5, Orc)**:
-  - `p.features` possui `"Fúria (2/dia, +2 Dano)"`. O parser atual de `getPlayerAllFeaturesAndTraits()` faz split cego por vírgula e quebra o texto em `Fúria (2/dia` e `+2 Dano)`, gerando um traço quebrado e solto.
-  - Traços de Orc incompletos: Faltam os traços raciais canônicos de Orc (*Visão no Escuro 18m*, *Ameaçador / Intimidação*, *Resistência Implacável*, *Ataques Selvagens*).
-- **Caim Vonsilford (Bruxo Nv 3, Draconato)**:
-  - `p.features` possui `"Invocações Ocultas (Agonia Mística, Armadura das Sombras)"`, quebrado pela vírgula interna.
-  - Faltam no registro textual os traços de Draconato (*Ancestral Dracônico*, *Arma de Sopro*, *Resistência a Dano*) e *Dádiva do Pacto*.
-- **Claker (Bruxo Nv 5, Tiefling)**:
-  - `p.features` possui apenas `"Bênção do Obscuro, Sorte do Obscuro"`.
-  - Faltam os traços oficiais de Tiefling: *Visão no Escuro (18m)*, *Resistência Infernal (Resistência a Fogo)*, *Legado Infernal* (*Taumaturgia*, *Repreensão Infernal* 1×/dia como 2º círculo, *Escuridão* 1×/dia como 2º círculo).
-  - Faltam as 3 Invocações Sobrenaturais canônicas de nível 5 (*Rajada Agonizante*, *Armadura das Sombras*, *Visão Diabólica*) e a *Dádiva do Pacto* (Pacto do Tomo / Corrente / Lâmina).
-- **Zenit (Feiticeiro 4 / Bruxo 1 Nv 5, Draconato)**:
-  - `p.features` possui `"Metamagia (Acelerar Magia, Magia Duplicada)"`, quebrado pela vírgula interna.
-  - Faltam traços explícitos de Draconato e Pontos de Feitiçaria (4 Pontos).
-- **Bug no Parser de Características (`src/js/players.js` linha 11132)**:
-  - `cleanLine.split(',')` não respeita parênteses balanceados, destruindo expressões como `"Fúria (2/dia, +2 Dano)"` ou `"Metamagia (A, B)"`.
+O objetivo da **ISSUE-174** é implementar o catálogo oficial com **38 Invocações Místicas D&D 5E** (Livro do Jogador, Guia de Xanathar e Caldeirão de Tasha), com seletor interativo, validação de pré-requisitos, contador pelo nível do Bruxo e integração total às fichas, compêndio e exportações.
 
 ---
 
-## 🎯 Escopo das Modificações
+## 2. Escopo das Modificações
 
-### 1. `src/js/core.js` (Bancos Padrão de Personagens `PLAYERS`):
-- Atualizar a ficha de **Claker**:
-  - Garantir array canônico de 9 círculos: `slots: [0, 0, 2, 0, 0, 0, 0, 0, 0]`, `slotsUsed: [0, 0, 0, 0, 0, 0, 0, 0, 0]`.
-  - Adicionar as magias inatas raciais de Tiefling em suas magias conhecidas/preparadas (*Taumaturgia*, *Repreensão Infernal*, *Escuridão*).
-  - Enriquecer `features` com as características oficiais completas de Bruxo 5 e Tiefling:
-    `"Bênção do Obscuro (10 PV temp ao matar), Sorte do Obscuro (+1d10), Invocações Sobrenaturais (Rajada Agonizante, Armadura das Sombras, Visão Diabólica), Dádiva do Pacto (Pacto do Tomo), Visão no Escuro (18m), Resistência Infernal (Fogo), Legado Infernal (Taumaturgia, Repreensão Infernal, Escuridão)"`.
-- Corrigir a ficha de **Yoshigake Kira**:
-  - Remover `"Retomar o Fôlego (1d10+1 PV)"` (característica errônea de guerreiro).
-  - Atualizar para características oficiais de Paladino Nv 5:
-    `"Sentido Divino (5/dia), Cura pelas Mãos (25 PV), Destruição Divina, Saúde Divina (Imune a Doenças), Canalizar Divindade (Arma Sagrada, Expulsar o Profano), Ataque Extra, Versatilidade Humana"`.
-  - Normalizar `slots` para 9 círculos: `[4, 2, 0, 0, 0, 0, 0, 0, 0]`.
-- Corrigir a ficha de **Deraravely**:
-  - Corrigir `features` para não conter quebras de vírgula:
-    `"Retomar o Fôlego (1d10+4 PV), Surto de Ação, Crítico Aprimorado (19-20), Fúria (2/dia - +2 Dano), Defesa sem Armadura, Visão no Escuro (18m), Ameaçador, Resistência Implacável, Ataques Selvagens"`.
-  - Normalizar `slots` para 9 círculos: `[0, 0, 0, 0, 0, 0, 0, 0, 0]`.
-- Corrigir e normalizar **Caim Vonsilford**, **Arkhalis**, **Marc Hiroshi**, **Lalw**, **Koichi** e **Zenit**:
-  - Garantir arrays de 9 círculos em `slots` e `slotsUsed`.
-  - Ajustar `features` com traços corretos de classe e raça sem parênteses corrompidos por vírgulas.
+### A. Base de Dados Oficial: `src/data/invocations.js`
+Criar o módulo de dados canônico `WARLOCK_INVOCATIONS_DATA` contendo 38 invocações com:
+- `id`: identificador único (ex: `'agonizing_blast'`, `'armor_of_shadows'`, `'book_of_ancient_secrets'`).
+- `name`: Nome em português (ex: `'Rajada Agonizante'`, `'Armadura das Sombras'`, `'Visão Diabólica'`).
+- `originalName`: Nome original em inglês (ex: `'Agonizing Blast'`).
+- `minLevel`: Nível mínimo de Bruxo necessário (`1`, `5`, `7`, `9`, `12`, `15`).
+- `pactRequired`: Pacto necessário (`null`, `'tome'`, `'blade'`, `'chain'`).
+- `cantripRequired`: Truque necessário (`'Rajada Mística'` ou `null`).
+- `spellGranted`: Magia concedida à vontade ou por espaço de pacto (ex: `'Armadura Arcana'`, `'Disfarçar-se'`).
+- `type`: Categoria (`'Ativo'`, `'Passivo'`, `'Modificador de Rajada'`, `'Magia à Vontade'`).
+- `description`: Texto completo das regras oficiais em português.
+- `summary`: Resumo direto de 1 linha para consulta rápida em mesa.
 
-### 2. `src/js/players.js`:
-- **Parser Inteligente de Traços Personalizados (`getPlayerAllFeaturesAndTraits`)**:
-  - Implementar divisor seguro que não separa vírgulas que estejam dentro de parênteses (ex: `"Fúria (2/dia, +2 Dano)"` permanece uma única habilidade íntegra).
-- **Interatividade & Bolhas de Slots de Pacto nos Círculos Inferiores (`renderPlayers`)**:
-  - Quando um Bruxo (ou conjurador de pacto) possui círculos inferiores com `maxSlots === 0` e um círculo superior de pacto disponível (ex: 3º círculo com 2 slots), renderizar bolhas ativas de atalho direto no cabeçalho do 1º e 2º círculo (`🔮 Espaço de Pacto: 2/2 de 3º Círc. [●][●]`).
-  - Clicar nessas bolhas alterna diretamente o slot de pacto correspondente (`togglePlayerCircleSlot(p.id, pactSlotIdx, slotIdx)`), permitindo que o jogador consuma ou restaure seus slots de magia diretamente ao lado de suas magias de 1º e 2º círculo!
-- **Alerta / Helper no Modal de Edição (`#modal-player`)**:
-  - Quando a classe for Bruxo, exibir badge explicativo temático ao lado dos slots: `🔮 Magia de Pacto (D&D 5E): Os slots de Bruxo ficam concentrados no círculo máximo (3º Círculo no Nv 5) e recarregam em Descanso Curto. Se sua mesa usa regras da casa com slots graduais, você pode preenchê-los livremente nos campos abaixo.`
+### B. Compilador e Testes (`builder.js` e `test_runner.js`)
+- Incluir `src/data/invocations.js` em `builder.js` dentro da ordem correta de concatenação de scripts.
+- Atualizar verificações de integridade em `test_runner.js`.
 
-### 3. `src/styles/head_css.html` & `src/ui/ui.html`:
-- Estilização suave para as gemas de pacto compartilhadas nos círculos inferiores (`.pact-shared-slot-bubble`).
-- Badge explicativo de Pact Magic no `#modal-player`.
+### C. Interface do Criador/Editor de Ficha (`src/ui/ui.html` e `src/styles/head_css.html`)
+- No Step 1 (Classe) do modal `#modal-player`, quando a classe selecionada for **Bruxo** e o Nível for $\ge 2$:
+  - Exibir o painel interativo `#ddb-warlock-invocations-box`:
+    - Cabeçalho com contador dinâmico de invocações: `🔮 Invocações Místicas: X de Y escolhidas` (Y = 2 no Nv 2-4, 3 no Nv 5-6, 4 no Nv 7-8, etc.).
+    - Barra de filtros: `Todos`, `Pré-requisitos Atendidos`, `Rajada Mística`, `Pacto da Lâmina`, `Pacto do Tomo`, `Pacto da Corrente`.
+    - Campo de busca instantânea de invocações.
+    - Grade de cards `.ddb-invocation-card` com indicador de status (selecionada, disponível, bloqueada por pré-requisito com aviso claro).
+    - Clique para alternar seleção respeitando o limite do nível com feedback visual em tempo real.
+- Estilização Dark Fantasy Premium: tema púrpura arcana (`#a855f7`, `#c084fc`), badges de pré-requisito e destaque dourado ao selecionar.
 
----
+### D. Lógica de Negócio e Fichas (`src/js/players.js` e `src/js/core.js`)
+- Funções em `src/js/players.js`:
+  - `getWarlockMaxInvocations(level)`: Retorna o limite oficial de invocações por nível.
+  - `checkInvocationPrerequisites(inv, playerOrData)`: Valida se o herói atende nível de bruxo, truques e pacto.
+  - `renderModalWarlockInvocations(player)`: Renderiza os cards interativos no modal.
+  - `toggleModalWarlockInvocation(invId)`: Alterna seleção de invocação e sincroniza com a ficha.
+  - Sincronização automática em `savePlayerSheet`: Salva array `p.invocations` e atualiza `p.features` garantindo que as invocações constem na lista de características.
+  - Na visualização da ficha Roll20 (`renderPlayers`): Na aba "📜 Traços", renderizar as invocações com badge dedicada `🔮 Invocação Mística` e resumo de efeito.
+- Atualização em `src/js/core.js`:
+  - Configurar `invocations` nos heróis bruxos padrão:
+    - **Claker (Bruxo 5)**: `["agonizing_blast", "armor_of_shadows", "devils_sight"]` (3/3 invocações).
+    - **Caim Vonsilford (Bruxo 3)**: `["agonizing_blast", "armor_of_shadows"]` (2/2 invocações).
 
-## 🧪 Estratégia de Verificação e Testes Automatizados
-
-1. **Script de Auditoria de Personagens (`test_characters_audit.js`)**:
-   - Valida cada um dos 9 personagens em `core.js`:
-     - Slots com 9 posições canônicas.
-     - Claker com slots canônicos `[0, 0, 2, 0, 0, 0, 0, 0, 0]` e gemas interativas acessíveis nos círculos 1, 2 e 3.
-     - Yoshigake Kira sem traços de guerreiro (sem "Retomar o Fôlego") e com traços canônicos de Paladino.
-     - Deraravely sem traços mutilados (`+2 Dano)`) e com traços canônicos de Orc e Campeão.
-     - Todos os traços raciais de espécies presentes e resolvidos corretamente.
-2. **Nova Bateria 142 no `test_runner.js`**:
-   - Teste de integridade de traços de raça e classe.
-   - Teste de slots de pacto de Bruxo (interação nos círculos 1, 2 e 3).
-   - Teste do parser de características com vírgulas protegidas dentro de parênteses.
-3. **Execução de Toda a Suíte**:
-   - `node builder.js`
-   - `node test_characters_audit.js`
-   - `node test_ui_integrity.js`
-   - `node test_runner.js` (alcançando 100% de aprovação em todos os testes).
+### E. Consulta no Compêndio de Classes (`src/js/classes.js`)
+- Na aba "Classes & Habilidades", ao visualizar a classe Bruxo, disponibilizar seção expansível com o catálogo completo das 38 Invocações Místicas para leitura e planejamento do jogador.
 
 ---
 
-## 📋 Confirmação do Usuário
-Você aprova este plano de implementação para prosseguirmos com as alterações nos arquivos fonte e compilação da build?
+## 3. Plano de Verificação e Testes
+
+1. **Testes Automatizados de Dados (`test_invocations.js`)**:
+   - Validar se o catálogo contém todas as 38 invocações oficiais.
+   - Validar integridade de campos (`id`, `name`, `minLevel`, `description`).
+   - Validar limites de invocações por nível (nível 1: 0; nível 2-4: 2; nível 5-6: 3; nível 20: 8).
+   - Validar pré-requisitos: checagem de nível, checagem de truque Rajada Mística e checagem de pactos (Lâmina, Tomo, Corrente).
+2. **Integração no Test Runner (`test_runner.js`)**:
+   - Adicionar **Bateria 143** cobrindo dados, renderização e seleção de invocações.
+3. **Compilação e Integridade de Telas**:
+   - `node builder.js` -> compilação com sucesso do standalone.
+   - `node test_ui_integrity.js` -> 100% das abas, modais e cliques aprovados.
+   - `node test_runner.js` -> 100% de aprovação de toda a suíte.
+
+---
+
+## 4. Relatório de Execução e Status
+- [x] **Base de Dados Oficial (`src/data/invocations.js`)**: 39 invocações oficiais de D&D 5E (PHB, XGE, TCE), helpers `findWarlockInvocationData`, `getWarlockMaxInvocations`, `checkInvocationPrerequisites`.
+- [x] **Compilador e Scripts (`builder.js`)**: Concatenação correta de `dataInvocations` no bundle standalone `planilha do rpg.html`.
+- [x] **Interface de Seleção (`src/ui/ui.html` e `src/styles/head_css.html`)**: Painel `#ddb-warlock-invocations-box`, contador dinâmico, chips de filtro rápido (*Todas*, *Elegíveis*, *Rajada*, *Lâmina*, *Tomo*, *Corrente*), busca instantânea e grid tátil de cards.
+- [x] **Lógica de Fichas e Ataques (`src/js/players.js` e `src/js/core.js`)**:
+  - Integração com cálculo de ataques: Rajada Mística com *Rajada Agonizante* soma modificador de Carisma por feixe.
+  - Renderização na aba 📜 Traços da ficha com chip de filtro `🔮 Invocações` e badge temática.
+  - Associação canônica para Claker (Bruxo 5, 3 invocações) e Caim Vonsilford (Bruxo 3, 2 invocações) com auto-migração retroativa em `loadFromLocalStorage()`.
+- [x] **Compêndio de Classes (`src/js/classes.js`)**: Seção temática de referência rápida com as 39 invocações ao visualizar o Bruxo.
+- [x] **Suíte de Testes Dedicada (`test_invocations.js`)**: 7 testes com 100% de aprovação.
+- [x] **Bateria 143 em `test_runner.js`**: 2562/2562 testes automatizados aprovados (100% de sucesso).
+- [x] **Auditoria de Integridade de UI (`test_ui_integrity.js`)**: 11/11 abas, 10/10 modais e 639/639 ações de clique aprovadas.
+- [x] **Documentação em `issues/README.md`**: Registro formal da ISSUE-174.

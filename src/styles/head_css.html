@@ -15089,6 +15089,93 @@
       color: #e9d5ff;
     }
 
+    /* Invocações Místicas do Bruxo (D&D 5E) */
+    .ddb-invocations-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 8px;
+      max-height: 290px;
+      overflow-y: auto;
+      padding: 4px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(168, 85, 247, 0.4) transparent;
+    }
+    .ddb-invocation-card {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(168, 85, 247, 0.25);
+      border-radius: 8px;
+      padding: 8px 10px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+    .ddb-invocation-card:hover {
+      border-color: rgba(192, 132, 252, 0.6);
+      background: rgba(24, 33, 56, 0.85);
+      transform: translateY(-1px);
+    }
+    .ddb-invocation-card.selected {
+      background: rgba(168, 85, 247, 0.18);
+      border-color: #c084fc;
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.35);
+    }
+    .ddb-invocation-card.ineligible {
+      opacity: 0.55;
+      background: rgba(15, 23, 42, 0.45);
+      border-color: rgba(148, 163, 184, 0.15);
+    }
+    .ddb-invocation-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .ddb-invocation-name {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #e9d5ff;
+    }
+    .ddb-invocation-card.selected .ddb-invocation-name {
+      color: #fff;
+    }
+    .ddb-invocation-req {
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 4px;
+      line-height: 1.2;
+    }
+    .ddb-invocation-req.met {
+      background: rgba(16, 185, 129, 0.15);
+      color: #6ee7b7;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .ddb-invocation-req.unmet {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .ddb-invocation-summary {
+      font-size: 10px;
+      color: #cbd5e1;
+      line-height: 1.35;
+    }
+    .badge-invocation-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: rgba(168, 85, 247, 0.2);
+      border: 1px solid rgba(192, 132, 252, 0.4);
+      color: #d8b4fe;
+    }
+
     /* Chips Rápidos de Antecedente */
     .ddb-bg-chips-bar {
       display: flex;

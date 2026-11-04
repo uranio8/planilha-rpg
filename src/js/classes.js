@@ -310,4 +310,49 @@ function renderClasses() {
       </div>
     `;
   }).join('');
+
+  // ISSUE-174: Catálogo de Invocações Místicas (Warlock / Bruxo)
+  if (currentClass.id === 'bruxo' && typeof WARLOCK_INVOCATIONS_DATA !== 'undefined') {
+    const invCount = WARLOCK_INVOCATIONS_DATA.length;
+    const invCardsHtml = WARLOCK_INVOCATIONS_DATA.map(inv => `
+      <div class="skill-node-card base-skill" style="border-left: 3px solid #a855f7;">
+        <div class="node-header">
+          <span class="node-lvl" style="background: rgba(168, 85, 247, 0.2); color: #e9d5ff; border: 1px solid #c084fc;">Invocação</span>
+          <span class="node-type" style="color: #c084fc;">${inv.source || 'PHB'}</span>
+        </div>
+        <div class="node-title" style="color: #e9d5ff;">🔮 ${inv.name}</div>
+        ${inv.prerequisite ? `<div style="font-size: 10px; color: #f59e0b; margin-bottom: 4px;">⚠️ ${inv.prerequisite}</div>` : `<div style="font-size: 10px; color: #10b981; margin-bottom: 4px;">✓ Sem pré-requisito</div>`}
+        <div class="node-snippet">${(inv.desc || '').replace(/<[^>]+>/g, '').substring(0, 120)}...</div>
+      </div>
+    `).join('');
+
+    treeContainer.innerHTML += `
+      <div class="tree-tier-block" style="border: 1px solid rgba(168, 85, 247, 0.35); background: rgba(88, 28, 135, 0.08);">
+        <div class="tree-tier-header" style="border-bottom: 1px solid rgba(168, 85, 247, 0.2);">
+          <span>🔮 Compêndio Canônico: 39 Invocações Místicas (Eldritch Invocations)</span>
+          <span class="badge" style="background: rgba(168, 85, 247, 0.25); border: 1px solid #c084fc; color: #e9d5ff; font-size: 10px;">${invCount} poderes arcanos</span>
+        </div>
+        <div style="padding: 12px;">
+          <div class="branch-label" style="color: #d8b4fe; margin-bottom: 10px;">
+            Poderes eternos barganhados com entidades cósmicas. Disponíveis para escolha a partir do Nível 2.
+          </div>
+          <div class="tree-nodes-grid" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px;">
+            ${invCardsHtml}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    selectClass,
+    selectSubclass,
+    setClassTierFilter,
+    toggleClassProgressionTable,
+    openSkillDetail,
+    closeSkillModal,
+    renderClasses
+  };
 }

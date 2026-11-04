@@ -21,6 +21,7 @@ const dataBastions = fs.readFileSync(path.join(srcDir, 'data', 'bastions.js'), '
 const dataFeats = fs.readFileSync(path.join(srcDir, 'data', 'feats.js'), 'utf8');
 const dataBackgrounds = fs.readFileSync(path.join(srcDir, 'data', 'backgrounds.js'), 'utf8');
 const dataTraitQuickRules = fs.readFileSync(path.join(srcDir, 'data', 'trait_quick_rules.js'), 'utf8');
+const dataInvocations = fs.readFileSync(path.join(srcDir, 'data', 'invocations.js'), 'utf8');
 
 // Official Fillable D&D 5E Sheet PDF Template (base64 for standalone offline use)
 const officialPdfPath = path.join(rootDir, 'books', 'pdfs', 'ficha.pdf');
@@ -71,6 +72,7 @@ ${dataBastions}
 ${dataFeats}
 ${dataBackgrounds}
 ${dataTraitQuickRules}
+${dataInvocations}
 ${dataOfficialPdfB64}
 ${jsAudioSynth}
 ${jsQrCode}

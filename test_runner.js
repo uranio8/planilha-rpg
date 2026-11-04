@@ -38,6 +38,7 @@ const requiredFiles = [
   'src/data/feats.js',
   'src/data/backgrounds.js',
   'src/data/trait_quick_rules.js',
+  'src/data/invocations.js',
   'src/js/core.js',
   'src/js/combat.js',
   'src/js/players.js',
@@ -254,6 +255,7 @@ const dataRulesXp = fs.readFileSync(path.join(srcDir, 'data', 'rules_xp.js'), 'u
 const dataFeats = fs.readFileSync(path.join(srcDir, 'data', 'feats.js'), 'utf8');
 const dataBackgrounds = fs.readFileSync(path.join(srcDir, 'data', 'backgrounds.js'), 'utf8');
 const dataTraitQuickRules = fs.readFileSync(path.join(srcDir, 'data', 'trait_quick_rules.js'), 'utf8');
+const dataInvocations = fs.readFileSync(path.join(srcDir, 'data', 'invocations.js'), 'utf8');
 const dataSpells = fs.readFileSync(path.join(srcDir, 'data', 'spells.js'), 'utf8');
 const dataMonsters = fs.readFileSync(path.join(srcDir, 'data', 'monsters.js'), 'utf8');
 const dataEquip = fs.readFileSync(path.join(srcDir, 'data', 'equipment.js'), 'utf8');
@@ -286,6 +288,7 @@ vm.runInContext(dataRulesXp, sandbox);
 vm.runInContext(dataFeats, sandbox);
 vm.runInContext(dataBackgrounds, sandbox);
 vm.runInContext(dataTraitQuickRules, sandbox);
+vm.runInContext(dataInvocations, sandbox);
 vm.runInContext(dataSpells, sandbox);
 vm.runInContext(dataMonsters, sandbox);
 vm.runInContext(dataEquip, sandbox);
@@ -10955,6 +10958,55 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
 
     const b142PlayersJs = fs.readFileSync(path.join(srcDir, 'js', 'players.js'), 'utf8');
     assert(b142PlayersJs.includes('🔮 Pacto'), 'players.js inclui indicador visual de Espaço de Pacto');
+
+    // =========================================================================
+    // 🔮 143. Catálogo Oficial e Seletor Interativo de Invocações Místicas (ISSUE-174)
+    // =========================================================================
+    // 1. Integridade do dataset de invocações (39 invocações oficiais)
+    const invocationsData = vm.runInContext('WARLOCK_INVOCATIONS_DATA', sandbox);
+    assert(Array.isArray(invocationsData) && invocationsData.length === 39, 'WARLOCK_INVOCATIONS_DATA contém exatamente 39 invocações oficiais');
+
+    // 2. Validação da tabela de progressão de quantidade máxima de invocações
+    const getMaxInv = sandbox.getWarlockMaxInvocations;
+    assert(typeof getMaxInv === 'function', 'sandbox exporta getWarlockMaxInvocations');
+    assert(getMaxInv(1) === 0 && getMaxInv(2) === 2 && getMaxInv(4) === 2 && getMaxInv(5) === 3 && getMaxInv(7) === 4 && getMaxInv(9) === 5 && getMaxInv(12) === 6 && getMaxInv(15) === 7 && getMaxInv(18) === 8 && getMaxInv(20) === 8, 'getWarlockMaxInvocations calcula os marcos canônicos de D&D 5E');
+
+    // 3. Validação do validador de pré-requisitos (checkInvocationPrerequisites)
+    const checkPrereq = sandbox.checkInvocationPrerequisites;
+    assert(typeof checkPrereq === 'function', 'sandbox exporta checkInvocationPrerequisites');
+    const invAgon = invocationsData.find(x => x.id === 'agonizing_blast');
+    const invThirst = invocationsData.find(x => x.id === 'thirsting_blade');
+    assert(checkPrereq(invAgon, { level: 2, spells: 'Rajada Mística' }).eligible === true, 'Rajada Agonizante elegível com Rajada Mística');
+    assert(checkPrereq(invAgon, { level: 2, spells: 'Bruxaria' }).eligible === false, 'Rajada Agonizante bloqueada sem Rajada Mística');
+    assert(checkPrereq(invThirst, { level: 2, features: 'Pacto da Lâmina' }).eligible === false, 'Lâmina Sedenta bloqueada no nível 2');
+    assert(checkPrereq(invThirst, { level: 5, features: 'Pacto da Lâmina' }).eligible === true, 'Lâmina Sedenta elegível no nível 5 com Pacto da Lâmina');
+
+    // 4. Associação canônica para Claker e Caim
+    const b143Players = vm.runInContext('CANONICAL_INITIAL_PLAYERS', sandbox);
+    const b143Claker = b143Players.find(p => p.name === 'Claker');
+    assert(b143Claker && Array.isArray(b143Claker.invocations) && b143Claker.invocations.includes('agonizing_blast') && b143Claker.invocations.includes('armor_of_shadows') && b143Claker.invocations.includes('devils_sight'), 'Claker possui invocações místicas canônicas [agonizing_blast, armor_of_shadows, devils_sight]');
+    const b143Caim = b143Players.find(p => p.name === 'Caim Vonsilford');
+    assert(b143Caim && Array.isArray(b143Caim.invocations) && b143Caim.invocations.includes('agonizing_blast') && b143Caim.invocations.includes('armor_of_shadows'), 'Caim Vonsilford possui invocações místicas canônicas [agonizing_blast, armor_of_shadows]');
+
+    // 5. Integração com cálculo de ataques (Rajada Agonizante soma Mod de Carisma)
+    const testWarlockAtks = sandbox.getPlayerSpecialClassAttacks({
+      name: 'Bruxo Teste',
+      className: 'Bruxo',
+      level: 5,
+      cha: 18,
+      spells: 'Rajada Mística',
+      invocations: ['agonizing_blast']
+    });
+    const blastAtk = testWarlockAtks.find(a => a.name.includes('Rajada Mística'));
+    assert(blastAtk && blastAtk.damage.includes('+4'), 'Rajada Agonizante soma bônus de Carisma (+4) ao dano de cada feixe');
+
+    // 6. Verificação de código nos módulos compilados
+    const b143UiHtml = fs.readFileSync(path.join(srcDir, 'ui', 'ui.html'), 'utf8');
+    assert(b143UiHtml.includes('id="ddb-warlock-invocations-box"'), 'ui.html possui painel de invocações místicas');
+    const b143HeadCss = fs.readFileSync(path.join(srcDir, 'styles', 'head_css.html'), 'utf8');
+    assert(b143HeadCss.includes('.ddb-invocations-grid'), 'head_css.html define estilo para o grid de invocações');
+    const b143ClassesJs = fs.readFileSync(path.join(srcDir, 'js', 'classes.js'), 'utf8');
+    assert(b143ClassesJs.includes('Compêndio Canônico: 39 Invocações Místicas'), 'classes.js exibe compêndio de invocações no Bruxo');
 
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;

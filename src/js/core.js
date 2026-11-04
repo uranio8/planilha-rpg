@@ -899,6 +899,10 @@ let PLAYERS = [
       }
     ],
     "name": "Caim Vonsilford",
+    "invocations": [
+      "agonizing_blast",
+      "armor_of_shadows"
+    ],
     "playerNotes": "",
     "preparedSpells": [
       "Rajada Mística",
@@ -1025,6 +1029,11 @@ let PLAYERS = [
       }
     ],
     "name": "Claker",
+    "invocations": [
+      "agonizing_blast",
+      "armor_of_shadows",
+      "devils_sight"
+    ],
     "playerNotes": "",
     "preparedSpells": [
       "Proteção contra Lâminas",
@@ -2292,6 +2301,19 @@ function loadFromLocalStorage() {
           if ((p.features || '').includes('Bênção do Obscuro, Sorte do Obscuro')) {
             p.features = canonical.features;
           }
+          if (!Array.isArray(p.invocations) || p.invocations.length === 0) {
+            p.invocations = ['agonizing_blast', 'armor_of_shadows', 'devils_sight'];
+          }
+        }
+
+        if (canonical && p.name && p.name.toLowerCase().includes('caim')) {
+          if (!Array.isArray(p.invocations) || p.invocations.length === 0) {
+            p.invocations = ['agonizing_blast', 'armor_of_shadows'];
+          }
+        }
+
+        if (!Array.isArray(p.invocations)) {
+          p.invocations = [];
         }
 
         return p;

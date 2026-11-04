@@ -2059,6 +2059,36 @@
             <div id="ddb-class-skills-picker" class="ddb-skills-chip-grid"></div>
           </div>
 
+          <!-- SELETOR INTERATIVO DE INVOCAÇÕES MÍSTICAS DO BRUXO (D&D 5E) -->
+          <div id="ddb-warlock-invocations-box" class="ddb-section-card" style="display: none; border-color: rgba(168, 85, 247, 0.4);">
+            <div class="ddb-section-card-header" style="border-bottom-color: rgba(168, 85, 247, 0.25);">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 16px;">🔮</span>
+                <div>
+                  <span style="font-weight: 800; color: #e9d5ff;">Invocações Místicas (Eldritch Invocations)</span>
+                  <div style="font-size: 10px; color: #c084fc;">Poderes arcanos permanentes concedidos pelo seu patrono</div>
+                </div>
+              </div>
+              <span id="ddb-invocations-counter" class="badge" style="background: rgba(168, 85, 247, 0.2); border: 1px solid #c084fc; color: #e9d5ff; font-weight: 800;">0 de 2 Escolhidas</span>
+            </div>
+
+            <!-- Toolbar de Filtros e Busca de Invocações -->
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 8px; margin-top: 6px;">
+              <div class="filter-chips-scroll" style="display: flex; gap: 4px; flex-wrap: wrap;" id="ddb-invocation-filter-chips">
+                <button type="button" class="btn-filter-chip active" data-inv-filter="all" onclick="filterModalInvocations('all')">🌐 Todas</button>
+                <button type="button" class="btn-filter-chip" data-inv-filter="eligible" onclick="filterModalInvocations('eligible')">✅ Elegíveis</button>
+                <button type="button" class="btn-filter-chip" data-inv-filter="blast" onclick="filterModalInvocations('blast')">⚡ Rajada</button>
+                <button type="button" class="btn-filter-chip" data-inv-filter="blade" onclick="filterModalInvocations('blade')">⚔️ Lâmina</button>
+                <button type="button" class="btn-filter-chip" data-inv-filter="tome" onclick="filterModalInvocations('tome')">📖 Tomo</button>
+                <button type="button" class="btn-filter-chip" data-inv-filter="chain" onclick="filterModalInvocations('chain')">⛓️ Corrente</button>
+              </div>
+              <input type="text" id="inp-search-modal-invocations" placeholder="🔍 Buscar invocação..." oninput="filterModalInvocations(null, this.value)" style="max-width: 170px; font-size: 10.5px; padding: 4px 8px; background: #0b1120; border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 6px; color: #fff;">
+            </div>
+
+            <!-- Grid de Cards de Invocações Místicas -->
+            <div id="ddb-invocations-grid" class="ddb-invocations-grid"></div>
+          </div>
+
           <!-- PREVIEW DE HABILIDADES DESBLOQUEADAS DA CLASSE -->
           <div class="ddb-section-card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
