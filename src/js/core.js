@@ -1,6 +1,6 @@
 // Fallback seguro para efeitos sonoros caso AudioEngine não esteja presente
 if (typeof playFX === 'undefined') {
-  var playFX = function(type) {};
+  var playFX = function (type) { };
 }
 
 // Variáveis de portal globalmente acessíveis (evita Temporal Dead Zone em bundles compilados)
@@ -1834,7 +1834,7 @@ async function checkAndRestoreFromIndexedDB() {
     if (!db) return false;
 
     // Se PLAYERS local já contém heróis reais (não apenas mocks p1..p5 vazios), apenas espelha no IDB
-    const hasCustomLocalPlayers = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS) && PLAYERS.length > 0 && PLAYERS.some(p => !['p1','p2','p3','p4','p5'].includes(p.id)));
+    const hasCustomLocalPlayers = (typeof PLAYERS !== 'undefined' && Array.isArray(PLAYERS) && PLAYERS.length > 0 && PLAYERS.some(p => !['p1', 'p2', 'p3', 'p4', 'p5'].includes(p.id)));
 
     if (!hasCustomLocalPlayers) {
       // Tenta recuperar do cofre IndexedDB
@@ -1926,7 +1926,7 @@ function safeLocalStorageSet(key, value) {
             if (Array.isArray(h) && h.length > 2) {
               localStorage.setItem('dnd5e_safety_snapshots_history_v1', JSON.stringify(h.slice(0, 2)));
             }
-          } catch(e){}
+          } catch (e) { }
         }
         localStorage.setItem(key, value);
         return true;
@@ -1948,7 +1948,7 @@ function saveToLocalStorage() {
       loadFromLocalStorage();
     }
 
-    const isPlayer = (typeof clientRole !== 'undefined' && clientRole === 'player') || 
+    const isPlayer = (typeof clientRole !== 'undefined' && clientRole === 'player') ||
       (typeof document !== 'undefined' && document.body && document.body.classList.contains('mode-player-portal')) ||
       (typeof activePortalPlayerId !== 'undefined' && !!activePortalPlayerId);
 
@@ -1957,7 +1957,7 @@ function saveToLocalStorage() {
     try {
       const existingRaw = (typeof localStorage !== 'undefined') ? localStorage.getItem(STORAGE_KEY) : null;
       if (existingRaw) existingParsed = JSON.parse(existingRaw);
-    } catch(e) {}
+    } catch (e) { }
 
     // Resolução resiliente de Campanhas (nunca permite gravar null se já houver dados no storage)
     let resolvedCampaigns = (typeof CAMPAIGNS_STATE !== 'undefined' && CAMPAIGNS_STATE && Array.isArray(CAMPAIGNS_STATE.campaigns) && CAMPAIGNS_STATE.campaigns.length > 0)
@@ -1967,7 +1967,7 @@ function saveToLocalStorage() {
       try {
         const rawCamp = localStorage.getItem('dnd_tracker_campaigns_v1') || localStorage.getItem('dnd5e_prisco_campaigns_v1');
         if (rawCamp) resolvedCampaigns = JSON.parse(rawCamp);
-      } catch(e) {}
+      } catch (e) { }
     }
 
     // Resolução resiliente de Grid
@@ -1978,7 +1978,7 @@ function saveToLocalStorage() {
       try {
         const rawGrid = localStorage.getItem('dnd_tracker_grid_v3') || localStorage.getItem('dnd5e_prisco_live_grid');
         if (rawGrid) resolvedGrid = JSON.parse(rawGrid);
-      } catch(e) {}
+      } catch (e) { }
     }
 
     let payload;
@@ -2018,7 +2018,7 @@ function saveToLocalStorage() {
           safeLocalStorageSet('dnd5e_prisco_live_grid', serializedGrid);
         }
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // 3. Espelhamento redundante no Cofre IndexedDB
     try {
@@ -2037,7 +2037,7 @@ function saveToLocalStorage() {
           idbSet('dnd5e_prisco_live_grid', resolvedGrid);
         }
       }
-    } catch (e) {}
+    } catch (e) { }
 
     if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
     if (typeof broadcastStateSync === 'function') broadcastStateSync();
@@ -2064,7 +2064,7 @@ function saveGridStatePermanently() {
       safeLocalStorageSet('dnd5e_prisco_live_grid', JSON.stringify(gridState));
       safeLocalStorageSet('dnd_tracker_grid_v3', JSON.stringify(gridState));
     }
-  } catch (e) {}
+  } catch (e) { }
   if (typeof broadcastGridState === 'function') broadcastGridState();
   if (typeof playFX === 'function') playFX('crit');
   if (typeof addLog === 'function') addLog(`💾 <b>Grid de Batalha:</b> Mapa e posições dos combatentes foram salvos com sucesso!`);
@@ -2075,7 +2075,7 @@ function loadFromLocalStorage() {
   isStorageLoaded = true;
   try {
     if (typeof loadCampaignsState === 'function') loadCampaignsState();
-    
+
     let loadedPlayers = null;
     let loadedState = null;
     let loadedGrid = null;
@@ -2087,17 +2087,17 @@ function loadFromLocalStorage() {
       try {
         const data = JSON.parse(raw);
         if (data && data.players && Array.isArray(data.players) && data.players.length > 0) {
-          const onlyOldMocks = data.players.every(p => ['p1','p2','p3','p4','p5'].includes(p.id));
+          const onlyOldMocks = data.players.every(p => ['p1', 'p2', 'p3', 'p4', 'p5'].includes(p.id));
           if (!onlyOldMocks) loadedPlayers = data.players;
         }
         if (data && data.state && Array.isArray(data.state.combatants)) {
-          const onlyOldCombat = data.state.combatants.every(c => ['c1','c2','c3'].includes(c.id));
+          const onlyOldCombat = data.state.combatants.every(c => ['c1', 'c2', 'c3'].includes(c.id));
           if (!onlyOldCombat) loadedState = data.state;
         }
         if (data && data.gridState) {
           loadedGrid = data.gridState;
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // 2. Fallback: Se não encontrou jogadores na chave v2, busca na chave v3 legada (dnd_tracker_players_v3)
@@ -2106,12 +2106,12 @@ function loadFromLocalStorage() {
         const rawPlayersV3 = localStorage.getItem('dnd_tracker_players_v3');
         if (rawPlayersV3) {
           const list = JSON.parse(rawPlayersV3);
-          if (Array.isArray(list) && list.length > 0 && !list.every(p => ['p1','p2','p3','p4','p5'].includes(p.id))) {
+          if (Array.isArray(list) && list.length > 0 && !list.every(p => ['p1', 'p2', 'p3', 'p4', 'p5'].includes(p.id))) {
             loadedPlayers = list;
             loadedFromFallback = true;
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // 3. Fallback: Se não encontrou jogadores, busca no último snapshot de segurança
@@ -2127,7 +2127,7 @@ function loadFromLocalStorage() {
             loadedFromFallback = true;
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     if (!loadedPlayers) {
@@ -2147,7 +2147,7 @@ function loadFromLocalStorage() {
             }
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // 4. Fallback: Chave v1
@@ -2161,7 +2161,7 @@ function loadFromLocalStorage() {
             loadedFromFallback = true;
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // Aplica os jogadores carregados com auto-migração contra caches locais defasados
@@ -2336,7 +2336,7 @@ function loadFromLocalStorage() {
           const sV3 = JSON.parse(rawStateV3);
           if (sV3 && Array.isArray(sV3.combatants)) state = sV3;
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     if (state && Array.isArray(state.logs)) {
@@ -2408,7 +2408,7 @@ function switchTab(tabId) {
   if (!isPortalMode && typeof localStorage !== 'undefined' && tabId) {
     try {
       localStorage.setItem('dnd5e_active_tab', tabId);
-    } catch(e) {}
+    } catch (e) { }
   }
 
   document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
@@ -2731,7 +2731,7 @@ function toggleCombatFocusMode() {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('dnd_combat_focus_mode', isFocus ? 'true' : 'false');
     }
-  } catch (err) {}
+  } catch (err) { }
   if (btn) {
     btn.classList.toggle('active', isFocus);
   }
@@ -2755,7 +2755,7 @@ function initCombatFocusMode() {
       if (btn) btn.classList.add('active');
       if (lbl) lbl.textContent = '👁️ Exibir Painel';
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 // Fechamento de dropdowns ao clicar fora
@@ -3013,7 +3013,7 @@ function formatFeatureToTopics(rawDesc, options = {}) {
     // Tenta dividir por sentenças terminadas em ponto que introduzem novas regras ou cláusulas
     // Ex: "Você possui um tomo arcano contendo suas fórmulas mágicas. Começa com 6 magias de 1º círculo e ganha +2 magias gratuitas a cada novo nível de mago, além de poder copiar qualquer pergaminho ou grimório encontrado gastando 50 PO e 2 horas por círculo de magia."
     const sentences = cleanDesc.split(/(?<=[.!?])\s+(?=[A-ZÀ-Ú0-9"“\*\+])/g).map(s => s.trim()).filter(Boolean);
-    
+
     // Se tiver apenas 1 sentença mas tiver cláusula conectiva forte como ", além de poder " ou ", você também ", separa
     if (sentences.length === 1 && cleanDesc.includes(', além de ')) {
       const parts = cleanDesc.split(/,\s+(?=além de )/i);
@@ -3041,9 +3041,9 @@ function formatFeatureToTopics(rawDesc, options = {}) {
   // Se tiver 2 ou mais partes, a primeira serve como Conceito Geral se for puramente descritiva
   if (rawChunks.length > 1) {
     const firstChunk = rawChunks[0];
-    const isConcept = !firstChunk.toLowerCase().startsWith('começa') && 
-                      !firstChunk.toLowerCase().startsWith('ganha') && 
-                      !firstChunk.toLowerCase().startsWith('custo');
+    const isConcept = !firstChunk.toLowerCase().startsWith('começa') &&
+      !firstChunk.toLowerCase().startsWith('ganha') &&
+      !firstChunk.toLowerCase().startsWith('custo');
     if (isConcept) {
       html += `<div class="skill-concept-box">${highlightInlineRules(firstChunk)}</div>`;
       startIndex = 1;
@@ -3103,7 +3103,7 @@ function saveSafetySnapshot(reason = 'Backup Automático') {
     try {
       const raw = localStorage.getItem(SAFETY_SNAPSHOTS_KEY);
       if (raw) history = JSON.parse(raw);
-    } catch (e) {}
+    } catch (e) { }
 
     // Mantém os 4 snapshots mais recentes no localStorage para poupar cota
     history.unshift(snapshot);
@@ -3118,7 +3118,7 @@ function saveSafetySnapshot(reason = 'Backup Automático') {
         idbSet(SAFETY_SNAPSHOTS_KEY, history);
         idbSet('dnd5e_prisco_safety_snapshot_latest', snapshot);
       }
-    } catch (e) {}
+    } catch (e) { }
 
     return true;
   } catch (e) {
@@ -3134,7 +3134,7 @@ function getSafetySnapshots() {
       const list = JSON.parse(raw);
       if (Array.isArray(list)) return list;
     }
-  } catch (e) {}
+  } catch (e) { }
   return [];
 }
 
@@ -3484,7 +3484,7 @@ function getMasterPinHash() {
         return computeSimplePinHash(pin.trim());
       }
     }
-  } catch (e) {}
+  } catch (e) { }
   return computeSimplePinHash(OFFICIAL_MASTER_PIN);
 }
 
@@ -3548,7 +3548,7 @@ function lockMasterSession() {
     }
     if (typeof clientRole !== 'undefined') clientRole = 'player';
     if (typeof setClientRole === 'function') setClientRole('player');
-  } catch (e) {}
+  } catch (e) { }
 
   if (typeof showToast === 'function') {
     showToast('🔒 Painel do Mestre bloqueado com sucesso.', 'info');
@@ -3703,7 +3703,7 @@ function submitMasterPin() {
         if (typeof idbSet === 'function') {
           idbSet(MASTER_PIN_KEY, currentPinDigits);
         }
-      } catch (e) {}
+      } catch (e) { }
 
       isPinChangeMode = false;
       tempPinConfirmation = '';
@@ -3746,7 +3746,7 @@ function submitMasterPin() {
         savedPin = stored.trim();
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 
   let isAuthorized = (currentPinDigits === savedPin || currentPinDigits === OFFICIAL_MASTER_PIN);
 
@@ -3763,7 +3763,7 @@ function submitMasterPin() {
           }
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   if (isAuthorized) {

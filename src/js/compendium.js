@@ -223,11 +223,11 @@ function renderSpells(resetLimit = true) {
               ${isConcentration ? '<span class="badge badge-cr" style="font-size: 9px; padding: 1px 5px;">🧠 Concentração</span>' : ''}
               ${isRitual ? '<span class="badge badge-src" style="font-size: 9px; padding: 1px 5px;">📜 Ritual</span>' : ''}
               ${(() => {
-                const spAct = typeof getSpellActionType === 'function' ? getSpellActionType(s) : (String(s.time || '').toLowerCase().includes('bônus') ? 'bonus' : (String(s.time || '').toLowerCase().includes('reação') ? 'reaction' : 'action'));
-                if (spAct === 'bonus') return '<span class="badge" style="font-size: 9px; padding: 1px 5px; background: rgba(234,179,8,0.2); color: #facc15; border: 1px solid rgba(234,179,8,0.4);">⚡ Bônus</span>';
-                if (spAct === 'reaction') return '<span class="badge" style="font-size: 9px; padding: 1px 5px; background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid rgba(168,85,247,0.4);">🛡️ Reação</span>';
-                return '';
-              })()}
+        const spAct = typeof getSpellActionType === 'function' ? getSpellActionType(s) : (String(s.time || '').toLowerCase().includes('bônus') ? 'bonus' : (String(s.time || '').toLowerCase().includes('reação') ? 'reaction' : 'action'));
+        if (spAct === 'bonus') return '<span class="badge" style="font-size: 9px; padding: 1px 5px; background: rgba(234,179,8,0.2); color: #facc15; border: 1px solid rgba(234,179,8,0.4);">⚡ Bônus</span>';
+        if (spAct === 'reaction') return '<span class="badge" style="font-size: 9px; padding: 1px 5px; background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid rgba(168,85,247,0.4);">🛡️ Reação</span>';
+        return '';
+      })()}
             </div>
           </div>
 
@@ -434,7 +434,7 @@ function highlightSearchMatch(text, tokens) {
     try {
       const regex = new RegExp(`(${tok})`, 'gi');
       result = result.replace(regex, '<mark class="mon-hl">$1</mark>');
-    } catch(e) {}
+    } catch (e) { }
   });
   return result;
 }
@@ -1074,10 +1074,10 @@ function generateNPC() {
 function copyNPCToClipboard() {
   if (!lastGeneratedNPC) return;
   const text = `📌 NPC: ${lastGeneratedNPC.name} (${lastGeneratedNPC.race} - ${lastGeneratedNPC.job})\n` +
-               `🎭 Traço: ${lastGeneratedNPC.trait}\n` +
-               `🗣️ Voz: ${lastGeneratedNPC.voice}\n` +
-               `🎯 Objetivo: ${lastGeneratedNPC.goal}\n` +
-               `🤫 Segredo: ${lastGeneratedNPC.secret}`;
+    `🎭 Traço: ${lastGeneratedNPC.trait}\n` +
+    `🗣️ Voz: ${lastGeneratedNPC.voice}\n` +
+    `🎯 Objetivo: ${lastGeneratedNPC.goal}\n` +
+    `🤫 Segredo: ${lastGeneratedNPC.secret}`;
   if (navigator.clipboard) {
     navigator.clipboard.writeText(text).then(() => {
       alert(`✅ Dados de "${lastGeneratedNPC.name}" copiados para a área de transferência!`);
@@ -1236,7 +1236,7 @@ let lastGeneratedEncounter = null;
 function generateRandomEncounter() {
   const biome = document.getElementById('gen-enc-biome')?.value || 'floresta';
   const diff = document.getElementById('gen-enc-diff')?.value || 'medio';
-  
+
   const pool = ENCOUNTER_TABLES[biome] || ENCOUNTER_TABLES.floresta;
   const enc = pool[Math.floor(Math.random() * pool.length)];
 
@@ -1449,7 +1449,7 @@ function generateAdventureHook() {
   const location = ADVENTURE_HOOKS_DATA.locations[Math.floor(Math.random() * ADVENTURE_HOOKS_DATA.locations.length)];
   const objective = ADVENTURE_HOOKS_DATA.objectives[Math.floor(Math.random() * ADVENTURE_HOOKS_DATA.objectives.length)];
   const twist = ADVENTURE_HOOKS_DATA.twists[Math.floor(Math.random() * ADVENTURE_HOOKS_DATA.twists.length)];
-  
+
   const goldReward = (Math.floor(Math.random() * 6) + 2) * 50;
   const xpReward = (Math.floor(Math.random() * 5) + 3) * 100;
 
@@ -1850,8 +1850,8 @@ function handleOmnisearchInput(rawQuery) {
 
   // 1. Monstros
   if (cat === 'all' || cat === 'monster') {
-    const monsters = (typeof BESTIARY_DATA !== 'undefined' && Array.isArray(BESTIARY_DATA)) 
-      ? BESTIARY_DATA 
+    const monsters = (typeof BESTIARY_DATA !== 'undefined' && Array.isArray(BESTIARY_DATA))
+      ? BESTIARY_DATA
       : ((typeof MONSTERS_DATA !== 'undefined' && Array.isArray(MONSTERS_DATA)) ? MONSTERS_DATA : []);
     for (const m of monsters) {
       if (!query || normalizeOmniText(m.name).includes(query) || normalizeOmniText(m.type || '').includes(query)) {
