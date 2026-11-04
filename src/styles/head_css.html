@@ -14350,10 +14350,28 @@
       background: transparent;
       transition: all 0.15s ease;
     }
-    .spell-circle-slot-bubble.active {
+    .spell-circle-slot-bubble.active,
+    .spell-circle-slot-bubble.available {
       background: #38bdf8;
       border-color: #7dd3fc;
       box-shadow: 0 0 6px rgba(56, 189, 248, 0.6);
+    }
+    .spell-circle-slot-bubble.spent {
+      background: transparent !important;
+      border-color: #475569 !important;
+      opacity: 0.45;
+      box-shadow: none !important;
+    }
+    .spell-circle-slot-bubble.pact-slot.available {
+      background: #c084fc;
+      border-color: #e9d5ff;
+      box-shadow: 0 0 6px rgba(192, 132, 252, 0.7);
+    }
+    .spell-circle-slot-bubble.pact-slot.spent {
+      background: transparent !important;
+      border-color: #6b21a8 !important;
+      opacity: 0.45;
+      box-shadow: none !important;
     }
     .spell-circle-slot-bubble:hover {
       transform: scale(1.15);

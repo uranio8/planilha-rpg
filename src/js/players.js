@@ -2544,6 +2544,7 @@ function renderPlayers() {
 
     // Slots de magia coloridos por círculo (M-L6)
     const hasSpellSlots = p.slots.some(s => s > 0);
+    const isWarlockChar = ((p.className || '').toLowerCase().includes('bruxo') || (p.className || '').toLowerCase().includes('warlock'));
     let slotsHtml = '';
     if (hasSpellSlots) {
       slotsHtml = `
@@ -2556,9 +2557,10 @@ function renderPlayers() {
           const isUsed = i < used;
           bubbles += `<button type="button" class="slot-bubble spell-gem-pip lvl-${lvlIdx + 1} ${isUsed ? 'used spent' : ''}" title="${isUsed ? 'Gasto (clique para restaurar)' : 'Disponível (clique para gastar)'}" onclick="togglePlayerSlot('${p.id}', ${lvlIdx}, ${i})"></button>`;
         }
+        const circleLabel = isWarlockChar ? `🔮 Pacto (${lvlIdx + 1}º Círculo)` : `${lvlIdx + 1}º Círculo`;
         return `
               <div class="slot-row">
-                <span class="slot-label">${lvlIdx + 1}º Círculo (${maxSlots - used}/${maxSlots})</span>
+                <span class="slot-label">${circleLabel} (${maxSlots - used}/${maxSlots})</span>
                 <div class="slot-bubbles spell-slot-gems">${bubbles}</div>
               </div>
             `;
@@ -3269,7 +3271,16 @@ function renderPlayers() {
                 const pactUsed = (p.slotsUsed || [])[higherSlotIdx] || 0;
                 const pactAvail = Math.max(0, pactMax - pactUsed);
                 const isWarlock = ((p.className || '').toLowerCase().includes('bruxo') || (p.className || '').toLowerCase().includes('warlock') || (Array.isArray(p.multiclass) && p.multiclass.some(m => (m.className || '').toLowerCase().includes('bruxo'))));
-                fallbackZeroSlotsHtml = `<span style="font-size:10px; color:#c084fc; font-weight:600;" title="Conjura usando espaço de ${pactLvl}º Círculo">${isWarlock ? '🔮 Espaços de Pacto' : '🔮 Usa Círc. Superior'} (${pactAvail}/${pactMax} de ${pactLvl}º Círc.)</span>`;
+                const pactBubbles = Array.from({ length: pactMax }).map((_, slotIdx) => {
+                  const isSpent = slotIdx < pactUsed;
+                  return `<div class="spell-circle-slot-bubble pact-slot ${isSpent ? 'spent' : 'available'}" onclick="togglePlayerCircleSlot('${p.id}', ${higherSlotIdx}, ${slotIdx}, event)" title="${isSpent ? `Espaço de Pacto (${pactLvl}º Círc.) Gasto - Clique para restaurar` : `Espaço de Pacto (${pactLvl}º Círc.) Disponível - Clique para gastar`}"></div>`;
+                }).join('');
+                fallbackZeroSlotsHtml = `
+                  <div style="display:inline-flex; align-items:center; gap:5px; flex-wrap:wrap;">
+                    <span style="font-size:9.5px; color:#c084fc; font-weight:600;" title="Conjura usando espaço de pacto de ${pactLvl}º Círculo">${isWarlock ? '🔮 Espaços de Pacto' : '🔮 Círc. Superior'} (${pactAvail}/${pactMax} de ${pactLvl}º Círc.):</span>
+                    <div style="display:inline-flex; align-items:center; gap:4px;">${pactBubbles}</div>
+                  </div>
+                `;
               }
             }
 
@@ -9809,6 +9820,13 @@ function onPlayerModalClassOrLevelChange(preserveSlotsIfSet = false) {
     }
   }
 
+  // ISSUE-173: Alerta explicativo sobre Espaços de Pacto (Bruxo)
+  const pactMagicBox = document.getElementById('pm-pact-magic-box');
+  if (pactMagicBox) {
+    const isWarlock = selectedClassName.toLowerCase().includes('bruxo') || selectedClassName.toLowerCase().includes('warlock');
+    pactMagicBox.style.display = isWarlock ? 'flex' : 'none';
+  }
+
   // Atualiza CA calculada automaticamente para a classe e atributos
   if (typeof updateModalCalculatedAc === 'function') {
     updateModalCalculatedAc();
@@ -11040,6 +11058,31 @@ function addPlayerToCombat(id) {
   switchTab('combat');
 }
 
+// ISSUE-173: Utilitário para divisão segura de características/traços respeitando parênteses/colchetes
+function splitFeaturesTextSafe(text) {
+  if (!text) return [];
+  const result = [];
+  let current = '';
+  let parenDepth = 0;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (char === '(' || char === '[' || char === '{') {
+      parenDepth++;
+      current += char;
+    } else if (char === ')' || char === ']' || char === '}') {
+      parenDepth = Math.max(0, parenDepth - 1);
+      current += char;
+    } else if (char === ',' && parenDepth === 0) {
+      if (current.trim()) result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) result.push(current.trim());
+  return result;
+}
+
 function getPlayerAllFeaturesAndTraits(p) {
   if (!p) return [];
   const list = [];
@@ -11128,8 +11171,9 @@ function getPlayerAllFeaturesAndTraits(p) {
     const lines = p.features.split('\n').map(l => l.trim()).filter(Boolean);
     lines.forEach(l => {
       const cleanLine = l.replace(/^[•\-\*✦]\s*/, '');
-      if (!cleanLine.includes(':') && cleanLine.includes(',')) {
-        cleanLine.split(',').map(s => s.trim()).filter(Boolean).forEach(subName => {
+      if (!cleanLine.includes(':')) {
+        const parts = splitFeaturesTextSafe(cleanLine);
+        parts.forEach(subName => {
           addEntry('Personalizado', subName, '');
         });
       } else {
@@ -11857,6 +11901,7 @@ function exportCurrentModalPlayerJson() {
 }
 
 if (typeof window !== 'undefined') {
+  window.splitFeaturesTextSafe = splitFeaturesTextSafe;
   window.getPlayerAllFeaturesAndTraits = getPlayerAllFeaturesAndTraits;
   window.printPlayerSheet = printPlayerSheet;
   window.closePrintModal = closePrintModal;
@@ -11867,6 +11912,7 @@ if (typeof window !== 'undefined') {
 }
 
 if (typeof global !== 'undefined') {
+  global.splitFeaturesTextSafe = splitFeaturesTextSafe;
   global.getPlayerAllFeaturesAndTraits = getPlayerAllFeaturesAndTraits;
 }
 
@@ -17429,7 +17475,8 @@ if (typeof module !== 'undefined' && module.exports) {
     consumePlayerAmmunition,
     getPlayerExtraAttacksCount,
     openAttackAdvantageMenu,
-    closeAttackAdvantageMenu
+    closeAttackAdvantageMenu,
+    splitFeaturesTextSafe
   };
 }
 

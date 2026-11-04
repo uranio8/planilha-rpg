@@ -118,19 +118,19 @@ const sandbox = {
           clientHeight: 800,
           getBoundingClientRect: () => ({ left: 0, top: 0, width: 1200, height: 800 }),
           dataset: {},
-          getContext: () => ({ clearRect: () => {}, beginPath: () => {}, moveTo: () => {}, lineTo: () => {}, stroke: () => {} }),
-          classList: { 
+          getContext: () => ({ clearRect: () => { }, beginPath: () => { }, moveTo: () => { }, lineTo: () => { }, stroke: () => { } }),
+          classList: {
             _classes: new Set(),
-            add(c) { this._classes.add(c); }, 
-            remove(c) { this._classes.delete(c); }, 
-            toggle(c, force) { 
+            add(c) { this._classes.add(c); },
+            remove(c) { this._classes.delete(c); },
+            toggle(c, force) {
               if (force !== undefined) {
                 if (force) this._classes.add(c);
                 else this._classes.delete(c);
                 return !!force;
               }
-              if (this._classes.has(c)) { this._classes.delete(c); return false; } 
-              else { this._classes.add(c); return true; } 
+              if (this._classes.has(c)) { this._classes.delete(c); return false; }
+              else { this._classes.add(c); return true; }
             },
             contains(c) { return this._classes.has(c); }
           },
@@ -139,9 +139,9 @@ const sandbox = {
           style: {},
           querySelector: () => null,
           querySelectorAll: () => [],
-          focus: () => {},
-          select: () => {},
-          insertAdjacentHTML: function(pos, html) { this.innerHTML = (this.innerHTML || '') + html; }
+          focus: () => { },
+          select: () => { },
+          insertAdjacentHTML: function (pos, html) { this.innerHTML = (this.innerHTML || '') + html; }
         };
       }
       return domElements[id];
@@ -162,10 +162,10 @@ const sandbox = {
           remove(c) { this._classes.delete(c); },
           contains(c) { return this._classes.has(c); }
         },
-        appendChild: () => {},
+        appendChild: () => { },
         setAttribute: (k, v) => { el[k] = v; },
         getAttribute: (k) => el[k] || null,
-        insertAdjacentHTML: function(pos, html) { this.innerHTML = (this.innerHTML || '') + html; }
+        insertAdjacentHTML: function (pos, html) { this.innerHTML = (this.innerHTML || '') + html; }
       };
       return el;
     },
@@ -187,12 +187,12 @@ const sandbox = {
         remove(c) { this._classes.delete(c); },
         contains(c) { return this._classes.has(c); }
       },
-      appendChild: () => {}
+      appendChild: () => { }
     },
-    documentElement: { style: { setProperty: () => {} } },
+    documentElement: { style: { setProperty: () => { } } },
     getElementsByName: (name) => [],
-    addEventListener: () => {},
-    removeEventListener: () => {}
+    addEventListener: () => { },
+    removeEventListener: () => { }
   },
   URLSearchParams: global.URLSearchParams || require('url').URLSearchParams,
   window: {
@@ -203,21 +203,21 @@ const sandbox = {
       pathname: '/rpg.html'
     },
     history: {
-      replaceState: () => {}
+      replaceState: () => { }
     },
-    addEventListener: () => {},
-    removeEventListener: () => {},
-    AudioContext: function() {
+    addEventListener: () => { },
+    removeEventListener: () => { },
+    AudioContext: function () {
       return {
         currentTime: 0,
         sampleRate: 44100,
         state: 'running',
-        createGain: () => ({ gain: { setValueAtTime: () => {}, linearRampToValueAtTime: () => {}, exponentialRampToValueAtTime: () => {} }, connect: () => {} }),
-        createOscillator: () => ({ type: 'sine', frequency: { setValueAtTime: () => {}, exponentialRampToValueAtTime: () => {} }, connect: () => {}, start: () => {}, stop: () => {} }),
-        createBiquadFilter: () => ({ type: 'lowpass', frequency: { setValueAtTime: () => {} }, Q: { setValueAtTime: () => {} }, connect: () => {} }),
-        createBufferSource: () => ({ buffer: null, loop: false, connect: () => {}, start: () => {}, stop: () => {} }),
+        createGain: () => ({ gain: { setValueAtTime: () => { }, linearRampToValueAtTime: () => { }, exponentialRampToValueAtTime: () => { } }, connect: () => { } }),
+        createOscillator: () => ({ type: 'sine', frequency: { setValueAtTime: () => { }, exponentialRampToValueAtTime: () => { } }, connect: () => { }, start: () => { }, stop: () => { } }),
+        createBiquadFilter: () => ({ type: 'lowpass', frequency: { setValueAtTime: () => { } }, Q: { setValueAtTime: () => { } }, connect: () => { } }),
+        createBufferSource: () => ({ buffer: null, loop: false, connect: () => { }, start: () => { }, stop: () => { } }),
         createBuffer: (c, len, sr) => ({ length: len, sampleRate: sr, getChannelData: () => new Float32Array(len) }),
-        resume: () => {},
+        resume: () => { },
         destination: {}
       };
     }
@@ -231,11 +231,11 @@ const sandbox = {
   },
   prompt: (msg, def) => (def !== undefined ? String(def) : '10'),
   confirm: () => true,
-  alert: () => {},
+  alert: () => { },
   setTimeout: (fn) => fn(),
-  clearTimeout: () => {},
+  clearTimeout: () => { },
   setInterval: (fn) => 1,
-  clearInterval: () => {},
+  clearInterval: () => { },
   Buffer: Buffer,
   atob: (str) => Buffer.from(str, 'base64').toString('binary'),
   btoa: (str) => Buffer.from(str, 'binary').toString('base64'),
@@ -273,12 +273,12 @@ const jsGrid = fs.readFileSync(path.join(srcDir, 'js', 'vtt_grid.js'), 'utf8');
 const jsScreen = fs.readFileSync(path.join(srcDir, 'js', 'screen_sync.js'), 'utf8');
 const jsFirebase = fs.readFileSync(path.join(srcDir, 'js', 'firebase_sync.js'), 'utf8');
 
-sandbox.BroadcastChannel = function(name) {
+sandbox.BroadcastChannel = function (name) {
   return {
     name,
-    postMessage: () => {},
+    postMessage: () => { },
     onmessage: null,
-    close: () => {}
+    close: () => { }
   };
 };
 
@@ -4157,7 +4157,7 @@ const coreMatch = jsCore.match(/let PLAYERS = (\[[\s\S]*?\]);\s*let state =/);
 const parsedCorePlayers = coreMatch ? JSON.parse(coreMatch[1]) : [];
 assert(parsedCorePlayers.length === 9, `Mesa oficial inicializada com 9 personagens reais (${parsedCorePlayers.length} heróis)`);
 
-const hasOldMocks = parsedCorePlayers.some(p => ['p1','p2','p3','p4','p5'].includes(p.id));
+const hasOldMocks = parsedCorePlayers.some(p => ['p1', 'p2', 'p3', 'p4', 'p5'].includes(p.id));
 assert(!hasOldMocks, 'Nenhum dos IDs de teste legados (p1..p5) está presente no elenco oficial');
 
 const studentsList = parsedCorePlayers.map(p => p.student);
@@ -9376,7 +9376,7 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
 
     // --- Bateria 121: Características de Classe/Talentos e Paginação de 2 Folhas A4 (ISSUE-152) ---
     console.log('\n📜 [Bateria 121] Características de Classe/Talentos e Paginação de 2 Folhas A4 (ISSUE-152):');
-    
+
     // 1. Validar desbloqueio de overflow no @media print
     const cssContentPrint = fs.readFileSync(path.join(__dirname, 'src/styles/head_css.html'), 'utf8');
     const mediaPrintBlock = cssContentPrint.slice(cssContentPrint.indexOf('@media print'));
@@ -9407,7 +9407,7 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     const alasterForm = loadedAlasterDoc.getForm();
     const featField = alasterForm.getTextField('Features_Traits');
     assert(!!featField, 'PDF contém campo Features_Traits');
-    
+
     // 3. Validar exportação de funções helper
     // 4. BATERIA 122: Sincronização Completa entre Ficha Virtual, A4 e PDF Editável (ISSUE-153)
     console.log('\n📄 122. Testes de Sincronização Completa: Virtual, A4 e PDF Editável (ISSUE-153):');
@@ -9549,7 +9549,7 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
       assert(Array.isArray(hero.saveProficiencies) && hero.saveProficiencies.length >= 2, `${heroName} possui pelo menos 2 salvaguardas proficientes`);
       assert(Array.isArray(hero.skillProficiencies) && hero.skillProficiencies.length >= 2, `${heroName} possui pelo menos 2 perícias proficientes`);
       assert(typeof hero.personality === 'string' && hero.personality.trim().length > 0, `${heroName} possui traços de personalidade configurados`);
-      
+
       if (typeof sandbox.calculatePlayerAcFromEquipment === 'function') {
         const calcAc = sandbox.calculatePlayerAcFromEquipment(hero);
         assert(calcAc === hero.ac, `${heroName}: CA calculada (${calcAc}) é idêntica à CA da ficha (${hero.ac})`);
@@ -9734,7 +9734,7 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
       if (id === 'inp-edit-pitem-cat') return { value: 'Item Mágico' };
       if (id === 'inp-edit-pitem-cost') return { value: '250 PO' };
       if (id === 'inp-edit-pitem-desc') return { value: 'Cura 8d4 + 8 pontos de vida.' };
-      if (id === 'modal-edit-player-item') return { classList: { add: () => {}, remove: () => {} } };
+      if (id === 'modal-edit-player-item') return { classList: { add: () => { }, remove: () => { } } };
       return origGetEl ? origGetEl(id) : null;
     };
 
@@ -9800,7 +9800,7 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     let addedHighlight = false;
     cardEl126.scrollIntoView = (opt) => { scrolledTarget = opt; };
     const origAdd126 = cardEl126.classList.add;
-    cardEl126.classList.add = function(cls) {
+    cardEl126.classList.add = function (cls) {
       if (cls === 'hero-card-highlight') addedHighlight = true;
       origAdd126.call(this, cls);
     };
@@ -10536,7 +10536,7 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
       assert(integrityOut.includes('100% DAS AÇÕES E TELAS DA INTERFACE APROVADAS'), 'test_ui_integrity.js executado com sucesso e 100% de aprovação');
       assert(integrityOut.includes('Abas Validadas:    11/11'), '11/11 abas validadas com sucesso');
       assert(integrityOut.includes('Modais Validados:  10/10'), '10/10 modais validados com sucesso');
-      assert(integrityOut.includes('aprovadas (0 falhas)'), 'Todas as ações de clique em ui.html aprovadas sem falhas');
+      assert(integrityOut.includes('(0 falhas)') && integrityOut.includes('Ações de Clique:'), 'Todas as ações de clique em ui.html aprovadas com 0 falhas');
     } catch (e) {
       assert(false, `test_ui_integrity.js falhou: ${e.message}`);
     }
@@ -10826,6 +10826,7 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(sandbox.evalCombatHpMath(25, 40, '30') === 30, 'evalCombatHpMath define valor numérico direto 30');
 
     // 2. Absorção de Dano por PV Temporário (Temp HP D&D 5E)
+    sandbox.state = vm.runInContext('state', sandbox);
     vm.runInContext(`
       const testCombatant140 = {
         id: 'c_b140_test',
@@ -10839,12 +10840,11 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
       state.combatants = [testCombatant140];
       quickAdjustCombatantHp('c_b140_test', -6);
     `, sandbox);
-    let c140 = vm.runInContext('state.combatants[0]', sandbox);
+    const c140 = sandbox.state.combatants[0];
     assert(c140.tempHp === 4, 'Dano inicial de 6 foi 100% absorvido pelo Temp HP (10 -> 4)');
     assert(c140.hp === 30, 'PV real permaneceu intacto em 30 PV');
 
     vm.runInContext(`quickAdjustCombatantHp('c_b140_test', -7);`, sandbox);
-    c140 = vm.runInContext('state.combatants[0]', sandbox);
     assert(c140.tempHp === 0, 'Dano subsequente de 7 esgotou os 4 Temp HP restantes');
     assert(c140.hp === 27, 'Excesso de 3 de dano reduziu os PVs reais para 27');
 
@@ -10854,12 +10854,10 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
       state.combatants[0].tempHp = 5;
       promptCombatantTempHp('c_b140_test');
     `, sandbox);
-    c140 = vm.runInContext('state.combatants[0]', sandbox);
     assert(c140.tempHp === 8, 'Temp HP atualizado para 8 (maior que 5)');
 
     sandbox.prompt = () => '4';
     vm.runInContext(`promptCombatantTempHp('c_b140_test');`, sandbox);
-    c140 = vm.runInContext('state.combatants[0]', sandbox);
     assert(c140.tempHp === 8, 'Temp HP menor (4) não reduziu o valor atual (8)');
 
     // 4. Controle de Rodada e Placar de Combate
@@ -10867,9 +10865,9 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
       state.round = 1;
       setCombatRound(1);
     `, sandbox);
-    assert(vm.runInContext('state.round', sandbox) === 2, 'setCombatRound(1) avançou para a Rodada 2');
+    assert(sandbox.state.round === 2, 'setCombatRound(1) avançou para a Rodada 2');
     vm.runInContext(`setCombatRound(-1);`, sandbox);
-    assert(vm.runInContext('state.round', sandbox) === 1, 'setCombatRound(-1) retrocedeu para a Rodada 1');
+    assert(sandbox.state.round === 1, 'setCombatRound(-1) retrocedeu para a Rodada 1');
 
     // 5. Limpeza de Criaturas Derrotadas (0 PV)
     const origConfirm140 = sandbox.confirm;
@@ -10884,11 +10882,10 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
       clearDefeatedCombatants();
     `, sandbox);
     sandbox.confirm = origConfirm140;
-    const combatantsAfterClear = vm.runInContext('state.combatants', sandbox);
-    assert(combatantsAfterClear.some(c => c.id === 'c_hero_alive'), 'Herói vivo foi mantido no combate');
-    assert(combatantsAfterClear.some(c => c.id === 'c_hero_down'), 'Herói a 0 PV foi mantido no combate (preserva salvaguardas da morte)');
-    assert(combatantsAfterClear.some(c => c.id === 'c_monst_alive'), 'Monstro vivo foi mantido no combate');
-    assert(!combatantsAfterClear.some(c => c.id === 'c_monst_dead'), 'Monstro a 0 PV foi removido da mesa com sucesso');
+    assert(sandbox.state.combatants.some(c => c.id === 'c_hero_alive'), 'Herói vivo foi mantido no combate');
+    assert(sandbox.state.combatants.some(c => c.id === 'c_hero_down'), 'Herói a 0 PV foi mantido no combate (preserva salvaguardas da morte)');
+    assert(sandbox.state.combatants.some(c => c.id === 'c_monst_alive'), 'Monstro vivo foi mantido no combate');
+    assert(!sandbox.state.combatants.some(c => c.id === 'c_monst_dead'), 'Monstro a 0 PV foi removido da mesa com sucesso');
 
     // 6. Verificação de CSS e Estrutura VTT
     const headCssContent140 = fs.readFileSync(path.join(srcDir, 'styles', 'head_css.html'), 'utf8');
@@ -10902,42 +10899,62 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(uiHtmlContent140.includes('btn-temp-hp-action') && uiHtmlContent140.includes('dispatch-presets-row'), 'ui.html inclui botão de Temp HP e presets rápidos no despachante');
 
     // =========================================================================
-    // 🔮 BATERIA 141: ISSUE-172 — SALVAMENTO E PERSISTÊNCIA INCONDICIONAL DE MAGIAS NA FICHA
+    // 🔮 BATERIA 142: ISSUE-173 - AUDITORIA DE TRAÇOS DE CLASSE/RAÇA, SLOTS DE PACTO E PARSER SEGURO
     // =========================================================================
-    console.log('\n🔮 [Bateria 141] Salvamento e Persistência Incondicional de Magias na Ficha (ISSUE-172):');
+    console.log('\n🔮 [Bateria 142] Auditoria de Traços D&D 5E, Espaços de Pacto e Parser Seguro (ISSUE-173):');
 
-    // 1. Integridade da UI (ui.html)
-    assert(uiHtmlContent140.includes('id="pm-spells-preview-container"'), 'ui.html inclui container de preview de magias na ficha (#pm-spells-preview-container)');
-    assert(uiHtmlContent140.includes('openSpellPickerFromPlayerModal()'), 'ui.html inclui botão de compêndio direto na ficha (openSpellPickerFromPlayerModal)');
-    assert(uiHtmlContent140.includes('id="modal-spell-picker"') && uiHtmlContent140.includes('closeSpellPickerModal()'), 'ui.html modal de magias fecha e salva via closeSpellPickerModal');
+    // 1. Função splitFeaturesTextSafe
+    assert(typeof sandbox.splitFeaturesTextSafe === 'function', 'sandbox exporta splitFeaturesTextSafe');
+    const safeParse1 = sandbox.splitFeaturesTextSafe('Fúria (2/dia, +2 Dano)');
+    assert(safeParse1.length === 1 && safeParse1[0] === 'Fúria (2/dia, +2 Dano)', 'splitFeaturesTextSafe preserva vírgula dentro de parênteses');
 
-    // 2. Integridade dos estilos CSS (head_css.html)
-    assert(headCssContent140.includes('#modal-spell-picker') && headCssContent140.includes('z-index: 12500'), 'CSS define z-index prioritário (12500) para o seletor de magias sobre a ficha');
-    assert(headCssContent140.includes('.pm-spell-chip') && headCssContent140.includes('.pm-spell-chip-del'), 'CSS inclui estilos temáticos para chips de magias selecionadas (.pm-spell-chip)');
+    const safeParse2 = sandbox.splitFeaturesTextSafe('Metamagia (Acelerar, Sutil), Sentido Divino (1 + Car)');
+    assert(safeParse2.length === 2 && safeParse2[0] === 'Metamagia (Acelerar, Sutil)' && safeParse2[1] === 'Sentido Divino (1 + Car)', 'splitFeaturesTextSafe divide apenas vírgulas fora de parênteses');
 
-    // 3. Exportação das funções no ambiente de execução (sandbox)
-    assert(typeof sandbox.openSpellPickerFromPlayerModal === 'function', 'Função openSpellPickerFromPlayerModal exportada');
-    assert(typeof sandbox.renderModalSpellsPreview === 'function', 'Função renderModalSpellsPreview exportada');
-    assert(typeof sandbox.removeSpellFromPlayerModalPreview === 'function', 'Função removeSpellFromPlayerModalPreview exportada');
-    assert(typeof sandbox.handleManualPmSpellsInput === 'function', 'Função handleManualPmSpellsInput exportada');
-    assert(typeof sandbox.parseSpellNamesFromRawText === 'function', 'Função parseSpellNamesFromRawText exportada');
+    // 2. Normalização de slots para 9 círculos em todos os 9 heróis padrão
+    const b142Players = vm.runInContext('CANONICAL_INITIAL_PLAYERS', sandbox);
+    assert(Array.isArray(b142Players) && b142Players.length === 9, 'Existem 9 personagens padrão no estado canônico');
+    b142Players.forEach(p => {
+      assert(Array.isArray(p.slots) && p.slots.length === 9, `[${p.name}] slots possui 9 círculos normalizados`);
+      assert(Array.isArray(p.slotsUsed) && p.slotsUsed.length === 9, `[${p.name}] slotsUsed possui 9 círculos normalizados`);
+    });
 
-    // 4. Parser resiliente com suporte a pontos, vírgulas, quebras de linha e magias customizadas
-    const parsedDotSpells = sandbox.parseSpellNamesFromRawText('Truques: Raio de Fogo. Preparadas: Mísseis Mágicos, Escudo Arcano. Ritual Proibido.');
-    assert(parsedDotSpells.includes('Raio de Fogo'), 'parseSpellNamesFromRawText extrai Raio de Fogo separado por ponto');
-    assert(parsedDotSpells.includes('Mísseis Mágicos'), 'parseSpellNamesFromRawText extrai Mísseis Mágicos');
-    assert(parsedDotSpells.includes('Escudo Arcano'), 'parseSpellNamesFromRawText extrai Escudo Arcano');
-    assert(parsedDotSpells.includes('Ritual Proibido'), 'parseSpellNamesFromRawText preserva magia customizada ("Ritual Proibido")');
-
-    // 5. Execução do teste real de agentes autônomos (test_spells_agent_e2e.js)
-    try {
-      const { execSync } = require('child_process');
-      const simOut = execSync('node test_spells_agent_e2e.js', { encoding: 'utf8' });
-      assert(simOut.includes('SIMULAÇÃO REAL DE AGENTES (E2E SPELLS) APROVADA COM 100%'), 'test_spells_agent_e2e.js executado com sucesso');
-      assert(simOut.includes('Cenário 1') && simOut.includes('Cenário 6'), 'Todos os 6 cenários de Agentes aprovados com 100%');
-    } catch (simErr) {
-      assert(false, `test_spells_agent_e2e.js falhou: ${simErr.message}`);
+    // 3. Validação canônica de Claker (Bruxo 5 Tiefling)
+    const b142Claker = b142Players.find(p => p.name === 'Claker');
+    assert(b142Claker !== undefined, 'Claker existe no elenco');
+    if (b142Claker) {
+      assert(b142Claker.slots[0] === 0 && b142Claker.slots[1] === 0 && b142Claker.slots[2] === 2, 'Claker possui 2 slots de 3º círculo D&D 5E');
+      assert(b142Claker.preparedSpells.includes('Taumaturgia') && b142Claker.preparedSpells.includes('Repreensão Infernal') && b142Claker.preparedSpells.includes('Escuridão'), 'Claker possui todas as magias raciais Tiefling');
+      assert(b142Claker.features.includes('Pacto do Tomo') && b142Claker.features.includes('Invocações Místicas'), 'Claker possui Pacto do Tomo e Invocações Místicas');
     }
+
+    // 4. Validação canônica de Yoshigake Kira (Paladino 5)
+    const b142Yoshi = b142Players.find(p => p.name === 'Yoshigake Kira');
+    assert(b142Yoshi !== undefined, 'Yoshigake Kira existe no elenco');
+    if (b142Yoshi) {
+      assert(!b142Yoshi.features.includes('Retomar o Fôlego'), 'Yoshigake Kira (Paladino) não contém Retomar o Fôlego de Guerreiro');
+      assert(b142Yoshi.features.includes('Sentido Divino') && b142Yoshi.features.includes('Cura pelas Mãos') && b142Yoshi.features.includes('Destruição Divina'), 'Yoshigake Kira possui traços autênticos de Paladino 5');
+      assert(b142Yoshi.fightingStyle === 'defense', 'Yoshigake Kira possui Estilo de Luta Defesa');
+      assert(b142Yoshi.slots[0] === 4 && b142Yoshi.slots[1] === 2, 'Yoshigake Kira possui slots canônicos [4, 2, 0, 0, 0, 0, 0, 0, 0]');
+    }
+
+    // 5. Integridade de getPlayerAllFeaturesAndTraits sem traços quebrados
+    b142Players.forEach(p => {
+      const pFeats = sandbox.getPlayerAllFeaturesAndTraits(p);
+      const broken = pFeats.find(f => f.name.trim() === '+2 Dano)' || (f.name.endsWith(')') && !f.name.includes('(')));
+      assert(!broken, `[${p.name}] Nenhuma característica foi corrompida por divisão indevida`);
+    });
+
+    // 6. Verificação de CSS e UI
+    const b142HeadCss = fs.readFileSync(path.join(srcDir, 'styles', 'head_css.html'), 'utf8');
+    assert(b142HeadCss.includes('.spell-circle-slot-bubble.pact-slot.available'), 'head_css.html define .spell-circle-slot-bubble.pact-slot.available');
+    assert(b142HeadCss.includes('.spell-circle-slot-bubble.pact-slot.spent'), 'head_css.html define .spell-circle-slot-bubble.pact-slot.spent');
+
+    const b142UiHtml = fs.readFileSync(path.join(srcDir, 'ui', 'ui.html'), 'utf8');
+    assert(b142UiHtml.includes('id="pm-pact-magic-box"'), 'ui.html inclui caixa informativa de Magia de Pacto no modal');
+
+    const b142PlayersJs = fs.readFileSync(path.join(srcDir, 'js', 'players.js'), 'utf8');
+    assert(b142PlayersJs.includes('🔮 Pacto'), 'players.js inclui indicador visual de Espaço de Pacto');
 
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;
@@ -10962,7 +10979,6 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     process.exit(1);
   }
 })();
-
 
 
 

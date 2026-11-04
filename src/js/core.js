@@ -198,7 +198,7 @@ const DND5E_XP_TABLE = [
 
 let PLAYERS = [
   {
-    "ac": 16,
+    "ac": 17,
     "actionEconomyFilter": "all",
     "actionLogs": [],
     "activeCardTab": "skills",
@@ -243,8 +243,8 @@ let PLAYERS = [
         "used": 0
       }
     ],
-    "features": "Retomar o Fôlego (1d10+1 PV)",
-    "fightingStyle": "",
+    "features": "Sentido Divino (1 + Car/dia), Cura pelas Mãos (25 PV), Destruição Divina, Saúde Divina (Imunidade a Doenças), Estilo de Luta (Defesa), Ataque Extra, Canalizar Divindade",
+    "fightingStyle": "defense",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
     "hitDice": "5d10",
@@ -289,9 +289,17 @@ let PLAYERS = [
       2,
       0,
       0,
+      0,
+      0,
+      0,
+      0,
       0
     ],
     "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
       0,
       0,
       0,
@@ -381,7 +389,7 @@ let PLAYERS = [
         "used": 0
       }
     ],
-    "features": "Retomar o Fôlego (1d10+4 PV), Surto de Ação, Fúria (2/dia, +2 Dano)",
+    "features": "Retomar o Fôlego (1d10+4 PV), Surto de Ação (1/descanso), Crítico Aprimorado (Margem 19-20), Fúria (2/dia, +2 Dano), Defesa Sem Armadura",
     "fightingStyle": "defense",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
@@ -417,9 +425,17 @@ let PLAYERS = [
       0,
       0,
       0,
+      0,
+      0,
+      0,
+      0,
       0
     ],
     "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
       0,
       0,
       0,
@@ -500,7 +516,7 @@ let PLAYERS = [
       "success": 0
     },
     "dex": 13,
-    "features": "Recuperação Arcana (Recupera 1 slot de 1º círculo em descanso curto)",
+    "features": "Recuperação Arcana (Recupera 1 slot de 1º círculo em descanso curto), Grimório de Magias, Conjurador Ritual",
     "fightingStyle": "",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 10,
@@ -522,9 +538,17 @@ let PLAYERS = [
       0,
       0,
       0,
+      0,
+      0,
+      0,
+      0,
       0
     ],
     "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
       0,
       0,
       0,
@@ -590,7 +614,7 @@ let PLAYERS = [
       "success": 0
     },
     "dex": 19,
-    "features": "Ataque Furtivo (1d6), Ação Astuta",
+    "features": "Ataque Furtivo (1d6), Ação Astuta, Especialização, Gíria de Ladrão",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
     "hitDice": "2d8",
@@ -618,9 +642,17 @@ let PLAYERS = [
       0,
       0,
       0,
+      0,
+      0,
+      0,
+      0,
       0
     ],
     "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
       0,
       0,
       0,
@@ -710,7 +742,7 @@ let PLAYERS = [
       "success": 0
     },
     "dex": 19,
-    "features": "Ataque Furtivo (2d6), Ação Astuta, Mãos Mágicas Trapaceiras",
+    "features": "Ataque Furtivo (2d6), Especialização, Ação Astuta, Mãos Mágicas Trapaceiras, Conjuração de Trapaceiro Arcano",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
     "hitDice": "3d8",
@@ -748,9 +780,17 @@ let PLAYERS = [
       0,
       0,
       0,
+      0,
+      0,
+      0,
+      0,
       0
     ],
     "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
       0,
       0,
       0,
@@ -839,7 +879,7 @@ let PLAYERS = [
       "success": 0
     },
     "dex": 16,
-    "features": "Bênção do Obscuro, Invocações Ocultas (Agonia Mística, Armadura das Sombras)",
+    "features": "Bênção do Obscuro (PV Temp ao abater), Invocações Místicas (Rajada Agonizante, Armadura das Sombras), Pacto da Corrente",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
     "hitDice": "3d8",
@@ -885,9 +925,17 @@ let PLAYERS = [
       2,
       0,
       0,
+      0,
+      0,
+      0,
+      0,
       0
     ],
     "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
       0,
       0,
       0,
@@ -956,7 +1004,7 @@ let PLAYERS = [
       "success": 0
     },
     "dex": 14,
-    "features": "Bênção do Obscuro, Sorte do Obscuro",
+    "features": "Bênção do Obscuro (PV Temp = Car + Nv ao abater), Sorte do Obscuro (+1d10 em teste 1/descanso), Pacto do Tomo, Invocações Místicas (Rajada Agonizante, Armadura das Sombras, Visão Diabólica)",
     "fightingStyle": "",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
@@ -987,7 +1035,10 @@ let PLAYERS = [
       "Contramágica",
       "Despedaçar",
       "Invisibilidade",
-      "Mãos Mágicas"
+      "Mãos Mágicas",
+      "Taumaturgia",
+      "Repreensão Infernal",
+      "Escuridão"
     ],
     "present": true,
     "race": "Tiefling",
@@ -996,6 +1047,10 @@ let PLAYERS = [
       0,
       2,
       0,
+      0,
+      0,
+      0,
+      0,
       0
     ],
     "slotsUsed": [
@@ -1003,10 +1058,14 @@ let PLAYERS = [
       0,
       0,
       0,
+      0,
+      0,
+      0,
+      0,
       0
     ],
     "speed": "9m",
-    "spells": "Truques: Proteção contra Lâminas, Rajada Mística, Mãos Mágicas\nPreparadas: Raio de Bruxa, Proteção contra o Bem e Mal, Mãos Flamejantes, Contramágica, Despedaçar, Invisibilidade",
+    "spells": "Truques: Proteção contra Lâminas, Rajada Mística, Mãos Mágicas, Taumaturgia\nPreparadas: Raio de Bruxa, Proteção contra o Bem e Mal, Mãos Flamejantes, Contramágica, Despedaçar, Invisibilidade, Repreensão Infernal, Escuridão",
     "spentHitDice": 0,
     "str": 6,
     "student": "Anna Julia",
@@ -1072,7 +1131,7 @@ let PLAYERS = [
       "success": 0
     },
     "dex": 14,
-    "features": "Ataque Furtivo (1d6)",
+    "features": "Ataque Furtivo (1d6), Especialização, Gíria de Ladrão",
     "fightingStyle": "",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
@@ -1108,9 +1167,17 @@ let PLAYERS = [
       0,
       0,
       0,
+      0,
+      0,
+      0,
+      0,
       0
     ],
     "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
       0,
       0,
       0,
@@ -1181,7 +1248,7 @@ let PLAYERS = [
         "used": 0
       }
     ],
-    "features": "Resiliência Dracônica (CA 13 + Des), Metamagia (Acelerar Magia, Magia Duplicada)",
+    "features": "Resiliência Dracônica (CA 13 + Des), Fonte de Magia (4 Pontos de Feitiçaria), Metamagia (Acelerar Magia, Magia Duplicada), Magia de Pacto (1 slot de 1º Círc. recarrega em descanso curto)",
     "fightingStyle": "",
     "flaw": "Às vezes ajo antes de planejar cautelosamente",
     "gold": 15,
@@ -1238,9 +1305,17 @@ let PLAYERS = [
       3,
       0,
       0,
+      0,
+      0,
+      0,
+      0,
       0
     ],
     "slotsUsed": [
+      0,
+      0,
+      0,
+      0,
       0,
       0,
       0,
@@ -1356,7 +1431,7 @@ let state = {
       "type": "player"
     },
     {
-      "ac": 16,
+      "ac": 17,
       "actions": "Espada Longa (+4, 1d8+2 cortante)",
       "hp": 43,
       "id": "c_1789399377590_wwib",
@@ -2188,6 +2263,35 @@ function loadFromLocalStorage() {
           const validSet = new Set([...p.preparedSpells, ...(Array.isArray(p.unpreparedSpells) ? p.unpreparedSpells : [])]);
           p.spellbookSpells = Array.from(validSet);
           if (Array.isArray(p.knownSpells)) p.knownSpells = Array.from(validSet);
+        }
+
+        // ISSUE-173: Normalização de slots de magia para 9 círculos e correção de traços canônicos
+        if (!Array.isArray(p.slots)) {
+          p.slots = canonical ? [...canonical.slots] : [0, 0, 0, 0, 0, 0, 0, 0, 0];
+        }
+        while (p.slots.length < 9) p.slots.push(0);
+        if (!Array.isArray(p.slotsUsed)) {
+          p.slotsUsed = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+        }
+        while (p.slotsUsed.length < 9) p.slotsUsed.push(0);
+
+        if (canonical && p.name && p.name.toLowerCase().includes('yoshigake') && (p.features || '').includes('Retomar o Fôlego')) {
+          p.features = canonical.features;
+          p.fightingStyle = canonical.fightingStyle || 'defense';
+        }
+
+        if (canonical && p.name && p.name.toLowerCase().includes('claker')) {
+          if (!p.slots || p.slots[2] !== 2) {
+            p.slots = [...canonical.slots];
+          }
+          if (Array.isArray(p.preparedSpells)) {
+            ['Taumaturgia', 'Repreensão Infernal', 'Escuridão'].forEach(sp => {
+              if (!p.preparedSpells.includes(sp)) p.preparedSpells.push(sp);
+            });
+          }
+          if ((p.features || '').includes('Bênção do Obscuro, Sorte do Obscuro')) {
+            p.features = canonical.features;
+          }
         }
 
         return p;
