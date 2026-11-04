@@ -1593,9 +1593,9 @@
                 <div id="stash-gold-amount" style="font-size: 26px; font-weight: 900; color: var(--primary); font-family: var(--font-title); line-height: 1.1;">0 PO</div>
               </div>
               <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                <button class="btn-action" style="padding: 6px 10px; font-size: 11px;" onclick="promptAdjustPartyGold('add')">➕ Adicionar PO</button>
-                <button class="btn-secondary" style="padding: 6px 10px; font-size: 11px;" onclick="promptAdjustPartyGold('remove')">➖ Gastar PO</button>
-                <button class="btn-secondary" style="padding: 6px 10px; font-size: 11px; color: var(--primary-light); border-color: rgba(245, 158, 11, 0.4);" onclick="splitPartyGold()" title="Dividir igualmente entre os heróis">⚖️ Dividir Ouro</button>
+                <button class="btn-action" style="padding: 6px 10px; font-size: 11px;" onclick="openStashGoldModal('add')">➕ Adicionar PO</button>
+                <button class="btn-secondary" style="padding: 6px 10px; font-size: 11px;" onclick="openStashGoldModal('remove')">➖ Gastar PO</button>
+                <button class="btn-secondary" style="padding: 6px 10px; font-size: 11px; color: var(--primary-light); border-color: rgba(245, 158, 11, 0.4);" onclick="openSplitGoldModal()" title="Dividir igualmente entre os heróis">⚖️ Dividir Ouro</button>
               </div>
             </div>
 
@@ -1693,13 +1693,32 @@
               </table>
             </div>
 
-            <!-- HISTÓRICO RECENTE DE TRANSAÇÕES -->
+            <!-- HISTÓRICO RECENTE DE TRANSAÇÕES (ISSUE-175: REGISTRO CONTÁBIL RICO & FILTROS) -->
             <div style="margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 10px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">📜 Movimentações Recentes do Baú:</span>
-                <button class="btn-secondary" style="font-size: 9px; padding: 2px 6px; color: #f87171; border-color: rgba(239, 68, 68, 0.3);" onclick="clearPartyStashHistory()" title="Resetar/limpar todo o histórico de movimentações do baú">🧹 Limpar Histórico</button>
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 11px; font-weight: 800; color: #f59e0b; text-transform: uppercase;">📜 Registro Contábil & Movimentações do Baú:</span>
+                  <span id="stash-history-total-count" class="badge" style="font-size: 9px; background: rgba(245,158,11,0.15); color: #fde68a; border: 1px solid rgba(245,158,11,0.3);">0 registros</span>
+                </div>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                  <button type="button" class="btn-secondary" id="btn-toggle-stash-history-all" style="font-size: 9.5px; padding: 3px 8px; color: #38bdf8; border-color: rgba(56,189,248,0.3);" onclick="toggleStashHistoryShowAll()">📜 Ver Histórico Completo</button>
+                  <button type="button" class="btn-secondary" style="font-size: 9.5px; padding: 3px 8px; color: #f87171; border-color: rgba(239, 68, 68, 0.3);" onclick="clearPartyStashHistory()" title="Resetar/limpar todo o histórico de movimentações do baú">🧹 Limpar Histórico</button>
+                </div>
               </div>
-              <div id="stash-history-list" style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px;"></div>
+
+              <!-- Toolbar de Filtros e Busca do Histórico -->
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <div class="filter-chips-scroll" style="display: flex; gap: 4px; flex-wrap: wrap;" id="stash-history-filter-chips">
+                  <button type="button" class="btn-filter-chip active" data-history-filter="all" onclick="setStashHistoryFilter('all')">🌐 Todas</button>
+                  <button type="button" class="btn-filter-chip" data-history-filter="gold" onclick="setStashHistoryFilter('gold')">💰 Ouro (+/-)</button>
+                  <button type="button" class="btn-filter-chip" data-history-filter="split" onclick="setStashHistoryFilter('split')">⚖️ Divisões</button>
+                  <button type="button" class="btn-filter-chip" data-history-filter="items" onclick="setStashHistoryFilter('items')">📦 Itens</button>
+                  <button type="button" class="btn-filter-chip" data-history-filter="sold" onclick="setStashHistoryFilter('sold')">🏷️ Vendas</button>
+                </div>
+                <input type="text" id="inp-search-stash-history" placeholder="🔍 Filtrar movimentações..." oninput="handleStashHistorySearch(this.value)" style="max-width: 190px; font-size: 11px; padding: 4px 8px; background: #0b1120; border: 1px solid rgba(245,158,11,0.25); border-radius: 6px; color: #fff;">
+              </div>
+
+              <div id="stash-history-list" style="display: flex; flex-direction: column; gap: 6px;"></div>
             </div>
           </div>
 
@@ -3704,9 +3723,9 @@
               <div style="font-size: 22px; font-weight: 900; color: #fff; font-family: var(--font-mono);" id="party-stash-modal-gold">0 PO</div>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-              <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="promptAdjustPartyGold('add')">➕ Depositar PO</button>
-              <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="promptAdjustPartyGold('remove')">➖ Retirar PO</button>
-              <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px; color: #facc15;" onclick="splitPartyGold()" title="Dividir o ouro acumulado em partes iguais entre os heróis da campanha">💰 Dividir Ouro</button>
+              <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="openStashGoldModal('add')">➕ Depositar PO</button>
+              <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="openStashGoldModal('remove')">➖ Retirar PO</button>
+              <button class="btn-secondary" style="font-size: 11px; padding: 4px 8px; color: #facc15;" onclick="openSplitGoldModal()" title="Dividir o ouro acumulado em partes iguais entre os heróis da campanha">💰 Dividir Ouro</button>
               <button class="btn-action" style="font-size: 11px; padding: 4px 10px;" onclick="openPartyItemModal()">➕ Item Detalhado</button>
             </div>
           </div>
@@ -5755,6 +5774,243 @@
           <kbd>Esc</kbd> <span>Fechar</span>
         </div>
         <div id="omnisearch-count-badge" class="omnisearch-count-badge">0 resultados</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       ISSUE-175: SISTEMA UNIVERSAL DE DIÁLOGOS & MODAIS PERSONALIZADOS
+       ========================================================================= -->
+
+  <!-- MODAL: SELETOR VISUAL DE HERÓI (SUBSTITUIÇÃO DE PROMPT NATIVO) -->
+  <div id="modal-hero-select" class="modal-overlay" style="display: none; z-index: 2500;" onclick="if(event.target===this) closeHeroSelectModal()">
+    <div class="modal-body" style="max-width: 680px; width: 95%;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span id="hero-select-modal-icon" style="font-size: 20px;">⭐</span>
+          <div>
+            <div id="hero-select-modal-title" style="font-weight: 800; font-size: 16px; color: #fff;">Conceder Recurso</div>
+            <div id="hero-select-modal-subtitle" style="font-size: 11px; color: var(--primary-light);">Selecione o herói que receberá a ação:</div>
+          </div>
+        </div>
+        <button type="button" class="btn-secondary" onclick="closeHeroSelectModal()">✕</button>
+      </div>
+
+      <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input type="text" id="inp-hero-select-search" placeholder="🔍 Filtrar herói por nome, jogador ou classe..." oninput="filterHeroSelectCards(this.value)" style="width: 100%; font-size: 12px; padding: 6px 10px; background: #0b1120; border: 1px solid rgba(245,158,11,0.3); border-radius: 6px; color: #fff;">
+        </div>
+
+        <div id="hero-select-grid" class="hero-select-grid" style="max-height: 380px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; padding: 2px;">
+          <!-- Injetado dinamicamente por openHeroSelectModal -->
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 4px;">
+          <button type="button" class="btn-secondary" onclick="closeHeroSelectModal()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DIÁLOGO UNIVERSAL DARK FANTASY (PROMPT / CONFIRM / ALERT) -->
+  <div id="modal-custom-dialog" class="modal-overlay" style="display: none; z-index: 3000;" onclick="if(event.target===this && !window._customDialogStrict) closeCustomDialog(null)">
+    <div class="modal-body custom-dialog-card" style="max-width: 440px; width: 92%; border-color: rgba(245, 158, 11, 0.4);">
+      <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
+        <div id="custom-dialog-icon-box" style="font-size: 28px; line-height: 1; padding: 8px; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); border-radius: 8px;">
+          <span id="custom-dialog-icon">🧙‍♂️</span>
+        </div>
+        <div style="flex: 1;">
+          <div id="custom-dialog-title" style="font-size: 15px; font-weight: 800; color: #fff; font-family: var(--font-title); letter-spacing: 0.5px;">Confirmação</div>
+          <div id="custom-dialog-message" style="font-size: 12px; color: #cbd5e1; margin-top: 4px; line-height: 1.4; white-space: pre-line;">Mensagem de confirmação</div>
+        </div>
+      </div>
+
+      <!-- Área de Input do Prompt -->
+      <div id="custom-dialog-input-wrap" style="display: none; margin-bottom: 14px;">
+        <input type="text" id="custom-dialog-input" style="width: 100%; font-size: 13px; padding: 8px 10px; background: #0b1120; border: 1px solid rgba(245,158,11,0.35); border-radius: 6px; color: #fff;" onkeydown="if(event.key==='Enter') submitCustomDialog(true)">
+        <div id="custom-dialog-presets" style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px;"></div>
+      </div>
+
+      <!-- Botões de Ação -->
+      <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px;">
+        <button type="button" id="custom-dialog-cancel-btn" class="btn-secondary" style="font-size: 11.5px; padding: 6px 12px;" onclick="closeCustomDialog(null)">Cancelar</button>
+        <button type="button" id="custom-dialog-confirm-btn" class="btn-action" style="font-size: 11.5px; padding: 6px 16px;" onclick="submitCustomDialog(true)">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: MOVIMENTAÇÃO DE OURO DO BAÚ (SUBSTITUIÇÃO DE PROMPTS) -->
+  <div id="modal-stash-gold-adjust" class="modal-overlay" style="display: none; z-index: 2300;" onclick="if(event.target===this) closeStashGoldModal()">
+    <div class="modal-body" style="max-width: 480px; width: 92%;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">💰</span>
+          <div>
+            <div id="stash-gold-modal-heading" style="font-weight: 800; font-size: 15px; color: #fff;">Movimentação de Tesouro</div>
+            <div style="font-size: 11px; color: var(--primary-light);">Baú do Grupo & Carteira da Campanha</div>
+          </div>
+        </div>
+        <button type="button" class="btn-secondary" onclick="closeStashGoldModal()">✕</button>
+      </div>
+
+      <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+        <!-- Abas: Depositar vs Retirar -->
+        <div style="display: flex; gap: 4px; background: rgba(0,0,0,0.3); padding: 3px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+          <button type="button" id="tab-stash-gold-add" class="subclass-pill-btn active" style="flex: 1; justify-content: center;" onclick="setStashGoldModalTab('add')">
+            <span>➕</span> <span>Depositar no Baú</span>
+          </button>
+          <button type="button" id="tab-stash-gold-remove" class="subclass-pill-btn" style="flex: 1; justify-content: center;" onclick="setStashGoldModalTab('remove')">
+            <span>➖</span> <span>Retirar do Baú</span>
+          </button>
+        </div>
+
+        <!-- Indicador de Saldos -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: rgba(0,0,0,0.25); border: 1px solid rgba(245,158,11,0.2); border-radius: 8px; padding: 8px 12px;">
+          <div>
+            <div style="font-size: 9.5px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Saldo do Baú:</div>
+            <div id="stash-gold-balance-display" style="font-size: 16px; font-weight: 800; color: #fde68a;">0 PO</div>
+          </div>
+          <div id="stash-hero-wallet-box">
+            <div style="font-size: 9.5px; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Carteira do Herói:</div>
+            <div id="stash-hero-balance-display" style="font-size: 16px; font-weight: 800; color: #a7f3d0;">0 PO</div>
+          </div>
+        </div>
+
+        <!-- Campo de Valor & Presets -->
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: #e2e8f0; display: block; margin-bottom: 4px;">Quantidade em Peças de Ouro (PO):</label>
+          <input type="number" id="inp-stash-gold-val" min="1" step="1" value="50" style="width: 100%; font-size: 15px; font-weight: 800; padding: 8px 10px; background: #0b1120; border: 1px solid rgba(245,158,11,0.4); border-radius: 6px; color: #fff;" onkeydown="if(event.key==='Enter') submitStashGoldModal()">
+          <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px;">
+            <button type="button" class="btn-micro" onclick="setStashGoldPreset(10)">+10 PO</button>
+            <button type="button" class="btn-micro" onclick="setStashGoldPreset(50)">+50 PO</button>
+            <button type="button" class="btn-micro" onclick="setStashGoldPreset(100)">+100 PO</button>
+            <button type="button" class="btn-micro" onclick="setStashGoldPreset(250)">+250 PO</button>
+            <button type="button" class="btn-micro" onclick="setStashGoldPreset(500)">+500 PO</button>
+            <button type="button" class="btn-micro" style="color: #facc15;" onclick="setStashGoldPreset('max')">Max / Tudo</button>
+          </div>
+        </div>
+
+        <!-- Motivo da Transação com Chips Rápidos -->
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: #e2e8f0; display: block; margin-bottom: 4px;">Motivo / Origem / Finalidade:</label>
+          <input type="text" id="inp-stash-gold-reason" placeholder="Ex: Recompensa de Masmorra, Espólio de Goblin, Compra de Provisões..." style="width: 100%; font-size: 12px; padding: 6px 10px; background: #0b1120; border: 1px solid rgba(245,158,11,0.3); border-radius: 6px; color: #fff;">
+          <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px;">
+            <button type="button" class="btn-micro" onclick="setStashReasonChip('Recompensa de Masmorra')">⚔️ Masmorra</button>
+            <button type="button" class="btn-micro" onclick="setStashReasonChip('Venda de Espólio')">🏷️ Venda Espólio</button>
+            <button type="button" class="btn-micro" onclick="setStashReasonChip('Compra de Suprimentos')">🍖 Suprimentos</button>
+            <button type="button" class="btn-micro" onclick="setStashReasonChip('Despesas de Taverna')">🍺 Taverna</button>
+            <button type="button" class="btn-micro" onclick="setStashReasonChip('Ajuste do Mestre')">👑 Ajuste</button>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 6px;">
+          <button type="button" class="btn-secondary" onclick="closeStashGoldModal()">Cancelar</button>
+          <button type="button" id="btn-submit-stash-gold" class="btn-action" onclick="submitStashGoldModal()">Confirmar Transação</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DIVISÃO DE TESOURO ENTRE OS HERÓIS -->
+  <div id="modal-stash-split-gold" class="modal-overlay" style="display: none; z-index: 2300;" onclick="if(event.target===this) closeSplitGoldModal()">
+    <div class="modal-body" style="max-width: 520px; width: 94%;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">⚖️</span>
+          <div>
+            <div style="font-weight: 800; font-size: 15px; color: #fff;">Divisão de Tesouro do Grupo</div>
+            <div style="font-size: 11px; color: var(--primary-light);">Partilha igualitária entre os heróis presentes</div>
+          </div>
+        </div>
+        <button type="button" class="btn-secondary" onclick="closeSplitGoldModal()">✕</button>
+      </div>
+
+      <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+        <!-- Banner de Saldo e Prévia da Divisão -->
+        <div style="background: linear-gradient(135deg, rgba(245,158,11,0.18) 0%, rgba(180,83,9,0.25) 100%); border: 1px solid rgba(245,158,11,0.4); border-radius: 8px; padding: 10px 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 11px; color: #fde68a; font-weight: 700; text-transform: uppercase;">Ouro Disponível no Baú:</span>
+            <span id="split-gold-total-badge" style="font-size: 18px; font-weight: 900; color: #fff; font-family: var(--font-mono);">0 PO</span>
+          </div>
+          <div id="split-gold-calculation-preview" style="font-size: 12px; color: #e2e8f0; line-height: 1.4; border-top: 1px dashed rgba(245,158,11,0.3); padding-top: 6px;">
+            Selecione os heróis que participarão da partilha.
+          </div>
+        </div>
+
+        <!-- Lista de Heróis Participantes -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase;">Heróis Participantes da Partilha:</span>
+            <div style="display: flex; gap: 4px;">
+              <button type="button" class="btn-micro" onclick="toggleAllSplitGoldHeroes(true)">Todos</button>
+              <button type="button" class="btn-micro" onclick="toggleAllSplitGoldHeroes(false)">Nenhum</button>
+            </div>
+          </div>
+
+          <div id="split-gold-heroes-list" style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding: 2px;">
+            <!-- Injetado dinamicamente por openSplitGoldModal -->
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+          <button type="button" class="btn-secondary" onclick="closeSplitGoldModal()">Cancelar</button>
+          <button type="button" id="btn-confirm-split-gold" class="btn-action" onclick="submitSplitGoldModal()">Distribuir Tesouro</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: VENDER ITEM DO BAÚ / CONVERTER EM OURO -->
+  <div id="modal-stash-sell-item" class="modal-overlay" style="display: none; z-index: 2300;" onclick="if(event.target===this) closeSellPartyItemModal()">
+    <div class="modal-body" style="max-width: 460px; width: 92%;">
+      <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">🏷️</span>
+          <div>
+            <div style="font-weight: 800; font-size: 15px; color: #fff;">Vender Item do Baú</div>
+            <div style="font-size: 11px; color: var(--primary-light);">Liquidar espólio e creditar ouro no tesouro</div>
+          </div>
+        </div>
+        <button type="button" class="btn-secondary" onclick="closeSellPartyItemModal()">✕</button>
+      </div>
+
+      <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+        <!-- Card com Dados do Item Selecionado -->
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(245,158,11,0.25); border-radius: 8px; padding: 10px 12px;">
+          <div id="sell-item-name" style="font-size: 14px; font-weight: 800; color: #fff;">Item</div>
+          <div style="display: flex; gap: 6px; align-items: center; margin-top: 4px; font-size: 11px; color: var(--text-dim);">
+            <span id="sell-item-category-badge" class="badge">Categoria</span>
+            <span id="sell-item-stock-info">Estoque: 1 un</span>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div>
+            <label style="font-size: 11px; font-weight: 700; color: #e2e8f0; display: block; margin-bottom: 4px;">Quantidade a Vender:</label>
+            <input type="number" id="inp-sell-item-qty" min="1" step="1" value="1" style="width: 100%; font-size: 14px; padding: 6px 8px; background: #0b1120; border: 1px solid rgba(245,158,11,0.3); border-radius: 6px; color: #fff;" oninput="updateSellCalculationPreview()">
+            <div style="display: flex; gap: 4px; margin-top: 4px;">
+              <button type="button" class="btn-micro" onclick="setSellQtyPreset(1)">1x</button>
+              <button type="button" class="btn-micro" onclick="setSellQtyPreset('half')">½ Estoque</button>
+              <button type="button" class="btn-micro" onclick="setSellQtyPreset('all')">Tudo</button>
+            </div>
+          </div>
+          <div>
+            <label style="font-size: 11px; font-weight: 700; color: #e2e8f0; display: block; margin-bottom: 4px;">Valor Unitário (PO):</label>
+            <input type="number" id="inp-sell-item-price" min="0" step="0.5" value="1" style="width: 100%; font-size: 14px; padding: 6px 8px; background: #0b1120; border: 1px solid rgba(245,158,11,0.3); border-radius: 6px; color: #fff;" oninput="updateSellCalculationPreview()">
+            <div style="font-size: 9.5px; color: var(--text-dim); margin-top: 4px;">Regra D&D 5E: ~50% do valor de mercado.</div>
+          </div>
+        </div>
+
+        <!-- Banner de Lucro Calculado -->
+        <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 12px; font-weight: 700; color: #a7f3d0;">Ouro a ser creditado no Baú:</span>
+          <span id="sell-item-total-gold" style="font-size: 18px; font-weight: 900; color: #10b981; font-family: var(--font-mono);">+0 PO</span>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+          <button type="button" class="btn-secondary" onclick="closeSellPartyItemModal()">Cancelar</button>
+          <button type="button" class="btn-action" style="background: linear-gradient(135deg, #10b981, #047857);" onclick="submitSellPartyItem()">Confirmar Venda</button>
+        </div>
       </div>
     </div>
   </div>

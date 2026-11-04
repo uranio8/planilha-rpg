@@ -81,6 +81,9 @@ function getDeletedPartyItemIds() {
 }
 
 function getActiveCampaign() {
+  if (typeof global !== 'undefined' && global.CAMPAIGNS_STATE && Array.isArray(global.CAMPAIGNS_STATE.campaigns) && global.CAMPAIGNS_STATE.campaigns.length > 0) {
+    CAMPAIGNS_STATE = global.CAMPAIGNS_STATE;
+  }
   if (!CAMPAIGNS_STATE.campaigns || CAMPAIGNS_STATE.campaigns.length === 0) {
     CAMPAIGNS_STATE.campaigns = (typeof INITIAL_CAMPAIGNS !== 'undefined') ? JSON.parse(JSON.stringify(INITIAL_CAMPAIGNS)) : [];
     CAMPAIGNS_STATE.activeCampaignId = CAMPAIGNS_STATE.campaigns[0]?.id || "camp_1";
@@ -657,6 +660,7 @@ function renderPartyStashItemRowHtml(it) {
         <span class="carrier-badge ${carrierClass}" title="${inStash ? 'Guardado no estoque coletivo do grupo' : 'Em posse de ' + it.carrier}">${carrierLabel}</span>
       </td>
       <td style="text-align:right; white-space:nowrap;">
+        <button type="button" class="btn-secondary" style="padding:3px 6px; font-size:10px; border-color:rgba(16,185,129,0.35); color:#6ee7b7;" onclick="openSellPartyItemModal('${it.id}')" title="Vender unidades deste item e creditar ouro no baú">🏷️ Vender</button>
         ${inStash
           ? `<button type="button" class="btn-secondary" style="padding:3px 7px; font-size:10px; border-color:rgba(56,189,248,0.35); color:#7dd3fc;" onclick="takePartyItemToPlayer('${it.id}')" title="Transferir do baú para a mochila de um herói">📥 Pegar</button>`
           : `<button type="button" class="btn-secondary" style="padding:3px 7px; font-size:10px; border-color:rgba(245,158,11,0.38); color:#fcd34d;" onclick="returnPartyItemToStash('${it.id}')" title="Devolver de ${it.carrier} para o Baú do Grupo">🔄 Ao Baú</button>
@@ -666,6 +670,133 @@ function renderPartyStashItemRowHtml(it) {
         <button type="button" class="btn-secondary" style="padding:3px 6px; font-size:10px; color:#f87171;" onclick="deletePartyItem('${it.id}')" title="Remover item">🗑️</button>
       </td>
     </tr>
+  `;
+}
+
+// --- ESTADO & FILTROS DO HISTÓRICO CONTÁBIL DO BAÚ (ISSUE-175) ---
+let stashHistoryFilter = 'all';
+let stashHistorySearch = '';
+let stashHistoryShowAll = false;
+
+function setStashHistoryFilter(filter) {
+  stashHistoryFilter = filter || 'all';
+  if (typeof document !== 'undefined') {
+    const chips = document.querySelectorAll('#stash-history-filter-chips .btn-filter-chip');
+    chips.forEach(c => {
+      if (c.getAttribute('data-history-filter') === stashHistoryFilter) {
+        c.classList.add('active');
+      } else {
+        c.classList.remove('active');
+      }
+    });
+  }
+  const camp = getActiveCampaign();
+  if (camp) {
+    const campPlayers = (camp.playerIds && camp.playerIds.length > 0 ? camp.playerIds.map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p) : PLAYERS) || [];
+    renderCampaignPartyStash(camp, campPlayers);
+  }
+}
+
+function handleStashHistorySearch(query) {
+  stashHistorySearch = (query || '').toLowerCase().trim();
+  const camp = getActiveCampaign();
+  if (camp) {
+    const campPlayers = (camp.playerIds && camp.playerIds.length > 0 ? camp.playerIds.map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p) : PLAYERS) || [];
+    renderCampaignPartyStash(camp, campPlayers);
+  }
+}
+
+function toggleStashHistoryShowAll() {
+  stashHistoryShowAll = !stashHistoryShowAll;
+  const camp = getActiveCampaign();
+  if (camp) {
+    const campPlayers = (camp.playerIds && camp.playerIds.length > 0 ? camp.playerIds.map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p) : PLAYERS) || [];
+    renderCampaignPartyStash(camp, campPlayers);
+  }
+}
+
+function renderStashHistoryCardHtml(h) {
+  const type = h.type || (h.text && h.text.startsWith('-') ? 'gold_out' : (h.text && h.text.startsWith('+') ? 'gold_in' : 'gold_in'));
+  let badgeLabel = 'Transação';
+  let badgeClass = 'gold_in';
+  let icon = '💰';
+
+  switch (type) {
+    case 'gold_in':
+      badgeLabel = 'Entrada';
+      badgeClass = 'gold_in';
+      icon = '💰';
+      break;
+    case 'gold_out':
+      badgeLabel = 'Saída';
+      badgeClass = 'gold_out';
+      icon = '💸';
+      break;
+    case 'gold_split':
+      badgeLabel = 'Divisão';
+      badgeClass = 'gold_split';
+      icon = '⚖️';
+      break;
+    case 'item_sold':
+      badgeLabel = 'Venda';
+      badgeClass = 'item_sold';
+      icon = '🏷️';
+      break;
+    case 'item_in':
+      badgeLabel = 'Item Adicionado';
+      badgeClass = 'item_in';
+      icon = '📥';
+      break;
+    case 'item_out':
+      badgeLabel = 'Item Retirado';
+      badgeClass = 'item_out';
+      icon = '📤';
+      break;
+    case 'item_edit':
+      badgeLabel = 'Ajuste';
+      badgeClass = 'item_edit';
+      icon = '✏️';
+      break;
+    default:
+      badgeLabel = 'Registro';
+      badgeClass = 'gold_in';
+      icon = '📜';
+  }
+
+  let dateStr = h.date || '';
+  if (dateStr && dateStr.includes('-') && dateStr.length === 10) {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) dateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+
+  let amountBadge = '';
+  if (h.amount) {
+    amountBadge = `<span class="stash-history-amount ${badgeClass}">${h.amount}</span>`;
+  } else if (h.text) {
+    const poMatch = h.text.match(/([+-]?\d+(?:\.\d+)?\s*PO)/i);
+    if (poMatch) {
+      amountBadge = `<span class="stash-history-amount ${badgeClass}">${poMatch[1]}</span>`;
+    }
+  }
+
+  const authorTag = h.author ? `<span style="color: var(--primary-light); font-weight: 600; font-size: 10px;">• ${h.author}</span>` : '';
+
+  return `
+    <div class="stash-history-card ${badgeClass}">
+      <div style="display: flex; align-items: flex-start; gap: 8px; flex: 1; min-width: 0;">
+        <span style="font-size: 15px; line-height: 1.2;">${icon}</span>
+        <div style="display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0;">
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <span class="stash-history-type-badge ${badgeClass}">${badgeLabel}</span>
+            ${amountBadge}
+            <span class="stash-history-date">${dateStr}</span>
+            ${authorTag}
+          </div>
+          <div class="stash-history-text">${h.text || ''}</div>
+        </div>
+      </div>
+      <button type="button" class="btn-micro" style="color: #f87171; border-color: rgba(239, 68, 68, 0.25); padding: 2px 6px;" onclick="deletePartyStashHistoryItem(${h.origIdx})" title="Excluir este registro contábil">🗑️</button>
+    </div>
   `;
 }
 
@@ -698,19 +829,51 @@ function renderCampaignPartyStash(camp, campPlayers) {
   if (historyList) {
     const rawHist = (stash.history || []);
     const indexed = rawHist.map((h, i) => ({ ...h, origIdx: i }));
-    const hist = indexed.slice(-8).reverse();
-    if (hist.length === 0) {
-      historyList.innerHTML = `<div style="color:var(--text-muted); font-size:11px; text-align:center;">Nenhuma movimentação registrada.</div>`;
+
+    // Filtragem por categoria
+    let filtered = indexed.filter(h => {
+      if (stashHistoryFilter === 'gold') {
+        return h.type === 'gold_in' || h.type === 'gold_out' || (h.text && h.text.includes('PO'));
+      }
+      if (stashHistoryFilter === 'split') {
+        return h.type === 'gold_split' || (h.text && h.text.toLowerCase().includes('divis'));
+      }
+      if (stashHistoryFilter === 'items') {
+        return h.type === 'item_in' || h.type === 'item_out' || h.type === 'item_edit' || h.type === 'item_sold' || (h.text && (h.text.toLowerCase().includes('item') || !h.text.includes('PO')));
+      }
+      if (stashHistoryFilter === 'sold') {
+        return h.type === 'item_sold' || (h.text && (h.text.toLowerCase().includes('vend') || h.text.toLowerCase().includes('venda')));
+      }
+      return true; // 'all'
+    });
+
+    // Filtragem por busca textual
+    if (stashHistorySearch) {
+      const q = stashHistorySearch.toLowerCase();
+      filtered = filtered.filter(h => 
+        (h.text && h.text.toLowerCase().includes(q)) ||
+        (h.type && h.type.toLowerCase().includes(q)) ||
+        (h.author && h.author.toLowerCase().includes(q)) ||
+        (h.date && h.date.toLowerCase().includes(q))
+      );
+    }
+
+    // Atualiza contadores
+    const countBadge = document.getElementById('stash-history-total-count');
+    if (countBadge) {
+      countBadge.innerText = `${filtered.length} registro${filtered.length === 1 ? '' : 's'}${filtered.length !== rawHist.length ? ` (de ${rawHist.length})` : ''}`;
+    }
+
+    const toggleBtn = document.getElementById('btn-toggle-stash-history-all');
+    if (toggleBtn) {
+      toggleBtn.innerHTML = stashHistoryShowAll ? '🔼 Ver Menos' : `📜 Ver Histórico Completo (${filtered.length})`;
+    }
+
+    if (filtered.length === 0) {
+      historyList.innerHTML = `<div style="color:var(--text-muted); font-size:11px; text-align:center; padding: 14px; background: rgba(0,0,0,0.2); border-radius: 6px; border: 1px dashed rgba(255,255,255,0.06);">Nenhuma movimentação registrada${stashHistorySearch || stashHistoryFilter !== 'all' ? ' para os filtros aplicados' : ''}.</div>`;
     } else {
-      historyList.innerHTML = hist.map(h => `
-        <div class="stash-history-item ${h.type || 'gold_in'}" style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
-          <span style="flex: 1;">${h.text}</span>
-          <div style="display: flex; align-items: center; gap: 4px;">
-            <span style="font-size:10px; color:var(--text-dim); white-space: nowrap;">${h.date || ''}</span>
-            <button class="btn-secondary" style="padding: 1px 4px; font-size: 9px; color: #f87171; border-color: rgba(239, 68, 68, 0.2); line-height: 1;" onclick="deletePartyStashHistoryItem(${h.origIdx})" title="Excluir este registro">🗑️</button>
-          </div>
-        </div>
-      `).join('');
+      const displayHist = stashHistoryShowAll ? filtered.slice().reverse() : filtered.slice(-8).reverse();
+      historyList.innerHTML = displayHist.map(h => renderStashHistoryCardHtml(h)).join('');
     }
   }
 }
@@ -1661,15 +1824,22 @@ function deleteSessionLog(sessionId) {
   if (typeof addLog === 'function') addLog(`🗑️ <b>Sessão Excluída:</b> Sessão ${sess.number}.`);
 }
 
-// --- BAÚ DO GRUPO & TESOURO (PARTY STASH) ---
-function promptAdjustPartyGold(type, sourcePlayerId = null) {
-  const camp = getActiveCampaign();
-  if (!camp) return;
-  camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
-  camp.partyStash.items = camp.partyStash.items || [];
-  camp.partyStash.history = camp.partyStash.history || [];
+// --- BAÚ DO GRUPO & TESOURO (PARTY STASH - ISSUE-175: MODAIS DARK FANTASY & CONTABILIDADE) ---
+let stashGoldModalType = 'add';
+let stashGoldModalPlayerId = null;
 
-  // Identifica o herói se a ação for disparada por um jogador ou portal
+function openStashGoldModal(type = 'add', sourcePlayerId = null) {
+  const camp = getActiveCampaign();
+  if (!camp) {
+    if (typeof customAlert === 'function') customAlert('Nenhuma campanha ativa selecionada.', 'Baú do Grupo');
+    else alert('Nenhuma campanha ativa selecionada.');
+    return;
+  }
+
+  camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+  stashGoldModalType = type === 'remove' ? 'remove' : 'add';
+  stashGoldModalPlayerId = sourcePlayerId;
+
   let player = null;
   if (sourcePlayerId && typeof PLAYERS !== 'undefined') {
     player = PLAYERS.find(p => p.id === sourcePlayerId);
@@ -1679,7 +1849,222 @@ function promptAdjustPartyGold(type, sourcePlayerId = null) {
     player = PLAYERS[0];
   }
 
-  // 1. FLUXO DO JOGADOR: Transfere diretamente de/para a carteira pessoal do herói
+  const modal = document.getElementById('modal-stash-gold-adjust');
+  if (!modal) {
+    promptAdjustPartyGoldLegacy(type, sourcePlayerId);
+    return;
+  }
+
+  const stashBalEl = document.getElementById('stash-gold-balance-display');
+  const heroBalBox = document.getElementById('stash-hero-wallet-box');
+  const heroBalEl = document.getElementById('stash-hero-balance-display');
+  const inpVal = document.getElementById('inp-stash-gold-val');
+  const inpReason = document.getElementById('inp-stash-gold-reason');
+
+  if (stashBalEl) stashBalEl.innerText = `${camp.partyStash.gold || 0} PO`;
+
+  if (player && heroBalBox && heroBalEl) {
+    heroBalBox.style.display = 'block';
+    const playerGold = player.gold !== undefined ? player.gold : ((player.coins && player.coins.gp) || 0);
+    heroBalEl.innerText = `${playerGold} PO (${player.name})`;
+  } else if (heroBalBox) {
+    heroBalBox.style.display = 'none';
+  }
+
+  setStashGoldModalTab(stashGoldModalType);
+
+  if (inpVal) inpVal.value = '50';
+  if (inpReason) inpReason.value = '';
+
+  modal.style.display = 'flex';
+  setTimeout(() => { if (inpVal) inpVal.focus(); }, 50);
+}
+
+function setStashGoldModalTab(tab) {
+  stashGoldModalType = tab === 'remove' ? 'remove' : 'add';
+  const tabAdd = document.getElementById('tab-stash-gold-add');
+  const tabRemove = document.getElementById('tab-stash-gold-remove');
+  const submitBtn = document.getElementById('btn-submit-stash-gold');
+  const headingEl = document.getElementById('stash-gold-modal-heading');
+
+  if (stashGoldModalType === 'add') {
+    if (tabAdd) tabAdd.classList.add('active');
+    if (tabRemove) tabRemove.classList.remove('active');
+    if (submitBtn) {
+      submitBtn.innerText = 'Confirmar Depósito';
+      submitBtn.style.background = 'linear-gradient(135deg, #10b981, #047857)';
+    }
+    if (headingEl) headingEl.innerText = 'Depositar Ouro no Baú';
+  } else {
+    if (tabRemove) tabRemove.classList.add('active');
+    if (tabAdd) tabAdd.classList.remove('active');
+    if (submitBtn) {
+      submitBtn.innerText = 'Confirmar Retirada';
+      submitBtn.style.background = 'linear-gradient(135deg, #ef4444, #b91c1c)';
+    }
+    if (headingEl) headingEl.innerText = 'Retirar Ouro do Baú';
+  }
+}
+
+function setStashGoldPreset(val) {
+  const inpVal = document.getElementById('inp-stash-gold-val');
+  if (!inpVal) return;
+  const camp = getActiveCampaign();
+  if (val === 'max') {
+    if (stashGoldModalType === 'remove' && camp) {
+      inpVal.value = String(camp.partyStash?.gold || 0);
+    } else {
+      let player = null;
+      if (stashGoldModalPlayerId && typeof PLAYERS !== 'undefined') {
+        player = PLAYERS.find(p => p.id === stashGoldModalPlayerId);
+      }
+      if (player) {
+        const playerGold = player.gold !== undefined ? player.gold : ((player.coins && player.coins.gp) || 0);
+        inpVal.value = String(playerGold);
+      } else {
+        inpVal.value = '500';
+      }
+    }
+  } else {
+    inpVal.value = String(parseInt(val, 10) || 50);
+  }
+}
+
+function setStashReasonChip(reason) {
+  const inpReason = document.getElementById('inp-stash-gold-reason');
+  if (inpReason) inpReason.value = reason;
+}
+
+function closeStashGoldModal() {
+  const modal = document.getElementById('modal-stash-gold-adjust');
+  if (modal) modal.style.display = 'none';
+  stashGoldModalPlayerId = null;
+}
+
+function submitStashGoldModal() {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+  camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+  camp.partyStash.history = camp.partyStash.history || [];
+
+  const inpVal = document.getElementById('inp-stash-gold-val');
+  const inpReason = document.getElementById('inp-stash-gold-reason');
+  const val = parseInt(inpVal?.value, 10);
+  if (isNaN(val) || val <= 0) {
+    if (typeof customAlert === 'function') customAlert('Informe uma quantidade válida de Peças de Ouro (maior que zero).', 'Atenção');
+    else alert('Informe uma quantidade válida de Peças de Ouro.');
+    return;
+  }
+
+  const reason = (inpReason?.value || '').trim() || (stashGoldModalType === 'add' ? 'Depósito no Baú' : 'Retirada do Baú');
+
+  let player = null;
+  if (stashGoldModalPlayerId && typeof PLAYERS !== 'undefined') {
+    player = PLAYERS.find(p => p.id === stashGoldModalPlayerId);
+  } else if (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId && typeof PLAYERS !== 'undefined') {
+    player = PLAYERS.find(p => p.id === activePortalPlayerId);
+  } else if (typeof document !== 'undefined' && document.body && document.body.classList.contains('mode-player-portal') && typeof PLAYERS !== 'undefined' && PLAYERS.length > 0) {
+    player = PLAYERS[0];
+  }
+
+  const stashGold = camp.partyStash.gold || 0;
+
+  if (player) {
+    const playerGold = player.gold !== undefined ? player.gold : ((player.coins && player.coins.gp) || 0);
+    if (stashGoldModalType === 'add') {
+      if (val > playerGold) {
+        if (typeof customAlert === 'function') customAlert(`Saldo insuficiente! ${player.name} possui apenas ${playerGold} PO em sua carteira.`, 'Saldo Insuficiente');
+        else alert(`Saldo insuficiente! ${player.name} possui apenas ${playerGold} PO.`);
+        return;
+      }
+      player.gold = playerGold - val;
+      player.coins = player.coins || { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
+      player.coins.gp = player.gold;
+      camp.partyStash.gold = stashGold + val;
+
+      camp.partyStash.history.push({
+        date: new Date().toISOString().split('T')[0],
+        type: 'gold_in',
+        text: `+${val} PO guardados por ${player.name} (${reason})`,
+        amount: `+${val} PO`,
+        author: player.name
+      });
+      if (typeof touchPlayer === 'function') touchPlayer(player);
+      if (typeof addLog === 'function') addLog(`💰 <b>Baú do Grupo:</b> ${player.name} guardou ${val} PO. (Saldo do Herói: ${player.gold} PO | Baú: ${camp.partyStash.gold} PO)`);
+    } else {
+      if (val > stashGold) {
+        if (typeof customAlert === 'function') customAlert(`Saldo insuficiente no Baú do Grupo! O baú possui apenas ${stashGold} PO.`, 'Saldo Insuficiente');
+        else alert(`Saldo insuficiente no Baú do Grupo! O baú possui apenas ${stashGold} PO.`);
+        return;
+      }
+      camp.partyStash.gold = stashGold - val;
+      player.gold = playerGold + val;
+      player.coins = player.coins || { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
+      player.coins.gp = player.gold;
+
+      camp.partyStash.history.push({
+        date: new Date().toISOString().split('T')[0],
+        type: 'gold_out',
+        text: `-${val} PO retirados por ${player.name} (${reason})`,
+        amount: `-${val} PO`,
+        author: player.name
+      });
+      if (typeof touchPlayer === 'function') touchPlayer(player);
+      if (typeof addLog === 'function') addLog(`💰 <b>Baú do Grupo:</b> ${player.name} retirou ${val} PO. (Saldo do Herói: ${player.gold} PO | Baú: ${camp.partyStash.gold} PO)`);
+    }
+  } else {
+    // Modo Mestre
+    if (stashGoldModalType === 'add') {
+      camp.partyStash.gold = stashGold + val;
+      camp.partyStash.history.push({
+        date: new Date().toISOString().split('T')[0],
+        type: 'gold_in',
+        text: `+${val} PO (${reason})`,
+        amount: `+${val} PO`,
+        author: 'Mestre'
+      });
+    } else {
+      camp.partyStash.gold = Math.max(0, stashGold - val);
+      camp.partyStash.history.push({
+        date: new Date().toISOString().split('T')[0],
+        type: 'gold_out',
+        text: `-${val} PO (${reason})`,
+        amount: `-${val} PO`,
+        author: 'Mestre'
+      });
+    }
+    if (typeof addLog === 'function') addLog(`💰 <b>Baú do Grupo:</b> ${stashGoldModalType === 'add' ? '+' : '-'}${val} PO (${reason}). Saldo: ${camp.partyStash.gold} PO.`);
+  }
+
+  touchPartyStash(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderCampaigns();
+  renderPartyStashViewer();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+
+  closeStashGoldModal();
+}
+
+function promptAdjustPartyGold(type, sourcePlayerId = null) {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+  camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+  camp.partyStash.items = camp.partyStash.items || [];
+  camp.partyStash.history = camp.partyStash.history || [];
+
+  let player = null;
+  if (sourcePlayerId && typeof PLAYERS !== 'undefined') {
+    player = PLAYERS.find(p => p.id === sourcePlayerId);
+  } else if (typeof activePortalPlayerId !== 'undefined' && activePortalPlayerId && typeof PLAYERS !== 'undefined') {
+    player = PLAYERS.find(p => p.id === activePortalPlayerId);
+  } else if (typeof document !== 'undefined' && document.body && document.body.classList.contains('mode-player-portal') && typeof PLAYERS !== 'undefined' && PLAYERS.length > 0) {
+    player = PLAYERS[0];
+  }
+
   if (player) {
     const playerGold = player.gold !== undefined ? player.gold : ((player.coins && player.coins.gp) || 0);
     const stashGold = camp.partyStash.gold || 0;
@@ -1706,13 +2091,13 @@ function promptAdjustPartyGold(type, sourcePlayerId = null) {
       camp.partyStash.history.push({
         date: new Date().toISOString().split('T')[0],
         text: `+${val} PO guardados por ${player.name} (${reason})`,
+        amount: `+${val} PO`,
         type: 'gold_in'
       });
 
       if (typeof touchPlayer === 'function') touchPlayer(player);
       if (typeof addLog === 'function') addLog(`💰 <b>Baú do Grupo:</b> ${player.name} guardou ${val} PO. (Saldo do Herói: ${player.gold} PO | Baú: ${camp.partyStash.gold} PO)`);
     } else {
-      // Retirada do baú para a carteira do herói
       const promptMsg = `[${player.name}] - Saldo no Baú: ${stashGold} PO\n\nQuantas Peças de Ouro (PO) deseja retirar do Baú do Grupo para a carteira de ${player.name}?`;
       const valStr = prompt(promptMsg, String(Math.min(stashGold, 10)));
       if (valStr === null) return;
@@ -1734,6 +2119,7 @@ function promptAdjustPartyGold(type, sourcePlayerId = null) {
       camp.partyStash.history.push({
         date: new Date().toISOString().split('T')[0],
         text: `-${val} PO retirados por ${player.name} (${reason})`,
+        amount: `-${val} PO`,
         type: 'gold_out'
       });
 
@@ -1741,7 +2127,6 @@ function promptAdjustPartyGold(type, sourcePlayerId = null) {
       if (typeof addLog === 'function') addLog(`💰 <b>Baú do Grupo:</b> ${player.name} retirou ${val} PO. (Saldo do Herói: ${player.gold} PO | Baú: ${camp.partyStash.gold} PO)`);
     }
   } else {
-    // 2. FLUXO DO MESTRE (DM): Injeção/gasto direto ou transferência de herói
     const promptMsg = type === 'add'
       ? 'Quantas Peças de Ouro (PO) deseja ADICIONAR ao Baú do Grupo (Tesouro da Campanha)?'
       : 'Quantas Peças de Ouro (PO) deseja RETIRAR do Baú do Grupo?';
@@ -1757,6 +2142,7 @@ function promptAdjustPartyGold(type, sourcePlayerId = null) {
       camp.partyStash.history.push({
         date: new Date().toISOString().split('T')[0],
         text: `+${val} PO (${reason})`,
+        amount: `+${val} PO`,
         type: 'gold_in'
       });
     } else {
@@ -1764,6 +2150,7 @@ function promptAdjustPartyGold(type, sourcePlayerId = null) {
       camp.partyStash.history.push({
         date: new Date().toISOString().split('T')[0],
         text: `-${val} PO (${reason})`,
+        amount: `-${val} PO`,
         type: 'gold_out'
       });
     }
@@ -1779,6 +2166,154 @@ function promptAdjustPartyGold(type, sourcePlayerId = null) {
   if (typeof renderPlayers === 'function') renderPlayers();
   if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
   if (typeof broadcastStateSync === 'function') broadcastStateSync();
+}
+
+function openSplitGoldModal() {
+  const camp = getActiveCampaign();
+  if (!camp) {
+    if (typeof customAlert === 'function') customAlert('Nenhuma campanha ativa selecionada.', 'Divisão de Tesouro');
+    else alert('Nenhuma campanha ativa selecionada.');
+    return;
+  }
+
+  camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+  const currentGold = camp.partyStash.gold || 0;
+  if (currentGold <= 0) {
+    if (typeof customAlert === 'function') customAlert('O baú do grupo não possui Peças de Ouro (PO) para dividir.', 'Baú Vazio');
+    else alert('O baú do grupo não possui ouro para dividir.');
+    return;
+  }
+
+  const campPlayers = (camp.playerIds && camp.playerIds.length > 0 ? camp.playerIds.map(id => PLAYERS.find(p => String(p.id) === String(id))).filter(p => p) : PLAYERS) || [];
+  if (campPlayers.length === 0) {
+    if (typeof customAlert === 'function') customAlert('Nenhum herói disponível na campanha para participar da divisão.', 'Sem Heróis');
+    else alert('Nenhum herói disponível para receber a divisão de ouro.');
+    return;
+  }
+
+  const modal = document.getElementById('modal-stash-split-gold');
+  if (!modal) {
+    splitPartyGoldLegacy();
+    return;
+  }
+
+  const totalBadge = document.getElementById('split-gold-total-badge');
+  if (totalBadge) totalBadge.innerText = `${currentGold} PO`;
+
+  const listEl = document.getElementById('split-gold-heroes-list');
+  if (listEl) {
+    listEl.innerHTML = campPlayers.map(p => {
+      const pGold = p.gold !== undefined ? p.gold : ((p.coins && p.coins.gp) || 0);
+      return `
+        <label style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; cursor: pointer;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" class="split-gold-hero-checkbox" value="${p.id}" checked onchange="updateSplitGoldCalculation()">
+            <div style="font-weight: 700; font-size: 13px; color: #fff;">${p.name}</div>
+            <span style="font-size: 10px; color: var(--text-dim);">${p.className || 'Herói'} Nv ${p.level || 1}</span>
+          </div>
+          <div style="font-size: 11px; color: #fde68a;">Atual: ${pGold} PO</div>
+        </label>
+      `;
+    }).join('');
+  }
+
+  updateSplitGoldCalculation();
+  modal.style.display = 'flex';
+}
+
+function toggleAllSplitGoldHeroes(checked) {
+  const checkboxes = document.querySelectorAll('.split-gold-hero-checkbox');
+  checkboxes.forEach(cb => { cb.checked = !!checked; });
+  updateSplitGoldCalculation();
+}
+
+function updateSplitGoldCalculation() {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+  const currentGold = camp.partyStash?.gold || 0;
+  const checkboxes = Array.from(document.querySelectorAll('.split-gold-hero-checkbox:checked'));
+  const count = checkboxes.length;
+
+  const previewEl = document.getElementById('split-gold-calculation-preview');
+  const confirmBtn = document.getElementById('btn-confirm-split-gold');
+
+  if (count === 0) {
+    if (previewEl) previewEl.innerHTML = `<span style="color: #f87171;">Nenhum herói selecionado. Marque ao menos um herói para partilhar.</span>`;
+    if (confirmBtn) confirmBtn.disabled = true;
+    return;
+  }
+
+  if (confirmBtn) confirmBtn.disabled = false;
+
+  const each = Math.floor(currentGold / count);
+  const remainder = currentGold % count;
+
+  if (previewEl) {
+    previewEl.innerHTML = `
+      <div style="display: flex; justify-content: space-between; font-size: 13px;">
+        <span>Cada um dos <b>${count}</b> heróis receberá:</span>
+        <b style="color: #10b981; font-size: 14px;">+${each} PO</b>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); margin-top: 3px;">
+        <span>Sobra retida no baú:</span>
+        <b>${remainder} PO</b>
+      </div>
+    `;
+  }
+}
+
+function closeSplitGoldModal() {
+  const modal = document.getElementById('modal-stash-split-gold');
+  if (modal) modal.style.display = 'none';
+}
+
+function submitSplitGoldModal() {
+  const camp = getActiveCampaign();
+  if (!camp) return;
+  camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+  camp.partyStash.history = camp.partyStash.history || [];
+
+  const currentGold = camp.partyStash.gold || 0;
+  const checkboxes = Array.from(document.querySelectorAll('.split-gold-hero-checkbox:checked'));
+  const count = checkboxes.length;
+  if (count === 0 || currentGold <= 0) return;
+
+  const selectedIds = checkboxes.map(cb => cb.value);
+  const selectedPlayers = (typeof PLAYERS !== 'undefined' ? PLAYERS : []).filter(p => selectedIds.includes(String(p.id)));
+
+  const each = Math.floor(currentGold / count);
+  const remainder = currentGold % count;
+  const totalDistributed = each * count;
+
+  selectedPlayers.forEach(p => {
+    p.gold = (p.gold || 0) + each;
+    p.coins = p.coins || { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
+    p.coins.gp = (p.coins.gp || 0) + each;
+    if (typeof touchPlayer === 'function') touchPlayer(p);
+  });
+
+  camp.partyStash.gold = remainder;
+  const names = selectedPlayers.map(p => p.name).join(', ');
+
+  camp.partyStash.history.push({
+    date: new Date().toISOString().split('T')[0],
+    type: 'gold_split',
+    text: `Divisão de ${totalDistributed} PO (${each} PO para cada um de: ${names})`,
+    amount: `-${totalDistributed} PO`,
+    author: 'Divisão Coletiva'
+  });
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+  renderCampaigns();
+  renderPartyStashViewer();
+  if (typeof renderPlayers === 'function') renderPlayers();
+  if (typeof addLog === 'function') addLog(`💰 <b>Divisão de Tesouro:</b> ${each} PO distribuídos para cada um dos ${count} heróis (${names}). Sobra no baú: ${remainder} PO.`);
+
+  closeSplitGoldModal();
 }
 
 function splitPartyGold() {
@@ -1817,7 +2352,8 @@ function splitPartyGold() {
   camp.partyStash.history.push({
     date: new Date().toISOString().split('T')[0],
     text: `Divisão de ${currentGold} PO (${each} PO para cada um dos ${campPlayers.length} heróis)`,
-    type: 'gold_out'
+    amount: `-${currentGold - remainder} PO`,
+    type: 'gold_split'
   });
 
   touchCampaign(camp);
@@ -1829,6 +2365,169 @@ function splitPartyGold() {
   renderPartyStashViewer();
   if (typeof renderPlayers === 'function') renderPlayers();
   if (typeof addLog === 'function') addLog(`💰 <b>Divisão de Tesouro:</b> ${each} PO distribuídos para cada um dos ${campPlayers.length} heróis. Sobra: ${remainder} PO.`);
+}
+
+// --- VENDA DE ITENS DO BAÚ (ISSUE-175: LIQUIDAÇÃO & COMÉRCIO) ---
+let currentSellingItemId = null;
+
+function getItemMarketPrice(itemName) {
+  if (!itemName) return 0;
+  const nameClean = itemName.toLowerCase().trim();
+  if (typeof EQUIPMENT_DATA !== 'undefined' && Array.isArray(EQUIPMENT_DATA)) {
+    const found = EQUIPMENT_DATA.find(eq => eq.name && eq.name.toLowerCase() === nameClean);
+    if (found && found.cost) {
+      const match = found.cost.match(/(\d+)/);
+      if (match) return parseInt(match[1], 10);
+    }
+  }
+  return 0;
+}
+
+function getItemDefaultSellPrice(itemName) {
+  const market = getItemMarketPrice(itemName);
+  if (market > 0) {
+    return Math.max(1, Math.floor(market * 0.5));
+  }
+  return 1;
+}
+
+function openSellPartyItemModal(itemId) {
+  const camp = getActiveCampaign();
+  if (!camp || !camp.partyStash?.items) return;
+  const it = camp.partyStash.items.find(x => x.id === itemId);
+  if (!it) {
+    if (typeof customAlert === 'function') customAlert('Item não encontrado no inventário coletivo.', 'Venda de Item');
+    else alert('Item não encontrado no inventário coletivo.');
+    return;
+  }
+
+  currentSellingItemId = itemId;
+  const modal = document.getElementById('modal-stash-sell-item');
+  if (!modal) return;
+
+  const nameEl = document.getElementById('sell-item-name');
+  const catEl = document.getElementById('sell-item-category-badge');
+  const stockEl = document.getElementById('sell-item-stock-info');
+  const inpQty = document.getElementById('inp-sell-item-qty');
+  const inpPrice = document.getElementById('inp-sell-item-price');
+
+  const stockQty = parseInt(it.qty, 10) || 1;
+  if (nameEl) nameEl.innerText = it.name || 'Item';
+  if (catEl) catEl.innerText = it.category || 'Equipamento';
+  if (stockEl) stockEl.innerText = `Estoque disponível: ${stockQty} un`;
+
+  if (inpQty) {
+    inpQty.value = '1';
+    inpQty.max = String(stockQty);
+    inpQty.min = '1';
+  }
+
+  const defPrice = getItemDefaultSellPrice(it.name);
+  if (inpPrice) {
+    inpPrice.value = String(defPrice);
+  }
+
+  updateSellCalculationPreview();
+  modal.style.display = 'flex';
+}
+
+function updateSellCalculationPreview() {
+  const camp = getActiveCampaign();
+  if (!camp || !currentSellingItemId) return;
+  const it = (camp.partyStash?.items || []).find(x => x.id === currentSellingItemId);
+  if (!it) return;
+
+  const inpQty = document.getElementById('inp-sell-item-qty');
+  const inpPrice = document.getElementById('inp-sell-item-price');
+  const totalEl = document.getElementById('sell-item-total-gold');
+
+  const stockQty = parseInt(it.qty, 10) || 1;
+  let qty = parseInt(inpQty?.value, 10) || 1;
+  qty = Math.max(1, Math.min(stockQty, qty));
+
+  const price = parseFloat(inpPrice?.value) || 0;
+  const total = Number((qty * price).toFixed(1));
+
+  if (totalEl) totalEl.innerText = `+${total} PO`;
+}
+
+function setSellQtyPreset(preset) {
+  const camp = getActiveCampaign();
+  if (!camp || !currentSellingItemId) return;
+  const it = (camp.partyStash?.items || []).find(x => x.id === currentSellingItemId);
+  if (!it) return;
+
+  const stockQty = parseInt(it.qty, 10) || 1;
+  const inpQty = document.getElementById('inp-sell-item-qty');
+  if (!inpQty) return;
+
+  if (preset === 'all') {
+    inpQty.value = String(stockQty);
+  } else if (preset === 'half') {
+    inpQty.value = String(Math.max(1, Math.floor(stockQty / 2)));
+  } else {
+    inpQty.value = String(Math.max(1, Math.min(stockQty, parseInt(preset, 10) || 1)));
+  }
+  updateSellCalculationPreview();
+}
+
+function closeSellPartyItemModal() {
+  const modal = document.getElementById('modal-stash-sell-item');
+  if (modal) modal.style.display = 'none';
+  currentSellingItemId = null;
+}
+
+function submitSellPartyItem() {
+  const camp = getActiveCampaign();
+  if (!camp || !currentSellingItemId) return;
+  camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+  camp.partyStash.items = camp.partyStash.items || [];
+  camp.partyStash.history = camp.partyStash.history || [];
+
+  const it = camp.partyStash.items.find(x => x.id === currentSellingItemId);
+  if (!it) {
+    closeSellPartyItemModal();
+    return;
+  }
+
+  const inpQty = document.getElementById('inp-sell-item-qty');
+  const inpPrice = document.getElementById('inp-sell-item-price');
+
+  const stockQty = parseInt(it.qty, 10) || 1;
+  let qty = parseInt(inpQty?.value, 10) || 1;
+  qty = Math.max(1, Math.min(stockQty, qty));
+
+  const unitPrice = parseFloat(inpPrice?.value) || 0;
+  const totalGold = Number((qty * unitPrice).toFixed(1));
+
+  if (qty >= stockQty) {
+    trackDeletedPartyItemId(it.id);
+    camp.partyStash.items = camp.partyStash.items.filter(x => x.id !== it.id);
+  } else {
+    it.qty = stockQty - qty;
+  }
+
+  camp.partyStash.gold = (camp.partyStash.gold || 0) + totalGold;
+
+  camp.partyStash.history.push({
+    date: new Date().toISOString().split('T')[0],
+    type: 'item_sold',
+    text: `Venda de ${qty}x "${it.name}" por +${totalGold} PO (${unitPrice} PO cada)`,
+    amount: `+${totalGold} PO`,
+    author: 'Comércio / Venda'
+  });
+
+  touchPartyStash(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase(true);
+  if (typeof broadcastStateSync === 'function') broadcastStateSync();
+  renderCampaigns();
+  renderPartyStashViewer();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+  if (typeof addLog === 'function') addLog(`🏷️ <b>Baú do Grupo:</b> ${qty}x "${it.name}" vendidos por +${totalGold} PO. Novo saldo: ${camp.partyStash.gold} PO.`);
+
+  closeSellPartyItemModal();
 }
 
 // --- ITENS DO BAÚ ---
@@ -2047,7 +2746,9 @@ function deletePartyItem(itemId) {
   camp.partyStash.history.push({
     date: new Date().toISOString().split('T')[0],
     text: `-${it.qty}x ${it.name} removido do grupo`,
-    type: 'item_out'
+    amount: `-${it.qty}x`,
+    type: 'item_out',
+    author: 'Mestre'
   });
 
   saveCampaignsState();
@@ -2235,7 +2936,7 @@ function deletePartyStashHistoryItem(origIndex) {
   if (isNaN(idx) || idx < 0 || idx >= camp.partyStash.history.length) return;
 
   const item = camp.partyStash.history[idx];
-  const itemText = item ? item.text : 'registro';
+  const itemText = item ? (item.text || 'registro') : 'registro';
 
   if (!confirm(`Excluir este registro do histórico?\n"${itemText}"`)) return;
 
@@ -2293,7 +2994,6 @@ function takePartyItemToPlayer(itemId, targetPlayerId = null, qty = null) {
   if (isNaN(takeQty) || takeQty <= 0) takeQty = 1;
   if (takeQty > itQty) takeQty = itQty;
 
-  // Resolve peso preservado ou busca no catálogo canônico
   let resolvedWeight = (it.weight !== undefined && !isNaN(parseFloat(it.weight))) ? parseFloat(it.weight) : 0;
   if (resolvedWeight === 0 && typeof EQUIPMENT_DATA !== 'undefined' && Array.isArray(EQUIPMENT_DATA)) {
     const eq = EQUIPMENT_DATA.find(e => e.name && e.name.toLowerCase() === (it.name || '').toLowerCase());
@@ -2335,7 +3035,9 @@ function takePartyItemToPlayer(itemId, targetPlayerId = null, qty = null) {
   camp.partyStash.history.push({
     date: new Date().toISOString().split('T')[0],
     text: `${takeQty}x ${it.name} transferido para a mochila de ${targetPlayer.name}`,
-    type: 'item_out'
+    amount: `${takeQty}x`,
+    type: 'item_out',
+    author: targetPlayer.name
   });
 
   saveCampaignsState();
@@ -5207,6 +5909,28 @@ if (typeof module !== 'undefined' && module.exports) {
     deletePartyStashHistoryItem,
     promptAdjustPartyGold,
     splitPartyGold,
+    openStashGoldModal,
+    setStashGoldModalTab,
+    setStashGoldPreset,
+    setStashReasonChip,
+    closeStashGoldModal,
+    submitStashGoldModal,
+    openSplitGoldModal,
+    toggleAllSplitGoldHeroes,
+    updateSplitGoldCalculation,
+    closeSplitGoldModal,
+    submitSplitGoldModal,
+    openSellPartyItemModal,
+    updateSellCalculationPreview,
+    setSellQtyPreset,
+    closeSellPartyItemModal,
+    submitSellPartyItem,
+    getItemMarketPrice,
+    getItemDefaultSellPrice,
+    setStashHistoryFilter,
+    handleStashHistorySearch,
+    toggleStashHistoryShowAll,
+    renderStashHistoryCardHtml,
     takePartyItemToPlayer,
     sendPlayerItemToPartyStash,
     getAllCampaignHirelings,
@@ -5330,6 +6054,28 @@ if (typeof window !== 'undefined') {
   window.takePartyItemToPlayer = takePartyItemToPlayer;
   window.promptAdjustPartyGold = promptAdjustPartyGold;
   window.splitPartyGold = splitPartyGold;
+  window.openStashGoldModal = openStashGoldModal;
+  window.setStashGoldModalTab = setStashGoldModalTab;
+  window.setStashGoldPreset = setStashGoldPreset;
+  window.setStashReasonChip = setStashReasonChip;
+  window.closeStashGoldModal = closeStashGoldModal;
+  window.submitStashGoldModal = submitStashGoldModal;
+  window.openSplitGoldModal = openSplitGoldModal;
+  window.toggleAllSplitGoldHeroes = toggleAllSplitGoldHeroes;
+  window.updateSplitGoldCalculation = updateSplitGoldCalculation;
+  window.closeSplitGoldModal = closeSplitGoldModal;
+  window.submitSplitGoldModal = submitSplitGoldModal;
+  window.openSellPartyItemModal = openSellPartyItemModal;
+  window.updateSellCalculationPreview = updateSellCalculationPreview;
+  window.setSellQtyPreset = setSellQtyPreset;
+  window.closeSellPartyItemModal = closeSellPartyItemModal;
+  window.submitSellPartyItem = submitSellPartyItem;
+  window.getItemMarketPrice = getItemMarketPrice;
+  window.getItemDefaultSellPrice = getItemDefaultSellPrice;
+  window.setStashHistoryFilter = setStashHistoryFilter;
+  window.handleStashHistorySearch = handleStashHistorySearch;
+  window.toggleStashHistoryShowAll = toggleStashHistoryShowAll;
+  window.renderStashHistoryCardHtml = renderStashHistoryCardHtml;
   window.renderCampaignHirelings = renderCampaignHirelings;
   window.updateHirelingMission = updateHirelingMission;
   window.updateHirelingStatus = updateHirelingStatus;

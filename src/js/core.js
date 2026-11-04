@@ -3823,6 +3823,342 @@ if (typeof window !== 'undefined' && typeof window.addEventListener === 'functio
   });
 }
 
+// =========================================================================
+// ISSUE-175: MOTOR UNIVERSAL DE DIÁLOGOS DARK FANTASY & SELETOR DE HERÓI
+// =========================================================================
+
+let _activeHeroSelectCallback = null;
+let _activeHeroSelectCancel = null;
+let _activeHeroSelectList = [];
+
+function openHeroSelectModal(options = {}) {
+  const modal = document.getElementById('modal-hero-select');
+  if (!modal) return;
+
+  const titleEl = document.getElementById('hero-select-modal-title');
+  const subEl = document.getElementById('hero-select-modal-subtitle');
+  const iconEl = document.getElementById('hero-select-modal-icon');
+  const searchInp = document.getElementById('inp-hero-select-search');
+
+  if (titleEl) { titleEl.textContent = options.title || 'Selecionar Personagem'; titleEl.innerText = titleEl.textContent; }
+  if (subEl) { subEl.textContent = options.subtitle || 'Escolha um herói da mesa para continuar:'; subEl.innerText = subEl.textContent; }
+  if (iconEl) { iconEl.textContent = options.icon || '⭐'; iconEl.innerText = iconEl.textContent; }
+  if (searchInp) searchInp.value = '';
+
+  _activeHeroSelectCallback = options.onSelect || null;
+  _activeHeroSelectCancel = options.onCancel || null;
+
+  const heroes = options.heroes || ((typeof global !== 'undefined' && global.PLAYERS && global.PLAYERS.length > 0) ? global.PLAYERS : (typeof PLAYERS !== 'undefined' ? PLAYERS : []));
+  _activeHeroSelectList = Array.isArray(heroes) ? [...heroes] : [];
+
+  renderHeroSelectCards(_activeHeroSelectList);
+  modal.style.display = 'flex';
+}
+
+function renderHeroSelectCards(list) {
+  const grid = document.getElementById('hero-select-grid');
+  if (!grid) return;
+
+  if (!list || list.length === 0) {
+    grid.innerHTML = '<div style="grid-column: 1 / -1; padding: 20px; text-align: center; color: var(--text-dim); font-size: 12px;">Nenhum personagem disponível ou encontrado.</div>';
+    return;
+  }
+
+  grid.innerHTML = list.map(p => {
+    const hpVal = p.hp !== undefined ? p.hp : (p.maxHp || 10);
+    const maxHpVal = p.maxHp || 10;
+    const hpPct = Math.max(0, Math.min(100, Math.round((hpVal / maxHpVal) * 100)));
+    const hpColor = hpPct > 50 ? '#10b981' : (hpPct > 25 ? '#f59e0b' : '#ef4444');
+    const avatar = p.avatar || '👤';
+
+    return `
+      <div class="hero-select-card" onclick="onHeroCardSelected('${p.id}')" title="Selecionar ${p.name}">
+        <div class="hero-select-avatar">${avatar}</div>
+        <div class="hero-select-info">
+          <div class="hero-select-name">${p.name}</div>
+          <div class="hero-select-sub">${p.className || 'Herói'} (Nv ${p.level || 1}) • ${p.student || 'Jogador'}</div>
+          <div style="display: flex; align-items: center; gap: 6px; margin-top: 3px;">
+            <div style="flex: 1; height: 4px; background: rgba(0,0,0,0.5); border-radius: 2px; overflow: hidden;">
+              <div style="width: ${hpPct}%; height: 100%; background: ${hpColor}; border-radius: 2px;"></div>
+            </div>
+            <span style="font-size: 9.5px; color: ${hpColor}; font-weight: 700;">${hpVal}/${maxHpVal} PV</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function filterHeroSelectCards(query) {
+  const q = (query || '').toLowerCase().trim();
+  if (!q) {
+    renderHeroSelectCards(_activeHeroSelectList);
+    return;
+  }
+  const filtered = _activeHeroSelectList.filter(p => {
+    const nameM = (p.name || '').toLowerCase().includes(q);
+    const studM = (p.student || '').toLowerCase().includes(q);
+    const classM = (p.className || '').toLowerCase().includes(q);
+    const raceM = (p.race || '').toLowerCase().includes(q);
+    return nameM || studM || classM || raceM;
+  });
+  renderHeroSelectCards(filtered);
+}
+
+function onHeroCardSelected(playerId) {
+  const pool = (_activeHeroSelectList && _activeHeroSelectList.length > 0) ? _activeHeroSelectList : (((typeof global !== 'undefined' && global.PLAYERS && global.PLAYERS.length > 0) ? global.PLAYERS : (typeof PLAYERS !== 'undefined' ? PLAYERS : [])));
+  const hero = pool.find(p => String(p.id) === String(playerId));
+  const cb = _activeHeroSelectCallback;
+  _activeHeroSelectCallback = null;
+  _activeHeroSelectCancel = null;
+  const modal = document.getElementById('modal-hero-select');
+  if (modal) modal.style.display = 'none';
+  if (typeof cb === 'function' && hero) {
+    cb(hero);
+  }
+}
+
+function closeHeroSelectModal() {
+  const modal = document.getElementById('modal-hero-select');
+  if (modal) modal.style.display = 'none';
+  const cancelCb = _activeHeroSelectCancel;
+  _activeHeroSelectCallback = null;
+  _activeHeroSelectCancel = null;
+  if (typeof cancelCb === 'function') {
+    cancelCb();
+  }
+}
+
+// -------------------------------------------------------------
+// MOTOR UNIVERSAL DE DIÁLOGOS CUSTOMIZADOS (PROMPT / CONFIRM / ALERT)
+// -------------------------------------------------------------
+
+let _customDialogResolve = null;
+let _customDialogOnConfirm = null;
+let _customDialogOnCancel = null;
+
+function customPrompt(options = {}) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('modal-custom-dialog');
+    if (!modal) {
+      const fallback = prompt(options.message || options.title || '', options.defaultValue || '');
+      if (fallback !== null && typeof options.onConfirm === 'function') options.onConfirm(fallback);
+      else if (fallback === null && typeof options.onCancel === 'function') options.onCancel();
+      resolve(fallback);
+      return;
+    }
+
+    _customDialogResolve = resolve;
+    _customDialogOnConfirm = options.onConfirm || null;
+    _customDialogOnCancel = options.onCancel || null;
+    window._customDialogStrict = false;
+
+    const iconEl = document.getElementById('custom-dialog-icon');
+    const titleEl = document.getElementById('custom-dialog-title');
+    const msgEl = document.getElementById('custom-dialog-message');
+    const inputWrap = document.getElementById('custom-dialog-input-wrap');
+    const inputEl = document.getElementById('custom-dialog-input');
+    const presetsEl = document.getElementById('custom-dialog-presets');
+    const cancelBtn = document.getElementById('custom-dialog-cancel-btn');
+    const confirmBtn = document.getElementById('custom-dialog-confirm-btn');
+
+    if (iconEl) { iconEl.textContent = options.icon || '✏️'; iconEl.innerText = iconEl.textContent; }
+    if (titleEl) { titleEl.textContent = options.title || 'Entrada de Dados'; titleEl.innerText = titleEl.textContent; }
+    if (msgEl) { msgEl.textContent = options.message || ''; msgEl.innerText = msgEl.textContent; }
+
+    if (inputWrap) inputWrap.style.display = 'block';
+    if (inputEl) {
+      inputEl.type = options.type || 'text';
+      inputEl.value = options.defaultValue !== undefined ? options.defaultValue : '';
+      inputEl.placeholder = options.placeholder || '';
+      if (options.min !== undefined) inputEl.min = options.min;
+      if (options.max !== undefined) inputEl.max = options.max;
+    }
+
+    if (presetsEl) {
+      if (Array.isArray(options.presets) && options.presets.length > 0) {
+        presetsEl.innerHTML = options.presets.map(p => `
+          <button type="button" class="btn-micro" onclick="setCustomDialogPreset('${p}')">${p}</button>
+        `).join('');
+      } else {
+        presetsEl.innerHTML = '';
+      }
+    }
+
+    if (cancelBtn) {
+      cancelBtn.style.display = 'inline-block';
+      cancelBtn.textContent = options.cancelText || 'Cancelar';
+    }
+    if (confirmBtn) {
+      confirmBtn.className = 'btn-action';
+      confirmBtn.textContent = options.confirmText || 'Confirmar';
+    }
+
+    modal.style.display = 'flex';
+    setTimeout(() => {
+      if (inputEl) {
+        if (typeof inputEl.focus === 'function') inputEl.focus();
+        if (typeof inputEl.select === 'function') inputEl.select();
+      }
+    }, 50);
+  });
+}
+
+function setCustomDialogPreset(val) {
+  const inputEl = document.getElementById('custom-dialog-input');
+  if (inputEl) inputEl.value = val;
+}
+
+function customConfirm(options = {}) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('modal-custom-dialog');
+    if (!modal) {
+      const fallback = confirm(options.message || options.title || '');
+      if (fallback && typeof options.onConfirm === 'function') options.onConfirm();
+      else if (!fallback && typeof options.onCancel === 'function') options.onCancel();
+      resolve(fallback);
+      return;
+    }
+
+    _customDialogResolve = resolve;
+    _customDialogOnConfirm = options.onConfirm || null;
+    _customDialogOnCancel = options.onCancel || null;
+    window._customDialogStrict = false;
+
+    const iconEl = document.getElementById('custom-dialog-icon');
+    const titleEl = document.getElementById('custom-dialog-title');
+    const msgEl = document.getElementById('custom-dialog-message');
+    const inputWrap = document.getElementById('custom-dialog-input-wrap');
+    const cancelBtn = document.getElementById('custom-dialog-cancel-btn');
+    const confirmBtn = document.getElementById('custom-dialog-confirm-btn');
+
+    if (iconEl) { iconEl.textContent = options.icon || (options.danger ? '⚠️' : '❓'); iconEl.innerText = iconEl.textContent; }
+    if (titleEl) { titleEl.textContent = options.title || 'Confirmação'; titleEl.innerText = titleEl.textContent; }
+    if (msgEl) { msgEl.textContent = options.message || 'Deseja realmente continuar?'; msgEl.innerText = msgEl.textContent; }
+    if (inputWrap) inputWrap.style.display = 'none';
+
+    if (cancelBtn) {
+      cancelBtn.style.display = 'inline-block';
+      cancelBtn.textContent = options.cancelText || 'Cancelar';
+    }
+    if (confirmBtn) {
+      confirmBtn.className = options.danger ? 'btn-action danger' : 'btn-action';
+      confirmBtn.textContent = options.confirmText || 'Confirmar';
+    }
+
+    modal.style.display = 'flex';
+  });
+}
+
+function customAlert(options = {}, customTitle = null) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('modal-custom-dialog');
+    if (!modal) {
+      alert(typeof options === 'string' ? options : (options.message || options.title || ''));
+      resolve(true);
+      return;
+    }
+
+    _customDialogResolve = resolve;
+    window._customDialogStrict = false;
+
+    const iconEl = document.getElementById('custom-dialog-icon');
+    const titleEl = document.getElementById('custom-dialog-title');
+    const msgEl = document.getElementById('custom-dialog-message');
+    const inputWrap = document.getElementById('custom-dialog-input-wrap');
+    const cancelBtn = document.getElementById('custom-dialog-cancel-btn');
+    const confirmBtn = document.getElementById('custom-dialog-confirm-btn');
+
+    let msg = '';
+    let title = 'Aviso';
+    if (typeof options === 'string') {
+      msg = options;
+      title = customTitle || 'Aviso';
+    } else {
+      msg = options.message || '';
+      title = options.title || customTitle || 'Aviso';
+    }
+    const type = options.type || 'info';
+    const icon = options.icon || (type === 'error' ? '❌' : (type === 'success' ? '✅' : (type === 'warning' ? '⚠️' : 'ℹ️')));
+
+    if (iconEl) { iconEl.textContent = icon; iconEl.innerText = icon; }
+    if (titleEl) { titleEl.textContent = title; titleEl.innerText = title; }
+    if (msgEl) { msgEl.textContent = msg; msgEl.innerText = msg; }
+    if (inputWrap) inputWrap.style.display = 'none';
+
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    if (confirmBtn) {
+      confirmBtn.className = 'btn-action';
+      confirmBtn.textContent = options.okText || 'OK';
+      confirmBtn.innerText = options.okText || 'OK';
+    }
+
+    modal.style.display = 'flex';
+  });
+}
+
+function submitCustomDialog(ok = true) {
+  const modal = document.getElementById('modal-custom-dialog');
+  const inputWrap = document.getElementById('custom-dialog-input-wrap');
+  const inputEl = document.getElementById('custom-dialog-input');
+
+  let result = null;
+  if (ok) {
+    if (inputWrap && inputWrap.style.display !== 'none') {
+      result = inputEl ? inputEl.value : '';
+    } else {
+      result = true;
+    }
+  } else {
+    result = inputWrap && inputWrap.style.display !== 'none' ? null : false;
+  }
+
+  if (modal) modal.style.display = 'none';
+
+  if (ok && typeof _customDialogOnConfirm === 'function') {
+    _customDialogOnConfirm(result);
+  } else if (!ok && typeof _customDialogOnCancel === 'function') {
+    _customDialogOnCancel();
+  }
+
+  if (typeof _customDialogResolve === 'function') {
+    _customDialogResolve(result);
+    _customDialogResolve = null;
+  }
+  _customDialogOnConfirm = null;
+  _customDialogOnCancel = null;
+}
+
+function closeCustomDialog(result = null) {
+  submitCustomDialog(false);
+}
+
+if (typeof window !== 'undefined') {
+  window.openHeroSelectModal = openHeroSelectModal;
+  window.closeHeroSelectModal = closeHeroSelectModal;
+  window.filterHeroSelectCards = filterHeroSelectCards;
+  window.onHeroCardSelected = onHeroCardSelected;
+  window.customPrompt = customPrompt;
+  window.customConfirm = customConfirm;
+  window.customAlert = customAlert;
+  window.submitCustomDialog = submitCustomDialog;
+  window.closeCustomDialog = closeCustomDialog;
+  window.setCustomDialogPreset = setCustomDialogPreset;
+}
+
+if (typeof global !== 'undefined') {
+  global.openHeroSelectModal = openHeroSelectModal;
+  global.closeHeroSelectModal = closeHeroSelectModal;
+  global.filterHeroSelectCards = filterHeroSelectCards;
+  global.onHeroCardSelected = onHeroCardSelected;
+  global.customPrompt = customPrompt;
+  global.customConfirm = customConfirm;
+  global.customAlert = customAlert;
+  global.submitCustomDialog = submitCustomDialog;
+  global.closeCustomDialog = closeCustomDialog;
+  global.setCustomDialogPreset = setCustomDialogPreset;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     isMasterPinConfigured,
@@ -3874,7 +4210,17 @@ if (typeof module !== 'undefined' && module.exports) {
     computeSimplePinHash,
     getMasterPinHash,
     toggleNavDropdown,
-    safeLocalStorageSet
+    safeLocalStorageSet,
+    openHeroSelectModal,
+    closeHeroSelectModal,
+    filterHeroSelectCards,
+    onHeroCardSelected,
+    customPrompt,
+    customConfirm,
+    customAlert,
+    submitCustomDialog,
+    closeCustomDialog,
+    setCustomDialogPreset
   };
 } else {
   if (typeof window !== 'undefined') {

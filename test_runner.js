@@ -11008,6 +11008,73 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     const b143ClassesJs = fs.readFileSync(path.join(srcDir, 'js', 'classes.js'), 'utf8');
     assert(b143ClassesJs.includes('Compêndio Canônico: 39 Invocações Místicas'), 'classes.js exibe compêndio de invocações no Bruxo');
 
+    // =========================================================================
+    // 💰 144. Overhaul de Contabilidade do Baú, Venda de Itens e Modais Dark Fantasy (ISSUE-175)
+    // =========================================================================
+    console.log('\n📜 [Bateria 144] Registro Contábil Rico do Baú, Venda de Itens e Modais Dark Fantasy (ISSUE-175):');
+
+    // 1. Funções de Dialog e Hero Select em core.js
+    assert(typeof sandbox.customAlert === 'function', 'sandbox exporta customAlert');
+    assert(typeof sandbox.customConfirm === 'function', 'sandbox exporta customConfirm');
+    assert(typeof sandbox.customPrompt === 'function', 'sandbox exporta customPrompt');
+    assert(typeof sandbox.openHeroSelectModal === 'function', 'sandbox exporta openHeroSelectModal');
+    assert(typeof sandbox.closeHeroSelectModal === 'function', 'sandbox exporta closeHeroSelectModal');
+    assert(typeof sandbox.onHeroCardSelected === 'function', 'sandbox exporta onHeroCardSelected');
+    passedTests += 6;
+
+    // 2. Funções Contábeis e Venda de Itens em campaigns.js
+    assert(typeof sandbox.setStashHistoryFilter === 'function', 'sandbox exporta setStashHistoryFilter');
+    assert(typeof sandbox.handleStashHistorySearch === 'function', 'sandbox exporta handleStashHistorySearch');
+    assert(typeof sandbox.toggleStashHistoryShowAll === 'function', 'sandbox exporta toggleStashHistoryShowAll');
+    assert(typeof sandbox.renderStashHistoryCardHtml === 'function', 'sandbox exporta renderStashHistoryCardHtml');
+    assert(typeof sandbox.openStashGoldModal === 'function', 'sandbox exporta openStashGoldModal');
+    assert(typeof sandbox.setStashGoldPreset === 'function', 'sandbox exporta setStashGoldPreset');
+    assert(typeof sandbox.submitStashGoldModal === 'function', 'sandbox exporta submitStashGoldModal');
+    assert(typeof sandbox.openSplitGoldModal === 'function', 'sandbox exporta openSplitGoldModal');
+    assert(typeof sandbox.toggleAllSplitGoldHeroes === 'function', 'sandbox exporta toggleAllSplitGoldHeroes');
+    assert(typeof sandbox.updateSplitGoldCalculation === 'function', 'sandbox exporta updateSplitGoldCalculation');
+    assert(typeof sandbox.submitSplitGoldModal === 'function', 'sandbox exporta submitSplitGoldModal');
+    assert(typeof sandbox.openSellPartyItemModal === 'function', 'sandbox exporta openSellPartyItemModal');
+    assert(typeof sandbox.updateSellCalculationPreview === 'function', 'sandbox exporta updateSellCalculationPreview');
+    assert(typeof sandbox.setSellQtyPreset === 'function', 'sandbox exporta setSellQtyPreset');
+    assert(typeof sandbox.submitSellPartyItem === 'function', 'sandbox exporta submitSellPartyItem');
+    assert(typeof sandbox.getItemMarketPrice === 'function', 'sandbox exporta getItemMarketPrice');
+    assert(typeof sandbox.getItemDefaultSellPrice === 'function', 'sandbox exporta getItemDefaultSellPrice');
+    passedTests += 17;
+
+    // 3. Renderização de card contábil rico
+    const sampleCard = sandbox.renderStashHistoryCardHtml({
+      type: 'gold_in',
+      text: '+100 PO (Recompensa de Masmorra)',
+      amount: '+100 PO',
+      date: '2026-11-04',
+      author: 'Mestre',
+      origIdx: 0
+    });
+    assert(sampleCard.includes('stash-history-card gold_in'), 'Card inclui classe CSS gold_in');
+    assert(sampleCard.includes('Entrada'), 'Card inclui badge de tipo Entrada');
+    assert(sampleCard.includes('04/11/2026'), 'Card formata a data para formato DD/MM/AAAA');
+    passedTests += 3;
+
+    // 4. Verificação de marcação HTML dos modais customizados e botões em ui.html
+    const b144UiHtml = fs.readFileSync(path.join(srcDir, 'ui', 'ui.html'), 'utf8');
+    assert(b144UiHtml.includes('id="modal-custom-dialog"'), 'ui.html inclui modal-custom-dialog universal');
+    assert(b144UiHtml.includes('id="modal-hero-select"'), 'ui.html inclui modal-hero-select com cards interativos');
+    assert(b144UiHtml.includes('id="modal-stash-gold-adjust"'), 'ui.html inclui modal-stash-gold-adjust com abas e presets');
+    assert(b144UiHtml.includes('id="modal-stash-split-gold"'), 'ui.html inclui modal-stash-split-gold com checklist');
+    assert(b144UiHtml.includes('id="modal-stash-sell-item"'), 'ui.html inclui modal-stash-sell-item com conversão');
+    assert(b144UiHtml.includes('id="stash-history-filter-chips"'), 'ui.html inclui toolbar de chips com filtros');
+    assert(b144UiHtml.includes('id="inp-search-stash-history"'), 'ui.html inclui input de busca no histórico');
+    passedTests += 7;
+
+    // 5. Verificação de estilos CSS Dark Fantasy em head_css.html
+    const b144HeadCss = fs.readFileSync(path.join(srcDir, 'styles', 'head_css.html'), 'utf8');
+    assert(b144HeadCss.includes('.stash-history-card'), 'head_css.html define .stash-history-card');
+    assert(b144HeadCss.includes('.hero-select-card'), 'head_css.html define .hero-select-card');
+    assert(b144HeadCss.includes('.custom-dialog-card'), 'head_css.html define .custom-dialog-card');
+    assert(b144HeadCss.includes('.stash-history-amount'), 'head_css.html define .stash-history-amount');
+    passedTests += 4;
+
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;
     sandbox.document.getElementById = origGetEl;

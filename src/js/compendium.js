@@ -854,61 +854,115 @@ function renderEquipment() {
 }
 
 function promptAddEquipmentToPartyStash(name, category, prop) {
-  const qtyStr = prompt(`Quantas unidades de "${name}" deseja adicionar ao Baú do Grupo?`, '1');
-  if (qtyStr === null) return;
-  const qty = parseInt(qtyStr);
-  if (isNaN(qty) || qty <= 0) return;
+  const doAdd = (qty) => {
+    if (typeof addItemToPartyStash === 'function') {
+      addItemToPartyStash(name, qty, category, prop, 'Baú do Grupo');
+      if (typeof customAlert === 'function') {
+        customAlert(`✅ ${qty}x "${name}" adicionado com sucesso ao Baú do Grupo!`, 'Baú do Grupo');
+      } else {
+        alert(`✅ ${qty}x "${name}" adicionado com sucesso ao Baú do Grupo!`);
+      }
+    } else {
+      alert('Função do baú não disponível.');
+    }
+  };
 
-  if (typeof addItemToPartyStash === 'function') {
-    addItemToPartyStash(name, qty, category, prop, 'Baú do Grupo');
-    alert(`✅ ${qty}x "${name}" adicionado com sucesso ao Baú do Grupo!`);
+  if (typeof customPrompt === 'function' && typeof document !== 'undefined' && document.getElementById('modal-custom-dialog')) {
+    customPrompt({
+      title: `Adicionar ao Baú do Grupo`,
+      message: `Quantas unidades de "${name}" deseja estocar no Baú Coletivo?`,
+      defaultValue: '1',
+      placeholder: 'Quantidade',
+      presets: ['1', '2', '5', '10', '20'],
+      onConfirm: (val) => {
+        const qty = parseInt(val, 10);
+        if (!isNaN(qty) && qty > 0) doAdd(qty);
+      }
+    });
   } else {
-    alert('Função do baú não disponível.');
+    const qtyStr = prompt(`Quantas unidades de "${name}" deseja adicionar ao Baú do Grupo?`, '1');
+    if (qtyStr === null) return;
+    const qty = parseInt(qtyStr, 10);
+    if (!isNaN(qty) && qty > 0) doAdd(qty);
   }
 }
 
 function promptGiveEquipmentToPlayer(name, weightStr, prop) {
   if (typeof PLAYERS === 'undefined' || PLAYERS.length === 0) {
-    alert('Nenhum herói cadastrado para receber o item.');
+    if (typeof customAlert === 'function') customAlert('Nenhum herói cadastrado para receber o item.', 'Entregar Item');
+    else alert('Nenhum herói cadastrado para receber o item.');
+    return;
+  }
+
+  const deliverToHero = (targetPlayer) => {
+    const doDeliver = (qty) => {
+      const parsedWeight = parseFloat(weightStr) || 0.5;
+      targetPlayer.inventory = targetPlayer.inventory || [];
+      const existing = targetPlayer.inventory.find(x => x.name.toLowerCase() === name.toLowerCase());
+      if (existing) {
+        existing.qty = (parseInt(existing.qty, 10) || 0) + qty;
+      } else {
+        targetPlayer.inventory.push({
+          id: 'inv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          name: name,
+          qty: qty,
+          equipped: false,
+          weight: parsedWeight,
+          desc: prop || ''
+        });
+      }
+
+      if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+      if (typeof renderPlayers === 'function') renderPlayers();
+      if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+      if (typeof addLog === 'function') addLog(`🎁 <b>Equipamento Entregue:</b> ${qty}x "${name}" entregue para a mochila de <b>${targetPlayer.name}</b>.`);
+      if (typeof customAlert === 'function') {
+        customAlert(`✅ ${qty}x "${name}" guardado na mochila de ${targetPlayer.name}!`, 'Item Entregue');
+      } else {
+        alert(`✅ ${qty}x "${name}" entregue para ${targetPlayer.name}!`);
+      }
+    };
+
+    if (typeof customPrompt === 'function' && typeof document !== 'undefined' && document.getElementById('modal-custom-dialog')) {
+      customPrompt({
+        title: `Entregar "${name}"`,
+        message: `Quantas unidades deseja colocar na mochila de ${targetPlayer.name}?`,
+        defaultValue: '1',
+        placeholder: 'Quantidade',
+        presets: ['1', '2', '5', '10'],
+        onConfirm: (val) => {
+          const qty = parseInt(val, 10);
+          if (!isNaN(qty) && qty > 0) doDeliver(qty);
+        }
+      });
+    } else {
+      const qtyStr = prompt(`Quantas unidades de "${name}" deseja entregar para ${targetPlayer.name}?`, '1');
+      if (qtyStr === null) return;
+      const qty = parseInt(qtyStr, 10);
+      if (!isNaN(qty) && qty > 0) doDeliver(qty);
+    }
+  };
+
+  if (typeof openHeroSelectModal === 'function' && typeof document !== 'undefined' && document.getElementById('modal-hero-select')) {
+    openHeroSelectModal({
+      title: `🎁 Entregar "${name}" a um Herói`,
+      subtitle: `Escolha o aventureiro que receberá este equipamento na mochila`,
+      onSelect: (selectedHero) => {
+        deliverToHero(selectedHero);
+      }
+    });
     return;
   }
 
   const heroList = PLAYERS.map((p, i) => `${i + 1}. ${p.name} (${p.student || 'Personagem'})`).join('\n');
   const choice = prompt(`Para qual herói deseja entregar "${name}"?\nDigite o número correspondente:\n\n${heroList}`, '1');
   if (!choice) return;
-  const idx = parseInt(choice) - 1;
+  const idx = parseInt(choice, 10) - 1;
   if (idx < 0 || idx >= PLAYERS.length) {
     alert('Herói inválido selecionado.');
     return;
   }
-
-  const targetPlayer = PLAYERS[idx];
-  const qtyStr = prompt(`Quantas unidades de "${name}" deseja entregar para ${targetPlayer.name}?`, '1');
-  if (qtyStr === null) return;
-  const qty = parseInt(qtyStr);
-  if (isNaN(qty) || qty <= 0) return;
-
-  const parsedWeight = parseFloat(weightStr) || 0.5;
-
-  targetPlayer.inventory = targetPlayer.inventory || [];
-  const existing = targetPlayer.inventory.find(x => x.name.toLowerCase() === name.toLowerCase());
-  if (existing) {
-    existing.qty = (parseInt(existing.qty) || 0) + qty;
-  } else {
-    targetPlayer.inventory.push({
-      name: name,
-      qty: qty,
-      equipped: false,
-      weight: parsedWeight,
-      desc: prop || ''
-    });
-  }
-
-  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
-  if (typeof renderPlayers === 'function') renderPlayers();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
-  if (typeof addLog === 'function') addLog(`🎁 <b>Equipamento Entregue:</b> ${qty}x "${name}" entregue para a mochila de <b>${targetPlayer.name}</b>.`);
-  alert(`✅ ${qty}x "${name}" entregue para ${targetPlayer.name}!`);
+  deliverToHero(PLAYERS[idx]);
 }
 
 // --- GERADORES DE NPCS, TESOUROS E ENCONTROS ---
@@ -1537,7 +1591,25 @@ function promptGrantFeatToHero(featId) {
   if (!feat) return;
   const players = (typeof PLAYERS !== 'undefined' ? PLAYERS : []);
   if (players.length === 0) {
-    alert('Nenhum personagem cadastrado na mesa. Crie um personagem na aba Fichas primeiro.');
+    if (typeof customAlert === 'function') {
+      customAlert('Nenhum personagem cadastrado na mesa. Crie um personagem na aba Fichas primeiro.', '⭐ Conceder Talento');
+    } else {
+      alert('Nenhum personagem cadastrado na mesa. Crie um personagem na aba Fichas primeiro.');
+    }
+    return;
+  }
+
+  // Novo fluxo Dark Fantasy com Seleção Visual de Heróis (ISSUE-175)
+  if (typeof openHeroSelectModal === 'function' && typeof document !== 'undefined' && document.getElementById('modal-hero-select')) {
+    openHeroSelectModal({
+      title: `⭐ Conceder Talento: "${feat.name}"`,
+      subtitle: `Selecione o herói que aprenderá este talento extraordinário`,
+      onSelect: (selectedHero) => {
+        if (typeof grantFeatToPlayer === 'function') {
+          grantFeatToPlayer(selectedHero.id, feat.id, { source: 'master' });
+        }
+      }
+    });
     return;
   }
 

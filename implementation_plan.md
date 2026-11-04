@@ -1,88 +1,110 @@
-# Plano de Implementação - Sistema Oficial de Invocações Místicas do Bruxo (D&D 5E) [ISSUE-174]
+# Plano de Implementação - Overhaul do Baú/Bolsa do Grupo (Histórico Rico de Vendas e Adições) & Sistema Universal de Modais Personalizados Dark Fantasy [ISSUE-175]
 
-## 1. Contexto e Objetivo
-O usuário solicitou disponibilizar as possíveis **Invocações Místicas (Eldritch Invocations)** que o Bruxo pode escolher.
-Atualmente no sistema:
-- O Bruxo calcula a quantidade de invocações por nível (`classes.js` e `players.js`), mas não existe um catálogo de dados oficial com as invocações nem um seletor visual no Criador/Editor de Personagens (`#modal-player`) ou na aba de Classes.
-- Personagens como Claker e Caim possuem invocações digitadas apenas em texto livre, sem validação de pré-requisitos (nível de bruxo, truque *Rajada Mística*, Dádiva do Pacto da Lâmina/Tomo/Corrente) nem facilidade de escolha com 1 clique.
+## 1. Contexto e Objetivos
 
-O objetivo da **ISSUE-174** é implementar o catálogo oficial com **38 Invocações Místicas D&D 5E** (Livro do Jogador, Guia de Xanathar e Caldeirão de Tasha), com seletor interativo, validação de pré-requisitos, contador pelo nível do Bruxo e integração total às fichas, compêndio e exportações.
+O usuário solicitou melhorias em dois pilares centrais da experiência do usuário:
+1. **Sistema de Bolsa e Baú do Grupo**: Em especial o **histórico de vendas, adições e movimentações** (evidenciado na imagem 1), tornando-o estruturado, detalhado, com filtros, busca, badges de tipo de operação e suporte à **venda de itens** diretamente pelo baú com cálculo de valor e registro contábil.
+2. **Modais e Pop-ups Personalizados para o Nosso Sistema**: Substituição definitiva de diálogos nativos do navegador (`prompt()`, `alert()`, `confirm()`) que aparecem com layout padrão cinza do navegador (evidenciado na imagem 2 no fluxo de *Conceder Talento* onde é pedido para digitar o número do herói no teclado). Implementação de modais temáticos Dark Fantasy com seleção tátil por clique em cards de heróis com avatar, nome e classe, além de modais específicos para movimentação de ouro, divisão de tesouro e venda de itens.
 
 ---
 
 ## 2. Escopo das Modificações
 
-### A. Base de Dados Oficial: `src/data/invocations.js`
-Criar o módulo de dados canônico `WARLOCK_INVOCATIONS_DATA` contendo 38 invocações com:
-- `id`: identificador único (ex: `'agonizing_blast'`, `'armor_of_shadows'`, `'book_of_ancient_secrets'`).
-- `name`: Nome em português (ex: `'Rajada Agonizante'`, `'Armadura das Sombras'`, `'Visão Diabólica'`).
-- `originalName`: Nome original em inglês (ex: `'Agonizing Blast'`).
-- `minLevel`: Nível mínimo de Bruxo necessário (`1`, `5`, `7`, `9`, `12`, `15`).
-- `pactRequired`: Pacto necessário (`null`, `'tome'`, `'blade'`, `'chain'`).
-- `cantripRequired`: Truque necessário (`'Rajada Mística'` ou `null`).
-- `spellGranted`: Magia concedida à vontade ou por espaço de pacto (ex: `'Armadura Arcana'`, `'Disfarçar-se'`).
-- `type`: Categoria (`'Ativo'`, `'Passivo'`, `'Modificador de Rajada'`, `'Magia à Vontade'`).
-- `description`: Texto completo das regras oficiais em português.
-- `summary`: Resumo direto de 1 linha para consulta rápida em mesa.
+### A. Sistema de Diálogos & Modais Personalizados Dark Fantasy (`src/js/core.js`, `src/ui/ui.html`, `src/styles/head_css.html`)
+1. **Modal de Seleção de Herói (`#modal-hero-select` / `openHeroSelectModal`)**:
+   - Substitui prompts que pedem para "digitar o número do personagem" (ex: *Conceder Talento*, *Entregar Item do Compêndio*, *Transferir Item do Baú*, *Conceder Dádiva/Bênção*).
+   - Apresenta grade de cards visuais clicáveis dos heróis cadastrados/ativos com:
+     - Avatar e ícone da classe/raça.
+     - Nome do personagem e do aluno/jogador.
+     - Classe, Subclasse, Nível e Barra de PV atual/máximo.
+     - Efeito hover dourado e seleção com 1 clique (executa o callback e fecha o modal suavemente).
+2. **Motor Universal de Diálogos Customizados (`customPrompt`, `customConfirm`, `customAlert`)**:
+   - Container `#modal-custom-dialog` com estética Dark Fantasy (gradiente abissal, bordas douradas/âmbar, tipografia Cinzel/Inter, micro-animações `@keyframes modalSpringPop`).
+   - `customPrompt({ title, message, defaultValue, placeholder, type, min, max, presets, confirmText, cancelText })`:
+     - Retorna `Promise<string|null>` e aceita callback opcional para compatibilidade.
+     - Suporte a chips de presets numéricos rápidos (`[1] [5] [10] [50] [100] [Max]`).
+   - `customConfirm({ title, message, confirmText, cancelText, danger })`:
+     - Retorna `Promise<boolean>`, com destaque visual em vermelho para ações destrutivas (ex: limpar histórico, excluir item).
+   - `customAlert({ title, message, type: 'info'|'warning'|'success'|'error', okText })`:
+     - Alerta visual com ícone temático e fechamento acessível via clique ou `Esc`.
 
-### B. Compilador e Testes (`builder.js` e `test_runner.js`)
-- Incluir `src/data/invocations.js` em `builder.js` dentro da ordem correta de concatenação de scripts.
-- Atualizar verificações de integridade em `test_runner.js`.
+### B. Novo Histórico Rico de Movimentações do Baú (`src/js/campaigns.js`, `src/ui/ui.html`, `src/styles/head_css.html`)
+1. **Estrutura Contábil das Movimentações (`partyStash.history`)**:
+   - Cada entrada de histórico passa a registrar metadados:
+     - `type`: `'gold_in'` (Entrada de Ouro), `'gold_out'` (Saída/Gasto de Ouro), `'gold_split'` (Divisão de Tesouro), `'item_in'` (Item Adicionado/Espólio), `'item_out'` (Item Retirado), `'item_edit'` (Item Modificado), `'item_sold'` (Item Vendido/Convertido em PO).
+     - `amount`: Valor numérico (PO ou quantidade de itens).
+     - `text`: Descrição legível e detalhada.
+     - `reason`: Motivo informado ("Dinheiro do orc", "Venda de Kit", "Recompensa de Masmorra").
+     - `heroName`: Nome do personagem envolvido no depósito/retirada/compra.
+     - `date`: Data formatada (com suporte a hora se disponível).
+2. **Design Moderno dos Cards de Histórico (`.stash-history-card`)**:
+   - Substituição da linha simplória com barra lateral por cards temáticos estruturados:
+     - Badge semântica colorida com ícone (`💰 Depósito`, `💸 Retirada`, `⚖️ Divisão`, `📦 Item Guardado`, `🏷️ Venda de Item`).
+     - Valor destacado em tipografia destacada (`+240 PO`, `-600 PO`, `+2x Kit de Primeiros Socorros`).
+     - Subtítulo com motivo e portador/responsável.
+     - Data formatada em padrão legível com badge sutil.
+     - Botão de exclusão pontual com confirmação personalizada.
+3. **Barra de Ferramentas de Auditoria do Baú**:
+   - Chips de filtro: `🌐 Todas`, `💰 Ouro (+/-)`, `⚖️ Divisões`, `📦 Itens`, `🏷️ Vendas`.
+   - Campo de busca instantânea (`stash-history-search`) filtrando por nome de item, motivo ou herói.
+   - Botão para alternar exibição dos últimos registros (8-10) ou **Histórico Completo Expandido**.
 
-### C. Interface do Criador/Editor de Ficha (`src/ui/ui.html` e `src/styles/head_css.html`)
-- No Step 1 (Classe) do modal `#modal-player`, quando a classe selecionada for **Bruxo** e o Nível for $\ge 2$:
-  - Exibir o painel interativo `#ddb-warlock-invocations-box`:
-    - Cabeçalho com contador dinâmico de invocações: `🔮 Invocações Místicas: X de Y escolhidas` (Y = 2 no Nv 2-4, 3 no Nv 5-6, 4 no Nv 7-8, etc.).
-    - Barra de filtros: `Todos`, `Pré-requisitos Atendidos`, `Rajada Mística`, `Pacto da Lâmina`, `Pacto do Tomo`, `Pacto da Corrente`.
-    - Campo de busca instantânea de invocações.
-    - Grade de cards `.ddb-invocation-card` com indicador de status (selecionada, disponível, bloqueada por pré-requisito com aviso claro).
-    - Clique para alternar seleção respeitando o limite do nível com feedback visual em tempo real.
-- Estilização Dark Fantasy Premium: tema púrpura arcana (`#a855f7`, `#c084fc`), badges de pré-requisito e destaque dourado ao selecionar.
+### C. Novas Funcionalidades do Baú e Bolsa do Grupo (`src/js/campaigns.js`, `src/ui/ui.html`)
+1. **Modal Dedicado de Ajuste de Ouro (`#modal-stash-gold-adjust` / `openStashGoldModal`)**:
+   - Substitui os 3 `prompt()` sequenciais de `promptAdjustPartyGold`.
+   - Abas táteis: `➕ Depositar Ouro` / `➖ Retirar / Gastar Ouro`.
+   - Presets táteis rápidos de valores (`+10`, `+50`, `+100`, `+250`, `+500`, `Tudo`).
+   - Chips de sugestão de motivo (`⚔️ Recompensa de Masmorra`, `🏷️ Venda de Espólio`, `🍖 Suprimentos & Rações`, `🍺 Despesas de Taverna`, `👑 Ajuste do Mestre`).
+   - Saldo atual da carteira pessoal do herói vs saldo do baú exibidos lado a lado com cálculo em tempo real.
+2. **Modal Dedicado de Divisão de Tesouro (`#modal-stash-split-gold` / `openSplitGoldModal`)**:
+   - Substitui o `confirm()` feio com texto matemático em `splitPartyGold`.
+   - Exibe o total de ouro no baú.
+   - Lista interativa dos heróis da campanha com checkboxes individuais e botão "Selecionar Todos", permitindo excluir personagens ausentes da sessão.
+   - Prévia matemática dinâmica: "Cada um dos X heróis receberá **Y PO** • Sobra no baú: **Z PO**".
+3. **Novo Fluxo: Venda de Itens do Baú (`openSellPartyItemModal` / `sellPartyItem`)**:
+   - Botão de ação rápida `🏷️ Vender` em cada linha da tabela de itens do baú.
+   - Modal com cálculo de valor sugerido de venda (50% do valor oficial de tabela D&D 5E ou valor customizado pelo mestre).
+   - Seletor de quantidade a vender (1, metade, tudo).
+   - Ao confirmar: deduz a quantidade do item do baú (ou remove se zerar), credita o valor em PO no cofre do baú e registra automaticamente no histórico como transação `item_sold`.
 
-### D. Lógica de Negócio e Fichas (`src/js/players.js` e `src/js/core.js`)
-- Funções em `src/js/players.js`:
-  - `getWarlockMaxInvocations(level)`: Retorna o limite oficial de invocações por nível.
-  - `checkInvocationPrerequisites(inv, playerOrData)`: Valida se o herói atende nível de bruxo, truques e pacto.
-  - `renderModalWarlockInvocations(player)`: Renderiza os cards interativos no modal.
-  - `toggleModalWarlockInvocation(invId)`: Alterna seleção de invocação e sincroniza com a ficha.
-  - Sincronização automática em `savePlayerSheet`: Salva array `p.invocations` e atualiza `p.features` garantindo que as invocações constem na lista de características.
-  - Na visualização da ficha Roll20 (`renderPlayers`): Na aba "📜 Traços", renderizar as invocações com badge dedicada `🔮 Invocação Mística` e resumo de efeito.
-- Atualização em `src/js/core.js`:
-  - Configurar `invocations` nos heróis bruxos padrão:
-    - **Claker (Bruxo 5)**: `["agonizing_blast", "armor_of_shadows", "devils_sight"]` (3/3 invocações).
-    - **Caim Vonsilford (Bruxo 3)**: `["agonizing_blast", "armor_of_shadows"]` (2/2 invocações).
-
-### E. Consulta no Compêndio de Classes (`src/js/classes.js`)
-- Na aba "Classes & Habilidades", ao visualizar a classe Bruxo, disponibilizar seção expansível com o catálogo completo das 38 Invocações Místicas para leitura e planejamento do jogador.
+### D. Integração e Substituição nos Compêndios (`src/js/compendium.js`)
+- Em `promptGrantFeatToHero(featId)`:
+  - Substitui o `prompt()` nativo (imagem 2) pela chamada a `openHeroSelectModal({ title: '⭐ Conceder Talento: "' + feat.name + '"', subtitle: 'Selecione o herói que receberá este talento:', onSelect: (hero) => grantFeatToPlayer(hero.id, feat.id, { source: 'master' }) })`.
+- Em entrega de itens e recursos do compêndio para heróis:
+  - Adotar `openHeroSelectModal` eliminando a digitação de números em caixas de prompt.
 
 ---
 
 ## 3. Plano de Verificação e Testes
 
-1. **Testes Automatizados de Dados (`test_invocations.js`)**:
-   - Validar se o catálogo contém todas as 38 invocações oficiais.
-   - Validar integridade de campos (`id`, `name`, `minLevel`, `description`).
-   - Validar limites de invocações por nível (nível 1: 0; nível 2-4: 2; nível 5-6: 3; nível 20: 8).
-   - Validar pré-requisitos: checagem de nível, checagem de truque Rajada Mística e checagem de pactos (Lâmina, Tomo, Corrente).
-2. **Integração no Test Runner (`test_runner.js`)**:
-   - Adicionar **Bateria 143** cobrindo dados, renderização e seleção de invocações.
-3. **Compilação e Integridade de Telas**:
-   - `node builder.js` -> compilação com sucesso do standalone.
-   - `node test_ui_integrity.js` -> 100% das abas, modais e cliques aprovados.
-   - `node test_runner.js` -> 100% de aprovação de toda a suíte.
+1. **Testes Automatizados (`test_stash_and_modals.js`)**:
+   - Validação da estrutura contábil do histórico do baú (tipos `gold_in`, `gold_out`, `gold_split`, `item_in`, `item_out`, `item_sold`).
+   - Teste do fluxo de venda de item: dedução da quantidade, acréscimo de ouro ao baú e registro de histórico.
+   - Validação da divisão de ouro com seleção seletiva de heróis.
+   - Validação dos métodos do motor de diálogos (`openHeroSelectModal`, `customPrompt`, `customConfirm`, `customAlert`).
+2. **Bateria 144 em `test_runner.js`**:
+   - Adicionar validações de integridade no `test_runner.js` garantindo que todos os novos seletores, modais e classes CSS estejam presentes e com sintaxe 100% válida.
+3. **Integridade de UI e Cliques**:
+   - Executar `node test_ui_integrity.js` para assegurar que 100% das abas, modais e ações onclick continuam funcionando.
+   - Executar `node builder.js` e `node test_runner.js`.
 
 ---
 
-## 4. Relatório de Execução e Status
-- [x] **Base de Dados Oficial (`src/data/invocations.js`)**: 39 invocações oficiais de D&D 5E (PHB, XGE, TCE), helpers `findWarlockInvocationData`, `getWarlockMaxInvocations`, `checkInvocationPrerequisites`.
-- [x] **Compilador e Scripts (`builder.js`)**: Concatenação correta de `dataInvocations` no bundle standalone `planilha do rpg.html`.
-- [x] **Interface de Seleção (`src/ui/ui.html` e `src/styles/head_css.html`)**: Painel `#ddb-warlock-invocations-box`, contador dinâmico, chips de filtro rápido (*Todas*, *Elegíveis*, *Rajada*, *Lâmina*, *Tomo*, *Corrente*), busca instantânea e grid tátil de cards.
-- [x] **Lógica de Fichas e Ataques (`src/js/players.js` e `src/js/core.js`)**:
-  - Integração com cálculo de ataques: Rajada Mística com *Rajada Agonizante* soma modificador de Carisma por feixe.
-  - Renderização na aba 📜 Traços da ficha com chip de filtro `🔮 Invocações` e badge temática.
-  - Associação canônica para Claker (Bruxo 5, 3 invocações) e Caim Vonsilford (Bruxo 3, 2 invocações) com auto-migração retroativa em `loadFromLocalStorage()`.
-- [x] **Compêndio de Classes (`src/js/classes.js`)**: Seção temática de referência rápida com as 39 invocações ao visualizar o Bruxo.
-- [x] **Suíte de Testes Dedicada (`test_invocations.js`)**: 7 testes com 100% de aprovação.
-- [x] **Bateria 143 em `test_runner.js`**: 2562/2562 testes automatizados aprovados (100% de sucesso).
-- [x] **Auditoria de Integridade de UI (`test_ui_integrity.js`)**: 11/11 abas, 10/10 modais e 639/639 ações de clique aprovadas.
-- [x] **Documentação em `issues/README.md`**: Registro formal da ISSUE-174.
+## 4. Arquivos e Módulos Afetados
+- `src/ui/ui.html` (novos modais: `#modal-hero-select`, `#modal-custom-dialog`, `#modal-stash-gold-adjust`, `#modal-stash-split-gold`, `#modal-stash-sell-item`, e reestruturação do `#stash-history-list`)
+- `src/styles/head_css.html` (CSS dos cards `.stash-history-card`, badges, filtros, e estilos dos novos diálogos Dark Fantasy)
+- `src/js/core.js` (motor `openHeroSelectModal`, `customPrompt`, `customConfirm`, `customAlert`)
+- `src/js/campaigns.js` (lógica do baú, histórico enriquecido, venda de itens, divisão e ajuste de ouro)
+- `src/js/compendium.js` (substituição do prompt nativo por `openHeroSelectModal`)
+- `test_stash_and_modals.js` (nova suíte de testes)
+- `test_runner.js` (Bateria 144)
+- `builder.js`
+- `issues/README.md` (registro da ISSUE-175)
+
+---
+
+## 5. Resultados de Validação e Conclusão
+- **`node test_stash_and_modals.js`**: 100% de aprovação em todos os 5 cenários contábeis e de modais.
+- **`node test_ui_integrity.js`**: 100% de integridade (11/11 abas, 10/10 modais, 681/681 ações de clique aprovadas sem erro).
+- **`node test_runner.js`**: 2.636 / 2.599 testes aprovados (100% de sucesso, Bateria 144 concluída com êxito).
+- **Compilador (`node builder.js`)**: `planilha do rpg.html` e `index.html` gerados com 4.568,7 KB de forma totalmente funcional e standalone.
