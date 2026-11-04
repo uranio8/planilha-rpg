@@ -2455,9 +2455,20 @@
               <div class="pm-slot-card"><span class="pm-slot-label">8º Círc.</span><input type="number" id="pm-slot-8" class="pm-slot-input" value="0" min="0" max="9"></div>
               <div class="pm-slot-card"><span class="pm-slot-label">9º Círc.</span><input type="number" id="pm-slot-9" class="pm-slot-input" value="0" min="0" max="9"></div>
             </div>
-            <div style="margin-top: 8px;">
-              <label>Anotações de Magias / Truques Iniciais</label>
-              <textarea id="pm-spells" rows="2" placeholder="Ex: Raio de Fogo, Mísseis Mágicos, Escudo Arcano..."></textarea>
+            <div style="margin-top: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label style="margin: 0; font-weight: 700; color: #fff;">Magias & Truques Conhecidos</label>
+                <button type="button" class="btn-action" style="font-size: 11px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px;" onclick="openSpellPickerFromPlayerModal()">
+                  <span>✨</span> Escolher Magias no Compêndio
+                </button>
+              </div>
+              <div id="pm-spells-preview-container" class="pm-spells-preview-box" style="margin-bottom: 6px; display: flex; flex-wrap: wrap; gap: 4px; min-height: 28px; padding: 6px; background: rgba(0,0,0,0.3); border: 1px dashed rgba(245,158,11,0.3); border-radius: 6px;">
+                <span style="font-size: 11px; color: var(--text-muted); font-style: italic;">Nenhuma magia selecionada no momento. Clique no botão acima para escolher do compêndio.</span>
+              </div>
+              <details style="margin-top: 4px;">
+                <summary style="font-size: 10.5px; color: var(--primary-light); cursor: pointer;">✏️ Editar texto manual de magias</summary>
+                <textarea id="pm-spells" rows="2" placeholder="Ex: Raio de Fogo, Mísseis Mágicos, Escudo Arcano..." style="margin-top: 4px;" oninput="handleManualPmSpellsInput(this.value)"></textarea>
+              </details>
             </div>
           </div>
         </div>
@@ -3117,7 +3128,7 @@
   </div>
 
   <!-- MODAL: SELETOR DE MAGIAS PREPARADAS DA FICHA -->
-  <div id="modal-spell-picker" class="modal-overlay">
+  <div id="modal-spell-picker" class="modal-overlay" onclick="if(event.target===this) closeSpellPickerModal()">
     <div class="modal-body modal-spell-picker-body" style="max-width: 960px; width: 95vw; height: 88vh; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; padding: 18px 22px; gap: 10px;">
       <div class="panel-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; flex-shrink: 0;">
         <div>

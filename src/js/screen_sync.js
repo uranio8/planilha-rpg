@@ -655,6 +655,12 @@ window.addEventListener('keydown', e => {
 });
 
 function closeAllModals() {
+  if (typeof closeSpellPickerModal === 'function') {
+    const spModal = document.getElementById('modal-spell-picker');
+    if (spModal && spModal.classList.contains('open')) {
+      closeSpellPickerModal();
+    }
+  }
   document.querySelectorAll('.modal-overlay.open').forEach(el => el.classList.remove('open'));
   const pv = document.getElementById('modal-player-view');
   if (pv) pv.style.display = 'none';
@@ -665,7 +671,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.modal-overlay').forEach(modal => {
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
-        modal.classList.remove('open');
+        if (modal.id === 'modal-spell-picker' && typeof closeSpellPickerModal === 'function') {
+          closeSpellPickerModal();
+        } else {
+          modal.classList.remove('open');
+        }
       }
     });
   });

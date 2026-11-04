@@ -6540,24 +6540,47 @@ function buildPlayerSpellsSummary(spellList) {
 function parseSpellNamesFromRawText(rawSpellsText) {
   const result = [];
   if (!rawSpellsText || typeof rawSpellsText !== 'string' || typeof SPELLS_DATA === 'undefined') return result;
+
+  const normStr = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
   const cleanedLines = rawSpellsText
     .replace(/truques\s*:/gi, ',')
     .replace(/preparadas\s*:/gi, ',')
     .replace(/magias\s*:/gi, ',')
+    .replace(/\.\s+/g, ',')
+    .replace(/\.$/, '')
     .split(/[\n,;]+/)
-    .map(tok => tok.trim().toLowerCase())
+    .map(tok => tok.trim())
     .filter(Boolean);
 
-  cleanedLines.forEach(token => {
-    const exact = SPELLS_DATA.find(sp => sp.name.toLowerCase() === token);
-    if (exact) {
-      if (!result.includes(exact.name)) result.push(exact.name);
+  cleanedLines.forEach(rawToken => {
+    const token = rawToken.replace(/^[\s\.\-\*•]+|[\s\.\-\*•]+$/g, '').trim();
+    if (!token) return;
+    const tokenNorm = normStr(token);
+
+    // 1. Busca exata ou por normalização de acentos no compêndio oficial
+    const found = SPELLS_DATA.find(sp => sp.name.toLowerCase() === token.toLowerCase() || normStr(sp.name) === tokenNorm);
+    if (found) {
+      if (!result.includes(found.name)) result.push(found.name);
       return;
     }
-    if (typeof SPELL_PHRASE_ALIASES !== 'undefined' && SPELL_PHRASE_ALIASES[token]) {
-      const targetPt = SPELL_PHRASE_ALIASES[token].toLowerCase();
-      const aliased = SPELLS_DATA.find(sp => sp.name.toLowerCase() === targetPt);
-      if (aliased && !result.includes(aliased.name)) result.push(aliased.name);
+
+    // 2. Busca por aliases em compêndio/regras
+    if (typeof SPELL_PHRASE_ALIASES !== 'undefined') {
+      const aliasKey = Object.keys(SPELL_PHRASE_ALIASES).find(k => k.toLowerCase() === token.toLowerCase() || normStr(k) === tokenNorm);
+      if (aliasKey) {
+        const targetPt = SPELL_PHRASE_ALIASES[aliasKey];
+        const aliased = SPELLS_DATA.find(sp => sp.name.toLowerCase() === targetPt.toLowerCase() || normStr(sp.name) === normStr(targetPt));
+        if (aliased && !result.includes(aliased.name)) {
+          result.push(aliased.name);
+          return;
+        }
+      }
+    }
+
+    // 3. Magia personalizada ou não-catalogada (preserva para não descartar dados do jogador)
+    if (!result.includes(token) && token.length > 1) {
+      result.push(token);
     }
   });
   return result;
@@ -8818,6 +8841,7 @@ function saveSpellPickerSelection(isSilent = false) {
   p.preparedSpells = selectedArr;
   p._spellsSyncedFromPicker = true;
 
+  // Atualiza unpreparedSpells com magias conhecidas que não estão preparadas
   if (Array.isArray(p.unpreparedSpells)) {
     p.unpreparedSpells = p.unpreparedSpells.filter(s => pickerSelectedSpells.has(s));
   }
@@ -8842,6 +8866,16 @@ function saveSpellPickerSelection(isSilent = false) {
   }
 
   p.spells = buildPlayerSpellsSummary(p.preparedSpells);
+
+  // Sincroniza em tempo real com o modal de criação/edição (#modal-player) se estiver aberto
+  const playerModal = document.getElementById('modal-player');
+  if (playerModal && playerModal.classList.contains('open')) {
+    const pmSpellsInput = document.getElementById('pm-spells');
+    if (pmSpellsInput) pmSpellsInput.value = p.spells;
+    if (typeof renderModalSpellsPreview === 'function') {
+      renderModalSpellsPreview(p);
+    }
+  }
 
   pickerHasChanges = false;
   const modal = document.getElementById('modal-spell-picker');
@@ -8870,9 +8904,9 @@ function saveSpellPickerSelection(isSilent = false) {
 
 function closeSpellPickerModal() {
   const modal = document.getElementById('modal-spell-picker');
-  if (modal && modal.classList.contains('open')) {
-    // Se houve alterações feitas pelo jogador, auto-salva para garantir que nada seja perdido!
-    if (pickerHasChanges && currentPickerPlayerId) {
+  if (modal) {
+    // Auto-salva incondicionalmente ao fechar se houver herói ativo no picker
+    if (currentPickerPlayerId) {
       saveSpellPickerSelection(true);
       if (typeof showToast === 'function') showToast(`✨ Magias selecionadas foram salvas automaticamente!`, 'success');
     }
@@ -10243,7 +10277,139 @@ function openPlayerModal(id) {
     initDdbCharacterBuilderModal();
   }
 
+  if (typeof renderModalSpellsPreview === 'function') {
+    renderModalSpellsPreview(id ? PLAYERS.find(x => x.id === id) : null);
+  }
+
   if (modal) modal.classList.add('open');
+}
+
+function openSpellPickerFromPlayerModal() {
+  let id = document.getElementById('pm-id')?.value;
+  let p = id ? (typeof PLAYERS !== 'undefined' ? PLAYERS.find(x => x.id === id) : null) : null;
+  const className = document.getElementById('pm-class')?.value || document.getElementById('pm-class-select')?.value || 'Mago';
+  const name = document.getElementById('pm-name')?.value?.trim() || 'Herói';
+  const level = parseInt(document.getElementById('pm-level')?.value, 10) || 1;
+  const rawSpells = document.getElementById('pm-spells')?.value || '';
+
+  if (!p) {
+    id = 'p_draft_' + Date.now();
+    const idEl = document.getElementById('pm-id');
+    if (idEl) idEl.value = id;
+    const parsedSpells = typeof parseSpellNamesFromRawText === 'function' ? parseSpellNamesFromRawText(rawSpells) : [];
+    p = {
+      id,
+      name,
+      student: document.getElementById('pm-student')?.value?.trim() || 'Estudante',
+      className,
+      level,
+      preparedSpells: parsedSpells,
+      spellbookSpells: parsedSpells,
+      knownSpells: parsedSpells,
+      unpreparedSpells: [],
+      spells: rawSpells,
+      int: parseInt(document.getElementById('pm-int')?.value, 10) || 10,
+      wis: parseInt(document.getElementById('pm-wis')?.value, 10) || 10,
+      cha: parseInt(document.getElementById('pm-cha')?.value, 10) || 10,
+      slots: [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    };
+    if (typeof PLAYERS !== 'undefined') PLAYERS.push(p);
+  } else {
+    p.name = name;
+    p.className = className;
+    p.level = level;
+    p.int = parseInt(document.getElementById('pm-int')?.value, 10) || p.int || 10;
+    p.wis = parseInt(document.getElementById('pm-wis')?.value, 10) || p.wis || 10;
+    p.cha = parseInt(document.getElementById('pm-cha')?.value, 10) || p.cha || 10;
+    if (rawSpells && (!Array.isArray(p.preparedSpells) || p.preparedSpells.length === 0)) {
+      const parsed = typeof parseSpellNamesFromRawText === 'function' ? parseSpellNamesFromRawText(rawSpells) : [];
+      p.preparedSpells = parsed;
+      p.spellbookSpells = Array.isArray(p.spellbookSpells) && p.spellbookSpells.length > 0 ? p.spellbookSpells : [...parsed];
+      p.knownSpells = [...p.spellbookSpells];
+    }
+  }
+  if (typeof openSpellPickerModal === 'function') {
+    openSpellPickerModal(p.id);
+  }
+}
+
+function renderModalSpellsPreview(playerOrDraft) {
+  const container = document.getElementById('pm-spells-preview-container');
+  if (!container) return;
+
+  let spellsList = [];
+  if (playerOrDraft && Array.isArray(playerOrDraft.preparedSpells) && playerOrDraft.preparedSpells.length > 0) {
+    spellsList = playerOrDraft.preparedSpells;
+  } else {
+    const rawVal = document.getElementById('pm-spells')?.value || '';
+    if (rawVal && typeof parseSpellNamesFromRawText === 'function') {
+      spellsList = parseSpellNamesFromRawText(rawVal);
+    }
+  }
+
+  if (!spellsList || spellsList.length === 0) {
+    container.innerHTML = `<div style="font-size:12px; color:var(--text-muted); font-style:italic; padding:6px 2px;">Nenhuma magia selecionada ainda. Clique no botão acima para escolher no compêndio oficial.</div>`;
+    return;
+  }
+
+  const chipsHtml = spellsList.map(sName => {
+    const spObj = (typeof SPELLS_DATA !== 'undefined') ? SPELLS_DATA.find(s => s.name.toLowerCase() === sName.toLowerCase()) : null;
+    const isCantrip = spObj && spObj.level === 0;
+    const tag = spObj ? (isCantrip ? 'T' : `${spObj.level}º`) : '★';
+    const tagTitle = spObj ? (isCantrip ? 'Truque' : `${spObj.level}º Círculo`) : 'Magia';
+    return `
+      <div class="pm-spell-chip ${isCantrip ? 'cantrip' : ''}" title="${tagTitle}">
+        <span style="font-size:9.5px; opacity:0.8; font-weight:700;">[${tag}]</span>
+        <span style="font-weight:600;">${escapeAttr(sName)}</span>
+        <span class="pm-spell-chip-del" onclick="removeSpellFromPlayerModalPreview('${escapeAttr(sName)}')" title="Remover">&times;</span>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = chipsHtml;
+}
+
+function removeSpellFromPlayerModalPreview(spellName) {
+  const id = document.getElementById('pm-id')?.value;
+  const p = id ? (typeof PLAYERS !== 'undefined' ? PLAYERS.find(x => x.id === id) : null) : null;
+  const rawSpells = document.getElementById('pm-spells')?.value || '';
+
+  let list = p && Array.isArray(p.preparedSpells) && p.preparedSpells.length > 0
+    ? [...p.preparedSpells]
+    : (typeof parseSpellNamesFromRawText === 'function' ? parseSpellNamesFromRawText(rawSpells) : []);
+
+  list = list.filter(s => s.toLowerCase() !== (spellName || '').toLowerCase());
+
+  if (p) {
+    p.preparedSpells = list;
+    if (Array.isArray(p.spellbookSpells)) {
+      p.spellbookSpells = p.spellbookSpells.filter(s => s.toLowerCase() !== (spellName || '').toLowerCase());
+    }
+    if (Array.isArray(p.knownSpells)) {
+      p.knownSpells = p.knownSpells.filter(s => s.toLowerCase() !== (spellName || '').toLowerCase());
+    }
+    p.spells = typeof buildPlayerSpellsSummary === 'function' ? buildPlayerSpellsSummary(list) : list.join(', ');
+  }
+
+  const summary = typeof buildPlayerSpellsSummary === 'function' ? buildPlayerSpellsSummary(list) : list.join(', ');
+  const pmSpells = document.getElementById('pm-spells');
+  if (pmSpells) pmSpells.value = summary;
+
+  renderModalSpellsPreview(p || { preparedSpells: list });
+}
+
+function handleManualPmSpellsInput(val) {
+  const id = document.getElementById('pm-id')?.value;
+  const p = id ? (typeof PLAYERS !== 'undefined' ? PLAYERS.find(x => x.id === id) : null) : null;
+  const parsed = typeof parseSpellNamesFromRawText === 'function' ? parseSpellNamesFromRawText(val) : [];
+
+  if (p) {
+    p.preparedSpells = parsed;
+    p.spellbookSpells = Array.isArray(p.spellbookSpells) && p.spellbookSpells.length > 0 ? p.spellbookSpells : [...parsed];
+    p.knownSpells = [...p.spellbookSpells];
+    p.spells = val;
+  }
+  renderModalSpellsPreview(p || { preparedSpells: parsed });
 }
 
 function autoLevelUpPrompt() {
@@ -10474,30 +10640,33 @@ function savePlayerSheet() {
 
   let currentPrepared = existing && Array.isArray(existing.preparedSpells) ? [...existing.preparedSpells] : [];
   let currentBook = existing && Array.isArray(existing.spellbookSpells) ? [...existing.spellbookSpells] : [...currentPrepared];
+  let currentUnprepared = existing && Array.isArray(existing.unpreparedSpells) ? [...existing.unpreparedSpells] : [];
+  let currentKnown = existing && Array.isArray(existing.knownSpells) ? [...existing.knownSpells] : [...currentBook];
   const spellsInputVal = document.getElementById('pm-spells') ? document.getElementById('pm-spells').value.trim() : '';
 
   if (spellsInputVal) {
-    const cleanSpellsText = spellsInputVal
-      .replace(/truques\s*:/gi, '')
-      .replace(/preparadas\s*:/gi, '')
-      .replace(/magias\s*:/gi, '');
-    const spellTokens = cleanSpellsText.split(/[\n,;]+/).map(s => s.trim()).filter(s => s.length > 0);
-    spellTokens.forEach(token => {
-      let matchedName = null;
-      if (typeof SPELLS_DATA !== 'undefined') {
-        const found = SPELLS_DATA.find(sp => sp.name.toLowerCase() === token.toLowerCase());
-        if (found) matchedName = found.name;
+    const parsedTokens = typeof parseSpellNamesFromRawText === 'function'
+      ? parseSpellNamesFromRawText(spellsInputVal)
+      : spellsInputVal.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean);
+
+    parsedTokens.forEach(spName => {
+      if (!currentPrepared.some(s => s.toLowerCase() === spName.toLowerCase())) {
+        currentPrepared.push(spName);
       }
-      if (matchedName) {
-        if (!currentPrepared.some(s => s.toLowerCase() === matchedName.toLowerCase())) {
-          currentPrepared.push(matchedName);
-        }
-        if (!currentBook.some(s => s.toLowerCase() === matchedName.toLowerCase())) {
-          currentBook.push(matchedName);
-        }
+      if (!currentBook.some(s => s.toLowerCase() === spName.toLowerCase())) {
+        currentBook.push(spName);
+      }
+      if (!currentKnown.some(s => s.toLowerCase() === spName.toLowerCase())) {
+        currentKnown.push(spName);
       }
     });
+
+    if (existing && existing._spellsSyncedFromPicker) {
+      currentPrepared = currentPrepared.filter(s => parsedTokens.some(tok => tok.toLowerCase() === s.toLowerCase()));
+    }
   }
+
+  currentUnprepared = currentBook.filter(s => !currentPrepared.includes(s));
 
   const data = {
     id: id || 'p_' + Date.now(),
@@ -10540,6 +10709,9 @@ function savePlayerSheet() {
     slotsUsed: existing && Array.isArray(existing.slotsUsed) ? existing.slotsUsed : [0, 0, 0, 0, 0, 0, 0, 0, 0],
     spellbookSpells: currentBook,
     preparedSpells: currentPrepared,
+    unpreparedSpells: currentUnprepared,
+    knownSpells: currentKnown && currentKnown.length > 0 ? currentKnown : [...currentBook],
+    _spellsSyncedFromPicker: true,
     skillProficiencies: (() => {
       const baseSkills = existing && Array.isArray(existing.skillProficiencies) ? [...existing.skillProficiencies] : [];
       const pendingBg = (typeof window !== 'undefined' && Array.isArray(window._modalPendingBackgroundSkills)) ? window._modalPendingBackgroundSkills : [];
@@ -10587,7 +10759,7 @@ function savePlayerSheet() {
     cha: parseInt(document.getElementById('pm-cha').value) || 10,
     attacks: document.getElementById('pm-attacks').value || '',
     features: document.getElementById('pm-features').value || '',
-    spells: document.getElementById('pm-spells').value || '',
+    spells: document.getElementById('pm-spells')?.value || (typeof buildPlayerSpellsSummary === 'function' ? buildPlayerSpellsSummary(currentPrepared) : ''),
     badges,
     activeCardTab: existing ? existing.activeCardTab : 'attacks',
     present: true,
@@ -17103,6 +17275,10 @@ if (typeof window !== 'undefined') {
   window.removeSpellFromPlayer = removeSpellFromPlayer;
   window.buildPlayerSpellsSummary = buildPlayerSpellsSummary;
   window.parseSpellNamesFromRawText = parseSpellNamesFromRawText;
+  window.openSpellPickerFromPlayerModal = openSpellPickerFromPlayerModal;
+  window.renderModalSpellsPreview = renderModalSpellsPreview;
+  window.removeSpellFromPlayerModalPreview = removeSpellFromPlayerModalPreview;
+  window.handleManualPmSpellsInput = handleManualPmSpellsInput;
 }
 
 if (typeof global !== 'undefined') {
@@ -17160,10 +17336,18 @@ if (typeof global !== 'undefined') {
   global.buildPlayerSpellsSummary = buildPlayerSpellsSummary;
   global.getPlayerSpecialClassAttacks = getPlayerSpecialClassAttacks;
   global.parseSpellNamesFromRawText = parseSpellNamesFromRawText;
+  global.openSpellPickerFromPlayerModal = openSpellPickerFromPlayerModal;
+  global.renderModalSpellsPreview = renderModalSpellsPreview;
+  global.removeSpellFromPlayerModalPreview = removeSpellFromPlayerModalPreview;
+  global.handleManualPmSpellsInput = handleManualPmSpellsInput;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
+    openSpellPickerFromPlayerModal,
+    renderModalSpellsPreview,
+    removeSpellFromPlayerModalPreview,
+    handleManualPmSpellsInput,
     getPlayerSpecialClassAttacks,
     getRacialAbilityBonuses,
     roll4d6DropLowest,

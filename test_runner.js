@@ -10901,6 +10901,44 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(uiHtmlContent140.includes('round-stepper') && uiHtmlContent140.includes('combat-encounter-tally'), 'ui.html inclui stepper de rodada e placar');
     assert(uiHtmlContent140.includes('btn-temp-hp-action') && uiHtmlContent140.includes('dispatch-presets-row'), 'ui.html inclui botão de Temp HP e presets rápidos no despachante');
 
+    // =========================================================================
+    // 🔮 BATERIA 141: ISSUE-172 — SALVAMENTO E PERSISTÊNCIA INCONDICIONAL DE MAGIAS NA FICHA
+    // =========================================================================
+    console.log('\n🔮 [Bateria 141] Salvamento e Persistência Incondicional de Magias na Ficha (ISSUE-172):');
+
+    // 1. Integridade da UI (ui.html)
+    assert(uiHtmlContent140.includes('id="pm-spells-preview-container"'), 'ui.html inclui container de preview de magias na ficha (#pm-spells-preview-container)');
+    assert(uiHtmlContent140.includes('openSpellPickerFromPlayerModal()'), 'ui.html inclui botão de compêndio direto na ficha (openSpellPickerFromPlayerModal)');
+    assert(uiHtmlContent140.includes('id="modal-spell-picker"') && uiHtmlContent140.includes('closeSpellPickerModal()'), 'ui.html modal de magias fecha e salva via closeSpellPickerModal');
+
+    // 2. Integridade dos estilos CSS (head_css.html)
+    assert(headCssContent140.includes('#modal-spell-picker') && headCssContent140.includes('z-index: 12500'), 'CSS define z-index prioritário (12500) para o seletor de magias sobre a ficha');
+    assert(headCssContent140.includes('.pm-spell-chip') && headCssContent140.includes('.pm-spell-chip-del'), 'CSS inclui estilos temáticos para chips de magias selecionadas (.pm-spell-chip)');
+
+    // 3. Exportação das funções no ambiente de execução (sandbox)
+    assert(typeof sandbox.openSpellPickerFromPlayerModal === 'function', 'Função openSpellPickerFromPlayerModal exportada');
+    assert(typeof sandbox.renderModalSpellsPreview === 'function', 'Função renderModalSpellsPreview exportada');
+    assert(typeof sandbox.removeSpellFromPlayerModalPreview === 'function', 'Função removeSpellFromPlayerModalPreview exportada');
+    assert(typeof sandbox.handleManualPmSpellsInput === 'function', 'Função handleManualPmSpellsInput exportada');
+    assert(typeof sandbox.parseSpellNamesFromRawText === 'function', 'Função parseSpellNamesFromRawText exportada');
+
+    // 4. Parser resiliente com suporte a pontos, vírgulas, quebras de linha e magias customizadas
+    const parsedDotSpells = sandbox.parseSpellNamesFromRawText('Truques: Raio de Fogo. Preparadas: Mísseis Mágicos, Escudo Arcano. Ritual Proibido.');
+    assert(parsedDotSpells.includes('Raio de Fogo'), 'parseSpellNamesFromRawText extrai Raio de Fogo separado por ponto');
+    assert(parsedDotSpells.includes('Mísseis Mágicos'), 'parseSpellNamesFromRawText extrai Mísseis Mágicos');
+    assert(parsedDotSpells.includes('Escudo Arcano'), 'parseSpellNamesFromRawText extrai Escudo Arcano');
+    assert(parsedDotSpells.includes('Ritual Proibido'), 'parseSpellNamesFromRawText preserva magia customizada ("Ritual Proibido")');
+
+    // 5. Execução do teste real de agentes autônomos (test_spells_agent_e2e.js)
+    try {
+      const { execSync } = require('child_process');
+      const simOut = execSync('node test_spells_agent_e2e.js', { encoding: 'utf8' });
+      assert(simOut.includes('SIMULAÇÃO REAL DE AGENTES (E2E SPELLS) APROVADA COM 100%'), 'test_spells_agent_e2e.js executado com sucesso');
+      assert(simOut.includes('Cenário 1') && simOut.includes('Cenário 6'), 'Todos os 6 cenários de Agentes aprovados com 100%');
+    } catch (simErr) {
+      assert(false, `test_spells_agent_e2e.js falhou: ${simErr.message}`);
+    }
+
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;
     sandbox.document.getElementById = origGetEl;
