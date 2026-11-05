@@ -8651,7 +8651,7 @@
        =================================================== */
     @page {
       size: A4 portrait;
-      margin: 8mm;
+      margin: 0 !important;
     }
 
     .print-a4-preview-viewport {
@@ -8671,15 +8671,18 @@
       max-width: 860px;
     }
 
-    /* FOLHAS A4 CANÔNICAS D&D 5E (ISSUE-148) */
+    /* FOLHAS A4 CANÔNICAS D&D 5E (ISSUE-148 & ISSUE-177) */
     .a4-print-page {
-      width: 194mm;
-      min-height: 277mm;
+      width: 210mm;
+      max-width: 210mm;
+      height: 297mm;
+      min-height: 297mm;
+      max-height: 297mm;
       background: #ffffff !important;
       color: #0f172a !important;
       box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
       box-sizing: border-box;
-      padding: 7mm 8mm;
+      padding: 6mm 8mm;
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       position: relative;
       border: 1px solid #cbd5e1;
@@ -8688,13 +8691,16 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      page-break-after: always;
-      break-after: page;
+      overflow: hidden !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      page-break-after: always !important;
+      break-after: page !important;
     }
     .a4-print-page:last-child {
       margin-bottom: 0;
-      page-break-after: auto;
-      break-after: auto;
+      page-break-after: avoid !important;
+      break-after: avoid !important;
     }
 
     .a4-sheet-header {
@@ -8773,9 +8779,11 @@
     .a4-page2-columns {
       display: grid;
       grid-template-columns: 56mm 66mm 1fr;
-      gap: 5mm;
+      gap: 4mm;
       flex: 1;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
+      min-height: 0;
+      overflow: hidden;
     }
 
     .a4-col-left,
@@ -8786,7 +8794,9 @@
     .a4-col-p2-right {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3.5px;
+      min-height: 0;
+      overflow: hidden;
     }
 
     .a4-stats-and-skills {
@@ -9207,16 +9217,19 @@
       flex: 1;
       display: flex;
       flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
     }
     .a4-features-content {
-      font-size: 6.5pt;
+      font-size: 6pt;
       color: #1e293b;
-      line-height: 1.25;
+      line-height: 1.2;
       overflow: hidden;
       white-space: normal;
       display: flex;
       flex-direction: column;
-      gap: 3.5px;
+      gap: 2.5px;
+      flex: 1;
     }
     .a4-feature-item {
       display: flex;
@@ -9477,6 +9490,82 @@
       color: #0f172a;
     }
 
+    /* ===================================================
+       🎭 MODAIS TEMÁTICOS CUSTOMIZADOS: PICKER & CONFIRM (ISSUE-177)
+       =================================================== */
+    .rpg-picker-card {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+      border: 1.5px solid rgba(217, 119, 6, 0.35);
+      border-radius: 9px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+      backdrop-filter: blur(8px);
+    }
+    .rpg-picker-card:hover {
+      border-color: #f59e0b;
+      background: linear-gradient(135deg, rgba(51, 65, 85, 0.95) 0%, rgba(30, 41, 59, 1) 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(245, 158, 11, 0.25);
+    }
+    .rpg-picker-card:active {
+      transform: translateY(0);
+    }
+    .rpg-picker-avatar {
+      font-size: 24px;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1.5px solid rgba(245, 158, 11, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+    .rpg-picker-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1;
+      min-width: 0;
+    }
+    .rpg-picker-name {
+      font-family: 'Cinzel', Georgia, serif;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #f8fafc;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .rpg-picker-meta {
+      font-size: 11px;
+      color: #94a3b8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .rpg-picker-hp {
+      font-size: 10px;
+      color: #10b981;
+      font-weight: 700;
+    }
+
+    .stash-history-item-del-btn {
+      opacity: 0.6;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+    .stash-history-item-del-btn:hover {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+
     @media print {
       /* Ocultar rigorosamente o site de fundo (header, main com as 28 páginas de cards, menus e banners) */
       header, main, footer, nav,
@@ -9533,20 +9622,27 @@
         box-shadow: none !important;
       }
 
+      *, *::before, *::after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+
       .print-a4-page, .a4-print-page {
         display: flex !important;
         flex-direction: column !important;
         justify-content: space-between !important;
-        width: 100% !important;
-        max-width: 100% !important;
+        width: 210mm !important;
+        max-width: 210mm !important;
         box-sizing: border-box !important;
-        height: 275mm !important;
+        height: 297mm !important;
         min-height: 275mm !important;
-        max-height: 275mm !important;
+        max-height: 297mm !important;
         margin: 0 !important;
-        padding: 5mm 6mm !important;
+        padding: 6mm 8mm !important;
         box-shadow: none !important;
         border: none !important;
+        overflow: hidden !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
         page-break-after: always !important;
@@ -9554,8 +9650,8 @@
         background: #ffffff !important;
       }
       .print-a4-page:last-child, .a4-print-page:last-child {
-        page-break-after: auto !important;
-        break-after: auto !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
       }
       .print-box, .print-subbox, .print-attack-row, .print-spell-group, .chronicle-session-card, .session-timeline-card,
       .a4-bordered-box, .a4-stat-card, .a4-hp-box, .a4-combat-pill, .a4-badge-box {

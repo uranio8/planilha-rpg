@@ -1,105 +1,72 @@
-# Plano de Implementação - VTT Battle Grid Épico com Sincronização Online em Tempo Real (Firebase) [ISSUE-176]
+# 📋 Plano de Implementação: Fichas A4 Sem Quebras, Modais Temáticos e Histórico do Baú
 
-## 1. Contexto e Objetivos
-
-O usuário solicitou um grande overhaul do mapa VTT tático inspirado em **Owlbear Rodeo, Foundry VTT, Roll20 e D&D Beyond**, com o requisito fundamental de que **o VTT seja sincronizado e salvo online via Firebase para que todos os jogadores possam acompanhar o mapa juntos ao mesmo tempo em tempo real**.
-
-Hoje, a planilha possui sincronização em nuvem via Firebase (`firebase_sync.js`) para fichas e combate, porém:
-1. O `#tab-grid` fica bloqueado por CSS no portal do jogador (`body.mode-player-portal #tab-grid { display: none !important; }`), impedindo que jogadores vejam o mapa em seus celulares/computadores.
-2. O método de persistência do grid (`broadcastGridState()`) apenas disparava `BroadcastChannel` local (mesmo navegador), sem sincronizar ativamente as movimentações do grid para o Firebase em tempo real.
-3. Os jogadores não tinham um botão de acesso direto ao mapa de batalha (`🗺️ Mapa VTT`) no portal do jogador.
+Este plano aborda com precisão cirúrgica os problemas identificados nas imagens enviadas pelo usuário, além da modernização dos modais nativos e do histórico do Baú/Bolsa do Grupo.
 
 ---
 
-## 2. Pilares de Inovação e Escopo Técnico
+## 🔍 1. Diagnóstico das Imagens Enviadas
 
-### Pilar 0: Sincronização Online em Tempo Real do VTT via Firebase (Jogadores + Mestre)
-1. **Disparo Imediato para a Nuvem**:
-   - Toda alteração no grid feita pelo Mestre (movimentação de token, névoa de guerra, troca de mapa de fundo, mudança de iluminação ambiente, adição/remoção de tokens) aciona `syncLocalChangesToFirebase(true)` para gravar em tempo real no Firebase Realtime Database (`dnd_rooms/{roomId}/gridState`).
-2. **Acesso do Jogador ao Mapa VTT no Portal (`body.mode-player-portal`)**:
-   - Inclusão do chip `🗺️ Mapa VTT` no banner de navegação do jogador (`#portal-nav-chips`) e na barra de ferramentas móvel.
-   - Liberação do `#tab-grid` para visualização no Portal do Jogador em modo seguro de jogador:
-     - Ocultação dos controles restritos do Mestre (ferramentas de desenhar névoa, mudar mapa, apagar fichas).
-     - O jogador visualiza o mapa com a **Névoa de Guerra estrita** ativa (áreas não exploradas permanecem escuras).
-     - Tokens marcados com `hidden: true` (monstros escondidos em emboscada) permanecem 100% invisíveis para os jogadores.
-     - Pings táteis disparados pelo Mestre ou companheiros pulsam na tela do jogador com animação sonora/visual.
-3. **Movimentação do Próprio Token pelo Jogador**:
-   - O jogador pode selecionar e movimentar o token do seu próprio herói (com snap ao grid), transmitindo a nova posição online instantaneamente para o Mestre e demais jogadores.
-4. **Recepção e Renderização em Tempo Real**:
-   - Quando novos dados chegam via Firebase (`on('value')`), o `gridState` local é atualizado e o mapa renderizado suavemente com `renderBattleGrid()`, sem travar a navegação.
-
-### Pilar 1: Dock Flutuante de Ferramentas Glassmorphism (`#vtt-floating-dock`)
-*(Inspirado no Owlbear Rodeo 2.0 & Foundry VTT)*
-- Barra flutuante translúcida com glassmorphism no topo do mapa.
-- Ferramentas táteis de 1 clique com atalhos de teclado:
-  - 🖱️ **Mover/Selecionar** (`V`)
-  - 📏 **Régua Tátil com Snap e Waypoints** (`M` ou `R`) - Medição dupla (Metros & Pés).
-  - 🌫️ **Névoa de Guerra Avançada** (`F`) - Pincel, Revelar Sala (Retângulo) e Revelar Círculo.
-  - 🎨 **Desenho Tático** (`D`)
-  - 💡 **Iluminação de Cena & Shaders** (`L`) - Dia, Ocaso, Noite, Masmorra, Pântano Místico.
-  - 🎯 **Ping Tático Rápido** (`P` ou Alt+Clique) - Transmitido online a todos os jogadores conectados.
-  - 👁️ **Alternar Visão de Jogador / Mestre** (`J`)
-  - 🖼️ **Mapa de Fundo**
-
-### Pilar 2: HUD Contextual de Token Flutuante (`#vtt-token-hud`)
-*(Inspirado no Foundry VTT & D&D Beyond)*
-Ao selecionar um token, exibe HUD acoplado:
-1. **Ajuste Instantâneo de PV**: botões rápidos `[-5]`, `[-1]`, `[+1]`, `[+5]`, barra de vida com gradiente, sincronizado com a ficha (`PLAYERS`) e combate (`COMBAT_STATE`).
-2. **Badge de CA (Classe de Armadura)** sempre visível.
-3. **Condições D&D 5E em 1 Clique**: seletor com ícones das 15 condições oficiais (Caído, Cego, Agarrado, Invisível, etc.).
-4. **Tocha & Emissão de Luz**: alternador de tocha com raio luminoso que perfura a escuridão da cena.
-5. **Auras de Alcance / Ameaça**: anéis translúcidos de 1.5m (ameaça corpo a corpo), 3m (alcance) e 9m (deslocamento).
-6. **Ocultar Token (GM Stealth)**: botão de olho para esconder monstros dos jogadores no Firebase/VTT.
-7. **Atalho de Ficha**: abre a ficha do herói ou ficha de monstro.
-
-### Pilar 3: Movimentação por Teclado e Snap Magnético ao Grid
-*(Inspirado no Roll20 & Foundry VTT)*
-1. Controle por teclas de direção (**Setas ↑, ↓, ←, →** ou **W, A, S, D**) para o token selecionado.
-2. Snap magnético automático ao centro das células do grid.
-3. **Rastreador de Deslocamento do Turno (Breadcrumbs)** com exibição em metros percorridos.
-
-### Pilar 4: Névoa de Guerra Avançada: Revelar Sala Retangular & Círculo
-*(Inspirado no Owlbear Rodeo)*
-- **Revelar Retângulo (Sala Completa)**: arrasta um retângulo para revelar um cômodo ou masmorra inteira com 1 gesto.
-- **Revelar Círculo**: desvenda área circular para explosões ou fogueiras.
-
-### Pilar 5: Shaders de Iluminação Atmosférica da Cena
-*(Inspirado no Foundry VTT)*
-- Presets de ambientação: **☀️ Dia Claro**, **🌇 Ocaso/Pôr do Sol**, **🌙 Noite Fechada**, **🏰 Masmorra Sombria**, **🧪 Pântano Místico**.
-- Slider de intensidade da escuridão. Tokens com tocha acesa perfuram a escuridão.
-
-### Pilar 6: Drag & Drop Direto de Imagens de Mapa
-*(Inspirado no Owlbear Rodeo)*
-- Arraste qualquer imagem do computador diretamente sobre a tela do mapa para carregar o novo mapa de batalha instantaneamente.
-- Suporte a colar imagem da área de transferência (`Ctrl + V`).
+### 📸 Problemas Detectados nos Prints:
+1. **Quebra Incorreta para 3 Páginas (*Page Spill*)**:
+   - O diálogo de impressão do Chrome indica **"3 páginas"** (em vez de estritamente 2).
+   - No caso de **Arkhalis** (Imagem 1), a Página 3 aparece vazia apenas com uma barra lateral residual.
+   - No caso de **Deraravely** (Imagens 2 e 4), a **Página 1 ficou quase toda em branco** (apenas com o cabeçalho) e o conteúdo da coluna de combate/ataques foi empurrado para a **Página 3**, quebrando a integridade visual da ficha.
+   - Na **Página 2** (Imagem 3), notas e características no rodapé estão encostando e transbordando na borda inferior da folha.
+2. **Causa Raiz Técnica**:
+   - A folha A4 possui exatamente **297mm** de altura vertical.
+   - O CSS `@media print` fixava `.a4-print-page` com `height: 275mm !important;` e `padding: 5mm 6mm !important;`.
+   - Quando o navegador imprime com margens padrão (10–12mm) e cabeçalhos/rodapés do navegador ativados (mais ~20mm), a área útil diminui para menos de **250mm**.
+   - Como $275\text{ mm} > 250\text{ mm}$, o Chrome força a quebra da página ao meio.
+   - Como os cartões possuíam regras de `break-inside: avoid`, a grade de 3 colunas não coube após o cabeçalho e foi empurrada para frente, gerando a página 1 em branco e o miolo na página 3.
+   - Faltava no CSS a regra `-webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;`, fazendo com que gradientes e fundos sumam se "Gráficos de segundo plano" estiver desmarcado.
 
 ---
 
-## 3. Arquivos e Módulos Afetados
+## 🎯 2. Objetivos da Implementação
 
-- `src/ui/ui.html`:
-  - Adição do chip `🗺️ Mapa VTT` no banner do jogador (`#portal-nav-chips`).
-  - Container `#vtt-floating-dock` e `#vtt-token-hud` no `#tab-grid`.
-- `src/styles/head_css.html`:
-  - Liberação do `#tab-grid` para jogadores no portal (`body.mode-player-portal #tab-grid`), escondendo apenas a barra de ferramentas administrativa de mestre (`.vtt-dm-only-tool`).
-  - Estilos de dock flutuante glassmorphism, Token Action HUD, auras de alcance e shaders de cena.
-- `src/js/vtt_grid.js`:
-  - Integração com `syncLocalChangesToFirebase(true)` no `broadcastGridState()` e nas ações de movimentação, névoa e tokens.
-  - Implementação do Token HUD, movimentação WASD/Setas, névoa retangular/circular, shaders de cena e drag & drop de mapas.
-  - Permissão para jogadores movimentarem seus próprios tokens online no portal.
-- `src/js/firebase_sync.js`:
-  - Garantia de transmissão e recepção em tempo real de `gridState` com atualização fluida sem perda de estado.
-- `test_vtt_enhancements.js`:
-  - Nova suíte de testes com testes de sincronização online, permissões de tokens de jogadores, névoa e mecânicas VTT.
-- `test_runner.js`:
-  - Inclusão da Bateria 145.
+### Parte A: Folhas A4 Canônicas à Prova de Falhas (2 Páginas Estritas)
+- Ajustar `@page` para margens zero controladas (`@page { size: A4 portrait; margin: 0; }`), garantindo que o navegador não roube espaço vertical da folha.
+- Adicionar `print-color-adjust: exact !important; -webkit-print-color-adjust: exact !important;` para preservar fundos e bordas temáticas mesmo com a opção do navegador desmarcada.
+- Ajustar `.a4-print-page` para caber com precisão milimétrica em A4 (`max-height: 297mm; height: 297mm; box-sizing: border-box; overflow: hidden !important; padding: 6mm 8mm;`).
+- Compactar verticalmente as caixas da Página 1 e Página 2 (cabeçalho, características de classe, tabela de ataques e lista de magias) para que heróis de qualquer nível e com multiclasse caibam sempre com folga confortável na Página 1.
+- Adicionar aviso no modal de impressão orientando as opções recomendadas do navegador.
+
+### Parte B: Substituição de `prompt()` e `confirm()` Nativos por Modais Temáticos
+- Substituir o prompt nativo cinza (`uranio8.github.io diz: Digite o número do personagem que receberá o talento...`) por uma modal temática D&D 5E (`#modal-rpg-picker`):
+  - Exibe a lista de personagens em **cartões visuais clicáveis** com avatar, nome, classe, nível e aluno.
+  - Não requer digitação de números: basta 1 clique no herói desejado.
+  - Aplicável para conceder Talentos, Itens e Magias do Compêndio/Bestiário.
+- Substituir confirmações genéricas de exclusão e limpeza de histórico por modais de diálogo temáticos (`showRpgConfirmModal(title, message, onConfirm)`).
+
+### Parte C: Novo Histórico e Experiência do Baú / Bolsa do Grupo
+- Reformular o container de "Movimentações Recentes do Baú":
+  - Estilo cartões de transação temática (badge verde para depósitos/vendas, vermelho para retiradas/ajustes, dourado para divisões de moedas entre heróis, azul para itens).
+  - Identificação de data, tipo de transação e heróis envolvidos.
+  - Filtros rápidos: `Todos`, `Moedas/PO`, `Itens`, `Divisões`.
+  - Botão de limpar histórico com confirmação temática estilizada.
 
 ---
 
-## 4. Estratégia de Verificação e Testes
+## 🗂️ 3. Arquivos e Módulos Afetados
 
-1. Execução de `node builder.js`.
-2. Execução da nova suíte `node test_vtt_enhancements.js`.
-3. Execução de `node test_ui_integrity.js`.
-4. Execução de `node test_runner.js` garantindo 100% de sucesso nos 2.636+ testes.
-5. Verificação da sincronização online e atualização do `issues/README.md`.
+| Arquivo | Modificações Planejadas |
+|---|---|
+| `src/styles/head_css.html` | Regras de `@media print`, `@page { margin: 0; }`, `-webkit-print-color-adjust: exact`, limites de altura estritos `297mm`, `overflow: hidden`, estilos dos novos cards de transação do baú e estilos da modal de seleção de herói. |
+| `src/js/players.js` | Ajustes de densidade e layout de `printPlayerSheet` (Página 1 e 2), evitando overflow de características e ataques. |
+| `src/ui/ui.html` | Inclusão da nova modal `#modal-rpg-picker` (para concessão visual de talentos/itens) e `#modal-rpg-confirm` (para confirmações temáticas); novo layout do histórico do baú. |
+| `src/js/core.js` | Funções utilitárias globais `showRpgPickerModal` e `showRpgConfirmModal`. |
+| `src/js/compendium.js` | Atualização das funções de concessão de talentos e itens para utilizarem `showRpgPickerModal` em vez de `prompt()`. |
+| `src/js/combat.js` / `src/js/campaigns.js` | Integração do novo renderizador de histórico do baú com badges e filtros. |
+
+---
+
+## 🧪 4. Estratégia de Verificação e Testes
+
+1. **Testes Automatizados**:
+   - `node builder.js` para compilar o `planilha do rpg.html`.
+   - `node test_runner.js` garantindo 100% de sucesso na suíte geral.
+   - Script automatizado de validação de impressão A4 verificando alturas, classes e ausência de overflow para todos os 9 personagens.
+2. **Verificação Visual Manual**:
+   - Simulação das folhas A4 de Deraravely e Arkhalis no navegador, confirmando exatamente **2 páginas** no diálogo de impressão.
+   - Teste de concessão de talento pelo Bestiário/Grimório sem nenhum `prompt` nativo.
+   - Teste de movimentações no Baú do Grupo com os novos filtros e cartões temáticos.

@@ -11464,7 +11464,8 @@ function printPlayerSheet(id) {
   // Espaços de Magia
   const slots = Array.isArray(p.slots) ? p.slots : [0, 0, 0, 0, 0, 0, 0, 0, 0];
   const slotsUsed = Array.isArray(p.slotsUsed) ? p.slotsUsed : [0, 0, 0, 0, 0, 0, 0, 0, 0];
-  const hasSpells = slots.some(s => s > 0) || (Array.isArray(p.preparedSpells) && p.preparedSpells.length > 0) || !!p.spells;
+  const isPureMartial = ['guerreiro', 'bárbaro', 'barbaro', 'ladino'].some(cl => cName === cl || (cName.includes(cl) && !cName.includes('bruxo') && !cName.includes('mago') && !cName.includes('feiticeiro') && !cName.includes('paladino') && !cName.includes('clérigo') && !cName.includes('bardo')));
+  const hasSpells = slots.some(s => s > 0) || (Array.isArray(p.preparedSpells) && p.preparedSpells.length > 0) || (typeof p.spells === 'string' && p.spells.trim().length > 0 && !isPureMartial);
 
   // Ataques & Armas
   const calcedAttacksList = (typeof getPlayerCalculatedAttacks === 'function') ? getPlayerCalculatedAttacks(p) : [];
@@ -11732,18 +11733,25 @@ function printPlayerSheet(id) {
       if (allFeats.length === 0) {
         return '<div style="color: #666; font-size: 7.5pt; font-style: italic;">Nenhuma característica especial registrada.</div>';
       }
-      return allFeats.map(feat => `
-                  <div class="a4-feature-item">
-                    <div class="a4-feature-item-header">
-                      <span class="a4-feature-bullet">✦</span>
-                      <b class="a4-feature-name">${feat.name}</b>
-                      ${feat.tag ? `<span class="a4-feature-tag">${feat.tag}</span>` : ''}
-                      ${feat.usage ? `<span class="a4-feature-usage">${feat.usage}</span>` : ''}
-                      ${feat.category ? `<span class="a4-feature-category">${feat.category}</span>` : ''}
-                    </div>
-                    ${feat.desc ? `<div class="a4-feature-desc">${feat.desc.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')}</div>` : ''}
-                  </div>
-                `).join('');
+      const isCompact = allFeats.length > 5;
+      return allFeats.map(feat => {
+        let desc = feat.desc ? feat.desc.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') : '';
+        if (isCompact && desc.length > 150) {
+          desc = desc.substring(0, 147) + '...';
+        }
+        return `
+          <div class="a4-feature-item" style="${isCompact ? 'gap: 0px; padding-bottom: 1px;' : ''}">
+            <div class="a4-feature-item-header">
+              <span class="a4-feature-bullet">✦</span>
+              <b class="a4-feature-name">${feat.name}</b>
+              ${feat.tag ? `<span class="a4-feature-tag">${feat.tag}</span>` : ''}
+              ${feat.usage ? `<span class="a4-feature-usage">${feat.usage}</span>` : ''}
+              ${feat.category && !isCompact ? `<span class="a4-feature-category">${feat.category}</span>` : ''}
+            </div>
+            ${desc ? `<div class="a4-feature-desc" style="${isCompact ? 'font-size: 5.5pt; line-height: 1.15;' : ''}">${desc}</div>` : ''}
+          </div>
+        `;
+      }).join('');
     })()}
             </div>
           </div>

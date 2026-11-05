@@ -8654,7 +8654,7 @@
        =================================================== */
     @page {
       size: A4 portrait;
-      margin: 8mm;
+      margin: 0 !important;
     }
 
     .print-a4-preview-viewport {
@@ -8674,15 +8674,18 @@
       max-width: 860px;
     }
 
-    /* FOLHAS A4 CANÔNICAS D&D 5E (ISSUE-148) */
+    /* FOLHAS A4 CANÔNICAS D&D 5E (ISSUE-148 & ISSUE-177) */
     .a4-print-page {
-      width: 194mm;
-      min-height: 277mm;
+      width: 210mm;
+      max-width: 210mm;
+      height: 297mm;
+      min-height: 297mm;
+      max-height: 297mm;
       background: #ffffff !important;
       color: #0f172a !important;
       box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
       box-sizing: border-box;
-      padding: 7mm 8mm;
+      padding: 6mm 8mm;
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       position: relative;
       border: 1px solid #cbd5e1;
@@ -8691,13 +8694,16 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      page-break-after: always;
-      break-after: page;
+      overflow: hidden !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      page-break-after: always !important;
+      break-after: page !important;
     }
     .a4-print-page:last-child {
       margin-bottom: 0;
-      page-break-after: auto;
-      break-after: auto;
+      page-break-after: avoid !important;
+      break-after: avoid !important;
     }
 
     .a4-sheet-header {
@@ -8776,9 +8782,11 @@
     .a4-page2-columns {
       display: grid;
       grid-template-columns: 56mm 66mm 1fr;
-      gap: 5mm;
+      gap: 4mm;
       flex: 1;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
+      min-height: 0;
+      overflow: hidden;
     }
 
     .a4-col-left,
@@ -8789,7 +8797,9 @@
     .a4-col-p2-right {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3.5px;
+      min-height: 0;
+      overflow: hidden;
     }
 
     .a4-stats-and-skills {
@@ -9210,16 +9220,19 @@
       flex: 1;
       display: flex;
       flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
     }
     .a4-features-content {
-      font-size: 6.5pt;
+      font-size: 6pt;
       color: #1e293b;
-      line-height: 1.25;
+      line-height: 1.2;
       overflow: hidden;
       white-space: normal;
       display: flex;
       flex-direction: column;
-      gap: 3.5px;
+      gap: 2.5px;
+      flex: 1;
     }
     .a4-feature-item {
       display: flex;
@@ -9480,6 +9493,82 @@
       color: #0f172a;
     }
 
+    /* ===================================================
+       🎭 MODAIS TEMÁTICOS CUSTOMIZADOS: PICKER & CONFIRM (ISSUE-177)
+       =================================================== */
+    .rpg-picker-card {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+      border: 1.5px solid rgba(217, 119, 6, 0.35);
+      border-radius: 9px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+      backdrop-filter: blur(8px);
+    }
+    .rpg-picker-card:hover {
+      border-color: #f59e0b;
+      background: linear-gradient(135deg, rgba(51, 65, 85, 0.95) 0%, rgba(30, 41, 59, 1) 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(245, 158, 11, 0.25);
+    }
+    .rpg-picker-card:active {
+      transform: translateY(0);
+    }
+    .rpg-picker-avatar {
+      font-size: 24px;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1.5px solid rgba(245, 158, 11, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+    .rpg-picker-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1;
+      min-width: 0;
+    }
+    .rpg-picker-name {
+      font-family: 'Cinzel', Georgia, serif;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #f8fafc;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .rpg-picker-meta {
+      font-size: 11px;
+      color: #94a3b8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .rpg-picker-hp {
+      font-size: 10px;
+      color: #10b981;
+      font-weight: 700;
+    }
+
+    .stash-history-item-del-btn {
+      opacity: 0.6;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+    .stash-history-item-del-btn:hover {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+
     @media print {
       /* Ocultar rigorosamente o site de fundo (header, main com as 28 páginas de cards, menus e banners) */
       header, main, footer, nav,
@@ -9536,20 +9625,27 @@
         box-shadow: none !important;
       }
 
+      *, *::before, *::after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+
       .print-a4-page, .a4-print-page {
         display: flex !important;
         flex-direction: column !important;
         justify-content: space-between !important;
-        width: 100% !important;
-        max-width: 100% !important;
+        width: 210mm !important;
+        max-width: 210mm !important;
         box-sizing: border-box !important;
-        height: 275mm !important;
+        height: 297mm !important;
         min-height: 275mm !important;
-        max-height: 275mm !important;
+        max-height: 297mm !important;
         margin: 0 !important;
-        padding: 5mm 6mm !important;
+        padding: 6mm 8mm !important;
         box-shadow: none !important;
         border: none !important;
+        overflow: hidden !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
         page-break-after: always !important;
@@ -9557,8 +9653,8 @@
         background: #ffffff !important;
       }
       .print-a4-page:last-child, .a4-print-page:last-child {
-        page-break-after: auto !important;
-        break-after: auto !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
       }
       .print-box, .print-subbox, .print-attack-row, .print-spell-group, .chronicle-session-card, .session-timeline-card,
       .a4-bordered-box, .a4-stat-card, .a4-hp-box, .a4-combat-pill, .a4-badge-box {
@@ -19142,6 +19238,13 @@
           <button class="btn-secondary" style="background: #1e293b; color: #cbd5e1; border-color: #475569; font-size: 13px; padding: 7px 14px; border-radius: 6px;" onclick="closePrintModal()">Fechar ✕</button>
         </div>
       </div>
+      <div style="background: rgba(217, 119, 6, 0.12); border: 1px solid rgba(217, 119, 6, 0.35); border-radius: 6px; padding: 7px 14px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11.5px; color: #fde68a;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 16px;">💡</span>
+          <span><b>Dica de Impressão:</b> Ao imprimir no navegador, certifique-se de manter <b>Margens: "Padrão" ou "Nenhuma"</b> e ativar <b>"Gráficos de segundo plano"</b> para gerar as 2 páginas canônicas com 100% de nitidez e fidelidade visual.</span>
+        </div>
+        <span class="badge" style="background: rgba(217, 119, 6, 0.25); color: #fef08a; border: 1px solid rgba(217, 119, 6, 0.5); font-size: 10px; white-space: nowrap;">2 Páginas Canônicas</span>
+      </div>
       <div class="print-a4-preview-viewport">
         <div id="print-sheet-content" class="print-a4-sheet"></div>
       </div>
@@ -19846,19 +19949,77 @@
           </div>
         </div>
 
-        <!-- Histórico do Tesouro -->
-        <div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-            <div style="font-size: 11px; font-weight: 800; color: var(--text-muted);">📜 Histórico Recente de Movimentações</div>
-            <button class="btn-secondary" style="font-size: 9.5px; padding: 2px 6px; color: #f87171; border-color: rgba(239, 68, 68, 0.3);" onclick="clearPartyStashHistory()" title="Resetar/limpar todo o histórico de movimentações do baú">🧹 Limpar Histórico</button>
+        <!-- Histórico do Tesouro (ISSUE-177: VISUAL ENRIQUECIDO COM FILTROS E CARDS TEMÁTICOS) -->
+        <div style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 11px; font-weight: 800; color: #f59e0b; text-transform: uppercase;">📜 Registro Contábil & Movimentações do Baú:</span>
+              <span id="party-stash-modal-history-count" class="badge" style="font-size: 9px; background: rgba(245,158,11,0.15); color: #fde68a; border: 1px solid rgba(245,158,11,0.3);">0 registros</span>
+            </div>
+            <button class="btn-secondary" style="font-size: 9.5px; padding: 2px 8px; color: #f87171; border-color: rgba(239, 68, 68, 0.3);" onclick="clearPartyStashHistory()" title="Resetar/limpar todo o histórico de movimentações do baú">🧹 Limpar Histórico</button>
           </div>
-          <div id="party-stash-modal-history" style="display: flex; flex-direction: column; gap: 3px; max-height: 120px; overflow-y: auto;">
+
+          <!-- Filtros e Busca Rápida -->
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <div class="filter-chips-scroll" style="display: flex; gap: 4px; flex-wrap: wrap;" id="party-stash-modal-filter-chips">
+              <button type="button" class="btn-filter-chip active" data-history-filter="all" onclick="setStashHistoryFilter('all')">🌐 Todas</button>
+              <button type="button" class="btn-filter-chip" data-history-filter="gold" onclick="setStashHistoryFilter('gold')">💰 Ouro</button>
+              <button type="button" class="btn-filter-chip" data-history-filter="split" onclick="setStashHistoryFilter('split')">⚖️ Divisões</button>
+              <button type="button" class="btn-filter-chip" data-history-filter="items" onclick="setStashHistoryFilter('items')">📦 Itens</button>
+              <button type="button" class="btn-filter-chip" data-history-filter="sold" onclick="setStashHistoryFilter('sold')">🏷️ Vendas</button>
+            </div>
+            <input type="text" id="inp-search-stash-modal-history" placeholder="🔍 Filtrar histórico..." oninput="handleStashHistorySearch(this.value)" style="max-width: 170px; font-size: 10.5px; padding: 3px 6px; background: #0b1120; border: 1px solid rgba(245,158,11,0.25); border-radius: 6px; color: #fff;">
+          </div>
+
+          <div id="party-stash-modal-history" style="display: flex; flex-direction: column; gap: 4px; max-height: 200px; overflow-y: auto; padding-right: 2px;">
           </div>
         </div>
       </div>
 
       <div style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 12px;">
         <button class="btn-secondary" onclick="closePartyStashModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL TEMÁTICA: SELEÇÃO VISUAL DE HERÓI (CONCEDER TALENTO / ITEM / MAGIA - ISSUE-177) -->
+  <div id="modal-rpg-picker" class="modal-overlay" style="z-index: 2400;">
+    <div class="modal-body rpg-picker-modal-box" style="max-width: 640px; width: 95vw; background: #0f172a; border: 1.5px solid #d97706; border-radius: 12px; padding: 18px; box-shadow: 0 10px 35px rgba(0,0,0,0.85); display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid rgba(217,119,6,0.3); padding-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span id="rpg-picker-icon" style="font-size: 26px;">⭐</span>
+          <div>
+            <div id="rpg-picker-title" style="font-family: 'Cinzel', Georgia, serif; font-size: 16.5px; font-weight: 800; color: #fef08a;">Conceder Dádiva / Talento</div>
+            <div id="rpg-picker-subtitle" style="font-size: 11.5px; color: #94a3b8; margin-top: 2px;">Escolha o herói que receberá esta ação:</div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeRpgPickerModal()" style="border-radius: 50%; width: 30px; height: 30px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 13px;">✕</button>
+      </div>
+
+      <!-- Grade de Heróis Clicáveis -->
+      <div id="rpg-picker-grid" class="rpg-picker-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; max-height: 55vh; overflow-y: auto; padding: 4px;">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px;">
+        <button class="btn-secondary" onclick="closeRpgPickerModal()" style="padding: 6px 18px;">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL TEMÁTICA: CONFIRMAÇÃO DE AÇÃO DO MESTRE (SUBSTITUTO DE CONFIRM NATIVO - ISSUE-177) -->
+  <div id="modal-rpg-confirm" class="modal-overlay" style="z-index: 2500;">
+    <div class="modal-body rpg-confirm-modal-box" style="max-width: 440px; width: 92vw; background: #0f172a; border: 1.5px solid #d97706; border-radius: 12px; padding: 20px; box-shadow: 0 10px 35px rgba(0,0,0,0.9); display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; align-items: flex-start; gap: 12px;">
+        <div id="rpg-confirm-icon" style="font-size: 26px; background: rgba(217,119,6,0.15); border: 1px solid rgba(217,119,6,0.3); border-radius: 8px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">⚠️</div>
+        <div>
+          <div id="rpg-confirm-title" style="font-family: 'Cinzel', Georgia, serif; font-size: 16px; font-weight: 800; color: #f8fafc;">Confirmar Ação</div>
+          <div id="rpg-confirm-message" style="font-size: 12px; color: #cbd5e1; margin-top: 4px; line-height: 1.4;">Tem certeza de que deseja prosseguir com esta operação?</div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; margin-top: 4px;">
+        <button class="btn-secondary" id="rpg-confirm-cancel-btn" onclick="closeRpgConfirmModal(false)" style="padding: 6px 16px;">Cancelar</button>
+        <button class="btn-action" id="rpg-confirm-btn" onclick="executeRpgConfirmAction()" style="padding: 6px 18px; font-weight: 700;">Confirmar</button>
       </div>
     </div>
   </div>
@@ -49164,12 +49325,12 @@ let _activeHeroSelectCancel = null;
 let _activeHeroSelectList = [];
 
 function openHeroSelectModal(options = {}) {
-  const modal = document.getElementById('modal-hero-select');
+  let modal = document.getElementById('modal-hero-select') || document.getElementById('modal-rpg-picker');
   if (!modal) return;
 
-  const titleEl = document.getElementById('hero-select-modal-title');
-  const subEl = document.getElementById('hero-select-modal-subtitle');
-  const iconEl = document.getElementById('hero-select-modal-icon');
+  const titleEl = document.getElementById('hero-select-modal-title') || document.getElementById('rpg-picker-title');
+  const subEl = document.getElementById('hero-select-modal-subtitle') || document.getElementById('rpg-picker-subtitle');
+  const iconEl = document.getElementById('hero-select-modal-icon') || document.getElementById('rpg-picker-icon');
   const searchInp = document.getElementById('inp-hero-select-search');
 
   if (titleEl) { titleEl.textContent = options.title || 'Selecionar Personagem'; titleEl.innerText = titleEl.textContent; }
@@ -49184,11 +49345,16 @@ function openHeroSelectModal(options = {}) {
   _activeHeroSelectList = Array.isArray(heroes) ? [...heroes] : [];
 
   renderHeroSelectCards(_activeHeroSelectList);
+  modal.classList.add('open');
   modal.style.display = 'flex';
 }
 
+function showRpgPickerModal(options = {}) {
+  openHeroSelectModal(options);
+}
+
 function renderHeroSelectCards(list) {
-  const grid = document.getElementById('hero-select-grid');
+  let grid = document.getElementById('hero-select-grid') || document.getElementById('rpg-picker-grid');
   if (!grid) return;
 
   if (!list || list.length === 0) {
@@ -49204,11 +49370,11 @@ function renderHeroSelectCards(list) {
     const avatar = p.avatar || '👤';
 
     return `
-      <div class="hero-select-card" onclick="onHeroCardSelected('${p.id}')" title="Selecionar ${p.name}">
-        <div class="hero-select-avatar">${avatar}</div>
-        <div class="hero-select-info">
-          <div class="hero-select-name">${p.name}</div>
-          <div class="hero-select-sub">${p.className || 'Herói'} (Nv ${p.level || 1}) • ${p.student || 'Jogador'}</div>
+      <div class="hero-select-card rpg-picker-card" onclick="onHeroCardSelected('${p.id}')" title="Selecionar ${p.name}">
+        <div class="hero-select-avatar rpg-picker-avatar">${avatar}</div>
+        <div class="hero-select-info rpg-picker-info">
+          <div class="hero-select-name rpg-picker-name">${p.name}</div>
+          <div class="hero-select-sub rpg-picker-meta">${p.className || 'Herói'} (Nv ${p.level || 1})${p.student ? ` • ${p.student}` : ''}</div>
           <div style="display: flex; align-items: center; gap: 6px; margin-top: 3px;">
             <div style="flex: 1; height: 4px; background: rgba(0,0,0,0.5); border-radius: 2px; overflow: hidden;">
               <div style="width: ${hpPct}%; height: 100%; background: ${hpColor}; border-radius: 2px;"></div>
@@ -49216,6 +49382,7 @@ function renderHeroSelectCards(list) {
             <span style="font-size: 9.5px; color: ${hpColor}; font-weight: 700;">${hpVal}/${maxHpVal} PV</span>
           </div>
         </div>
+        <span style="font-size: 16px; color: #f59e0b; margin-left: auto;">➔</span>
       </div>
     `;
   }).join('');
@@ -49243,22 +49410,78 @@ function onHeroCardSelected(playerId) {
   const cb = _activeHeroSelectCallback;
   _activeHeroSelectCallback = null;
   _activeHeroSelectCancel = null;
-  const modal = document.getElementById('modal-hero-select');
-  if (modal) modal.style.display = 'none';
+  const modal = document.getElementById('modal-hero-select') || document.getElementById('modal-rpg-picker');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.style.display = 'none';
+  }
   if (typeof cb === 'function' && hero) {
     cb(hero);
   }
 }
 
 function closeHeroSelectModal() {
-  const modal = document.getElementById('modal-hero-select');
-  if (modal) modal.style.display = 'none';
+  const modal = document.getElementById('modal-hero-select') || document.getElementById('modal-rpg-picker');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.style.display = 'none';
+  }
   const cancelCb = _activeHeroSelectCancel;
   _activeHeroSelectCallback = null;
   _activeHeroSelectCancel = null;
   if (typeof cancelCb === 'function') {
     cancelCb();
   }
+}
+
+function closeRpgPickerModal() {
+  closeHeroSelectModal();
+}
+
+let _rpgConfirmCallback = null;
+
+function showRpgConfirmModal(options = {}) {
+  const modal = document.getElementById('modal-rpg-confirm');
+  if (!modal) {
+    if (confirm(options.message ? options.message.replace(/<[^>]*>/g, '') : 'Confirmar operação?')) {
+      if (typeof options.onConfirm === 'function') options.onConfirm();
+    }
+    return;
+  }
+
+  _rpgConfirmCallback = options.onConfirm || null;
+  const titleEl = document.getElementById('rpg-confirm-title');
+  const msgEl = document.getElementById('rpg-confirm-message');
+  const iconEl = document.getElementById('rpg-confirm-icon');
+  const btn = document.getElementById('rpg-confirm-btn');
+
+  if (titleEl) titleEl.textContent = options.title || 'Confirmar Ação';
+  if (msgEl) msgEl.innerHTML = options.message || 'Tem certeza de que deseja continuar?';
+  if (iconEl) iconEl.textContent = options.icon || (options.danger ? '⚠️' : '❓');
+  if (btn) {
+    btn.textContent = options.confirmText || 'Confirmar';
+    btn.className = options.danger ? 'btn-action btn-danger' : 'btn-action';
+  }
+
+  modal.classList.add('open');
+  modal.style.display = 'flex';
+}
+
+function executeRpgConfirmAction() {
+  const cb = _rpgConfirmCallback;
+  closeRpgConfirmModal();
+  if (typeof cb === 'function') {
+    cb();
+  }
+}
+
+function closeRpgConfirmModal() {
+  const modal = document.getElementById('modal-rpg-confirm');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.style.display = 'none';
+  }
+  _rpgConfirmCallback = null;
 }
 
 // -------------------------------------------------------------
@@ -49468,6 +49691,11 @@ function closeCustomDialog(result = null) {
 if (typeof window !== 'undefined') {
   window.openHeroSelectModal = openHeroSelectModal;
   window.closeHeroSelectModal = closeHeroSelectModal;
+  window.showRpgPickerModal = showRpgPickerModal;
+  window.closeRpgPickerModal = closeRpgPickerModal;
+  window.showRpgConfirmModal = showRpgConfirmModal;
+  window.executeRpgConfirmAction = executeRpgConfirmAction;
+  window.closeRpgConfirmModal = closeRpgConfirmModal;
   window.filterHeroSelectCards = filterHeroSelectCards;
   window.onHeroCardSelected = onHeroCardSelected;
   window.customPrompt = customPrompt;
@@ -49481,6 +49709,11 @@ if (typeof window !== 'undefined') {
 if (typeof global !== 'undefined') {
   global.openHeroSelectModal = openHeroSelectModal;
   global.closeHeroSelectModal = closeHeroSelectModal;
+  global.showRpgPickerModal = showRpgPickerModal;
+  global.closeRpgPickerModal = closeRpgPickerModal;
+  global.showRpgConfirmModal = showRpgConfirmModal;
+  global.executeRpgConfirmAction = executeRpgConfirmAction;
+  global.closeRpgConfirmModal = closeRpgConfirmModal;
   global.filterHeroSelectCards = filterHeroSelectCards;
   global.onHeroCardSelected = onHeroCardSelected;
   global.customPrompt = customPrompt;
@@ -64780,7 +65013,8 @@ function printPlayerSheet(id) {
   // Espaços de Magia
   const slots = Array.isArray(p.slots) ? p.slots : [0, 0, 0, 0, 0, 0, 0, 0, 0];
   const slotsUsed = Array.isArray(p.slotsUsed) ? p.slotsUsed : [0, 0, 0, 0, 0, 0, 0, 0, 0];
-  const hasSpells = slots.some(s => s > 0) || (Array.isArray(p.preparedSpells) && p.preparedSpells.length > 0) || !!p.spells;
+  const isPureMartial = ['guerreiro', 'bárbaro', 'barbaro', 'ladino'].some(cl => cName === cl || (cName.includes(cl) && !cName.includes('bruxo') && !cName.includes('mago') && !cName.includes('feiticeiro') && !cName.includes('paladino') && !cName.includes('clérigo') && !cName.includes('bardo')));
+  const hasSpells = slots.some(s => s > 0) || (Array.isArray(p.preparedSpells) && p.preparedSpells.length > 0) || (typeof p.spells === 'string' && p.spells.trim().length > 0 && !isPureMartial);
 
   // Ataques & Armas
   const calcedAttacksList = (typeof getPlayerCalculatedAttacks === 'function') ? getPlayerCalculatedAttacks(p) : [];
@@ -65048,18 +65282,25 @@ function printPlayerSheet(id) {
       if (allFeats.length === 0) {
         return '<div style="color: #666; font-size: 7.5pt; font-style: italic;">Nenhuma característica especial registrada.</div>';
       }
-      return allFeats.map(feat => `
-                  <div class="a4-feature-item">
-                    <div class="a4-feature-item-header">
-                      <span class="a4-feature-bullet">✦</span>
-                      <b class="a4-feature-name">${feat.name}</b>
-                      ${feat.tag ? `<span class="a4-feature-tag">${feat.tag}</span>` : ''}
-                      ${feat.usage ? `<span class="a4-feature-usage">${feat.usage}</span>` : ''}
-                      ${feat.category ? `<span class="a4-feature-category">${feat.category}</span>` : ''}
-                    </div>
-                    ${feat.desc ? `<div class="a4-feature-desc">${feat.desc.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')}</div>` : ''}
-                  </div>
-                `).join('');
+      const isCompact = allFeats.length > 5;
+      return allFeats.map(feat => {
+        let desc = feat.desc ? feat.desc.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') : '';
+        if (isCompact && desc.length > 150) {
+          desc = desc.substring(0, 147) + '...';
+        }
+        return `
+          <div class="a4-feature-item" style="${isCompact ? 'gap: 0px; padding-bottom: 1px;' : ''}">
+            <div class="a4-feature-item-header">
+              <span class="a4-feature-bullet">✦</span>
+              <b class="a4-feature-name">${feat.name}</b>
+              ${feat.tag ? `<span class="a4-feature-tag">${feat.tag}</span>` : ''}
+              ${feat.usage ? `<span class="a4-feature-usage">${feat.usage}</span>` : ''}
+              ${feat.category && !isCompact ? `<span class="a4-feature-category">${feat.category}</span>` : ''}
+            </div>
+            ${desc ? `<div class="a4-feature-desc" style="${isCompact ? 'font-size: 5.5pt; line-height: 1.15;' : ''}">${desc}</div>` : ''}
+          </div>
+        `;
+      }).join('');
     })()}
             </div>
           </div>
@@ -73835,10 +74076,11 @@ function promptGiveEquipmentToPlayer(name, weightStr, prop) {
     }
   };
 
-  if (typeof openHeroSelectModal === 'function' && typeof document !== 'undefined' && document.getElementById('modal-hero-select')) {
+  if (typeof openHeroSelectModal === 'function' && typeof document !== 'undefined' && (document.getElementById('modal-hero-select') || document.getElementById('modal-rpg-picker'))) {
     openHeroSelectModal({
       title: `🎁 Entregar "${name}" a um Herói`,
-      subtitle: `Escolha o aventureiro que receberá este equipamento na mochila`,
+      subtitle: `Escolha o aventureiro que receberá este equipamento na mochila:`,
+      icon: '🎁',
       onSelect: (selectedHero) => {
         deliverToHero(selectedHero);
       }
@@ -74491,11 +74733,12 @@ function promptGrantFeatToHero(featId) {
     return;
   }
 
-  // Novo fluxo Dark Fantasy com Seleção Visual de Heróis (ISSUE-175)
-  if (typeof openHeroSelectModal === 'function' && typeof document !== 'undefined' && document.getElementById('modal-hero-select')) {
+  // Novo fluxo Dark Fantasy com Seleção Visual de Heróis (ISSUE-175 & ISSUE-177)
+  if (typeof openHeroSelectModal === 'function' && typeof document !== 'undefined' && (document.getElementById('modal-hero-select') || document.getElementById('modal-rpg-picker'))) {
     openHeroSelectModal({
       title: `⭐ Conceder Talento: "${feat.name}"`,
-      subtitle: `Selecione o herói que aprenderá este talento extraordinário`,
+      subtitle: `Selecione o herói que aprenderá este talento extraordinário:`,
+      icon: '⭐',
       onSelect: (selectedHero) => {
         if (typeof grantFeatToPlayer === 'function') {
           grantFeatToPlayer(selectedHero.id, feat.id, { source: 'master' });
@@ -78652,19 +78895,52 @@ function renderPartyStashViewer() {
   if (histEl) {
     const rawHist = (stash.history || []);
     const indexed = rawHist.map((h, i) => ({ ...h, origIdx: i }));
-    const hist = indexed.slice(-12).reverse();
-    if (hist.length === 0) {
-      histEl.innerHTML = `<div style="color:var(--text-muted); font-size:11px; text-align:center;">Nenhuma movimentação registrada.</div>`;
+
+    // Filtragem por categoria
+    let filtered = indexed.filter(h => {
+      if (stashHistoryFilter === 'gold') {
+        return h.type === 'gold_in' || h.type === 'gold_out' || (h.text && h.text.includes('PO'));
+      }
+      if (stashHistoryFilter === 'split') {
+        return h.type === 'gold_split' || (h.text && h.text.toLowerCase().includes('divis'));
+      }
+      if (stashHistoryFilter === 'items') {
+        return h.type === 'item_in' || h.type === 'item_out' || h.type === 'item_edit' || h.type === 'item_sold' || (h.text && (h.text.toLowerCase().includes('item') || !h.text.includes('PO')));
+      }
+      if (stashHistoryFilter === 'sold') {
+        return h.type === 'item_sold' || (h.text && (h.text.toLowerCase().includes('vend') || h.text.toLowerCase().includes('venda')));
+      }
+      return true; // 'all'
+    });
+
+    if (stashHistorySearch) {
+      const q = stashHistorySearch.toLowerCase();
+      filtered = filtered.filter(h => 
+        (h.text && h.text.toLowerCase().includes(q)) ||
+        (h.type && h.type.toLowerCase().includes(q)) ||
+        (h.author && h.author.toLowerCase().includes(q)) ||
+        (h.date && h.date.toLowerCase().includes(q))
+      );
+    }
+
+    const countBadge = document.getElementById('party-stash-modal-history-count');
+    if (countBadge) {
+      countBadge.innerText = `${filtered.length} registro${filtered.length === 1 ? '' : 's'}${filtered.length !== rawHist.length ? ` (de ${rawHist.length})` : ''}`;
+    }
+
+    const modalChips = document.getElementById('party-stash-modal-filter-chips');
+    if (modalChips) {
+      modalChips.querySelectorAll('.btn-filter-chip').forEach(btn => {
+        const cat = btn.getAttribute('data-history-filter');
+        btn.classList.toggle('active', cat === stashHistoryFilter);
+      });
+    }
+
+    if (filtered.length === 0) {
+      histEl.innerHTML = `<div style="color:var(--text-muted); font-size:11px; text-align:center; padding:12px; background:rgba(0,0,0,0.2); border-radius:6px; border:1px dashed rgba(255,255,255,0.06);">Nenhuma movimentação registrada${stashHistorySearch || stashHistoryFilter !== 'all' ? ' para os filtros aplicados' : ''}.</div>`;
     } else {
-      histEl.innerHTML = hist.map(h => `
-        <div class="stash-history-item ${h.type || 'gold_in'}" style="font-size:10.5px; padding:3px 6px; display: flex; justify-content: space-between; align-items: center; gap: 6px;">
-          <span style="flex: 1;">${h.text}</span>
-          <div style="display: flex; align-items: center; gap: 4px;">
-            <span style="font-size:9px; color:var(--text-dim); white-space: nowrap;">${h.date || ''}</span>
-            <button class="btn-secondary" style="padding: 1px 4px; font-size: 9px; color: #f87171; border-color: rgba(239, 68, 68, 0.2); line-height: 1;" onclick="deletePartyStashHistoryItem(${h.origIdx})" title="Excluir este registro">🗑️</button>
-          </div>
-        </div>
-      `).join('');
+      const hist = filtered.slice(-20).reverse();
+      histEl.innerHTML = hist.map(h => renderStashHistoryCardHtml(h)).join('');
     }
   }
 }
@@ -78674,17 +78950,39 @@ function clearPartyStashHistory() {
   if (!camp) return;
   camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
   if (!camp.partyStash.history || camp.partyStash.history.length === 0) {
-    alert('O histórico de movimentações do baú já está vazio.');
+    if (typeof customAlert === 'function') {
+      customAlert('O histórico de movimentações do baú já está vazio.', 'Baú do Grupo');
+    } else {
+      alert('O histórico de movimentações do baú já está vazio.');
+    }
     return;
   }
-  if (!confirm('Deseja realmente limpar e resetar todo o histórico de movimentações do baú coletivo desta campanha?')) return;
-  camp.partyStash.history = [];
-  saveCampaignsState();
-  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
-  renderCampaigns();
-  renderPartyStashViewer();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
-  if (typeof addLog === 'function') addLog('🧹 <b>Baú do Grupo:</b> Histórico de movimentações resetado pelo mestre.');
+
+  const doClear = () => {
+    camp.partyStash.history = [];
+    saveCampaignsState();
+    if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+    renderCampaigns();
+    renderPartyStashViewer();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+    if (typeof addLog === 'function') addLog('🧹 <b>Baú do Grupo:</b> Histórico de movimentações resetado pelo mestre.');
+  };
+
+  const modal = (typeof document !== 'undefined') ? document.getElementById('modal-rpg-confirm') : null;
+  const isRealBrowser = typeof window !== 'undefined' && typeof window.matchMedia === 'function';
+
+  if (isRealBrowser && modal && typeof showRpgConfirmModal === 'function') {
+    showRpgConfirmModal({
+      title: 'Limpar Histórico do Baú',
+      message: 'Deseja realmente limpar e resetar todo o histórico de movimentações do baú coletivo desta campanha?<br><br><b style="color:#ef4444;">Esta ação não pode ser desfeita.</b>',
+      icon: '🧹',
+      confirmText: 'Limpar Histórico',
+      danger: true,
+      onConfirm: doClear
+    });
+  } else {
+    if (confirm('Deseja realmente limpar e resetar todo o histórico de movimentações do baú coletivo desta campanha?')) doClear();
+  }
 }
 
 function deletePartyStashHistoryItem(origIndex) {
@@ -78696,14 +78994,30 @@ function deletePartyStashHistoryItem(origIndex) {
   const item = camp.partyStash.history[idx];
   const itemText = item ? (item.text || 'registro') : 'registro';
 
-  if (!confirm(`Excluir este registro do histórico?\n"${itemText}"`)) return;
+  const doDelete = () => {
+    camp.partyStash.history.splice(idx, 1);
+    saveCampaignsState();
+    if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+    renderCampaigns();
+    renderPartyStashViewer();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  };
 
-  camp.partyStash.history.splice(idx, 1);
-  saveCampaignsState();
-  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
-  renderCampaigns();
-  renderPartyStashViewer();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  const modal = (typeof document !== 'undefined') ? document.getElementById('modal-rpg-confirm') : null;
+  const isRealBrowser = typeof window !== 'undefined' && typeof window.matchMedia === 'function';
+
+  if (isRealBrowser && modal && typeof showRpgConfirmModal === 'function') {
+    showRpgConfirmModal({
+      title: 'Excluir Registro Contábil',
+      message: `Deseja remover esta movimentação do histórico?<br><br><span style="color:#f59e0b; font-weight:600;">"${itemText}"</span>`,
+      icon: '🗑️',
+      confirmText: 'Excluir',
+      danger: true,
+      onConfirm: doDelete
+    });
+  } else {
+    if (confirm(`Excluir este registro do histórico?\n"${itemText}"`)) doDelete();
+  }
 }
 
 function takePartyItemToPlayer(itemId, targetPlayerId = null, qty = null) {
@@ -78722,6 +79036,17 @@ function takePartyItemToPlayer(itemId, targetPlayerId = null, qty = null) {
   } else if (typeof PLAYERS !== 'undefined' && PLAYERS.length === 1) {
     targetPlayer = PLAYERS[0];
   } else if (typeof PLAYERS !== 'undefined' && PLAYERS.length > 1) {
+    if (typeof openHeroSelectModal === 'function') {
+      openHeroSelectModal({
+        title: `📦 Transferir "${it.name}"`,
+        subtitle: `Escolha o herói da mesa que receberá este item na mochila:`,
+        icon: '📦',
+        onSelect: (selectedHero) => {
+          takePartyItemToPlayer(itemId, selectedHero.id, qty);
+        }
+      });
+      return;
+    }
     const heroList = PLAYERS.map((p, i) => `${i + 1}. ${p.name} (${p.student || 'Personagem'})`).join('\n');
     const choice = prompt(`Para qual herói deseja transferir "${it.name}"?\nDigite o número correspondente:\n\n${heroList}`, '1');
     if (!choice) return;

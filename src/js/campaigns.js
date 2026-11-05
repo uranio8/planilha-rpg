@@ -2894,19 +2894,52 @@ function renderPartyStashViewer() {
   if (histEl) {
     const rawHist = (stash.history || []);
     const indexed = rawHist.map((h, i) => ({ ...h, origIdx: i }));
-    const hist = indexed.slice(-12).reverse();
-    if (hist.length === 0) {
-      histEl.innerHTML = `<div style="color:var(--text-muted); font-size:11px; text-align:center;">Nenhuma movimentação registrada.</div>`;
+
+    // Filtragem por categoria
+    let filtered = indexed.filter(h => {
+      if (stashHistoryFilter === 'gold') {
+        return h.type === 'gold_in' || h.type === 'gold_out' || (h.text && h.text.includes('PO'));
+      }
+      if (stashHistoryFilter === 'split') {
+        return h.type === 'gold_split' || (h.text && h.text.toLowerCase().includes('divis'));
+      }
+      if (stashHistoryFilter === 'items') {
+        return h.type === 'item_in' || h.type === 'item_out' || h.type === 'item_edit' || h.type === 'item_sold' || (h.text && (h.text.toLowerCase().includes('item') || !h.text.includes('PO')));
+      }
+      if (stashHistoryFilter === 'sold') {
+        return h.type === 'item_sold' || (h.text && (h.text.toLowerCase().includes('vend') || h.text.toLowerCase().includes('venda')));
+      }
+      return true; // 'all'
+    });
+
+    if (stashHistorySearch) {
+      const q = stashHistorySearch.toLowerCase();
+      filtered = filtered.filter(h => 
+        (h.text && h.text.toLowerCase().includes(q)) ||
+        (h.type && h.type.toLowerCase().includes(q)) ||
+        (h.author && h.author.toLowerCase().includes(q)) ||
+        (h.date && h.date.toLowerCase().includes(q))
+      );
+    }
+
+    const countBadge = document.getElementById('party-stash-modal-history-count');
+    if (countBadge) {
+      countBadge.innerText = `${filtered.length} registro${filtered.length === 1 ? '' : 's'}${filtered.length !== rawHist.length ? ` (de ${rawHist.length})` : ''}`;
+    }
+
+    const modalChips = document.getElementById('party-stash-modal-filter-chips');
+    if (modalChips) {
+      modalChips.querySelectorAll('.btn-filter-chip').forEach(btn => {
+        const cat = btn.getAttribute('data-history-filter');
+        btn.classList.toggle('active', cat === stashHistoryFilter);
+      });
+    }
+
+    if (filtered.length === 0) {
+      histEl.innerHTML = `<div style="color:var(--text-muted); font-size:11px; text-align:center; padding:12px; background:rgba(0,0,0,0.2); border-radius:6px; border:1px dashed rgba(255,255,255,0.06);">Nenhuma movimentação registrada${stashHistorySearch || stashHistoryFilter !== 'all' ? ' para os filtros aplicados' : ''}.</div>`;
     } else {
-      histEl.innerHTML = hist.map(h => `
-        <div class="stash-history-item ${h.type || 'gold_in'}" style="font-size:10.5px; padding:3px 6px; display: flex; justify-content: space-between; align-items: center; gap: 6px;">
-          <span style="flex: 1;">${h.text}</span>
-          <div style="display: flex; align-items: center; gap: 4px;">
-            <span style="font-size:9px; color:var(--text-dim); white-space: nowrap;">${h.date || ''}</span>
-            <button class="btn-secondary" style="padding: 1px 4px; font-size: 9px; color: #f87171; border-color: rgba(239, 68, 68, 0.2); line-height: 1;" onclick="deletePartyStashHistoryItem(${h.origIdx})" title="Excluir este registro">🗑️</button>
-          </div>
-        </div>
-      `).join('');
+      const hist = filtered.slice(-20).reverse();
+      histEl.innerHTML = hist.map(h => renderStashHistoryCardHtml(h)).join('');
     }
   }
 }
@@ -2916,17 +2949,39 @@ function clearPartyStashHistory() {
   if (!camp) return;
   camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
   if (!camp.partyStash.history || camp.partyStash.history.length === 0) {
-    alert('O histórico de movimentações do baú já está vazio.');
+    if (typeof customAlert === 'function') {
+      customAlert('O histórico de movimentações do baú já está vazio.', 'Baú do Grupo');
+    } else {
+      alert('O histórico de movimentações do baú já está vazio.');
+    }
     return;
   }
-  if (!confirm('Deseja realmente limpar e resetar todo o histórico de movimentações do baú coletivo desta campanha?')) return;
-  camp.partyStash.history = [];
-  saveCampaignsState();
-  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
-  renderCampaigns();
-  renderPartyStashViewer();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
-  if (typeof addLog === 'function') addLog('🧹 <b>Baú do Grupo:</b> Histórico de movimentações resetado pelo mestre.');
+
+  const doClear = () => {
+    camp.partyStash.history = [];
+    saveCampaignsState();
+    if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+    renderCampaigns();
+    renderPartyStashViewer();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+    if (typeof addLog === 'function') addLog('🧹 <b>Baú do Grupo:</b> Histórico de movimentações resetado pelo mestre.');
+  };
+
+  const modal = (typeof document !== 'undefined') ? document.getElementById('modal-rpg-confirm') : null;
+  const isRealBrowser = typeof window !== 'undefined' && typeof window.matchMedia === 'function';
+
+  if (isRealBrowser && modal && typeof showRpgConfirmModal === 'function') {
+    showRpgConfirmModal({
+      title: 'Limpar Histórico do Baú',
+      message: 'Deseja realmente limpar e resetar todo o histórico de movimentações do baú coletivo desta campanha?<br><br><b style="color:#ef4444;">Esta ação não pode ser desfeita.</b>',
+      icon: '🧹',
+      confirmText: 'Limpar Histórico',
+      danger: true,
+      onConfirm: doClear
+    });
+  } else {
+    if (confirm('Deseja realmente limpar e resetar todo o histórico de movimentações do baú coletivo desta campanha?')) doClear();
+  }
 }
 
 function deletePartyStashHistoryItem(origIndex) {
@@ -2938,14 +2993,30 @@ function deletePartyStashHistoryItem(origIndex) {
   const item = camp.partyStash.history[idx];
   const itemText = item ? (item.text || 'registro') : 'registro';
 
-  if (!confirm(`Excluir este registro do histórico?\n"${itemText}"`)) return;
+  const doDelete = () => {
+    camp.partyStash.history.splice(idx, 1);
+    saveCampaignsState();
+    if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+    renderCampaigns();
+    renderPartyStashViewer();
+    if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  };
 
-  camp.partyStash.history.splice(idx, 1);
-  saveCampaignsState();
-  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
-  renderCampaigns();
-  renderPartyStashViewer();
-  if (typeof syncLocalChangesToFirebase === 'function') syncLocalChangesToFirebase();
+  const modal = (typeof document !== 'undefined') ? document.getElementById('modal-rpg-confirm') : null;
+  const isRealBrowser = typeof window !== 'undefined' && typeof window.matchMedia === 'function';
+
+  if (isRealBrowser && modal && typeof showRpgConfirmModal === 'function') {
+    showRpgConfirmModal({
+      title: 'Excluir Registro Contábil',
+      message: `Deseja remover esta movimentação do histórico?<br><br><span style="color:#f59e0b; font-weight:600;">"${itemText}"</span>`,
+      icon: '🗑️',
+      confirmText: 'Excluir',
+      danger: true,
+      onConfirm: doDelete
+    });
+  } else {
+    if (confirm(`Excluir este registro do histórico?\n"${itemText}"`)) doDelete();
+  }
 }
 
 function takePartyItemToPlayer(itemId, targetPlayerId = null, qty = null) {
@@ -2964,6 +3035,17 @@ function takePartyItemToPlayer(itemId, targetPlayerId = null, qty = null) {
   } else if (typeof PLAYERS !== 'undefined' && PLAYERS.length === 1) {
     targetPlayer = PLAYERS[0];
   } else if (typeof PLAYERS !== 'undefined' && PLAYERS.length > 1) {
+    if (typeof openHeroSelectModal === 'function') {
+      openHeroSelectModal({
+        title: `📦 Transferir "${it.name}"`,
+        subtitle: `Escolha o herói da mesa que receberá este item na mochila:`,
+        icon: '📦',
+        onSelect: (selectedHero) => {
+          takePartyItemToPlayer(itemId, selectedHero.id, qty);
+        }
+      });
+      return;
+    }
     const heroList = PLAYERS.map((p, i) => `${i + 1}. ${p.name} (${p.student || 'Personagem'})`).join('\n');
     const choice = prompt(`Para qual herói deseja transferir "${it.name}"?\nDigite o número correspondente:\n\n${heroList}`, '1');
     if (!choice) return;

@@ -943,10 +943,11 @@ function promptGiveEquipmentToPlayer(name, weightStr, prop) {
     }
   };
 
-  if (typeof openHeroSelectModal === 'function' && typeof document !== 'undefined' && document.getElementById('modal-hero-select')) {
+  if (typeof openHeroSelectModal === 'function' && typeof document !== 'undefined' && (document.getElementById('modal-hero-select') || document.getElementById('modal-rpg-picker'))) {
     openHeroSelectModal({
       title: `🎁 Entregar "${name}" a um Herói`,
-      subtitle: `Escolha o aventureiro que receberá este equipamento na mochila`,
+      subtitle: `Escolha o aventureiro que receberá este equipamento na mochila:`,
+      icon: '🎁',
       onSelect: (selectedHero) => {
         deliverToHero(selectedHero);
       }
@@ -1599,11 +1600,12 @@ function promptGrantFeatToHero(featId) {
     return;
   }
 
-  // Novo fluxo Dark Fantasy com Seleção Visual de Heróis (ISSUE-175)
-  if (typeof openHeroSelectModal === 'function' && typeof document !== 'undefined' && document.getElementById('modal-hero-select')) {
+  // Novo fluxo Dark Fantasy com Seleção Visual de Heróis (ISSUE-175 & ISSUE-177)
+  if (typeof openHeroSelectModal === 'function' && typeof document !== 'undefined' && (document.getElementById('modal-hero-select') || document.getElementById('modal-rpg-picker'))) {
     openHeroSelectModal({
       title: `⭐ Conceder Talento: "${feat.name}"`,
-      subtitle: `Selecione o herói que aprenderá este talento extraordinário`,
+      subtitle: `Selecione o herói que aprenderá este talento extraordinário:`,
+      icon: '⭐',
       onSelect: (selectedHero) => {
         if (typeof grantFeatToPlayer === 'function') {
           grantFeatToPlayer(selectedHero.id, feat.id, { source: 'master' });

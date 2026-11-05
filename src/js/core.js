@@ -3832,12 +3832,12 @@ let _activeHeroSelectCancel = null;
 let _activeHeroSelectList = [];
 
 function openHeroSelectModal(options = {}) {
-  const modal = document.getElementById('modal-hero-select');
+  let modal = document.getElementById('modal-hero-select') || document.getElementById('modal-rpg-picker');
   if (!modal) return;
 
-  const titleEl = document.getElementById('hero-select-modal-title');
-  const subEl = document.getElementById('hero-select-modal-subtitle');
-  const iconEl = document.getElementById('hero-select-modal-icon');
+  const titleEl = document.getElementById('hero-select-modal-title') || document.getElementById('rpg-picker-title');
+  const subEl = document.getElementById('hero-select-modal-subtitle') || document.getElementById('rpg-picker-subtitle');
+  const iconEl = document.getElementById('hero-select-modal-icon') || document.getElementById('rpg-picker-icon');
   const searchInp = document.getElementById('inp-hero-select-search');
 
   if (titleEl) { titleEl.textContent = options.title || 'Selecionar Personagem'; titleEl.innerText = titleEl.textContent; }
@@ -3852,11 +3852,16 @@ function openHeroSelectModal(options = {}) {
   _activeHeroSelectList = Array.isArray(heroes) ? [...heroes] : [];
 
   renderHeroSelectCards(_activeHeroSelectList);
+  modal.classList.add('open');
   modal.style.display = 'flex';
 }
 
+function showRpgPickerModal(options = {}) {
+  openHeroSelectModal(options);
+}
+
 function renderHeroSelectCards(list) {
-  const grid = document.getElementById('hero-select-grid');
+  let grid = document.getElementById('hero-select-grid') || document.getElementById('rpg-picker-grid');
   if (!grid) return;
 
   if (!list || list.length === 0) {
@@ -3872,11 +3877,11 @@ function renderHeroSelectCards(list) {
     const avatar = p.avatar || '👤';
 
     return `
-      <div class="hero-select-card" onclick="onHeroCardSelected('${p.id}')" title="Selecionar ${p.name}">
-        <div class="hero-select-avatar">${avatar}</div>
-        <div class="hero-select-info">
-          <div class="hero-select-name">${p.name}</div>
-          <div class="hero-select-sub">${p.className || 'Herói'} (Nv ${p.level || 1}) • ${p.student || 'Jogador'}</div>
+      <div class="hero-select-card rpg-picker-card" onclick="onHeroCardSelected('${p.id}')" title="Selecionar ${p.name}">
+        <div class="hero-select-avatar rpg-picker-avatar">${avatar}</div>
+        <div class="hero-select-info rpg-picker-info">
+          <div class="hero-select-name rpg-picker-name">${p.name}</div>
+          <div class="hero-select-sub rpg-picker-meta">${p.className || 'Herói'} (Nv ${p.level || 1})${p.student ? ` • ${p.student}` : ''}</div>
           <div style="display: flex; align-items: center; gap: 6px; margin-top: 3px;">
             <div style="flex: 1; height: 4px; background: rgba(0,0,0,0.5); border-radius: 2px; overflow: hidden;">
               <div style="width: ${hpPct}%; height: 100%; background: ${hpColor}; border-radius: 2px;"></div>
@@ -3884,6 +3889,7 @@ function renderHeroSelectCards(list) {
             <span style="font-size: 9.5px; color: ${hpColor}; font-weight: 700;">${hpVal}/${maxHpVal} PV</span>
           </div>
         </div>
+        <span style="font-size: 16px; color: #f59e0b; margin-left: auto;">➔</span>
       </div>
     `;
   }).join('');
@@ -3911,22 +3917,78 @@ function onHeroCardSelected(playerId) {
   const cb = _activeHeroSelectCallback;
   _activeHeroSelectCallback = null;
   _activeHeroSelectCancel = null;
-  const modal = document.getElementById('modal-hero-select');
-  if (modal) modal.style.display = 'none';
+  const modal = document.getElementById('modal-hero-select') || document.getElementById('modal-rpg-picker');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.style.display = 'none';
+  }
   if (typeof cb === 'function' && hero) {
     cb(hero);
   }
 }
 
 function closeHeroSelectModal() {
-  const modal = document.getElementById('modal-hero-select');
-  if (modal) modal.style.display = 'none';
+  const modal = document.getElementById('modal-hero-select') || document.getElementById('modal-rpg-picker');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.style.display = 'none';
+  }
   const cancelCb = _activeHeroSelectCancel;
   _activeHeroSelectCallback = null;
   _activeHeroSelectCancel = null;
   if (typeof cancelCb === 'function') {
     cancelCb();
   }
+}
+
+function closeRpgPickerModal() {
+  closeHeroSelectModal();
+}
+
+let _rpgConfirmCallback = null;
+
+function showRpgConfirmModal(options = {}) {
+  const modal = document.getElementById('modal-rpg-confirm');
+  if (!modal) {
+    if (confirm(options.message ? options.message.replace(/<[^>]*>/g, '') : 'Confirmar operação?')) {
+      if (typeof options.onConfirm === 'function') options.onConfirm();
+    }
+    return;
+  }
+
+  _rpgConfirmCallback = options.onConfirm || null;
+  const titleEl = document.getElementById('rpg-confirm-title');
+  const msgEl = document.getElementById('rpg-confirm-message');
+  const iconEl = document.getElementById('rpg-confirm-icon');
+  const btn = document.getElementById('rpg-confirm-btn');
+
+  if (titleEl) titleEl.textContent = options.title || 'Confirmar Ação';
+  if (msgEl) msgEl.innerHTML = options.message || 'Tem certeza de que deseja continuar?';
+  if (iconEl) iconEl.textContent = options.icon || (options.danger ? '⚠️' : '❓');
+  if (btn) {
+    btn.textContent = options.confirmText || 'Confirmar';
+    btn.className = options.danger ? 'btn-action btn-danger' : 'btn-action';
+  }
+
+  modal.classList.add('open');
+  modal.style.display = 'flex';
+}
+
+function executeRpgConfirmAction() {
+  const cb = _rpgConfirmCallback;
+  closeRpgConfirmModal();
+  if (typeof cb === 'function') {
+    cb();
+  }
+}
+
+function closeRpgConfirmModal() {
+  const modal = document.getElementById('modal-rpg-confirm');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.style.display = 'none';
+  }
+  _rpgConfirmCallback = null;
 }
 
 // -------------------------------------------------------------
@@ -4136,6 +4198,11 @@ function closeCustomDialog(result = null) {
 if (typeof window !== 'undefined') {
   window.openHeroSelectModal = openHeroSelectModal;
   window.closeHeroSelectModal = closeHeroSelectModal;
+  window.showRpgPickerModal = showRpgPickerModal;
+  window.closeRpgPickerModal = closeRpgPickerModal;
+  window.showRpgConfirmModal = showRpgConfirmModal;
+  window.executeRpgConfirmAction = executeRpgConfirmAction;
+  window.closeRpgConfirmModal = closeRpgConfirmModal;
   window.filterHeroSelectCards = filterHeroSelectCards;
   window.onHeroCardSelected = onHeroCardSelected;
   window.customPrompt = customPrompt;
@@ -4149,6 +4216,11 @@ if (typeof window !== 'undefined') {
 if (typeof global !== 'undefined') {
   global.openHeroSelectModal = openHeroSelectModal;
   global.closeHeroSelectModal = closeHeroSelectModal;
+  global.showRpgPickerModal = showRpgPickerModal;
+  global.closeRpgPickerModal = closeRpgPickerModal;
+  global.showRpgConfirmModal = showRpgConfirmModal;
+  global.executeRpgConfirmAction = executeRpgConfirmAction;
+  global.closeRpgConfirmModal = closeRpgConfirmModal;
   global.filterHeroSelectCards = filterHeroSelectCards;
   global.onHeroCardSelected = onHeroCardSelected;
   global.customPrompt = customPrompt;
