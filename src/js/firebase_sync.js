@@ -940,11 +940,27 @@ function applyCloudDataToLocal(cloudData) {
       }
     }
 
-    // 3. Atualiza Grid de Batalha (Opcional se sincronizado)
+    // 3. Atualiza Grid de Batalha em Tempo Real Online (ISSUE-176)
     if (cloudData.gridState && typeof gridState !== 'undefined') {
-      gridState = Object.assign({}, gridState, cloudData.gridState);
-      if (typeof renderBattleGrid === 'function') renderBattleGrid();
-      if (typeof renderVttCombatHud === 'function') renderVttCombatHud();
+      const isDraggingNow = (typeof draggingToken !== 'undefined' && draggingToken);
+      if (!isDraggingNow) {
+        gridState = Object.assign({}, gridState, cloudData.gridState);
+        if (typeof renderBattleGrid === 'function') renderBattleGrid();
+        if (typeof renderVttCombatHud === 'function') renderVttCombatHud();
+        if (typeof applyVttAmbientLighting === 'function') {
+          applyVttAmbientLighting(gridState.ambientLight || 'day', gridState.ambientDarkness || 0);
+        }
+        if (gridState.fowEnabled && gridState.fowDataUrl && typeof loadFoWFromDataUrl === 'function') {
+          loadFoWFromDataUrl(gridState.fowDataUrl);
+        }
+      }
+    }
+
+    // Suporte a Pings em Tempo Real Online
+    if (cloudData.lastPing && cloudData.lastPing.sender !== localClientId && (Date.now() - (cloudData.lastPing.ts || 0) < 5000)) {
+      if (typeof showGridPing === 'function') {
+        showGridPing(cloudData.lastPing.x, cloudData.lastPing.y, cloudData.lastPing.color);
+      }
     }
 
     // 4. Atualiza Campanhas, Baú do Grupo e Mesas de Jogo com mescla inteligente defensiva

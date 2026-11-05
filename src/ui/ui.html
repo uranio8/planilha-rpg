@@ -159,6 +159,7 @@
     <!-- LINHA 2: Nav Chips com scroll horizontal -->
     <div class="portal-nav-scroll-row" id="portal-nav-chips">
       <button class="portal-chip active" id="pnav-players" onclick="switchTab('players')">👤 Ficha</button>
+      <button class="portal-chip" id="pnav-grid" onclick="switchTab('grid')">🗺️ Mapa VTT</button>
       <button class="portal-chip" id="pnav-combat" onclick="openPlayerCombatModal()">⚔️ Combate</button>
       <button class="portal-chip" id="pnav-stash" onclick="openPartyStashModal()">🎒 Baú</button>
       <button class="portal-chip" id="pnav-chronicles" onclick="openChroniclesViewerModal()">📖 Crônicas</button>
@@ -567,6 +568,93 @@
              onwheel="handleGridWheelZoom(event)" 
              onmousedown="handleViewportMouseDown(event)"
              oncontextmenu="handleGridContextMenu(event)">
+
+          <!-- DOCK FLUTUANTE DE FERRAMENTAS VTT (OWLBEAR & FOUNDRY STYLE) -->
+          <div id="vtt-floating-dock" class="vtt-floating-dock">
+            <div class="vtt-dock-segment">
+              <button id="dock-tool-select" class="vtt-dock-btn active" onclick="setPanMode(false); setVttTool('select');" title="Selecionar Tokens (V / Esc)">
+                <span class="vtt-dock-icon">🎯</span>
+                <span class="vtt-dock-lbl">Tokens</span>
+              </button>
+              <button id="dock-tool-pan" class="vtt-dock-btn" onclick="togglePanMode()" title="Mover Mapa (Espaço)">
+                <span class="vtt-dock-icon">🖐️</span>
+                <span class="vtt-dock-lbl">Mover</span>
+              </button>
+              <button id="dock-tool-ruler" class="vtt-dock-btn" onclick="toggleRulerTool()" title="Régua Tátil com Waypoints (M / R)">
+                <span class="vtt-dock-icon">📏</span>
+                <span class="vtt-dock-lbl">Régua</span>
+              </button>
+              <button id="dock-tool-ping" class="vtt-dock-btn" onclick="togglePingTool()" title="Ping Tático no Mapa (P / Alt+Clique)">
+                <span class="vtt-dock-icon">📍</span>
+                <span class="vtt-dock-lbl">Ping</span>
+              </button>
+            </div>
+            <div class="vtt-dock-divider vtt-dm-only-tool"></div>
+            <div class="vtt-dock-segment vtt-dm-only-tool">
+              <!-- NÉVOA DE GUERRA DROPDOWN -->
+              <div class="vtt-dock-dropdown-wrap">
+                <button id="dock-tool-fow" class="vtt-dock-btn" onclick="toggleVttFowDropdown(event)" title="Névoa de Guerra Avançada (F)">
+                  <span class="vtt-dock-icon">🌫️</span>
+                  <span class="vtt-dock-lbl">Névoa ▾</span>
+                </button>
+                <div id="vtt-fow-dropdown" class="vtt-dock-dropdown" style="display: none;">
+                  <button type="button" onclick="setVttFowMode('brush'); closeVttDockDropdowns();" title="Pincel Livre de Névoa">🖌️ Pincel</button>
+                  <button type="button" onclick="setVttFowMode('box_reveal'); closeVttDockDropdowns();" title="Revelar Sala Retangular">🔲 Revelar Sala (Caixa)</button>
+                  <button type="button" onclick="setVttFowMode('circle_reveal'); closeVttDockDropdowns();" title="Revelar Raio Circular">⭕ Revelar Círculo</button>
+                  <button type="button" onclick="setVttFowMode('box_hide'); closeVttDockDropdowns();" title="Ocultar Sala Retangular">⬛ Ocultar Sala</button>
+                  <div class="dropdown-divider"></div>
+                  <button type="button" onclick="revealAllFoW(); closeVttDockDropdowns();" title="Revelar Todo o Mapa">👁️ Revelar Tudo</button>
+                  <button type="button" onclick="hideAllFoW(); closeVttDockDropdowns();" title="Cobrir Todo o Mapa">🌑 Ocultar Tudo</button>
+                </div>
+              </div>
+              <!-- DESENHO & GIZ -->
+              <button id="dock-tool-draw" class="vtt-dock-btn" onclick="toggleDrawingTool()" title="Desenho Tático / Giz (D)">
+                <span class="vtt-dock-icon">✏️</span>
+                <span class="vtt-dock-lbl">Giz</span>
+              </button>
+              <!-- ILUMINAÇÃO & AMBIENTAÇÃO SHADERS -->
+              <div class="vtt-dock-dropdown-wrap">
+                <button id="dock-tool-ambient" class="vtt-dock-btn" onclick="toggleVttAmbientDropdown(event)" title="Iluminação & Shaders de Cena (L)">
+                  <span class="vtt-dock-icon">💡</span>
+                  <span class="vtt-dock-lbl">Luz ▾</span>
+                </button>
+                <div id="vtt-ambient-dropdown" class="vtt-dock-dropdown" style="display: none;">
+                  <div class="ambient-title">Shaders de Ambiente</div>
+                  <button type="button" onclick="setVttAmbientPreset('day'); closeVttDockDropdowns();">☀️ Dia Pleno</button>
+                  <button type="button" onclick="setVttAmbientPreset('dusk'); closeVttDockDropdowns();">🌇 Entardecer / Ocaso</button>
+                  <button type="button" onclick="setVttAmbientPreset('night'); closeVttDockDropdowns();">🌙 Noite Fechada</button>
+                  <button type="button" onclick="setVttAmbientPreset('dungeon'); closeVttDockDropdowns();">🏰 Masmorra Penumbra</button>
+                  <button type="button" onclick="setVttAmbientPreset('swamp'); closeVttDockDropdowns();">🧪 Pântano Místico</button>
+                  <div class="ambient-slider-row">
+                    <span>Escuridão:</span>
+                    <input type="range" id="vtt-darkness-slider" min="0" max="90" step="5" value="0" oninput="setVttAmbientDarkness(this.value)">
+                    <span id="vtt-darkness-val">0%</span>
+                  </div>
+                </div>
+              </div>
+              <!-- VISÃO DO JOGADOR -->
+              <button id="dock-tool-player-view" class="vtt-dock-btn" onclick="toggleVttPlayerPerspective()" title="Simular Visão dos Jogadores (J)">
+                <span class="vtt-dock-icon">👁️</span>
+                <span class="vtt-dock-lbl">Jogador</span>
+              </button>
+            </div>
+            <div class="vtt-dock-divider"></div>
+            <div class="vtt-dock-segment">
+              <button type="button" class="vtt-dock-btn" onclick="zoomGrid(1.2)" title="Aproximar Zoom (+)">🔍+</button>
+              <button type="button" class="vtt-dock-btn" onclick="zoomGrid(0.8)" title="Afastar Zoom (-)">🔍-</button>
+              <button type="button" class="vtt-dock-btn" onclick="resetGridZoom()" title="Resetar Visualização">🔄</button>
+              <button type="button" class="vtt-dock-btn vtt-dm-only-tool" onclick="toggleVttHudCollapse()" title="Alternar Modo Foco">🔲 Foco</button>
+            </div>
+          </div>
+
+          <!-- DROPZONE OVERLAY PARA ARRASTAR IMAGENS DE MAPA (OWLBEAR STYLE) -->
+          <div id="vtt-dropzone-overlay" class="vtt-dropzone-overlay" style="display: none;">
+            <div class="vtt-dropzone-box">
+              <div style="font-size: 40px; margin-bottom: 8px;">📥</div>
+              <h3 style="margin: 0 0 6px 0; color: var(--gold-light); font-family: var(--font-title);">Solte a Imagem do Mapa</h3>
+              <p style="margin: 0; color: #94a3b8; font-size: 13px;">Formatos: PNG, JPG, WebP ou cole com Ctrl+V</p>
+            </div>
+          </div>
           
           <div class="battlegrid-transform-layer" id="battlegrid-transform-layer">
             <div id="grid-coord-top" class="grid-coord-top" style="display: none;"></div>
@@ -587,6 +675,9 @@
               <div id="grid-aoe-layer"></div>
               <div id="grid-markers-layer"></div>
               <div id="grid-tokens-layer"></div>
+              <!-- SHADER DE ILUMINAÇÃO ATMOSFÉRICA & TRILHA DE MOVIMENTO POR TECLADO -->
+              <div id="battlegrid-ambient-overlay" class="battlegrid-ambient-overlay"></div>
+              <div id="vtt-keyboard-movement-trail" class="vtt-keyboard-movement-trail" style="display: none;"></div>
               <!-- TOKEN ACTION HUD FLUTUANTE (VTT DOCK) -->
               <div id="vtt-token-action-hud" class="vtt-token-action-hud" style="display: none;"></div>
               <canvas id="fow-canvas-dm" class="fow-canvas fow-canvas-dm" style="display: none;"></canvas>

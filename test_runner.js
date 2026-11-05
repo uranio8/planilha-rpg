@@ -11075,6 +11075,59 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(b144HeadCss.includes('.stash-history-amount'), 'head_css.html define .stash-history-amount');
     passedTests += 4;
 
+    // ----------------------------------------------------
+    // Bateria 145: VTT Battle Grid Épico & Sincronização em Nuvem (ISSUE-176)
+    // ----------------------------------------------------
+    console.log('\n🗺️ [Bateria 145] VTT Battle Grid Épico, Sincronização em Nuvem & Inspiração Owlbear/Foundry (ISSUE-176):');
+    totalTests += 25;
+
+    // 1. Verificação de funções exportadas do VTT
+    const expectedVttExports = [
+      'setVttFowMode', 'revealFoWRect', 'hideFoWRect', 'revealFoWCircle',
+      'revealAllFoW', 'hideAllFoW', 'zoomGrid', 'resetGridZoom',
+      'handleKeyboardTokenMove', 'renderVttMovementTrail', 'clearVttMovementTrail',
+      'setVttAmbientPreset', 'setVttAmbientDarkness', 'applyVttAmbientLighting',
+      'initVttDropzone', 'loadVttMapFile', 'applyTokenQuickAdjustHp',
+      'promptEditTokenHp', 'toggleTokenTorch', 'cycleTokenReachAura',
+      'toggleVttTokenConditionsPopover', 'toggleTokenConditionFromHud',
+      'toggleVttFowDropdown', 'toggleVttAmbientDropdown', 'toggleVttPlayerPerspective'
+    ];
+    expectedVttExports.forEach(fnName => {
+      assert(typeof sandbox[fnName] === 'function', `sandbox exporta ${fnName}`);
+      passedTests++;
+    });
+
+    // 2. Verificação de Elementos no ui.html
+    totalTests += 7;
+    const b145UiHtml = fs.readFileSync(path.join(srcDir, 'ui', 'ui.html'), 'utf8');
+    assert(b145UiHtml.includes('id="vtt-floating-dock"'), 'ui.html inclui dock flutuante');
+    assert(b145UiHtml.includes('id="vtt-fow-dropdown"'), 'ui.html inclui dropdown de névoa');
+    assert(b145UiHtml.includes('id="vtt-ambient-dropdown"'), 'ui.html inclui dropdown de ambientação');
+    assert(b145UiHtml.includes('id="vtt-dropzone-overlay"'), 'ui.html inclui overlay de dropzone');
+    assert(b145UiHtml.includes('id="battlegrid-ambient-overlay"'), 'ui.html inclui overlay de luz ambiente');
+    assert(b145UiHtml.includes('id="vtt-keyboard-movement-trail"'), 'ui.html inclui container de breadcrumbs');
+    assert(b145UiHtml.includes('id="pnav-grid"'), 'ui.html inclui chip de Mapa VTT no banner do Portal');
+    passedTests += 7;
+
+    // 3. Verificação de Estilos no head_css.html
+    totalTests += 6;
+    const b145HeadCss = fs.readFileSync(path.join(srcDir, 'styles', 'head_css.html'), 'utf8');
+    assert(b145HeadCss.includes('.vtt-floating-dock'), 'head_css.html define .vtt-floating-dock');
+    assert(b145HeadCss.includes('.battlegrid-ambient-overlay.ambient-night'), 'head_css.html define shader de noite');
+    assert(b145HeadCss.includes('.battlegrid-ambient-overlay.ambient-dungeon'), 'head_css.html define shader de masmorra');
+    assert(b145HeadCss.includes('.token-torch-active'), 'head_css.html define efeito de tocha');
+    assert(b145HeadCss.includes('.token-reach-aura'), 'head_css.html define auras de alcance');
+    assert(b145HeadCss.includes('body.mode-player-portal #tab-grid.active'), 'head_css.html permite #tab-grid ativo no portal');
+    passedTests += 6;
+
+    // 4. Verificação de Nuvem e Navegação
+    totalTests += 2;
+    const b145CoreJs = fs.readFileSync(path.join(srcDir, 'js', 'core.js'), 'utf8');
+    const b145VttJs = fs.readFileSync(path.join(srcDir, 'js', 'vtt_grid.js'), 'utf8');
+    assert(b145CoreJs.includes("'grid'"), 'PLAYER_ALLOWED_TABS inclui grid no core.js');
+    assert(b145VttJs.includes('syncLocalChangesToFirebase(true)'), 'broadcastGridState despacha sync para o Firebase');
+    passedTests += 2;
+
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;
     sandbox.document.getElementById = origGetEl;

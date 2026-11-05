@@ -50,7 +50,7 @@ let _vttSaveTimeout = null;
 function debouncedVttSave(delay = 400) {
   if (_vttSaveTimeout) clearTimeout(_vttSaveTimeout);
   _vttSaveTimeout = setTimeout(() => {
-    saveToLocalStorage();
+    if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
     _vttSaveTimeout = null;
   }, delay);
 }
@@ -1284,6 +1284,70 @@ function setFogBrushMode(mode) {
 
 let lastFogPos = null;
 
+let vttFowMode = 'brush';
+let vttFowStartPos = null;
+
+function setVttFowMode(mode) {
+  vttFowMode = mode || 'brush';
+  if (!gridState.fowEnabled && typeof toggleFoW === 'function') {
+    toggleFoW();
+  }
+  const modeLabels = {
+    brush: '🖌️ Pincel Livre',
+    box_reveal: '🔲 Revelar Sala (Retângulo)',
+    circle_reveal: '⭕ Revelar Círculo',
+    box_hide: '⬛ Ocultar Sala (Retângulo)'
+  };
+  if (typeof showToast === 'function') {
+    showToast(`Modo de Névoa: ${modeLabels[vttFowMode] || vttFowMode}`, 'info');
+  }
+}
+
+function revealFoWRect(x1, y1, x2, y2) {
+  const canvasDm = document.getElementById('fow-canvas-dm');
+  if (!canvasDm) return;
+  const ctx = canvasDm.getContext('2d');
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-out';
+  const rx = Math.min(x1, x2);
+  const ry = Math.min(y1, y2);
+  const rw = Math.abs(x2 - x1);
+  const rh = Math.abs(y2 - y1);
+  ctx.fillRect(rx, ry, rw, rh);
+  ctx.restore();
+  updateScreenFoWCanvas(canvasDm);
+}
+
+function hideFoWRect(x1, y1, x2, y2) {
+  const canvasDm = document.getElementById('fow-canvas-dm');
+  if (!canvasDm) return;
+  const ctx = canvasDm.getContext('2d');
+  ctx.save();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = '#05070c';
+  const rx = Math.min(x1, x2);
+  const ry = Math.min(y1, y2);
+  const rw = Math.abs(x2 - x1);
+  const rh = Math.abs(y2 - y1);
+  ctx.fillRect(rx, ry, rw, rh);
+  ctx.restore();
+  updateScreenFoWCanvas(canvasDm);
+}
+
+function revealFoWCircle(cx, cy, ex, ey) {
+  const canvasDm = document.getElementById('fow-canvas-dm');
+  if (!canvasDm) return;
+  const ctx = canvasDm.getContext('2d');
+  const radius = Math.hypot(ex - cx, ey - cy);
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  updateScreenFoWCanvas(canvasDm);
+}
+
 function initFoWCanvases() {
   const w = gridState.width || 1200;
   const h = gridState.height || 800;
@@ -1309,7 +1373,10 @@ function initFoWCanvases() {
       // scaleX = nativo / display → converte pixels de tela para pixels de canvas corretamente.
       const pos = clientToCanvas(e.clientX, e.clientY, canvasDm);
       lastFogPos = pos;
-      drawFogAtPoint(lastFogPos.x, lastFogPos.y);
+      vttFowStartPos = pos;
+      if (vttFowMode === 'brush') {
+        drawFogAtPoint(lastFogPos.x, lastFogPos.y);
+      }
     });
 
     document.addEventListener('mousemove', (e) => {
@@ -1317,15 +1384,28 @@ function initFoWCanvases() {
       const cv = document.getElementById('fow-canvas-dm');
       if (!cv) return;
       const pos = clientToCanvas(e.clientX, e.clientY, cv);
-      drawFogLine(lastFogPos.x, lastFogPos.y, pos.x, pos.y);
+      if (vttFowMode === 'brush') {
+        drawFogLine(lastFogPos.x, lastFogPos.y, pos.x, pos.y);
+      }
       lastFogPos = pos;
     });
 
     document.addEventListener('mouseup', () => {
       if (isDrawingFog) {
         isDrawingFog = false;
+        if (vttFowStartPos && lastFogPos) {
+          if (vttFowMode === 'box_reveal') {
+            revealFoWRect(vttFowStartPos.x, vttFowStartPos.y, lastFogPos.x, lastFogPos.y);
+          } else if (vttFowMode === 'box_hide') {
+            hideFoWRect(vttFowStartPos.x, vttFowStartPos.y, lastFogPos.x, lastFogPos.y);
+          } else if (vttFowMode === 'circle_reveal') {
+            revealFoWCircle(vttFowStartPos.x, vttFowStartPos.y, lastFogPos.x, lastFogPos.y);
+          }
+        }
         lastFogPos = null;
+        vttFowStartPos = null;
         syncFoWData();
+        broadcastGridState();
       }
     });
   }
@@ -1952,14 +2032,21 @@ function renderBattleGrid() {
         ? `<div class="token-aura aura-${tok.aura.range} aura-${tok.aura.color || 'gold'}"></div>`
         : '';
 
+      const cSize = gridState.cellSize || 50;
+      const reachDiameter = (tok.reachAura === '1_5m') ? (cSize * 3) : (tok.reachAura === '3m' ? (cSize * 5) : (tok.reachAura === '9m' ? (cSize * 13) : 0));
+      const reachAuraHtml = (tok.reachAura && tok.reachAura !== 'none' && reachDiameter > 0)
+        ? `<div class="token-reach-aura aura-${tok.reachAura}" style="width: ${reachDiameter}px; height: ${reachDiameter}px; left: ${cSize / 2}px; top: ${cSize / 2}px;"></div>`
+        : '';
+
       return `
         <div id="tok-el-${tok.id}" 
-             class="grid-token ${sizeClass} ${tok.type === 'player' ? 'token-player' : 'token-monster'} ${isActive ? 'active-turn' : ''} ${isSelected ? 'selected' : ''} ${tok.hidden ? 'token-hidden' : ''} ${isLowHp ? 'token-low-hp' : ''} ${isDead ? 'token-dead' : ''}"
+             class="grid-token ${sizeClass} ${tok.type === 'player' ? 'token-player' : 'token-monster'} ${isActive ? 'active-turn' : ''} ${isSelected ? 'selected' : ''} ${tok.hidden ? 'token-hidden' : ''} ${isLowHp ? 'token-low-hp' : ''} ${isDead ? 'token-dead' : ''} ${tok.torch ? 'token-torch-active' : ''}"
              style="left: ${tok.x + 3}px; top: ${tok.y + 3}px;"
              title="${tok.name} (${c.hp}/${c.maxHp} PV · ${hpPct}%) - Clique direito para menu"
              ${!isReadOnly ? `onmousedown="startTokenDrag(event, '${tok.id}')" oncontextmenu="openTokenContextMenu(event, '${tok.id}')"` : ''}>
           
           ${auraHtml}
+          ${reachAuraHtml}
           <div class="token-hp-ring ${isLowHp ? 'token-hp-ring-pulse' : ''}" style="border-color: ${hpColor};"></div>
           <div class="token-hp-bar"><div class="token-hp-fill" style="width: ${hpPct}%; background-color: ${hpColor};"></div></div>
           
@@ -2063,6 +2150,21 @@ function startTokenDrag(e, tokenId) {
 
   const token = (gridState.tokens || []).find(t => t.id === tokenId);
   if (!token) return;
+
+  // ISSUE-176: Validação de controle para jogador no Portal (apenas move seu próprio herói)
+  const isPortalPlayer = (typeof document !== 'undefined' && document.body && document.body.classList.contains('mode-player-portal')) || (typeof activePortalPlayerId !== 'undefined' && !!activePortalPlayerId);
+  if (isPortalPlayer) {
+    const myHero = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(p => p.id === activePortalPlayerId) : null;
+    const isMyToken = token && (
+      (myHero && token.name && (token.name.includes(myHero.name) || myHero.name.includes(token.name))) ||
+      (token.combatantId && token.combatantId === activePortalPlayerId) ||
+      (state.combatants && state.combatants.find(c => c.id === token.combatantId && c.playerId === activePortalPlayerId))
+    );
+    if (!isMyToken) {
+      if (typeof showToast === 'function') showToast('Você só pode movimentar seu próprio herói!', 'warning');
+      return;
+    }
+  }
 
   if (e.shiftKey) {
     if (selectedTokenIds.has(tokenId)) selectedTokenIds.delete(tokenId);
@@ -2474,9 +2576,105 @@ function broadcastGridState() {
   try {
     localStorage.setItem('dnd5e_prisco_live_grid', JSON.stringify(gridState));
   } catch (e) {}
+
+  // 🚀 ISSUE-176: Sincronização em nuvem em tempo real com o Firebase (Mestre & Jogadores)
+  if (typeof syncLocalChangesToFirebase === 'function') {
+    syncLocalChangesToFirebase(true);
+  }
 }
 
-// --- ESCUTADOR GLOBAL DE TECLADO (ESPAÇO PARA MODO MÃO + CTRL+Z PARA UNDO) ---
+// --- RASTREADOR DE MOVIMENTAÇÃO POR TECLADO (BREADCRUMBS) ---
+let vttMovementTrailOrigin = null;
+let vttMovementTrailTokenId = null;
+let vttMovementTrailSteps = 0;
+
+function handleKeyboardTokenMove(code) {
+  if (!selectedTokenIds || selectedTokenIds.size !== 1) return;
+  const tokenId = Array.from(selectedTokenIds)[0];
+  const token = (gridState.tokens || []).find(t => t.id === tokenId);
+  if (!token) return;
+
+  // Verificação de permissão para jogadores no modo Portal
+  const isPortalPlayer = (typeof document !== 'undefined' && document.body && document.body.classList.contains('mode-player-portal')) || (typeof activePortalPlayerId !== 'undefined' && !!activePortalPlayerId);
+  if (isPortalPlayer) {
+    const myHero = (typeof PLAYERS !== 'undefined') ? PLAYERS.find(p => p.id === activePortalPlayerId) : null;
+    const isMyToken = token && (
+      (myHero && token.name && (token.name.includes(myHero.name) || myHero.name.includes(token.name))) ||
+      (token.combatantId && token.combatantId === activePortalPlayerId) ||
+      (state.combatants && state.combatants.find(c => c.id === token.combatantId && c.playerId === activePortalPlayerId))
+    );
+    if (!isMyToken) {
+      if (typeof showToast === 'function') showToast('Você só pode movimentar seu próprio herói!', 'warning');
+      return;
+    }
+  }
+
+  const cSize = gridState.cellSize || 50;
+  const span = typeof getTokenSpan === 'function' ? getTokenSpan(token) : 1;
+  const maxX = (gridState.width || 1200) - (span * cSize);
+  const maxY = (gridState.height || 800) - (span * cSize);
+
+  let dx = 0;
+  let dy = 0;
+  if (code === 'ArrowUp' || code === 'KeyW') dy = -cSize;
+  else if (code === 'ArrowDown' || code === 'KeyS') dy = cSize;
+  else if (code === 'ArrowLeft' || code === 'KeyA') dx = -cSize;
+  else if (code === 'ArrowRight' || code === 'KeyD') dx = cSize;
+
+  const newX = Math.max(0, Math.min(maxX, token.x + dx));
+  const newY = Math.max(0, Math.min(maxY, token.y + dy));
+
+  if (newX === token.x && newY === token.y) return;
+
+  if (!vttMovementTrailOrigin || vttMovementTrailTokenId !== token.id) {
+    vttMovementTrailOrigin = { x: token.x + ((span * cSize) / 2), y: token.y + ((span * cSize) / 2) };
+    vttMovementTrailTokenId = token.id;
+    vttMovementTrailSteps = 0;
+  }
+  vttMovementTrailSteps += 1;
+
+  token.x = newX;
+  token.y = newY;
+
+  renderBattleGrid();
+  renderVttMovementTrail();
+  broadcastGridState();
+  debouncedVttSave();
+}
+
+function renderVttMovementTrail() {
+  const trailContainer = document.getElementById('vtt-keyboard-movement-trail');
+  if (!trailContainer || !vttMovementTrailOrigin || !vttMovementTrailSteps) {
+    if (trailContainer) trailContainer.style.display = 'none';
+    return;
+  }
+  const token = (gridState.tokens || []).find(t => t.id === vttMovementTrailTokenId);
+  if (!token) return;
+
+  const cSize = gridState.cellSize || 50;
+  const span = typeof getTokenSpan === 'function' ? getTokenSpan(token) : 1;
+  const curCenter = { x: token.x + ((span * cSize) / 2), y: token.y + ((span * cSize) / 2) };
+  const meters = (vttMovementTrailSteps * 1.5).toFixed(1);
+  const feet = vttMovementTrailSteps * 5;
+
+  trailContainer.style.display = 'block';
+  trailContainer.innerHTML = `
+    <div class="vtt-trail-point" style="left: ${vttMovementTrailOrigin.x}px; top: ${vttMovementTrailOrigin.y}px;" title="Origem do movimento"></div>
+    <div class="vtt-trail-badge" style="left: ${curCenter.x}px; top: ${token.y - 12}px;">
+      🚶 Movido: ${meters}m (${feet}ft / ${vttMovementTrailSteps}sq)
+    </div>
+  `;
+}
+
+function clearVttMovementTrail() {
+  vttMovementTrailOrigin = null;
+  vttMovementTrailTokenId = null;
+  vttMovementTrailSteps = 0;
+  const trailContainer = document.getElementById('vtt-keyboard-movement-trail');
+  if (trailContainer) trailContainer.style.display = 'none';
+}
+
+// --- ESCUTADOR GLOBAL DE TECLADO (ESPAÇO PARA MODO MÃO + CTRL+Z PARA UNDO + SETAS/WASD) ---
 if (typeof window !== 'undefined') {
   window.addEventListener('keydown', (e) => {
     if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'SELECT') {
@@ -2488,6 +2686,19 @@ if (typeof window !== 'undefined') {
     if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ' && activeVttTool === 'draw') {
       e.preventDefault();
       undoLastDrawing();
+    }
+    // ISSUE-176: Movimentação por teclado do token selecionado (Setas e WASD)
+    const isArrowOrWasd = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code);
+    if (isArrowOrWasd && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'SELECT') {
+      const activeGridTab = document.getElementById('tab-grid');
+      if (activeGridTab && activeGridTab.classList.contains('active') && selectedTokenIds && selectedTokenIds.size === 1) {
+        e.preventDefault();
+        handleKeyboardTokenMove(e.code);
+      }
+    }
+    // Confirmação de movimento de turno
+    if ((e.code === 'Enter' || e.code === 'Space') && vttMovementTrailSteps > 0 && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+      clearVttMovementTrail();
     }
   });
 
@@ -2894,20 +3105,41 @@ function toggleVttHudCollapse() {
 }
 
 /* ==========================================================================
-   FASE 2: VTT FLOATING TOKEN ACTION HUD
+   FASE 2: VTT FLOATING TOKEN ACTION HUD (FOUNDRY & D&D BEYOND STYLE)
    ========================================================================== */
+let activeVttHudConditionsTokenId = null;
+
 function renderVttTokenActionHud(container) {
-  if (!container || !selectedTokenIds || selectedTokenIds.size !== 1) return;
+  if (!container || !selectedTokenIds || selectedTokenIds.size !== 1) {
+    const existingHud = document.getElementById('vtt-token-hud');
+    if (existingHud) {
+      if (typeof existingHud.remove === 'function') {
+        existingHud.remove();
+      } else if (existingHud.parentNode && typeof existingHud.parentNode.removeChild === 'function') {
+        existingHud.parentNode.removeChild(existingHud);
+      }
+    }
+    return;
+  }
 
   const tokenId = Array.from(selectedTokenIds)[0];
   const token = (gridState.tokens || []).find(t => t.id === tokenId);
   if (!token) return;
 
-  const c = state.combatants.find(x => x.id === token.combatantId) || { hp: 10, maxHp: 10, conditions: [] };
+  const c = state.combatants.find(x => x.id === token.combatantId) || { hp: 10, maxHp: 10, ca: 10, conditions: [] };
   const span = typeof getTokenSpan === 'function' ? getTokenSpan(token) : 1;
   const cSize = gridState.cellSize || 50;
   const centerX = token.x + ((span * cSize) / 2);
-  const topY = token.y - 4;
+  const topY = token.y - 6;
+
+  // Resolução da CA oficial (combate ou ficha)
+  let resolvedCa = c.ca || 10;
+  if (token.type === 'player' && typeof PLAYERS !== 'undefined') {
+    const p = PLAYERS.find(x => x.id === c.playerId || (x.name && (c.name.includes(x.name) || x.name.includes(c.name))));
+    if (p) {
+      resolvedCa = (typeof calculatePlayerCA === 'function') ? calculatePlayerCA(p) : (p.ca || resolvedCa);
+    }
+  }
 
   let quickActionBtn = '';
   if (token.type === 'player') {
@@ -2926,31 +3158,360 @@ function renderVttTokenActionHud(container) {
     `;
   }
 
+  // Popover de Condições D&D 5E se ativo
+  let conditionsPopoverHtml = '';
+  if (activeVttHudConditionsTokenId === token.id) {
+    const standardConditions = [
+      'Caído', 'Cego', 'Agarrado', 'Invisível', 'Envenenado', 
+      'Paralisado', 'Amedrontado', 'Incapacitado', 'Contido', 
+      'Atordoado', 'Inconsciente', 'Ensurdecido', 'Petrificado', 'Exausto', 'Encantado'
+    ];
+    const currentConds = (c.conditions || []).map(cd => cd.toLowerCase());
+    const condBtns = standardConditions.map(cond => {
+      const isAct = currentConds.includes(cond.toLowerCase());
+      return `
+        <button type="button" class="token-hud-cond-item ${isAct ? 'active' : ''}" 
+                onclick="toggleTokenConditionFromHud('${token.id}', '${cond}')">
+          <span>${isAct ? '✓' : '•'}</span> ${cond}
+        </button>
+      `;
+    }).join('');
+
+    conditionsPopoverHtml = `
+      <div class="token-hud-conditions-popover" onclick="event.stopPropagation()">
+        <div style="grid-column: 1 / -1; font-size: 10px; font-weight: 800; color: #f59e0b; padding-bottom: 2px; border-bottom: 1px solid rgba(245,158,11,0.2); margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+          <span>⚡ Condições D&D 5E</span>
+          <span style="cursor: pointer; padding: 0 4px;" onclick="toggleVttTokenConditionsPopover('${token.id}', event)">✕</span>
+        </div>
+        ${condBtns}
+      </div>
+    `;
+  }
+
   const hudHtml = `
     <div id="vtt-token-hud" class="vtt-token-action-hud" style="left: ${centerX}px; top: ${topY}px;" onclick="event.stopPropagation()">
+      ${conditionsPopoverHtml}
       <div class="token-hud-pill">
-        <span style="font-size: 11px; font-weight: 800; color: #fff; padding: 0 4px;" title="Pontos de Vida Atuais">
-          ${c.hp}/${c.maxHp}
+        <span class="token-hud-hp-badge" style="font-size: 11px; font-weight: 800; color: #fff; padding: 0 4px; cursor: pointer;" 
+              onclick="promptEditTokenHp('${token.id}')" title="Clique para editar PV">
+          ❤️ ${c.hp}/${c.maxHp}
+        </span>
+        <span class="token-hud-ac-badge" title="Classe de Armadura">
+          🛡️ ${resolvedCa}
         </span>
         <div class="token-hud-quick-dmg">
           <button type="button" class="token-hud-dmg-btn dmg" onclick="applyTokenQuickDamage('${token.id}', 5)" title="Causar 5 de Dano">-5</button>
+          <button type="button" class="token-hud-dmg-btn dmg" onclick="applyTokenQuickDamage('${token.id}', 1)" title="Causar 1 de Dano">-1</button>
+          <button type="button" class="token-hud-dmg-btn heal" onclick="applyTokenQuickHeal('${token.id}', 1)" title="Curar 1 de Vida">+1</button>
           <button type="button" class="token-hud-dmg-btn heal" onclick="applyTokenQuickHeal('${token.id}', 5)" title="Curar 5 de Vida">+5</button>
         </div>
         ${quickActionBtn}
-        <button type="button" class="token-hud-btn" onclick="openCondModal('${c.id}')" title="Gerenciar Status / Condições">
+        <button type="button" class="token-hud-btn ${activeVttHudConditionsTokenId === token.id ? 'active' : ''}" 
+                onclick="if(event.shiftKey && typeof openCondModal === 'function'){ openCondModal('${c.id}'); } else { toggleVttTokenConditionsPopover('${token.id}', event); }" title="Condições / Status D&D 5E (Shift+Clique para modal clássico)">
           ⚡ Status
         </button>
-        <button type="button" class="token-hud-btn" onclick="toggleTokenHidden('${token.id}')" title="Ocultar ou Revelar no Telão dos Jogadores">
+        <button type="button" class="token-hud-btn ${token.torch ? 'active' : ''}" 
+                onclick="toggleTokenTorch('${token.id}')" title="Tocha / Luz de 6m">
+          ${token.torch ? '🔥 Tocha' : '🕯️ Tocha'}
+        </button>
+        <button type="button" class="token-hud-btn ${token.reachAura && token.reachAura !== 'none' ? 'active' : ''}" 
+                onclick="cycleTokenReachAura('${token.id}')" title="Aura de Alcance Tático">
+          ⭕ Ameaça
+        </button>
+        <button type="button" class="token-hud-btn" onclick="toggleTokenHidden('${token.id}')" title="Ocultar ou Revelar no Telão e Firebase">
           ${token.hidden ? '👁️' : '🙈'}
         </button>
       </div>
     </div>
   `;
 
+  const oldHud = document.getElementById('vtt-token-hud');
+  if (oldHud) {
+    if (typeof oldHud.remove === 'function') {
+      oldHud.remove();
+    } else if (oldHud.parentNode && typeof oldHud.parentNode.removeChild === 'function') {
+      oldHud.parentNode.removeChild(oldHud);
+    }
+  }
+
   if (typeof container.insertAdjacentHTML === 'function') {
     container.insertAdjacentHTML('beforeend', hudHtml);
   } else {
     container.innerHTML = (container.innerHTML || '') + hudHtml;
+  }
+}
+
+function applyTokenQuickAdjustHp(tokenId, delta) {
+  if (delta < 0) {
+    applyTokenQuickDamage(tokenId, Math.abs(delta));
+  } else {
+    applyTokenQuickHeal(tokenId, delta);
+  }
+}
+
+function promptEditTokenHp(tokenId) {
+  const token = (gridState.tokens || []).find(t => t.id === tokenId);
+  if (!token) return;
+  const c = state.combatants.find(x => x.id === token.combatantId);
+  if (!c) return;
+
+  if (typeof customPrompt === 'function') {
+    customPrompt({
+      title: `❤️ Editar Pontos de Vida: ${token.name}`,
+      message: `Digite o novo valor de PV atual (Máx: ${c.maxHp}):`,
+      defaultValue: c.hp.toString(),
+      type: 'number',
+      min: 0,
+      max: c.maxHp,
+      onConfirm: (val) => {
+        const num = parseInt(val, 10);
+        if (!isNaN(num)) {
+          c.hp = Math.max(0, Math.min(c.maxHp, num));
+          if (c.type === 'player' && typeof PLAYERS !== 'undefined') {
+            const p = PLAYERS.find(x => c.name.includes(x.name));
+            if (p) p.hp = c.hp;
+          }
+          renderBattleGrid();
+          broadcastGridState();
+          debouncedVttSave();
+        }
+      }
+    });
+  } else {
+    const val = prompt(`Novo PV para ${token.name} (Máx: ${c.maxHp}):`, c.hp);
+    const num = parseInt(val, 10);
+    if (!isNaN(num)) {
+      c.hp = Math.max(0, Math.min(c.maxHp, num));
+      if (c.type === 'player' && typeof PLAYERS !== 'undefined') {
+        const p = PLAYERS.find(x => c.name.includes(x.name));
+        if (p) p.hp = c.hp;
+      }
+      renderBattleGrid();
+      broadcastGridState();
+      debouncedVttSave();
+    }
+  }
+}
+
+function toggleTokenTorch(tokenId) {
+  const token = (gridState.tokens || []).find(t => t.id === tokenId);
+  if (!token) return;
+  token.torch = !token.torch;
+  renderBattleGrid();
+  broadcastGridState();
+  debouncedVttSave();
+  if (typeof showToast === 'function') {
+    showToast(token.torch ? `🔥 Tocha acesa para ${token.name}!` : `💨 Tocha apagada de ${token.name}`, 'info');
+  }
+}
+
+function cycleTokenReachAura(tokenId) {
+  const token = (gridState.tokens || []).find(t => t.id === tokenId);
+  if (!token) return;
+  const cycles = ['none', '1_5m', '3m', '9m'];
+  const curIdx = cycles.indexOf(token.reachAura || 'none');
+  const nextIdx = (curIdx + 1) % cycles.length;
+  token.reachAura = cycles[nextIdx];
+  renderBattleGrid();
+  broadcastGridState();
+  debouncedVttSave();
+  if (typeof showToast === 'function') {
+    const labels = { none: 'Desativada', '1_5m': '1.5m (Corpo a Corpo / Ameaça)', '3m': '3.0m (Alcance)', '9m': '9.0m (Deslocamento / Magia)' };
+    showToast(`⭕ Aura de Alcance: ${labels[token.reachAura] || token.reachAura}`, 'info');
+  }
+}
+
+function toggleVttTokenConditionsPopover(tokenId, event) {
+  if (event) event.stopPropagation();
+  if (activeVttHudConditionsTokenId === tokenId) {
+    activeVttHudConditionsTokenId = null;
+  } else {
+    activeVttHudConditionsTokenId = tokenId;
+  }
+  const container = document.getElementById('grid-tokens-layer');
+  if (container) renderVttTokenActionHud(container);
+}
+
+function toggleTokenConditionFromHud(tokenId, condName) {
+  const token = (gridState.tokens || []).find(t => t.id === tokenId);
+  if (!token) return;
+  const c = state.combatants.find(x => x.id === token.combatantId);
+  if (!c) return;
+  c.conditions = c.conditions || [];
+  const idx = c.conditions.findIndex(cd => cd.toLowerCase() === condName.toLowerCase());
+  if (idx >= 0) {
+    c.conditions.splice(idx, 1);
+  } else {
+    c.conditions.push(condName);
+  }
+  renderBattleGrid();
+  broadcastGridState();
+  debouncedVttSave();
+}
+
+/* ==========================================================================
+   FASE 3: ILUMINAÇÃO ATMOSFÉRICA & SHADERS DE CENA (FOUNDRY VTT STYLE)
+   ========================================================================== */
+function setVttAmbientPreset(preset) {
+  gridState.ambientLight = preset;
+  applyVttAmbientLighting(preset, gridState.ambientDarkness || 0);
+  broadcastGridState();
+  debouncedVttSave();
+  if (typeof showToast === 'function') {
+    const names = { day: '☀️ Dia Pleno', dusk: '🌇 Entardecer / Ocaso', night: '🌙 Noite Fechada', dungeon: '🏰 Masmorra Penumbra', swamp: '🧪 Pântano Místico' };
+    showToast(`💡 Iluminação alterada para: ${names[preset] || preset}`, 'info');
+  }
+}
+
+function setVttAmbientDarkness(val) {
+  const num = parseInt(val, 10) || 0;
+  gridState.ambientDarkness = num;
+  const lbl = document.getElementById('vtt-darkness-val');
+  if (lbl) lbl.textContent = num + '%';
+  applyVttAmbientLighting(gridState.ambientLight || 'day', num);
+  broadcastGridState();
+  debouncedVttSave();
+}
+
+function applyVttAmbientLighting(preset, darkness = 0) {
+  const overlay = document.getElementById('battlegrid-ambient-overlay');
+  if (!overlay) return;
+  overlay.className = `battlegrid-ambient-overlay ambient-${preset || 'day'}`;
+  const baseOpacity = preset === 'day' ? 0 : 0.65;
+  const extraOpacity = (darkness / 100) * 0.35;
+  overlay.style.opacity = (baseOpacity + extraOpacity).toString();
+
+  const slider = document.getElementById('vtt-darkness-slider');
+  const lbl = document.getElementById('vtt-darkness-val');
+  if (slider && document.activeElement !== slider) slider.value = darkness.toString();
+  if (lbl) lbl.textContent = darkness + '%';
+}
+
+/* ==========================================================================
+   FASE 4: DRAG & DROP E PASTE DE MAPAS (OWLBEAR RODEO STYLE)
+   ========================================================================== */
+function initVttDropzone() {
+  const vp = document.getElementById('battlegrid-viewport');
+  const overlay = document.getElementById('vtt-dropzone-overlay');
+  if (!vp || typeof vp.addEventListener !== 'function' || (vp.dataset && vp.dataset.dropzoneAttached)) return;
+  if (vp.dataset) vp.dataset.dropzoneAttached = 'true';
+
+  vp.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    if (overlay) overlay.style.display = 'flex';
+  });
+
+  vp.addEventListener('dragleave', (e) => {
+    if (e.relatedTarget && vp.contains(e.relatedTarget)) return;
+    if (overlay) overlay.style.display = 'none';
+  });
+
+  vp.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (overlay) overlay.style.display = 'none';
+    const files = e.dataTransfer && e.dataTransfer.files;
+    if (files && files.length > 0) {
+      loadVttMapFile(files[0]);
+    }
+  });
+
+  // Ctrl+V (colar imagem diretamente da área de transferência)
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    window.addEventListener('paste', (e) => {
+      const tabGrid = document.getElementById('tab-grid');
+      if (!tabGrid || !tabGrid.classList.contains('active')) return;
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+      const items = (e.clipboardData || e.originalEvent?.clipboardData)?.items;
+      if (items) {
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type && items[i].type.indexOf('image') !== -1) {
+            const blob = items[i].getAsFile();
+            if (blob) loadVttMapFile(blob);
+            break;
+          }
+        }
+      }
+    });
+  }
+}
+
+function loadVttMapFile(file) {
+  if (!file || !file.type || !file.type.startsWith('image/')) {
+    if (typeof showToast === 'function') showToast('Arquivo inválido. Selecione uma imagem (PNG, JPG, WebP)!', 'warning');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const dataUrl = ev.target.result;
+    gridState.theme = 'custom';
+    gridState.customImage = dataUrl;
+    const board = document.getElementById('battlegrid-board');
+    if (board) {
+      board.className = 'battlegrid-board';
+      board.style.backgroundImage = `url(${dataUrl})`;
+      board.style.backgroundSize = 'contain';
+    }
+    renderBattleGrid();
+    broadcastGridState();
+    debouncedVttSave();
+    if (typeof showToast === 'function') showToast('🗺️ Novo Mapa de Batalha carregado com sucesso!', 'success');
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ==========================================================================
+   FASE 5: CONTROLES DO DOCK FLUTUANTE
+   ========================================================================== */
+function toggleVttFowDropdown(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  const dd = document.getElementById('vtt-fow-dropdown');
+  const amb = document.getElementById('vtt-ambient-dropdown');
+  if (amb) amb.style.display = 'none';
+  if (dd) {
+    dd.style.display = (dd.style.display === 'none' || !dd.style.display) ? 'flex' : 'none';
+  }
+}
+
+function toggleVttAmbientDropdown(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  const dd = document.getElementById('vtt-ambient-dropdown');
+  const fow = document.getElementById('vtt-fow-dropdown');
+  if (fow) fow.style.display = 'none';
+  if (dd) {
+    dd.style.display = (dd.style.display === 'none' || !dd.style.display) ? 'flex' : 'none';
+  }
+}
+
+function closeVttDockDropdowns() {
+  const dd = document.getElementById('vtt-fow-dropdown');
+  const amb = document.getElementById('vtt-ambient-dropdown');
+  if (dd) dd.style.display = 'none';
+  if (amb) amb.style.display = 'none';
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('click', (e) => {
+    if (!e.target || !e.target.closest || !e.target.closest('.vtt-dock-dropdown-wrap')) {
+      closeVttDockDropdowns();
+    }
+  });
+}
+
+let isVttPlayerPerspective = false;
+function toggleVttPlayerPerspective() {
+  isVttPlayerPerspective = !isVttPlayerPerspective;
+  const vp = document.getElementById('battlegrid-viewport');
+  const btn = document.getElementById('dock-tool-player-view');
+  if (vp) vp.classList.toggle('vtt-player-perspective', isVttPlayerPerspective);
+  if (btn) {
+    btn.classList.toggle('active', isVttPlayerPerspective);
+    btn.innerHTML = isVttPlayerPerspective 
+      ? '<span class="vtt-dock-icon">👁️‍🗨️</span><span class="vtt-dock-lbl">Mestre</span>'
+      : '<span class="vtt-dock-icon">👁️</span><span class="vtt-dock-lbl">Jogador</span>';
+  }
+  renderBattleGrid();
+  if (typeof showToast === 'function') {
+    showToast(isVttPlayerPerspective ? 'Simulando visão dos jogadores' : 'Visão do Mestre restaurada', 'info');
   }
 }
 
@@ -2996,6 +3557,35 @@ function rollTokenQuickAttack(tokenId) {
   }
 }
 
+function zoomGrid(factor) {
+  if (factor > 1) {
+    zoomBattleGrid(0.2);
+  } else {
+    zoomBattleGrid(-0.2);
+  }
+}
+
+function resetGridZoom() {
+  resetBattleGridZoom();
+}
+
+function revealAllFoW() {
+  revealAllFog();
+}
+
+function hideAllFoW() {
+  coverAllFog();
+}
+
+// Inicializa Dropzone ao carregar documento
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initVttDropzone);
+  } else {
+    initVttDropzone();
+  }
+}
+
 // Exportações para Window e Node.js
 if (typeof window !== 'undefined') {
   window.handleBoardTouchStart = handleBoardTouchStart;
@@ -3007,6 +3597,32 @@ if (typeof window !== 'undefined') {
   window.renderVttTokenActionHud = renderVttTokenActionHud;
   window.openPlayerSheetFromVtt = openPlayerSheetFromVtt;
   window.rollTokenQuickAttack = rollTokenQuickAttack;
+  window.setVttFowMode = setVttFowMode;
+  window.revealFoWRect = revealFoWRect;
+  window.hideFoWRect = hideFoWRect;
+  window.revealFoWCircle = revealFoWCircle;
+  window.revealAllFoW = revealAllFoW;
+  window.hideAllFoW = hideAllFoW;
+  window.zoomGrid = zoomGrid;
+  window.resetGridZoom = resetGridZoom;
+  window.handleKeyboardTokenMove = handleKeyboardTokenMove;
+  window.renderVttMovementTrail = renderVttMovementTrail;
+  window.clearVttMovementTrail = clearVttMovementTrail;
+  window.setVttAmbientPreset = setVttAmbientPreset;
+  window.setVttAmbientDarkness = setVttAmbientDarkness;
+  window.applyVttAmbientLighting = applyVttAmbientLighting;
+  window.initVttDropzone = initVttDropzone;
+  window.loadVttMapFile = loadVttMapFile;
+  window.applyTokenQuickAdjustHp = applyTokenQuickAdjustHp;
+  window.promptEditTokenHp = promptEditTokenHp;
+  window.toggleTokenTorch = toggleTokenTorch;
+  window.cycleTokenReachAura = cycleTokenReachAura;
+  window.toggleVttTokenConditionsPopover = toggleVttTokenConditionsPopover;
+  window.toggleTokenConditionFromHud = toggleTokenConditionFromHud;
+  window.toggleVttFowDropdown = toggleVttFowDropdown;
+  window.toggleVttAmbientDropdown = toggleVttAmbientDropdown;
+  window.closeVttDockDropdowns = closeVttDockDropdowns;
+  window.toggleVttPlayerPerspective = toggleVttPlayerPerspective;
 }
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -3019,7 +3635,33 @@ if (typeof module !== 'undefined' && module.exports) {
     toggleVttHudCollapse,
     renderVttTokenActionHud,
     openPlayerSheetFromVtt,
-    rollTokenQuickAttack
+    rollTokenQuickAttack,
+    setVttFowMode,
+    revealFoWRect,
+    hideFoWRect,
+    revealFoWCircle,
+    revealAllFoW,
+    hideAllFoW,
+    zoomGrid,
+    resetGridZoom,
+    handleKeyboardTokenMove,
+    renderVttMovementTrail,
+    clearVttMovementTrail,
+    setVttAmbientPreset,
+    setVttAmbientDarkness,
+    applyVttAmbientLighting,
+    initVttDropzone,
+    loadVttMapFile,
+    applyTokenQuickAdjustHp,
+    promptEditTokenHp,
+    toggleTokenTorch,
+    cycleTokenReachAura,
+    toggleVttTokenConditionsPopover,
+    toggleTokenConditionFromHud,
+    toggleVttFowDropdown,
+    toggleVttAmbientDropdown,
+    closeVttDockDropdowns,
+    toggleVttPlayerPerspective
   };
 }
 

@@ -5123,13 +5123,29 @@
       display: none !important;
     }
     body.mode-player-portal #tab-combat,
-    body.mode-player-portal #tab-grid,
     body.mode-player-portal #tab-grid-config,
     body.mode-player-portal #tab-dmscreen,
     body.mode-player-portal #tab-generators,
     body.mode-player-portal #tab-bestiary,
     body.mode-player-portal #tab-campaigns,
     body.mode-player-portal #tab-bastions {
+      display: none !important;
+    }
+    body.mode-player-portal #tab-grid:not(.active) {
+      display: none !important;
+    }
+    body.mode-player-portal #tab-grid.active {
+      display: flex !important;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      min-height: 85vh;
+    }
+    body.mode-player-portal .battlegrid-toolbar .toolbar-group:first-child,
+    body.mode-player-portal .battlegrid-toolbar .vtt-dm-only-tool,
+    body.mode-player-portal .vtt-dm-only-tool,
+    body.mode-player-portal .vtt-dm-only,
+    body.mode-player-portal #grid-combatants-drawer {
       display: none !important;
     }
     body.mode-player-portal .player-toolbar .btn-action[onclick*="addPlayerToCombat"] {
@@ -14121,8 +14137,247 @@
     }
 
     /* ==========================================================================
-       FASE 2: VTT TOKEN ACTION HUD FLUTUANTE
+       FASE 2: VTT FLOATING DOCK, TOKEN ACTION HUD & SHADERS (ISSUE-176)
        ========================================================================== */
+    .vtt-floating-dock {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 110;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 28px;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 0 14px rgba(245, 158, 11, 0.15);
+      user-select: none;
+    }
+    .vtt-dock-segment {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .vtt-dock-divider {
+      width: 1px;
+      height: 22px;
+      background: rgba(255, 255, 255, 0.15);
+      margin: 0 3px;
+    }
+    .vtt-dock-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 9px;
+      border-radius: 18px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      white-space: nowrap;
+    }
+    .vtt-dock-btn:hover {
+      background: rgba(245, 158, 11, 0.18);
+      border-color: rgba(245, 158, 11, 0.35);
+      color: #fef08a;
+      transform: translateY(-1px);
+    }
+    .vtt-dock-btn.active {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.35), rgba(217, 119, 6, 0.5));
+      border-color: #f59e0b;
+      color: #fff;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+    }
+    .vtt-dock-icon {
+      font-size: 13px;
+    }
+    .vtt-dock-dropdown-wrap {
+      position: relative;
+      display: inline-flex;
+    }
+    .vtt-dock-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      border-radius: 12px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 0 15px rgba(245, 158, 11, 0.15);
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 180px;
+      z-index: 125;
+      animation: modalSpringPop 0.18s ease-out;
+    }
+    .vtt-dock-dropdown button {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: #e2e8f0;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .vtt-dock-dropdown button:hover {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fef08a;
+    }
+    .vtt-dock-dropdown .ambient-title {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--gold-light);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 4px 8px 2px 8px;
+    }
+    .vtt-dock-dropdown .ambient-slider-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      font-size: 11px;
+      color: #cbd5e1;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      margin-top: 4px;
+    }
+    .vtt-dock-dropdown .ambient-slider-row input[type="range"] {
+      flex: 1;
+      height: 4px;
+      accent-color: #f59e0b;
+      cursor: pointer;
+    }
+
+    /* DROPZONE OVERLAY */
+    .vtt-dropzone-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 150;
+      pointer-events: none;
+    }
+    .vtt-dropzone-box {
+      border: 2px dashed #f59e0b;
+      border-radius: 16px;
+      padding: 36px 48px;
+      text-align: center;
+      background: rgba(245, 158, 11, 0.05);
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.2);
+      animation: modalSpringPop 0.2s ease-out;
+    }
+
+    /* SHADERS DE ILUMINAÇÃO ATMOSFÉRICA */
+    .battlegrid-ambient-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 25;
+      width: 100%;
+      height: 100%;
+      transition: background 0.4s ease, opacity 0.4s ease;
+    }
+    .battlegrid-ambient-overlay.ambient-day {
+      background: transparent;
+    }
+    .battlegrid-ambient-overlay.ambient-dusk {
+      background: radial-gradient(circle at 50% 50%, rgba(251, 146, 60, 0.18) 0%, rgba(180, 83, 9, 0.38) 100%);
+      mix-blend-mode: multiply;
+    }
+    .battlegrid-ambient-overlay.ambient-night {
+      background: radial-gradient(circle at 50% 50%, rgba(30, 58, 138, 0.45) 0%, rgba(15, 23, 42, 0.85) 100%);
+      mix-blend-mode: multiply;
+    }
+    .battlegrid-ambient-overlay.ambient-dungeon {
+      background: radial-gradient(circle at 50% 50%, rgba(17, 24, 39, 0.55) 0%, rgba(3, 7, 18, 0.92) 100%);
+      mix-blend-mode: multiply;
+    }
+    .battlegrid-ambient-overlay.ambient-swamp {
+      background: radial-gradient(circle at 50% 50%, rgba(22, 101, 52, 0.3) 0%, rgba(5, 46, 22, 0.72) 100%);
+      mix-blend-mode: multiply;
+    }
+
+    /* TOCHA E LUZ DO TOKEN */
+    .grid-token.token-torch-active {
+      box-shadow: 0 0 50px 25px rgba(251, 191, 36, 0.6), inset 0 0 20px rgba(251, 191, 36, 0.4) !important;
+      z-index: 30;
+    }
+
+    /* AURAS DE ALCANCE E AMEAÇA */
+    .token-reach-aura {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      transition: all 0.2s ease;
+      border: 2px dashed rgba(245, 158, 11, 0.6);
+      background: rgba(245, 158, 11, 0.08);
+      z-index: 20;
+    }
+    .token-reach-aura.aura-1_5m {
+      border-color: rgba(239, 68, 68, 0.75);
+      background: rgba(239, 68, 68, 0.09);
+    }
+    .token-reach-aura.aura-3m {
+      border-color: rgba(56, 189, 248, 0.75);
+      background: rgba(56, 189, 248, 0.09);
+    }
+    .token-reach-aura.aura-9m {
+      border-color: rgba(16, 185, 129, 0.75);
+      background: rgba(16, 185, 129, 0.09);
+    }
+
+    /* TRILHA DE MOVIMENTO POR TECLADO */
+    .vtt-keyboard-movement-trail {
+      position: absolute;
+      pointer-events: none;
+      z-index: 35;
+    }
+    .vtt-trail-point {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #f59e0b;
+      box-shadow: 0 0 8px #f59e0b;
+      transform: translate(-50%, -50%);
+    }
+    .vtt-trail-badge {
+      position: absolute;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid #f59e0b;
+      border-radius: 10px;
+      color: #fef08a;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      transform: translate(-50%, -100%);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    /* TOKEN ACTION HUD FLUTUANTE */
     .vtt-token-action-hud {
       position: absolute;
       z-index: 120;
@@ -14144,10 +14399,24 @@
       gap: 4px;
       background: rgba(15, 23, 42, 0.95);
       border: 1px solid rgba(245, 158, 11, 0.45);
-      padding: 4px 6px;
+      padding: 4px 8px;
       border-radius: 20px;
       box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 10px rgba(245, 158, 11, 0.2);
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .token-hud-ac-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      background: rgba(245, 158, 11, 0.18);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fef08a;
+      font-weight: 800;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      white-space: nowrap;
     }
     .token-hud-btn {
       display: inline-flex;
@@ -14170,10 +14439,15 @@
       color: #fef08a;
       transform: translateY(-1px);
     }
+    .token-hud-btn.active {
+      background: rgba(245, 158, 11, 0.35);
+      border-color: #f59e0b;
+      color: #fff;
+    }
     .token-hud-quick-dmg {
       display: flex;
       align-items: center;
-      gap: 3px;
+      gap: 2px;
     }
     .token-hud-dmg-btn {
       padding: 2px 5px;
@@ -14182,16 +14456,66 @@
       cursor: pointer;
       border: 1px solid transparent;
       font-weight: 800;
+      transition: all 0.12s ease;
     }
     .token-hud-dmg-btn.dmg {
       background: rgba(239, 68, 68, 0.2);
       border-color: rgba(239, 68, 68, 0.4);
       color: #fca5a5;
     }
+    .token-hud-dmg-btn.dmg:hover {
+      background: rgba(239, 68, 68, 0.4);
+      color: #fff;
+    }
     .token-hud-dmg-btn.heal {
       background: rgba(16, 185, 129, 0.2);
       border-color: rgba(16, 185, 129, 0.4);
       color: #6ee7b7;
+    }
+    .token-hud-dmg-btn.heal:hover {
+      background: rgba(16, 185, 129, 0.4);
+      color: #fff;
+    }
+    .token-hud-conditions-popover {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.97);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      border-radius: 12px;
+      padding: 6px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+      min-width: 250px;
+      z-index: 130;
+      animation: modalSpringPop 0.15s ease-out;
+    }
+    .token-hud-cond-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 6px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 600;
+      color: #cbd5e1;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .token-hud-cond-item:hover {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fef08a;
+    }
+    .token-hud-cond-item.active {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: #ef4444;
+      color: #fca5a5;
     }
 
     /* ==========================================================================

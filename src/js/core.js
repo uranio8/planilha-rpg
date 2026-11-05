@@ -2395,7 +2395,7 @@ function normalizeStr(str) {
 }
 
 // --- NAVEGAÇÃO ENTRE ABAS ---
-const PLAYER_ALLOWED_TABS = ['players', 'spells', 'equipment', 'classes', 'species', 'feats'];
+const PLAYER_ALLOWED_TABS = ['players', 'spells', 'equipment', 'classes', 'species', 'feats', 'grid'];
 
 function switchTab(tabId) {
   const isPortalMode = (typeof document !== 'undefined' && document.body && document.body.classList.contains('mode-player-portal')) || (typeof activePortalPlayerId !== 'undefined' && !!activePortalPlayerId);
