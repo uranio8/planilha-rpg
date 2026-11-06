@@ -11151,11 +11151,14 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     passedTests += 3;
 
     // 3. Sanitização de nível duplicado na classe e sincronização no PDF Editável
-    totalTests += 2;
+    totalTests += 4;
     assert(b146PlayersJs.includes('p.className && /\\d/.test(p.className)'), 'players.js previne duplicação de nível quando a classe já contém numerais (ex: Bruxo 8)');
+    assert(b146PlayersJs.includes('formattedClassLevel.replace(/\\b(\\d+)\\s+\\1\\b/g, \'$1\')'), 'players.js possui regex defensiva contra números repetidos (ex: Mago 8 8)');
+    assert(b146HeadCss.includes('#modal-print .modal-body > *:not(.print-a4-preview-viewport)'), 'head_css.html blinda o corpo do modal contra vazamento de qualquer elemento fora do viewport');
+    assert(b146HeadCss.includes('Cache-Control'), 'head_css.html possui meta tags de Cache-Control para forçar atualização no navegador');
     const b146PdfExportJs = fs.readFileSync(path.join(srcDir, 'js', 'pdf_export.js'), 'utf8');
     assert(b146PdfExportJs.includes('scoreField.addToPage(page1, { x: 30, y: s.y + 19, width: 48, height: 26 })'), 'pdf_export.js posiciona o Score no box principal e o Modificador no medalhão');
-    passedTests += 2;
+    passedTests += 4;
 
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;

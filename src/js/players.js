@@ -11429,6 +11429,8 @@ function printPlayerSheet(id) {
   } else {
     formattedClassLevel = `${p.className || 'Aventureiro'} ${p.level || 1}`.trim();
   }
+  // Sanitização estrita contra duplicações numéricas (ex: "Mago 8 8" -> "Mago 8")
+  formattedClassLevel = formattedClassLevel.replace(/\b(\d+)\s+\1\b/g, '$1').trim();
 
   // Salvaguardas contra a morte ativas
   const curDeathSuccess = Number(p.deathSaves?.success || (p.death_saves?.success)) || 0;
