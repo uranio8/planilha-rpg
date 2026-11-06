@@ -184,11 +184,11 @@
         if (tf) {
           safeSetText(tf, val);
           if (fontSize) {
-            try { tf.setFontSize(fontSize); } catch (e) {}
+            try { tf.setFontSize(fontSize); } catch (e) { }
           }
           return tf;
         }
-      } catch (e) {}
+      } catch (e) { }
       return null;
     };
 
@@ -200,14 +200,14 @@
           else cb.uncheck();
           return cb;
         }
-      } catch (e) {}
+      } catch (e) { }
       return null;
     };
 
     const createHiddenTextField = (fieldName, val, targetPage = page1) => {
       try {
         let tf = null;
-        try { tf = form.getTextField(fieldName); } catch (e) {}
+        try { tf = form.getTextField(fieldName); } catch (e) { }
         if (!tf) {
           tf = form.createTextField(fieldName);
           tf.addToPage(targetPage, { x: -200, y: -200, width: 1, height: 1, borderWidth: 0 });
@@ -222,7 +222,7 @@
     const createHiddenCheckBox = (fieldName, checked, targetPage = page1) => {
       try {
         let cb = null;
-        try { cb = form.getCheckBox(fieldName); } catch (e) {}
+        try { cb = form.getCheckBox(fieldName); } catch (e) { }
         if (!cb) {
           cb = form.createCheckBox(fieldName);
           cb.addToPage(targetPage, { x: -200, y: -200, width: 1, height: 1, borderWidth: 0 });
@@ -497,7 +497,7 @@
         if (Array.isArray(calced) && calced.length > 0) {
           initialAttacks = calced.map(a => ({ name: a.name || '', bonus: a.hit || a.bonus || '', damage: a.dmg || a.damage || '' }));
         }
-      } catch (e) {}
+      } catch (e) { }
     }
     if (initialAttacks.length === 0) {
       if (Array.isArray(p.attacks)) {
@@ -605,7 +605,7 @@
       // Fallback autônomo para chamada direta em Node.js sem players.js no escopo global
       let quickRulesRef = (typeof TRAIT_QUICK_RULES !== 'undefined' && TRAIT_QUICK_RULES) || null;
       if (!quickRulesRef && typeof require === 'function') {
-        try { quickRulesRef = require('../data/trait_quick_rules.js').TRAIT_QUICK_RULES; } catch (e) {}
+        try { quickRulesRef = require('../data/trait_quick_rules.js').TRAIT_QUICK_RULES; } catch (e) { }
       }
       const rawItems = [];
       if (Array.isArray(p.features)) {
@@ -804,7 +804,7 @@
       try {
         const known = getPlayerKnownSpells(p);
         if (Array.isArray(known)) known.forEach(s => registerSpellEntry(s, true));
-      } catch (e) {}
+      } catch (e) { }
     }
     if (Array.isArray(p.preparedSpells)) {
       p.preparedSpells.forEach(s => registerSpellEntry(s, true));
@@ -879,11 +879,11 @@
           doc.context.obj(calculationFieldsOrder.map(f => f.acroField.ref))
         );
       }
-    } catch (e) {}
+    } catch (e) { }
 
     try {
       form.updateFieldAppearances(fontRegular);
-    } catch (e) {}
+    } catch (e) { }
 
     const pdfBytes = await doc.save({ useObjectStreams: false });
     return pdfBytes;
@@ -1147,8 +1147,8 @@
         const normSp = normalizeSkillKey(sp);
         if (!normSp) return false;
         return (sk.aliases && sk.aliases.some(alias => normalizeSkillKey(alias) === normSp)) ||
-               normalizeSkillKey(sk.key) === normSp ||
-               normalizeSkillKey(sk.pt) === normSp;
+          normalizeSkillKey(sk.key) === normSp ||
+          normalizeSkillKey(sk.pt) === normSp;
       });
       if (isProf) chk.check();
       chk.addToPage(page1, { x: 100, y: yLine, width: 9, height: 9 });
@@ -1308,7 +1308,7 @@
 
     page1.drawRectangle({ x: 309, y: p1Height - 335, width: 86, height: 55, color: cWhite, borderColor: cBorder, borderWidth: 1 });
     page1.drawText('SALVAS / MORTE', { x: 318, y: p1Height - 290, size: 6.5, font: fontBold, color: cDark });
-    
+
     const curSuccess = Number(p.deathSaves?.success || (p.death_saves?.success)) || 0;
     const curFail = Number(p.deathSaves?.fail || (p.death_saves?.fail)) || 0;
 
@@ -1349,7 +1349,7 @@
         if (Array.isArray(calced) && calced.length > 0) {
           initialAttacks = calced.map(a => ({ name: a.name || '', bonus: a.hit || a.bonus || '', damage: a.dmg || a.damage || '' }));
         }
-      } catch (e) {}
+      } catch (e) { }
     }
     if (initialAttacks.length === 0) {
       if (Array.isArray(p.attacks)) {
@@ -1560,8 +1560,8 @@
     page2.drawText('GRIMÓRIO & ESPAÇOS DE MAGIA', { x: 30, y: p2Height - 180, size: 8, font: fontBold, color: cDark });
 
     // Grid de Espaços de Magia (1º ao 9º Nível com Total e Gastos)
-    const rawSlots = Array.isArray(p.slots) ? p.slots : [0,0,0,0,0,0,0,0,0];
-    const rawSlotsUsed = Array.isArray(p.slotsUsed) ? p.slotsUsed : [0,0,0,0,0,0,0,0,0];
+    const rawSlots = Array.isArray(p.slots) ? p.slots : [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    const rawSlotsUsed = Array.isArray(p.slotsUsed) ? p.slotsUsed : [0, 0, 0, 0, 0, 0, 0, 0, 0];
     page2.drawText('ESPAÇOS (T=Total / U=Usados):', { x: 30, y: p2Height - 193, size: 5.5, font: fontBold, color: cMuted });
 
     for (let lvl = 1; lvl <= 9; lvl++) {
