@@ -8651,7 +8651,7 @@
        =================================================== */
     @page {
       size: A4 portrait;
-      margin: 6mm 8mm;
+      margin: 0;
     }
 
     .print-a4-preview-viewport {
@@ -8671,16 +8671,17 @@
       max-width: 860px;
     }
 
-    /* FOLHAS A4 CANÔNICAS D&D 5E (ISSUE-148 & ISSUE-178) */
+    /* FOLHAS A4 CANÔNICAS D&D 5E (ISSUE-148, ISSUE-178 & ISSUE-179) */
     .a4-print-page {
-      width: 194mm;
-      max-width: 194mm;
-      min-height: 275mm;
+      width: 210mm;
+      max-width: 210mm;
+      min-height: 295mm;
+      max-height: 295mm;
       background: #ffffff !important;
       color: #0f172a !important;
       box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
       box-sizing: border-box;
-      padding: 5mm 7mm;
+      padding: 7mm 9mm;
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       position: relative;
       border: 1px solid #cbd5e1;
@@ -8832,23 +8833,23 @@
       text-transform: uppercase;
       letter-spacing: 0.8px;
     }
-    .a4-stat-mod {
-      font-size: 13.5pt;
+    .a4-stat-score {
+      font-size: 14pt;
       font-weight: 900;
       color: #0f172a;
       line-height: 1;
       margin: 1px 0;
     }
-    .a4-stat-score {
-      font-size: 6.5pt;
+    .a4-stat-mod {
+      font-size: 7.5pt;
       font-weight: 800;
-      color: #334155;
+      color: #1e293b;
       border: 1px solid #cbd5e1;
       border-radius: 10px;
       padding: 0.5px 6px;
       background: #f1f5f9;
       margin-bottom: 2px;
-      min-width: 14px;
+      min-width: 18px;
     }
 
     .a4-skills-stack {
@@ -9573,7 +9574,7 @@
       .modal-overlay:not(#modal-print):not(#modal-print-chronicles),
       button, .btn-action, .btn-secondary, .fab-actions-container,
       .global-dice-widget, .dm-notes-drawer, .no-print,
-      #modal-print .modal-header-print, #modal-print-toolbar,
+      #modal-print .modal-header-print, #modal-print-toolbar, #modal-print-tip-banner,
       #modal-print-chronicles .modal-header-print, #modal-print-chronicles-toolbar,
       .welcome-screen-overlay, .welcome-screen-backdrop,
       .mobile-vital-thumb-hud, .mobile-player-dock,
@@ -9631,13 +9632,13 @@
         flex-direction: column !important;
         justify-content: space-between !important;
         width: 100% !important;
-        max-width: 184mm !important;
+        max-width: 210mm !important;
         box-sizing: border-box !important;
-        height: 248mm !important;
-        min-height: 248mm !important;
-        max-height: 248mm !important; /* compatível com folha A4 275mm e margens do Chrome */
+        height: 295mm !important;
+        min-height: 295mm !important;
+        max-height: 295mm !important; /* compatível com folha A4 (275mm útil e 297mm física) */
         margin: 0 auto !important;
-        padding: 4mm 6mm !important;
+        padding: 7mm 9mm !important;
         box-shadow: none !important;
         border: none !important;
         overflow: hidden !important;
@@ -9658,6 +9659,25 @@
       }
       .print-document-sheet *, .a4-print-page * {
         color: #000000 !important;
+      }
+      .a4-sheet-title-box, .a4-header-p2 .a4-sheet-title-box {
+        background: #0f172a !important;
+        border: 1.5px solid #000000 !important;
+      }
+      .a4-sheet-title-box .a4-char-name,
+      .a4-header-p2 .a4-sheet-title-box .a4-char-name {
+        color: #fef08a !important;
+        -webkit-text-fill-color: #fef08a !important;
+      }
+      .a4-sheet-title-box .a4-char-tag,
+      .a4-header-p2 .a4-sheet-title-box .a4-char-tag {
+        color: #f59e0b !important;
+        -webkit-text-fill-color: #f59e0b !important;
+      }
+      .a4-stat-name {
+        background: #0f172a !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
       }
     }
     /* ===================================================

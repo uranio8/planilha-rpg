@@ -1,43 +1,78 @@
-# 📋 Plano de Implementação: Resolução Definitiva de Páginas A4 na Impressão/PDF (ISSUE-178)
+# 📋 Plano de Implementação: Correção Definitiva de Impressão/Download A4 e Inversão de Atributos (ISSUE-179)
 
-## 📌 Contexto & Diagnóstico dos Problemas Relatados
+## 📌 Contexto & Análise do Problema (Diagnóstico com Especialistas)
 
-O usuário reportou:
-> *"piorou a questão do arquivo gerado, verifique pois agora está é com 4 páginas, fora outros problemas"*
+O usuário solicitou:
+> *"analise o que esta acontecendo quando tentamos fazer o download da ficha, outro ponto é q o modificador de atributo esta invertido com o valor de atributo. Procura na internet e com especialistas as melhores formas de gerar esse documento em pdf A4"*
+> *(Com envio de capturas demonstrando quebras em 3 e 4 páginas no Chrome, cabeçalho isolado na Página 1, banner de dicas impresso no papel, e valores de atributos invertidos)*
 
-### 🔍 Diagnóstico Detalhado:
+---
 
-1. **Por que o arquivo gerado passou para 4 páginas no Chrome Print ("Salvar como PDF")?**
-   * Ao imprimir no Google Chrome, as configurações padrão do diálogo de impressão são:
-     * `Margens`: **Padrão** (adiciona ~12mm no topo, rodapé, esquerda e direita).
-     * `Opções`: `[x] Cabeçalhos e rodapés` (reserva ~15mm no topo para data/título e ~15mm no rodapé para URL).
-   * A folha física A4 tem 297mm de altura e 210mm de largura. Com as margens e cabeçalhos padrão do Chrome, a área útil imprimível é de apenas **~186mm de largura × ~245mm de altura**.
-   * No commit anterior, `.a4-print-page` foi fixada em `width: 210mm` e `height: 297mm`.
-   * Como 297mm excede 245mm em mais de 50mm, o Chrome renderizou os primeiros 245mm da Página 1 na Folha 1 e transbordou os 52mm restantes para a Folha 2. Em seguida, a Página 2 (também de 297mm) renderizou 245mm na Folha 3 e transbordou seus 52mm restantes para a Folha 4.
-   * **Resultado**: Exatamente **4 páginas**, com quebras no meio das tabelas e partes inferiores flutuando no topo de páginas extras.
-   * Além disso, `width: 210mm` em uma área útil de 186mm gerou overflow horizontal de 24mm, cortando a borda direita da folha.
+### 🔍 Diagnóstico Técnico das Causas Raiz:
 
-2. **Diagnóstico dos "Outros Problemas" Revelados pela Auditoria:**
-   * **Equipamentos listados como Magias (Deraravely)**: No banco inicial `DEFAULT_PLAYERS`, o campo `spells` de Deraravely continha `"Armadura de Cota de Malha, Escudo, Mochila"`. Por isso, na Página 2 sob "Grimório & Magias Conhecidas", apareciam Cota de Malha e Mochila como se fossem feitiços.
-   * **Atributos de Conjuração Falsos para Não-Conjuradores**: Para classes marciais puras (como Guerreiro/Bárbaro com INT 15), o código assumia `spellAttrKey = 'int'` por padrão e calculava `Habilidade Chave: INT`, `CD Resistência: 13`, `Bônus de Ataque: +5`, exibindo dados de conjuração para quem não possui magia.
-   * **Tabela de Espaços de Magia Vazia na Página 1**: Guerreiros e Bárbaros sem espaços de magia ainda geravam o container de spell slots ("Nv 1: — | Nv 2: — | Nv 3: —"), ocupando espaço vertical valioso que empurrava as características de classe para baixo.
-   * **Texto do Diário/Grimório transbordando sobre o Rodapé na Página 2**: As larguras fixas `56mm 66mm 1fr` espremiam a coluna 3 quando a folha sofria contração de margens no Chrome, forçando quebras excessivas de linha que invadiam o rodapé.
-   * **Duplicação de Nível no PDF Editável (AcroForm)**: `ClassLevel` concatenava `charLevel` ao final de `charClass` mesmo quando este já continha os níveis (ex: `"Guerreiro 4 / Bárbaro 1 5"`).
+#### 1. Por que a ficha gerou 3 a 4 páginas com a Página 1 vazia sob o cabeçalho?
+* **Vazamento do Banner de Dicas (`#modal-print-tip-banner`)**:
+  * No arquivo `src/ui/ui.html` (linha 3167), o bloco informativo de alerta (*"Dica de Impressão: Ao imprimir no navegador..."*) não possuía a classe `.no-print` nem estava contemplado na regra `@media print { ... display: none !important; }`.
+  * Como resultado, esse banner ocupava **~25mm de altura física** no topo absoluto da folha de papel antes da própria ficha (visível na captura `media_1793967680528_c2112b1f.jpg`).
+* **Efeito Cascata no Algoritmo de Paginação do Chromium (Chrome / Edge)**:
+  * Quando o usuário imprime no Chrome com `Margens: Padrão` (~12mm) e `Cabeçalhos e rodapés` ativado (~15mm adicionais no topo e base), a altura útil imprimível de uma folha A4 cai de 297mm para apenas **~250mm**.
+  * A Página 1 da ficha começava com o Banner (25mm) seguido do Cabeçalho da Ficha (28mm) = **53mm**.
+  * A área restante na folha era de apenas **197mm**.
+  * O grid de 3 colunas (`.a4-page1-columns`), com suas caixas de atributos, PV e ataques possuindo `break-inside: avoid;`, necessita de ~220mm de altura.
+  * O motor de impressão do Chrome determinou que 220mm não cabiam nos 197mm restantes. Portanto, **forçou uma quebra de página logo abaixo do cabeçalho**!
+  * **Consequência visual**: A Página 1 ficou com apenas o cabeçalho e um imenso vazio branco embaixo (conforme captura `media_1793916179173_7b7f5982.png`).
+  * As colunas foram empurradas para a folha seguinte. Como o container possuía `page-break-after: always;`, isso cascateou gerando uma 3ª folha (com os ataques e magias flutuando, conforme captura `media_1793916258206_7365e791.png`) e uma 4ª folha para o verso da ficha.
+
+#### 2. Inversão entre Valor do Atributo e Modificador:
+* Em `src/js/players.js` (linhas 11531-11536):
+  * A classe `.a4-stat-mod` (tamanho 13.5pt bold central) estava recebendo o modificador (`+5`, `-2`, `+0`).
+  * A classe `.a4-stat-score` (oval pequena de 6.5pt na base) estava recebendo o valor do atributo (`20`, `6`, `10`).
+* No padrão canônico oficial de D&D 5E e conforme apontado pelo usuário, o **Valor do Atributo (Score)** deve figurar no campo central de grande destaque (ex: `20`, `14`, `16`, `6`), enquanto o **Modificador** deve ocupar o medalhão/oval delimitado na base com seu sinal correspondente (ex: `+5`, `+2`, `+3`, `-2`).
+
+#### 3. Duplicação de Nível na Classe (`Bruxo 8 8` e `Guerreiro 5 / Bárbaro 3 8`):
+* Em `src/js/players.js` (linha 11424), o código fazia `${p.className} ${p.level}`.
+* Para personagens em que `className` já trazia o nível ou multiclasse (como `Bruxo 8` ou `Guerreiro 5 / Bárbaro 3`), o nível era concatenado novamente ao final, gerando a duplicação feia no cabeçalho.
+
+---
+
+### 🌐 Recomendações dos Especialistas & Padrões da Indústria (W3C Paged Media & Chrome Engine):
+
+A pesquisa técnica internacional em especificações W3C e melhores práticas de geradores de fichas (Roll20, D&D Beyond, MPMB, Paged.js) destaca as seguintes regras de ouro:
+
+1. **`@page { size: A4 portrait; margin: 0; }`**:
+   * Definir a margem da página em zero no `@page` anula automaticamente os cabeçalhos/rodapés injetados pelo navegador (título da página, URL, data e carimbo de página do Chrome), liberando a tela A4 integral de $210\text{mm} \times 297\text{mm}$.
+2. **Padding Interno Explícito no Container (`box-sizing: border-box;`)**:
+   * A folha `.a4-print-page` deve ter dimensões estritas de $210\text{mm} \times 297\text{mm}$ com `padding: 7mm 9mm; box-sizing: border-box;`. Isso cria uma margem física perfeita no papel impresso sem depender de opções variáveis de margem do navegador do usuário.
+3. **Controle Estrito de Quebras (`break-after` e `break-inside`)**:
+   * A Página 1 deve ter `page-break-after: always; break-after: page;`.
+   * A Página 2 (última) deve ter `page-break-after: avoid; break-after: avoid;` para garantir matematicamente que uma 3ª página em branco jamais seja criada.
+4. **Isolamento Total do Modo de Impressão (`.no-print`)**:
+   * Todo e qualquer elemento fora da ficha (overlays, backdrops, botões da toolbar, banners de dica e painéis auxiliares) deve ter `.no-print { display: none !important; }`.
+5. **Contraste Seguro para Impressão sem Gráficos de Fundo**:
+   * Usuários frequentemente imprimem com "Gráficos de segundo plano" desmarcado para economizar tinta. O design das bordas e títulos deve usar bordas sólidas pretas (`border: 1.5px solid #000; color: #000;`) garantindo legibilidade máxima mesmo sem fundos coloridos.
+6. **Duas Vias Robustas de Obtenção**:
+   * **Via 1 (Salvar PDF / Imprimir em Alta Resolução)**: `window.print()` estilizado com CSS Paged Media perfeito, permitindo salvar em PDF vetorial de altíssima definição pelo Chrome.
+   * **Via 2 (Baixar PDF Editável Oficial)**: Geração direta de arquivo `.pdf` via `pdf-lib` baixado instantaneamente no disco, sem passar pelo diálogo de impressão.
 
 ---
 
 ## 🎯 Objetivos da Modificação
 
-1. **Garantir Paginação Estrita em Exatamente 2 Páginas em Qualquer Navegador / Configuração de Impressão**:
-   * O layout A4 deve caber confortavelmente na área útil do Chrome com `Margens: Padrão` e `Cabeçalhos e rodapés` ativados (~248mm de altura máxima e ~184mm de largura máxima), sem transbordar para uma 3ª ou 4ª folha.
-   * Com `Margens: Nenhuma`, o layout manterá margens brancas elegantes e continuará em exatamente 2 páginas.
-2. **Correção dos Dados Canônicos e Supressão de Magias para Não-Conjuradores**:
-   * Limpar o campo `spells` de Deraravely e adicionar auto-higienização retroativa no `loadFromLocalStorage()`.
-   * Em `printPlayerSheet()`, se o personagem for puramente marcial sem capacidade de conjuração, exibir `Habilidade Chave: — | CD: — | Ataque Mágico: —` e a indicação `Personagem marcial (sem conjuração de magias)` no Grimório, sem gerar espaços de magia na Página 1.
-3. **Prevenção de Transbordo de Texto sobre Rodapés na Página 2**:
-   * Usar colunas fluidas (`29% 34% 37%` ou `52mm 62mm 1fr`) com `gap: 3.5mm` e `overflow: hidden; flex: 1; min-height: 0;` em `.a4-page2-columns`, garantindo que o Diário de Missões e o Grimório nunca toquem ou colidam com o rodapé.
-4. **Correção de Duplicação de Nível no PDF Editável**:
-   * Sanitizar a formatação de `ClassLevel` em `src/js/pdf_export.js`.
+1. **Ocultação Rigorosa de Banners e Menus em `@media print`**:
+   * Adicionar classe `.no-print` e ID específico ao banner `#modal-print-tip-banner`.
+   * Assegurar que nenhum elemento além de `.a4-print-page` entre no fluxo de impressão.
+2. **Paginação Perfeita em 2 Páginas Canônicas**:
+   * Configurar `@page { size: A4 portrait; margin: 0; }`.
+   * Ajustar as dimensões da folha para $210\text{mm} \times 297\text{mm}$ com padding interno de 7mm no topo/base e 9mm nas laterais.
+   * Ajustar a altura das colunas e caixas de modo que todo o conteúdo da Página 1 e Página 2 caiba com folga ergonômica sem estourar.
+   * Travar a Página 2 com `break-after: avoid;` eliminando qualquer 3ª página.
+3. **Inversão dos Atributos (Score no centro grande, Modificador no medalhão)**:
+   * No HTML A4 (`players.js` e `head_css.html`): O valor do atributo (ex: `20`, `14`, `16`) ficará grande no centro (`14pt bold`), e o modificador com sinal (ex: `+5`, `+2`, `+3`) ficará no medalhão inferior (`7.5pt bold`).
+   * No PDF Editável (`pdf_export.js`): Campo principal de valor de atributo (`STR`, `DEX`, etc.) na caixa superior e campo de modificador (`STR_MOD`, etc.) no medalhão de cálculo.
+4. **Correção de Nível Duplicado na Classe**:
+   * Unificar a formatação em `players.js` utilizando a mesma lógica defensiva de `pdf_export.js` (`/\d/.test(className)`).
+5. **Resiliência a Gráficos Desmarcados e Otimização do Cabeçalho**:
+   * Garantir alto contraste e bordas nítidas para impressão preto-e-branco ou sem fundos coloridos.
 
 ---
 
@@ -45,19 +80,20 @@ O usuário reportou:
 
 | Arquivo | Componente / Responsabilidade |
 |---|---|
-| `src/styles/head_css.html` | Regras `@media print` e dimensões de `.a4-print-page`, `@page { margin: 6mm 8mm; }`, contenção estrita em `max-height: 248mm; max-width: 184mm;` e colunas fluidas |
-| `src/js/players.js` | Função `printPlayerSheet()`: verificação estrita de conjuradores, exibição contextual de atributos de magia, higienização de spells para marciais e diagramação compacta |
-| `src/js/core.js` | Correção em `DEFAULT_PLAYERS` (Deraravely `spells: ""`) e auto-migração defensiva em `loadFromLocalStorage()` |
-| `src/js/pdf_export.js` | Correção na formatação de `ClassLevel` para multiclasse sem duplicar o nível |
-| `issues/README.md` | Registro formal da ISSUE-178 |
+| `src/ui/ui.html` | Adição da classe `.no-print` e ID `#modal-print-tip-banner` ao banner de dicas do modal de impressão |
+| `src/styles/head_css.html` | Regras `@page { size: A4 portrait; margin: 0; }`, dimensões de `.a4-print-page` para $210\text{mm} \times 297\text{mm}$, ocultação estrita de `#modal-print-tip-banner`, classes de atributos `.a4-stat-score` e `.a4-stat-mod`, e garantia de alto contraste |
+| `src/js/players.js` | Inversão dos campos de atributo (Score no centro, Modificador no oval), correção da duplicação de nível em `formattedClassLevel`, e contenção proporcional de alturas de blocos |
+| `src/js/pdf_export.js` | Sincronização da inversão no gerador de PDF programático editável para conformidade com o mesmo padrão |
+| `issues/README.md` | Registro detalhado da ISSUE-179 |
 
 ---
 
 ## ⚠️ Possíveis Impactos & Riscos Mitigados
 
-* **Persistência (`localStorage`)**: Totalmente seguro. Apenas limpa a string de equipamento indevidamente gravada no campo `spells` de fichas legadas do Deraravely via auto-migração não-destrutiva.
-* **Combate e VTT Grid**: Nenhum impacto negativo.
-* **Suíte de Testes**: As asserções existentes de `test_runner.js` (como Bateria 121 e Baterias de A4) serão preservadas e validadas.
+* **Persistência (`localStorage`)**: Risco zero. Nenhuma chave ou schema de dados é alterado.
+* **Combate e VTT**: Risco zero. Funções de combate operam de forma isolada.
+* **Fidelidade Visual na Tela**: A pré-visualização no `#modal-print` manterá a mesma beleza e fidelidade da folha física.
+* **Suíte de Testes**: Preservação de 100% de aprovação no `test_runner.js`.
 
 ---
 
@@ -65,13 +101,14 @@ O usuário reportou:
 
 1. **Automatizada**:
    * Compilação com `node builder.js`.
-   * Execução de `node test_runner.js` garantindo 100% de sucesso (todas as 2.716+ asserções).
-   * Script de validação que simula a renderização de `printPlayerSheet` para todos os 9 heróis padrão e calcula a altura/largura e estrutura das 2 páginas.
-2. **Manual**:
-   * Teste no navegador Google Chrome via `window.print()` e visualização no `#modal-print` verificando:
-     * Deraravely: Exatamente 2 páginas, sem 3ª ou 4ª folha, sem equipamentos no Grimório e sem dados falsos de conjuração.
-     * Arkhalis: Exatamente 2 páginas.
-     * Nenhum corte lateral ou transbordo sobre rodapé.
+   * Execução de `node test_runner.js` validando todas as 2.716+ asserções existentes.
+   * Criação de testes dedicados no `test_runner.js` verificando:
+     - Presença da classe `.no-print` no banner de dicas.
+     - Posicionamento correto do Valor de Atributo (Score) e do Modificador na estrutura HTML gerada.
+     - Ausência de duplicação de nível (`Bruxo 8` e `Guerreiro 5 / Bárbaro 3`).
+2. **Manual / Inspeção Visual**:
+   * Verificação da pré-visualização de impressão para Claker e Deraravely.
+   * Validação de que a saída do diálogo de impressão do navegador produz rigorosamente **2 páginas canônicas**, sem 3ª página vazia e sem quebras no meio das tabelas.
 
 ---
 

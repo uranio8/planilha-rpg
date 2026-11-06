@@ -11419,9 +11419,16 @@ function printPlayerSheet(id) {
   const passInsight = 10 + wisMod + (isInsightProf ? prof : 0);
 
   // Formatação consistente de Multiclasse
-  const formattedClassLevel = (p.multiclass && typeof p.multiclass === 'string' && p.multiclass.trim())
-    ? `${p.multiclass} (Nv ${p.level || 1})`
-    : `${p.className || 'Aventureiro'} ${p.level || 1}`;
+  let formattedClassLevel = '';
+  if (p.multiclass && typeof p.multiclass === 'string' && p.multiclass.trim()) {
+    formattedClassLevel = `${p.multiclass} (Nv ${p.level || 1})`;
+  } else if (Array.isArray(p.multiclass) && p.multiclass.length > 1) {
+    formattedClassLevel = p.multiclass.map(m => `${m.className} ${m.level}`).join(' / ');
+  } else if (p.className && /\d/.test(p.className)) {
+    formattedClassLevel = p.className;
+  } else {
+    formattedClassLevel = `${p.className || 'Aventureiro'} ${p.level || 1}`.trim();
+  }
 
   // Salvaguardas contra a morte ativas
   const curDeathSuccess = Number(p.deathSaves?.success || (p.death_saves?.success)) || 0;
@@ -11531,8 +11538,8 @@ function printPlayerSheet(id) {
               ${['str', 'dex', 'con', 'int', 'wis', 'cha'].map(k => `
                 <div class="a4-stat-card">
                   <div class="a4-stat-name">${attrMap[k].name}</div>
-                  <div class="a4-stat-mod">${fmtMod(attrMap[k].mod)}</div>
                   <div class="a4-stat-score">${attrMap[k].val}</div>
+                  <div class="a4-stat-mod">${fmtMod(attrMap[k].mod)}</div>
                 </div>
               `).join('')}
             </div>

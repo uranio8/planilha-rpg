@@ -11128,6 +11128,35 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(b145VttJs.includes('syncLocalChangesToFirebase(true)'), 'broadcastGridState despacha sync para o Firebase');
     passedTests += 2;
 
+    // ========================================
+    // 🖨️ [Bateria 146] Correção de Impressão/Download A4 e Inversão Canônica de Atributos (ISSUE-179):
+    // ========================================
+    console.log('\n🖨️ [Bateria 146] Correção de Impressão/Download A4 e Inversão Canônica de Atributos (ISSUE-179):');
+
+    // 1. Ocultação rigorosa do banner de dicas na impressão
+    totalTests += 3;
+    const b146UiHtml = fs.readFileSync(path.join(srcDir, 'ui', 'ui.html'), 'utf8');
+    const b146HeadCss = fs.readFileSync(path.join(srcDir, 'styles', 'head_css.html'), 'utf8');
+    assert(b146UiHtml.includes('id="modal-print-tip-banner" class="no-print"'), 'ui.html possui id="modal-print-tip-banner" com classe no-print');
+    assert(b146HeadCss.includes('#modal-print-tip-banner'), 'head_css.html oculta #modal-print-tip-banner no @media print');
+    assert(b146HeadCss.includes('@page {\n      size: A4 portrait;\n      margin: 0;'), 'head_css.html declara @page com margin: 0 para suprimir cabeçalhos automáticos do navegador');
+    passedTests += 3;
+
+    // 2. Inversão canônica de Atributos (Score central grande, Modificador no medalhão)
+    totalTests += 3;
+    assert(b146HeadCss.includes('.a4-stat-score {\n      font-size: 14pt;'), 'head_css.html define .a4-stat-score com fonte grande de destaque (14pt)');
+    assert(b146HeadCss.includes('.a4-stat-mod {\n      font-size: 7.5pt;'), 'head_css.html define .a4-stat-mod como medalhão delimitado (7.5pt)');
+    const b146PlayersJs = fs.readFileSync(path.join(srcDir, 'js', 'players.js'), 'utf8');
+    assert(b146PlayersJs.includes('<div class="a4-stat-score">${attrMap[k].val}</div>\n                  <div class="a4-stat-mod">${fmtMod(attrMap[k].mod)}</div>'), 'players.js renderiza o Valor do Atributo no centro (.a4-stat-score) e o Modificador no medalhão (.a4-stat-mod)');
+    passedTests += 3;
+
+    // 3. Sanitização de nível duplicado na classe e sincronização no PDF Editável
+    totalTests += 2;
+    assert(b146PlayersJs.includes('p.className && /\\d/.test(p.className)'), 'players.js previne duplicação de nível quando a classe já contém numerais (ex: Bruxo 8)');
+    const b146PdfExportJs = fs.readFileSync(path.join(srcDir, 'js', 'pdf_export.js'), 'utf8');
+    assert(b146PdfExportJs.includes('scoreField.addToPage(page1, { x: 30, y: s.y + 19, width: 48, height: 26 })'), 'pdf_export.js posiciona o Score no box principal e o Modificador no medalhão');
+    passedTests += 2;
+
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;
     sandbox.document.getElementById = origGetEl;

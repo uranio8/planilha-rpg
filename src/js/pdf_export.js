@@ -1043,12 +1043,12 @@
         color: cDark
       });
 
-      const modFieldName = `${s.key}_MOD`;
-      const modField = form.createTextField(modFieldName);
-      const initialMod = Math.floor((s.val - 10) / 2);
-      safeSetText(modField, (initialMod >= 0 ? '+' : '') + initialMod);
-      modField.addToPage(page1, { x: 30, y: s.y + 19, width: 48, height: 26 });
+      // Valor do Atributo (Score) no centro grande
+      const scoreField = form.createTextField(s.key);
+      safeSetText(scoreField, String(s.val));
+      scoreField.addToPage(page1, { x: 30, y: s.y + 19, width: 48, height: 26 });
 
+      // Medalhão inferior para o Modificador
       page1.drawRectangle({
         x: 37, y: s.y + 4,
         width: 34, height: 14,
@@ -1056,9 +1056,11 @@
         borderColor: cBorder,
         borderWidth: 1
       });
-      const scoreField = form.createTextField(s.key);
-      safeSetText(scoreField, String(s.val));
-      scoreField.addToPage(page1, { x: 39, y: s.y + 5, width: 30, height: 12 });
+      const modFieldName = `${s.key}_MOD`;
+      const modField = form.createTextField(modFieldName);
+      const initialMod = Math.floor((s.val - 10) / 2);
+      safeSetText(modField, (initialMod >= 0 ? '+' : '') + initialMod);
+      modField.addToPage(page1, { x: 39, y: s.y + 5, width: 30, height: 12 });
 
       const calcJs = `
         var v = this.getField("${s.key}").value;
