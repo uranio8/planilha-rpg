@@ -11430,7 +11430,7 @@ function printPlayerSheet(id) {
     formattedClassLevel = `${p.className || 'Aventureiro'} ${p.level || 1}`.trim();
   }
   // Sanitização estrita contra duplicações numéricas (ex: "Mago 8 8" -> "Mago 8")
-  formattedClassLevel = formattedClassLevel.replace(/\b(\d+)\s+\1\b/g, '$1').trim();
+  formattedClassLevel = formattedClassLevel.replace(/\b(\d+)\s+\1\b/g, '$1').replace(/\/\s*([A-Za-zÀ-ÿ]+)\s+(\d+)\s+\d+$/g, '/ $1 $2').trim();
 
   // Salvaguardas contra a morte ativas
   const curDeathSuccess = Number(p.deathSaves?.success || (p.death_saves?.success)) || 0;
@@ -11752,12 +11752,23 @@ function printPlayerSheet(id) {
         if (isCompact && desc.length > 150) {
           desc = desc.substring(0, 147) + '...';
         }
+        const tagUpper = (feat.tag || '').toUpperCase();
+        let tagClass = 'tag-passivo';
+        if (tagUpper.includes('AÇÃO BÔNUS') || tagUpper.includes('ACAO BONUS') || tagUpper.includes('BÔNUS')) {
+          tagClass = 'tag-bonus';
+        } else if (tagUpper.includes('REAÇÃO') || tagUpper.includes('REACAO')) {
+          tagClass = 'tag-reacao';
+        } else if (tagUpper.includes('AÇÃO') || tagUpper.includes('ACAO')) {
+          tagClass = 'tag-acao';
+        } else if (tagUpper.includes('SUBCLASSE')) {
+          tagClass = 'tag-subclasse';
+        }
         return `
           <div class="a4-feature-item" style="${isCompact ? 'gap: 0px; padding-bottom: 1px;' : ''}">
             <div class="a4-feature-item-header">
               <span class="a4-feature-bullet">✦</span>
               <b class="a4-feature-name">${feat.name}</b>
-              ${feat.tag ? `<span class="a4-feature-tag">${feat.tag}</span>` : ''}
+              ${feat.tag ? `<span class="a4-feature-tag ${tagClass}">${feat.tag}</span>` : ''}
               ${feat.usage ? `<span class="a4-feature-usage">${feat.usage}</span>` : ''}
               ${feat.category && !isCompact ? `<span class="a4-feature-category">${feat.category}</span>` : ''}
             </div>

@@ -11160,6 +11160,28 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(b146PdfExportJs.includes('scoreField.addToPage(page1, { x: 30, y: s.y + 19, width: 48, height: 26 })'), 'pdf_export.js posiciona o Score no box principal e o Modificador no medalhão');
     passedTests += 4;
 
+    // ========================================
+    // 🎨 [Bateria 147] Overhaul Visual Épico de Alta Fantasia & Eliminação de Página 3 (ISSUE-180):
+    // ========================================
+    console.log('\n🎨 [Bateria 147] Overhaul Visual Épico de Alta Fantasia & Eliminação de Página 3 (ISSUE-180):');
+
+    totalTests += 6;
+    // 1. Contenção estrita de altura para 2 páginas canônicas
+    assert(b146HeadCss.includes('height: 265mm !important;'), 'head_css.html define altura de 265mm para compatibilidade total com margens do Chrome');
+    assert(b146HeadCss.includes('.a4-page-2') && b146HeadCss.includes('break-after: avoid !important;'), 'head_css.html trava .a4-page-2 evitando criação da página 3');
+
+    // 2. Cabeçalho nobre pergaminho marfim e texto carmesim nobre
+    assert(b146HeadCss.includes('#fffbeb') && b146HeadCss.includes('#991b1b'), 'head_css.html utiliza pergaminho marfim (#fffbeb) e carmesim (#991b1b) no título da ficha');
+
+    // 3. Badges semânticos de talentos livres de blocos pretos
+    assert(!b146HeadCss.includes('.a4-feature-tag {\n      display: inline-block;\n      background: #1e293b;'), 'head_css.html eliminou fundo preto/ardósia opaco (#1e293b) em .a4-feature-tag');
+    assert(b146PlayersJs.includes('tagClass') && b146PlayersJs.includes('tag-passivo') && b146PlayersJs.includes('tag-bonus'), 'players.js injeta classes semânticas por tipo de ação nos badges');
+
+    // 4. Versão v3.9.2 atualizada no core.js e ui.html
+    const b147CoreJs = fs.readFileSync(path.join(srcDir, 'js', 'core.js'), 'utf8');
+    assert(b147CoreJs.includes("version: '3.9.2'"), 'core.js atualizado para v3.9.2');
+    passedTests += 6;
+
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;
     sandbox.document.getElementById = origGetEl;

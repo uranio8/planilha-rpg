@@ -1,55 +1,98 @@
-# 📋 Plano de Implementação: Blindagem Total contra Cache e Leaks no A4 (ISSUE-179 - Refinamento)
+# 📋 Plano de Implementação: Overhaul Visual, Identidade Épica de Cores e Eliminação da Página 3 em Branco (ISSUE-180)
 
-## 📌 Contexto & Análise do Feedback do Usuário
+## 📌 Contexto & Diagnóstico da Solicitação do Usuário
 
-O usuário enviou o PDF gerado (`media_1793969658640_26f3a59f.pdf`) com a mensagem:
-> *"ta sendo impresso assim"*
+O usuário enviou as capturas do diálogo de impressão do navegador (Chrome) demonstrando os problemas nas fichas de diferentes personagens (**Arkhalis**, **Deraravely** e **Claker**):
+> *"esta assim agora, tem coisa q n da pra ver pq ta preto ou azul escuro, vams melhorar o layout visual e de cores, dando uma identidade mais viva"*
 
-### 🔍 Diagnóstico do Arquivo Enviado pelo Usuário:
-1. **O documento agora possui RIGOROSAMENTE 2 PÁGINAS**:
-   * A folha 1 e a folha 2 foram unificadas canonicamente, sem páginas 3 ou 4 excedentes!
-2. **Entretanto, o PDF gerado às 09:53:53 ainda continha o estado em cache do navegador**:
-   * O banner de dicas amarelo ainda figurava no topo da Página 1.
-   * A classe ainda exibia `Mago 8 8`.
-   * Os atributos ainda exibiam o modificador em cima e o valor embaixo.
-3. **Causa Raiz Comprovada**:
-   * O navegador do usuário estava executando o bundle anterior em cache de memória/disco (`index.html` de 4.6MB servido pelo GitHub Pages com cache HTTP padrão de 10 minutos).
-   * O push anterior (`abad761`) foi concluído às 09:51:30 e o PDF foi gerado às 09:53:53 sem que o navegador tivesse feito um **Hard Refresh (Ctrl + F5)**.
-   * Adicionalmente, para garantir blindagem definitiva independente de qualquer comportamento de cache ou motor de impressão:
-     - O banner de dicas deve ser movido **para dentro** de `#modal-print-toolbar` (que já é nativamente `display: none !important;` na impressão).
-     - `#modal-print .modal-body > *:not(.print-a4-preview-viewport)` deve ser ocultado de forma estrita via CSS.
-     - `formattedClassLevel` deve conter regex de desduplicação `/\b(\d+)\s+\1\b/g` para sanitizar casos onde a string no `localStorage` do usuário já esteja gravada como `"Mago 8 8"`.
-     - Inclusão de meta tags de `Cache-Control: no-cache` e exibição de badge de versão `v3.9.1` no modal de impressão para auditoria visual imediata.
+### 🔍 Diagnóstico Técnico Detalhado dos Problemas:
 
----
+1. **Textos Pretos Sobre Fundos Escuros (Ilegibilidade Total nos Badges e Cabeçalhos)**:
+   * **Causa Raiz**: No arquivo `src/styles/head_css.html:9665` (sob `@media print`), existe a regra genérica:
+     `.print-document-sheet *, .a4-print-page * { color: #000000 !important; }`
+     Esta regra força **todo e qualquer texto a ficar preto `#000000`**.
+   * Quando combinada com elementos que usam fundos escuros:
+     - `.a4-feature-tag` possui `background: #1e293b;` (azul ardósia escuro). Com o texto forçado a preto, todas as tags de características (`PASSIVO`, `CONTINUO`, `AÇÃO BÔNUS`, `LIVRE`) tornam-se **blocos pretos 100% ilegíveis**!
+     - `.a4-sheet-title-box` possui gradiente escuro (`#0f172a`), fazendo com que o nome do herói (`CLAKER`, `ARKHALIS`, `DERARAVELY`) fique preto sobre azul-escuro.
+     - `.a4-stat-name` usa fundo `#0f172a`, gerando faixas pretas.
+   * **Comportamento do Chrome sem "Gráficos de segundo plano"**:
+     Nas capturas do usuário, a opção **[ ] Gráficos de segundo plano** está desmarcada (padrão do Chrome). Quando desmarcada, o navegador remove fundos coloridos, tornando textos brancos invisíveis e gerando inconsistências severas.
 
-## 🎯 Objetivos do Refinamento
+2. **Causa Raiz da Página 3 em Branco / Transbordada**:
+   * Em `src/styles/head_css.html:9642`, a altura das páginas está fixada em `height: 295mm !important; min-height: 295mm !important; max-height: 295mm !important;`.
+   * Uma folha A4 física tem $297\text{mm}$.
+   * No diálogo de impressão do Chrome, quando o usuário usa **Margens: "Padrão"** (10-15mm) e **[x] Cabeçalhos e rodapés** (8mm adicionais), a altura útil imprimível da folha cai para aproximadamente **$262\text{mm}$ a $270\text{mm}$**.
+   * Como $295\text{mm} > 267\text{mm}$, o Chrome é matematicamente forçado a criar quebras de página forçadas, empurrando o conteúdo para uma 3ª página (ou criando uma 3ª folha em branco residual com a barra lateral cinza).
+   * **Comprovação Experimental**: Realizamos testes reais com o motor headless do Chrome:
+     - `Height 295mm`: Gera **3 páginas**.
+     - `Height 265mm`: Gera **EXATAMENTE 2 PÁGINAS CANÔNICAS**, tanto para personagens conjuradores (Arkhalis/Claker) quanto para guerreiros multiclasse com muitas características (Deraravely).
 
-1. **Blindagem Estrutural Contra Impressão de Banners**:
-   * Mover o banner de dicas para dentro do `#modal-print-toolbar` (ou torná-lo um tooltip/popover auxiliar), garantindo que nenhum elemento HTML fora da folha A4 possa ser interpretado pelo Chromium.
-   * Regra CSS estrita: `#modal-print .modal-body > *:not(.print-a4-preview-viewport) { display: none !important; }`.
-2. **Higienização Defensiva contra `"Mago 8 8"` no `localStorage`**:
-   * Aplicar regex `/\b(\d+)\s+\1\b/g` no `formattedClassLevel` para eliminar duplicações herdadas de edições manuais anteriores no cache local do navegador.
-3. **Controle de Cache do Navegador (Cache-Busting)**:
-   * Adicionar meta tags `Cache-Control: no-cache, no-store, must-revalidate`, `Pragma: no-cache` e `Expires: 0` no `<head>` de `src/styles/head_css.html`.
-   * Incluir badge `v3.9.1` visível no cabeçalho do `#modal-print` para que o usuário saiba com certeza absoluta se o navegador carregou a nova versão.
+3. **Identidade Visual Sombria & Sem Vida**:
+   * O usuário pediu expressamente: *"dando uma identidade mais viva"*.
+   * Fichas canônicas e livros de D&D 5E utilizam uma paleta nobre e quente de alta fantasia: pergaminho marfim, carmesim dragão nobre, ouro âmbar polido, roxo arcano, verde esmeralda e azul cobalto.
 
 ---
 
-## 📁 Arquivos Afetados
+## 🎯 Objetivos e Solução Proposta
+
+### 1. 🎨 Nova Identidade Visual Épica de Alta Fantasia D&D 5E:
+* **Cabeçalho Nobre em Pergaminho Marfim**:
+  * Substituir o bloco preto do `.a4-sheet-title-box` por um fundo marfim pergaminho suave (`background: #fffbeb; border: 1.5px solid #b45309; border-left: 5px solid #991b1b;`).
+  * **Nome do Herói** em **Carmesim Dragão Nobre** (`color: #991b1b !important; -webkit-text-fill-color: #991b1b !important; font-family: 'Cinzel', serif; font-size: 16pt; font-weight: 900; letter-spacing: 1px;`).
+  * **Subtítulo** em **Dourado Âmbar** (`color: #b45309 !important; -webkit-text-fill-color: #b45309 !important; font-weight: 800; font-size: 6.5pt;`).
+  * Funciona com 100% de nitidez com gráficos de fundo ativados OU desativados.
+* **Atributos Vivos & Cristalinos**:
+  * Header do atributo (`.a4-stat-name`): Carmesim Nobre (`background: #991b1b !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; font-weight: 900; font-size: 6.5pt;`).
+  * Valor do Atributo no centro (`.a4-stat-score`): Em destaque (`font-size: 14pt; font-weight: 900; color: #0f172a;`).
+  * Medalhão do Modificador embaixo (`.a4-stat-mod`): Em formato oval âmbar suave (`background: #fef3c7 !important; border: 1.5px solid #d97706 !important; color: #92400e !important; -webkit-text-fill-color: #92400e !important; font-size: 8pt; font-weight: 900;`).
+* **Badges de Habilidades Semânticos (Fim dos Blocos Pretos)**:
+  * Substituir o fundo preto `#1e293b` por pastéis luminosos de alto contraste com bordas vivas e texto escuro de alta legibilidade:
+    - `PASSIVO`: Roxo arcano suave (`background: #ede9fe !important; border: 1px solid #8b5cf6 !important; color: #5b21b6 !important; -webkit-text-fill-color: #5b21b6 !important;`).
+    - `AÇÃO`: Verde esmeralda tático (`background: #dcfce7 !important; border: 1px solid #16a34a !important; color: #14532d !important; -webkit-text-fill-color: #14532d !important;`).
+    - `AÇÃO BÔNUS / REAÇÃO`: Laranja rubi ágil (`background: #ffedd5 !important; border: 1px solid #ea580c !important; color: #9a3412 !important; -webkit-text-fill-color: #9a3412 !important;`).
+    - `USO / RECARGA` (`1x/Descanso Longo`, `1x/Curto`): Dourado de prestígio (`background: #fef3c7 !important; border: 1px solid #d97706 !important; color: #92400e !important; -webkit-text-fill-color: #92400e !important; font-weight: 700;`).
+    - `DISTÂNCIA / ALCANCE`: Azul celeste (`background: #e0f2fe !important; border: 1px solid #0284c7 !important; color: #0369a1 !important; -webkit-text-fill-color: #0369a1 !important;`).
+* **Pilares de Combate e Vida**:
+  * CA: Azul Escudo Nobre (`background: #f0f9ff; border: 1.5px solid #0284c7; color: #0369a1;`).
+  * Iniciativa: Âmbar Relâmpago (`background: #fffbeb; border: 1.5px solid #d97706; color: #92400e;`).
+  * Deslocamento: Verde Velocidade (`background: #f0fdf4; border: 1.5px solid #16a34a; color: #15803d;`).
+  * Caixa de PV: Faixa superior Carmesim (`background: #b91c1c; color: #ffffff;`).
+* **Títulos de Caixas (`.a4-box-title`)**:
+  * Pergaminho marfim com traço inferior dourado (`background: #fffbeb !important; border-bottom: 2px solid #b45309 !important; color: #78350f !important; font-family: 'Cinzel', serif; font-weight: 800;`).
+
+### 2. 📄 Garantia Definitiva de 2 Páginas Canônicas (Zero Página 3):
+* No `@media print`:
+  - Definir `.a4-print-page` com `height: 265mm !important; max-height: 265mm !important; min-height: 0 !important;` e `padding: 5mm 8mm !important;`.
+  - Configurar `@page { size: A4 portrait; margin: 6mm 8mm; }`.
+  - Travar `.a4-page-2` com `break-after: avoid !important; page-break-after: avoid !important; margin-bottom: 0 !important;`.
+  - Ocultar rigorosamente o banner `#modal-print-tip-banner` e quaisquer elementos externos.
+
+---
+
+## 📁 Arquivos e Módulos Afetados
 
 | Arquivo | Componente / Responsabilidade |
 |---|---|
-| `src/ui/ui.html` | Mover `#modal-print-tip-banner` para dentro de `#modal-print-toolbar` e exibir badge `v3.9.1` |
-| `src/styles/head_css.html` | Meta tags anti-cache no head e regra estrita `#modal-print .modal-body > *:not(.print-a4-preview-viewport)` |
-| `src/js/players.js` | Sanitização por regex de duplicações numéricas no `formattedClassLevel` |
-| `src/js/core.js` | Atualização de versão para `3.9.1` |
-| `test_runner.js` | Teste automatizado para validar a nova regra e ausência de banners no body |
+| `src/styles/head_css.html` | Cores nobres, pergaminho claro, badges semânticos, remoção da regra forçada `* { color: #000; }`, e ajuste de altura para `265mm` |
+| `src/js/players.js` | Injeção de classes semânticas nos badges de características e sanitização rigorosa de nível |
+| `src/js/core.js` | Atualização de versão para `v3.9.2` |
+| `src/ui/ui.html` | Atualização do badge de versão para `v3.9.2` |
+| `issues/README.md` | Registro oficial da ISSUE-180 |
+| `test_runner.js` | Testes automatizados cobrindo contraste, 2 páginas e ausência de blocos pretos |
 
 ---
 
 ## 🧪 Estratégia de Verificação
 
-* Compilação com `node builder.js`.
-* Suíte completa com `node test_runner.js` (garantindo 100% de sucesso nas 2.732+ asserções).
-* Validação via Chrome Headless confirmando que o PDF final contém Score central grande, Modificador no medalhão, `Mago 8` e zero banners.
+1. **Testes Automatizados (`node test_runner.js`)**:
+   - Validação de ausência de blocos pretos em badges (`.a4-feature-tag`).
+   - Validação da altura canônica compatível com Chrome (`265mm`).
+   - Validação de quebra canônica de 2 páginas.
+2. **Teste com Chrome Headless Real**:
+   - Execução de impressão via linha de comando do Chrome para Arkhalis, Deraravely e Claker, validando `pageCount === 2` com 100% de precisão.
+3. **Compilação**:
+   - Execução de `node builder.js` e verificação no `planilha do rpg.html`.
+
+---
+
+> ⚠️ **Aguardando aprovação explícita do usuário conforme a Regra 1 de `AGENTS.md` para iniciar as alterações no código sob `src/`.**
