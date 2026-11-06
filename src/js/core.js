@@ -443,7 +443,7 @@ let PLAYERS = [
       0
     ],
     "speed": "9m",
-    "spells": "Armadura de Cota de Malha, Escudo, Mochila",
+    "spells": "",
     "spentHitDice": 0,
     "str": 18,
     "student": "Samuel",
@@ -2246,6 +2246,9 @@ function loadFromLocalStorage() {
               { id: 'inv_der_1', name: 'Cota de Malha', qty: 1, weight: 25, equipped: true },
               { id: 'inv_der_2', name: 'Escudo', qty: 1, weight: 6, equipped: true }
             ];
+          }
+          if (typeof p.spells === 'string' && (p.spells.includes('Armadura') || p.spells.includes('Escudo') || p.spells.includes('Mochila'))) {
+            p.spells = '';
           }
         }
 

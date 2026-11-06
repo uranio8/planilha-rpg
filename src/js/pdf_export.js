@@ -271,9 +271,16 @@
     const normSaveProfs = saveProfs.map(s => String(s).toLowerCase());
     const normalizedPlayerSkills = skillProfs.map(s => normalizeSkillKey(s));
 
-    const formattedClassLevel = (p.multiclass && typeof p.multiclass === 'string' && p.multiclass.trim())
-      ? `${p.multiclass} (Nv ${charLevel})`
-      : `${charClass} ${charLevel}`.trim();
+    let formattedClassLevel = '';
+    if (p.multiclass && typeof p.multiclass === 'string' && p.multiclass.trim()) {
+      formattedClassLevel = `${p.multiclass} (Nv ${charLevel})`;
+    } else if (Array.isArray(p.multiclass) && p.multiclass.length > 1) {
+      formattedClassLevel = p.multiclass.map(m => `${m.className} ${m.level}`).join(' / ');
+    } else if (charClass && /\d/.test(charClass)) {
+      formattedClassLevel = charClass;
+    } else {
+      formattedClassLevel = `${charClass} ${charLevel}`.trim();
+    }
 
     // =====================================================
     // PÁGINA 1: IDENTIDADE, ATRIBUTOS, PERÍCIAS, COMBATE E TRAÇOS
@@ -981,9 +988,16 @@
     fCharName.addToPage(page1, { x: 32, y: p1Height - 70, width: 170, height: 18 });
 
     // Grid de Metadados do Cabeçalho
-    const formattedClassLevel = (p.multiclass && typeof p.multiclass === 'string' && p.multiclass.trim())
-      ? `${p.multiclass} (Nv ${charLevel})`
-      : `${charClass} ${charLevel}`;
+    let formattedClassLevel = '';
+    if (p.multiclass && typeof p.multiclass === 'string' && p.multiclass.trim()) {
+      formattedClassLevel = `${p.multiclass} (Nv ${charLevel})`;
+    } else if (Array.isArray(p.multiclass) && p.multiclass.length > 1) {
+      formattedClassLevel = p.multiclass.map(m => `${m.className} ${m.level}`).join(' / ');
+    } else if (charClass && /\d/.test(charClass)) {
+      formattedClassLevel = charClass;
+    } else {
+      formattedClassLevel = `${charClass} ${charLevel}`.trim();
+    }
 
     const metaCols = [
       { label: 'CLASSE E NÍVEL', name: 'ClassLevel', val: formattedClassLevel, x: 215, y: p1Height - 48, w: 110 },

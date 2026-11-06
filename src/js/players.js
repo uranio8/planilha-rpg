@@ -11448,6 +11448,14 @@ function printPlayerSheet(id) {
 
   // Conjuração e Magias
   const cName = (p.className || '').toLowerCase();
+  const isCasterClass = ['mago', 'bruxo', 'warlock', 'feiticeiro', 'sorcerer', 'clérigo', 'clerigo', 'druida', 'bardo', 'paladino', 'patrulheiro', 'ranger'].some(cl => cName.includes(cl)) || (cName.includes('trapaceiro arcano') || cName.includes('cavaleiro arcano'));
+
+  // Espaços de Magia
+  const slots = Array.isArray(p.slots) ? p.slots : [0, 0, 0, 0, 0, 0, 0, 0, 0];
+  const slotsUsed = Array.isArray(p.slotsUsed) ? p.slotsUsed : [0, 0, 0, 0, 0, 0, 0, 0, 0];
+  const isPureMartial = ['guerreiro', 'bárbaro', 'barbaro', 'ladino'].some(cl => cName === cl || (cName.includes(cl) && !cName.includes('bruxo') && !cName.includes('mago') && !cName.includes('feiticeiro') && !cName.includes('paladino') && !cName.includes('clérigo') && !cName.includes('bardo')));
+  const hasSpells = slots.some(s => s > 0) || (Array.isArray(p.preparedSpells) && p.preparedSpells.length > 0) || (typeof p.spells === 'string' && p.spells.trim().length > 0 && !isPureMartial && !p.spells.includes('Armadura') && !p.spells.includes('Escudo') && !p.spells.includes('Mochila'));
+
   let spellAttrKey = 'int';
   let spellAttrLabel = 'INT';
   if (cName.includes('clérigo') || cName.includes('clerigo') || cName.includes('druida') || cName.includes('patrulheiro') || cName.includes('ranger') || cName.includes('monge')) {
@@ -11458,14 +11466,10 @@ function printPlayerSheet(id) {
     spellAttrLabel = 'CAR';
   }
   const spellMod = attrMap[spellAttrKey].mod;
-  const spellSaveDc = 8 + prof + spellMod;
-  const spellAtkBonus = fmtMod(prof + spellMod);
-
-  // Espaços de Magia
-  const slots = Array.isArray(p.slots) ? p.slots : [0, 0, 0, 0, 0, 0, 0, 0, 0];
-  const slotsUsed = Array.isArray(p.slotsUsed) ? p.slotsUsed : [0, 0, 0, 0, 0, 0, 0, 0, 0];
-  const isPureMartial = ['guerreiro', 'bárbaro', 'barbaro', 'ladino'].some(cl => cName === cl || (cName.includes(cl) && !cName.includes('bruxo') && !cName.includes('mago') && !cName.includes('feiticeiro') && !cName.includes('paladino') && !cName.includes('clérigo') && !cName.includes('bardo')));
-  const hasSpells = slots.some(s => s > 0) || (Array.isArray(p.preparedSpells) && p.preparedSpells.length > 0) || (typeof p.spells === 'string' && p.spells.trim().length > 0 && !isPureMartial);
+  const isTrueSpellcaster = isCasterClass || hasSpells;
+  const spellSaveDc = isTrueSpellcaster ? (8 + prof + spellMod) : '—';
+  const spellAtkBonus = isTrueSpellcaster ? fmtMod(prof + spellMod) : '—';
+  const displaySpellAttrLabel = isTrueSpellcaster ? spellAttrLabel : '—';
 
   // Ataques & Armas
   const calcedAttacksList = (typeof getPlayerCalculatedAttacks === 'function') ? getPlayerCalculatedAttacks(p) : [];
@@ -11879,7 +11883,7 @@ function printPlayerSheet(id) {
             <div class="a4-spell-meta-grid">
               <div class="a4-spell-meta-cell">
                 <span class="a4-spell-meta-lbl">Habilidade Chave</span>
-                <span class="a4-spell-meta-val">${spellAttrLabel}</span>
+                <span class="a4-spell-meta-val">${displaySpellAttrLabel}</span>
               </div>
               <div class="a4-spell-meta-cell">
                 <span class="a4-spell-meta-lbl">CD Resistência</span>
@@ -11897,28 +11901,34 @@ function printPlayerSheet(id) {
             <div class="a4-box-title">Grimório & Magias Conhecidas</div>
             <div class="a4-spellbook-list">
               ${(() => {
-      const spellsArr = (Array.isArray(p.preparedSpells) && p.preparedSpells.length > 0)
-        ? p.preparedSpells
-        : (Array.isArray(p.spells) && p.spells.length > 0 ? p.spells : []);
+                if (!isTrueSpellcaster) {
+                  return '<div style="color: #64748b; font-size: 7pt; font-style: italic; padding: 4px 0;">Personagem marcial (sem conjuração de magias).</div>';
+                }
+                const spellsArr = (Array.isArray(p.preparedSpells) && p.preparedSpells.length > 0)
+                  ? p.preparedSpells
+                  : (Array.isArray(p.spells) && p.spells.length > 0 ? p.spells : []);
 
-      if (spellsArr.length > 0) {
-        return spellsArr.map(s => {
-          const sName = typeof s === 'string' ? s : (s.name || 'Magia');
-          const sLvl = typeof s === 'object' && s.level !== undefined ? (s.level === 0 ? 'Truque' : `Nv ${s.level}`) : '';
-          return `
+                if (spellsArr.length > 0) {
+                  return spellsArr.map(s => {
+                    const sName = typeof s === 'string' ? s : (s.name || 'Magia');
+                    const sLvl = typeof s === 'object' && s.level !== undefined ? (s.level === 0 ? 'Truque' : `Nv ${s.level}`) : '';
+                    return `
                       <div class="a4-spell-entry">
                         <span class="a4-spell-entry-bullet">✦</span>
                         <span class="a4-spell-entry-name">${sName}</span>
                         ${sLvl ? `<span class="a4-spell-entry-lvl">${sLvl}</span>` : ''}
                       </div>
                     `;
-        }).join('');
-      }
-      if (typeof p.spells === 'string' && p.spells.trim()) {
-        return `<div style="font-size: 8pt; line-height: 1.4;">${p.spells.replace(/\n/g, '<br>')}</div>`;
-      }
-      return '<div style="color: #666; font-size: 7.5pt;">Nenhuma magia preparada.</div>';
-    })()}
+                  }).join('');
+                }
+                if (typeof p.spells === 'string' && p.spells.trim()) {
+                  if (p.spells.includes('Armadura') || p.spells.includes('Escudo') || p.spells.includes('Mochila')) {
+                    return '<div style="color: #64748b; font-size: 7pt; font-style: italic; padding: 4px 0;">Personagem marcial (sem conjuração de magias).</div>';
+                  }
+                  return `<div style="font-size: 7.5pt; line-height: 1.35;">${p.spells.replace(/\n/g, '<br>')}</div>`;
+                }
+                return '<div style="color: #666; font-size: 7.5pt;">Nenhuma magia preparada.</div>';
+              })()}
             </div>
           </div>
 

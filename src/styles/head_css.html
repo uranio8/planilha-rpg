@@ -8651,7 +8651,7 @@
        =================================================== */
     @page {
       size: A4 portrait;
-      margin: 0 !important;
+      margin: 6mm 8mm;
     }
 
     .print-a4-preview-viewport {
@@ -8671,18 +8671,16 @@
       max-width: 860px;
     }
 
-    /* FOLHAS A4 CANÔNICAS D&D 5E (ISSUE-148 & ISSUE-177) */
+    /* FOLHAS A4 CANÔNICAS D&D 5E (ISSUE-148 & ISSUE-178) */
     .a4-print-page {
-      width: 210mm;
-      max-width: 210mm;
-      height: 297mm;
-      min-height: 297mm;
-      max-height: 297mm;
+      width: 194mm;
+      max-width: 194mm;
+      min-height: 275mm;
       background: #ffffff !important;
       color: #0f172a !important;
       box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
       box-sizing: border-box;
-      padding: 6mm 8mm;
+      padding: 5mm 7mm;
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       position: relative;
       border: 1px solid #cbd5e1;
@@ -8778,8 +8776,8 @@
     .a4-page1-columns,
     .a4-page2-columns {
       display: grid;
-      grid-template-columns: 56mm 66mm 1fr;
-      gap: 4mm;
+      grid-template-columns: 53mm 63mm 1fr;
+      gap: 3.5mm;
       flex: 1;
       margin-bottom: 2px;
       min-height: 0;
@@ -9632,14 +9630,14 @@
         display: flex !important;
         flex-direction: column !important;
         justify-content: space-between !important;
-        width: 210mm !important;
-        max-width: 210mm !important;
+        width: 100% !important;
+        max-width: 184mm !important;
         box-sizing: border-box !important;
-        height: 297mm !important;
-        min-height: 275mm !important;
-        max-height: 297mm !important;
-        margin: 0 !important;
-        padding: 6mm 8mm !important;
+        height: 248mm !important;
+        min-height: 248mm !important;
+        max-height: 248mm !important; /* compatível com folha A4 275mm e margens do Chrome */
+        margin: 0 auto !important;
+        padding: 4mm 6mm !important;
         box-shadow: none !important;
         border: none !important;
         overflow: hidden !important;
