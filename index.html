@@ -13471,6 +13471,182 @@
     }
 
     /* =====================================================================
+       🌾👑 PROGRESSÃO DE ASSENTAMENTO & RENOME DO BASTIÃO (ISSUE-181)
+       ===================================================================== */
+    .bastion-tier-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+    .bastion-tier-badge.tier-1 {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.3));
+      border: 1px solid #10b981;
+      color: #6ee7b7;
+    }
+    .bastion-tier-badge.tier-2 {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(14, 165, 233, 0.3));
+      border: 1px solid #38bdf8;
+      color: #7dd3fc;
+    }
+    .bastion-tier-badge.tier-3 {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.3));
+      border: 1px solid #f59e0b;
+      color: #fde047;
+    }
+    .bastion-tier-badge.tier-4 {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(147, 51, 234, 0.3));
+      border: 1px solid #a855f7;
+      color: #e9d5ff;
+    }
+    .bastion-tier-badge.tier-5 {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(245, 158, 11, 0.35));
+      border: 1px solid #f59e0b;
+      color: #fff;
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+    }
+
+    .bastion-renown-container {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 200px;
+      flex: 1;
+      max-width: 320px;
+    }
+    .bastion-renown-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #cbd5e1;
+    }
+    .bastion-renown-progress-track {
+      width: 100%;
+      height: 8px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+    }
+    .bastion-renown-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 70%, #fef08a 100%);
+      border-radius: 6px;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+    }
+
+    .settlement-tiers-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .settlement-tier-card {
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+    .settlement-tier-card.current {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(15, 23, 42, 0.85) 100%);
+      border: 1.5px solid #f59e0b;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);
+    }
+    .settlement-tier-card.next-available {
+      border: 1.5px solid #10b981;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(15, 23, 42, 0.8) 100%);
+    }
+    .settlement-tier-card.locked {
+      opacity: 0.6;
+    }
+    .settlement-tier-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .settlement-tier-card-title {
+      font-weight: 800;
+      font-size: 14px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .settlement-req-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 6px;
+      margin-top: 4px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .settlement-req-item {
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: #94a3b8;
+    }
+    .settlement-req-item.met {
+      color: #6ee7b7;
+      font-weight: 700;
+    }
+    .settlement-req-item.missing {
+      color: #f87171;
+    }
+
+    .bastion-walls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .bastion-wall-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1.5px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 14px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+      transition: all 0.2s ease;
+    }
+    .bastion-wall-card:hover {
+      border-color: rgba(245, 158, 11, 0.6);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+    }
+    .bastion-wall-card.active {
+      border-color: #f59e0b;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(15, 23, 42, 0.9) 100%);
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.3);
+    }
+    .bastion-wall-card.current-installed {
+      border-color: #10b981;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(15, 23, 42, 0.9) 100%);
+    }
+
+    /* =====================================================================
        ⚔️ MODAL PLAYER: ARMAS EQUIPADAS & AUTOMAÇÃO DINÂMICA
        ===================================================================== */
     .modal-weapons-section {
@@ -18057,6 +18233,8 @@
         <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
           <span style="font-weight: 800; font-family: var(--font-title); font-size: 14px; color: #fef08a;">🏰 BASTIÃO DA CAMPANHA:</span>
           <select id="sel-bastion-active-campaign" onchange="switchBastionCampaign(this.value)" style="font-weight: 700; min-width: 230px;"></select>
+          <span id="bastion-tab-tier-badge" class="bastion-tier-badge tier-1">🌾 Fazenda & Refúgio (Tier 1)</span>
+          <span id="bastion-tab-renown-badge" class="badge" style="background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.5); color: #fef08a; font-weight: 800;">👑 Renome: 25</span>
           <span id="bastion-tab-lvl-badge" class="badge badge-lvl">⭐ Nível 5</span>
           <span id="bastion-tab-turn-badge" class="badge" style="border-color: #64748b; color: #e2e8f0;">⏳ Semana 1</span>
           <span id="bastion-tab-def-badge" class="badge badge-cls">🛡️ 0 Defensores</span>
@@ -18065,26 +18243,32 @@
           <span id="bastion-tab-bank-badge" class="badge" style="background: rgba(234, 179, 8, 0.2); border-color: rgba(234, 179, 8, 0.6); color: #fef08a; font-weight: 800;">🏦 Cofre: 0 PO</span>
         </div>
         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button type="button" class="btn-action" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: 800; box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);" onclick="openBastionSettlementUpgradeModal()" title="Evoluir Assentamento (Fazenda, Aldeia, Vila, Cidadela, Metrópole)">
+            ✨ Evoluir Assentamento
+          </button>
           <button type="button" class="btn-action" style="background: linear-gradient(135deg, #eab308, #ca8a04); color: #000; font-weight: 800; box-shadow: 0 0 10px rgba(234, 179, 8, 0.35);" onclick="openBastionBankModal()">
             🏦 Banco / Cofre
           </button>
           <button type="button" class="btn-action" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; font-weight: 800;" onclick="openCreateBastionStaffModal()">
             👥 Staff / Criar NPC
           </button>
-          <button type="button" class="btn-action" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: 800;" onclick="openBastionActionModal()">
+          <button type="button" class="btn-action" style="background: linear-gradient(135deg, #0d9488, #0f766e); color: #fff; font-weight: 800;" onclick="openBastionActionModal()">
             ➕ Emitir Ordem
           </button>
           <button type="button" class="btn-secondary" onclick="openBastionAddFacilityModal()">
             🏗️ Nova Instalação
           </button>
-          <button type="button" class="btn-secondary" style="color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" onclick="promptUpgradeBastionWalls()">
+          <button type="button" class="btn-secondary" style="color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" onclick="openBastionWallsModal()">
             🧱 Aprimorar Muralhas
           </button>
           <button type="button" class="btn-action" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; box-shadow: 0 0 12px rgba(139, 92, 246, 0.35); font-weight: 800;" onclick="advanceBastionTurn()">
             🎲 Avançar Turno (7 Dias)
           </button>
-          <button type="button" class="btn-secondary" onclick="promptEditBastionInfo()" title="Editar Nome ou Localização do Bastião">
-            ✏️ Editar Fortaleza
+          <button type="button" class="btn-secondary" style="color: #fef08a; border-color: rgba(245, 158, 11, 0.4);" onclick="fundBastionFestival()" title="Financiar Festival Popular (+30 Renome por 50 PO)">
+            🎉 Financiar Festival
+          </button>
+          <button type="button" class="btn-secondary" onclick="openEditBastionInfoModal()" title="Editar Nome, Tipo ou Localização do Bastião">
+            ✏️ Editar Bastião
           </button>
         </div>
       </div>
@@ -19357,7 +19541,7 @@
             <div>
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span style="font-size: 16px; font-weight: 700; color: #f8fafc; font-family: 'Cinzel', serif;">Exportação & Impressão A4 (PDF)</span>
-                <span class="badge" style="background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); font-size: 10px;">v3.9.2</span>
+                <span class="badge" style="background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); font-size: 10px;">v3.10.0</span>
               </div>
               <div style="font-size: 11.5px; color: #94a3b8;">Layout Canônico D&D 5E • 2 Páginas • Alta Fidelidade</div>
             </div>
@@ -22036,6 +22220,162 @@
               Confirmar Designação
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EVOLUÇÃO DE ASSENTAMENTO DO BASTIÃO (ISSUE-181) -->
+  <div id="modal-bastion-settlement-upgrade" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeBastionSettlementUpgradeModal()">
+    <div class="modal-body" style="max-width: 680px; width: 95%; border: 1.5px solid var(--accent-gold); box-shadow: 0 0 32px rgba(245, 158, 11, 0.3);">
+      <div class="panel-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 24px;">✨</span>
+          <div>
+            <div style="font-family: var(--font-title); font-size: 16px; font-weight: 800; color: #fef08a;">Evolução de Assentamento do Bastião</div>
+            <div style="font-size: 11px; color: var(--text-dim);">Evolua de uma modesta fazenda até uma metrópole lendária</div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeBastionSettlementUpgradeModal()">✕</button>
+      </div>
+
+      <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 12px;">
+        <!-- Banner do Estágio Atual -->
+        <div id="bastion-settlement-current-banner" style="background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(15,23,42,0.85)); border: 1px solid rgba(245,158,11,0.35); border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <div style="font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Estágio Atual de Desenvolvimento:</div>
+            <div id="bastion-settlement-current-title" style="font-family: var(--font-title); font-size: 18px; font-weight: 800; color: #fef08a; display: flex; align-items: center; gap: 6px;">🌾 Fazenda & Refúgio (Tier 1)</div>
+            <div id="bastion-settlement-current-sub" style="font-size: 11.5px; color: #cbd5e1; margin-top: 2px;">Capacidade: até 2 salas especiais • até 4 defensores • Renda: +10 PO/semana</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 11px; color: #94a3b8; font-weight: 700;">Renome Acumulado:</div>
+            <div id="bastion-settlement-renown-val" style="font-size: 22px; font-weight: 900; color: #facc15; font-family: var(--font-mono);">25 👑</div>
+          </div>
+        </div>
+
+        <!-- Seletor da Fonte de Custeio da Obra -->
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); display: block;">Fonte de Ouro para a Obra:</label>
+            <select id="sel-settlement-upgrade-gold-source" onchange="updateSettlementUpgradeGoldSourceMeta()" style="font-size: 12px; font-weight: 700; min-width: 220px;"></select>
+          </div>
+          <div id="settlement-upgrade-gold-meta" style="font-size: 11.5px; color: #94a3b8;">Saldo disponível: -</div>
+        </div>
+
+        <!-- Próximo Nível e Requisitos -->
+        <div id="bastion-settlement-next-box" style="background: rgba(15,23,42,0.85); border: 1.5px solid rgba(16,185,129,0.3); border-radius: 10px; padding: 14px;">
+          <div style="font-size: 11px; text-transform: uppercase; color: #6ee7b7; font-weight: 800; margin-bottom: 6px;">Próxima Evolução Disponível:</div>
+          <div id="bastion-settlement-next-title" style="font-size: 16px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px;">🏡 Aldeia & Entreposto (Tier 2)</div>
+          <div id="bastion-settlement-next-desc" style="font-size: 12px; color: #cbd5e1; margin-top: 4px; line-height: 1.4;">Comerciantes, artesãos e colonos se estabelecem ao redor do seu bastião.</div>
+
+          <div style="margin-top: 10px; font-size: 11px; font-weight: 700; color: #94a3b8;">Requisitos para a Construção:</div>
+          <div id="bastion-settlement-req-list" class="settlement-req-grid">
+            <!-- Gerado dinamicamente -->
+          </div>
+        </div>
+
+        <!-- Linha do Tempo de Todos os Estágios -->
+        <div>
+          <div style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px;">Caminho da Fama e Prosperidade (5 Estágios):</div>
+          <div id="bastion-settlement-timeline-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto;"></div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px;">
+          <button type="button" class="btn-secondary" onclick="closeBastionSettlementUpgradeModal()">Fechar</button>
+          <button type="button" id="btn-confirm-settlement-upgrade" class="btn-action" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: 800; min-height: 38px; padding: 6px 16px;" onclick="confirmBastionSettlementUpgrade()">
+            🚀 Iniciar Expansão do Assentamento
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EDITAR INFORMAÇÕES DO BASTIÃO (ISSUE-181) -->
+  <div id="modal-bastion-edit-info" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeEditBastionInfoModal()">
+    <div class="modal-body" style="max-width: 480px; width: 95%; border: 1.5px solid var(--accent-gold);">
+      <div class="panel-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 22px;">✏️</span>
+          <div>
+            <div style="font-family: var(--font-title); font-size: 16px; font-weight: 800; color: #fef08a;">Editar Detalhes do Bastião</div>
+            <div style="font-size: 11px; color: var(--text-dim);">Personalize o nome, assentamento, região e lema da fortaleza</div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeEditBastionInfoModal()">✕</button>
+      </div>
+
+      <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 10px;">
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Nome da Fortaleza / Bastião:</label>
+          <input type="text" id="inp-bastion-name" placeholder="Ex: Fortaleza do Grifo Dourado, Refúgio da Colina" style="width: 100%; font-weight: 700; font-size: 13px;">
+        </div>
+
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Tipo de Assentamento / Estrutura:</label>
+          <input type="text" id="inp-bastion-type" list="dl-bastion-types" placeholder="Ex: Fazenda Fortificada, Aldeia Murada, Cidadela Arcana" style="width: 100%; font-size: 12px;">
+          <datalist id="dl-bastion-types">
+            <option value="Fazenda & Refúgio"></option>
+            <option value="Aldeia & Entreposto Comercial"></option>
+            <option value="Vila Próspera"></option>
+            <option value="Cidadela Fortificada"></option>
+            <option value="Metrópole Lendária"></option>
+            <option value="Torre Arcana"></option>
+            <option value="Mosteiro na Montanha"></option>
+            <option value="Acampamento Fortificado"></option>
+          </datalist>
+        </div>
+
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Localização / Região:</label>
+          <input type="text" id="inp-bastion-location" placeholder="Ex: Fronteira Selvagem, Costa da Espada, Floresta Alta" style="width: 100%; font-size: 12px;">
+        </div>
+
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Lema / Juramento da Fortaleza:</label>
+          <input type="text" id="inp-bastion-motto" placeholder="Ex: 'Nenhum passo atrás', 'Luz na escuridão'..." style="width: 100%; font-size: 12px; font-style: italic;">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px;">
+          <button type="button" class="btn-secondary" onclick="closeEditBastionInfoModal()">Cancelar</button>
+          <button type="button" class="btn-action" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 800;" onclick="saveBastionInfoModal()">
+            💾 Salvar Alterações
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: APRIMORAMENTO DE MURALHAS DO BASTIÃO (ISSUE-181) -->
+  <div id="modal-bastion-walls" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeBastionWallsModal()">
+    <div class="modal-body" style="max-width: 640px; width: 95%; border: 1.5px solid #38bdf8; box-shadow: 0 0 32px rgba(56, 189, 248, 0.25);">
+      <div class="panel-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 24px;">🧱</span>
+          <div>
+            <div style="font-family: var(--font-title); font-size: 16px; font-weight: 800; color: #7dd3fc;">Aprimoramento de Muralhas & Defesas</div>
+            <div style="font-size: 11px; color: var(--text-dim);">Proteja seu bastião contra invasões e cercos reduzindo o dano inimigo</div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="closeBastionWallsModal()">✕</button>
+      </div>
+
+      <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 12px;">
+        <!-- Seletor de Origem do Pagamento -->
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); display: block;">Fonte do Pagamento em Ouro:</label>
+            <select id="sel-bastion-walls-gold-source" onchange="updateBastionWallsGoldSourceMeta()" style="font-size: 12px; font-weight: 700; min-width: 220px;"></select>
+          </div>
+          <div id="bastion-walls-gold-meta" style="font-size: 11.5px; color: #94a3b8;">Saldo disponível: -</div>
+        </div>
+
+        <!-- Grade com 4 Opções de Muralha -->
+        <div id="bastion-walls-options-list" class="bastion-walls-grid">
+          <!-- Renderizado dinamicamente -->
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px;">
+          <button type="button" class="btn-secondary" onclick="closeBastionWallsModal()">Fechar</button>
         </div>
       </div>
     </div>
@@ -42001,8 +42341,124 @@ const BASTION_WALL_OPTIONS = {
     costPO: 1000,
     desc: "Muralhas altas de alvenaria maciça e portão levadiço de ferro. Reduz o ataque inimigo de 6d6 para 4d6!",
     defenseDice: 4
+  },
+  runic: {
+    key: "runic",
+    name: "Baluartes Rúnicos & Adamante",
+    costPO: 2500,
+    desc: "Muralhas revestidas com placas de adamante e runas de proteção ancestrais. Reduz o ataque inimigo para apenas 3d6!",
+    defenseDice: 3
   }
 };
+
+// Sistema Progressivo de Assentamento de Bastiões (Fazenda até Metrópole)
+const BASTION_SETTLEMENT_TIERS = {
+  1: {
+    stage: 1,
+    id: "farm",
+    name: "Fazenda & Refúgio",
+    typeLabel: "Fazenda / Acampamento",
+    subtitle: "Pequena propriedade rural ou acampamento fortificado",
+    icon: "🌾",
+    renownMin: 0,
+    renownMax: 99,
+    maxSpecialFacilities: 2,
+    maxDefenders: 4,
+    weeklyRevenueGold: 10,
+    costGold: 0,
+    reqWeeks: 0,
+    reqFacilities: 0,
+    reqRenown: 0,
+    description: "Um começo humilde nas terras ermas. Uma cabana de caça, moinho ou pequena fazenda com um punhado de colonos e aliados leais."
+  },
+  2: {
+    stage: 2,
+    id: "village",
+    name: "Aldeia & Entreposto",
+    typeLabel: "Aldeia / Entreposto",
+    subtitle: "Comunidade emergente atraída pela segurança da guarnição",
+    icon: "🏡",
+    renownMin: 100,
+    renownMax: 299,
+    maxSpecialFacilities: 4,
+    maxDefenders: 8,
+    weeklyRevenueGold: 25,
+    costGold: 150,
+    reqWeeks: 2,
+    reqFacilities: 1,
+    reqRenown: 100,
+    description: "Comerciantes, artesãos e colonos se estabelecem ao redor do seu bastião. Pequenas oficinas e estalagens florescem na região."
+  },
+  3: {
+    stage: 3,
+    id: "town",
+    name: "Vila Próspera",
+    typeLabel: "Vila Próspera",
+    subtitle: "Centro urbano florescente com rotas comerciais e feiras",
+    icon: "🏘️",
+    renownMin: 300,
+    renownMax: 599,
+    maxSpecialFacilities: 6,
+    maxDefenders: 12,
+    weeklyRevenueGold: 60,
+    costGold: 400,
+    reqWeeks: 4,
+    reqFacilities: 3,
+    reqRenown: 300,
+    description: "A vila agora possui mercado central, milícia organizada e renome regional que atrai viajantes, sábios e aventureiros."
+  },
+  4: {
+    stage: 4,
+    id: "city",
+    name: "Cidadela Fortificada",
+    typeLabel: "Cidadela Fortificada",
+    subtitle: "Bastião imponente e centro de poder militar e político",
+    icon: "🏰",
+    renownMin: 600,
+    renownMax: 999,
+    maxSpecialFacilities: 8,
+    maxDefenders: 16,
+    weeklyRevenueGold: 120,
+    costGold: 1000,
+    reqWeeks: 8,
+    reqFacilities: 5,
+    reqRenown: 600,
+    description: "Cercada por grandes muralhas e torres de vigia. Lordes vizinhos e reinos respeitam a soberania e autoridade desta fortaleza."
+  },
+  5: {
+    stage: 5,
+    id: "metropolis",
+    name: "Metrópole Lendária",
+    typeLabel: "Metrópole Lendária",
+    subtitle: "Capital épica com acadêmias arcanas e fama continental",
+    icon: "👑",
+    renownMin: 1000,
+    renownMax: Infinity,
+    maxSpecialFacilities: 12,
+    maxDefenders: 24,
+    weeklyRevenueGold: 250,
+    costGold: 2500,
+    reqWeeks: 12,
+    reqFacilities: 7,
+    reqRenown: 1000,
+    description: "Uma maravilha do mundo conhecido. Magos, diplomatas e exércitos buscam aliança com este marco histórico incontestável."
+  }
+};
+
+if (typeof window !== 'undefined') {
+  window.BASTION_SPECIAL_FACILITIES_CATALOG = BASTION_SPECIAL_FACILITIES_CATALOG;
+  window.BASTION_ACTIONS_CATALOG = BASTION_ACTIONS_CATALOG;
+  window.BASTION_EVENTS_TABLE = BASTION_EVENTS_TABLE;
+  window.BASTION_WALL_OPTIONS = BASTION_WALL_OPTIONS;
+  window.BASTION_SETTLEMENT_TIERS = BASTION_SETTLEMENT_TIERS;
+}
+if (typeof global !== 'undefined') {
+  global.BASTION_SPECIAL_FACILITIES_CATALOG = BASTION_SPECIAL_FACILITIES_CATALOG;
+  global.BASTION_ACTIONS_CATALOG = BASTION_ACTIONS_CATALOG;
+  global.BASTION_EVENTS_TABLE = BASTION_EVENTS_TABLE;
+  global.BASTION_WALL_OPTIONS = BASTION_WALL_OPTIONS;
+  global.BASTION_SETTLEMENT_TIERS = BASTION_SETTLEMENT_TIERS;
+}
 
 // ============================================================================
 // 📜 D&D 5E FEATS (TALENTOS) - COMPÊNDIO OFICIAL E INTUITIVO
@@ -48890,7 +49346,7 @@ function exportCompleteBackupJson() {
   try {
     const backupData = {
       appName: 'Planilha RPG D&D 5E Assistant & VTT',
-      version: '3.9.2',
+      version: '3.10.0',
       exportDate: new Date().toISOString(),
       players: typeof PLAYERS !== 'undefined' ? PLAYERS : [],
       combatState: typeof state !== 'undefined' ? state : { round: 1, turnIndex: 0, combatants: [] },
@@ -80137,6 +80593,17 @@ function renderBastionsTab(targetCampId = null) {
   const wallBadge = document.getElementById('bastion-tab-wall-badge');
   const goldBadge = document.getElementById('bastion-tab-gold-badge');
   const bankBadge = document.getElementById('bastion-tab-bank-badge');
+  const tierBadge = document.getElementById('bastion-tab-tier-badge');
+  const renownBadge = document.getElementById('bastion-tab-renown-badge');
+
+  const tier = getBastionSettlementTier(bastion);
+  if (tierBadge) {
+    tierBadge.className = `bastion-tier-badge tier-${tier.stage}`;
+    tierBadge.innerHTML = `${tier.icon} ${bastion.settlementType || tier.name} (Tier ${tier.stage})`;
+  }
+  if (renownBadge) {
+    renownBadge.innerText = `👑 Renome: ${bastion.renown || 0}`;
+  }
 
   if (lvlBadge) lvlBadge.innerText = `⭐ Nível ${bastion.level || 5}`;
   if (turnBadge) turnBadge.innerText = `⏳ Semana ${bastion.turnCount || 1}`;
@@ -80150,29 +80617,121 @@ function renderBastionsTab(targetCampId = null) {
   renderCampaignBastion(camp, campPlayers, 'bastion-view-container');
 }
 
-function promptEditBastionInfo() {
+function getBastionSettlementTier(bastion) {
+  const stage = (bastion && typeof bastion.settlementStage === 'number') ? bastion.settlementStage : 1;
+  if (typeof BASTION_SETTLEMENT_TIERS !== 'undefined' && BASTION_SETTLEMENT_TIERS[stage]) {
+    return BASTION_SETTLEMENT_TIERS[stage];
+  }
+  return {
+    stage: 1,
+    id: "farm",
+    name: "Fazenda & Refúgio",
+    typeLabel: "Fazenda / Acampamento",
+    subtitle: "Pequena propriedade rural ou acampamento fortificado",
+    icon: "🌾",
+    renownMin: 0,
+    renownMax: 99,
+    maxSpecialFacilities: 2,
+    maxDefenders: 4,
+    weeklyRevenueGold: 10,
+    costGold: 0,
+    reqWeeks: 0,
+    reqFacilities: 0,
+    reqRenown: 0,
+    description: "Um começo humilde nas terras ermas."
+  };
+}
+
+function openEditBastionInfoModal() {
   const camp = getSelectedBastionCampaign();
   if (!camp) return;
   const bastion = getCampaignBastion(camp);
   if (!bastion) return;
 
-  const newName = prompt(`Nome da Fortaleza / Bastião (${camp.name}):`, bastion.name || '');
-  if (newName === null) return;
-  const trimmedName = newName.trim();
-  if (trimmedName) bastion.name = trimmedName;
+  const modal = document.getElementById('modal-bastion-edit-info');
+  if (!modal) return;
 
-  const newLoc = prompt(`Localização geográfica do Bastião:`, bastion.location || '');
-  if (newLoc !== null) {
-    bastion.location = newLoc.trim() || 'Fronteiras da Campanha';
+  const inpName = document.getElementById('inp-bastion-name');
+  const inpType = document.getElementById('inp-bastion-type');
+  const inpLoc = document.getElementById('inp-bastion-location');
+  const inpMotto = document.getElementById('inp-bastion-motto');
+
+  if (inpName) inpName.value = bastion.name || '';
+  if (inpType) inpType.value = bastion.settlementType || '';
+  if (inpLoc) inpLoc.value = bastion.location || '';
+  if (inpMotto) inpMotto.value = bastion.motto || '';
+
+  modal.style.display = 'flex';
+}
+
+function closeEditBastionInfoModal() {
+  const modal = document.getElementById('modal-bastion-edit-info');
+  if (modal) modal.style.display = 'none';
+}
+
+function saveBastionInfoModal() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+
+  const inpName = document.getElementById('inp-bastion-name');
+  const inpType = document.getElementById('inp-bastion-type');
+  const inpLoc = document.getElementById('inp-bastion-location');
+  const inpMotto = document.getElementById('inp-bastion-motto');
+
+  if (inpName && inpName.value.trim()) {
+    bastion.name = inpName.value.trim();
+  }
+  if (inpType && inpType.value.trim()) {
+    bastion.settlementType = inpType.value.trim();
+  }
+  if (inpLoc) {
+    bastion.location = inpLoc.value.trim() || 'Fronteiras da Campanha';
+  }
+  if (inpMotto) {
+    bastion.motto = inpMotto.value.trim();
   }
 
   touchCampaign(camp);
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
 
+  closeEditBastionInfoModal();
   renderBastionsTab(camp.id);
   renderCampaigns();
   if (typeof addLog === 'function') addLog(`🏰 <b>Bastião:</b> Informações da fortaleza atualizadas para "${bastion.name}".`);
+}
+
+function promptEditBastionInfo() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+
+  if (typeof prompt === 'function') {
+    const newName = prompt(`Nome da Fortaleza / Bastião (${camp.name}):`, bastion.name || '');
+    if (newName !== null) {
+      const trimmedName = newName.trim();
+      if (trimmedName) bastion.name = trimmedName;
+
+      const newLoc = prompt(`Localização geográfica do Bastião:`, bastion.location || '');
+      if (newLoc !== null) {
+        bastion.location = newLoc.trim() || 'Fronteiras da Campanha';
+      }
+
+      touchCampaign(camp);
+      saveCampaignsState();
+      if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+
+      renderBastionsTab(camp.id);
+      renderCampaigns();
+      if (typeof addLog === 'function') addLog(`🏰 <b>Bastião:</b> Informações da fortaleza atualizadas para "${bastion.name}".`);
+      return;
+    }
+  }
+
+  openEditBastionInfoModal();
 }
 
 function getBastionBank(bastion) {
@@ -80196,7 +80755,11 @@ function getCampaignBastion(camp) {
     const secondOwnerId = (camp.playerIds && camp.playerIds.length > 1) ? camp.playerIds[1] : defaultOwnerId;
     camp.bastion = {
       name: "Fortaleza de " + (camp.name || "Aventureiros"),
+      settlementType: "Fazenda & Refúgio",
+      settlementStage: 1,
+      renown: 25,
       location: "Fronteiras da Campanha",
+      motto: "",
       level: 5,
       turnCount: 1,
       walls: "none",
@@ -80210,7 +80773,7 @@ function getCampaignBastion(camp) {
           turn: 1,
           date: new Date().toISOString().split('T')[0],
           title: "Fundação do Bastião",
-          desc: "O grupo adquiriu a posse da fortaleza conjunta como base permanente de operações."
+          desc: "O grupo adquiriu a posse da fazenda e refúgio inicial como base permanente de operações."
         }
       ]
     };
@@ -80219,6 +80782,15 @@ function getCampaignBastion(camp) {
   }
   if (!camp.bastion.bank) camp.bastion.bank = { gold: 0, history: [] };
   if (!Array.isArray(camp.bastion.staff)) camp.bastion.staff = [];
+  if (typeof camp.bastion.settlementStage !== 'number') camp.bastion.settlementStage = 1;
+  if (typeof camp.bastion.renown !== 'number') camp.bastion.renown = 25;
+  if (!camp.bastion.settlementType) {
+    const tier = (typeof BASTION_SETTLEMENT_TIERS !== 'undefined' && BASTION_SETTLEMENT_TIERS[camp.bastion.settlementStage])
+      ? BASTION_SETTLEMENT_TIERS[camp.bastion.settlementStage].name
+      : "Fazenda & Refúgio";
+    camp.bastion.settlementType = tier;
+  }
+  if (typeof camp.bastion.motto !== 'string') camp.bastion.motto = "";
   return camp.bastion;
 }
 
@@ -80233,25 +80805,62 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
   const wallOpt = (typeof BASTION_WALL_OPTIONS !== 'undefined') ? BASTION_WALL_OPTIONS[bastion.walls || 'none'] : { name: 'Sem Muralhas', defenseDice: 6 };
   const goldAmount = camp.partyStash ? (camp.partyStash.gold || 0) : 0;
   const lastEvent = bastion.history && bastion.history.length > 0 ? bastion.history[bastion.history.length - 1] : null;
+  const tier = getBastionSettlementTier(bastion);
+  const currentRenown = bastion.renown || 0;
+  const nextTier = (typeof BASTION_SETTLEMENT_TIERS !== 'undefined') ? BASTION_SETTLEMENT_TIERS[tier.stage + 1] : null;
+  const prevRenown = tier.renownMin || 0;
+  const denom = (nextTier ? (nextTier.reqRenown - prevRenown) : 1000) || 1;
+  const percent = nextTier ? Math.min(100, Math.max(0, Math.round(((currentRenown - prevRenown) / denom) * 100))) : 100;
 
   let html = `
     <div class="bastion-panel-card">
       <div class="bastion-header-bar">
         <div>
           <div class="bastion-title-wrap">
-            <span style="font-size: 24px;">🏰</span>
+            <span style="font-size: 28px;">${tier.icon}</span>
             <div>
               <div class="bastion-title-text">${bastion.name}</div>
-              <div style="font-size: 11px; color: #cbd5e1; margin-top: 2px;">📍 ${bastion.location} • Base Conjunta da Campanha</div>
+              <div style="font-size: 11px; color: #cbd5e1; margin-top: 2px;">
+                📍 ${bastion.location} • <span style="color: #fef08a; font-weight: 700;">${bastion.settlementType || tier.name}</span>
+                ${bastion.motto ? ` • <span style="font-style: italic; color: #93c5fd;">"${bastion.motto}"</span>` : ''}
+              </div>
             </div>
           </div>
         </div>
         <div class="bastion-badges-row">
+          <span class="bastion-tier-badge tier-${tier.stage}">
+            ${tier.icon} ${bastion.settlementType || tier.name} (Tier ${tier.stage})
+          </span>
+          <span class="bastion-stat-pill" style="border-color: #f59e0b; color: #fef08a; background: rgba(245,158,11,0.15); font-weight: 800;" title="Renome e Prestígio acumulado">
+            👑 ${currentRenown} Renome
+          </span>
           <span class="bastion-stat-pill bastion-stat-pill-lvl" title="Nível do Bastião desbloqueia novas instalações">⭐ Nível ${bastion.level || 5}</span>
           <span class="bastion-stat-pill" style="border-color: #64748b; color: #e2e8f0;" title="Turno semanal de gestão">⏳ Semana ${bastion.turnCount || 1}</span>
           <span class="bastion-stat-pill bastion-stat-pill-def" title="Defensores da guarnição permanente">🛡️ ${bastion.defenders || 0} Defensores</span>
-          <span class="bastion-stat-pill" style="border-color: #f59e0b; color: #fef08a;" title="Status das muralhas">🧱 ${wallOpt ? wallOpt.name : 'Muralhas'}</span>
+          <span class="bastion-stat-pill" style="border-color: #38bdf8; color: #7dd3fc;" title="Status das muralhas">🧱 ${wallOpt ? wallOpt.name : 'Muralhas'}</span>
           <span class="bastion-stat-pill bastion-stat-pill-gold" title="Ouro total disponível no Baú do Grupo">💰 Baú: ${goldAmount} PO</span>
+          <span class="bastion-stat-pill" style="border-color: rgba(234,179,8,0.6); color: #facc15; background: rgba(234,179,8,0.15);" title="Saldo protegido no cofre forte">🏦 Cofre: ${bastion.bank?.gold || 0} PO</span>
+        </div>
+      </div>
+
+      <!-- Barra de Progresso de Renome e Prestígio (ISSUE-181) -->
+      <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(245,158,11,0.25); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div style="flex: 1; min-width: 240px;">
+          <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #cbd5e1; margin-bottom: 4px;">
+            <span>👑 Prestígio do Assentamento: <b>${tier.name}</b> (${currentRenown} Renome)</span>
+            <span>${nextTier ? `Próximo: ${nextTier.name} (${nextTier.reqRenown} Renome)` : '⭐ Metrópole Lendária'}</span>
+          </div>
+          <div class="bastion-renown-progress-track">
+            <div class="bastion-renown-progress-fill" style="width: ${percent}%;"></div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+          <button type="button" class="btn-action" style="font-size: 11px; font-weight: 800; background: linear-gradient(135deg, #10b981, #059669); color: #fff;" onclick="openBastionSettlementUpgradeModal()" title="Evoluir assentamento (Fazenda -> Aldeia -> Vila -> Cidadela -> Metrópole)">
+            ✨ Evoluir Assentamento
+          </button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; color: #fef08a; border-color: rgba(245,158,11,0.4);" onclick="fundBastionFestival()" title="Financiar Festival Popular (+30 Renome por 50 PO)">
+            🎉 Financiar Festival
+          </button>
         </div>
       </div>
 
@@ -80264,8 +80873,11 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
           <button type="button" class="btn-secondary" style="font-size: 11px;" onclick="openBastionAddFacilityModal()">
             🏗️ Adicionar Instalação Especial
           </button>
-          <button type="button" class="btn-secondary" style="font-size: 11px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" onclick="promptUpgradeBastionWalls()">
+          <button type="button" class="btn-secondary" style="font-size: 11px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" onclick="openBastionWallsModal()">
             🧱 Aprimorar Muralhas
+          </button>
+          <button type="button" class="btn-secondary" style="font-size: 11px;" onclick="openEditBastionInfoModal()">
+            ✏️ Editar Bastião
           </button>
         </div>
         <div>
@@ -81598,7 +82210,21 @@ function advanceBastionTurn() {
   const staff = getBastionStaff(bastion);
 
   bastion.turnCount = (bastion.turnCount || 1) + 1;
+  bastion.renown = (bastion.renown || 0) + 10; // +10 Renome por semana ativa de bastião
   const completedOrders = [];
+
+  // Renda territorial semanal de acordo com o estágio de assentamento (ISSUE-181)
+  const currentTier = getBastionSettlementTier(bastion);
+  const weeklyRevenue = currentTier.weeklyRevenueGold || 10;
+  if (weeklyRevenue > 0) {
+    camp.partyStash.gold = (camp.partyStash.gold || 0) + weeklyRevenue;
+    camp.partyStash.history = camp.partyStash.history || [];
+    camp.partyStash.history.push({
+      date: new Date().toISOString().split('T')[0],
+      text: `+${weeklyRevenue} PO renda territorial semanal do assentamento (${currentTier.name})`,
+      type: 'gold_in'
+    });
+  }
 
   // 0. Folha de Pagamento Semanal do Staff debitada do Cofre do Banco (ISSUE-133)
   const totalPayroll = staff.reduce((sum, n) => sum + (n.wage || 0), 0);
@@ -81892,6 +82518,14 @@ function confirmAddBastionFacility() {
 
   if (!cat) return;
 
+  // Verificação de capacidade do estágio de assentamento (ISSUE-181)
+  const tier = getBastionSettlementTier(bastion);
+  const currentCount = (bastion.specialFacilities || []).length;
+  if (currentCount >= (tier.maxSpecialFacilities || 2)) {
+    alert(`Capacidade máxima de instalações atingida para ${tier.name} (${tier.maxSpecialFacilities} salas)!\n\nEvolua seu assentamento (ex: de Fazenda para Aldeia ou Vila) no botão "✨ Evoluir Assentamento" para expandir os limites de construção da sua fortaleza.`);
+    return;
+  }
+
   bastion.specialFacilities = bastion.specialFacilities || [];
   bastion.specialFacilities.push({
     id: 'fac_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
@@ -81902,6 +82536,9 @@ function confirmAddBastionFacility() {
     status: 'active'
   });
 
+  // Bônus de renome por construir nova sala
+  bastion.renown = (bastion.renown || 0) + 25;
+
   touchCampaign(camp);
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
@@ -81909,7 +82546,7 @@ function confirmAddBastionFacility() {
   closeBastionAddFacilityModal();
   renderBastionsTab(camp.id);
   renderCampaigns();
-  if (typeof addLog === 'function') addLog(`🏗️ <b>Bastião:</b> Nova instalação "${cat.name}" adicionada à fortaleza.`);
+  if (typeof addLog === 'function') addLog(`🏗️ <b>Bastião:</b> Nova instalação "${cat.name}" adicionada à fortaleza (+25 Renome).`);
 }
 
 function removeBastionFacility(facId) {
@@ -81933,6 +82570,157 @@ function removeBastionFacility(facId) {
   }
 }
 
+// =========================================================================
+// 🧱 MODAL MODERNO: APRIMORAMENTO DE MURALHAS DO BASTIÃO (ISSUE-181)
+// =========================================================================
+
+function openBastionWallsModal() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+  const bank = getBastionBank(bastion);
+
+  const modal = document.getElementById('modal-bastion-walls');
+  if (!modal) return;
+
+  const selSource = document.getElementById('sel-bastion-walls-gold-source');
+  if (selSource) {
+    const partyGold = camp.partyStash?.gold || 0;
+    const bankGold = bank.gold || 0;
+    selSource.innerHTML = `
+      <option value="bank" ${bankGold > 0 ? 'selected' : ''}>Cofre do Bastião (${bankGold} PO disponíveis)</option>
+      <option value="stash" ${bankGold === 0 && partyGold > 0 ? 'selected' : ''}>Baú da Campanha (${partyGold} PO disponíveis)</option>
+    `;
+    updateBastionWallsGoldSourceMeta();
+  }
+
+  const listEl = document.getElementById('bastion-walls-options-list');
+  if (listEl && typeof BASTION_WALL_OPTIONS !== 'undefined') {
+    const currentWallKey = bastion.walls || 'none';
+    listEl.innerHTML = Object.entries(BASTION_WALL_OPTIONS).map(([key, opt]) => {
+      const isCurrent = key === currentWallKey;
+      return `
+        <div class="bastion-wall-card ${isCurrent ? 'current-installed' : ''}">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+              <div style="font-weight: 800; font-size: 14px; color: ${isCurrent ? '#6ee7b7' : '#fff'};">
+                ${key === 'runic' ? '⚡' : (key === 'stone' ? '🏰' : (key === 'wood' ? '🪵' : '🛡️'))} ${opt.name}
+              </div>
+              ${isCurrent ? '<span class="badge" style="background: rgba(16,185,129,0.25); color: #6ee7b7; border-color: #10b981;">Ativa</span>' : ''}
+            </div>
+            <div style="font-size: 11.5px; color: #cbd5e1; margin-top: 6px; line-height: 1.4;">
+              ${opt.desc || ''}
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px; margin-top: 6px;">
+            <div style="font-size: 13px; font-weight: 800; color: #facc15; font-family: var(--font-mono);">
+              ${opt.costPO > 0 ? `🪙 ${opt.costPO} PO` : 'Grátis'}
+            </div>
+            <div>
+              ${isCurrent
+                ? '<button type="button" class="btn-secondary" disabled style="opacity: 0.6; font-size: 11px; padding: 4px 10px;">Instalada</button>'
+                : `<button type="button" class="btn-action" style="font-size: 11px; font-weight: 800; background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; padding: 4px 12px;" onclick="confirmBastionWallUpgrade('${key}')">Construir</button>`
+              }
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  modal.style.display = 'flex';
+}
+
+function closeBastionWallsModal() {
+  const modal = document.getElementById('modal-bastion-walls');
+  if (modal) modal.style.display = 'none';
+}
+
+function updateBastionWallsGoldSourceMeta() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  const bank = getBastionBank(bastion);
+  const selSource = document.getElementById('sel-bastion-walls-gold-source');
+  const meta = document.getElementById('bastion-walls-gold-meta');
+  if (!selSource || !meta) return;
+
+  if (selSource.value === 'bank') {
+    meta.innerText = `Saldo no Cofre: ${bank.gold || 0} PO`;
+  } else {
+    meta.innerText = `Saldo no Baú: ${camp.partyStash?.gold || 0} PO`;
+  }
+}
+
+function confirmBastionWallUpgrade(wallKey) {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+  const bank = getBastionBank(bastion);
+
+  if (bastion.walls === wallKey) {
+    alert('Esta modalidade de muralha já está instalada em seu bastião!');
+    return;
+  }
+
+  const opt = (typeof BASTION_WALL_OPTIONS !== 'undefined') ? BASTION_WALL_OPTIONS[wallKey] : null;
+  if (!opt) return;
+
+  const cost = opt.costPO || 0;
+  const selSource = document.getElementById('sel-bastion-walls-gold-source');
+  const fundSource = selSource ? selSource.value : 'bank';
+
+  if (cost > 0) {
+    if (fundSource === 'bank') {
+      if ((bank.gold || 0) < cost) {
+        alert(`Saldo insuficiente no Cofre do Banco da Fortaleza!\nNecessário: ${cost} PO. Disponível: ${bank.gold || 0} PO.`);
+        return;
+      }
+      bank.gold -= cost;
+      bank.history = bank.history || [];
+      bank.history.push({
+        type: 'withdraw',
+        amount: cost,
+        entityName: 'Obras de Defesa',
+        reason: `Construção de ${opt.name}`,
+        date: new Date().toISOString().split('T')[0]
+      });
+    } else {
+      if ((camp.partyStash?.gold || 0) < cost) {
+        alert(`Saldo insuficiente no Baú Coletivo da Campanha!\nNecessário: ${cost} PO. Disponível: ${camp.partyStash?.gold || 0} PO.`);
+        return;
+      }
+      camp.partyStash.gold -= cost;
+      camp.partyStash.history = camp.partyStash.history || [];
+      camp.partyStash.history.push({
+        date: new Date().toISOString().split('T')[0],
+        text: `-${cost} PO construção de ${opt.name}`,
+        type: 'gold_out'
+      });
+    }
+  }
+
+  bastion.walls = wallKey;
+  const renownBonus = wallKey === 'runic' ? 50 : (wallKey === 'stone' ? 25 : 10);
+  bastion.renown = (bastion.renown || 0) + renownBonus;
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+
+  closeBastionWallsModal();
+  renderBastionsTab(camp.id);
+  renderCampaigns();
+  renderPartyStashViewer();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+
+  if (typeof addLog === 'function') {
+    addLog(`🧱 <b>Bastião:</b> ${opt.name} construída com sucesso (+${renownBonus} Renome)!`);
+  }
+}
+
 function promptUpgradeBastionWalls() {
   const camp = getSelectedBastionCampaign();
   if (!camp) return;
@@ -81941,59 +82729,361 @@ function promptUpgradeBastionWalls() {
   if (!bastion) return;
   const bank = getBastionBank(bastion);
 
-  const bankGold = bank.gold || 0;
-  const choice = prompt(
-    `🏰 APRIMORAMENTO DE MURALHAS DO BASTIÃO\n` +
-    `Muralha Atual: ${bastion.walls === 'stone' ? 'Pedra Maciça' : (bastion.walls === 'wood' ? 'Paliçada de Madeira' : 'Nenhuma')}\n` +
-    `Saldo no Cofre do Banco: ${bankGold} PO\n\n` +
-    `Escolha uma obra para financiar via Cofre do Banco:\n` +
-    `1 - Paliçada de Madeira Reforçada (250 PO, Defesa 5d6)\n` +
-    `2 - Muralhas de Pedra Maciça (1000 PO, Reduz invasão para 4d6!)\n` +
-    `0 - Cancelar`
-  );
+  // Se houver um prompt mockado/disponível no ambiente de teste automatizado (headless)
+  if (typeof prompt === 'function') {
+    const bankGold = bank.gold || 0;
+    const choice = prompt(
+      `🏰 APRIMORAMENTO DE MURALHAS DO BASTIÃO\n` +
+      `Muralha Atual: ${bastion.walls === 'stone' ? 'Pedra Maciça' : (bastion.walls === 'wood' ? 'Paliçada de Madeira' : 'Nenhuma')}\n` +
+      `Saldo no Cofre do Banco: ${bankGold} PO\n\n` +
+      `Escolha uma obra para financiar via Cofre do Banco:\n` +
+      `1 - Paliçada de Madeira Reforçada (250 PO, Defesa 5d6)\n` +
+      `2 - Muralhas de Pedra Maciça (1000 PO, Reduz invasão para 4d6!)\n` +
+      `0 - Cancelar`
+    );
 
-  if (choice === '1') {
-    if (bankGold < 250) {
-      alert(`Saldo insuficiente no Cofre do Banco da Fortaleza!\nAs obras de muralha exigem PO guardados no Banco.\n\nNecessário: 250 PO. Disponível no Banco: ${bankGold} PO.\nDeposite ouro no Banco do Bastião antes de iniciar a obra.`);
+    if (choice === '1') {
+      if (bankGold < 250) {
+        if (typeof alert === 'function') alert(`Saldo insuficiente no Cofre do Banco da Fortaleza!\nAs obras de muralha exigem PO guardados no Banco.\n\nNecessário: 250 PO. Disponível no Banco: ${bankGold} PO.\nDeposite ouro no Banco do Bastião antes de iniciar a obra.`);
+        return;
+      }
+      bank.gold -= 250;
+      bank.history = bank.history || [];
+      bank.history.push({
+        type: 'withdraw',
+        amount: 250,
+        entityName: 'Obras de Defesa',
+        reason: 'Construção de Paliçada de Madeira Reforçada',
+        date: new Date().toISOString().split('T')[0]
+      });
+      bastion.walls = 'wood';
+      touchCampaign(camp);
+      saveCampaignsState();
+      renderBastionsTab(camp.id);
+      renderCampaigns();
+      if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+      return;
+    } else if (choice === '2') {
+      if (bankGold < 1000) {
+        if (typeof alert === 'function') alert(`Saldo insuficiente no Cofre do Banco da Fortaleza!\nAs obras de muralha exigem PO guardados no Banco.\n\nNecessário: 1000 PO. Disponível no Banco: ${bankGold} PO.\nDeposite ouro no Banco do Bastião antes de iniciar a obra.`);
+        return;
+      }
+      bank.gold -= 1000;
+      bank.history = bank.history || [];
+      bank.history.push({
+        type: 'withdraw',
+        amount: 1000,
+        entityName: 'Obras de Defesa',
+        reason: 'Construção de Muralhas de Pedra Maciça',
+        date: new Date().toISOString().split('T')[0]
+      });
+      bastion.walls = 'stone';
+      touchCampaign(camp);
+      saveCampaignsState();
+      renderBastionsTab(camp.id);
+      renderCampaigns();
+      if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
       return;
     }
-    bank.gold -= 250;
-    bank.history = bank.history || [];
-    bank.history.push({
-      type: 'withdraw',
-      amount: 250,
-      entityName: 'Obras de Defesa',
-      reason: 'Construção de Paliçada de Madeira Reforçada',
-      date: new Date().toISOString().split('T')[0]
-    });
-    bastion.walls = 'wood';
-    touchCampaign(camp);
-    saveCampaignsState();
-    renderBastionsTab(camp.id);
-    renderCampaigns();
-    if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
-    alert('Paliçada de Madeira construída com sucesso ao redor do Bastião! Custo financiado pelo Cofre do Banco.');
-  } else if (choice === '2') {
-    if (bankGold < 1000) {
-      alert(`Saldo insuficiente no Cofre do Banco da Fortaleza!\nAs obras de muralha exigem PO guardados no Banco.\n\nNecessário: 1000 PO. Disponível no Banco: ${bankGold} PO.\nDeposite ouro no Banco do Bastião antes de iniciar a obra.`);
-      return;
+  }
+
+  openBastionWallsModal();
+}
+
+// =========================================================================
+// ✨ MODAL MODERNO: EVOLUÇÃO DE ASSENTAMENTO DO BASTIÃO (ISSUE-181)
+// =========================================================================
+
+function openBastionSettlementUpgradeModal() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+  const bank = getBastionBank(bastion);
+
+  const modal = document.getElementById('modal-bastion-settlement-upgrade');
+  if (!modal) return;
+
+  const currentTier = getBastionSettlementTier(bastion);
+  const nextStage = currentTier.stage + 1;
+  const nextTier = (typeof BASTION_SETTLEMENT_TIERS !== 'undefined') ? BASTION_SETTLEMENT_TIERS[nextStage] : null;
+
+  const curTitle = document.getElementById('bastion-settlement-current-title');
+  if (curTitle) curTitle.innerHTML = `${currentTier.icon} ${bastion.name} — ${currentTier.name} (Tier ${currentTier.stage})`;
+
+  const curSub = document.getElementById('bastion-settlement-current-sub');
+  if (curSub) curSub.innerHTML = `Capacidade: até ${currentTier.maxSpecialFacilities} salas especiais • até ${currentTier.maxDefenders} defensores • Renda Semanal: +${currentTier.weeklyRevenueGold} PO`;
+
+  const renownVal = document.getElementById('bastion-settlement-renown-val');
+  if (renownVal) renownVal.innerHTML = `${bastion.renown || 0} 👑`;
+
+  const selSource = document.getElementById('sel-settlement-upgrade-gold-source');
+  if (selSource) {
+    const partyGold = camp.partyStash?.gold || 0;
+    const bankGold = bank.gold || 0;
+    selSource.innerHTML = `
+      <option value="bank" ${bankGold >= (nextTier?.costGold || 0) ? 'selected' : ''}>Cofre do Bastião (${bankGold} PO disponíveis)</option>
+      <option value="stash" ${bankGold < (nextTier?.costGold || 0) && partyGold >= (nextTier?.costGold || 0) ? 'selected' : ''}>Baú da Campanha (${partyGold} PO disponíveis)</option>
+    `;
+    updateSettlementUpgradeGoldSourceMeta();
+  }
+
+  const nextTitle = document.getElementById('bastion-settlement-next-title');
+  const nextDesc = document.getElementById('bastion-settlement-next-desc');
+  const reqList = document.getElementById('bastion-settlement-req-list');
+  const confirmBtn = document.getElementById('btn-confirm-settlement-upgrade');
+
+  if (nextTier) {
+    if (nextTitle) nextTitle.innerHTML = `${nextTier.icon} ${nextTier.name} (Tier ${nextTier.stage}) — ${nextTier.subtitle}`;
+    if (nextDesc) nextDesc.innerHTML = `${nextTier.description}<br><span style="color: #6ee7b7; font-weight: 700; margin-top: 4px; display: inline-block;">Benefícios:</span> até ${nextTier.maxSpecialFacilities} salas • até ${nextTier.maxDefenders} defensores • Renda de +${nextTier.weeklyRevenueGold} PO/semana`;
+
+    const weeksMet = (bastion.turnCount || 1) >= nextTier.reqWeeks;
+    const facsMet = (bastion.specialFacilities || []).length >= nextTier.reqFacilities;
+    const renownMet = (bastion.renown || 0) >= nextTier.reqRenown;
+
+    const bankGold = bank.gold || 0;
+    const stashGold = camp.partyStash?.gold || 0;
+    const hasEnoughGold = (bankGold >= nextTier.costGold) || (stashGold >= nextTier.costGold);
+
+    if (reqList) {
+      reqList.innerHTML = `
+        <div class="settlement-req-item ${weeksMet ? 'met' : 'missing'}">
+          ${weeksMet ? '✅' : '❌'} ⏳ Semanas: ${bastion.turnCount || 1}/${nextTier.reqWeeks}
+        </div>
+        <div class="settlement-req-item ${facsMet ? 'met' : 'missing'}">
+          ${facsMet ? '✅' : '❌'} 🏗️ Instalações: ${(bastion.specialFacilities || []).length}/${nextTier.reqFacilities}
+        </div>
+        <div class="settlement-req-item ${renownMet ? 'met' : 'missing'}">
+          ${renownMet ? '✅' : '❌'} 👑 Renome: ${bastion.renown || 0}/${nextTier.reqRenown}
+        </div>
+        <div class="settlement-req-item ${hasEnoughGold ? 'met' : 'missing'}">
+          ${hasEnoughGold ? '✅' : '❌'} 🪙 Custo: ${nextTier.costGold} PO
+        </div>
+      `;
     }
-    bank.gold -= 1000;
-    bank.history = bank.history || [];
-    bank.history.push({
-      type: 'withdraw',
-      amount: 1000,
-      entityName: 'Obras de Defesa',
-      reason: 'Construção de Muralhas de Pedra Maciça',
-      date: new Date().toISOString().split('T')[0]
+
+    const allMet = weeksMet && facsMet && renownMet && hasEnoughGold;
+    if (confirmBtn) {
+      confirmBtn.disabled = !allMet;
+      confirmBtn.style.opacity = allMet ? '1' : '0.5';
+      confirmBtn.style.cursor = allMet ? 'pointer' : 'not-allowed';
+      confirmBtn.innerText = allMet ? `🚀 Evoluir para ${nextTier.name} (${nextTier.costGold} PO)` : `🔒 Requisitos Pendentes para ${nextTier.name}`;
+    }
+  } else {
+    if (nextTitle) nextTitle.innerHTML = `👑 Metrópole Lendária Alcançada!`;
+    if (nextDesc) nextDesc.innerHTML = `Sua fortaleza atingiu o ápice de renome, poder e desenvolvimento de todo o continente.`;
+    if (reqList) reqList.innerHTML = `<div style="grid-column: 1 / -1; color: #fef08a; font-weight: 700;">⭐ Nível Máximo de Assentamento atingido!</div>`;
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      confirmBtn.style.opacity = '0.5';
+      confirmBtn.innerText = `👑 Assentamento no Nível Máximo`;
+    }
+  }
+
+  const timelineList = document.getElementById('bastion-settlement-timeline-list');
+  if (timelineList && typeof BASTION_SETTLEMENT_TIERS !== 'undefined') {
+    timelineList.innerHTML = Object.values(BASTION_SETTLEMENT_TIERS).map(t => {
+      const isCur = t.stage === currentTier.stage;
+      const isPassed = t.stage < currentTier.stage;
+      const isNext = t.stage === currentTier.stage + 1;
+      let statusBadge = isCur
+        ? '<span class="badge" style="background: rgba(245,158,11,0.2); color: #fef08a; border-color: #f59e0b;">⭐ Atual</span>'
+        : (isPassed ? '<span class="badge" style="background: rgba(16,185,129,0.2); color: #6ee7b7; border-color: #10b981;">✅ Concluído</span>'
+        : (isNext ? '<span class="badge" style="background: rgba(56,189,248,0.2); color: #7dd3fc; border-color: #38bdf8;">🎯 Próximo</span>'
+        : '<span class="badge" style="background: rgba(100,116,139,0.2); color: #94a3b8; border-color: #64748b;">🔒 Bloqueado</span>'));
+
+      return `
+        <div class="settlement-tier-card ${isCur ? 'current' : ''} ${isNext ? 'next-available' : ''} ${t.stage > nextStage ? 'locked' : ''}">
+          <div class="settlement-tier-card-header">
+            <div class="settlement-tier-card-title">
+              <span>${t.icon}</span>
+              <span>${t.name} (Tier ${t.stage})</span>
+            </div>
+            <div>${statusBadge}</div>
+          </div>
+          <div style="font-size: 11px; color: #cbd5e1;">${t.subtitle} • Renda: <b>+${t.weeklyRevenueGold} PO/sem</b> • Máx ${t.maxSpecialFacilities} salas</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  modal.style.display = 'flex';
+}
+
+function closeBastionSettlementUpgradeModal() {
+  const modal = document.getElementById('modal-bastion-settlement-upgrade');
+  if (modal) modal.style.display = 'none';
+}
+
+function updateSettlementUpgradeGoldSourceMeta() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  const bank = getBastionBank(bastion);
+  const selSource = document.getElementById('sel-settlement-upgrade-gold-source');
+  const meta = document.getElementById('settlement-upgrade-gold-meta');
+  if (!selSource || !meta) return;
+
+  if (selSource.value === 'bank') {
+    meta.innerText = `Saldo no Cofre: ${bank.gold || 0} PO`;
+  } else {
+    meta.innerText = `Saldo no Baú: ${camp.partyStash?.gold || 0} PO`;
+  }
+}
+
+function confirmBastionSettlementUpgrade() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+  const bank = getBastionBank(bastion);
+
+  const currentTier = getBastionSettlementTier(bastion);
+  const nextStage = currentTier.stage + 1;
+  const nextTier = (typeof BASTION_SETTLEMENT_TIERS !== 'undefined') ? BASTION_SETTLEMENT_TIERS[nextStage] : null;
+  if (!nextTier) {
+    alert('O bastião já alcançou o nível máximo de assentamento!');
+    return;
+  }
+
+  const weeksMet = (bastion.turnCount || 1) >= nextTier.reqWeeks;
+  const facsMet = (bastion.specialFacilities || []).length >= nextTier.reqFacilities;
+  const renownMet = (bastion.renown || 0) >= nextTier.reqRenown;
+
+  if (!weeksMet || !facsMet || !renownMet) {
+    alert(`Requisitos pendentes para expandir para ${nextTier.name}!\n` +
+          `• Semanas: ${(bastion.turnCount || 1)}/${nextTier.reqWeeks}\n` +
+          `• Salas Construídas: ${(bastion.specialFacilities || []).length}/${nextTier.reqFacilities}\n` +
+          `• Renome: ${(bastion.renown || 0)}/${nextTier.reqRenown}`);
+    return;
+  }
+
+  const selSource = document.getElementById('sel-settlement-upgrade-gold-source');
+  const fundSource = selSource ? selSource.value : 'bank';
+  const cost = nextTier.costGold || 0;
+
+  if (cost > 0) {
+    if (fundSource === 'bank') {
+      if ((bank.gold || 0) < cost) {
+        alert(`Saldo insuficiente no Cofre do Bastião!\nNecessário: ${cost} PO. Disponível: ${bank.gold || 0} PO.`);
+        return;
+      }
+      bank.gold -= cost;
+      bank.history = bank.history || [];
+      bank.history.push({
+        type: 'withdraw',
+        amount: cost,
+        entityName: 'Expansão de Assentamento',
+        reason: `Evolução para ${nextTier.name}`,
+        date: new Date().toISOString().split('T')[0]
+      });
+    } else {
+      if ((camp.partyStash?.gold || 0) < cost) {
+        alert(`Saldo insuficiente no Baú da Campanha!\nNecessário: ${cost} PO. Disponível: ${camp.partyStash?.gold || 0} PO.`);
+        return;
+      }
+      camp.partyStash.gold -= cost;
+      camp.partyStash.history = camp.partyStash.history || [];
+      camp.partyStash.history.push({
+        date: new Date().toISOString().split('T')[0],
+        text: `-${cost} PO expansão de assentamento para ${nextTier.name}`,
+        type: 'gold_out'
+      });
+    }
+  }
+
+  bastion.settlementStage = nextTier.stage;
+  bastion.settlementType = nextTier.name;
+  bastion.renown = (bastion.renown || 0) + 50; // Bônus de renome pela conquista
+
+  bastion.history = bastion.history || [];
+  bastion.history.push({
+    turn: bastion.turnCount || 1,
+    date: new Date().toISOString().split('T')[0],
+    title: `✨ Expansão: ${nextTier.name}!`,
+    desc: `O assentamento prosperou e foi elevado a ${nextTier.name}. Capacidade aumentada para ${nextTier.maxSpecialFacilities} salas e renda semanal de +${nextTier.weeklyRevenueGold} PO!`,
+    resolution: `Evolução de Assentamento concluída com sucesso (+50 Renome)!`
+  });
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+
+  closeBastionSettlementUpgradeModal();
+  renderBastionsTab(camp.id);
+  renderCampaigns();
+  renderPartyStashViewer();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+
+  if (typeof addLog === 'function') {
+    addLog(`✨ <b>Bastião Expandido:</b> O assentamento foi elevado a <b>${nextTier.name}</b>! (+50 Renome).`);
+  }
+}
+
+// =========================================================================
+// 🎉 FINANCIAMENTO DE FESTIVAL POPULAR NO BASTIÃO (ISSUE-181)
+// =========================================================================
+
+function fundBastionFestival() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+  const bank = getBastionBank(bastion);
+
+  const cost = 50;
+  const bankGold = bank.gold || 0;
+  const stashGold = camp.partyStash?.gold || 0;
+
+  if (bankGold < cost && stashGold < cost) {
+    alert(`Ouro insuficiente para financiar um Festival Popular!\nSão necessárias 50 Peças de Ouro (PO) no Cofre do Bastião ou no Baú da Campanha.\nDisponível: ${bankGold} PO no Cofre, ${stashGold} PO no Baú.`);
+    return;
+  }
+
+  if (confirm(`Financiar um Festival Popular no assentamento?\n\nCusto: 50 PO\nBenefício: +30 Renome & Prestígio e celebração com o povo!\n\nDeseja realizar o festival?`)) {
+    if (bankGold >= cost) {
+      bank.gold -= cost;
+      bank.history = bank.history || [];
+      bank.history.push({
+        type: 'withdraw',
+        amount: cost,
+        entityName: 'Festival Popular',
+        reason: 'Banquete e festividades no bastião',
+        date: new Date().toISOString().split('T')[0]
+      });
+    } else {
+      camp.partyStash.gold -= cost;
+      camp.partyStash.history = camp.partyStash.history || [];
+      camp.partyStash.history.push({
+        date: new Date().toISOString().split('T')[0],
+        text: `-${cost} PO festival popular no bastião`,
+        type: 'gold_out'
+      });
+    }
+
+    bastion.renown = (bastion.renown || 0) + 30;
+
+    bastion.history = bastion.history || [];
+    bastion.history.push({
+      turn: bastion.turnCount || 1,
+      date: new Date().toISOString().split('T')[0],
+      title: "🎉 Festival Popular Celebrado!",
+      desc: "Música, dança e banquetes atraíram plebeus, bardos e viajantes de toda a região (+30 Renome).",
+      resolution: "+30 Renome concedido ao bastião!"
     });
-    bastion.walls = 'stone';
+
     touchCampaign(camp);
     saveCampaignsState();
+    if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+
     renderBastionsTab(camp.id);
     renderCampaigns();
+    renderPartyStashViewer();
     if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
-    alert('Muralhas de Pedra Maciça e Portão de Ferro erguidos com sucesso! Custo financiado pelo Cofre do Banco.');
+
+    if (typeof addLog === 'function') {
+      addLog(`🎉 <b>Bastião:</b> Festival Popular financiado com sucesso! (+30 Renome).`);
+    }
   }
 }
 
@@ -82285,11 +83375,37 @@ if (typeof module !== 'undefined' && module.exports) {
     rollDmgGemToStash,
     rollDmgArtToStash,
     rollDmgMagicItemToStash,
-    rollDmgTreasureHoardToStash
+    rollDmgTreasureHoardToStash,
+    getBastionSettlementTier,
+    openBastionSettlementUpgradeModal,
+    closeBastionSettlementUpgradeModal,
+    updateSettlementUpgradeGoldSourceMeta,
+    confirmBastionSettlementUpgrade,
+    openEditBastionInfoModal,
+    closeEditBastionInfoModal,
+    saveBastionInfoModal,
+    openBastionWallsModal,
+    closeBastionWallsModal,
+    updateBastionWallsGoldSourceMeta,
+    confirmBastionWallUpgrade,
+    fundBastionFestival
   };
 }
 
 if (typeof window !== 'undefined') {
+  window.getBastionSettlementTier = getBastionSettlementTier;
+  window.openBastionSettlementUpgradeModal = openBastionSettlementUpgradeModal;
+  window.closeBastionSettlementUpgradeModal = closeBastionSettlementUpgradeModal;
+  window.updateSettlementUpgradeGoldSourceMeta = updateSettlementUpgradeGoldSourceMeta;
+  window.confirmBastionSettlementUpgrade = confirmBastionSettlementUpgrade;
+  window.openEditBastionInfoModal = openEditBastionInfoModal;
+  window.closeEditBastionInfoModal = closeEditBastionInfoModal;
+  window.saveBastionInfoModal = saveBastionInfoModal;
+  window.openBastionWallsModal = openBastionWallsModal;
+  window.closeBastionWallsModal = closeBastionWallsModal;
+  window.updateBastionWallsGoldSourceMeta = updateBastionWallsGoldSourceMeta;
+  window.confirmBastionWallUpgrade = confirmBastionWallUpgrade;
+  window.fundBastionFestival = fundBastionFestival;
   window.rollDmgGemToStash = rollDmgGemToStash;
   window.rollDmgArtToStash = rollDmgArtToStash;
   window.rollDmgMagicItemToStash = rollDmgMagicItemToStash;

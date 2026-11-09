@@ -11177,10 +11177,68 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(!b146HeadCss.includes('.a4-feature-tag {\n      display: inline-block;\n      background: #1e293b;'), 'head_css.html eliminou fundo preto/ardósia opaco (#1e293b) em .a4-feature-tag');
     assert(b146PlayersJs.includes('tagClass') && b146PlayersJs.includes('tag-passivo') && b146PlayersJs.includes('tag-bonus'), 'players.js injeta classes semânticas por tipo de ação nos badges');
 
-    // 4. Versão v3.9.2 atualizada no core.js e ui.html
+    // 4. Versão v3.9.2+ atualizada no core.js e ui.html
     const b147CoreJs = fs.readFileSync(path.join(srcDir, 'js', 'core.js'), 'utf8');
-    assert(b147CoreJs.includes("version: '3.9.2'"), 'core.js atualizado para v3.9.2');
+    assert(b147CoreJs.includes("version: '3.10.0'") || b147CoreJs.includes("version: '3.9.2'"), 'core.js atualizado para v3.9.2+ / v3.10.0');
     passedTests += 6;
+
+    // ========================================
+    // 🌾👑 [Bateria 148] Evolução de Assentamento de Bastiões, Renome e Modais Modernos (ISSUE-181):
+    // ========================================
+    console.log('\n🌾👑 [Bateria 148] Evolução de Assentamento de Bastiões, Renome e Modais Modernos (ISSUE-181):');
+
+    totalTests += 16;
+
+    // 1. Catálogo BASTION_SETTLEMENT_TIERS e Opção Rúnica de Muralhas
+    const b148Tiers = vm.runInContext("typeof BASTION_SETTLEMENT_TIERS !== 'undefined' ? BASTION_SETTLEMENT_TIERS : null", sandbox);
+    assert(b148Tiers && Object.keys(b148Tiers).length === 5, 'BASTION_SETTLEMENT_TIERS possui exatamente 5 estágios (Fazenda até Metrópole)');
+    assert(b148Tiers[1].id === 'farm' && b148Tiers[1].maxSpecialFacilities === 2 && b148Tiers[1].weeklyRevenueGold === 10, 'Tier 1 é Fazenda/Refúgio com max 2 salas e +10 PO/sem');
+    assert(b148Tiers[2].id === 'village' && b148Tiers[2].maxSpecialFacilities === 4 && b148Tiers[2].weeklyRevenueGold === 25, 'Tier 2 é Aldeia com max 4 salas e +25 PO/sem');
+    assert(b148Tiers[3].id === 'town' && b148Tiers[3].maxSpecialFacilities === 6 && b148Tiers[3].weeklyRevenueGold === 60, 'Tier 3 é Vila com max 6 salas e +60 PO/sem');
+    assert(b148Tiers[4].id === 'city' && b148Tiers[4].maxSpecialFacilities === 8 && b148Tiers[4].weeklyRevenueGold === 120, 'Tier 4 é Cidadela com max 8 salas e +120 PO/sem');
+    assert(b148Tiers[5].id === 'metropolis' && b148Tiers[5].maxSpecialFacilities === 12 && b148Tiers[5].weeklyRevenueGold === 250, 'Tier 5 é Metrópole com max 12 salas e +250 PO/sem');
+
+    const b148Walls = vm.runInContext("typeof BASTION_WALL_OPTIONS !== 'undefined' ? BASTION_WALL_OPTIONS : null", sandbox);
+    assert(b148Walls && b148Walls.runic && b148Walls.runic.defenseDice === 3 && b148Walls.runic.costPO === 2500, 'BASTION_WALL_OPTIONS inclui Baluartes Rúnicos & Adamante (3d6, 2500 PO)');
+
+    // 2. Inicialização e Mecânica de Renome e Estágios
+    const testCamp148 = {
+      id: 'camp_settlement_test',
+      name: 'Campanha de Fronteira',
+      playerIds: ['p_test_hero'],
+      partyStash: { gold: 500, items: [], history: [] }
+    };
+    sandbox.CAMPAIGNS_STATE.campaigns.push(testCamp148);
+    sandbox.CAMPAIGNS_STATE.activeCampaignId = 'camp_settlement_test';
+
+    const b148Bastion = sandbox.getCampaignBastion(testCamp148);
+    assert(b148Bastion && b148Bastion.settlementStage === 1, 'Bastião inicia no Estágio 1 (Fazenda & Refúgio)');
+    assert(b148Bastion.renown >= 25, 'Bastião inicia com Renome basal positivo (>= 25)');
+
+    const tierInfo148 = sandbox.getBastionSettlementTier(b148Bastion);
+    assert(tierInfo148.stage === 1 && tierInfo148.name === 'Fazenda & Refúgio', 'getBastionSettlementTier retorna dados consistentes do Tier 1');
+
+    // 3. Financiamento de Festival Popular (+30 Renome, -50 PO)
+    const initialRenown = b148Bastion.renown;
+    const initialGold = testCamp148.partyStash.gold;
+    sandbox.confirm = () => true;
+    sandbox.fundBastionFestival();
+    assert(b148Bastion.renown === initialRenown + 30, 'fundBastionFestival adiciona exatamente +30 de Renome');
+    assert(testCamp148.partyStash.gold === initialGold - 50, 'fundBastionFestival deduz 50 PO da fonte de ouro');
+
+    // 4. Modais Modernos no ui.html e Estilização no head_css.html
+    const b148Ui = fs.readFileSync(path.join(srcDir, 'ui', 'ui.html'), 'utf8');
+    const b148Css = fs.readFileSync(path.join(srcDir, 'styles', 'head_css.html'), 'utf8');
+    assert(b148Ui.includes('id="modal-bastion-settlement-upgrade"'), 'ui.html inclui #modal-bastion-settlement-upgrade');
+    assert(b148Ui.includes('id="modal-bastion-edit-info"'), 'ui.html inclui #modal-bastion-edit-info');
+    assert(b148Ui.includes('id="modal-bastion-walls"'), 'ui.html inclui #modal-bastion-walls');
+    assert(b148Css.includes('.bastion-tier-badge') && b148Css.includes('.bastion-renown-progress-track'), 'head_css.html inclui badges de tier e trilha de renome');
+    assert(b148Css.includes('.settlement-tier-card') && b148Css.includes('.bastion-wall-card'), 'head_css.html inclui cards visuais de assentamento e muralha');
+
+    // 5. Versão v3.10.0 consistente
+    assert(b148Ui.includes('v3.10.0') && b147CoreJs.includes("version: '3.10.0'"), 'ui.html e core.js exibem a versão v3.10.0');
+
+    passedTests += 16;
 
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;

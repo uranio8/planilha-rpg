@@ -791,5 +791,121 @@ const BASTION_WALL_OPTIONS = {
     costPO: 1000,
     desc: "Muralhas altas de alvenaria maciça e portão levadiço de ferro. Reduz o ataque inimigo de 6d6 para 4d6!",
     defenseDice: 4
+  },
+  runic: {
+    key: "runic",
+    name: "Baluartes Rúnicos & Adamante",
+    costPO: 2500,
+    desc: "Muralhas revestidas com placas de adamante e runas de proteção ancestrais. Reduz o ataque inimigo para apenas 3d6!",
+    defenseDice: 3
   }
 };
+
+// Sistema Progressivo de Assentamento de Bastiões (Fazenda até Metrópole)
+const BASTION_SETTLEMENT_TIERS = {
+  1: {
+    stage: 1,
+    id: "farm",
+    name: "Fazenda & Refúgio",
+    typeLabel: "Fazenda / Acampamento",
+    subtitle: "Pequena propriedade rural ou acampamento fortificado",
+    icon: "🌾",
+    renownMin: 0,
+    renownMax: 99,
+    maxSpecialFacilities: 2,
+    maxDefenders: 4,
+    weeklyRevenueGold: 10,
+    costGold: 0,
+    reqWeeks: 0,
+    reqFacilities: 0,
+    reqRenown: 0,
+    description: "Um começo humilde nas terras ermas. Uma cabana de caça, moinho ou pequena fazenda com um punhado de colonos e aliados leais."
+  },
+  2: {
+    stage: 2,
+    id: "village",
+    name: "Aldeia & Entreposto",
+    typeLabel: "Aldeia / Entreposto",
+    subtitle: "Comunidade emergente atraída pela segurança da guarnição",
+    icon: "🏡",
+    renownMin: 100,
+    renownMax: 299,
+    maxSpecialFacilities: 4,
+    maxDefenders: 8,
+    weeklyRevenueGold: 25,
+    costGold: 150,
+    reqWeeks: 2,
+    reqFacilities: 1,
+    reqRenown: 100,
+    description: "Comerciantes, artesãos e colonos se estabelecem ao redor do seu bastião. Pequenas oficinas e estalagens florescem na região."
+  },
+  3: {
+    stage: 3,
+    id: "town",
+    name: "Vila Próspera",
+    typeLabel: "Vila Próspera",
+    subtitle: "Centro urbano florescente com rotas comerciais e feiras",
+    icon: "🏘️",
+    renownMin: 300,
+    renownMax: 599,
+    maxSpecialFacilities: 6,
+    maxDefenders: 12,
+    weeklyRevenueGold: 60,
+    costGold: 400,
+    reqWeeks: 4,
+    reqFacilities: 3,
+    reqRenown: 300,
+    description: "A vila agora possui mercado central, milícia organizada e renome regional que atrai viajantes, sábios e aventureiros."
+  },
+  4: {
+    stage: 4,
+    id: "city",
+    name: "Cidadela Fortificada",
+    typeLabel: "Cidadela Fortificada",
+    subtitle: "Bastião imponente e centro de poder militar e político",
+    icon: "🏰",
+    renownMin: 600,
+    renownMax: 999,
+    maxSpecialFacilities: 8,
+    maxDefenders: 16,
+    weeklyRevenueGold: 120,
+    costGold: 1000,
+    reqWeeks: 8,
+    reqFacilities: 5,
+    reqRenown: 600,
+    description: "Cercada por grandes muralhas e torres de vigia. Lordes vizinhos e reinos respeitam a soberania e autoridade desta fortaleza."
+  },
+  5: {
+    stage: 5,
+    id: "metropolis",
+    name: "Metrópole Lendária",
+    typeLabel: "Metrópole Lendária",
+    subtitle: "Capital épica com acadêmias arcanas e fama continental",
+    icon: "👑",
+    renownMin: 1000,
+    renownMax: Infinity,
+    maxSpecialFacilities: 12,
+    maxDefenders: 24,
+    weeklyRevenueGold: 250,
+    costGold: 2500,
+    reqWeeks: 12,
+    reqFacilities: 7,
+    reqRenown: 1000,
+    description: "Uma maravilha do mundo conhecido. Magos, diplomatas e exércitos buscam aliança com este marco histórico incontestável."
+  }
+};
+
+if (typeof window !== 'undefined') {
+  window.BASTION_SPECIAL_FACILITIES_CATALOG = BASTION_SPECIAL_FACILITIES_CATALOG;
+  window.BASTION_ACTIONS_CATALOG = BASTION_ACTIONS_CATALOG;
+  window.BASTION_EVENTS_TABLE = BASTION_EVENTS_TABLE;
+  window.BASTION_WALL_OPTIONS = BASTION_WALL_OPTIONS;
+  window.BASTION_SETTLEMENT_TIERS = BASTION_SETTLEMENT_TIERS;
+}
+if (typeof global !== 'undefined') {
+  global.BASTION_SPECIAL_FACILITIES_CATALOG = BASTION_SPECIAL_FACILITIES_CATALOG;
+  global.BASTION_ACTIONS_CATALOG = BASTION_ACTIONS_CATALOG;
+  global.BASTION_EVENTS_TABLE = BASTION_EVENTS_TABLE;
+  global.BASTION_WALL_OPTIONS = BASTION_WALL_OPTIONS;
+  global.BASTION_SETTLEMENT_TIERS = BASTION_SETTLEMENT_TIERS;
+}
