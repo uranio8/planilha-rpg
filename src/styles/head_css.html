@@ -13598,16 +13598,212 @@
     .settlement-req-item {
       font-size: 11px;
       display: flex;
-      align-items: center;
-      gap: 5px;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
       color: #94a3b8;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
     }
     .settlement-req-item.met {
       color: #6ee7b7;
       font-weight: 700;
+      border-color: rgba(16, 185, 129, 0.3);
+      background: rgba(16, 185, 129, 0.08);
     }
     .settlement-req-item.missing {
       color: #f87171;
+      border-color: rgba(239, 68, 68, 0.25);
+      background: rgba(239, 68, 68, 0.06);
+    }
+
+    /* HERO EMPTY STATE DE INSTALAÇÕES DO BASTIÃO (ISSUE-182) */
+    .bastion-empty-hero {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 36px 24px;
+      color: #94a3b8;
+      background: radial-gradient(circle at 50% 20%, rgba(245, 158, 11, 0.08) 0%, rgba(15, 23, 42, 0.65) 100%);
+      border: 1.5px dashed rgba(245, 158, 11, 0.35);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35), inset 0 0 40px rgba(245, 158, 11, 0.03);
+      position: relative;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+    .bastion-empty-icon-wrap {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1.5px solid rgba(245, 158, 11, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.25);
+    }
+    .bastion-empty-icon {
+      font-size: 30px;
+    }
+    .bastion-empty-title {
+      font-family: var(--font-title);
+      font-size: 16px;
+      font-weight: 800;
+      color: #fef08a;
+      letter-spacing: 0.4px;
+    }
+    .bastion-empty-desc {
+      font-size: 12px;
+      color: #94a3b8;
+      max-width: 540px;
+      line-height: 1.5;
+    }
+    .bastion-empty-preview-tags {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+      max-width: 580px;
+      margin: 4px 0 6px 0;
+    }
+    .bastion-preview-tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      color: #cbd5e1;
+    }
+    .bastion-btn-build-first {
+      background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+      color: #000 !important;
+      font-weight: 800 !important;
+      font-size: 13px !important;
+      padding: 9px 22px !important;
+      border-radius: 8px !important;
+      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35) !important;
+      transition: all 0.2s ease !important;
+      cursor: pointer !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      border: none !important;
+    }
+    .bastion-btn-build-first:hover {
+      transform: translateY(-2px) scale(1.03) !important;
+      box-shadow: 0 6px 22px rgba(245, 158, 11, 0.5) !important;
+    }
+
+    /* ROADMAP E CHECKLIST DE PRÉ-REQUISITOS (ISSUE-182) */
+    .bastion-evolution-card {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(7, 9, 14, 0.95));
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+    .bastion-evolution-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .bastion-req-checklist {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 8px;
+    }
+    .bastion-req-pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 6px 10px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.2s ease;
+    }
+    .bastion-req-pill.met {
+      border-color: rgba(16, 185, 129, 0.45);
+      background: rgba(16, 185, 129, 0.1);
+      color: #6ee7b7;
+    }
+    .bastion-req-pill.pending {
+      border-color: rgba(245, 158, 11, 0.4);
+      background: rgba(245, 158, 11, 0.1);
+      color: #fde68a;
+    }
+    .bastion-req-pill-bar {
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      width: 100%;
+    }
+    .bastion-req-pill-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+    .bastion-req-pill.met .bastion-req-pill-bar-fill {
+      background: #10b981;
+    }
+    .bastion-req-pill.pending .bastion-req-pill-bar-fill {
+      background: #f59e0b;
+    }
+    .bastion-btn-ready-pulse {
+      animation: bastionPulseGlow 2s infinite alternate !important;
+    }
+    @keyframes bastionPulseGlow {
+      0% {
+        box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+        transform: scale(1);
+      }
+      100% {
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.85);
+        transform: scale(1.03);
+      }
+    }
+    .bastion-benefits-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .bastion-benefit-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 11px;
+    }
+    .bastion-benefit-label {
+      color: #94a3b8;
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .bastion-benefit-val {
+      color: #6ee7b7;
+      font-weight: 800;
+      font-size: 12px;
     }
 
     .bastion-walls-grid {

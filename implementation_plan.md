@@ -1,96 +1,64 @@
-# 📋 Plano de Implementação: Sistema de Evolução de Bastiões (De Fazenda a Metrópole), Renome e Modernização de Modais (ISSUE-181)
+# 📋 Plano de Implementação: Visual Épico de Upgrade de Bastião (Roadmap & Pré-Requisitos) e Correção do Empty State de Instalações (ISSUE-182)
 
 ## 📌 Contexto & Solicitação do Usuário
 
-O usuário solicitou uma grande evolução no sistema de Bastiões do grupo (D&D 2024 / 5.5):
-> *"vamos melhorar os modais aqui, podemos adicionar uma mercanica para os bastiões de tipo "ah, vcs iniciam como uma fazenda, dps upam para vila, etc" para dar um ar de o bastião estar melhorando com base o tempo passa e eles conseguem novas melhorais para ele e até mesmo renome"*
+O usuário enviou uma captura de tela do painel de Bastiões e solicitou duas melhorias essenciais:
+> *"vamos adicionar ao plano de implementação melhorias na questão visual do upgrade de basstião, pra q eles possam ter ideia de quando poderão evoluir e os pre-requisitos do proximo nivel. com base no print q enviei, vamos corrigir esse modal de construir a primeira instalação, deixando mais bonito e quando apertar ele me redirecionar para construir a primeira construção."*
 
-### 🔍 Diagnóstico do Estado Atual:
-1. **Falta de Progressão Temática de Povoado**:
-   * O bastião atualmente possui apenas um número estático (`bastion.level = 5`), sem transmitir a sensação orgânica de crescimento onde o grupo começa em uma fazenda humilde, acampamento ou refúgio e vai expandindo com o passar das semanas.
-2. **Ausência de Sistema de Renome / Prestígio**:
-   * Não existe acúmulo de Renome baseado no tempo (semanas ativas), ordens cumpridas, salas construídas ou defesas heróicas contra invasores.
-3. **Uso de `window.prompt` Nativo nos Modais de Bastião**:
-   * Funções críticas como `promptEditBastionInfo()` e `promptUpgradeBastionWalls()` ainda utilizam diálogos nativos `window.prompt(...)`, que são visualmente pobres, bloqueantes e destoam da interface dark fantasy rica do sistema.
-
----
-
-## 🎯 Objetivos da Implementação
-
-### 1. 🌾 Estágios Canônicos de Assentamento do Bastião (`BASTION_SETTLEMENT_TIERS`)
-Criar uma esteira de 5 estágios progressivos de povoamento:
-* **Estágio 1 — 🌾 Fazenda / Refúgio Pioneiro** (Tier 1):
-  * *Descrição*: Um lote humilde de terra com cabana de madeira, pasto e vala defensiva. Os primeiros colonos buscam proteção.
-  * *Renome Requerido*: 0 a 99 (Título: *Pioneiros Desconhecidos*)
-  * *Capacidade de Salas Especiais*: Até 2 instalações
-  * *Guarnição Máxima*: 4 defensores
-  * *Renda Semanal da Terra*: +10 PO por avanço de turno (trocas agrícolas locais)
-* **Estágio 2 — 🏡 Aldeia / Entreposto Fortificado** (Tier 2):
-  * *Descrição*: Uma aldeia crescente com artesãos, pequenos comércios e paliçada de troncos.
-  * *Renome Requerido*: 100 a 299 (Título: *Aldeia Notável*)
-  * *Capacidade de Salas Especiais*: Até 4 instalações
-  * *Guarnição Máxima*: 8 defensores
-  * *Renda Semanal da Terra*: +25 PO por semana
-  * *Requisitos de Evolução*: 2 semanas ativas, 1 sala construída, 100 Renome e 150 PO de obra.
-* **Estágio 3 — 🏰 Vila Próspera / Feudo Nobre** (Tier 3):
-  * *Descrição*: Uma vila movimentada com guildas incipientes, taverna acolhedora e muralhas de pedra. Peregrinos e mercadores viajam para cá.
-  * *Renome Requerido*: 300 a 599 (Título: *Vila Famosa Regional*)
-  * *Capacidade de Salas Especiais*: Até 6 instalações
-  * *Guarnição Máxima*: 12 defensores
-  * *Renda Semanal da Terra*: +60 PO por semana
-  * *Requisitos de Evolução*: 4 semanas ativas, 3 salas construídas, 300 Renome e 400 PO de obra.
-* **Estágio 4 — 🏯 Cidadela / Cidade Autônoma** (Tier 4):
-  * *Descrição*: Um grande centro militar e comercial com portão de ferro, baluartes imponentes, mercado arcano e guarnição regular.
-  * *Renome Requerido*: 600 a 999 (Título: *Grande Domínio Continental*)
-  * *Capacidade de Salas Especiais*: Até 8 instalações
-  * *Guarnição Máxima*: 16 defensores
-  * *Renda Semanal da Terra*: +120 PO por semana
-  * *Requisitos de Evolução*: 8 semanas ativas, 5 salas construídas, 600 Renome e 1.000 PO de obra.
-* **Estágio 5 — 👑 Metrópole Lendária / Fortaleza Capital** (Tier 5):
-  * *Descrição*: A joia do reino ou capital soberana. Maravilhas arcanas, fortificações rúnicas e renome lendário por todo o plano.
-  * *Renome Requerido*: 1.000+ (Título: *Baluarte Lendário do Mundo*)
-  * *Capacidade de Salas Especiais*: Até 12 instalações
-  * *Guarnição Máxima*: 24 defensores
-  * *Renda Semanal da Terra*: +250 PO por semana
-  * *Requisitos de Evolução*: 12 semanas ativas, 7 salas construídas, 1.000 Renome e 2.500 PO de obra.
+### 🔍 Diagnóstico e Problemas Identificados:
+1. **Botão Quebrado no Empty State (Bug Crítico)**:
+   * No print (`media_1794243588546_ee34c1db.png`), o botão `[ 🏗️ Construir Primeira Instalação ]` possui `onclick="openAddBastionFacilityModal()"`. No entanto, a função real declarada no código é `openBastionAddFacilityModal()`. Ao clicar, ocorre um erro silencioso no console e **nada acontece**, impedindo o usuário de adicionar sua primeira instalação por esse atalho direto.
+2. **Estilo Quebrado e Destoante (Botão Branco Plano)**:
+   * O botão utiliza `class="btn-primary"`, uma classe inexistente no CSS do projeto. O navegador aplicava a estilização padrão do sistema operacional (fundo branco/cinza plano `buttonface` com texto preto e cantos retos), criando uma quebra visual abrupta na atmosfera dark fantasy.
+3. **Falta de Clareza Visual sobre Quando e Como Evoluir o Bastião**:
+   * Atualmente, o painel exibe apenas uma barra de porcentagem de Renome (`25 / 60 Renome`).
+   * No entanto, a evolução de estágio de assentamento (ex: de *Fazenda* para *Aldeia*) exige **4 pilares de pré-requisitos**:
+     1. ⏳ **Tempo / Semanas Ativas** (ex: 4 semanas de administração).
+     2. 🏛️ **Salas Construídas** (ex: 2 salas especiais ativas).
+     3. 👑 **Renome Acumulado** (ex: 60 pontos de prestígio).
+     4. 🪙 **Ouro / Custo de Obra** (ex: 500 PO disponíveis no Cofre ou Baú).
+   * Os jogadores atualmente não conseguem ver de imediato quais desses 4 requisitos já foram cumpridos e o que ainda falta alcançar.
 
 ---
 
-### 2. ⭐ Sistema Dinâmico de Renome & Prestígio (`bastion.renown`)
-* O Renome representa a reputação e notoriedade do Bastião no mundo de D&D.
-* **Fontes de Ganho de Renome**:
-  * **Avançar Turno (7 Dias)**: +10 Renome (comunidade viva e produtiva).
-  * **Construir Instalação Especial**: +25 Renome.
-  * **Concluir Ordem de Instalação**: +15 Renome.
-  * **Defesa Bem-Sucedida de Ataque no d100**: +40 Renome.
-  * **Financiar Festival Popular / Banquete** (botão `🎉 Financiar Festival`): Custa 50 PO e concede +30 Renome imediatamente, registrando no log e na crônica.
-* **Barra de Progresso de Renome**:
-  * Exibida no topo do painel do Bastião com o estágio atual (ex: `🏡 Aldeia Notável`), progresso em barra dourada (`120 / 300 Renome`) e botão de destaque `✨ Evoluir Assentamento` quando os requisitos forem alcançados.
+## 🎯 Objetivos da Implementação (ISSUE-182)
+
+### 1. 🏰 Redesign Hero & Correção do Empty State de Instalações
+* **Correção da Ação de Clique**:
+  * Substituir a chamada para `openBastionAddFacilityModal()`, garantindo que ao clicar no botão o modal oficial de seleção de instalações especiais (`#modal-bastion-add-facility`) seja aberto imediatamente.
+  * Criar alias defensivo no escopo global (`window.openAddBastionFacilityModal = openBastionAddFacilityModal`).
+* **Visual Dark Fantasy Épico**:
+  * Substituir o botão branco por um botão estilizado `.btn-action` com gradiente dourado (`linear-gradient(135deg, #f59e0b, #d97706)`), texto em alto contraste, cantos arredondados, ícone vibrante e micro-sombra iluminada (`box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35)`).
+  * Enriquecer o container do empty state com:
+    * Borda suave com gradiente âmbar pontilhado e fundo radial profundo.
+    * Ícone de fortaleza iluminado.
+    * Chips informativos preview das opções iniciais (ex: `⚔️ Forja`, `🧪 Alquimia`, `🌿 Jardim & Estufa`, `📚 Biblioteca`, `⛪ Santuário`).
+    * Frase encorajadora destacando os benefícios da primeira sala.
 
 ---
 
-### 3. 🎨 Modernização Completa dos Modais de Bastião (Zero `window.prompt`)
-1. **Novo Modal: `#modal-bastion-settlement-upgrade` (Evolução de Assentamento)**:
-   * Interface visual dark fantasy comparando o estágio atual com o próximo.
-   * Checklist visual de requisitos:
-     * ⏳ Semanas Ativas (`X / Y`)
-     * 🏛️ Instalações Construídas (`X / Y`)
-     * ⭐ Pontos de Renome (`X / Y`)
-     * 💰 Custo de Obra em PO (com opção de debitar do Cofre do Bastião ou Baú da Campanha).
-   * Botão de confirmação de evolução com fanfarra sonora (`playFX('crit')`) e celebração no log da mesa.
-2. **Novo Modal: `#modal-bastion-edit-info` (Identidade do Bastião)**:
-   * Substitui `promptEditBastionInfo()`.
-   * Campos: Nome da Fortaleza, Subtítulo / Tipo de Assentamento (Fazenda, Aldeia, Mina, Abadia, Torre Arcana, Cidadela...), Localização e Lema.
-3. **Novo Modal: `#modal-bastion-walls` (Aprimoramento de Muralhas)**:
-   * Substitui `promptUpgradeBastionWalls()`.
-   * Cards visuais interativos para cada nível de fortificação:
-     * *Sem Muralhas* (0 PO, 6d6 ataque invasor)
-     * *Paliçada de Troncos Reforçada* (250 PO, 5d6 ataque invasor)
-     * *Muralhas de Pedra com Ameias* (1.000 PO, 4d6 ataque invasor)
-     * *Baluartes Rúnicos / Adamante* (2.500 PO, 3d6 ataque invasor)
-   * Seleção da fonte de pagamento (Cofre do Banco do Bastião ou Baú Coletivo da Campanha) e upgrade com 1 clique.
-4. **Refinamento dos Modais de Ordem e Adição de Instalações**:
-   * Badges de nível mais claros, feedback sonoro e visual aprimorado.
+### 2. 🗺️ Roadmap Visual de Evolução & Checklist de Pré-Requisitos
+* **No Painel Principal do Bastião (`renderBastionsTab`)**:
+  * Adicionar um **Card de Progresso para o Próximo Estágio** com exibição clara:
+    * **Título da Próxima Era**: Ex: `🏡 Próxima Evolução: Aldeia Fortificada (Tier 2)`.
+    * **Checklist Dinâmico de 4 Pilares** com status visual:
+      * ⏳ **Tempo de Gestão**: `Semana X / Y` (badge verde ✅ quando cumprido, ou âmbar ⏳ com semanas restantes).
+      * 🏛️ **Ocupação de Salas**: `X / Y Instalações` (badge verde ✅ quando atingido, ou âmbar ⏳ informando quantas salas faltam construir).
+      * 👑 **Renome do Domínio**: `X / Y Renome` (badge verde ✅ quando atingido, ou âmbar ⏳ informando quanto renome falta acumular).
+      * 🪙 **Custo de Expansão**: `X / Y PO` (somatório de Cofre + Baú, com badge verde ✅ se o grupo possui o valor, ou âmbar ⏳ com o déficit em moedas de ouro).
+    * **Texto Resumo Inteligente**: Linha explicativa informando o estado atual, ex:  
+      `"Faltam: 3 semanas, 2 salas e 350 PO para que sua Fazenda possa se transformar em uma Aldeia."`  
+      ou quando todos os requisitos estiverem cumpridos:  
+      `"🎉 Todos os pré-requisitos foram conquistados! Sua fortaleza está pronta para evoluir!"`
+    * **Destaque no Botão de Evoluir**: Animação sutil de pulso dourado no botão `✨ Evoluir Assentamento` quando 100% dos requisitos estiverem prontos para a cerimônia.
+
+* **No Modal de Evolução (`#modal-bastion-settlement-upgrade`)**:
+  * Incluir barras de progresso individuais (0 a 100%) para cada um dos 4 pré-requisitos, permitindo aos jogadores ver visualmente o quão perto estão em cada frente.
+  * Adicionar uma seção comparativa **"Ganhos do Próximo Nível"**:
+    * 🏛️ Limite de Instalações: `Atual ➔ Novo` (ex: `2 salas ➔ 4 salas`)
+    * 🛡️ Guarnição de Defensores: `Atual ➔ Novo` (ex: `4 soldados ➔ 8 soldados`)
+    * 💰 Renda Semanal Territorial: `Atual ➔ Novo` (ex: `+10 PO/sem ➔ +25 PO/sem`)
+  * Timeline de eras com destaque diferenciado entre **Concluído**, **Era Atual**, **Próxima Meta** e **Eras Futuras**.
 
 ---
 
@@ -98,33 +66,37 @@ Criar uma esteira de 5 estágios progressivos de povoamento:
 
 | Arquivo | Componente / Responsabilidade |
 |---|---|
-| `src/data/bastions.js` | Definição da constante `BASTION_SETTLEMENT_TIERS` com os 5 estágios, requisitos, limites de salas e rendas semanais; expansão de `BASTION_WALL_OPTIONS` |
-| `src/js/campaigns.js` | Lógica de `bastion.settlementStage`, ganho de `bastion.renown`, rendimento semanal em `advanceBastionTurn()`, novos handlers de modais (`openBastionSettlementUpgradeModal()`, `openEditBastionInfoModal()`, `openBastionWallsModal()`, `fundBastionFestival()`) e exclusão de `window.prompt` |
-| `src/ui/ui.html` | Estrutura dos 3 novos modais (`#modal-bastion-settlement-upgrade`, `#modal-bastion-edit-info`, `#modal-bastion-walls`) e barra de progresso de Renome/Povoado |
-| `src/styles/head_css.html` | Estilos dos novos modais, cards de muralhas, selos de povoado e barra de progresso dourada de Renome |
-| `issues/README.md` | Registro oficial da ISSUE-181 |
-| `test_runner.js` | Bateria 148 de testes automatizados cobrindo progressão de assentamento, renome, renda semanal e novos modais |
+| `src/js/campaigns.js` | Correção do `onclick` para `openBastionAddFacilityModal()`, novo template HTML rico para o empty state, lógica de cálculo do checklist de pré-requisitos do próximo estágio, registro de alias defensivo |
+| `src/ui/ui.html` | Atualização do modal `#modal-bastion-settlement-upgrade` com barras de progresso individuais e grid comparativo de ganhos de nível |
+| `src/styles/head_css.html` | Estilos para o card hero do empty state, chips de instalações, checklist de pré-requisitos, barras de progresso dos pilares e animação de pulso no botão pronto para evoluir |
+| `test_runner.js` | Bateria 149 com testes automatizados para o empty state de bastiões, chamada correta de abertura de modal e validação do checklist de pré-requisitos |
+| `issues/README.md` | Registro oficial da ISSUE-182 |
 
 ---
 
 ## ⚠️ Possíveis Impactos & Riscos Mitigados
 
-* **Compatibilidade de Fichas e Campanhas Antigas**:
-  * Bastiões já existentes no `localStorage` receberão backfill defensivo transparente em `getCampaignBastion(camp)`: se `bastion.settlementStage` não existir, será inferido com base no número de salas ou nível atual (mínimo 1), e `bastion.renown` será inicializado com valor compatível sem perda de dados.
-* **Zero Comandos Destrutivos Git**: Preservação total de histórico.
-* **100% de Aprovação nos Testes Automatizados**: A suíte de testes garantirá que todas as 147 baterias anteriores continuem passando sem qualquer regressão.
+* **Zero Quebra de Compatibilidade**: O cálculo de pré-requisitos é puramente reativo com base no estado existente de `bastion` (`turnCount`, `specialFacilities`, `renown`, `bank.gold` e `partyStash.gold`).
+* **Proteção Contra Erros de Script**: Alias global `window.openAddBastionFacilityModal` assegura que nenhum evento legado falhe.
+* **Preservação de Layout e Performance**: Os novos elementos utilizam flexbox puro e CSS vanilla otimizado, sem injeção de bibliotecas pesadas.
+* **Governança de Código**: Nenhuma alteração em `src/` será feita sem autorização explícita do usuário.
 
 ---
 
 ## 🧪 Estratégia de Verificação
 
 1. **Testes Automatizados (`node test_runner.js`)**:
-   * Nova Bateria 148 validando `BASTION_SETTLEMENT_TIERS`, cálculo de renome, evolução de estágio (Fazenda ➔ Aldeia ➔ Vila), depósito da renda semanal e ausência de `window.prompt` nos modais.
+   * Criação da Bateria 149 testando:
+     - Renderização do empty state e presença da função `openBastionAddFacilityModal`.
+     - Presença do botão estilizado com classe de ação e sem estilo padrão nulo.
+     - Cálculo exato dos 4 pilares de pré-requisitos para cada tier.
+     - Status correto (verde ✅ vs pendente ⏳) com base no estado do bastião.
 2. **Compilação**:
-   * `node builder.js` gerando a build final com integridade garantida.
-3. **Verificação Manual e Visual**:
-   * Abertura do modal de aprimoramento de assentamento, de edição de informações e de muralhas, testando as interações com 1 clique e a barra de renome.
+   * `node builder.js` validando o HTML final standalone gerado.
+3. **Verificação Visual e Funcional**:
+   * Confirmação de que o botão abre diretamente o modal `#modal-bastion-add-facility`.
+   * Verificação visual do checklist de pré-requisitos no painel do bastião e no modal de upgrade.
 
 ---
 
-> ⚠️ **Aguardando aprovação explícita do usuário conforme a Regra 1 de `AGENTS.md` para iniciar as alterações no código sob `src/`.**
+> ⚠️ **Aguardando sua aprovação explícita para iniciar a implementação nos arquivos `src/` conforme as diretrizes de governança (`AGENTS.md`).**

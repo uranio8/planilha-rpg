@@ -11177,9 +11177,9 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(!b146HeadCss.includes('.a4-feature-tag {\n      display: inline-block;\n      background: #1e293b;'), 'head_css.html eliminou fundo preto/ardósia opaco (#1e293b) em .a4-feature-tag');
     assert(b146PlayersJs.includes('tagClass') && b146PlayersJs.includes('tag-passivo') && b146PlayersJs.includes('tag-bonus'), 'players.js injeta classes semânticas por tipo de ação nos badges');
 
-    // 4. Versão v3.9.2+ atualizada no core.js e ui.html
+    // 4. Versão v3.9.2+ / v3.10.x atualizada no core.js e ui.html
     const b147CoreJs = fs.readFileSync(path.join(srcDir, 'js', 'core.js'), 'utf8');
-    assert(b147CoreJs.includes("version: '3.10.0'") || b147CoreJs.includes("version: '3.9.2'"), 'core.js atualizado para v3.9.2+ / v3.10.0');
+    assert(b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'") || b147CoreJs.includes("version: '3.9.2'"), 'core.js atualizado para v3.9.2+ / v3.10.x');
     passedTests += 6;
 
     // ========================================
@@ -11235,10 +11235,41 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(b148Css.includes('.bastion-tier-badge') && b148Css.includes('.bastion-renown-progress-track'), 'head_css.html inclui badges de tier e trilha de renome');
     assert(b148Css.includes('.settlement-tier-card') && b148Css.includes('.bastion-wall-card'), 'head_css.html inclui cards visuais de assentamento e muralha');
 
-    // 5. Versão v3.10.0 consistente
-    assert(b148Ui.includes('v3.10.0') && b147CoreJs.includes("version: '3.10.0'"), 'ui.html e core.js exibem a versão v3.10.0');
+    // 5. Versão v3.10.0 / v3.10.1 consistente
+    assert((b148Ui.includes('v3.10.1') || b148Ui.includes('v3.10.0')) && (b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'")), 'ui.html e core.js exibem a versão v3.10.0+');
 
     passedTests += 16;
+
+    // ========================================
+    // 🏰✨ [Bateria 149] Visual Épico de Upgrade de Bastião e Empty State de Instalações (ISSUE-182):
+    // ========================================
+    console.log('\n🏰✨ [Bateria 149] Visual Épico de Upgrade de Bastião e Empty State de Instalações (ISSUE-182):');
+
+    totalTests += 10;
+
+    // 1. Redesign do Empty State de Instalações
+    const campJs149 = fs.readFileSync(path.join(srcDir, 'js', 'campaigns.js'), 'utf8');
+    const css149 = fs.readFileSync(path.join(srcDir, 'styles', 'head_css.html'), 'utf8');
+
+    assert(!campJs149.includes('class="btn-primary"'), 'campaigns.js não utiliza a classe inexistente btn-primary no empty state');
+    assert(campJs149.includes('class="bastion-empty-hero"'), 'campaigns.js utiliza .bastion-empty-hero para o card de empty state');
+    assert(campJs149.includes('bastion-btn-build-first'), 'campaigns.js utiliza .bastion-btn-build-first estilizado com gradiente de ação');
+    assert(campJs149.includes('openBastionAddFacilityModal()'), 'Botão de construir primeira instalação chama openBastionAddFacilityModal()');
+
+    // 2. Alias de compatibilidade global
+    const hasAlias = vm.runInContext("typeof openAddBastionFacilityModal === 'function' && typeof openBastionAddFacilityModal === 'function'", sandbox);
+    assert(hasAlias, 'Alias openAddBastionFacilityModal está registrado e mapeado para openBastionAddFacilityModal');
+
+    // 3. Checklist dos 4 Pilares de Pré-Requisitos na Visão Geral
+    assert(campJs149.includes('bastion-evolution-card'), 'campaigns.js inclui container .bastion-evolution-card');
+    assert(campJs149.includes('bastion-req-checklist'), 'campaigns.js inclui grid de checklist .bastion-req-checklist');
+    assert(campJs149.includes('bastion-req-pill'), 'campaigns.js renderiza os pills dos 4 pilares (.bastion-req-pill)');
+
+    // 4. Estilos no head_css.html
+    assert(css149.includes('.bastion-empty-hero') && css149.includes('.bastion-btn-build-first'), 'head_css.html define estilos épicos para .bastion-empty-hero e .bastion-btn-build-first');
+    assert(css149.includes('.bastion-req-pill.met') && css149.includes('.bastion-btn-ready-pulse'), 'head_css.html define status met/pending e pulso dourado');
+
+    passedTests += 10;
 
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;

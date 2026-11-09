@@ -4174,6 +4174,27 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
   const denom = (nextTier ? (nextTier.reqRenown - prevRenown) : 1000) || 1;
   const percent = nextTier ? Math.min(100, Math.max(0, Math.round(((currentRenown - prevRenown) / denom) * 100))) : 100;
 
+  // Cálculo dos 4 Pilares de Pré-Requisitos para o Próximo Estágio (ISSUE-182)
+  const weeksCur = bastion.turnCount || 1;
+  const facsCur = (bastion.specialFacilities || []).length;
+  const goldAvailable = (bastion.bank?.gold || 0) + goldAmount;
+
+  let weeksMet = true, facsMet = true, renownMet = true, goldMet = true, allReqsMet = false;
+  let missingParts = [];
+
+  if (nextTier) {
+    weeksMet = weeksCur >= nextTier.reqWeeks;
+    facsMet = facsCur >= nextTier.reqFacilities;
+    renownMet = currentRenown >= nextTier.reqRenown;
+    goldMet = goldAvailable >= nextTier.costGold;
+    allReqsMet = weeksMet && facsMet && renownMet && goldMet;
+
+    if (!weeksMet) missingParts.push(`${nextTier.reqWeeks - weeksCur} sem. de gestão`);
+    if (!facsMet) missingParts.push(`${nextTier.reqFacilities - facsCur} sala(s)`);
+    if (!renownMet) missingParts.push(`${nextTier.reqRenown - currentRenown} de Renome`);
+    if (!goldMet) missingParts.push(`${nextTier.costGold - goldAvailable} PO`);
+  }
+
   let html = `
     <div class="bastion-panel-card">
       <div class="bastion-header-bar">
@@ -4205,25 +4226,83 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
         </div>
       </div>
 
-      <!-- Barra de Progresso de Renome e Prestígio (ISSUE-181) -->
-      <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(245,158,11,0.25); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-        <div style="flex: 1; min-width: 240px;">
-          <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #cbd5e1; margin-bottom: 4px;">
-            <span>👑 Prestígio do Assentamento: <b>${tier.name}</b> (${currentRenown} Renome)</span>
-            <span>${nextTier ? `Próximo: ${nextTier.name} (${nextTier.reqRenown} Renome)` : '⭐ Metrópole Lendária'}</span>
+      <!-- Card de Evolução de Assentamento & Pré-Requisitos (ISSUE-181 & ISSUE-182) -->
+      <div class="bastion-evolution-card">
+        <div class="bastion-evolution-header">
+          <div style="flex: 1; min-width: 260px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 700; color: #cbd5e1; margin-bottom: 4px;">
+              <span>👑 Prestígio Atual: <b>${tier.name}</b> (${currentRenown} Renome)</span>
+              <span>${nextTier ? `Próximo Nível: <b>${nextTier.name}</b> (${nextTier.reqRenown} Renome)` : '⭐ Metrópole Lendária'}</span>
+            </div>
+            <div class="bastion-renown-progress-track">
+              <div class="bastion-renown-progress-fill" style="width: ${percent}%;"></div>
+            </div>
           </div>
-          <div class="bastion-renown-progress-track">
-            <div class="bastion-renown-progress-fill" style="width: ${percent}%;"></div>
+          <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+            <button type="button" class="btn-action ${allReqsMet ? 'bastion-btn-ready-pulse' : ''}" style="font-size: 11px; font-weight: 800; background: ${allReqsMet ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #0284c7, #0369a1)'}; color: #fff;" onclick="openBastionSettlementUpgradeModal()" title="Evoluir assentamento (Fazenda -> Aldeia -> Vila -> Cidadela -> Metrópole)">
+              ${allReqsMet ? '🎉 Pronto para Evoluir!' : '✨ Evoluir Assentamento'}
+            </button>
+            <button type="button" class="btn-secondary" style="font-size: 11px; color: #fef08a; border-color: rgba(245,158,11,0.4);" onclick="fundBastionFestival()" title="Financiar Festival Popular (+30 Renome por 50 PO)">
+              🎉 Financiar Festival
+            </button>
           </div>
         </div>
-        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-          <button type="button" class="btn-action" style="font-size: 11px; font-weight: 800; background: linear-gradient(135deg, #10b981, #059669); color: #fff;" onclick="openBastionSettlementUpgradeModal()" title="Evoluir assentamento (Fazenda -> Aldeia -> Vila -> Cidadela -> Metrópole)">
-            ✨ Evoluir Assentamento
-          </button>
-          <button type="button" class="btn-secondary" style="font-size: 11px; color: #fef08a; border-color: rgba(245,158,11,0.4);" onclick="fundBastionFestival()" title="Financiar Festival Popular (+30 Renome por 50 PO)">
-            🎉 Financiar Festival
-          </button>
-        </div>
+
+        ${nextTier ? `
+          <!-- Checklist Visual dos 4 Pilares de Evolução -->
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 8px; margin-top: 2px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 4px;">
+              <span style="font-size: 10.5px; font-weight: 800; text-transform: uppercase; color: var(--primary-light); letter-spacing: 0.5px;">
+                Pré-Requisitos para Evolução ➔ ${nextTier.icon} ${nextTier.name} (Tier ${nextTier.stage}):
+              </span>
+              <span style="font-size: 10.5px; color: ${allReqsMet ? '#6ee7b7' : '#fde68a'}; font-weight: 700;">
+                ${allReqsMet ? '✅ Todos os 4 requisitos cumpridos!' : `⏳ Faltam: ${missingParts.join(', ')}`}
+              </span>
+            </div>
+            <div class="bastion-req-checklist">
+              <div class="bastion-req-pill ${weeksMet ? 'met' : 'pending'}" title="${weeksMet ? 'Tempo de administração cumprido' : `Faltam ${nextTier.reqWeeks - weeksCur} semana(s)`}">
+                <div style="display: flex; justify-content: space-between;">
+                  <span>${weeksMet ? '✅' : '⏳'} Semanas</span>
+                  <b>${weeksCur}/${nextTier.reqWeeks}</b>
+                </div>
+                <div class="bastion-req-pill-bar">
+                  <div class="bastion-req-pill-bar-fill" style="width: ${Math.min(100, Math.round((weeksCur / nextTier.reqWeeks) * 100))}%;"></div>
+                </div>
+              </div>
+              <div class="bastion-req-pill ${facsMet ? 'met' : 'pending'}" title="${facsMet ? 'Salas especiais mínimas construídas' : `Faltam ${nextTier.reqFacilities - facsCur} sala(s)`}">
+                <div style="display: flex; justify-content: space-between;">
+                  <span>${facsMet ? '✅' : '⏳'} Instalações</span>
+                  <b>${facsCur}/${nextTier.reqFacilities}</b>
+                </div>
+                <div class="bastion-req-pill-bar">
+                  <div class="bastion-req-pill-bar-fill" style="width: ${Math.min(100, Math.round((facsCur / nextTier.reqFacilities) * 100))}%;"></div>
+                </div>
+              </div>
+              <div class="bastion-req-pill ${renownMet ? 'met' : 'pending'}" title="${renownMet ? 'Renome suficiente alcançado' : `Faltam ${nextTier.reqRenown - currentRenown} de Renome`}">
+                <div style="display: flex; justify-content: space-between;">
+                  <span>${renownMet ? '✅' : '⏳'} Renome</span>
+                  <b>${currentRenown}/${nextTier.reqRenown} 👑</b>
+                </div>
+                <div class="bastion-req-pill-bar">
+                  <div class="bastion-req-pill-bar-fill" style="width: ${Math.min(100, Math.round((currentRenown / nextTier.reqRenown) * 100))}%;"></div>
+                </div>
+              </div>
+              <div class="bastion-req-pill ${goldMet ? 'met' : 'pending'}" title="${goldMet ? 'Ouro suficiente para a obra (Cofre + Baú)' : `Faltam ${nextTier.costGold - goldAvailable} PO`}">
+                <div style="display: flex; justify-content: space-between;">
+                  <span>${goldMet ? '✅' : '⏳'} Ouro (Obra)</span>
+                  <b>${goldAvailable}/${nextTier.costGold} PO</b>
+                </div>
+                <div class="bastion-req-pill-bar">
+                  <div class="bastion-req-pill-bar-fill" style="width: ${Math.min(100, Math.round((goldAvailable / nextTier.costGold) * 100))}%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ` : `
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 6px; font-size: 11px; color: #fef08a; font-weight: 700;">
+            ⭐ Nível Máximo de Assentamento Alcançado! Sua fortaleza é uma Metrópole Lendária reverenciada em todo o continente.
+          </div>
+        `}
       </div>
 
       <!-- Barra de Ações Principais do Bastião -->
@@ -4263,11 +4342,25 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
 
   if (!bastion.specialFacilities || bastion.specialFacilities.length === 0) {
     html += `
-      <div style="grid-column: 1 / -1; text-align: center; padding: 32px 20px; color: #94a3b8; font-size: 13px; background: rgba(15, 23, 42, 0.4); border: 1px dashed rgba(245, 158, 11, 0.25); border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
-        <span style="font-size: 28px;">🏰</span>
-        <div><b>Sua fortaleza ainda não possui salas ou instalações construídas.</b></div>
-        <div style="font-size: 11px; color: #64748b; max-width: 460px;">Expanda seu bastião construindo salas como Forja, Laboratório Alquímico, Jardim, Biblioteca, Aposentos ou Santuário.</div>
-        <button type="button" class="btn-primary" style="margin-top: 6px; padding: 6px 14px; font-size: 12px;" onclick="openAddBastionFacilityModal()">🏗️ Construir Primeira Instalação</button>
+      <div class="bastion-empty-hero">
+        <div class="bastion-empty-icon-wrap">
+          <span class="bastion-empty-icon">🏰</span>
+        </div>
+        <div class="bastion-empty-title">Sua fortaleza ainda não possui salas construídas</div>
+        <div class="bastion-empty-desc">
+          O bastião ganha vida quando seus heróis constroem suas instalações especiais. Cada sala concede ordens semanais, benefícios de descanso, recursos arcanos ou renda!
+        </div>
+        <div class="bastion-empty-preview-tags">
+          <span class="bastion-preview-tag">⚔️ Forja</span>
+          <span class="bastion-preview-tag">🧪 Lab. Alquímico</span>
+          <span class="bastion-preview-tag">🌿 Jardim & Estufa</span>
+          <span class="bastion-preview-tag">📚 Biblioteca Arcana</span>
+          <span class="bastion-preview-tag">⛪ Santuário</span>
+          <span class="bastion-preview-tag">🛡️ Aposentos & Quartel</span>
+        </div>
+        <button type="button" class="btn-action bastion-btn-build-first" onclick="openBastionAddFacilityModal()">
+          🏗️ Construir Primeira Instalação
+        </button>
       </div>
     `;
   } else {
@@ -5811,6 +5904,10 @@ function closeBastionEventModal() {
   if (modal) modal.style.display = 'none';
 }
 
+function openAddBastionFacilityModal() {
+  return openBastionAddFacilityModal();
+}
+
 function openBastionAddFacilityModal() {
   const camp = getSelectedBastionCampaign();
   if (!camp) return;
@@ -6197,7 +6294,6 @@ function openBastionSettlementUpgradeModal() {
 
   if (nextTier) {
     if (nextTitle) nextTitle.innerHTML = `${nextTier.icon} ${nextTier.name} (Tier ${nextTier.stage}) — ${nextTier.subtitle}`;
-    if (nextDesc) nextDesc.innerHTML = `${nextTier.description}<br><span style="color: #6ee7b7; font-weight: 700; margin-top: 4px; display: inline-block;">Benefícios:</span> até ${nextTier.maxSpecialFacilities} salas • até ${nextTier.maxDefenders} defensores • Renda de +${nextTier.weeklyRevenueGold} PO/semana`;
 
     const weeksMet = (bastion.turnCount || 1) >= nextTier.reqWeeks;
     const facsMet = (bastion.specialFacilities || []).length >= nextTier.reqFacilities;
@@ -6205,21 +6301,71 @@ function openBastionSettlementUpgradeModal() {
 
     const bankGold = bank.gold || 0;
     const stashGold = camp.partyStash?.gold || 0;
-    const hasEnoughGold = (bankGold >= nextTier.costGold) || (stashGold >= nextTier.costGold);
+    const goldAvailable = bankGold + stashGold;
+    const hasEnoughGold = (bankGold >= nextTier.costGold) || (stashGold >= nextTier.costGold) || (goldAvailable >= nextTier.costGold);
+
+    const weeksPercent = Math.min(100, Math.round(((bastion.turnCount || 1) / nextTier.reqWeeks) * 100));
+    const facsPercent = Math.min(100, Math.round(((bastion.specialFacilities || []).length / nextTier.reqFacilities) * 100));
+    const renownPercent = Math.min(100, Math.round(((bastion.renown || 0) / nextTier.reqRenown) * 100));
+    const goldPercent = Math.min(100, Math.round((goldAvailable / nextTier.costGold) * 100));
+
+    if (nextDesc) {
+      nextDesc.innerHTML = `
+        ${nextTier.description}
+        <div class="bastion-benefits-grid">
+          <div class="bastion-benefit-cell">
+            <span class="bastion-benefit-label">Capacidade de Salas</span>
+            <span class="bastion-benefit-val">${currentTier.maxSpecialFacilities} ➔ ${nextTier.maxSpecialFacilities} salas (+${nextTier.maxSpecialFacilities - currentTier.maxSpecialFacilities})</span>
+          </div>
+          <div class="bastion-benefit-cell">
+            <span class="bastion-benefit-label">Guarnição</span>
+            <span class="bastion-benefit-val">${currentTier.maxDefenders} ➔ ${nextTier.maxDefenders} soldados (+${nextTier.maxDefenders - currentTier.maxDefenders})</span>
+          </div>
+          <div class="bastion-benefit-cell">
+            <span class="bastion-benefit-label">Renda Semanal</span>
+            <span class="bastion-benefit-val">+${currentTier.weeklyRevenueGold} ➔ +${nextTier.weeklyRevenueGold} PO/sem (+${nextTier.weeklyRevenueGold - currentTier.weeklyRevenueGold} PO)</span>
+          </div>
+        </div>
+      `;
+    }
 
     if (reqList) {
       reqList.innerHTML = `
         <div class="settlement-req-item ${weeksMet ? 'met' : 'missing'}">
-          ${weeksMet ? '✅' : '❌'} ⏳ Semanas: ${bastion.turnCount || 1}/${nextTier.reqWeeks}
+          <div style="display: flex; justify-content: space-between; width: 100%;">
+            <span>${weeksMet ? '✅' : '⏳'} Semanas de Gestão</span>
+            <b>${bastion.turnCount || 1}/${nextTier.reqWeeks}</b>
+          </div>
+          <div class="bastion-req-pill-bar">
+            <div class="bastion-req-pill-bar-fill" style="width: ${weeksPercent}%; background: ${weeksMet ? '#10b981' : '#f59e0b'};"></div>
+          </div>
         </div>
         <div class="settlement-req-item ${facsMet ? 'met' : 'missing'}">
-          ${facsMet ? '✅' : '❌'} 🏗️ Instalações: ${(bastion.specialFacilities || []).length}/${nextTier.reqFacilities}
+          <div style="display: flex; justify-content: space-between; width: 100%;">
+            <span>${facsMet ? '✅' : '⏳'} Instalações Especiais</span>
+            <b>${(bastion.specialFacilities || []).length}/${nextTier.reqFacilities}</b>
+          </div>
+          <div class="bastion-req-pill-bar">
+            <div class="bastion-req-pill-bar-fill" style="width: ${facsPercent}%; background: ${facsMet ? '#10b981' : '#f59e0b'};"></div>
+          </div>
         </div>
         <div class="settlement-req-item ${renownMet ? 'met' : 'missing'}">
-          ${renownMet ? '✅' : '❌'} 👑 Renome: ${bastion.renown || 0}/${nextTier.reqRenown}
+          <div style="display: flex; justify-content: space-between; width: 100%;">
+            <span>${renownMet ? '✅' : '⏳'} Renome do Domínio</span>
+            <b>${bastion.renown || 0}/${nextTier.reqRenown} 👑</b>
+          </div>
+          <div class="bastion-req-pill-bar">
+            <div class="bastion-req-pill-bar-fill" style="width: ${renownPercent}%; background: ${renownMet ? '#10b981' : '#f59e0b'};"></div>
+          </div>
         </div>
         <div class="settlement-req-item ${hasEnoughGold ? 'met' : 'missing'}">
-          ${hasEnoughGold ? '✅' : '❌'} 🪙 Custo: ${nextTier.costGold} PO
+          <div style="display: flex; justify-content: space-between; width: 100%;">
+            <span>${hasEnoughGold ? '✅' : '⏳'} Custo de Obra</span>
+            <b>${goldAvailable}/${nextTier.costGold} PO</b>
+          </div>
+          <div class="bastion-req-pill-bar">
+            <div class="bastion-req-pill-bar-fill" style="width: ${hasEnoughGold ? 100 : goldPercent}%; background: ${hasEnoughGold ? '#10b981' : '#ef4444'};"></div>
+          </div>
         </div>
       `;
     }
@@ -6683,6 +6829,7 @@ if (typeof module !== 'undefined' && module.exports) {
     advanceBastionTurn,
     closeBastionEventModal,
     openBastionAddFacilityModal,
+    openAddBastionFacilityModal: openBastionAddFacilityModal,
     closeBastionAddFacilityModal,
     updateNewFacilityPreview,
     confirmAddBastionFacility,
@@ -6840,6 +6987,7 @@ if (typeof window !== 'undefined') {
   window.advanceBastionTurn = advanceBastionTurn;
   window.closeBastionEventModal = closeBastionEventModal;
   window.openBastionAddFacilityModal = openBastionAddFacilityModal;
+  window.openAddBastionFacilityModal = openBastionAddFacilityModal;
   window.closeBastionAddFacilityModal = closeBastionAddFacilityModal;
   window.updateNewFacilityPreview = updateNewFacilityPreview;
   window.confirmAddBastionFacility = confirmAddBastionFacility;
