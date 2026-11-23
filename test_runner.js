@@ -11177,9 +11177,9 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(!b146HeadCss.includes('.a4-feature-tag {\n      display: inline-block;\n      background: #1e293b;'), 'head_css.html eliminou fundo preto/ardósia opaco (#1e293b) em .a4-feature-tag');
     assert(b146PlayersJs.includes('tagClass') && b146PlayersJs.includes('tag-passivo') && b146PlayersJs.includes('tag-bonus'), 'players.js injeta classes semânticas por tipo de ação nos badges');
 
-    // 4. Versão v3.9.2+ / v3.10.x / v3.11.x atualizada no core.js e ui.html
+    // 4. Versão v3.9.2+ / v3.10.x / v3.11.x / v3.12.x atualizada no core.js e ui.html
     const b147CoreJs = fs.readFileSync(path.join(srcDir, 'js', 'core.js'), 'utf8');
-    assert(b147CoreJs.includes("version: '3.11.0'") || b147CoreJs.includes("version: '3.10.2'") || b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'") || b147CoreJs.includes("version: '3.9.2'"), 'core.js atualizado para v3.9.2+ / v3.11.x');
+    assert(b147CoreJs.includes("version: '3.12.0'") || b147CoreJs.includes("version: '3.11.0'") || b147CoreJs.includes("version: '3.10.2'") || b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'") || b147CoreJs.includes("version: '3.9.2'"), 'core.js atualizado para v3.9.2+ / v3.12.x');
     passedTests += 6;
 
     // ========================================
@@ -11235,8 +11235,8 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(b148Css.includes('.bastion-tier-badge') && b148Css.includes('.bastion-renown-progress-track'), 'head_css.html inclui badges de tier e trilha de renome');
     assert(b148Css.includes('.settlement-tier-card') && b148Css.includes('.bastion-wall-card'), 'head_css.html inclui cards visuais de assentamento e muralha');
 
-    // 5. Versão v3.10.x / v3.11.x consistente
-    assert((b148Ui.includes('v3.11.0') || b148Ui.includes('v3.10.2') || b148Ui.includes('v3.10.1') || b148Ui.includes('v3.10.0')) && (b147CoreJs.includes("version: '3.11.0'") || b147CoreJs.includes("version: '3.10.2'") || b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'")), 'ui.html e core.js exibem a versão v3.10.0+');
+    // 5. Versão v3.10.x / v3.11.x / v3.12.x consistente
+    assert((b148Ui.includes('v3.12.0') || b148Ui.includes('v3.11.0') || b148Ui.includes('v3.10.2') || b148Ui.includes('v3.10.1') || b148Ui.includes('v3.10.0')) && (b147CoreJs.includes("version: '3.12.0'") || b147CoreJs.includes("version: '3.11.0'") || b147CoreJs.includes("version: '3.10.2'") || b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'")), 'ui.html e core.js exibem a versão v3.10.0+');
 
     passedTests += 16;
 
@@ -11407,6 +11407,45 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(playersJs151.includes('openPlayerBastionViewerModal'), 'players.js inclui botão rápido para jogadores abrirem o Bastião em modo leitura');
 
     passedTests += 12;
+
+    // ========================================
+    // 🎭🏆🤝 [Bateria 152] Bastião Vivo: Dilemas, Troféus & Lealdade/Missões do Staff (ISSUE-185):
+    // ========================================
+    console.log('\n🎭🏆🤝 [Bateria 152] Bastião Vivo: Dilemas, Troféus & Lealdade/Missões do Staff (ISSUE-185):');
+
+    totalTests += 9;
+
+    const b152Dilemmas = vm.runInContext("typeof BASTION_DILEMMAS_CATALOG !== 'undefined' ? BASTION_DILEMMAS_CATALOG : null", sandbox);
+    assert(Array.isArray(b152Dilemmas) && b152Dilemmas.length >= 5, 'BASTION_DILEMMAS_CATALOG possui dilemas e visitantes disponíveis');
+
+    // 1. Sortear e resolver Dilema
+    const dil152 = sandbox.triggerRandomBastionDilemma();
+    assert(dil152 && b151.pendingDilemma && b151.pendingDilemma.id === dil152.id, 'triggerRandomBastionDilemma registra dilema pendente no Bastião');
+    b151.bank.gold = 200;
+    sandbox.resolveBastionDilemma(0);
+    assert(b151.pendingDilemma === null, 'resolveBastionDilemma aplica decisão e limpa pendingDilemma');
+
+    // 2. Galeria de Troféus (+15 Renome, +5% Felicidade)
+    const renBeforeTrophy = b151.renown;
+    const hapBeforeTrophy = b151.happiness;
+    b151.happiness = 70;
+    sandbox.addBastionTrophy('Dragão Verde Venomfang', '8', 'Derrotado em Thundertree');
+    assert(b151.trophies.length === 1 && b151.trophies[0].name === 'Dragão Verde Venomfang', 'addBastionTrophy registra troféu na Galeria do Bastião');
+    assert(b151.renown === renBeforeTrophy + 15 && b151.happiness === 75, 'Expor troféu concede +15 Renome e +5% Felicidade');
+
+    // 3. Lealdade, Missão Pessoal e Status Veterano do Staff
+    b151.staff.push({ id: 'npc_vet_152', name: 'Thorek', role: 'Ferreiro', level: 2, wage: 10, loyalty: 50, personalQuest: 'Recuperar Bigorna', questCompleted: false, veteran: false });
+    const renBeforeQuest = b151.renown;
+    sandbox.completeStaffPersonalQuest('npc_vet_152');
+    const thorek = b151.staff.find(s => s.id === 'npc_vet_152');
+    assert(thorek.questCompleted === true && thorek.veteran === true && thorek.loyalty === 70, 'completeStaffPersonalQuest promove NPC para Veterano e soma +20% Lealdade');
+    assert(b151.renown === renBeforeQuest + 15, 'Concluir missão do Staff concede +15 Renome');
+
+    // 4. CSS de Dilemas, Troféus e Veterano
+    assert(b148Css.includes('.bastion-dilemma-card') && b148Css.includes('.bastion-trophy-card') && b148Css.includes('.bastion-staff-veteran-badge'), 'head_css.html inclui estilos de Dilemas, Troféus e Veterano');
+    assert(!b148Css.includes('rumors-board') && !campJs149.includes('BASTION_RUMORS_POOL'), 'Mural de Rumores não foi incluído conforme solicitação do usuário');
+
+    passedTests += 9;
 
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;

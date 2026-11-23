@@ -910,6 +910,92 @@ const BASTION_POPULATION_MILESTONES = [
   { minPop: 200, id: "market", icon: "🏛️", title: "Mercado Regional", desc: "Rotas comerciais reduzem em 15% os custos de obras e suprimentos." }
 ];
 
+// Catálogo de Dilemas, Petições & Visitantes do Bastião (ISSUE-185)
+const BASTION_DILEMMAS_CATALOG = [
+  {
+    id: "refugees_gate",
+    icon: "🏕️",
+    title: "Refugiados nos Portões",
+    desc: "Famílias fugindo de um saque orc pedem abrigo e comida em frente à fortaleza.",
+    choices: [
+      { label: "Acolher todos (-50 PO, +6 Hab., +10% Felicidade, +15 Renome)", gold: -50, pop: 6, happiness: 10, renown: 15, defenders: 0 },
+      { label: "Aceitar apenas quem puder lutar (+2 Defensores, -5% Felicidade)", gold: 0, pop: 2, happiness: -5, renown: 0, defenders: 2 },
+      { label: "Fechar os portões (-15% Felicidade, -10 Renome)", gold: 0, pop: 0, happiness: -15, renown: -10, defenders: 0 }
+    ]
+  },
+  {
+    id: "hidden_artisan",
+    icon: "🔨",
+    title: "O Artesão Mestre Escondido",
+    desc: "Um mestre artífice perseguido por uma guilda tirânica pede proteção temporária em troca de seus serviços.",
+    choices: [
+      { label: "Proteger e contratar secretamente (-40 PO, +25 Renome, +8% Felicidade)", gold: -40, pop: 1, happiness: 8, renown: 25, defenders: 0 },
+      { label: "Cobrar taxa de asilo (+80 PO, -5% Felicidade)", gold: 80, pop: 1, happiness: -5, renown: 0, defenders: 0 },
+      { label: "Entregá-lo à guilda (+120 PO, -15% Felicidade, -20 Renome)", gold: 120, pop: 0, happiness: -15, renown: -20, defenders: 0 }
+    ]
+  },
+  {
+    id: "repentant_monster",
+    icon: "👹",
+    title: "O Ex-Monstro Procurando Emprego",
+    desc: "Um ogro cozinheiro educado (ou goblin inventor) aparece com um avental limpo pedindo um trabalho honesto.",
+    choices: [
+      { label: "Contratar para a cozinha/oficina (-20 PO, +12% Felicidade, +10 Renome)", gold: -20, pop: 1, happiness: 12, renown: 10, defenders: 0 },
+      { label: "Colocar na patrulha externa (+2 Defensores, -5% Felicidade)", gold: 0, pop: 1, happiness: -5, renown: 5, defenders: 2 },
+      { label: "Expulsar imediatamente (+2% Felicidade dos tradicionalistas)", gold: 0, pop: 0, happiness: 2, renown: 0, defenders: 0 }
+    ]
+  },
+  {
+    id: "royal_auditor",
+    icon: "📜",
+    title: "O Auditor Fiscal da Coroa",
+    desc: "Um burocrata meticuloso chega com escolta para auditar os impostos e licenças mágicas do Bastião.",
+    choices: [
+      { label: "Pagar as taxas em dia (-60 PO, +20 Renome, +5% Felicidade)", gold: -60, pop: 0, happiness: 5, renown: 20, defenders: 0 },
+      { label: "Oferecer um banquete diplomático (-25 PO, +10 Renome)", gold: -25, pop: 0, happiness: 5, renown: 10, defenders: 0 },
+      { label: "Recusar jurisdição da Coroa (+5% Felicidade rebelde, -15 Renome)", gold: 0, pop: 0, happiness: 5, renown: -15, defenders: 0 }
+    ]
+  },
+  {
+    id: "imposter_bard",
+    icon: "🎭",
+    title: "O Bardo Impostor",
+    desc: "Um bardo carismático espalha na vila que ELE é o verdadeiro dono da fortaleza e os heróis são apenas seus mercenários.",
+    choices: [
+      { label: "Contratá-lo como arauto oficial (-30 PO, +20 Renome, +8% Felicidade)", gold: -30, pop: 1, happiness: 8, renown: 20, defenders: 0 },
+      { label: "Humilhá-lo em duelo verbal e expulsar (+5 Renome)", gold: 0, pop: 0, happiness: 3, renown: 5, defenders: 0 }
+    ]
+  },
+  {
+    id: "caravan_escort",
+    icon: "🐎",
+    title: "Caravana Mercante Ameaçada",
+    desc: "Mercadores ricos oferecem parte dos lucros se a guarnição do Bastião escoltá-los por 2 dias na estrada.",
+    choices: [
+      { label: "Enviar patrulha de escolta (+100 PO, +15 Renome, +5% Felicidade)", gold: 100, pop: 2, happiness: 5, renown: 15, defenders: 0 },
+      { label: "Recusar para manter a guarda no forte (+3% Felicidade interna)", gold: 0, pop: 0, happiness: 3, renown: 0, defenders: 0 }
+    ]
+  },
+  {
+    id: "sentient_broom_strike",
+    icon: "🧹",
+    title: "Greve dos Objetos Encantados",
+    desc: "Uma vassoura animada e um caldeirão falante organizaram uma greve na equipe de limpeza exigindo nomes próprios.",
+    choices: [
+      { label: "Batizar os itens e dar folga aos sábados (-15 PO, +12% Felicidade)", gold: -15, pop: 0, happiness: 12, renown: 5, defenders: 0 },
+      { label: "Desfazer os encantamentos (+0 PO, -8% Felicidade)", gold: 0, pop: 0, happiness: -8, renown: 0, defenders: 0 }
+    ]
+  }
+];
+
+const BASTION_STAFF_QUEST_TEMPLATES = [
+  "Recuperar a ferramenta ou tomo ancestral perdido em ruínas próximas",
+  "Proteger a família ou antigo aprendiz ameaçado por bandidos locais",
+  "Obter um ingrediente raro de monstro para sua obra-prima",
+  "Quitar uma dívida antiga com uma guilda rival na capital",
+  "Encontrar um manuscrito secreto com técnicas perdidas de seu ofício"
+];
+
 if (typeof window !== 'undefined') {
   window.BASTION_SPECIAL_FACILITIES_CATALOG = BASTION_SPECIAL_FACILITIES_CATALOG;
   window.BASTION_ACTIONS_CATALOG = BASTION_ACTIONS_CATALOG;
@@ -917,6 +1003,8 @@ if (typeof window !== 'undefined') {
   window.BASTION_WALL_OPTIONS = BASTION_WALL_OPTIONS;
   window.BASTION_SETTLEMENT_TIERS = BASTION_SETTLEMENT_TIERS;
   window.BASTION_POPULATION_MILESTONES = BASTION_POPULATION_MILESTONES;
+  window.BASTION_DILEMMAS_CATALOG = BASTION_DILEMMAS_CATALOG;
+  window.BASTION_STAFF_QUEST_TEMPLATES = BASTION_STAFF_QUEST_TEMPLATES;
 }
 if (typeof global !== 'undefined') {
   global.BASTION_SPECIAL_FACILITIES_CATALOG = BASTION_SPECIAL_FACILITIES_CATALOG;
@@ -925,4 +1013,6 @@ if (typeof global !== 'undefined') {
   global.BASTION_WALL_OPTIONS = BASTION_WALL_OPTIONS;
   global.BASTION_SETTLEMENT_TIERS = BASTION_SETTLEMENT_TIERS;
   global.BASTION_POPULATION_MILESTONES = BASTION_POPULATION_MILESTONES;
+  global.BASTION_DILEMMAS_CATALOG = BASTION_DILEMMAS_CATALOG;
+  global.BASTION_STAFF_QUEST_TEMPLATES = BASTION_STAFF_QUEST_TEMPLATES;
 }

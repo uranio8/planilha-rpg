@@ -4129,6 +4129,154 @@ function switchBastionSubTab(tabKey) {
   }
 }
 
+function triggerRandomBastionDilemma() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return null;
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return null;
+
+  const catalog = (typeof BASTION_DILEMMAS_CATALOG !== 'undefined' && Array.isArray(BASTION_DILEMMAS_CATALOG)) ? BASTION_DILEMMAS_CATALOG : [];
+  if (catalog.length === 0) return null;
+
+  const picked = catalog[Math.floor(Math.random() * catalog.length)];
+  bastion.pendingDilemma = JSON.parse(JSON.stringify(picked));
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderBastionsTab(camp.id);
+  return bastion.pendingDilemma;
+}
+
+function resolveBastionDilemma(choiceIdx) {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  if (!bastion || !bastion.pendingDilemma) return;
+
+  const dilemma = bastion.pendingDilemma;
+  const choice = dilemma.choices && dilemma.choices[choiceIdx];
+  if (!choice) return;
+
+  const bank = getBastionBank(bastion);
+  const goldDelta = choice.gold || 0;
+  if (goldDelta < 0) {
+    const cost = Math.abs(goldDelta);
+    if ((bank.gold || 0) >= cost) {
+      bank.gold -= cost;
+    } else if ((camp.partyStash?.gold || 0) >= cost) {
+      camp.partyStash.gold -= cost;
+    } else {
+      alert(`Ouro insuficiente no Cofre (${bank.gold || 0} PO) ou Baú (${camp.partyStash?.gold || 0} PO) para esta escolha (custo: ${cost} PO).`);
+      return;
+    }
+  } else if (goldDelta > 0) {
+    bank.gold = (bank.gold || 0) + goldDelta;
+  }
+
+  const maxPop = getBastionMaxPopulation(bastion);
+  const tier = getBastionSettlementTier(bastion);
+  bastion.population = Math.max(0, Math.min(maxPop, (bastion.population || 0) + (choice.pop || 0)));
+  bastion.happiness = Math.max(0, Math.min(100, (typeof bastion.happiness === 'number' ? bastion.happiness : 50) + (choice.happiness || 0)));
+  bastion.renown = Math.max(0, (bastion.renown || 0) + (choice.renown || 0));
+  bastion.defenders = Math.max(0, Math.min(tier.maxDefenders || 12, (bastion.defenders || 0) + (choice.defenders || 0)));
+
+  bastion.history = bastion.history || [];
+  bastion.history.push({
+    turn: bastion.turnCount || 0,
+    date: new Date().toISOString().split('T')[0],
+    title: `${dilemaTitleSafe(dilemma)}`,
+    desc: dilemma.desc,
+    resolution: `Decisão do Grupo: ${choice.label}`
+  });
+
+  bastion.pendingDilemma = null;
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderBastionsTab(camp.id);
+  renderCampaigns();
+  renderPartyStashViewer();
+  if (typeof addLog === 'function') {
+    addLog(`🎭 <b>Dilema no Bastião (${dilemma.title}):</b> ${choice.label}`);
+  }
+}
+
+function dilemaTitleSafe(d) {
+  return `${d.icon || '🎭'} ${d.title || 'Petição'}`;
+}
+
+function addBastionTrophy(nameParam = null, crParam = null, notesParam = null) {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+
+  const name = (nameParam !== null ? nameParam : document.getElementById('inp-trophy-name')?.value || '').trim();
+  if (!name) {
+    alert('Informe o nome do chefão ou monstro derrotado para registrar o troféu.');
+    return;
+  }
+  const cr = (crParam !== null ? crParam : document.getElementById('inp-trophy-cr')?.value || '').trim() || '?';
+  const notes = (notesParam !== null ? notesParam : document.getElementById('inp-trophy-notes')?.value || '').trim() || 'Derrotado em combate épico pelo grupo.';
+  const cal = getCampaignCalendar(camp);
+
+  bastion.trophies = bastion.trophies || [];
+  bastion.trophies.push({
+    id: 'trophy_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+    name,
+    cr,
+    notes,
+    day: cal.currentDay || 1
+  });
+
+  bastion.renown = (bastion.renown || 0) + 15;
+  bastion.happiness = Math.min(100, (typeof bastion.happiness === 'number' ? bastion.happiness : 50) + 5);
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderBastionsTab(camp.id);
+  if (typeof addLog === 'function') {
+    addLog(`🏆 <b>Galeria de Troféus:</b> "${name}" (ND ${cr}) exposto no Salão Principal! (+15 Renome, +5% Felicidade)`);
+  }
+}
+
+function removeBastionTrophy(trophyId) {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  if (!bastion || !Array.isArray(bastion.trophies)) return;
+  bastion.trophies = bastion.trophies.filter(t => t.id !== trophyId);
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderBastionsTab(camp.id);
+}
+
+function completeStaffPersonalQuest(npcId) {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  const staff = getBastionStaff(bastion);
+  const npc = staff.find(s => s.id === npcId);
+  if (!npc) return;
+
+  npc.questCompleted = true;
+  npc.veteran = true;
+  npc.loyalty = Math.min(100, (typeof npc.loyalty === 'number' ? npc.loyalty : 50) + 20);
+  bastion.renown = (bastion.renown || 0) + 15;
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderBastionsTab(camp.id);
+  if (typeof addLog === 'function') {
+    addLog(`🏅 <b>Missão do Staff Concluída:</b> ${npc.name} tornou-se <b>⭐ Veterano</b> (-1 dia extra nas ordens de sua sala, +20% Lealdade, +15 Renome)!`);
+  }
+}
+
 function getBastionPartyLevel(camp) {
   if (!camp || !Array.isArray(camp.playerIds) || camp.playerIds.length === 0) return 1;
   if (typeof PLAYERS === 'undefined' || !Array.isArray(PLAYERS)) return 1;
@@ -4289,6 +4437,8 @@ function getCampaignBastion(camp) {
       bank: { gold: 0, history: [] },
       staff: [],
       specialFacilities: [],
+      trophies: [],
+      pendingDilemma: null,
       activeBuffs: [],
       history: [
         {
@@ -4304,6 +4454,8 @@ function getCampaignBastion(camp) {
   }
   if (!camp.bastion.bank) camp.bastion.bank = { gold: 0, history: [] };
   if (!Array.isArray(camp.bastion.staff)) camp.bastion.staff = [];
+  if (!Array.isArray(camp.bastion.trophies)) camp.bastion.trophies = [];
+  if (typeof camp.bastion.pendingDilemma === 'undefined') camp.bastion.pendingDilemma = null;
   if (typeof camp.bastion.settlementStage !== 'number') camp.bastion.settlementStage = 1;
   if (typeof camp.bastion.renown !== 'number') camp.bastion.renown = 0;
   if (typeof camp.bastion.population !== 'number') camp.bastion.population = 0;
@@ -4762,6 +4914,66 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
         </div>
       </div>
 
+      <!-- Card de Dilemas, Petições & Visitantes (ISSUE-185) -->
+      <div class="bastion-dilemma-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div style="font-size: 13px; font-weight: 800; color: #ddd6fe; font-family: var(--font-title);">
+            🎭 Dilemas, Petições & Visitantes na Cidade
+          </div>
+          <button type="button" class="btn-secondary" style="font-size: 11px; color: #c4b5fd; border-color: rgba(167,139,250,0.4);" onclick="triggerRandomBastionDilemma()">
+            🎲 Sortear Novo Dilema / Visitante
+          </button>
+        </div>
+        ${bastion.pendingDilemma ? `
+          <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px 12px; border: 1px solid rgba(167,139,250,0.25);">
+            <div style="font-size: 14px; font-weight: 800; color: #fef08a;">${bastion.pendingDilemma.icon || '🎭'} ${bastion.pendingDilemma.title}</div>
+            <div style="font-size: 12px; color: #cbd5e1; margin-top: 3px;">${bastion.pendingDilemma.desc}</div>
+            <div class="bastion-dilemma-choices">
+              ${(bastion.pendingDilemma.choices || []).map((c, idx) => `
+                <button type="button" class="bastion-dilemma-choice-btn" onclick="resolveBastionDilemma(${idx})">
+                  ➤ ${c.label}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        ` : `
+          <div style="font-size: 11.5px; color: #94a3b8;">
+            Nenhuma petição pendente no momento. Novos dilemas e visitantes podem surgir ao avançar os turnos ou clicando em <b>"🎲 Sortear Novo Dilema"</b>.
+          </div>
+        `}
+      </div>
+
+      <!-- Galeria de Troféus de Chefões Derrotados (ISSUE-185) -->
+      <div class="bastion-evolution-card" style="border-color: rgba(245, 158, 11, 0.35);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <div style="font-size: 13px; font-weight: 800; color: #fef08a; font-family: var(--font-title);">
+              🏆 Galeria de Troféus de Chefões (${(bastion.trophies || []).length})
+            </div>
+            <div style="font-size: 11px; color: #94a3b8;">Exponha monstros marcantes derrotados pelo grupo (+15 Renome e +5% Felicidade cada)</div>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 2fr 80px 2fr auto; gap: 6px; align-items: center; margin-top: 4px;">
+          <input type="text" id="inp-trophy-name" placeholder="Nome do Chefão (ex: Dragão Verde Venomfang)" style="font-size: 11.5px;">
+          <input type="text" id="inp-trophy-cr" placeholder="ND (ex: 8)" style="font-size: 11.5px;">
+          <input type="text" id="inp-trophy-notes" placeholder="Relato curto / bônus narrativo" style="font-size: 11.5px;">
+          <button type="button" class="btn-action" style="font-size: 11px; padding: 6px 12px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 800;" onclick="addBastionTrophy()">🏆 Expor</button>
+        </div>
+        ${(bastion.trophies || []).length > 0 ? `
+          <div class="bastion-trophy-grid">
+            ${bastion.trophies.map(t => `
+              <div class="bastion-trophy-card">
+                <div>
+                  <div style="font-weight: 800; color: #fef08a; font-size: 12px;">🏆 ${t.name} <span style="color: #94a3b8; font-size: 10px;">(ND ${t.cr})</span></div>
+                  <div style="font-size: 10.5px; color: #cbd5e1; margin-top: 2px;">${t.notes} • Dia ${t.day || 1}</div>
+                </div>
+                <button type="button" class="btn-micro" style="color: #f87171;" onclick="removeBastionTrophy('${t.id}')" title="Remover troféu">✕</button>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
+
       <!-- Card de Evolução de Assentamento & Pré-Requisitos (ISSUE-181 & ISSUE-182) -->
       <div class="bastion-evolution-card">
         <div class="bastion-evolution-header">
@@ -4899,6 +5111,8 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
       staff.forEach(npc => {
         const assignedFacility = npc.assignedFacilityId ? (bastion.specialFacilities || []).find(f => f.id === npc.assignedFacilityId) : null;
         const mastery = (typeof getBastionStaffMasteryInfo === 'function') ? getBastionStaffMasteryInfo(npc.level || 1) : { level: 1, title: 'Aprendiz', stars: '⭐', timeReductionDays: 0, desc: 'Padrão' };
+        const loyaltyVal = typeof npc.loyalty === 'number' ? npc.loyalty : 50;
+        const isVet = Boolean(npc.veteran || loyaltyVal >= 80);
         html += `
           <div class="bastion-staff-card">
             <div class="bastion-staff-header">
@@ -4907,10 +5121,17 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
                   <span>${npc.icon || '👤'}</span>
                   <span>${npc.name}</span>
                   <span class="bastion-mastery-badge" title="${mastery.title}">${mastery.stars} Nv.${mastery.level}</span>
+                  ${isVet ? '<span class="bastion-staff-veteran-badge" title="Veterano: -1 dia extra nas ordens da sala">⭐ Veterano</span>' : ''}
                 </div>
-                <div class="bastion-staff-role">${npc.role || 'Especialista'}</div>
+                <div class="bastion-staff-role">${npc.role || 'Especialista'} • ❤️ Lealdade: ${loyaltyVal}%</div>
+                <div class="bastion-loyalty-bar"><div class="bastion-loyalty-fill" style="width: ${loyaltyVal}%;"></div></div>
               </div>
               <div style="display: flex; gap: 4px; align-items: center;">
+                ${!npc.questCompleted ? `
+                  <button type="button" class="btn-secondary" style="font-size: 10px; padding: 2px 6px; color: #6ee7b7; border-color: rgba(16,185,129,0.4);" onclick="completeStaffPersonalQuest('${npc.id}')" title="Concluir missão pessoal do NPC (torna Veterano +20% Lealdade)">
+                    🏅 Missão
+                  </button>
+                ` : ''}
                 ${(npc.level || 1) < 5 ? `
                   <button type="button" class="btn-promote-staff" onclick="promoteBastionStaffMember('${npc.id}')" title="Promover nível de maestria do especialista">
                     ⭐ Promover
@@ -4920,6 +5141,12 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
                 <button type="button" class="btn-micro" style="color: #f87171;" onclick="deleteBastionStaffMember('${npc.id}')" title="Dispensar especialista">🗑️</button>
               </div>
             </div>
+
+            ${npc.personalQuest ? `
+              <div style="font-size: 10.5px; color: ${npc.questCompleted ? '#6ee7b7' : '#fde68a'}; background: rgba(0,0,0,0.22); padding: 4px 6px; border-radius: 4px;">
+                ${npc.questCompleted ? '✅' : '📜'} <b>Missão Pessoal:</b> ${npc.personalQuest}
+              </div>
+            ` : ''}
 
             ${npc.trait ? `
               <div style="font-size: 11px; color: #cbd5e1; font-style: italic; background: rgba(0,0,0,0.2); padding: 4px 6px; border-radius: 4px;">
@@ -5547,6 +5774,8 @@ function saveBastionStaffMember() {
       }
     }
   } else {
+    const qTemplates = (typeof BASTION_STAFF_QUEST_TEMPLATES !== 'undefined' && Array.isArray(BASTION_STAFF_QUEST_TEMPLATES)) ? BASTION_STAFF_QUEST_TEMPLATES : [];
+    const autoQuest = qTemplates.length > 0 ? qTemplates[Math.floor(Math.random() * qTemplates.length)] : 'Ajudar o especialista em um favor pessoal';
     staff.push({
       id: 'bstaff_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
       name,
@@ -5556,6 +5785,10 @@ function saveBastionStaffMember() {
       wage,
       trait,
       notes,
+      loyalty: 50,
+      personalQuest: notes || autoQuest,
+      questCompleted: false,
+      veteran: false,
       assignedFacilityId: null
     });
   }
@@ -5866,11 +6099,12 @@ function renderBastionActionsList() {
   let mgrInfoText = '';
   if (selectedFac && selectedFac.managerNpcId) {
     const mgr = (bastion.staff || []).find(s => s.id === selectedFac.managerNpcId);
-    if (mgr) {
-      const minfo = getBastionStaffMasteryInfo(mgr.level || 1);
-      timeReduction = minfo.timeReductionDays || 0;
-      mgrInfoText = `👤 Encarregado: ${mgr.name} (${minfo.stars} Nv.${minfo.level}) • Desconto: -${timeReduction} dias`;
-    }
+      if (mgr) {
+        const minfo = getBastionStaffMasteryInfo(mgr.level || 1);
+        const vetBonus = (mgr.veteran || (mgr.loyalty || 50) >= 80) ? 1 : 0;
+        timeReduction = (minfo.timeReductionDays || 0) + vetBonus;
+        mgrInfoText = `👤 Encarregado: ${mgr.name} (${minfo.stars} Nv.${mgr.level}${vetBonus ? ' • ⭐ Veterano' : ''}) • Desconto: -${timeReduction} dias`;
+      }
   }
 
   listContainer.innerHTML = actions.map(act => {
@@ -6084,12 +6318,13 @@ function triggerActivateBastionAction(actionKey) {
   let mgrName = fac.managerNpcName || null;
   if (fac.managerNpcId) {
     const mgr = (bastion.staff || []).find(s => s.id === fac.managerNpcId);
-    if (mgr) {
-      mgrLevel = mgr.level || 1;
-      mgrName = mgr.name;
-      const minfo = getBastionStaffMasteryInfo(mgrLevel);
-      timeReduction = minfo.timeReductionDays || 0;
-    }
+      if (mgr) {
+        mgrLevel = mgr.level || 1;
+        mgrName = mgr.name;
+        const minfo = getBastionStaffMasteryInfo(mgrLevel);
+        const vetBonus = (mgr.veteran || (mgr.loyalty || 50) >= 80) ? 1 : 0;
+        timeReduction = (minfo.timeReductionDays || 0) + vetBonus;
+      }
   }
 
   const baseDays = act.durationDays || 7;
@@ -6296,6 +6531,20 @@ function advanceBastionTurn(silent = false) {
         });
       }
       payrollNotice = `⚠️ ALERTA: Saldo bancário insuficiente para a folha do Staff (${totalPayroll} PO necessários, faltaram ${unpaid} PO). Moral dos especialistas abalada!`;
+    }
+  }
+
+  // 0.05 Atualiza Lealdade & Status Veterano do Staff (ISSUE-185)
+  staff.forEach(npc => {
+    const prevLoy = typeof npc.loyalty === 'number' ? npc.loyalty : 50;
+    npc.loyalty = Math.max(0, Math.min(100, prevLoy + (payrollPaidOk ? 5 : -15)));
+    if (npc.loyalty >= 80) npc.veteran = true;
+  });
+
+  // Chance orgânica (35%) de surgir novo Dilema/Visitante se nenhum estiver pendente
+  if (!bastion.pendingDilemma && typeof BASTION_DILEMMAS_CATALOG !== 'undefined' && Array.isArray(BASTION_DILEMMAS_CATALOG) && BASTION_DILEMMAS_CATALOG.length > 0) {
+    if (Math.random() < 0.35) {
+      bastion.pendingDilemma = JSON.parse(JSON.stringify(BASTION_DILEMMAS_CATALOG[Math.floor(Math.random() * BASTION_DILEMMAS_CATALOG.length)]));
     }
   }
 
@@ -7337,16 +7586,47 @@ function renderPlayerBastionViewerModal() {
       <div style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; margin-bottom: 6px;">
         👥 Equipe & NPCs Contratados (${staff.length}):
       </div>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px; margin-bottom: 14px;">
         ${staff.length === 0 ? `
           <div style="grid-column: 1 / -1; padding: 12px; text-align: center; color: #94a3b8; background: rgba(0,0,0,0.25); border-radius: 8px; font-size: 12px;">
             Nenhum NPC especialista contratado.
           </div>
-        ` : staff.map(npc => `
-          <div class="bastion-staff-card" style="padding: 8px 10px;">
-            <div style="font-weight: 800; color: #f8fafc; font-size: 12.5px;">${npc.icon || '👤'} ${npc.name} <span style="color: #fbbf24; font-size: 10.5px;">(Nv.${npc.level || 1})</span></div>
-            <div style="font-size: 11px; color: #94a3b8;">${npc.role || 'Especialista'} • 🪙 ${npc.wage || 0} PO/sem</div>
-            ${npc.trait ? `<div style="font-size: 10.5px; color: #cbd5e1; font-style: italic; margin-top: 3px;">"${npc.trait}"</div>` : ''}
+        ` : staff.map(npc => {
+          const loy = typeof npc.loyalty === 'number' ? npc.loyalty : 50;
+          const isVet = Boolean(npc.veteran || loy >= 80);
+          return `
+            <div class="bastion-staff-card" style="padding: 8px 10px;">
+              <div style="font-weight: 800; color: #f8fafc; font-size: 12.5px;">${npc.icon || '👤'} ${npc.name} <span style="color: #fbbf24; font-size: 10.5px;">(Nv.${npc.level || 1})</span> ${isVet ? '<span class="bastion-staff-veteran-badge">⭐ Veterano</span>' : ''}</div>
+              <div style="font-size: 11px; color: #94a3b8;">${npc.role || 'Especialista'} • ❤️ ${loy}% • 🪙 ${npc.wage || 0} PO/sem</div>
+              ${npc.personalQuest ? `<div style="font-size: 10.5px; color: ${npc.questCompleted ? '#6ee7b7' : '#fde68a'}; margin-top: 2px;">${npc.questCompleted ? '✅' : '📜'} ${npc.personalQuest}</div>` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      ${bastion.pendingDilemma ? `
+        <div class="bastion-dilemma-card" style="margin-bottom: 12px;">
+          <div style="font-size: 12px; font-weight: 800; color: #ddd6fe;">🎭 Petição / Dilema para o Grupo Debater:</div>
+          <div style="font-size: 13.5px; font-weight: 800; color: #fef08a;">${bastion.pendingDilemma.icon || '🎭'} ${bastion.pendingDilemma.title}</div>
+          <div style="font-size: 11.5px; color: #cbd5e1;">${bastion.pendingDilemma.desc}</div>
+          <div style="font-size: 10.5px; color: #94a3b8;">Opções em debate: ${(bastion.pendingDilemma.choices || []).map(c => c.label).join(' | ')}</div>
+        </div>
+      ` : ''}
+
+      <div style="font-size: 11px; font-weight: 800; color: #fef08a; text-transform: uppercase; margin-bottom: 6px;">
+        🏆 Galeria de Troféus do Salão (${(bastion.trophies || []).length}):
+      </div>
+      <div class="bastion-trophy-grid">
+        ${(bastion.trophies || []).length === 0 ? `
+          <div style="grid-column: 1 / -1; padding: 12px; text-align: center; color: #94a3b8; background: rgba(0,0,0,0.25); border-radius: 8px; font-size: 12px;">
+            Nenhum troféu de chefão exposto ainda.
+          </div>
+        ` : bastion.trophies.map(t => `
+          <div class="bastion-trophy-card">
+            <div>
+              <div style="font-weight: 800; color: #fef08a; font-size: 12px;">🏆 ${t.name} <span style="color: #94a3b8; font-size: 10px;">(ND ${t.cr})</span></div>
+              <div style="font-size: 10.5px; color: #cbd5e1; margin-top: 2px;">${t.notes} • Dia ${t.day || 1}</div>
+            </div>
           </div>
         `).join('')}
       </div>
@@ -7769,11 +8049,21 @@ if (typeof module !== 'undefined' && module.exports) {
     openBastionBestiaryManagerModal,
     closeBastionBestiaryManagerModal,
     addManualDiscoveredCreature,
-    removeDiscoveredCreature
+    removeDiscoveredCreature,
+    triggerRandomBastionDilemma,
+    resolveBastionDilemma,
+    addBastionTrophy,
+    removeBastionTrophy,
+    completeStaffPersonalQuest
   };
 }
 
 if (typeof window !== 'undefined') {
+  window.triggerRandomBastionDilemma = triggerRandomBastionDilemma;
+  window.resolveBastionDilemma = resolveBastionDilemma;
+  window.addBastionTrophy = addBastionTrophy;
+  window.removeBastionTrophy = removeBastionTrophy;
+  window.completeStaffPersonalQuest = completeStaffPersonalQuest;
   window.getCampaignCalendar = getCampaignCalendar;
   window.getCampaignDiscoveredBestiary = getCampaignDiscoveredBestiary;
   window.getBastionPopulationMilestones = getBastionPopulationMilestones;

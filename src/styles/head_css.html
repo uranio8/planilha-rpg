@@ -13968,6 +13968,76 @@
       gap: 6px;
     }
 
+    /* DILEMAS, TROFÉUS & LEALDADE DO STAFF (ISSUE-185) */
+    .bastion-dilemma-card {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.14), rgba(15, 23, 42, 0.92));
+      border: 1.5px solid rgba(167, 139, 250, 0.45);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .bastion-dilemma-choices {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .bastion-dilemma-choice-btn {
+      text-align: left;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(167, 139, 250, 0.35);
+      background: rgba(0, 0, 0, 0.35);
+      color: #f8fafc;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .bastion-dilemma-choice-btn:hover {
+      background: rgba(139, 92, 246, 0.25);
+      border-color: #c4b5fd;
+    }
+    .bastion-trophy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .bastion-trophy-card {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(15, 23, 42, 0.85));
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 6px;
+    }
+    .bastion-staff-veteran-badge {
+      background: linear-gradient(135deg, #f59e0b, #b45309);
+      color: #fff;
+      font-size: 9.5px;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 10px;
+    }
+    .bastion-loyalty-bar {
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .bastion-loyalty-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ec4899, #f43f5e);
+      transition: width 0.3s ease;
+    }
+
     .bastion-walls-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
