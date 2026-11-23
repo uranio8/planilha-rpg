@@ -390,7 +390,8 @@ const BASTION_ACTIONS_CATALOG = {
     levelReq: 5,
     costPO: 10,
     durationDays: 7,
-    rewardDesc: "Descobre lendas, fraquezas ou segredos de uma criatura ou masmorra da campanha."
+    hasMonsterSelector: true,
+    rewardDesc: "Descobre lendas, fraquezas ou segredos de uma criatura do Bestiário e libera o registro para o grupo."
   },
   sanctuary_prayer: {
     key: "sanctuary_prayer",
@@ -640,7 +641,8 @@ const BASTION_ACTIONS_CATALOG = {
     levelReq: 13,
     costPO: 50,
     durationDays: 7,
-    rewardDesc: "Revela segredos lendários com efeito da magia Lendas e Histórias sobre itens e vilões."
+    hasMonsterSelector: true,
+    rewardDesc: "Revela segredos lendários com efeito da magia Lendas e Histórias sobre criaturas, itens e vilões."
   },
   house_rare_beasts: {
     key: "house_rare_beasts",
@@ -900,12 +902,21 @@ const BASTION_SETTLEMENT_TIERS = {
   }
 };
 
+// Marcos Populacionais do Bastião (SimCity & Peso para Jogadores - ISSUE-184)
+const BASTION_POPULATION_MILESTONES = [
+  { minPop: 10, id: "commerce", icon: "🛒", title: "Comércio Local", desc: "Mercadores ambulantes abastecem o bastião com itens mundanos até 25 PO." },
+  { minPop: 30, id: "militia", icon: "🛡️", title: "Milícia Cívica", desc: "Cidadãos treinados garantem +2 Defensores extras gratuitos em cercos." },
+  { minPop: 80, id: "rumors", icon: "📜", title: "Centro de Rumores", desc: "Viajantes trazem informações: pesquisas de criaturas levam -2 dias." },
+  { minPop: 200, id: "market", icon: "🏛️", title: "Mercado Regional", desc: "Rotas comerciais reduzem em 15% os custos de obras e suprimentos." }
+];
+
 if (typeof window !== 'undefined') {
   window.BASTION_SPECIAL_FACILITIES_CATALOG = BASTION_SPECIAL_FACILITIES_CATALOG;
   window.BASTION_ACTIONS_CATALOG = BASTION_ACTIONS_CATALOG;
   window.BASTION_EVENTS_TABLE = BASTION_EVENTS_TABLE;
   window.BASTION_WALL_OPTIONS = BASTION_WALL_OPTIONS;
   window.BASTION_SETTLEMENT_TIERS = BASTION_SETTLEMENT_TIERS;
+  window.BASTION_POPULATION_MILESTONES = BASTION_POPULATION_MILESTONES;
 }
 if (typeof global !== 'undefined') {
   global.BASTION_SPECIAL_FACILITIES_CATALOG = BASTION_SPECIAL_FACILITIES_CATALOG;
@@ -913,4 +924,5 @@ if (typeof global !== 'undefined') {
   global.BASTION_EVENTS_TABLE = BASTION_EVENTS_TABLE;
   global.BASTION_WALL_OPTIONS = BASTION_WALL_OPTIONS;
   global.BASTION_SETTLEMENT_TIERS = BASTION_SETTLEMENT_TIERS;
+  global.BASTION_POPULATION_MILESTONES = BASTION_POPULATION_MILESTONES;
 }

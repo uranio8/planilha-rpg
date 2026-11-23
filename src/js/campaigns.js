@@ -4323,6 +4323,99 @@ function getCampaignBastion(camp) {
   return camp.bastion;
 }
 
+function getCampaignCalendar(camp) {
+  if (!camp) return { currentDay: 1, dayBuffer: 0 };
+  if (!camp.calendar || typeof camp.calendar !== 'object') {
+    camp.calendar = { currentDay: 1, dayBuffer: 0 };
+  }
+  if (typeof camp.calendar.currentDay !== 'number' || camp.calendar.currentDay < 1) {
+    camp.calendar.currentDay = 1;
+  }
+  if (typeof camp.calendar.dayBuffer !== 'number' || camp.calendar.dayBuffer < 0) {
+    camp.calendar.dayBuffer = 0;
+  }
+  return camp.calendar;
+}
+
+function getCampaignDiscoveredBestiary(camp) {
+  if (!camp) return [];
+  if (!Array.isArray(camp.discoveredBestiary)) {
+    camp.discoveredBestiary = [];
+  }
+  return camp.discoveredBestiary;
+}
+
+function getBastionPopulationMilestones(bastion) {
+  const pop = bastion?.population || 0;
+  const list = (typeof BASTION_POPULATION_MILESTONES !== 'undefined' && Array.isArray(BASTION_POPULATION_MILESTONES))
+    ? BASTION_POPULATION_MILESTONES
+    : [];
+  return list.map(m => ({ ...m, unlocked: pop >= m.minPop }));
+}
+
+function getBastionRestBonus(bastion) {
+  const hScore = typeof bastion?.happiness === 'number' ? bastion.happiness : 50;
+  const lvl = Math.max(1, parseInt(bastion?.level, 10) || 1);
+  return {
+    active: hScore >= 60,
+    tempHp: hScore >= 60 ? lvl : 0,
+    socialBonus: hScore >= 80 ? '+1d6' : null
+  };
+}
+
+function unlockCreatureInDiscoveredBestiary(camp, monsterName, weaknessText = '', loreText = '') {
+  if (!camp || !monsterName) return null;
+  const list = getCampaignDiscoveredBestiary(camp);
+  const norm = String(monsterName).trim().toLowerCase();
+  const catalog = (typeof BESTIARY_DATA !== 'undefined' && Array.isArray(BESTIARY_DATA)) ? BESTIARY_DATA : [];
+  const found = catalog.find(m => String(m.name || '').trim().toLowerCase() === norm);
+  const cal = getCampaignCalendar(camp);
+
+  const entryData = {
+    name: found ? found.name : monsterName.trim(),
+    source: found ? (found.source || 'Bestiário') : 'Campanha',
+    cr: found ? (found.cr || '?') : '?',
+    ac: found ? (found.ac || '-') : '-',
+    hp: found ? (found.hp || '-') : '-',
+    speed: found ? (found.speed || '9m') : '9m',
+    attack: found ? (found.attack || '') : '',
+    weakness: (weaknessText || '').trim() || 'Observações táticas em andamento.',
+    lore: (loreText || '').trim() || 'Criatura registrada nos tomos de pesquisa da fortaleza.',
+    discoveredDay: cal.currentDay || 1,
+    discoveredDate: new Date().toISOString().split('T')[0]
+  };
+
+  const existingIdx = list.findIndex(x => String(x.name || '').trim().toLowerCase() === entryData.name.toLowerCase());
+  if (existingIdx >= 0) {
+    list[existingIdx] = {
+      ...list[existingIdx],
+      weakness: weaknessText && weaknessText.trim() ? weaknessText.trim() : list[existingIdx].weakness,
+      lore: loreText && loreText.trim() ? loreText.trim() : list[existingIdx].lore
+    };
+    return list[existingIdx];
+  }
+
+  list.push(entryData);
+  return entryData;
+}
+
+function filterBastionBestiarySelect(inputId, selectId) {
+  const inp = document.getElementById(inputId);
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const q = (inp ? inp.value : '').trim().toLowerCase();
+  const catalog = (typeof BESTIARY_DATA !== 'undefined' && Array.isArray(BESTIARY_DATA)) ? BESTIARY_DATA : [];
+  const matches = catalog
+    .filter(m => !q || String(m.name || '').toLowerCase().includes(q) || String(m.cr || '').toLowerCase().includes(q))
+    .slice(0, 60);
+
+  if (matches.length === 0) {
+    sel.innerHTML = '<option value="">Nenhuma criatura encontrada</option>';
+    return;
+  }
+  sel.innerHTML = matches.map(m => `<option value="${String(m.name).replace(/"/g, '&quot;')}">${m.name} (ND ${m.cr || '?'} • CA ${m.ac || '-'} • PV ${m.hp || '-'})</option>`).join('');
+}
+
 function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
   const containerId = targetContainerId || 'campaign-bastion-container';
   const container = document.getElementById(containerId);
@@ -4374,6 +4467,10 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
   }
 
   const subTab = activeBastionSubTab || 'overview';
+  const cal = getCampaignCalendar(camp);
+  const discoveredCount = getCampaignDiscoveredBestiary(camp).length;
+  const restBonus = getBastionRestBonus(bastion);
+  const milestones = getBastionPopulationMilestones(bastion);
 
   let html = `
     <div class="bastion-panel-card">
@@ -4423,6 +4520,25 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
           <span class="bastion-kpi-label">🏦 Cofre do Bastião</span>
           <div class="bastion-kpi-value" style="color: #facc15;">${bank.gold || 0} PO</div>
           <span class="bastion-kpi-sub">Baú da Campanha: <b>${goldAmount} PO</b></span>
+        </div>
+      </div>
+
+      <!-- Relógio de Dias da Campanha & Bestiário Descoberto (ISSUE-184) -->
+      <div class="bastion-day-clock-bar">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <span style="font-size: 18px;">⏳</span>
+          <div>
+            <div style="font-size: 12px; font-weight: 800; color: #7dd3fc;">Dia ${cal.currentDay} de Campanha • Semana ${weeksCur} (${cal.dayBuffer}/7 dias p/ próximo ciclo)</div>
+            <div style="font-size: 10.5px; color: #94a3b8;">Avance os dias de viagem ou descanso e as produções do Bastião acompanham automaticamente</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 5px; align-items: center; flex-wrap: wrap;">
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 9px;" onclick="advanceCampaignDays(1)">+1 Dia</button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 9px;" onclick="advanceCampaignDays(3)">+3 Dias</button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 9px; color: #c4b5fd; border-color: rgba(139,92,246,0.4);" onclick="advanceCampaignDays(7)">+7 Dias</button>
+          <input type="number" id="inp-bastion-custom-days" min="1" max="365" value="2" style="width: 52px; font-size: 11px; padding: 3px 6px; text-align: center;" title="Quantidade de dias para avançar">
+          <button type="button" class="btn-action" style="font-size: 11px; padding: 4px 10px; background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff;" onclick="advanceCampaignDays(parseInt(document.getElementById('inp-bastion-custom-days')?.value, 10) || 1)">Avançar</button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 4px 10px; color: #fef08a; border-color: rgba(245,158,11,0.4);" onclick="openBastionBestiaryManagerModal()" title="Gerenciar criaturas descobertas para os jogadores">📖 Bestiário (${discoveredCount})</button>
         </div>
       </div>
 
@@ -4624,6 +4740,25 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
 
         <div class="bastion-happiness-factors">
           ${hFactors.length > 0 ? hFactors.map(f => `<span class="bastion-factor-chip ${f.type}">${f.label}</span>`).join('') : '<span class="bastion-factor-chip">ℹ️ Construa muralhas, salas de bem-estar ou contrate staff para gerar bônus de humor.</span>'}
+        </div>
+
+        <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px; margin-top: 4px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+            <span style="font-size: 11px; font-weight: 800; color: #6ee7b7;">🏘️ Benefícios para os Jogadores & Marcos Populacionais:</span>
+            <span style="font-size: 11px; color: ${restBonus.active ? '#6ee7b7' : '#94a3b8'}; font-weight: 700;">
+              ${restBonus.active ? `🏕️ Descanso no Bastião ativo: +${restBonus.tempHp} PV Temp.${restBonus.socialBonus ? ` & ${restBonus.socialBonus} Social` : ''}` : '🏕️ Descanso no Bastião: requer Felicidade ≥ 60%'}
+            </span>
+          </div>
+          <div class="bastion-milestones-grid">
+            ${milestones.map(m => `
+              <div class="bastion-milestone-card ${m.unlocked ? 'unlocked' : ''}">
+                <div style="font-weight: 800; color: ${m.unlocked ? '#6ee7b7' : '#94a3b8'};">
+                  ${m.unlocked ? '✅' : '🔒'} ${m.icon} ${m.title} (${m.minPop}+ hab.)
+                </div>
+                <div style="font-size: 10.5px; margin-top: 2px;">${m.desc}</div>
+              </div>
+            `).join('')}
+          </div>
         </div>
       </div>
 
@@ -5690,6 +5825,7 @@ function renderBastionActionsList() {
   const selFac = document.getElementById('sel-bastion-action-facility');
   const selectedFacId = selFac ? selFac.value : null;
   const selectedFac = (bastion?.specialFacilities || []).find(f => f.id === selectedFacId);
+
   const selGoldSource = document.getElementById('sel-bastion-action-gold-source');
   const goldSource = selGoldSource ? selGoldSource.value : 'bank';
   const currentBankGold = goldSource === 'stash' ? (camp.partyStash?.gold || 0) : (bank.gold || 0);
@@ -5767,8 +5903,9 @@ function renderBastionActionsList() {
           </button>
         </div>
 
-        <!-- Seletor de Item Dinâmico se a ação permitir confecção de itens -->
+        <!-- Seletor de Item ou Criatura Dinâmico -->
         ${act.hasItemSelector ? renderActionItemSelectorHtml(act) : ''}
+        ${act.hasMonsterSelector ? renderActionMonsterSelectorHtml(act) : ''}
 
         <div class="bastion-action-reward-box">
           <b>🎁 Recompensa / Benefício:</b> ${act.rewardDesc}
@@ -5855,6 +5992,23 @@ function renderActionItemSelectorHtml(act) {
   `;
 }
 
+function renderActionMonsterSelectorHtml(act) {
+  const catalog = (typeof BESTIARY_DATA !== 'undefined' && Array.isArray(BESTIARY_DATA)) ? BESTIARY_DATA : [];
+  const initialOpts = catalog.slice(0, 60).map(m => `<option value="${String(m.name).replace(/"/g, '&quot;')}">${m.name} (ND ${m.cr || '?'} • CA ${m.ac || '-'})</option>`).join('');
+  return `
+    <div style="background: rgba(15,23,42,0.75); border: 1px solid rgba(56,189,248,0.3); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px;">
+      <label style="font-size: 11px; font-weight: 700; color: #7dd3fc;">🐉 Selecione a Criatura para Estudo & Bestiário do Grupo:</label>
+      <input type="text" id="inp-monster-search-${act.key}" placeholder="Buscar criatura no Bestiário (ex: Dragão, Goblin, Vampiro)..."
+        oninput="filterBastionBestiarySelect('inp-monster-search-${act.key}', 'sel-monster-for-${act.key}')" style="width: 100%; font-size: 11.5px;">
+      <select id="sel-monster-for-${act.key}" style="width: 100%; font-size: 12px;">
+        ${initialOpts || '<option value="">Bestiário indisponível</option>'}
+      </select>
+      <input type="text" id="inp-monster-weakness-${act.key}" placeholder="Fraquezas / Táticas descobertas (ex: Vulnerável a Fogo)" style="width: 100%; font-size: 11px;">
+      <input type="text" id="inp-monster-lore-${act.key}" placeholder="História / Notas da campanha (opcional)" style="width: 100%; font-size: 11px;">
+    </div>
+  `;
+}
+
 function triggerActivateBastionAction(actionKey) {
   const camp = getSelectedBastionCampaign();
   if (!camp) return;
@@ -5905,6 +6059,17 @@ function triggerActivateBastionAction(actionKey) {
     }
   }
 
+  let selectedMonster = null;
+  if (act.hasMonsterSelector) {
+    const selMonsterEl = document.getElementById(`sel-monster-for-${act.key}`);
+    const mName = selMonsterEl ? selMonsterEl.value : '';
+    if (mName) {
+      const mWeak = document.getElementById(`inp-monster-weakness-${act.key}`)?.value || '';
+      const mLore = document.getElementById(`inp-monster-lore-${act.key}`)?.value || '';
+      selectedMonster = { name: mName, weakness: mWeak, lore: mLore };
+    }
+  }
+
   const selGoldSource = document.getElementById('sel-bastion-action-gold-source');
   const goldSource = selGoldSource ? selGoldSource.value : 'bank';
   const availableGold = goldSource === 'stash' ? (camp.partyStash?.gold || 0) : (bank.gold || 0);
@@ -5928,7 +6093,8 @@ function triggerActivateBastionAction(actionKey) {
   }
 
   const baseDays = act.durationDays || 7;
-  const effectiveDays = Math.max(1, baseDays - timeReduction);
+  const rumorSpeedBonus = (act.hasMonsterSelector && (bastion.population || 0) >= 80) ? 2 : 0;
+  const effectiveDays = Math.max(1, baseDays - timeReduction - rumorSpeedBonus);
 
   // Deduz da fonte escolhida (Cofre ou Baú)
   if (finalCost > 0) {
@@ -5956,13 +6122,14 @@ function triggerActivateBastionAction(actionKey) {
 
   fac.currentOrder = {
     actionKey: act.key,
-    name: act.name,
+    name: selectedMonster ? `${act.name}: ${selectedMonster.name}` : act.name,
     durationDays: effectiveDays,
     daysLeft: effectiveDays,
     heroId: heroId,
     managerNpcName: mgrName,
     managerNpcLevel: mgrLevel,
     selectedItem: selectedItem,
+    targetMonster: selectedMonster,
     rewardDesc: act.rewardDesc,
     rewardItem: act.rewardItem,
     costPO: finalCost
@@ -5982,8 +6149,108 @@ function triggerActivateBastionAction(actionKey) {
   }
 }
 
+function completeBastionFacilityOrder(camp, bastion, fac, staff, currentTier) {
+  if (!fac || !fac.currentOrder) return false;
+
+  // Identifica se o encarregado é Nível 5 (Lenda Viva) para dobrar a produção
+  let isLevel5 = fac.managerNpcLevel === 5 || fac.currentOrder.managerNpcLevel === 5;
+  if (!isLevel5 && fac.managerNpcId) {
+    const m = staff.find(s => s.id === fac.managerNpcId);
+    if (m && m.level === 5) isLevel5 = true;
+  }
+  const productionMultiplier = isLevel5 ? 2 : 1;
+
+  // Adiciona item concluído no Baú Coletivo
+  if (fac.currentOrder.selectedItem) {
+    camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+    camp.partyStash.items = camp.partyStash.items || [];
+    camp.partyStash.items.push({
+      id: 'it_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      name: fac.currentOrder.selectedItem.name,
+      qty: productionMultiplier,
+      category: 'Fabricação do Bastião',
+      carrier: 'Baú do Grupo',
+      desc: `Item fabricado no Bastião pela ordem "${fac.currentOrder.name}".`
+    });
+    const mgrNotice = fac.managerNpcName ? ` (Supervisionado por ${fac.managerNpcName}${isLevel5 ? ' - ⭐ Lenda Viva 2x' : ''})` : '';
+    camp.partyStash.history = camp.partyStash.history || [];
+    camp.partyStash.history.push({
+      date: new Date().toISOString().split('T')[0],
+      text: `+${productionMultiplier}x ${fac.currentOrder.selectedItem.name} fabricado na ${fac.name}${mgrNotice}`,
+      type: 'item_in'
+    });
+  } else if (fac.currentOrder.rewardItem) {
+    const rItem = fac.currentOrder.rewardItem;
+    const finalQty = (rItem.qty || 1) * productionMultiplier;
+    const mgrNotice = fac.managerNpcName ? ` (Supervisionado por ${fac.managerNpcName}${isLevel5 ? ' - ⭐ Lenda Viva 2x' : ''})` : '';
+    camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+    camp.partyStash.items = camp.partyStash.items || [];
+    camp.partyStash.items.push({
+      id: 'it_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      name: rItem.name,
+      qty: finalQty,
+      category: 'Produção do Bastião',
+      carrier: 'Baú do Grupo',
+      desc: rItem.desc || 'Produzido nas instalações da fortaleza.'
+    });
+    camp.partyStash.history = camp.partyStash.history || [];
+    camp.partyStash.history.push({
+      date: new Date().toISOString().split('T')[0],
+      text: `+${finalQty}x ${rItem.name} produzido no Bastião (${fac.name})${mgrNotice}`,
+      type: 'item_in'
+    });
+  }
+
+  // Pesquisa de Criatura: Desbloqueia no Bestiário Descoberto do Grupo (ISSUE-184)
+  if (fac.currentOrder.targetMonster && fac.currentOrder.targetMonster.name) {
+    const tm = fac.currentOrder.targetMonster;
+    const unlocked = unlockCreatureInDiscoveredBestiary(camp, tm.name, tm.weakness, tm.lore);
+    if (unlocked && typeof addLog === 'function') {
+      addLog(`📖 <b>Bestiário do Grupo:</b> Estudo concluído sobre <b>${unlocked.name}</b>! Agora visível para os jogadores.`);
+    }
+  }
+
+  // Faturamento comercial direto para o Baú
+  if (fac.currentOrder.actionKey === 'run_gambling_night') {
+    const profit = Math.floor(Math.random() * 90) + 30;
+    camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+    camp.partyStash.gold = (camp.partyStash.gold || 0) + profit;
+    camp.partyStash.history = camp.partyStash.history || [];
+    camp.partyStash.history.push({
+      date: new Date().toISOString().split('T')[0],
+      text: `+${profit} PO lucro da Noite de Jogatina no Bastião`,
+      type: 'gold_in'
+    });
+  } else if (fac.currentOrder.actionKey === 'trade_commodities') {
+    const profit = Math.floor(Math.random() * 100) + 50;
+    camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+    camp.partyStash.gold = (camp.partyStash.gold || 0) + profit;
+    camp.partyStash.history = camp.partyStash.history || [];
+    camp.partyStash.history.push({
+      date: new Date().toISOString().split('T')[0],
+      text: `+${profit} PO lucro de caravanas no Depósito Comercial`,
+      type: 'gold_in'
+    });
+  } else if (fac.currentOrder.actionKey === 'guild_trade_revenue') {
+    camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+    camp.partyStash.gold = (camp.partyStash.gold || 0) + 500;
+    camp.partyStash.history = camp.partyStash.history || [];
+    camp.partyStash.history.push({
+      date: new Date().toISOString().split('T')[0],
+      text: `+500 PO receita fixa semanal da Sede de Guilda`,
+      type: 'gold_in'
+    });
+  } else if (fac.currentOrder.actionKey === 'recruit_defenders') {
+    const maxDef = (currentTier && currentTier.maxDefenders) || 12;
+    bastion.defenders = Math.min(maxDef, (bastion.defenders || 0) + 4);
+  }
+
+  fac.currentOrder = null;
+  return true;
+}
+
 // Avança 7 dias no tempo do Bastião, processa ordens concluídas e rola na Tabela d100 de Eventos
-function advanceBastionTurn() {
+function advanceBastionTurn(silent = false) {
   const camp = getSelectedBastionCampaign();
   if (!camp) return;
 
@@ -6072,82 +6339,7 @@ function advanceBastionTurn() {
       fac.currentOrder.daysLeft -= 7;
       if (fac.currentOrder.daysLeft <= 0) {
         completedOrders.push({ fac, order: fac.currentOrder });
-
-        // Identifica se o encarregado é Nível 5 (Lenda Viva) para dobrar a produção
-        let isLevel5 = fac.managerNpcLevel === 5 || fac.currentOrder.managerNpcLevel === 5;
-        if (!isLevel5 && fac.managerNpcId) {
-          const m = staff.find(s => s.id === fac.managerNpcId);
-          if (m && m.level === 5) isLevel5 = true;
-        }
-        const productionMultiplier = isLevel5 ? 2 : 1;
-
-        // Adiciona item concluído no Baú Coletivo
-        if (fac.currentOrder.selectedItem) {
-          camp.partyStash.items = camp.partyStash.items || [];
-          camp.partyStash.items.push({
-            id: 'it_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-            name: fac.currentOrder.selectedItem.name,
-            qty: productionMultiplier,
-            category: 'Fabricação do Bastião',
-            carrier: 'Baú do Grupo',
-            desc: `Item fabricado no Bastião pela ordem "${fac.currentOrder.name}".`
-          });
-          const mgrNotice = fac.managerNpcName ? ` (Supervisionado por ${fac.managerNpcName}${isLevel5 ? ' - ⭐ Lenda Viva 2x' : ''})` : '';
-          camp.partyStash.history.push({
-            date: new Date().toISOString().split('T')[0],
-            text: `+${productionMultiplier}x ${fac.currentOrder.selectedItem.name} fabricado na ${fac.name}${mgrNotice}`,
-            type: 'item_in'
-          });
-        } else if (fac.currentOrder.rewardItem) {
-          const rItem = fac.currentOrder.rewardItem;
-          const finalQty = (rItem.qty || 1) * productionMultiplier;
-          const mgrNotice = fac.managerNpcName ? ` (Supervisionado por ${fac.managerNpcName}${isLevel5 ? ' - ⭐ Lenda Viva 2x' : ''})` : '';
-          camp.partyStash.items = camp.partyStash.items || [];
-          camp.partyStash.items.push({
-            id: 'it_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-            name: rItem.name,
-            qty: finalQty,
-            category: 'Produção do Bastião',
-            carrier: 'Baú do Grupo',
-            desc: rItem.desc || 'Produzido nas instalações da fortaleza.'
-          });
-          camp.partyStash.history.push({
-            date: new Date().toISOString().split('T')[0],
-            text: `+${finalQty}x ${rItem.name} produzido no Bastião (${fac.name})${mgrNotice}`,
-            type: 'item_in'
-          });
-        }
-
-        // Faturamento comercial direto para o Baú
-        if (fac.currentOrder.actionKey === 'run_gambling_night') {
-          const profit = Math.floor(Math.random() * 90) + 30; // 30 a 120 PO
-          camp.partyStash.gold = (camp.partyStash.gold || 0) + profit;
-          camp.partyStash.history.push({
-            date: new Date().toISOString().split('T')[0],
-            text: `+${profit} PO lucro da Noite de Jogatina no Bastião`,
-            type: 'gold_in'
-          });
-        } else if (fac.currentOrder.actionKey === 'trade_commodities') {
-          const profit = Math.floor(Math.random() * 100) + 50; // 50 a 150 PO
-          camp.partyStash.gold = (camp.partyStash.gold || 0) + profit;
-          camp.partyStash.history.push({
-            date: new Date().toISOString().split('T')[0],
-            text: `+${profit} PO lucro de caravanas no Depósito Comercial`,
-            type: 'gold_in'
-          });
-        } else if (fac.currentOrder.actionKey === 'guild_trade_revenue') {
-          camp.partyStash.gold = (camp.partyStash.gold || 0) + 500;
-          camp.partyStash.history.push({
-            date: new Date().toISOString().split('T')[0],
-            text: `+500 PO receita fixa semanal da Sede de Guilda`,
-            type: 'gold_in'
-          });
-        } else if (fac.currentOrder.actionKey === 'recruit_defenders') {
-          const maxDef = currentTier.maxDefenders || 12;
-          bastion.defenders = Math.min(maxDef, (bastion.defenders || 0) + 4);
-        }
-
-        fac.currentOrder = null;
+        completeBastionFacilityOrder(camp, bastion, fac, staff, currentTier);
       }
     }
   });
@@ -6254,11 +6446,67 @@ function advanceBastionTurn() {
   if (evDesc) evDesc.innerText = eventEntry.desc;
   if (evRes) evRes.innerHTML = `<b>Resolução:</b> ${resolutionText}`;
 
-  const evModal = document.getElementById('modal-bastion-event');
-  if (evModal) evModal.style.display = 'flex';
+  if (!silent) {
+    const evModal = document.getElementById('modal-bastion-event');
+    if (evModal) evModal.style.display = 'flex';
+  }
 
   if (typeof addLog === 'function') {
     addLog(`🏰 <b>Turno do Bastião (${bastion.turnCount}):</b> d100 = ${d100} (${eventEntry.title}). ${completedOrders.length} ordens concluídas.`);
+  }
+}
+
+function advanceCampaignDays(daysRaw = 1) {
+  const days = Math.max(1, Math.min(365, parseInt(daysRaw, 10) || 1));
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+  const staff = getBastionStaff(bastion);
+  const currentTier = getBastionSettlementTier(bastion);
+  const cal = getCampaignCalendar(camp);
+
+  cal.currentDay += days;
+  cal.dayBuffer += days;
+
+  let completedNow = 0;
+  // Desconta os dias em todas as ordens ativas (concluindo as que zerarem)
+  (bastion.specialFacilities || []).forEach(fac => {
+    if (fac.currentOrder) {
+      fac.currentOrder.daysLeft -= days;
+      if (fac.currentOrder.daysLeft <= 0) {
+        completeBastionFacilityOrder(camp, bastion, fac, staff, currentTier);
+        completedNow++;
+      }
+    }
+  });
+
+  let weeklyTurnsTriggered = 0;
+  while (cal.dayBuffer >= 7) {
+    cal.dayBuffer -= 7;
+    weeklyTurnsTriggered++;
+    // Avança o ciclo semanal sem descontar 7 dias duplicados das ordens que já descontaram `days`
+    const prevOrders = (bastion.specialFacilities || []).map(f => ({ f, daysLeft: f.currentOrder ? f.currentOrder.daysLeft : null }));
+    advanceBastionTurn(true);
+    prevOrders.forEach(item => {
+      if (item.f.currentOrder && item.daysLeft !== null) {
+        item.f.currentOrder.daysLeft = item.daysLeft;
+      }
+    });
+  }
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+
+  renderBastionsTab(camp.id);
+  renderCampaigns();
+  renderPartyStashViewer();
+  if (typeof updateAllPartyStashElements === 'function') updateAllPartyStashElements();
+
+  if (typeof addLog === 'function') {
+    addLog(`⏳ <b>Relógio da Campanha:</b> +${days} dia(s) (Dia ${cal.currentDay}). ${completedNow} ordem(ns) concluída(s), ${weeklyTurnsTriggered} ciclo(s) semanal(is).`);
   }
 }
 
@@ -6961,6 +7209,245 @@ function fundBastionFestival() {
 }
 
 
+// =========================================================================
+// 👁️ VISÃO SOMENTE-LEITURA DO BASTIÃO & BESTIÁRIO DESCOBERTO (JOGADORES - ISSUE-184)
+// =========================================================================
+
+var activePlayerBastionViewTab = 'fortress';
+var activePlayerBastionCampId = null;
+
+function resolveCampaignForPlayerViewer(playerId = null) {
+  const pid = playerId || (typeof activePortalPlayerId !== 'undefined' ? activePortalPlayerId : null);
+  const camps = CAMPAIGNS_STATE?.campaigns || [];
+  if (pid) {
+    const byPlayer = camps.find(c => Array.isArray(c.playerIds) && c.playerIds.some(id => String(id) === String(pid)));
+    if (byPlayer) return byPlayer;
+  }
+  return getActiveCampaign() || camps[0] || null;
+}
+
+function openPlayerBastionViewerModal(playerId = null) {
+  const camp = resolveCampaignForPlayerViewer(playerId);
+  if (!camp) {
+    if (typeof alert === 'function') alert('Nenhuma campanha vinculada encontrada.');
+    return;
+  }
+  activePlayerBastionCampId = camp.id;
+  activePlayerBastionViewTab = 'fortress';
+  renderPlayerBastionViewerModal();
+  const modal = document.getElementById('modal-player-bastion-view');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closePlayerBastionViewerModal() {
+  const modal = document.getElementById('modal-player-bastion-view');
+  if (modal) modal.style.display = 'none';
+}
+
+function switchPlayerBastionViewTab(tabKey) {
+  activePlayerBastionViewTab = tabKey || 'fortress';
+  renderPlayerBastionViewerModal();
+}
+
+function renderPlayerBastionViewerModal() {
+  const camp = (CAMPAIGNS_STATE?.campaigns || []).find(c => c.id === activePlayerBastionCampId) || resolveCampaignForPlayerViewer();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+
+  const body = document.getElementById('player-bastion-view-body');
+  const titleEl = document.getElementById('player-bastion-view-title');
+  const subEl = document.getElementById('player-bastion-view-subtitle');
+  const btnFort = document.getElementById('btn-pbv-tab-fortress');
+  const btnBest = document.getElementById('btn-pbv-tab-bestiary');
+
+  const tier = getBastionSettlementTier(bastion);
+  const cal = getCampaignCalendar(camp);
+  const discovered = getCampaignDiscoveredBestiary(camp);
+
+  if (titleEl) titleEl.innerText = `${tier.icon} ${bastion.name} (${tier.name})`;
+  if (subEl) subEl.innerText = `Dia ${cal.currentDay} • Semana ${bastion.turnCount || 0} • Visão Somente-Leitura do Grupo`;
+  if (btnFort) btnFort.classList.toggle('active', activePlayerBastionViewTab === 'fortress');
+  if (btnBest) {
+    btnBest.classList.toggle('active', activePlayerBastionViewTab === 'bestiary');
+    btnBest.innerText = `📖 Bestiário Descoberto (${discovered.length})`;
+  }
+  if (!body) return;
+
+  if (activePlayerBastionViewTab === 'fortress') {
+    const bank = getBastionBank(bastion);
+    const staff = getBastionStaff(bastion);
+    const hInfo = getBastionHappinessInfo(bastion.happiness);
+    const maxPop = getBastionMaxPopulation(bastion);
+    const wallOpt = (typeof BASTION_WALL_OPTIONS !== 'undefined') ? BASTION_WALL_OPTIONS[bastion.walls || 'none'] : { name: 'Sem Muralhas' };
+    const restBonus = getBastionRestBonus(bastion);
+    const facilities = bastion.specialFacilities || [];
+
+    body.innerHTML = `
+      <div class="bastion-kpi-grid" style="margin-top: 4px; margin-bottom: 12px;">
+        <div class="bastion-kpi-card">
+          <span class="bastion-kpi-label">🏦 Cofre do Bastião</span>
+          <div class="bastion-kpi-value" style="color: #facc15;">${bank.gold || 0} PO</div>
+          <span class="bastion-kpi-sub">Baú do Grupo: ${camp.partyStash?.gold || 0} PO</span>
+        </div>
+        <div class="bastion-kpi-card">
+          <span class="bastion-kpi-label">👥 População & Humor</span>
+          <div class="bastion-kpi-value" style="color: #7dd3fc;">${bastion.population || 0}/${maxPop}</div>
+          <span class="bastion-kpi-sub">${hInfo.icon} ${hInfo.score}% (${hInfo.label})</span>
+        </div>
+        <div class="bastion-kpi-card">
+          <span class="bastion-kpi-label">🛡️ Defesa & Muralha</span>
+          <div class="bastion-kpi-value" style="color: #cbd5e1;">${bastion.defenders || 0} Guardas</div>
+          <span class="bastion-kpi-sub">${wallOpt ? wallOpt.name : 'Sem Muralhas'}</span>
+        </div>
+        <div class="bastion-kpi-card">
+          <span class="bastion-kpi-label">🏕️ Descanso na Base</span>
+          <div class="bastion-kpi-value" style="color: ${restBonus.active ? '#6ee7b7' : '#94a3b8'};">${restBonus.active ? `+${restBonus.tempHp} PV Temp.` : 'Inativo'}</div>
+          <span class="bastion-kpi-sub">${restBonus.active ? 'Bônus ativo (Felicidade ≥ 60%)' : 'Requer Felicidade ≥ 60%'}</span>
+        </div>
+      </div>
+
+      <div style="font-size: 11px; font-weight: 800; color: var(--primary-light); text-transform: uppercase; margin-bottom: 6px;">
+        ⚙️ Produções & Salas Ativas (${facilities.length}):
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; margin-bottom: 14px;">
+        ${facilities.length === 0 ? `
+          <div style="grid-column: 1 / -1; padding: 14px; text-align: center; color: #94a3b8; background: rgba(0,0,0,0.25); border-radius: 8px; font-size: 12px;">
+            Nenhuma instalação especial construída no momento.
+          </div>
+        ` : facilities.map(fac => {
+          const cat = (typeof BASTION_SPECIAL_FACILITIES_CATALOG !== 'undefined') ? BASTION_SPECIAL_FACILITIES_CATALOG[fac.key] : null;
+          const ord = fac.currentOrder;
+          return `
+            <div class="bastion-facility-card" style="padding: 10px;">
+              <div style="font-weight: 800; color: #fef08a; font-size: 13px;">${cat ? cat.icon : '🏛️'} ${fac.name || cat?.name}</div>
+              ${fac.managerNpcName ? `<div style="font-size: 10.5px; color: #67e8f9;">👤 Encarregado: ${fac.managerNpcName}</div>` : ''}
+              <div class="bastion-order-box" style="margin-top: 6px;">
+                ${ord ? `
+                  <div style="color: #6ee7b7; font-weight: 700; font-size: 11.5px;">⚙️ Produzindo: ${ord.name}</div>
+                  ${ord.selectedItem ? `<div style="font-size: 11px; color: #e2e8f0;">Item: <b>${ord.selectedItem.name}</b></div>` : ''}
+                  <div style="font-size: 10.5px; color: #fde68a; margin-top: 2px;">⏳ Faltam ${ord.daysLeft} dia(s) para concluir</div>
+                ` : '<div style="font-size: 11px; color: #94a3b8; font-style: italic;">Sem produção em andamento.</div>'}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <div style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; margin-bottom: 6px;">
+        👥 Equipe & NPCs Contratados (${staff.length}):
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px;">
+        ${staff.length === 0 ? `
+          <div style="grid-column: 1 / -1; padding: 12px; text-align: center; color: #94a3b8; background: rgba(0,0,0,0.25); border-radius: 8px; font-size: 12px;">
+            Nenhum NPC especialista contratado.
+          </div>
+        ` : staff.map(npc => `
+          <div class="bastion-staff-card" style="padding: 8px 10px;">
+            <div style="font-weight: 800; color: #f8fafc; font-size: 12.5px;">${npc.icon || '👤'} ${npc.name} <span style="color: #fbbf24; font-size: 10.5px;">(Nv.${npc.level || 1})</span></div>
+            <div style="font-size: 11px; color: #94a3b8;">${npc.role || 'Especialista'} • 🪙 ${npc.wage || 0} PO/sem</div>
+            ${npc.trait ? `<div style="font-size: 10.5px; color: #cbd5e1; font-style: italic; margin-top: 3px;">"${npc.trait}"</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } else {
+    body.innerHTML = discovered.length === 0 ? `
+      <div style="text-align: center; padding: 28px 16px; color: #94a3b8; background: rgba(0,0,0,0.25); border-radius: 10px; border: 1px dashed rgba(245,158,11,0.3);">
+        <div style="font-size: 28px; margin-bottom: 6px;">📖</div>
+        <div style="font-weight: 800; color: #fef08a; font-size: 14px;">O Bestiário do Grupo ainda está em branco</div>
+        <div style="font-size: 11.5px; margin-top: 4px; max-width: 440px; margin-inline: auto;">
+          Enviem ordens de pesquisa na <b>Biblioteca</b> ou enfrentem criaturas em missão para que o Mestre registre suas fraquezas e histórias aqui!
+        </div>
+      </div>
+    ` : `
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        ${discovered.slice().reverse().map(c => `
+          <div class="bastion-discovered-creature-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+              <div style="font-family: var(--font-title); font-size: 15px; font-weight: 800; color: #fef08a;">🐉 ${c.name}</div>
+              <div style="display: flex; gap: 6px; font-size: 10.5px;">
+                <span class="badge badge-lvl">ND ${c.cr || '?'}</span>
+                <span class="badge">CA ${c.ac || '-'}</span>
+                <span class="badge">PV ${c.hp || '-'}</span>
+                <span class="badge" style="color: #7dd3fc;">Dia ${c.discoveredDay || 1}</span>
+              </div>
+            </div>
+            <div style="font-size: 11.5px; color: #fca5a5;"><b>⚔️ Fraquezas & Táticas:</b> ${c.weakness || 'Não registradas'}</div>
+            <div style="font-size: 11.5px; color: #cbd5e1;"><b>📜 História & Notas:</b> ${c.lore || 'Sem anotações adicionais.'}</div>
+            ${c.attack ? `<div style="font-size: 10.5px; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 5px;"><b>Ataques Observados:</b> ${c.attack}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+}
+
+function openBastionBestiaryManagerModal() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  filterBastionBestiarySelect('inp-bestiary-mgr-search', 'sel-bestiary-mgr-monster');
+  renderBastionBestiaryManagerList(camp);
+  const modal = document.getElementById('modal-bastion-bestiary-manager');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeBastionBestiaryManagerModal() {
+  const modal = document.getElementById('modal-bastion-bestiary-manager');
+  if (modal) modal.style.display = 'none';
+}
+
+function renderBastionBestiaryManagerList(camp) {
+  const listEl = document.getElementById('bastion-bestiary-mgr-list');
+  if (!listEl || !camp) return;
+  const list = getCampaignDiscoveredBestiary(camp);
+  if (list.length === 0) {
+    listEl.innerHTML = '<div style="text-align: center; color: #94a3b8; font-size: 11.5px; padding: 10px;">Nenhuma criatura liberada para os jogadores ainda.</div>';
+    return;
+  }
+  listEl.innerHTML = list.slice().reverse().map(c => `
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 10px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+      <div>
+        <div style="font-weight: 800; color: #fef08a; font-size: 12px;">🐉 ${c.name} (ND ${c.cr || '?'})</div>
+        <div style="font-size: 10.5px; color: #fca5a5;">${c.weakness || ''}</div>
+      </div>
+      <button type="button" class="btn-micro" style="color: #f87171;" onclick="removeDiscoveredCreature('${String(c.name).replace(/'/g, "\\'")}')" title="Ocultar dos jogadores">🗑️</button>
+    </div>
+  `).join('');
+}
+
+function addManualDiscoveredCreature() {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const sel = document.getElementById('sel-bestiary-mgr-monster');
+  const weak = document.getElementById('inp-bestiary-mgr-weakness');
+  const lore = document.getElementById('inp-bestiary-mgr-lore');
+  const name = sel ? sel.value : '';
+  if (!name) return;
+
+  unlockCreatureInDiscoveredBestiary(camp, name, weak ? weak.value : '', lore ? lore.value : '');
+  if (weak) weak.value = '';
+  if (lore) lore.value = '';
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderBastionBestiaryManagerList(camp);
+  renderBastionsTab(camp.id);
+}
+
+function removeDiscoveredCreature(monsterName) {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  camp.discoveredBestiary = getCampaignDiscoveredBestiary(camp).filter(
+    c => String(c.name || '').toLowerCase() !== String(monsterName || '').toLowerCase()
+  );
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderBastionBestiaryManagerList(camp);
+  renderBastionsTab(camp.id);
+}
+
 // Vincula em window para uso no browser
 // ==========================================================================
 // 🏛️ ITEM 7: FACÇÕES & RENOME, BÊNÇÃOS DOS DEUSES & DÁDIVAS ÉPICAS (DMG CAP. 1 & 7 - ISSUE-161)
@@ -7268,11 +7755,39 @@ if (typeof module !== 'undefined' && module.exports) {
     getBastionMaxPopulation,
     getBastionHappinessInfo,
     getBastionHappinessFactors,
-    adjustBastionHappiness
+    adjustBastionHappiness,
+    getCampaignCalendar,
+    getCampaignDiscoveredBestiary,
+    getBastionPopulationMilestones,
+    getBastionRestBonus,
+    unlockCreatureInDiscoveredBestiary,
+    filterBastionBestiarySelect,
+    advanceCampaignDays,
+    openPlayerBastionViewerModal,
+    closePlayerBastionViewerModal,
+    switchPlayerBastionViewTab,
+    openBastionBestiaryManagerModal,
+    closeBastionBestiaryManagerModal,
+    addManualDiscoveredCreature,
+    removeDiscoveredCreature
   };
 }
 
 if (typeof window !== 'undefined') {
+  window.getCampaignCalendar = getCampaignCalendar;
+  window.getCampaignDiscoveredBestiary = getCampaignDiscoveredBestiary;
+  window.getBastionPopulationMilestones = getBastionPopulationMilestones;
+  window.getBastionRestBonus = getBastionRestBonus;
+  window.unlockCreatureInDiscoveredBestiary = unlockCreatureInDiscoveredBestiary;
+  window.filterBastionBestiarySelect = filterBastionBestiarySelect;
+  window.advanceCampaignDays = advanceCampaignDays;
+  window.openPlayerBastionViewerModal = openPlayerBastionViewerModal;
+  window.closePlayerBastionViewerModal = closePlayerBastionViewerModal;
+  window.switchPlayerBastionViewTab = switchPlayerBastionViewTab;
+  window.openBastionBestiaryManagerModal = openBastionBestiaryManagerModal;
+  window.closeBastionBestiaryManagerModal = closeBastionBestiaryManagerModal;
+  window.addManualDiscoveredCreature = addManualDiscoveredCreature;
+  window.removeDiscoveredCreature = removeDiscoveredCreature;
   window.switchBastionSubTab = switchBastionSubTab;
   window.getBastionPartyLevel = getBastionPartyLevel;
   window.getBastionMaxPopulation = getBastionMaxPopulation;

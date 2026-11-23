@@ -3367,9 +3367,10 @@ function renderPlayers() {
                     <span>🎒 Baú Coletivo:</span>
                     <span class="stash-gold-pill">${((typeof getActiveCampaign === 'function' ? getActiveCampaign()?.partyStash?.gold : 0) || 0)} PO</span>
                   </div>
-                  <div style="display: flex; gap: 4px;">
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap;">
                     <button type="button" class="btn-micro" onclick="openPartyStashModal()" title="Abrir Baú Coletivo & Suprimentos do Grupo" style="color: #facc15; padding: 2px 7px;">🎒 Ver Baú</button>
                     <button type="button" class="btn-micro" onclick="openPartyItemModal()" title="Adicionar item diretamente ao Baú do Grupo" style="color: #38bdf8; padding: 2px 7px;">➕ No Baú</button>
+                    <button type="button" class="btn-micro" onclick="openPlayerBastionViewerModal('${p.id}')" title="Ver produção do Bastião, Cofre, NPCs e Bestiário Descoberto (somente leitura)" style="color: #6ee7b7; padding: 2px 7px;">🏰 Bastião</button>
                   </div>
                 </div>
 

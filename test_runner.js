@@ -11177,9 +11177,9 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(!b146HeadCss.includes('.a4-feature-tag {\n      display: inline-block;\n      background: #1e293b;'), 'head_css.html eliminou fundo preto/ardósia opaco (#1e293b) em .a4-feature-tag');
     assert(b146PlayersJs.includes('tagClass') && b146PlayersJs.includes('tag-passivo') && b146PlayersJs.includes('tag-bonus'), 'players.js injeta classes semânticas por tipo de ação nos badges');
 
-    // 4. Versão v3.9.2+ / v3.10.x atualizada no core.js e ui.html
+    // 4. Versão v3.9.2+ / v3.10.x / v3.11.x atualizada no core.js e ui.html
     const b147CoreJs = fs.readFileSync(path.join(srcDir, 'js', 'core.js'), 'utf8');
-    assert(b147CoreJs.includes("version: '3.10.2'") || b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'") || b147CoreJs.includes("version: '3.9.2'"), 'core.js atualizado para v3.9.2+ / v3.10.x');
+    assert(b147CoreJs.includes("version: '3.11.0'") || b147CoreJs.includes("version: '3.10.2'") || b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'") || b147CoreJs.includes("version: '3.9.2'"), 'core.js atualizado para v3.9.2+ / v3.11.x');
     passedTests += 6;
 
     // ========================================
@@ -11235,8 +11235,8 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(b148Css.includes('.bastion-tier-badge') && b148Css.includes('.bastion-renown-progress-track'), 'head_css.html inclui badges de tier e trilha de renome');
     assert(b148Css.includes('.settlement-tier-card') && b148Css.includes('.bastion-wall-card'), 'head_css.html inclui cards visuais de assentamento e muralha');
 
-    // 5. Versão v3.10.x consistente
-    assert((b148Ui.includes('v3.10.2') || b148Ui.includes('v3.10.1') || b148Ui.includes('v3.10.0')) && (b147CoreJs.includes("version: '3.10.2'") || b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'")), 'ui.html e core.js exibem a versão v3.10.0+');
+    // 5. Versão v3.10.x / v3.11.x consistente
+    assert((b148Ui.includes('v3.11.0') || b148Ui.includes('v3.10.2') || b148Ui.includes('v3.10.1') || b148Ui.includes('v3.10.0')) && (b147CoreJs.includes("version: '3.11.0'") || b147CoreJs.includes("version: '3.10.2'") || b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'")), 'ui.html e core.js exibem a versão v3.10.0+');
 
     passedTests += 16;
 
@@ -11337,6 +11337,76 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(b148Css.includes('.bastion-kpi-grid') && b148Css.includes('.bastion-subtabs-bar') && b148Css.includes('.bastion-simcity-panel'), 'head_css.html inclui estilos de KPIs, sub-abas e painel SimCity');
 
     passedTests += 14;
+
+    // ========================================
+    // 👁️⏳📖 [Bateria 151] Visão Somente-Leitura para Jogadores, Relógio de Dias & Bestiário Descoberto (ISSUE-184):
+    // ========================================
+    console.log('\n👁️⏳📖 [Bateria 151] Visão Somente-Leitura para Jogadores, Relógio de Dias & Bestiário Descoberto (ISSUE-184):');
+
+    totalTests += 12;
+
+    const camp151 = {
+      id: 'camp_dayclock_test',
+      name: 'Campanha Relógio & Bestiário',
+      playerIds: [],
+      partyStash: { gold: 100, items: [], history: [] }
+    };
+    sandbox.CAMPAIGNS_STATE.campaigns.push(camp151);
+    sandbox.switchBastionCampaign('camp_dayclock_test');
+    sandbox.document.getElementById = (id) => {
+      if (id === 'sel-bastion-campaign') return { value: 'camp_dayclock_test' };
+      return origGetEl ? origGetEl(id) : null;
+    };
+
+    const b151 = sandbox.getCampaignBastion(camp151);
+    const cal151 = sandbox.getCampaignCalendar(camp151);
+    assert(cal151.currentDay === 1 && cal151.dayBuffer === 0, 'Calendário da campanha inicia no Dia 1 com buffer 0');
+
+    // Ordem de pesquisa de criatura com targetMonster
+    b151.specialFacilities.push({
+      id: 'fac_lib_151',
+      key: 'library',
+      name: 'Biblioteca de Sabedoria',
+      patronId: '',
+      currentOrder: {
+        actionKey: 'research_lore',
+        name: 'Pesquisa Histórica e Monstruosa: Aboleth',
+        durationDays: 5,
+        daysLeft: 5,
+        targetMonster: { name: 'Aboleth', weakness: 'Vulnerável fora da água', lore: 'Habita o lago subterrâneo' }
+      }
+    });
+
+    // Avançar 3 dias reduz daysLeft (5->2) sem fechar semana ainda
+    sandbox.advanceCampaignDays(3);
+    assert(camp151.calendar.currentDay === 4 && camp151.calendar.dayBuffer === 3, 'advanceCampaignDays(3) avança para Dia 4 com dayBuffer 3');
+    assert(b151.specialFacilities[0].currentOrder && b151.specialFacilities[0].currentOrder.daysLeft === 2, 'Ordem em andamento reduziu de 5 para 2 dias restantes');
+    assert(b151.turnCount === 0, 'Turno semanal ainda não disparou antes de completar 7 dias');
+
+    // Avançar mais 4 dias (total 7) conclui ordem, desbloqueia Aboleth e dispara 1 ciclo semanal
+    sandbox.advanceCampaignDays(4);
+    assert(camp151.calendar.currentDay === 8 && camp151.calendar.dayBuffer === 0, 'Ao completar 7 dias (3+4), dayBuffer zera e avança para Dia 8');
+    assert(b151.turnCount === 1, 'Ciclo semanal do Bastião disparou automaticamente ao completar 7 dias');
+    assert(b151.specialFacilities[0].currentOrder === null, 'Pesquisa foi concluída automaticamente ao zerar os dias');
+
+    const disc151 = sandbox.getCampaignDiscoveredBestiary(camp151);
+    assert(disc151.length === 1 && disc151[0].name === 'Aboleth' && disc151[0].weakness.includes('água'), 'Aboleth foi desbloqueado no Bestiário Descoberto do Grupo com fraqueza registrada');
+
+    // Marcos populacionais & Bônus de Descanso
+    b151.population = 35;
+    b151.happiness = 75;
+    b151.level = 5;
+    const ms151 = sandbox.getBastionPopulationMilestones(b151);
+    const rb151 = sandbox.getBastionRestBonus(b151);
+    assert(ms151.filter(m => m.unlocked).length === 2, 'Com 35 habitantes, desbloqueia exatamente 2 marcos (Comércio Local e Milícia Cívica)');
+    assert(rb151.active === true && rb151.tempHp === 5, 'Felicidade >= 60% ativa bônus de descanso (+5 PV Temporários no Nv. 5)');
+
+    // UI e Players.js possuem acesso somente-leitura
+    const playersJs151 = fs.readFileSync(path.join(srcDir, 'js', 'players.js'), 'utf8');
+    assert(b148Ui.includes('id="modal-player-bastion-view"') && b148Ui.includes('id="pnav-bastion"'), 'ui.html inclui modal somente-leitura e chip do Bastião no Portal do Jogador');
+    assert(playersJs151.includes('openPlayerBastionViewerModal'), 'players.js inclui botão rápido para jogadores abrirem o Bastião em modo leitura');
+
+    passedTests += 12;
 
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;
