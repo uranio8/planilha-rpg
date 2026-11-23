@@ -1115,6 +1115,8 @@
       max-height: calc(100vh - 60px);
       max-height: 90dvh;
       overflow-y: auto;
+      overflow-x: hidden;
+      box-sizing: border-box;
       padding: 22px;
       display: flex;
       flex-direction: column;
@@ -1161,6 +1163,9 @@
       border-bottom: 1px solid rgba(245, 158, 11, 0.22);
       padding-bottom: 12px;
       gap: 10px;
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .modal-header h2,
@@ -1169,14 +1174,18 @@
       font-family: var(--font-title);
       font-size: 16px;
       font-weight: 800;
-      letter-spacing: 0.5px;
-      background: linear-gradient(to right, #ffffff, #fde047);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.4px;
+      color: #fef08a;
+      text-shadow: 0 1px 10px rgba(245, 158, 11, 0.22);
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 8px;
       margin: 0;
+      flex: 1;
+      min-width: 0;
+      line-height: 1.3;
+      overflow-wrap: anywhere;
     }
 
     .modal-close {
@@ -1215,6 +1224,9 @@
       color: #f8fafc;
       padding: 8px 12px;
       font-size: 13px;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
     .modal-box input:not([type="checkbox"]):not([type="radio"]):focus,
@@ -6928,6 +6940,8 @@
       display: flex;
       align-items: center;
       gap: 14px;
+      min-width: 0;
+      flex: 1;
     }
 
     .skill-modal-icon-badge {
@@ -6950,7 +6964,9 @@
       font-weight: 800;
       color: #fff;
       letter-spacing: 0.5px;
-      line-height: 1.2;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+      min-width: 0;
     }
 
     .skill-modal-meta {
@@ -16931,6 +16947,87 @@
       padding: 0.5px 4px;
       border-radius: 3px;
       white-space: nowrap;
+    }
+
+    /* =====================================================================
+       📐 ISSUE-187: CONTENÇÃO DE MODAIS, SÍMBOLOS, NOMES E LEITURA DE CARDS
+       ===================================================================== */
+    .modal-body > *,
+    .modal-box > *,
+    .modal-content > * {
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    .skill-modal-header-left,
+    .ddb-hero-left,
+    .bastion-title-wrap,
+    .atlas-city-card-top,
+    .player-title-row,
+    .combatant-header,
+    .modal-weapon-top {
+      min-width: 0;
+    }
+    .skill-modal-header-left > div,
+    .ddb-hero-left > div,
+    .bastion-title-wrap > div,
+    .atlas-city-card-top > div,
+    .bastion-facility-header > div {
+      min-width: 0;
+      flex: 1;
+    }
+    .ddb-hero-name,
+    .bastion-title-text,
+    .bastion-facility-name,
+    .atlas-city-name,
+    .player-title,
+    .combatant-name,
+    .modal-weapon-name {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      min-width: 0;
+    }
+    .bastion-kpi-card,
+    .atlas-attraction-box,
+    .atlas-city-card,
+    .bastion-facility-card,
+    .modal-weapon-card,
+    .ddb-entity-card {
+      min-width: 0;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+    .bastion-kpi-value {
+      flex-wrap: wrap;
+      overflow-wrap: anywhere;
+    }
+    .bastion-stat-pill,
+    .atlas-faction-pill,
+    .class-badge,
+    .pm-spell-chip {
+      max-width: 100%;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      line-height: 1.25;
+    }
+    .ddb-builder-stage {
+      min-width: 0;
+      overflow-x: hidden;
+    }
+    .ddb-step-pane {
+      min-width: 0;
+      overflow-x: hidden;
+    }
+    @media (max-width: 640px) {
+      .modal-body [style*="grid-template-columns"] {
+        min-width: 0;
+      }
+      .modal-body [style*="grid-template-columns"] > * {
+        min-width: 0;
+      }
+      .ddb-builder-stage {
+        padding: 2px 18px;
+      }
     }
 
   </style>

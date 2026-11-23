@@ -11184,7 +11184,7 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
 
     // 4. Versão v3.9.2+ / v3.10.x / v3.11.x / v3.12.x atualizada no core.js e ui.html
     const b147CoreJs = fs.readFileSync(path.join(srcDir, 'js', 'core.js'), 'utf8');
-    assert(b147CoreJs.includes("version: '3.13.0'") || b147CoreJs.includes("version: '3.12.0'") || b147CoreJs.includes("version: '3.11.0'") || b147CoreJs.includes("version: '3.10.2'") || b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'") || b147CoreJs.includes("version: '3.9.2'"), 'core.js atualizado para v3.9.2+ / v3.13.x');
+    assert(b147CoreJs.includes("version: '3.13.1'") || b147CoreJs.includes("version: '3.13.0'") || b147CoreJs.includes("version: '3.12.0'") || b147CoreJs.includes("version: '3.11.0'") || b147CoreJs.includes("version: '3.10.2'") || b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'") || b147CoreJs.includes("version: '3.9.2'"), 'core.js atualizado para v3.9.2+ / v3.13.x');
     passedTests += 6;
 
     // ========================================
@@ -11241,7 +11241,7 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(b148Css.includes('.settlement-tier-card') && b148Css.includes('.bastion-wall-card'), 'head_css.html inclui cards visuais de assentamento e muralha');
 
     // 5. Versão v3.10.x / v3.11.x / v3.12.x consistente
-    assert((b148Ui.includes('v3.13.0') || b148Ui.includes('v3.12.0') || b148Ui.includes('v3.11.0') || b148Ui.includes('v3.10.2') || b148Ui.includes('v3.10.1') || b148Ui.includes('v3.10.0')) && (b147CoreJs.includes("version: '3.13.0'") || b147CoreJs.includes("version: '3.12.0'") || b147CoreJs.includes("version: '3.11.0'") || b147CoreJs.includes("version: '3.10.2'") || b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'")), 'ui.html e core.js exibem a versão v3.10.0+');
+    assert((b148Ui.includes('v3.13.1') || b148Ui.includes('v3.13.0') || b148Ui.includes('v3.12.0') || b148Ui.includes('v3.11.0') || b148Ui.includes('v3.10.2') || b148Ui.includes('v3.10.1') || b148Ui.includes('v3.10.0')) && (b147CoreJs.includes("version: '3.13.1'") || b147CoreJs.includes("version: '3.13.0'") || b147CoreJs.includes("version: '3.12.0'") || b147CoreJs.includes("version: '3.11.0'") || b147CoreJs.includes("version: '3.10.2'") || b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'")), 'ui.html e core.js exibem a versão v3.10.0+');
 
     passedTests += 16;
 
@@ -11494,6 +11494,17 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(b148Ui.includes('id="tab-atlas"') && b148Ui.includes('id="modal-atlas-city"') && b148Css.includes('.atlas-city-card'), 'ui.html e head_css.html incluem aba, modal e cards do Atlas');
 
     passedTests += 11;
+
+    // ============================================================================
+    // 📐 [Bateria 154] Reforma de Modais, Contenção de Texto/Símbolos e Layouts (ISSUE-187)
+    // ============================================================================
+    console.log('\n📐 [Bateria 154] Reforma de Modais, Contenção de Texto/Símbolos e Layouts (ISSUE-187):');
+    assert(b148Css.includes('overflow-x: hidden;') && b148Css.includes('box-sizing: border-box;'), 'Modais possuem overflow-x: hidden e box-sizing: border-box');
+    assert(b148Css.includes('overflow-wrap: anywhere;') && b148Css.includes('min-width: 0;'), 'Títulos e cards possuem overflow-wrap: anywhere e min-width: 0');
+    assert(!b148Css.match(/\.modal-header h2[^}]*-webkit-text-fill-color:\s*transparent/), 'Títulos de modais não usam -webkit-text-fill-color: transparent (preserva emojis/símbolos)');
+    assert(b148Css.includes('ISSUE-187'), 'Seção de contenção e leitura ISSUE-187 presente em head_css.html');
+    assert(b147CoreJs.includes("version: '3.13.1'") && b148Ui.includes('v3.13.1'), 'Versão atualizada para v3.13.1 em core.js e ui.html');
+    passedTests += 5;
 
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;

@@ -3266,7 +3266,7 @@ function exportCompleteBackupJson() {
   try {
     const backupData = {
       appName: 'Planilha RPG D&D 5E Assistant & VTT',
-      version: '3.13.0',
+      version: '3.13.1',
       exportDate: new Date().toISOString(),
       players: typeof PLAYERS !== 'undefined' ? PLAYERS : [],
       combatState: typeof state !== 'undefined' ? state : { round: 1, turnIndex: 0, combatants: [] },
