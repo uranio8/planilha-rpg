@@ -4017,11 +4017,13 @@ function openEditBastionInfoModal() {
   const inpType = document.getElementById('inp-bastion-type');
   const inpLoc = document.getElementById('inp-bastion-location');
   const inpMotto = document.getElementById('inp-bastion-motto');
+  const inpLevel = document.getElementById('inp-bastion-level');
 
   if (inpName) inpName.value = bastion.name || '';
   if (inpType) inpType.value = bastion.settlementType || '';
   if (inpLoc) inpLoc.value = bastion.location || '';
   if (inpMotto) inpMotto.value = bastion.motto || '';
+  if (inpLevel) inpLevel.value = bastion.level || getBastionPartyLevel(camp);
 
   modal.style.display = 'flex';
 }
@@ -4041,6 +4043,7 @@ function saveBastionInfoModal() {
   const inpType = document.getElementById('inp-bastion-type');
   const inpLoc = document.getElementById('inp-bastion-location');
   const inpMotto = document.getElementById('inp-bastion-motto');
+  const inpLevel = document.getElementById('inp-bastion-level');
 
   if (inpName && inpName.value.trim()) {
     bastion.name = inpName.value.trim();
@@ -4053,6 +4056,12 @@ function saveBastionInfoModal() {
   }
   if (inpMotto) {
     bastion.motto = inpMotto.value.trim();
+  }
+  if (inpLevel) {
+    const parsedLvl = parseInt(inpLevel.value, 10);
+    if (!isNaN(parsedLvl) && parsedLvl >= 1 && parsedLvl <= 20) {
+      bastion.level = parsedLvl;
+    }
   }
 
   touchCampaign(camp);
@@ -4110,32 +4119,183 @@ function getBastionStaff(bastion) {
   return bastion.staff;
 }
 
+var activeBastionSubTab = 'overview';
+
+function switchBastionSubTab(tabKey) {
+  activeBastionSubTab = tabKey || 'overview';
+  const camp = getSelectedBastionCampaign();
+  if (camp) {
+    renderBastionsTab(camp.id);
+  }
+}
+
+function getBastionPartyLevel(camp) {
+  if (!camp || !Array.isArray(camp.playerIds) || camp.playerIds.length === 0) return 1;
+  if (typeof PLAYERS === 'undefined' || !Array.isArray(PLAYERS)) return 1;
+  const levels = camp.playerIds
+    .map(id => PLAYERS.find(p => String(p.id) === String(id)))
+    .filter(Boolean)
+    .map(p => parseInt(p.level, 10) || 1);
+  if (levels.length === 0) return 1;
+  return Math.max(1, Math.min(20, Math.max(...levels)));
+}
+
+function getBastionMaxPopulation(bastion) {
+  const tier = getBastionSettlementTier(bastion);
+  const basePop = tier.baseMaxPopulation || 10;
+  const lvl = Math.max(1, parseInt(bastion?.level, 10) || 1);
+  return basePop + (lvl * 2);
+}
+
+function getBastionHappinessInfo(happinessRaw) {
+  const score = Math.max(0, Math.min(100, typeof happinessRaw === 'number' ? Math.round(happinessRaw) : 50));
+  if (score >= 80) {
+    return {
+      score,
+      label: 'Radiante',
+      icon: '🤩',
+      color: '#6ee7b7',
+      barColor: 'linear-gradient(90deg, #10b981, #34d399)',
+      popMin: 2,
+      popMax: 3,
+      revMultiplier: 1.25,
+      renownBonus: 5,
+      summary: '+2 a +3 moradores/sem • +25% renda • +5 Renome/sem'
+    };
+  }
+  if (score >= 60) {
+    return {
+      score,
+      label: 'Feliz',
+      icon: '😊',
+      color: '#38bdf8',
+      barColor: 'linear-gradient(90deg, #0284c7, #38bdf8)',
+      popMin: 1,
+      popMax: 2,
+      revMultiplier: 1.0,
+      renownBonus: 0,
+      summary: '+1 a +2 moradores/sem • Renda territorial normal (100%)'
+    };
+  }
+  if (score >= 40) {
+    return {
+      score,
+      label: 'Estável',
+      icon: '😐',
+      color: '#fde68a',
+      barColor: 'linear-gradient(90deg, #d97706, #fbbf24)',
+      popMin: 0,
+      popMax: 1,
+      revMultiplier: 1.0,
+      renownBonus: 0,
+      summary: 'População estável (0 a +1/sem) • Renda normal (100%)'
+    };
+  }
+  if (score >= 20) {
+    return {
+      score,
+      label: 'Insatisfeita',
+      icon: '😟',
+      color: '#fb923c',
+      barColor: 'linear-gradient(90deg, #ea580c, #fb923c)',
+      popMin: -1,
+      popMax: -1,
+      revMultiplier: 0.75,
+      renownBonus: 0,
+      summary: 'Êxodo de -1 morador/sem • -25% na renda territorial'
+    };
+  }
+  return {
+    score,
+    label: 'Em Crise',
+    icon: '😠',
+    color: '#f87171',
+    barColor: 'linear-gradient(90deg, #b91c1c, #ef4444)',
+    popMin: -2,
+    popMax: -2,
+    revMultiplier: 0,
+    renownBonus: 0,
+    summary: 'Êxodo de -2 moradores/sem • Renda territorial suspensa (0%)'
+  };
+}
+
+function getBastionHappinessFactors(camp, bastion) {
+  const factors = [];
+  if (!bastion) return factors;
+
+  const walls = bastion.walls || 'none';
+  if (walls === 'wood') factors.push({ label: '🪵 Paliçada (+2%/sem)', delta: 2, type: 'pos' });
+  else if (walls === 'stone') factors.push({ label: '🧱 Muralhas de Pedra (+4%/sem)', delta: 4, type: 'pos' });
+  else if (walls === 'runic') factors.push({ label: '✨ Baluartes Rúnicos (+6%/sem)', delta: 6, type: 'pos' });
+  else if ((bastion.population || 0) > 0 && (bastion.defenders || 0) === 0) {
+    factors.push({ label: '⚠️ Sem muralhas nem guardas (-3%/sem)', delta: -3, type: 'neg' });
+  }
+
+  const wellbeingKeys = ['garden', 'sanctuary', 'greenhouse', 'theater', 'pub', 'sanctum'];
+  const wellbeingCount = (bastion.specialFacilities || []).filter(f => wellbeingKeys.includes(f.key)).length;
+  if (wellbeingCount > 0) {
+    const bonus = Math.min(12, wellbeingCount * 3);
+    factors.push({ label: `🌿 Cultura & Bem-Estar (+${bonus}%/sem)`, delta: bonus, type: 'pos' });
+  }
+
+  const staff = getBastionStaff(bastion);
+  if (staff.length > 0) {
+    const totalPayroll = staff.reduce((sum, n) => sum + (n.wage || 0), 0);
+    const bankGold = bastion.bank?.gold || 0;
+    if (totalPayroll > 0 && bankGold < totalPayroll) {
+      factors.push({ label: '💸 Cofre sem saldo p/ Staff (-15%/sem)', delta: -15, type: 'neg' });
+    } else if (totalPayroll > 0) {
+      factors.push({ label: '✅ Staff com salário em dia (+3%/sem)', delta: 3, type: 'pos' });
+    }
+  }
+
+  return factors;
+}
+
+function adjustBastionHappiness(delta) {
+  const camp = getSelectedBastionCampaign();
+  if (!camp) return;
+  const bastion = getCampaignBastion(camp);
+  if (!bastion) return;
+
+  const prev = typeof bastion.happiness === 'number' ? bastion.happiness : 50;
+  bastion.happiness = Math.max(0, Math.min(100, prev + (parseInt(delta, 10) || 0)));
+
+  touchCampaign(camp);
+  saveCampaignsState();
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+  renderBastionsTab(camp.id);
+  if (typeof addLog === 'function') {
+    addLog(`😊 <b>Bastião:</b> Felicidade ajustada de ${prev}% para <b>${bastion.happiness}%</b>.`);
+  }
+}
+
 function getCampaignBastion(camp) {
   if (!camp) return null;
   if (!camp.bastion) {
-    const defaultOwnerId = (camp.playerIds && camp.playerIds.length > 0) ? camp.playerIds[0] : "";
-    const secondOwnerId = (camp.playerIds && camp.playerIds.length > 1) ? camp.playerIds[1] : defaultOwnerId;
     camp.bastion = {
       name: "Fortaleza de " + (camp.name || "Aventureiros"),
       settlementType: "Fazenda & Refúgio",
       settlementStage: 1,
-      renown: 25,
+      renown: 0,
+      population: 0,
+      happiness: 50,
       location: "Fronteiras da Campanha",
       motto: "",
-      level: 5,
-      turnCount: 1,
+      level: getBastionPartyLevel(camp),
+      turnCount: 0,
       walls: "none",
-      defenders: 4,
+      defenders: 0,
       bank: { gold: 0, history: [] },
       staff: [],
-      specialFacilities: [], // ISSUE-169: Inicializa sem instalações automáticas (apenas adicionadas sob demanda pelo usuário)
+      specialFacilities: [],
       activeBuffs: [],
       history: [
         {
-          turn: 1,
+          turn: 0,
           date: new Date().toISOString().split('T')[0],
           title: "Fundação do Bastião",
-          desc: "O grupo adquiriu a posse da fazenda e refúgio inicial como base permanente de operações."
+          desc: "O grupo assumiu a posse da propriedade inicial como base de operações."
         }
       ]
     };
@@ -4145,7 +4305,14 @@ function getCampaignBastion(camp) {
   if (!camp.bastion.bank) camp.bastion.bank = { gold: 0, history: [] };
   if (!Array.isArray(camp.bastion.staff)) camp.bastion.staff = [];
   if (typeof camp.bastion.settlementStage !== 'number') camp.bastion.settlementStage = 1;
-  if (typeof camp.bastion.renown !== 'number') camp.bastion.renown = 25;
+  if (typeof camp.bastion.renown !== 'number') camp.bastion.renown = 0;
+  if (typeof camp.bastion.population !== 'number') camp.bastion.population = 0;
+  if (typeof camp.bastion.happiness !== 'number') camp.bastion.happiness = 50;
+  if (typeof camp.bastion.defenders !== 'number') camp.bastion.defenders = 0;
+  if (typeof camp.bastion.turnCount !== 'number') camp.bastion.turnCount = 0;
+  if (typeof camp.bastion.level !== 'number' || camp.bastion.level < 1) {
+    camp.bastion.level = getBastionPartyLevel(camp);
+  }
   if (!camp.bastion.settlementType) {
     const tier = (typeof BASTION_SETTLEMENT_TIERS !== 'undefined' && BASTION_SETTLEMENT_TIERS[camp.bastion.settlementStage])
       ? BASTION_SETTLEMENT_TIERS[camp.bastion.settlementStage].name
@@ -4166,6 +4333,8 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
 
   const wallOpt = (typeof BASTION_WALL_OPTIONS !== 'undefined') ? BASTION_WALL_OPTIONS[bastion.walls || 'none'] : { name: 'Sem Muralhas', defenseDice: 6 };
   const goldAmount = camp.partyStash ? (camp.partyStash.gold || 0) : 0;
+  const bank = getBastionBank(bastion);
+  const staff = getBastionStaff(bastion);
   const lastEvent = bastion.history && bastion.history.length > 0 ? bastion.history[bastion.history.length - 1] : null;
   const tier = getBastionSettlementTier(bastion);
   const currentRenown = bastion.renown || 0;
@@ -4174,10 +4343,19 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
   const denom = (nextTier ? (nextTier.reqRenown - prevRenown) : 1000) || 1;
   const percent = nextTier ? Math.min(100, Math.max(0, Math.round(((currentRenown - prevRenown) / denom) * 100))) : 100;
 
+  // SimCity: Felicidade & População (ISSUE-183)
+  const currentPop = bastion.population || 0;
+  const maxPop = getBastionMaxPopulation(bastion);
+  const popPercent = Math.min(100, Math.round((currentPop / Math.max(1, maxPop)) * 100));
+  const hInfo = getBastionHappinessInfo(bastion.happiness);
+  const hFactors = getBastionHappinessFactors(camp, bastion);
+  const popTaxIncome = hInfo.score >= 40 ? Math.floor(currentPop / 10) * 5 : 0;
+  const projectedTierRev = Math.round((tier.weeklyRevenueGold || 0) * hInfo.revMultiplier);
+
   // Cálculo dos 4 Pilares de Pré-Requisitos para o Próximo Estágio (ISSUE-182)
-  const weeksCur = bastion.turnCount || 1;
+  const weeksCur = bastion.turnCount || 0;
   const facsCur = (bastion.specialFacilities || []).length;
-  const goldAvailable = (bastion.bank?.gold || 0) + goldAmount;
+  const goldAvailable = (bank.gold || 0) + goldAmount;
 
   let weeksMet = true, facsMet = true, renownMet = true, goldMet = true, allReqsMet = false;
   let missingParts = [];
@@ -4195,8 +4373,11 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
     if (!goldMet) missingParts.push(`${nextTier.costGold - goldAvailable} PO`);
   }
 
+  const subTab = activeBastionSubTab || 'overview';
+
   let html = `
     <div class="bastion-panel-card">
+      <!-- Cabeçalho Compacto e Limpo (ISSUE-183) -->
       <div class="bastion-header-bar">
         <div>
           <div class="bastion-title-wrap">
@@ -4212,17 +4393,237 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
         </div>
         <div class="bastion-badges-row">
           <span class="bastion-tier-badge tier-${tier.stage}">
-            ${tier.icon} ${bastion.settlementType || tier.name} (Tier ${tier.stage})
+            ${tier.icon} Tier ${tier.stage}: ${tier.name}
           </span>
-          <span class="bastion-stat-pill" style="border-color: #f59e0b; color: #fef08a; background: rgba(245,158,11,0.15); font-weight: 800;" title="Renome e Prestígio acumulado">
-            👑 ${currentRenown} Renome
+          <span class="bastion-stat-pill bastion-stat-pill-lvl" title="Nível do Bastião (define salas e população máxima)">⭐ Nível ${bastion.level || 1}</span>
+          <span class="bastion-stat-pill" style="border-color: #64748b; color: #e2e8f0;" title="Semanas de gestão decorridas">⏳ Semana ${weeksCur}</span>
+          <span class="bastion-stat-pill bastion-stat-pill-def" title="Guarnição de defensores (máx ${tier.maxDefenders})">🛡️ ${bastion.defenders || 0}/${tier.maxDefenders} Def.</span>
+          <button type="button" class="btn-secondary" style="font-size: 11px; padding: 3px 9px;" onclick="openEditBastionInfoModal()">✏️ Editar</button>
+        </div>
+      </div>
+
+      <!-- 4 KPIs Essenciais -->
+      <div class="bastion-kpi-grid">
+        <div class="bastion-kpi-card" style="border-color: rgba(56, 189, 248, 0.3);">
+          <span class="bastion-kpi-label">👥 População</span>
+          <div class="bastion-kpi-value" style="color: #7dd3fc;">${currentPop} <span style="font-size: 12px; color: #94a3b8;">/ ${maxPop}</span></div>
+          <span class="bastion-kpi-sub">Impostos: <b>+${popTaxIncome} PO/sem</b> (${popPercent}% lotação)</span>
+        </div>
+        <div class="bastion-kpi-card" style="border-color: rgba(16, 185, 129, 0.3);">
+          <span class="bastion-kpi-label">😊 Felicidade</span>
+          <div class="bastion-kpi-value" style="color: ${hInfo.color};">${hInfo.icon} ${hInfo.score}% <span style="font-size: 12px;">(${hInfo.label})</span></div>
+          <span class="bastion-kpi-sub">${hInfo.summary}</span>
+        </div>
+        <div class="bastion-kpi-card" style="border-color: rgba(245, 158, 11, 0.35);">
+          <span class="bastion-kpi-label">👑 Renome & Prestígio</span>
+          <div class="bastion-kpi-value" style="color: #fef08a;">${currentRenown} <span style="font-size: 12px; color: #94a3b8;">${nextTier ? `/ ${nextTier.reqRenown}` : 'Máx'}</span></div>
+          <span class="bastion-kpi-sub">${nextTier ? `Próximo: ${nextTier.name}` : '⭐ Metrópole Lendária'}</span>
+        </div>
+        <div class="bastion-kpi-card" style="border-color: rgba(234, 179, 8, 0.35);">
+          <span class="bastion-kpi-label">🏦 Cofre do Bastião</span>
+          <div class="bastion-kpi-value" style="color: #facc15;">${bank.gold || 0} PO</div>
+          <span class="bastion-kpi-sub">Baú da Campanha: <b>${goldAmount} PO</b></span>
+        </div>
+      </div>
+
+      <!-- Barra de Sub-Abas Internas -->
+      <div class="bastion-subtabs-bar">
+        <button type="button" class="bastion-subtab-btn ${subTab === 'overview' ? 'active' : ''}" onclick="switchBastionSubTab('overview')">
+          🏛️ Visão Geral & Salas (${facsCur}/${tier.maxSpecialFacilities})
+        </button>
+        <button type="button" class="bastion-subtab-btn ${subTab === 'evolution' ? 'active' : ''}" onclick="switchBastionSubTab('evolution')">
+          ✨ Evolução & Cidade ${allReqsMet ? '🟢' : ''}
+        </button>
+        <button type="button" class="bastion-subtab-btn ${subTab === 'economy' ? 'active' : ''}" onclick="switchBastionSubTab('economy')">
+          🏦 Cofre & Staff (${staff.length})
+        </button>
+        <button type="button" class="bastion-subtab-btn ${subTab === 'history' ? 'active' : ''}" onclick="switchBastionSubTab('history')">
+          📜 Crônica & Eventos (${(bastion.history || []).length})
+        </button>
+      </div>
+  `;
+
+  // =========================================================================
+  // SUB-ABA 1: VISÃO GERAL & SALAS
+  // =========================================================================
+  if (subTab === 'overview') {
+    html += `
+      <!-- Barra de Ações Principais do Bastião -->
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; background: rgba(0,0,0,0.25); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button type="button" class="btn-action" style="font-size: 12px; font-weight: 800; background: linear-gradient(135deg, #10b981, #059669); color: #fff;" onclick="openBastionActionModal()">
+            ➕ Emitir Ordem no Bastião
+          </button>
+          <button type="button" class="btn-secondary" style="font-size: 11px;" onclick="openBastionAddFacilityModal()">
+            🏗️ Adicionar Instalação Especial
+          </button>
+          <button type="button" class="btn-secondary" style="font-size: 11px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" onclick="openBastionWallsModal()">
+            🧱 Muralhas (${wallOpt ? wallOpt.name : 'Nenhuma'})
+          </button>
+        </div>
+        <div>
+          <button type="button" class="btn-action" style="font-size: 12px; font-weight: 800; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; box-shadow: 0 0 12px rgba(139, 92, 246, 0.4);" onclick="advanceBastionTurn()">
+            🎲 Avançar Turno do Bastião (7 Dias)
+          </button>
+        </div>
+      </div>
+
+      <!-- Grid de Instalações Especiais -->
+      <div style="margin-top: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 11px; font-weight: 800; color: var(--primary-light); text-transform: uppercase; letter-spacing: 0.5px;">
+            Salas & Instalações Especiais da Fortaleza (${facsCur}/${tier.maxSpecialFacilities}):
           </span>
-          <span class="bastion-stat-pill bastion-stat-pill-lvl" title="Nível do Bastião desbloqueia novas instalações">⭐ Nível ${bastion.level || 5}</span>
-          <span class="bastion-stat-pill" style="border-color: #64748b; color: #e2e8f0;" title="Turno semanal de gestão">⏳ Semana ${bastion.turnCount || 1}</span>
-          <span class="bastion-stat-pill bastion-stat-pill-def" title="Defensores da guarnição permanente">🛡️ ${bastion.defenders || 0} Defensores</span>
-          <span class="bastion-stat-pill" style="border-color: #38bdf8; color: #7dd3fc;" title="Status das muralhas">🧱 ${wallOpt ? wallOpt.name : 'Muralhas'}</span>
-          <span class="bastion-stat-pill bastion-stat-pill-gold" title="Ouro total disponível no Baú do Grupo">💰 Baú: ${goldAmount} PO</span>
-          <span class="bastion-stat-pill" style="border-color: rgba(234,179,8,0.6); color: #facc15; background: rgba(234,179,8,0.15);" title="Saldo protegido no cofre forte">🏦 Cofre: ${bastion.bank?.gold || 0} PO</span>
+          <span style="font-size: 10px; color: #94a3b8;">Cada jogador pode ser gestor de suas salas</span>
+        </div>
+
+        <div class="bastion-facilities-grid">
+    `;
+
+    if (!bastion.specialFacilities || bastion.specialFacilities.length === 0) {
+      html += `
+        <div class="bastion-empty-hero">
+          <div class="bastion-empty-icon-wrap">
+            <span class="bastion-empty-icon">🏰</span>
+          </div>
+          <div class="bastion-empty-title">Sua fortaleza ainda não possui salas construídas</div>
+          <div class="bastion-empty-desc">
+            O bastião ganha vida quando seus heróis constroem suas instalações especiais. Cada sala concede ordens semanais, benefícios de descanso, recursos arcanos ou renda!
+          </div>
+          <div class="bastion-empty-preview-tags">
+            <span class="bastion-preview-tag">⚔️ Forja</span>
+            <span class="bastion-preview-tag">🧪 Lab. Alquímico</span>
+            <span class="bastion-preview-tag">🌿 Jardim & Estufa</span>
+            <span class="bastion-preview-tag">📚 Biblioteca Arcana</span>
+            <span class="bastion-preview-tag">⛪ Santuário</span>
+            <span class="bastion-preview-tag">🛡️ Aposentos & Quartel</span>
+          </div>
+          <button type="button" class="btn-action bastion-btn-build-first" onclick="openBastionAddFacilityModal()">
+            🏗️ Construir Primeira Instalação
+          </button>
+        </div>
+      `;
+    } else {
+      bastion.specialFacilities.forEach(fac => {
+        const cat = (typeof BASTION_SPECIAL_FACILITIES_CATALOG !== 'undefined') ? BASTION_SPECIAL_FACILITIES_CATALOG[fac.key] : null;
+        const patronHero = campPlayers.find(p => String(p.id) === String(fac.patronId));
+        const patronName = patronHero ? patronHero.name : (fac.patronId ? 'Herói Vinculado' : 'Sem Patrono Definido');
+        const icon = cat ? cat.icon : '🏛️';
+        const order = fac.currentOrder;
+        const hasManager = Boolean(fac.managerNpcId && fac.managerNpcName);
+
+        html += `
+          <div class="bastion-facility-card">
+            <div class="bastion-facility-header">
+              <div>
+                <div class="bastion-facility-name">
+                  <span>${icon}</span>
+                  <span>${fac.name || (cat ? cat.name : 'Instalação')}</span>
+                </div>
+                <div class="bastion-facility-patron">
+                  <span>👤 Patrono:</span>
+                  <strong>${patronName}</strong>
+                </div>
+              </div>
+              <div style="display: flex; gap: 4px;">
+                <button type="button" class="btn-micro" style="color: #f87171;" onclick="removeBastionFacility('${fac.id}')" title="Desativar/Excluir esta sala">🗑️</button>
+              </div>
+            </div>
+
+            <!-- Crachá do NPC Encarregado da Sala -->
+            <div class="bastion-facility-manager-row">
+              <div class="bastion-facility-manager-info">
+                <span style="font-size: 14px;">${fac.managerNpcIcon || '👤'}</span>
+                <div>
+                  ${hasManager ? `
+                    <span style="color: #67e8f9; font-weight: 700;">${fac.managerNpcName}</span>
+                    <span style="color: #94a3b8; font-size: 10px;"> • ${fac.managerNpcRole || 'Encarregado'}</span>
+                  ` : `
+                    <span style="color: #94a3b8; font-style: italic;">Sem encarregado exclusivo</span>
+                  `}
+                </div>
+              </div>
+              <div style="display: flex; gap: 4px;">
+                <button type="button" class="btn-secondary" style="font-size: 10px; padding: 2px 6px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" onclick="openAssignBastionNpcModal('${fac.id}')" title="Designar ou alterar o NPC encarregado desta sala">
+                  ${hasManager ? '✏️ Trocar' : '👤 Designar'}
+                </button>
+                ${hasManager ? `
+                  <button type="button" class="btn-micro" style="color: #f87171;" onclick="unassignBastionNpc('${fac.id}')" title="Desvincular encarregado">✕</button>
+                ` : ''}
+              </div>
+            </div>
+
+            <div style="font-size: 11px; color: #94a3b8; line-height: 1.4;">
+              ${cat ? cat.desc : 'Instalação ativa da base coletiva.'}
+            </div>
+
+            <div class="bastion-order-box">
+              ${order ? `
+                <div class="bastion-order-name">
+                  <span>⚙️ Ordem Ativa:</span>
+                  <span>${order.name}</span>
+                </div>
+                <div class="bastion-order-desc">
+                  ${order.selectedItem ? `<b>Item em confecção:</b> ${order.selectedItem.name}` : (order.rewardDesc || 'Em execução')}
+                </div>
+                <div class="bastion-order-progress">
+                  ⏳ Restam ${order.daysLeft} dias para conclusão (avança a cada turno semanal)
+                </div>
+              ` : `
+                <div style="color: #94a3b8; font-style: italic; display: flex; justify-content: space-between; align-items: center;">
+                  <span>Sem ordem em andamento.</span>
+                  <button type="button" class="btn-secondary" style="font-size: 10px; padding: 2px 8px; color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);" onclick="openBastionActionModal('${fac.id}')">
+                    ⚡ Dar Ordem
+                  </button>
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    html += `</div></div>`;
+  }
+
+  // =========================================================================
+  // SUB-ABA 2: EVOLUÇÃO & CIDADE (SIMCITY: FELICIDADE, POPULAÇÃO & TIER)
+  // =========================================================================
+  if (subTab === 'evolution') {
+    html += `
+      <!-- Painel SimCity: Felicidade & Demografia -->
+      <div class="bastion-simcity-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <div style="font-size: 14px; font-weight: 800; color: #7dd3fc; font-family: var(--font-title);">
+              ${hInfo.icon} Felicidade & Crescimento Populacional (Estilo SimCity)
+            </div>
+            <div style="font-size: 11.5px; color: #cbd5e1; margin-top: 2px;">
+              Moradores: <b>${currentPop} / ${maxPop}</b> (Base ${tier.baseMaxPopulation || 10} + ${((bastion.level || 1) * 2)} pelo Nv.${bastion.level || 1}) •
+              Renda projetada: <b style="color: #facc15;">+${projectedTierRev + popTaxIncome} PO/sem</b> (${projectedTierRev} PO terra + ${popTaxIncome} PO impostos)
+            </div>
+          </div>
+          <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+            <button type="button" class="btn-secondary" style="font-size: 11px; color: #f87171; border-color: rgba(239,68,68,0.35);" onclick="adjustBastionHappiness(-10)" title="Ajuste narrativo do Mestre: -10% Felicidade">😟 -10%</button>
+            <button type="button" class="btn-secondary" style="font-size: 11px; color: #6ee7b7; border-color: rgba(16,185,129,0.35);" onclick="adjustBastionHappiness(10)" title="Ajuste narrativo do Mestre: +10% Felicidade">😊 +10%</button>
+            <button type="button" class="btn-secondary" style="font-size: 11px; color: #fef08a; border-color: rgba(245,158,11,0.4);" onclick="fundBastionFestival()" title="Financiar Festival Popular (+30 Renome e +20% Felicidade por 50 PO)">
+              🎉 Financiar Festival (50 PO)
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; margin-bottom: 4px;">
+            <span style="color: ${hInfo.color};">${hInfo.icon} Humor Atual: <b>${hInfo.label} (${hInfo.score}%)</b></span>
+            <span style="color: #94a3b8;">${hInfo.summary}</span>
+          </div>
+          <div class="bastion-happiness-bar-track">
+            <div class="bastion-happiness-bar-fill" style="width: ${hInfo.score}%; background: ${hInfo.barColor};"></div>
+          </div>
+        </div>
+
+        <div class="bastion-happiness-factors">
+          ${hFactors.length > 0 ? hFactors.map(f => `<span class="bastion-factor-chip ${f.type}">${f.label}</span>`).join('') : '<span class="bastion-factor-chip">ℹ️ Construa muralhas, salas de bem-estar ou contrate staff para gerar bônus de humor.</span>'}
         </div>
       </div>
 
@@ -4242,8 +4643,8 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
             <button type="button" class="btn-action ${allReqsMet ? 'bastion-btn-ready-pulse' : ''}" style="font-size: 11px; font-weight: 800; background: ${allReqsMet ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #0284c7, #0369a1)'}; color: #fff;" onclick="openBastionSettlementUpgradeModal()" title="Evoluir assentamento (Fazenda -> Aldeia -> Vila -> Cidadela -> Metrópole)">
               ${allReqsMet ? '🎉 Pronto para Evoluir!' : '✨ Evoluir Assentamento'}
             </button>
-            <button type="button" class="btn-secondary" style="font-size: 11px; color: #fef08a; border-color: rgba(245,158,11,0.4);" onclick="fundBastionFestival()" title="Financiar Festival Popular (+30 Renome por 50 PO)">
-              🎉 Financiar Festival
+            <button type="button" class="btn-secondary" style="font-size: 11px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" onclick="openBastionWallsModal()">
+              🧱 Aprimorar Muralhas
             </button>
           </div>
         </div>
@@ -4260,40 +4661,40 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
               </span>
             </div>
             <div class="bastion-req-checklist">
-              <div class="bastion-req-pill ${weeksMet ? 'met' : 'pending'}" title="${weeksMet ? 'Tempo de administração cumprido' : `Faltam ${nextTier.reqWeeks - weeksCur} semana(s)`}">
+              <div class="bastion-req-pill ${weeksMet ? 'met' : 'pending'}">
                 <div style="display: flex; justify-content: space-between;">
                   <span>${weeksMet ? '✅' : '⏳'} Semanas</span>
                   <b>${weeksCur}/${nextTier.reqWeeks}</b>
                 </div>
                 <div class="bastion-req-pill-bar">
-                  <div class="bastion-req-pill-bar-fill" style="width: ${Math.min(100, Math.round((weeksCur / nextTier.reqWeeks) * 100))}%;"></div>
+                  <div class="bastion-req-pill-bar-fill" style="width: ${Math.min(100, Math.round((weeksCur / Math.max(1, nextTier.reqWeeks)) * 100))}%;"></div>
                 </div>
               </div>
-              <div class="bastion-req-pill ${facsMet ? 'met' : 'pending'}" title="${facsMet ? 'Salas especiais mínimas construídas' : `Faltam ${nextTier.reqFacilities - facsCur} sala(s)`}">
+              <div class="bastion-req-pill ${facsMet ? 'met' : 'pending'}">
                 <div style="display: flex; justify-content: space-between;">
                   <span>${facsMet ? '✅' : '⏳'} Instalações</span>
                   <b>${facsCur}/${nextTier.reqFacilities}</b>
                 </div>
                 <div class="bastion-req-pill-bar">
-                  <div class="bastion-req-pill-bar-fill" style="width: ${Math.min(100, Math.round((facsCur / nextTier.reqFacilities) * 100))}%;"></div>
+                  <div class="bastion-req-pill-bar-fill" style="width: ${Math.min(100, Math.round((facsCur / Math.max(1, nextTier.reqFacilities)) * 100))}%;"></div>
                 </div>
               </div>
-              <div class="bastion-req-pill ${renownMet ? 'met' : 'pending'}" title="${renownMet ? 'Renome suficiente alcançado' : `Faltam ${nextTier.reqRenown - currentRenown} de Renome`}">
+              <div class="bastion-req-pill ${renownMet ? 'met' : 'pending'}">
                 <div style="display: flex; justify-content: space-between;">
                   <span>${renownMet ? '✅' : '⏳'} Renome</span>
                   <b>${currentRenown}/${nextTier.reqRenown} 👑</b>
                 </div>
                 <div class="bastion-req-pill-bar">
-                  <div class="bastion-req-pill-bar-fill" style="width: ${Math.min(100, Math.round((currentRenown / nextTier.reqRenown) * 100))}%;"></div>
+                  <div class="bastion-req-pill-bar-fill" style="width: ${Math.min(100, Math.round((currentRenown / Math.max(1, nextTier.reqRenown)) * 100))}%;"></div>
                 </div>
               </div>
-              <div class="bastion-req-pill ${goldMet ? 'met' : 'pending'}" title="${goldMet ? 'Ouro suficiente para a obra (Cofre + Baú)' : `Faltam ${nextTier.costGold - goldAvailable} PO`}">
+              <div class="bastion-req-pill ${goldMet ? 'met' : 'pending'}">
                 <div style="display: flex; justify-content: space-between;">
                   <span>${goldMet ? '✅' : '⏳'} Ouro (Obra)</span>
                   <b>${goldAvailable}/${nextTier.costGold} PO</b>
                 </div>
                 <div class="bastion-req-pill-bar">
-                  <div class="bastion-req-pill-bar-fill" style="width: ${Math.min(100, Math.round((goldAvailable / nextTier.costGold) * 100))}%;"></div>
+                  <div class="bastion-req-pill-bar-fill" style="width: ${Math.min(100, Math.round((goldAvailable / Math.max(1, nextTier.costGold)) * 100))}%;"></div>
                 </div>
               </div>
             </div>
@@ -4304,256 +4705,140 @@ function renderCampaignBastion(camp, campPlayers, targetContainerId = null) {
           </div>
         `}
       </div>
-
-      <!-- Barra de Ações Principais do Bastião -->
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; background: rgba(0,0,0,0.25); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
-        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-          <button type="button" class="btn-action" style="font-size: 12px; font-weight: 800; background: linear-gradient(135deg, #10b981, #059669); color: #fff;" onclick="openBastionActionModal()">
-            ➕ Emitir Ordem no Bastião
-          </button>
-          <button type="button" class="btn-secondary" style="font-size: 11px;" onclick="openBastionAddFacilityModal()">
-            🏗️ Adicionar Instalação Especial
-          </button>
-          <button type="button" class="btn-secondary" style="font-size: 11px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" onclick="openBastionWallsModal()">
-            🧱 Aprimorar Muralhas
-          </button>
-          <button type="button" class="btn-secondary" style="font-size: 11px;" onclick="openEditBastionInfoModal()">
-            ✏️ Editar Bastião
-          </button>
-        </div>
-        <div>
-          <button type="button" class="btn-action" style="font-size: 12px; font-weight: 800; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; box-shadow: 0 0 12px rgba(139, 92, 246, 0.4);" onclick="advanceBastionTurn()">
-            🎲 Avançar Turno do Bastião (7 Dias)
-          </button>
-        </div>
-      </div>
-
-      <!-- Grid de Instalações Especiais -->
-      <div style="margin-top: 14px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 11px; font-weight: 800; color: var(--primary-light); text-transform: uppercase; letter-spacing: 0.5px;">
-            Salas & Instalações Especiais da Fortaleza (${(bastion.specialFacilities || []).length}):
-          </span>
-          <span style="font-size: 10px; color: #94a3b8;">Cada jogador pode ser gestor de suas salas</span>
-        </div>
-
-        <div class="bastion-facilities-grid">
-  `;
-
-  if (!bastion.specialFacilities || bastion.specialFacilities.length === 0) {
-    html += `
-      <div class="bastion-empty-hero">
-        <div class="bastion-empty-icon-wrap">
-          <span class="bastion-empty-icon">🏰</span>
-        </div>
-        <div class="bastion-empty-title">Sua fortaleza ainda não possui salas construídas</div>
-        <div class="bastion-empty-desc">
-          O bastião ganha vida quando seus heróis constroem suas instalações especiais. Cada sala concede ordens semanais, benefícios de descanso, recursos arcanos ou renda!
-        </div>
-        <div class="bastion-empty-preview-tags">
-          <span class="bastion-preview-tag">⚔️ Forja</span>
-          <span class="bastion-preview-tag">🧪 Lab. Alquímico</span>
-          <span class="bastion-preview-tag">🌿 Jardim & Estufa</span>
-          <span class="bastion-preview-tag">📚 Biblioteca Arcana</span>
-          <span class="bastion-preview-tag">⛪ Santuário</span>
-          <span class="bastion-preview-tag">🛡️ Aposentos & Quartel</span>
-        </div>
-        <button type="button" class="btn-action bastion-btn-build-first" onclick="openBastionAddFacilityModal()">
-          🏗️ Construir Primeira Instalação
-        </button>
-      </div>
     `;
-  } else {
-    bastion.specialFacilities.forEach(fac => {
-      const cat = (typeof BASTION_SPECIAL_FACILITIES_CATALOG !== 'undefined') ? BASTION_SPECIAL_FACILITIES_CATALOG[fac.key] : null;
-      const patronHero = campPlayers.find(p => String(p.id) === String(fac.patronId));
-      const patronName = patronHero ? patronHero.name : (fac.patronId ? 'Herói Vinculado' : 'Sem Patrono Definido');
-      const icon = cat ? cat.icon : '🏛️';
-      const order = fac.currentOrder;
-      const hasManager = Boolean(fac.managerNpcId && fac.managerNpcName);
-
-      html += `
-        <div class="bastion-facility-card">
-          <div class="bastion-facility-header">
-            <div>
-              <div class="bastion-facility-name">
-                <span>${icon}</span>
-                <span>${fac.name || (cat ? cat.name : 'Instalação')}</span>
-              </div>
-              <div class="bastion-facility-patron">
-                <span>👤 Patrono:</span>
-                <strong>${patronName}</strong>
-              </div>
-            </div>
-            <div style="display: flex; gap: 4px;">
-              <button type="button" class="btn-micro" style="color: #f87171;" onclick="removeBastionFacility('${fac.id}')" title="Desativar/Excluir esta sala">🗑️</button>
-            </div>
-          </div>
-
-          <!-- Crachá do NPC Encarregado da Sala (ISSUE-132) -->
-          <div class="bastion-facility-manager-row">
-            <div class="bastion-facility-manager-info">
-              <span style="font-size: 14px;">${fac.managerNpcIcon || '👤'}</span>
-              <div>
-                ${hasManager ? `
-                  <span style="color: #67e8f9; font-weight: 700;">${fac.managerNpcName}</span>
-                  <span style="color: #94a3b8; font-size: 10px;"> • ${fac.managerNpcRole || 'Encarregado'}</span>
-                ` : `
-                  <span style="color: #94a3b8; font-style: italic;">Sem encarregado exclusivo</span>
-                `}
-              </div>
-            </div>
-            <div style="display: flex; gap: 4px;">
-              <button type="button" class="btn-secondary" style="font-size: 10px; padding: 2px 6px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" onclick="openAssignBastionNpcModal('${fac.id}')" title="Designar ou alterar o NPC encarregado desta sala">
-                ${hasManager ? '✏️ Trocar' : '👤 Designar'}
-              </button>
-              ${hasManager ? `
-                <button type="button" class="btn-micro" style="color: #f87171;" onclick="unassignBastionNpc('${fac.id}')" title="Desvincular encarregado">✕</button>
-              ` : ''}
-            </div>
-          </div>
-
-          <div style="font-size: 11px; color: #94a3b8; line-height: 1.4;">
-            ${cat ? cat.desc : 'Instalação ativa da base coletiva.'}
-          </div>
-
-          <div class="bastion-order-box">
-            ${order ? `
-              <div class="bastion-order-name">
-                <span>⚙️ Ordem Ativa:</span>
-                <span>${order.name}</span>
-              </div>
-              <div class="bastion-order-desc">
-                ${order.selectedItem ? `<b>Item em confecção:</b> ${order.selectedItem.name}` : (order.rewardDesc || 'Em execução')}
-              </div>
-              <div class="bastion-order-progress">
-                ⏳ Restam ${order.daysLeft} dias para conclusão (avança a cada turno semanal)
-              </div>
-            ` : `
-              <div style="color: #94a3b8; font-style: italic; display: flex; justify-content: space-between; align-items: center;">
-                <span>Sem ordem em andamento.</span>
-                <button type="button" class="btn-secondary" style="font-size: 10px; padding: 2px 8px; color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);" onclick="openBastionActionModal('${fac.id}')">
-                  ⚡ Dar Ordem
-                </button>
-              </div>
-            `}
-          </div>
-        </div>
-      `;
-    });
   }
 
-  html += `</div></div>`;
-
-  // 1. Painel do Banco / Cofre da Fortaleza (ISSUE-132)
-  const bank = getBastionBank(bastion);
-  const staff = getBastionStaff(bastion);
-
-  html += `
-    <div class="bastion-bank-panel">
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <span style="font-size: 28px;">🏦</span>
-        <div>
-          <div style="font-size: 14px; font-weight: 800; color: #fef08a; font-family: var(--font-title);">Cofre Forte & Banco da Fortaleza</div>
-          <div style="font-size: 11px; color: #94a3b8;">Depósito seguro de ouro, financiamento de obras e movimentações do grupo</div>
-        </div>
-      </div>
-      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-        <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(234, 179, 8, 0.4); border-radius: 8px; padding: 4px 12px; text-align: center;">
-          <span style="font-size: 10px; color: #94a3b8; text-transform: uppercase;">Saldo no Cofre:</span>
-          <div style="font-size: 18px; font-weight: 900; color: #facc15; font-family: var(--font-mono);">${bank.gold || 0} PO</div>
-        </div>
-        <div style="display: flex; gap: 6px;">
-          <button type="button" class="btn-action" style="font-size: 11px; font-weight: 800; background: linear-gradient(135deg, #10b981, #059669); color: #fff;" onclick="openBastionBankModal()">
-            📥 Depositar / Sacar
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 2. Seção do Corpo de Funcionários & Especialistas (Staff - ISSUE-132) -->
-    <div class="bastion-staff-section">
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 20px;">👥</span>
+  // =========================================================================
+  // SUB-ABA 3: COFRE & STAFF
+  // =========================================================================
+  if (subTab === 'economy') {
+    html += `
+      <div class="bastion-bank-panel">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 28px;">🏦</span>
           <div>
-            <div style="font-size: 13px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px;">Corpo de Funcionários & Especialistas (${staff.length})</div>
-            <div style="font-size: 10.5px; color: #94a3b8;">NPCs criados pelo mestre para administrar os cômodos e serviços da fortaleza</div>
+            <div style="font-size: 14px; font-weight: 800; color: #fef08a; font-family: var(--font-title);">Cofre Forte & Banco da Fortaleza</div>
+            <div style="font-size: 11px; color: #94a3b8;">Recebe a renda semanal da cidade, paga salários do Staff e financia obras</div>
           </div>
         </div>
-        <div>
-          <button type="button" class="btn-action" style="font-size: 11px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff;" onclick="openCreateBastionStaffModal()">
-            ➕ Criar Novo Especialista
-          </button>
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(234, 179, 8, 0.4); border-radius: 8px; padding: 4px 12px; text-align: center;">
+            <span style="font-size: 10px; color: #94a3b8; text-transform: uppercase;">Saldo no Cofre:</span>
+            <div style="font-size: 18px; font-weight: 900; color: #facc15; font-family: var(--font-mono);">${bank.gold || 0} PO</div>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" class="btn-action" style="font-size: 11px; font-weight: 800; background: linear-gradient(135deg, #10b981, #059669); color: #fff;" onclick="openBastionBankModal()">
+              📥 Depositar / Sacar
+            </button>
+          </div>
         </div>
       </div>
 
-      <div class="bastion-staff-grid">
-  `;
-
-  if (staff.length === 0) {
-    html += `
-      <div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #94a3b8; font-size: 11.5px; background: rgba(0,0,0,0.2); border-radius: 8px;">
-        Nenhum especialista cadastrado no staff desta fortaleza. Clique em <b>"➕ Criar Novo Especialista"</b> para designar mestres ferreiros, alquimistas, senescais ou comandantes!
-      </div>
-    `;
-  } else {
-    staff.forEach(npc => {
-      const assignedFacility = npc.assignedFacilityId ? (bastion.specialFacilities || []).find(f => f.id === npc.assignedFacilityId) : null;
-      const mastery = (typeof getBastionStaffMasteryInfo === 'function') ? getBastionStaffMasteryInfo(npc.level || 1) : { level: 1, title: 'Aprendiz', stars: '⭐', timeReductionDays: 0, desc: 'Padrão' };
-      html += `
-        <div class="bastion-staff-card">
-          <div class="bastion-staff-header">
+      <!-- Seção do Corpo de Funcionários & Especialistas (Staff) -->
+      <div class="bastion-staff-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px;">👥</span>
             <div>
-              <div class="bastion-staff-name">
-                <span>${npc.icon || '👤'}</span>
-                <span>${npc.name}</span>
-                <span class="bastion-mastery-badge" title="${mastery.title}">${mastery.stars} Nv.${mastery.level}</span>
-              </div>
-              <div class="bastion-staff-role">${npc.role || 'Especialista'}</div>
-            </div>
-            <div style="display: flex; gap: 4px; align-items: center;">
-              ${(npc.level || 1) < 5 ? `
-                <button type="button" class="btn-promote-staff" onclick="promoteBastionStaffMember('${npc.id}')" title="Promover nível de maestria do especialista (aumenta o soldo e benefícios)">
-                  ⭐ Promover
-                </button>
-              ` : ''}
-              <button type="button" class="btn-micro" onclick="openCreateBastionStaffModal('${npc.id}')" title="Editar dados do especialista">✏️</button>
-              <button type="button" class="btn-micro" style="color: #f87171;" onclick="deleteBastionStaffMember('${npc.id}')" title="Dispensar especialista">🗑️</button>
+              <div style="font-size: 13px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px;">Corpo de Funcionários & Especialistas (${staff.length})</div>
+              <div style="font-size: 10.5px; color: #94a3b8;">NPCs criados pelo mestre para administrar os cômodos e serviços da fortaleza</div>
             </div>
           </div>
-
-          ${npc.trait ? `
-            <div style="font-size: 11px; color: #cbd5e1; font-style: italic; background: rgba(0,0,0,0.2); padding: 4px 6px; border-radius: 4px;">
-              "${npc.trait}"
-            </div>
-          ` : ''}
-
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; font-size: 10px; gap: 6px; flex-wrap: wrap;">
-            <span class="bastion-staff-benefit-pill" title="${mastery.desc}">
-              ${mastery.level === 5 ? '⚡ 2x Produção & -7d' : (mastery.timeReductionDays > 0 ? `⏱️ -${mastery.timeReductionDays} dias` : '⏱️ Tempo padrão')}
-            </span>
-            <span class="bastion-staff-status-badge ${assignedFacility ? 'bastion-staff-status-assigned' : 'bastion-staff-status-idle'}">
-              ${assignedFacility ? `🟢 ${assignedFacility.name}` : `🟡 Disponível`}
-            </span>
-            <span style="color: #facc15; font-weight: 700;">🪙 ${npc.wage || 0} PO/sem</span>
+          <div>
+            <button type="button" class="btn-action" style="font-size: 11px; font-weight: 800; background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff;" onclick="openCreateBastionStaffModal()">
+              ➕ Criar Novo Especialista
+            </button>
           </div>
+        </div>
+
+        <div class="bastion-staff-grid">
+    `;
+
+    if (staff.length === 0) {
+      html += `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #94a3b8; font-size: 11.5px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+          Nenhum especialista cadastrado no staff desta fortaleza. Clique em <b>"➕ Criar Novo Especialista"</b> para designar mestres ferreiros, alquimistas, senescais ou comandantes!
         </div>
       `;
-    });
+    } else {
+      staff.forEach(npc => {
+        const assignedFacility = npc.assignedFacilityId ? (bastion.specialFacilities || []).find(f => f.id === npc.assignedFacilityId) : null;
+        const mastery = (typeof getBastionStaffMasteryInfo === 'function') ? getBastionStaffMasteryInfo(npc.level || 1) : { level: 1, title: 'Aprendiz', stars: '⭐', timeReductionDays: 0, desc: 'Padrão' };
+        html += `
+          <div class="bastion-staff-card">
+            <div class="bastion-staff-header">
+              <div>
+                <div class="bastion-staff-name">
+                  <span>${npc.icon || '👤'}</span>
+                  <span>${npc.name}</span>
+                  <span class="bastion-mastery-badge" title="${mastery.title}">${mastery.stars} Nv.${mastery.level}</span>
+                </div>
+                <div class="bastion-staff-role">${npc.role || 'Especialista'}</div>
+              </div>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                ${(npc.level || 1) < 5 ? `
+                  <button type="button" class="btn-promote-staff" onclick="promoteBastionStaffMember('${npc.id}')" title="Promover nível de maestria do especialista">
+                    ⭐ Promover
+                  </button>
+                ` : ''}
+                <button type="button" class="btn-micro" onclick="openCreateBastionStaffModal('${npc.id}')" title="Editar dados do especialista">✏️</button>
+                <button type="button" class="btn-micro" style="color: #f87171;" onclick="deleteBastionStaffMember('${npc.id}')" title="Dispensar especialista">🗑️</button>
+              </div>
+            </div>
+
+            ${npc.trait ? `
+              <div style="font-size: 11px; color: #cbd5e1; font-style: italic; background: rgba(0,0,0,0.2); padding: 4px 6px; border-radius: 4px;">
+                "${npc.trait}"
+              </div>
+            ` : ''}
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; font-size: 10px; gap: 6px; flex-wrap: wrap;">
+              <span class="bastion-staff-benefit-pill" title="${mastery.desc}">
+                ${mastery.level === 5 ? '⚡ 2x Produção & -7d' : (mastery.timeReductionDays > 0 ? `⏱️ -${mastery.timeReductionDays} dias` : '⏱️ Tempo padrão')}
+              </span>
+              <span class="bastion-staff-status-badge ${assignedFacility ? 'bastion-staff-status-assigned' : 'bastion-staff-status-idle'}">
+                ${assignedFacility ? `🟢 ${assignedFacility.name}` : `🟡 Disponível`}
+              </span>
+              <span style="color: #facc15; font-weight: 700;">🪙 ${npc.wage || 0} PO/sem</span>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    html += `</div></div>`;
   }
 
-  html += `</div></div>`;
-
-  // Banner do Último Evento Semanal do Bastião
-  if (lastEvent) {
+  // =========================================================================
+  // SUB-ABA 4: CRÔNICA & EVENTOS
+  // =========================================================================
+  if (subTab === 'history') {
+    const historyList = (bastion.history || []).slice().reverse();
     html += `
-      <div class="bastion-event-banner">
-        <span style="font-size: 20px;">📜</span>
-        <div style="flex: 1;">
-          <div class="bastion-event-title">Último Acontecimento (Semana ${lastEvent.turn}): ${lastEvent.title}</div>
-          <div class="bastion-event-desc">${lastEvent.desc}</div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        ${lastEvent ? `
+          <div class="bastion-event-banner">
+            <span style="font-size: 20px;">📜</span>
+            <div style="flex: 1;">
+              <div class="bastion-event-title">Último Acontecimento (Semana ${lastEvent.turn}): ${lastEvent.title}</div>
+              <div class="bastion-event-desc">${lastEvent.desc}</div>
+              ${lastEvent.resolution ? `<div style="font-size: 11px; color: #6ee7b7; margin-top: 4px;"><b>Resolução:</b> ${lastEvent.resolution}</div>` : ''}
+            </div>
+          </div>
+        ` : ''}
+        <div style="font-size: 11px; font-weight: 800; color: var(--primary-light); text-transform: uppercase; margin-top: 4px;">
+          Registro Histórico da Fortaleza (${historyList.length} eventos):
         </div>
+        ${historyList.map(ev => `
+          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px 12px;">
+            <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; color: #fef08a;">
+              <span>${ev.title || 'Registro'}</span>
+              <span style="font-size: 10.5px; color: #94a3b8;">Semana ${ev.turn ?? '-'} • ${ev.date || ''}</span>
+            </div>
+            <div style="font-size: 11.5px; color: #cbd5e1; margin-top: 3px;">${ev.desc || ''}</div>
+            ${ev.resolution ? `<div style="font-size: 11px; color: #6ee7b7; margin-top: 3px;">${ev.resolution}</div>` : ''}
+          </div>
+        `).join('')}
       </div>
     `;
   }
@@ -5355,8 +5640,19 @@ function openBastionActionModal(preselectedFacId = null) {
     selFac.innerHTML = (bastion.specialFacilities || []).map(f => {
       const cat = (typeof BASTION_SPECIAL_FACILITIES_CATALOG !== 'undefined') ? BASTION_SPECIAL_FACILITIES_CATALOG[f.key] : null;
       const mgrLabel = f.managerNpcName ? ` • 👤 ${f.managerNpcName}` : '';
-      return `<option value="${f.id}" ${f.id === preselectedFacId ? 'selected' : ''}>${cat ? cat.icon : '🏛️'} ${f.name || cat?.name} (Nv.${cat?.levelReq || 5})${mgrLabel}</option>`;
+      const busyLabel = f.currentOrder ? ' [⚙️ Ocupada]' : '';
+      return `<option value="${f.id}" ${f.id === preselectedFacId ? 'selected' : ''}>${cat ? cat.icon : '🏛️'} ${f.name || cat?.name} (Nv.${cat?.levelReq || 5})${mgrLabel}${busyLabel}</option>`;
     }).join('');
+  }
+
+  const selGold = document.getElementById('sel-bastion-action-gold-source');
+  if (selGold) {
+    const bGold = bank.gold || 0;
+    const sGold = camp.partyStash?.gold || 0;
+    selGold.innerHTML = `
+      <option value="bank" ${bGold >= sGold ? 'selected' : ''}>🏦 Cofre do Bastião (${bGold} PO)</option>
+      <option value="stash" ${bGold < sGold ? 'selected' : ''}>💰 Baú da Campanha (${sGold} PO)</option>
+    `;
   }
 
   renderBastionActionsList();
@@ -5394,7 +5690,10 @@ function renderBastionActionsList() {
   const selFac = document.getElementById('sel-bastion-action-facility');
   const selectedFacId = selFac ? selFac.value : null;
   const selectedFac = (bastion?.specialFacilities || []).find(f => f.id === selectedFacId);
-  const currentBankGold = bank.gold || 0;
+  const selGoldSource = document.getElementById('sel-bastion-action-gold-source');
+  const goldSource = selGoldSource ? selGoldSource.value : 'bank';
+  const currentBankGold = goldSource === 'stash' ? (camp.partyStash?.gold || 0) : (bank.gold || 0);
+  const sourceLabel = goldSource === 'stash' ? 'do Baú' : 'do Cofre';
 
   if (typeof BASTION_ACTIONS_CATALOG === 'undefined') {
     listContainer.innerHTML = '<div style="color:#94a3b8;">Catálogo de ações indisponível.</div>';
@@ -5457,14 +5756,14 @@ function renderBastionActionsList() {
             </div>
             <div style="display: flex; gap: 6px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
               <span class="badge badge-lvl" style="font-size: 10px;">⭐ Requer Nível ${act.levelReq}</span>
-              <span class="badge badge-gold" style="font-size: 10px;">🏦 Custo: ${costDisplay} (do Banco)</span>
+              <span class="badge badge-gold" style="font-size: 10px;">🏦 Custo: ${costDisplay} (${sourceLabel})</span>
               <span class="badge" style="font-size: 10px; background: rgba(255,255,255,0.1); color: #cbd5e1;">⏳ Tempo: ${effectiveDays} dias ${timeReduction > 0 ? `(era ${act.durationDays}d)` : ''}</span>
             </div>
             ${mgrInfoText ? `<div style="font-size: 10.5px; color: #67e8f9; margin-top: 3px;">${mgrInfoText}</div>` : ''}
           </div>
           <button type="button" class="btn-action" style="padding: 6px 14px; font-size: 11px; font-weight: 800; background: ${canAfford ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'rgba(100,116,139,0.4)'}; color: ${canAfford ? '#000' : '#94a3b8'};"
             onclick="triggerActivateBastionAction('${act.key}')" ${!canAfford && act.costPO > 0 ? 'disabled' : ''}>
-            ${canAfford || act.costPO === 0 ? '✔️ Ativar Ordem' : '❌ Sem Saldo no Banco'}
+            ${canAfford || act.costPO === 0 ? '✔️ Ativar Ordem' : '❌ Saldo Insuficiente'}
           </button>
         </div>
 
@@ -5543,10 +5842,15 @@ function renderActionItemSelectorHtml(act) {
   return `
     <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 10px;">
       <label style="font-size: 11px; font-weight: 700; color: #fef08a;">📦 Selecione o Item a ser Fabricado:</label>
-      <select id="sel-item-for-${act.key}" style="width: 100%; font-size: 12px; margin-top: 4px;">
+      <select id="sel-item-for-${act.key}" style="width: 100%; font-size: 12px; margin-top: 4px;"
+        onchange="const b = document.getElementById('bastion-custom-inputs-${act.key}'); if (b) b.style.display = this.value === 'CUSTOM' ? 'grid' : 'none';">
         ${optionsHtml}
         <option value="CUSTOM">➕ Item Personalizado / Sob Medida...</option>
       </select>
+      <div id="bastion-custom-inputs-${act.key}" style="display: none; grid-template-columns: 2fr 1fr; gap: 8px; margin-top: 6px;">
+        <input type="text" id="inp-custom-item-name-${act.key}" placeholder="Nome do item personalizado" style="font-size: 11.5px;">
+        <input type="number" id="inp-custom-item-cost-${act.key}" min="0" value="50" placeholder="Custo (PO)" style="font-size: 11.5px;">
+      </div>
     </div>
   `;
 }
@@ -5568,6 +5872,12 @@ function triggerActivateBastionAction(actionKey) {
     return;
   }
 
+  if (fac.currentOrder) {
+    if (!confirm(`A instalação "${fac.name}" já possui a ordem "${fac.currentOrder.name}" em andamento (restam ${fac.currentOrder.daysLeft} dias).\n\nDeseja cancelar a ordem anterior e iniciar esta nova ordem?`)) {
+      return;
+    }
+  }
+
   const act = (typeof BASTION_ACTIONS_CATALOG !== 'undefined') ? BASTION_ACTIONS_CATALOG[actionKey] : null;
   if (!act) return;
 
@@ -5578,10 +5888,15 @@ function triggerActivateBastionAction(actionKey) {
     const selItemEl = document.getElementById(`sel-item-for-${act.key}`);
     const selVal = selItemEl ? selItemEl.value : '';
     if (selVal === 'CUSTOM') {
-      const customName = prompt('Digite o nome do item personalizado que deseja fabricar:');
-      if (!customName) return;
-      const customCostStr = prompt('Digite o custo de materiais em PO acordado com o Mestre:', '50');
-      finalCost = parseInt(customCostStr) || 0;
+      const customNameEl = document.getElementById(`inp-custom-item-name-${act.key}`);
+      const customCostEl = document.getElementById(`inp-custom-item-cost-${act.key}`);
+      const customName = customNameEl ? customNameEl.value.trim() : '';
+      if (!customName) {
+        alert('Digite o nome do item personalizado no campo abaixo do seletor.');
+        if (customNameEl) customNameEl.focus();
+        return;
+      }
+      finalCost = Math.max(0, parseInt(customCostEl?.value, 10) || 0);
       selectedItem = { name: customName, costPO: finalCost, type: 'custom' };
     } else if (selVal.includes('|')) {
       const parts = selVal.split('|');
@@ -5590,9 +5905,11 @@ function triggerActivateBastionAction(actionKey) {
     }
   }
 
-  const currentBankGold = bank.gold || 0;
-  if (finalCost > currentBankGold) {
-    alert(`Saldo insuficiente no Cofre do Banco da Fortaleza!\n\nCusto dos materiais da ordem: ${finalCost} PO.\nSaldo disponível no Banco: ${currentBankGold} PO.\n\nPor favor, deposite ouro no Banco do Bastião antes de iniciar a obra.`);
+  const selGoldSource = document.getElementById('sel-bastion-action-gold-source');
+  const goldSource = selGoldSource ? selGoldSource.value : 'bank';
+  const availableGold = goldSource === 'stash' ? (camp.partyStash?.gold || 0) : (bank.gold || 0);
+  if (finalCost > availableGold) {
+    alert(`Saldo insuficiente ${goldSource === 'stash' ? 'no Baú da Campanha' : 'no Cofre do Bastião'}!\n\nCusto dos materiais: ${finalCost} PO.\nDisponível: ${availableGold} PO.`);
     return;
   }
 
@@ -5613,17 +5930,28 @@ function triggerActivateBastionAction(actionKey) {
   const baseDays = act.durationDays || 7;
   const effectiveDays = Math.max(1, baseDays - timeReduction);
 
-  // Deduz exclusivamente do Cofre do Banco da Fortaleza
+  // Deduz da fonte escolhida (Cofre ou Baú)
   if (finalCost > 0) {
-    bank.gold -= finalCost;
-    bank.history = bank.history || [];
-    bank.history.push({
-      type: 'withdraw',
-      amount: finalCost,
-      entityName: fac.name,
-      reason: `Materiais para ordem "${act.name}"`,
-      date: new Date().toISOString().split('T')[0]
-    });
+    if (goldSource === 'stash') {
+      camp.partyStash = camp.partyStash || { gold: 0, items: [], history: [] };
+      camp.partyStash.gold -= finalCost;
+      camp.partyStash.history = camp.partyStash.history || [];
+      camp.partyStash.history.push({
+        date: new Date().toISOString().split('T')[0],
+        text: `-${finalCost} PO ordem "${act.name}" na ${fac.name}`,
+        type: 'gold_out'
+      });
+    } else {
+      bank.gold -= finalCost;
+      bank.history = bank.history || [];
+      bank.history.push({
+        type: 'withdraw',
+        amount: finalCost,
+        entityName: fac.name,
+        reason: `Materiais para ordem "${act.name}"`,
+        date: new Date().toISOString().split('T')[0]
+      });
+    }
   }
 
   fac.currentOrder = {
@@ -5664,26 +5992,14 @@ function advanceBastionTurn() {
   const bank = getBastionBank(bastion);
   const staff = getBastionStaff(bastion);
 
-  bastion.turnCount = (bastion.turnCount || 1) + 1;
+  bastion.turnCount = (bastion.turnCount || 0) + 1;
   bastion.renown = (bastion.renown || 0) + 10; // +10 Renome por semana ativa de bastião
   const completedOrders = [];
-
-  // Renda territorial semanal de acordo com o estágio de assentamento (ISSUE-181)
-  const currentTier = getBastionSettlementTier(bastion);
-  const weeklyRevenue = currentTier.weeklyRevenueGold || 10;
-  if (weeklyRevenue > 0) {
-    camp.partyStash.gold = (camp.partyStash.gold || 0) + weeklyRevenue;
-    camp.partyStash.history = camp.partyStash.history || [];
-    camp.partyStash.history.push({
-      date: new Date().toISOString().split('T')[0],
-      text: `+${weeklyRevenue} PO renda territorial semanal do assentamento (${currentTier.name})`,
-      type: 'gold_in'
-    });
-  }
 
   // 0. Folha de Pagamento Semanal do Staff debitada do Cofre do Banco (ISSUE-133)
   const totalPayroll = staff.reduce((sum, n) => sum + (n.wage || 0), 0);
   let payrollNotice = "";
+  let payrollPaidOk = true;
 
   if (totalPayroll > 0) {
     if ((bank.gold || 0) >= totalPayroll) {
@@ -5698,6 +6014,7 @@ function advanceBastionTurn() {
       });
       payrollNotice = `Folha de pagamento semanal (${totalPayroll} PO) quitada via Cofre do Banco.`;
     } else {
+      payrollPaidOk = false;
       const unpaid = totalPayroll - (bank.gold || 0);
       const paid = bank.gold || 0;
       bank.gold = 0;
@@ -5713,6 +6030,40 @@ function advanceBastionTurn() {
       }
       payrollNotice = `⚠️ ALERTA: Saldo bancário insuficiente para a folha do Staff (${totalPayroll} PO necessários, faltaram ${unpaid} PO). Moral dos especialistas abalada!`;
     }
+  }
+
+  // 0.1 SimCity: Atualiza Felicidade & População e deposita Renda Territorial + Impostos no Cofre (ISSUE-183)
+  const currentTier = getBastionSettlementTier(bastion);
+  const hFactors = getBastionHappinessFactors(camp, bastion);
+  const factorDelta = hFactors.reduce((acc, f) => acc + (f.delta || 0), 0);
+  const prevHappiness = typeof bastion.happiness === 'number' ? bastion.happiness : 50;
+  bastion.happiness = Math.max(0, Math.min(100, prevHappiness + factorDelta));
+
+  const hInfo = getBastionHappinessInfo(bastion.happiness);
+  if (hInfo.renownBonus > 0) {
+    bastion.renown += hInfo.renownBonus;
+  }
+
+  const maxPop = getBastionMaxPopulation(bastion);
+  const prevPop = bastion.population || 0;
+  const popDelta = hInfo.popMin === hInfo.popMax
+    ? hInfo.popMin
+    : (Math.floor(Math.random() * (hInfo.popMax - hInfo.popMin + 1)) + hInfo.popMin);
+  bastion.population = Math.max(0, Math.min(maxPop, prevPop + popDelta));
+
+  const baseWeeklyRevenue = Math.round((currentTier.weeklyRevenueGold || 10) * hInfo.revMultiplier);
+  const popTaxIncome = hInfo.score >= 40 ? Math.floor(bastion.population / 10) * 5 : 0;
+  const totalVaultRevenue = baseWeeklyRevenue + popTaxIncome;
+  if (totalVaultRevenue > 0) {
+    bank.gold = (bank.gold || 0) + totalVaultRevenue;
+    bank.history = bank.history || [];
+    bank.history.push({
+      type: 'deposit',
+      amount: totalVaultRevenue,
+      entityName: `Renda (${currentTier.name})`,
+      reason: `Território (+${baseWeeklyRevenue} PO) + Impostos de ${bastion.population} hab. (+${popTaxIncome} PO)`,
+      date: new Date().toISOString().split('T')[0]
+    });
   }
 
   // 1. Processa as ordens das instalações especiais
@@ -5792,7 +6143,8 @@ function advanceBastionTurn() {
             type: 'gold_in'
           });
         } else if (fac.currentOrder.actionKey === 'recruit_defenders') {
-          bastion.defenders = Math.min(12, (bastion.defenders || 0) + 4);
+          const maxDef = currentTier.maxDefenders || 12;
+          bastion.defenders = Math.min(maxDef, (bastion.defenders || 0) + 4);
         }
 
         fac.currentOrder = null;
@@ -5827,9 +6179,14 @@ function advanceBastionTurn() {
     if (bastion.defenders > 0) {
       const lost = Math.min(bastion.defenders, onesRolled);
       bastion.defenders -= lost;
+      if (lost === 0) {
+        bastion.happiness = Math.min(100, bastion.happiness + 5);
+        bastion.renown = (bastion.renown || 0) + 40;
+      }
       resolutionText = `Defensores resistiram ao ataque! Rolagem de invasão (${diceCount}d6): [${rolls.join(', ')}]. Perdas: ${lost} defensores. Restam: ${bastion.defenders}.`;
     } else {
-      resolutionText = `Sem defensores! A fortaleza sofreu danos leves e uma das salas precisará de reparos.`;
+      bastion.happiness = Math.max(0, bastion.happiness - 15);
+      resolutionText = `Sem defensores! A fortaleza sofreu danos leves e a felicidade caiu (-15%).`;
     }
   } else if (eventEntry.effect === 'treasure') {
     camp.partyStash.gold = (camp.partyStash.gold || 0) + 150;
@@ -5848,11 +6205,17 @@ function advanceBastionTurn() {
     });
     resolutionText = `Bênção sagrada concedida! +300 PO creditados no Baú Coletivo e todos os heróis revigorados!`;
   } else if (eventEntry.effect === 'recruits') {
-    bastion.defenders = Math.min(12, (bastion.defenders || 0) + 2);
+    const maxDef = currentTier.maxDefenders || 12;
+    bastion.defenders = Math.min(maxDef, (bastion.defenders || 0) + 2);
     resolutionText = `+2 guardas leais voluntários juntaram-se à guarnição da fortaleza!`;
   } else {
     resolutionText = `Nenhum dano sofrido. As atividades rotineiras prosseguem com tranquilidade.`;
   }
+
+  const popDiff = bastion.population - prevPop;
+  const popSummary = popDiff > 0 ? `+${popDiff} moradores` : (popDiff < 0 ? `${popDiff} moradores` : 'população estável');
+  const citySummary = `Cidade: ${hInfo.icon} ${bastion.happiness}% (${popSummary} • ${bastion.population}/${maxPop} hab. • +${totalVaultRevenue} PO no Cofre)`;
+  resolutionText = `${citySummary} • ${resolutionText}`;
 
   if (payrollNotice) {
     resolutionText = `[Soldo do Staff]: ${payrollNotice} • ${resolutionText}`;
@@ -6020,12 +6383,13 @@ function removeBastionFacility(facId) {
 
   if (confirm(`Deseja realmente desmantelar a instalação "${fac.name}" da fortaleza?`)) {
     bastion.specialFacilities = bastion.specialFacilities.filter(f => f.id !== facId);
+    bastion.renown = Math.max(0, (bastion.renown || 0) - 25);
     touchCampaign(camp);
     saveCampaignsState();
     if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
     renderBastionsTab(camp.id);
     renderCampaigns();
-    if (typeof addLog === 'function') addLog(`🗑️ <b>Bastião:</b> Instalação "${fac.name}" desmantelada.`);
+    if (typeof addLog === 'function') addLog(`🗑️ <b>Bastião:</b> Instalação "${fac.name}" desmantelada (-25 Renome).`);
   }
 }
 
@@ -6570,14 +6934,15 @@ function fundBastionFestival() {
     }
 
     bastion.renown = (bastion.renown || 0) + 30;
+    bastion.happiness = Math.min(100, (typeof bastion.happiness === 'number' ? bastion.happiness : 50) + 20);
 
     bastion.history = bastion.history || [];
     bastion.history.push({
-      turn: bastion.turnCount || 1,
+      turn: bastion.turnCount || 0,
       date: new Date().toISOString().split('T')[0],
       title: "🎉 Festival Popular Celebrado!",
-      desc: "Música, dança e banquetes atraíram plebeus, bardos e viajantes de toda a região (+30 Renome).",
-      resolution: "+30 Renome concedido ao bastião!"
+      desc: "Música, dança e banquetes atraíram plebeus, bardos e viajantes de toda a região (+30 Renome e +20% Felicidade).",
+      resolution: "+30 Renome e +20% Felicidade concedidos ao bastião!"
     });
 
     touchCampaign(camp);
@@ -6897,11 +7262,23 @@ if (typeof module !== 'undefined' && module.exports) {
     closeBastionWallsModal,
     updateBastionWallsGoldSourceMeta,
     confirmBastionWallUpgrade,
-    fundBastionFestival
+    fundBastionFestival,
+    switchBastionSubTab,
+    getBastionPartyLevel,
+    getBastionMaxPopulation,
+    getBastionHappinessInfo,
+    getBastionHappinessFactors,
+    adjustBastionHappiness
   };
 }
 
 if (typeof window !== 'undefined') {
+  window.switchBastionSubTab = switchBastionSubTab;
+  window.getBastionPartyLevel = getBastionPartyLevel;
+  window.getBastionMaxPopulation = getBastionMaxPopulation;
+  window.getBastionHappinessInfo = getBastionHappinessInfo;
+  window.getBastionHappinessFactors = getBastionHappinessFactors;
+  window.adjustBastionHappiness = adjustBastionHappiness;
   window.getBastionSettlementTier = getBastionSettlementTier;
   window.openBastionSettlementUpgradeModal = openBastionSettlementUpgradeModal;
   window.closeBastionSettlementUpgradeModal = closeBastionSettlementUpgradeModal;

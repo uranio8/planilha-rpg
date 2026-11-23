@@ -3164,7 +3164,7 @@
             <div>
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span style="font-size: 16px; font-weight: 700; color: #f8fafc; font-family: 'Cinzel', serif;">Exportação & Impressão A4 (PDF)</span>
-                <span class="badge" style="background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); font-size: 10px;">v3.10.1</span>
+                <span class="badge" style="background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); font-size: 10px;">v3.10.2</span>
               </div>
               <div style="font-size: 11.5px; color: #94a3b8;">Layout Canônico D&D 5E • 2 Páginas • Alta Fidelidade</div>
             </div>
@@ -5558,7 +5558,7 @@
       </div>
 
       <!-- Seletor de Herói / Patrono Responsável -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px;">
         <div>
           <label style="font-size: 11px; font-weight: 700; color: var(--primary-light);">Herói Atribuído à Ação:</label>
           <select id="sel-bastion-action-hero" style="width: 100%; font-size: 12px;"></select>
@@ -5566,6 +5566,13 @@
         <div>
           <label style="font-size: 11px; font-weight: 700; color: var(--primary-light);">Instalação Vinculada:</label>
           <select id="sel-bastion-action-facility" onchange="renderBastionActionsList()" style="width: 100%; font-size: 12px;"></select>
+        </div>
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: var(--primary-light);">Fonte de Pagamento:</label>
+          <select id="sel-bastion-action-gold-source" onchange="renderBastionActionsList()" style="width: 100%; font-size: 12px;">
+            <option value="bank">🏦 Cofre do Bastião</option>
+            <option value="stash">💰 Baú da Campanha</option>
+          </select>
         </div>
       </div>
 
@@ -5956,6 +5963,11 @@
         <div>
           <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Lema / Juramento da Fortaleza:</label>
           <input type="text" id="inp-bastion-motto" placeholder="Ex: 'Nenhum passo atrás', 'Luz na escuridão'..." style="width: 100%; font-size: 12px; font-style: italic;">
+        </div>
+
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: var(--primary-light); margin-bottom: 4px; display: block;">Nível do Bastião (1 a 20 — define capacidade populacional e instalações):</label>
+          <input type="number" id="inp-bastion-level" min="1" max="20" placeholder="Sincronizado com o grupo" style="width: 100%; font-size: 12px; font-weight: 700;">
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px;">

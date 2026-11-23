@@ -6429,9 +6429,9 @@ vm.runInContext(`
 
 let bastionTest = vm.runInContext("b86", sandbox);
 assert(bastionTest !== null && typeof bastionTest === 'object', 'Bastião foi inicializado com sucesso na campanha');
-assert(bastionTest.level === 5, 'Bastião inicia no Nível 5');
-assert(bastionTest.turnCount === 1, 'Bastião inicia na Semana / Turno 1');
-assert(bastionTest.defenders === 4, 'Bastião possui 4 defensores iniciais');
+assert(bastionTest.level === sandbox.getBastionPartyLevel(vm.runInContext("camp86", sandbox)), 'Bastião sincroniza nível com os heróis da campanha (sem Nível 5 hardcoded)');
+assert(bastionTest.turnCount === 0, 'Bastião inicia na Semana 0 (sem turno fantasma)');
+assert(bastionTest.defenders === 0, 'Bastião inicia com 0 defensores (sem defensores fantasmas)');
 assert(Array.isArray(bastionTest.specialFacilities) && bastionTest.specialFacilities.length === 0, 'Bastião inicia limpo sem instalações forçadas indesejadas (ISSUE-169)');
 
 // 4. Execução de Ordem de Fabricação de Item com Débito no Baú
@@ -6467,7 +6467,7 @@ vm.runInContext(`
 
 let updatedBastion = vm.runInContext("camp86.bastion", sandbox);
 let stashItems = vm.runInContext("camp86.partyStash.items", sandbox);
-assert(updatedBastion.turnCount === 2, 'Contador de turnos avançou para Semana 2');
+assert(updatedBastion.turnCount === 1, 'Contador de turnos avançou para Semana 1');
 assert(stashItems.some(i => i.name === 'Espada Longa de Aço'), 'Espada Longa forjada foi depositada automaticamente no Baú do Grupo');
 assert(updatedBastion.history.length >= 2, 'Evento d100 semanal foi registrado no histórico do Bastião');
 
@@ -7791,7 +7791,7 @@ vm.runInContext(`
 `, sandbox);
 
 const bankAfterPayroll = vm.runInContext("getSelectedBastionCampaign().bastion.bank.gold", sandbox);
-assert(bankAfterPayroll === 40, 'Folha de pagamento de 10 PO foi debitada do Cofre do Banco (de 50 para 40 PO)');
+assert(bankAfterPayroll === 50, 'Folha de pagamento (10 PO) debitada e renda semanal (10 PO) creditada no Cofre (50 - 10 + 10 = 50 PO)');
 const payrollTx = vm.runInContext("getSelectedBastionCampaign().bastion.bank.history.find(h => h.entityName === 'Folha de Pagamento')", sandbox);
 assert(payrollTx !== undefined && payrollTx.amount === 10, 'Lançamento de Folha de Pagamento gravado no extrato do cofre');
 
@@ -10779,7 +10779,7 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
       cleanBastionObj = getCampaignBastion(testCampClean);
     `, sandbox);
     assert(sandbox.cleanBastionObj && Array.isArray(sandbox.cleanBastionObj.specialFacilities) && sandbox.cleanBastionObj.specialFacilities.length === 0, 'getCampaignBastion inicializa specialFacilities como array vazio ([])');
-    assert(sandbox.cleanBastionObj.level === 5, 'Bastião inicializado no nível 5 conforme padrão das regras 2024');
+    assert(sandbox.cleanBastionObj.level === 1, 'Bastião sem heróis inicia no nível 1 (dinâmico sem Nível 5 hardcoded)');
 
     // 2. Verificação dos estilos CSS modernos dos Pop-ups e Modais
     const headCssContent138 = fs.readFileSync(path.join(srcDir, 'styles', 'head_css.html'), 'utf8');
@@ -11179,7 +11179,7 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
 
     // 4. Versão v3.9.2+ / v3.10.x atualizada no core.js e ui.html
     const b147CoreJs = fs.readFileSync(path.join(srcDir, 'js', 'core.js'), 'utf8');
-    assert(b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'") || b147CoreJs.includes("version: '3.9.2'"), 'core.js atualizado para v3.9.2+ / v3.10.x');
+    assert(b147CoreJs.includes("version: '3.10.2'") || b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'") || b147CoreJs.includes("version: '3.9.2'"), 'core.js atualizado para v3.9.2+ / v3.10.x');
     passedTests += 6;
 
     // ========================================
@@ -11213,7 +11213,7 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
 
     const b148Bastion = sandbox.getCampaignBastion(testCamp148);
     assert(b148Bastion && b148Bastion.settlementStage === 1, 'Bastião inicia no Estágio 1 (Fazenda & Refúgio)');
-    assert(b148Bastion.renown >= 25, 'Bastião inicia com Renome basal positivo (>= 25)');
+    assert(b148Bastion.renown === 0, 'Bastião inicia com Renome zerado (sem valores fantasmas)');
 
     const tierInfo148 = sandbox.getBastionSettlementTier(b148Bastion);
     assert(tierInfo148.stage === 1 && tierInfo148.name === 'Fazenda & Refúgio', 'getBastionSettlementTier retorna dados consistentes do Tier 1');
@@ -11235,8 +11235,8 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(b148Css.includes('.bastion-tier-badge') && b148Css.includes('.bastion-renown-progress-track'), 'head_css.html inclui badges de tier e trilha de renome');
     assert(b148Css.includes('.settlement-tier-card') && b148Css.includes('.bastion-wall-card'), 'head_css.html inclui cards visuais de assentamento e muralha');
 
-    // 5. Versão v3.10.0 / v3.10.1 consistente
-    assert((b148Ui.includes('v3.10.1') || b148Ui.includes('v3.10.0')) && (b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'")), 'ui.html e core.js exibem a versão v3.10.0+');
+    // 5. Versão v3.10.x consistente
+    assert((b148Ui.includes('v3.10.2') || b148Ui.includes('v3.10.1') || b148Ui.includes('v3.10.0')) && (b147CoreJs.includes("version: '3.10.2'") || b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'")), 'ui.html e core.js exibem a versão v3.10.0+');
 
     passedTests += 16;
 
@@ -11270,6 +11270,73 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(css149.includes('.bastion-req-pill.met') && css149.includes('.bastion-btn-ready-pulse'), 'head_css.html define status met/pending e pulso dourado');
 
     passedTests += 10;
+
+    // ========================================
+    // 😊🏘️ [Bateria 150] Reformulação do Bastião, Limpeza de Valores Fantasmas & SimCity Felicidade/População (ISSUE-183):
+    // ========================================
+    console.log('\n😊🏘️ [Bateria 150] Reformulação do Bastião, Limpeza de Valores Fantasmas & SimCity Felicidade/População (ISSUE-183):');
+
+    totalTests += 14;
+
+    const camp150 = {
+      id: 'camp_simcity_test',
+      name: 'Campanha SimCity',
+      playerIds: [],
+      partyStash: { gold: 200, items: [], history: [] }
+    };
+    sandbox.CAMPAIGNS_STATE.campaigns.push(camp150);
+    sandbox.CAMPAIGNS_STATE.activeCampaignId = 'camp_simcity_test';
+    if (typeof sandbox.switchBastionCampaign === 'function') {
+      sandbox.switchBastionCampaign('camp_simcity_test');
+    }
+    sandbox.document.getElementById = (id) => {
+      if (id === 'sel-bastion-campaign') return { value: 'camp_simcity_test' };
+      return origGetEl ? origGetEl(id) : null;
+    };
+
+    const b150 = sandbox.getCampaignBastion(camp150);
+    assert(b150.renown === 0 && b150.defenders === 0 && b150.turnCount === 0 && b150.population === 0, 'Bastião inicia limpo (0 renome, 0 defensores, 0 semanas, 0 população)');
+    assert(b150.happiness === 50, 'Bastião inicia com Felicidade neutra em 50%');
+    assert(b150.level === 1, 'Bastião sem heróis vinculados inicia no Nível 1 (sem Nível 5 hardcoded)');
+
+    // População máxima escala com Tier + Nível
+    b150.level = 5;
+    const maxPop150 = sandbox.getBastionMaxPopulation(b150);
+    assert(maxPop150 === 20, 'Tier 1 (base 10) + Nível 5 (5*2 = 10) resulta em capacidade máxima de 20 moradores');
+
+    // Faixas de Felicidade SimCity
+    const hRad = sandbox.getBastionHappinessInfo(85);
+    const hCris = sandbox.getBastionHappinessInfo(10);
+    assert(hRad.label === 'Radiante' && hRad.revMultiplier === 1.25, 'Felicidade >= 80% retorna estado Radiante com +25% renda');
+    assert(hCris.label === 'Em Crise' && hCris.revMultiplier === 0, 'Felicidade < 20% retorna estado Em Crise com renda suspensa');
+
+    // Festival aumenta +20% Felicidade e +30 Renome
+    sandbox.confirm = () => true;
+    sandbox.fundBastionFestival();
+    assert(b150.happiness === 70 && b150.renown === 30, 'fundBastionFestival concede +20% Felicidade (50->70) e +30 Renome');
+
+    // Avançar turno aumenta população e deposita renda no Cofre (bank.gold)
+    const bankBefore150 = b150.bank.gold || 0;
+    sandbox.advanceBastionTurn();
+    assert(b150.turnCount === 1, 'advanceBastionTurn avança turnCount de 0 para 1');
+    assert(b150.population >= 1, 'Felicidade >= 60% atrai novos moradores ao avançar turno');
+    assert((b150.bank.gold || 0) > bankBefore150, 'Renda territorial semanal é creditada diretamente no Cofre do Bastião');
+
+    // Ajuste do Mestre clamped 0..100
+    sandbox.adjustBastionHappiness(100);
+    assert(b150.happiness === 100, 'adjustBastionHappiness respeita teto máximo de 100%');
+
+    // Anti-exploit ao desmantelar sala
+    b150.specialFacilities.push({ id: 'fac_tmp_150', key: 'smithy', name: 'Ferraria', patronId: '', currentOrder: null });
+    b150.renown = 50;
+    sandbox.removeBastionFacility('fac_tmp_150');
+    assert(b150.renown === 25, 'removeBastionFacility deduz -25 Renome para impedir farm infinito');
+
+    // Elementos de UI e CSS da reformulação
+    assert(b148Ui.includes('id="sel-bastion-action-gold-source"') && b148Ui.includes('id="inp-bastion-level"'), 'ui.html inclui seletor de fonte de ouro em ordens e campo de nível do bastião');
+    assert(b148Css.includes('.bastion-kpi-grid') && b148Css.includes('.bastion-subtabs-bar') && b148Css.includes('.bastion-simcity-panel'), 'head_css.html inclui estilos de KPIs, sub-abas e painel SimCity');
+
+    passedTests += 14;
 
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;
