@@ -44,7 +44,7 @@ function trackDeletedCampaignId(campId) {
       list.push(campId);
       localStorage.setItem('dnd5e_deleted_campaign_ids', JSON.stringify(list));
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 function getDeletedCampaignIds() {
@@ -53,7 +53,7 @@ function getDeletedCampaignIds() {
       const raw = localStorage.getItem('dnd5e_deleted_campaign_ids');
       if (raw) return JSON.parse(raw) || [];
     }
-  } catch (e) {}
+  } catch (e) { }
   return [];
 }
 
@@ -67,7 +67,7 @@ function trackDeletedPartyItemId(itemId) {
       list.push(itemId);
       localStorage.setItem('dnd5e_deleted_stash_item_ids', JSON.stringify(list));
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 function getDeletedPartyItemIds() {
@@ -76,7 +76,7 @@ function getDeletedPartyItemIds() {
       const raw = localStorage.getItem('dnd5e_deleted_stash_item_ids');
       if (raw) return JSON.parse(raw) || [];
     }
-  } catch (e) {}
+  } catch (e) { }
   return [];
 }
 
@@ -125,12 +125,12 @@ function saveCampaignsState() {
           setStorage(STORAGE_KEY, JSON.stringify(fullParsed));
         }
       }
-    } catch(e) {}
+    } catch (e) { }
 
     // Backup de segurança resiliente
     try {
       localStorage.setItem('dnd5e_campaigns_backup_safety', serialized);
-    } catch(e) {}
+    } catch (e) { }
 
     // Espelhamento no Cofre IndexedDB
     try {
@@ -138,7 +138,7 @@ function saveCampaignsState() {
         idbSet('dnd5e_prisco_campaigns_v1', CAMPAIGNS_STATE);
         idbSet('dnd_tracker_campaigns_v1', CAMPAIGNS_STATE);
       }
-    } catch(e) {}
+    } catch (e) { }
 
     if (typeof showSaveStatus === 'function') showSaveStatus();
     if (typeof broadcastCampaignState === 'function') broadcastCampaignState();
@@ -160,7 +160,7 @@ function loadCampaignsState() {
         if (full && full.campaignsState) {
           raw = JSON.stringify(full.campaignsState);
         }
-      } catch(e) {}
+      } catch (e) { }
     }
     if (!raw) {
       raw = localStorage.getItem('dnd5e_campaigns_backup_safety');
@@ -410,7 +410,7 @@ function renderCampaignSessions(camp) {
         `;
       }
     }
-  } catch(e) {}
+  } catch (e) { }
 
   if (sessions.length === 0) {
     container.innerHTML = `
@@ -662,10 +662,10 @@ function renderPartyStashItemRowHtml(it) {
       <td style="text-align:right; white-space:nowrap;">
         <button type="button" class="btn-secondary" style="padding:3px 6px; font-size:10px; border-color:rgba(16,185,129,0.35); color:#6ee7b7;" onclick="openSellPartyItemModal('${it.id}')" title="Vender unidades deste item e creditar ouro no baú">🏷️ Vender</button>
         ${inStash
-          ? `<button type="button" class="btn-secondary" style="padding:3px 7px; font-size:10px; border-color:rgba(56,189,248,0.35); color:#7dd3fc;" onclick="takePartyItemToPlayer('${it.id}')" title="Transferir do baú para a mochila de um herói">📥 Pegar</button>`
-          : `<button type="button" class="btn-secondary" style="padding:3px 7px; font-size:10px; border-color:rgba(245,158,11,0.38); color:#fcd34d;" onclick="returnPartyItemToStash('${it.id}')" title="Devolver de ${it.carrier} para o Baú do Grupo">🔄 Ao Baú</button>
+      ? `<button type="button" class="btn-secondary" style="padding:3px 7px; font-size:10px; border-color:rgba(56,189,248,0.35); color:#7dd3fc;" onclick="takePartyItemToPlayer('${it.id}')" title="Transferir do baú para a mochila de um herói">📥 Pegar</button>`
+      : `<button type="button" class="btn-secondary" style="padding:3px 7px; font-size:10px; border-color:rgba(245,158,11,0.38); color:#fcd34d;" onclick="returnPartyItemToStash('${it.id}')" title="Devolver de ${it.carrier} para o Baú do Grupo">🔄 Ao Baú</button>
              <button type="button" class="btn-secondary" style="padding:3px 6px; font-size:10px;" onclick="takePartyItemToPlayer('${it.id}')" title="Transferir para outro herói">📥</button>`
-        }
+    }
         <button type="button" class="btn-secondary" style="padding:3px 6px; font-size:10px;" onclick="openPartyItemModal('${it.id}')" title="Editar detalhes do item">✏️</button>
         <button type="button" class="btn-secondary" style="padding:3px 6px; font-size:10px; color:#f87171;" onclick="deletePartyItem('${it.id}')" title="Remover item">🗑️</button>
       </td>
@@ -850,7 +850,7 @@ function renderCampaignPartyStash(camp, campPlayers) {
     // Filtragem por busca textual
     if (stashHistorySearch) {
       const q = stashHistorySearch.toLowerCase();
-      filtered = filtered.filter(h => 
+      filtered = filtered.filter(h =>
         (h.text && h.text.toLowerCase().includes(q)) ||
         (h.type && h.type.toLowerCase().includes(q)) ||
         (h.author && h.author.toLowerCase().includes(q)) ||
@@ -981,9 +981,9 @@ function renderCampaignHirelings(camp, campPlayers) {
             Nenhum ajudante ou mercenário contratado no momento. Clique em <b>➕ Contratar NPC</b> para admitir tocheiros, soldados, aprendizes ou especialistas!
           </div>
         ` : hirelings.map(h => {
-          const statusClass = h.status === 'fled' ? 'status-pill-fled' : (h.status === 'injured' ? 'status-pill-injured' : (h.status === 'away' ? 'status-pill-away' : 'status-pill-acting'));
-          const statusLabel = h.status === 'fled' ? '🏃 Fugiu / Desaparecido' : (h.status === 'injured' ? '🔴 Ferido / Repouso' : (h.status === 'away' ? '🟡 Missão Externa' : '🟢 Em Ação'));
-          return `
+    const statusClass = h.status === 'fled' ? 'status-pill-fled' : (h.status === 'injured' ? 'status-pill-injured' : (h.status === 'away' ? 'status-pill-away' : 'status-pill-acting'));
+    const statusLabel = h.status === 'fled' ? '🏃 Fugiu / Desaparecido' : (h.status === 'injured' ? '🔴 Ferido / Repouso' : (h.status === 'away' ? '🟡 Missão Externa' : '🟢 Em Ação'));
+    return `
             <div class="hireling-card ${h.status === 'fled' ? 'fled' : ''}" id="hireling-card-${h.id}">
               <div class="hireling-header">
                 <div>
@@ -1029,7 +1029,7 @@ function renderCampaignHirelings(camp, campPlayers) {
               </div>
             </div>
           `;
-        }).join('')}
+  }).join('')}
       </div>
     </div>
   `;
@@ -1665,7 +1665,7 @@ function saveSessionDraft() {
         const draft = { num, date, title, loc, xp, npcs, notes, timestamp: Date.now() };
         localStorage.setItem('dnd5e_session_draft', JSON.stringify(draft));
       }
-    } catch(e) {}
+    } catch (e) { }
   }, 250);
 }
 
@@ -1705,7 +1705,7 @@ function openSessionModal(sessionId = null) {
           if (draft.date) document.getElementById('inp-sess-date').value = draft.date;
         }
       }
-    } catch(e) {}
+    } catch (e) { }
   }
 
   modal.classList.add('open');
@@ -1764,7 +1764,7 @@ function saveSessionLog() {
   // Limpa o rascunho temporário
   try {
     localStorage.removeItem('dnd5e_session_draft');
-  } catch(e) {}
+  } catch (e) { }
 
   saveCampaignsState();
   if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
@@ -1805,7 +1805,7 @@ function recoverSessionsFromSnapshots(silent = false) {
     } else {
       if (!silent) alert('Nenhum registro anterior de sessão foi encontrado nos backups locais.');
     }
-  } catch(e) {
+  } catch (e) {
     console.warn('Erro ao recuperar sessões:', e);
   }
   return recoveredCount;
@@ -2914,7 +2914,7 @@ function renderPartyStashViewer() {
 
     if (stashHistorySearch) {
       const q = stashHistorySearch.toLowerCase();
-      filtered = filtered.filter(h => 
+      filtered = filtered.filter(h =>
         (h.text && h.text.toLowerCase().includes(q)) ||
         (h.type && h.type.toLowerCase().includes(q)) ||
         (h.author && h.author.toLowerCase().includes(q)) ||
@@ -3165,7 +3165,7 @@ function handlePartyStashSearch(query) {
       if (inputs.length > 0) {
         const inp = inputs[0];
         inp.focus();
-        try { inp.setSelectionRange(inp.value.length, inp.value.length); } catch (e) {}
+        try { inp.setSelectionRange(inp.value.length, inp.value.length); } catch (e) { }
       }
     }
   }
@@ -3706,7 +3706,7 @@ function saveDMNotes() {
     camp.dmNotes = textarea.value;
     try {
       localStorage.setItem('dnd_tracker_dm_notes_v3', textarea.value);
-    } catch(e) {}
+    } catch (e) { }
     saveCampaignsState();
     if (typeof syncLocalChangesToFirebase === 'function') {
       syncLocalChangesToFirebase();
@@ -3720,7 +3720,7 @@ function saveDMNotes() {
 
 // Registra atalho de teclado global Ctrl+N / Cmd+N para Notas do Mestre
 if (typeof document !== 'undefined') {
-  document.addEventListener('keydown', function(e) {
+  document.addEventListener('keydown', function (e) {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
       // Não intercepta se o usuário estiver no Portal do Jogador
       if (document.body && document.body.classList && document.body.classList.contains('mode-player-portal')) {
@@ -6939,9 +6939,9 @@ function openBastionWallsModal() {
             </div>
             <div>
               ${isCurrent
-                ? '<button type="button" class="btn-secondary" disabled style="opacity: 0.6; font-size: 11px; padding: 4px 10px;">Instalada</button>'
-                : `<button type="button" class="btn-action" style="font-size: 11px; font-weight: 800; background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; padding: 4px 12px;" onclick="confirmBastionWallUpgrade('${key}')">Construir</button>`
-              }
+          ? '<button type="button" class="btn-secondary" disabled style="opacity: 0.6; font-size: 11px; padding: 4px 10px;">Instalada</button>'
+          : `<button type="button" class="btn-action" style="font-size: 11px; font-weight: 800; background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; padding: 4px 12px;" onclick="confirmBastionWallUpgrade('${key}')">Construir</button>`
+        }
             </div>
           </div>
         </div>
@@ -7258,8 +7258,8 @@ function openBastionSettlementUpgradeModal() {
       let statusBadge = isCur
         ? '<span class="badge" style="background: rgba(245,158,11,0.2); color: #fef08a; border-color: #f59e0b;">⭐ Atual</span>'
         : (isPassed ? '<span class="badge" style="background: rgba(16,185,129,0.2); color: #6ee7b7; border-color: #10b981;">✅ Concluído</span>'
-        : (isNext ? '<span class="badge" style="background: rgba(56,189,248,0.2); color: #7dd3fc; border-color: #38bdf8;">🎯 Próximo</span>'
-        : '<span class="badge" style="background: rgba(100,116,139,0.2); color: #94a3b8; border-color: #64748b;">🔒 Bloqueado</span>'));
+          : (isNext ? '<span class="badge" style="background: rgba(56,189,248,0.2); color: #7dd3fc; border-color: #38bdf8;">🎯 Próximo</span>'
+            : '<span class="badge" style="background: rgba(100,116,139,0.2); color: #94a3b8; border-color: #64748b;">🔒 Bloqueado</span>'));
 
       return `
         <div class="settlement-tier-card ${isCur ? 'current' : ''} ${isNext ? 'next-available' : ''} ${t.stage > nextStage ? 'locked' : ''}">
@@ -7321,9 +7321,9 @@ function confirmBastionSettlementUpgrade() {
 
   if (!weeksMet || !facsMet || !renownMet) {
     alert(`Requisitos pendentes para expandir para ${nextTier.name}!\n` +
-          `• Semanas: ${(bastion.turnCount || 1)}/${nextTier.reqWeeks}\n` +
-          `• Salas Construídas: ${(bastion.specialFacilities || []).length}/${nextTier.reqFacilities}\n` +
-          `• Renome: ${(bastion.renown || 0)}/${nextTier.reqRenown}`);
+      `• Semanas: ${(bastion.turnCount || 1)}/${nextTier.reqWeeks}\n` +
+      `• Salas Construídas: ${(bastion.specialFacilities || []).length}/${nextTier.reqFacilities}\n` +
+      `• Renome: ${(bastion.renown || 0)}/${nextTier.reqRenown}`);
     return;
   }
 
@@ -7565,9 +7565,9 @@ function renderPlayerBastionViewerModal() {
             Nenhuma instalação especial construída no momento.
           </div>
         ` : facilities.map(fac => {
-          const cat = (typeof BASTION_SPECIAL_FACILITIES_CATALOG !== 'undefined') ? BASTION_SPECIAL_FACILITIES_CATALOG[fac.key] : null;
-          const ord = fac.currentOrder;
-          return `
+      const cat = (typeof BASTION_SPECIAL_FACILITIES_CATALOG !== 'undefined') ? BASTION_SPECIAL_FACILITIES_CATALOG[fac.key] : null;
+      const ord = fac.currentOrder;
+      return `
             <div class="bastion-facility-card" style="padding: 10px;">
               <div style="font-weight: 800; color: #fef08a; font-size: 13px;">${cat ? cat.icon : '🏛️'} ${fac.name || cat?.name}</div>
               ${fac.managerNpcName ? `<div style="font-size: 10.5px; color: #67e8f9;">👤 Encarregado: ${fac.managerNpcName}</div>` : ''}
@@ -7580,7 +7580,7 @@ function renderPlayerBastionViewerModal() {
               </div>
             </div>
           `;
-        }).join('')}
+    }).join('')}
       </div>
 
       <div style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; margin-bottom: 6px;">
@@ -8210,5 +8210,5 @@ if (typeof window !== 'undefined') {
 // Auto-carregamento imediato na avaliação do módulo
 try {
   loadCampaignsState();
-} catch (e) {}
+} catch (e) { }
 

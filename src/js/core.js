@@ -2398,7 +2398,7 @@ function normalizeStr(str) {
 }
 
 // --- NAVEGAÇÃO ENTRE ABAS ---
-const PLAYER_ALLOWED_TABS = ['players', 'spells', 'equipment', 'classes', 'species', 'feats', 'grid'];
+const PLAYER_ALLOWED_TABS = ['players', 'spells', 'equipment', 'classes', 'species', 'feats', 'grid', 'atlas'];
 
 function switchTab(tabId) {
   const isPortalMode = (typeof document !== 'undefined' && document.body && document.body.classList.contains('mode-player-portal')) || (typeof activePortalPlayerId !== 'undefined' && !!activePortalPlayerId);
@@ -2507,6 +2507,7 @@ function switchTab(tabId) {
   }
   else if (tabId === 'campaigns' && typeof renderCampaigns === 'function') renderCampaigns();
   else if (tabId === 'bastions' && typeof renderBastionsTab === 'function') renderBastionsTab();
+  else if (tabId === 'atlas' && typeof renderAtlasTab === 'function') renderAtlasTab();
 }
 
 // --- TOGGLE DE DROPDOWNS DO CABEÇALHO (COMPÊNDIO, MESTRE, MAIS) ---
@@ -2783,8 +2784,8 @@ function initSwipeNavigation() {
   let touchStartTime = 0;
   let isSwipeIgnored = false;
 
-  const MASTER_TABS_ORDER = ['combat', 'grid', 'players', 'campaigns', 'bestiary', 'spells', 'equipment', 'classes', 'species', 'dmscreen', 'generators'];
-  const PORTAL_TABS_ORDER = ['players', 'spells', 'equipment', 'classes', 'species'];
+  const MASTER_TABS_ORDER = ['combat', 'grid', 'players', 'campaigns', 'atlas', 'bestiary', 'spells', 'equipment', 'classes', 'species', 'dmscreen', 'generators'];
+  const PORTAL_TABS_ORDER = ['players', 'atlas', 'spells', 'equipment', 'classes', 'species'];
 
   document.addEventListener('touchstart', (e) => {
     if (!e.touches || e.touches.length !== 1) {
@@ -3265,7 +3266,7 @@ function exportCompleteBackupJson() {
   try {
     const backupData = {
       appName: 'Planilha RPG D&D 5E Assistant & VTT',
-      version: '3.12.0',
+      version: '3.13.0',
       exportDate: new Date().toISOString(),
       players: typeof PLAYERS !== 'undefined' ? PLAYERS : [],
       combatState: typeof state !== 'undefined' ? state : { round: 1, turnIndex: 0, combatants: [] },

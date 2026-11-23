@@ -35,6 +35,7 @@ const requiredFiles = [
   'src/data/campaigns.js',
   'src/data/hirelings.js',
   'src/data/bastions.js',
+  'src/data/atlas.js',
   'src/data/feats.js',
   'src/data/backgrounds.js',
   'src/data/trait_quick_rules.js',
@@ -262,6 +263,7 @@ const dataEquip = fs.readFileSync(path.join(srcDir, 'data', 'equipment.js'), 'ut
 const dataCampaigns = fs.readFileSync(path.join(srcDir, 'data', 'campaigns.js'), 'utf8');
 const dataHirelings = fs.readFileSync(path.join(srcDir, 'data', 'hirelings.js'), 'utf8');
 const dataBastions = fs.readFileSync(path.join(srcDir, 'data', 'bastions.js'), 'utf8');
+const dataAtlas = fs.readFileSync(path.join(srcDir, 'data', 'atlas.js'), 'utf8');
 const jsAudioSynth = fs.readFileSync(path.join(srcDir, 'js', 'audio_synth.js'), 'utf8');
 const jsQrCode = fs.readFileSync(path.join(srcDir, 'js', 'qrcode_lib.js'), 'utf8');
 const jsCore = fs.readFileSync(path.join(srcDir, 'js', 'core.js'), 'utf8');
@@ -270,6 +272,7 @@ const jsPlayers = fs.readFileSync(path.join(srcDir, 'js', 'players.js'), 'utf8')
 const jsPdfExport = fs.readFileSync(path.join(srcDir, 'js', 'pdf_export.js'), 'utf8');
 const jsComp = fs.readFileSync(path.join(srcDir, 'js', 'compendium.js'), 'utf8');
 const jsCampaigns = fs.readFileSync(path.join(srcDir, 'js', 'campaigns.js'), 'utf8');
+const jsAtlas = fs.readFileSync(path.join(srcDir, 'js', 'atlas.js'), 'utf8');
 const jsDice = fs.readFileSync(path.join(srcDir, 'js', 'dice_roller.js'), 'utf8');
 const jsGrid = fs.readFileSync(path.join(srcDir, 'js', 'vtt_grid.js'), 'utf8');
 const jsScreen = fs.readFileSync(path.join(srcDir, 'js', 'screen_sync.js'), 'utf8');
@@ -304,6 +307,8 @@ vm.runInContext(jsPlayers, sandbox);
 vm.runInContext(jsPdfExport, sandbox);
 vm.runInContext(jsComp, sandbox);
 vm.runInContext(jsCampaigns, sandbox);
+vm.runInContext(dataAtlas, sandbox);
+vm.runInContext(jsAtlas, sandbox);
 vm.runInContext(jsDice, sandbox);
 vm.runInContext(jsGrid, sandbox);
 vm.runInContext(jsScreen, sandbox);
@@ -10537,7 +10542,7 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
       const { execSync } = require('child_process');
       const integrityOut = execSync('node test_ui_integrity.js', { encoding: 'utf8' });
       assert(integrityOut.includes('100% DAS AÇÕES E TELAS DA INTERFACE APROVADAS'), 'test_ui_integrity.js executado com sucesso e 100% de aprovação');
-      assert(integrityOut.includes('Abas Validadas:    11/11'), '11/11 abas validadas com sucesso');
+      assert(integrityOut.includes('Abas Validadas:    12/12'), '12/12 abas validadas com sucesso');
       assert(integrityOut.includes('Modais Validados:  10/10'), '10/10 modais validados com sucesso');
       assert(integrityOut.includes('(0 falhas)') && integrityOut.includes('Ações de Clique:'), 'Todas as ações de clique em ui.html aprovadas com 0 falhas');
     } catch (e) {
@@ -11179,7 +11184,7 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
 
     // 4. Versão v3.9.2+ / v3.10.x / v3.11.x / v3.12.x atualizada no core.js e ui.html
     const b147CoreJs = fs.readFileSync(path.join(srcDir, 'js', 'core.js'), 'utf8');
-    assert(b147CoreJs.includes("version: '3.12.0'") || b147CoreJs.includes("version: '3.11.0'") || b147CoreJs.includes("version: '3.10.2'") || b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'") || b147CoreJs.includes("version: '3.9.2'"), 'core.js atualizado para v3.9.2+ / v3.12.x');
+    assert(b147CoreJs.includes("version: '3.13.0'") || b147CoreJs.includes("version: '3.12.0'") || b147CoreJs.includes("version: '3.11.0'") || b147CoreJs.includes("version: '3.10.2'") || b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'") || b147CoreJs.includes("version: '3.9.2'"), 'core.js atualizado para v3.9.2+ / v3.13.x');
     passedTests += 6;
 
     // ========================================
@@ -11236,7 +11241,7 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(b148Css.includes('.settlement-tier-card') && b148Css.includes('.bastion-wall-card'), 'head_css.html inclui cards visuais de assentamento e muralha');
 
     // 5. Versão v3.10.x / v3.11.x / v3.12.x consistente
-    assert((b148Ui.includes('v3.12.0') || b148Ui.includes('v3.11.0') || b148Ui.includes('v3.10.2') || b148Ui.includes('v3.10.1') || b148Ui.includes('v3.10.0')) && (b147CoreJs.includes("version: '3.12.0'") || b147CoreJs.includes("version: '3.11.0'") || b147CoreJs.includes("version: '3.10.2'") || b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'")), 'ui.html e core.js exibem a versão v3.10.0+');
+    assert((b148Ui.includes('v3.13.0') || b148Ui.includes('v3.12.0') || b148Ui.includes('v3.11.0') || b148Ui.includes('v3.10.2') || b148Ui.includes('v3.10.1') || b148Ui.includes('v3.10.0')) && (b147CoreJs.includes("version: '3.13.0'") || b147CoreJs.includes("version: '3.12.0'") || b147CoreJs.includes("version: '3.11.0'") || b147CoreJs.includes("version: '3.10.2'") || b147CoreJs.includes("version: '3.10.1'") || b147CoreJs.includes("version: '3.10.0'")), 'ui.html e core.js exibem a versão v3.10.0+');
 
     passedTests += 16;
 
@@ -11446,6 +11451,49 @@ assert(skillsMap.some(s => s.key === 'arcana' && s.stat === 'INT'), 'Perícia Ar
     assert(!b148Css.includes('rumors-board') && !campJs149.includes('BASTION_RUMORS_POOL'), 'Mural de Rumores não foi incluído conforme solicitação do usuário');
 
     passedTests += 9;
+
+    // ========================================
+    // 🧭🗺️ [Bateria 153] Atlas e Guia de Viagem da Costa da Espada (ISSUE-186):
+    // ========================================
+    console.log('\n🧭🗺️ [Bateria 153] Atlas e Guia de Viagem da Costa da Espada (ISSUE-186):');
+
+    totalTests += 11;
+
+    const atlasCities = vm.runInContext("typeof ATLAS_CITIES !== 'undefined' ? ATLAS_CITIES : []", sandbox);
+    const atlasRegions = vm.runInContext("typeof ATLAS_REGIONS !== 'undefined' ? ATLAS_REGIONS : []", sandbox);
+    assert(atlasRegions.length >= 5, 'ATLAS_REGIONS contém as 5 regiões principais de Faerûn');
+    assert(atlasCities.length >= 12 && atlasCities[0].id === 'portoreal_bastiao', 'ATLAS_CITIES inclui PortoReal Bastião como ponto de partida');
+
+    // Cálculo de distância e dias por transporte (38/55/75 km/dia)
+    const originPr = atlasCities.find(c => c.id === 'portoreal_bastiao');
+    const waterdeep = atlasCities.find(c => c.id === 'aguas_profundas');
+    const distWd = sandbox.computeAtlasDistanceKm(originPr, waterdeep);
+    assert(distWd === 360, 'Distância de PortoReal Bastião até Águas Profundas é 360 km');
+    assert(sandbox.computeAtlasTravelDays(360, 'foot', originPr, waterdeep).days === 10, 'A pé (38 km/dia): 360 km = 10 dias');
+    assert(sandbox.computeAtlasTravelDays(360, 'horse', originPr, waterdeep).days === 7, 'A cavalo (55 km/dia): 360 km = 7 dias');
+    assert(sandbox.computeAtlasTravelDays(360, 'ship', originPr, waterdeep).days === 5, 'Navio (75 km/dia): 360 km = 5 dias');
+
+    // Filtros por região, facção e busca por atração ("forja")
+    sandbox.setAtlasRegionFilter('costa_sul');
+    assert(sandbox.getFilteredAtlasCities().every(c => c.regionId === 'costa_sul'), 'Filtro por região retorna apenas cidades da região selecionada');
+    sandbox.setAtlasRegionFilter('all');
+    sandbox.handleAtlasSearch('forja');
+    assert(sandbox.getFilteredAtlasCities().length >= 3, 'Busca por "forja" localiza cidades com atração de forjas');
+    sandbox.handleAtlasSearch('');
+
+    // Viajar pelo Atlas atualiza localização e avança dias do relógio/Bastião
+    const dayBeforeTravel = camp151.calendar.currentDay;
+    sandbox.setCurrentPartyAtlasLocation('portoreal_bastiao');
+    sandbox.openAtlasCityModal('aguas_profundas');
+    sandbox.setAtlasTravelMode('ship'); // 5 dias
+    sandbox.travelPartyToModalCity();
+    assert(camp151.currentLocationId === 'aguas_profundas', 'travelPartyToModalCity atualiza a localização atual do grupo para o destino');
+    assert(camp151.calendar.currentDay === dayBeforeTravel + 5, 'travelPartyToModalCity avança o Relógio de Dias e o Bastião automaticamente (+5 dias)');
+
+    // UI e CSS do Atlas
+    assert(b148Ui.includes('id="tab-atlas"') && b148Ui.includes('id="modal-atlas-city"') && b148Css.includes('.atlas-city-card'), 'ui.html e head_css.html incluem aba, modal e cards do Atlas');
+
+    passedTests += 11;
 
     // Restaura mocks de document.getElementById
     sandbox.document.getElementById = origGetEl;

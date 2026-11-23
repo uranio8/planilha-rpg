@@ -1,44 +1,65 @@
-# 📋 Plano de Implementação: Bastião Vivo — Dilemas & Visitantes, Galeria de Troféus e Lealdade/Missões do Staff (ISSUE-185)
+# 📋 Plano de Implementação: Atlas e Guia de Viagem da Costa da Espada (ISSUE-186)
 
 ## 📌 Contexto & Solicitação do Usuário
 
-Para tornar o Bastião verdadeiramente vivo e envolvente na mesa (evitando a chamada *"Bastion Bubble"* apontada pela comunidade de D&D 2024 e *Strongholds & Followers*), o usuário aprovou a inclusão dos 3 pilares abaixo:
-1. **Dilemas, Petições dos Cidadãos & Visitantes Memoráveis** (com escolhas morais e impacto real).
-2. **Galeria de Troféus de Chefões Derrotados** (orgulho visual e bônus temáticos para o grupo).
-3. **Vínculo, Lealdade & Missões Pessoais do Staff** (NPCs com história, status Veterano e recompensas exclusivas).
+O usuário solicitou a criação de um módulo completo de **"Atlas e Guia de Viagem da Costa da Espada"** integrado ao sistema de RPG, com foco em lore fiel de *Forgotten Realms (D&D 5e)* em português do Brasil, tendo como ponto de partida central o **Bastião dos Jogadores** nos arredores de **PortoReal Bastião**.
 
 ---
 
-## 🎯 Objetivos da Implementação (ISSUE-185)
+## 🧭 Posicionamento Geográfico Escolhido (Ponto Zero)
 
-### 1. 🎭 Dilemas, Petições & Visitantes Memoráveis (`BASTION_DILEMMAS_CATALOG`)
-* **Catálogo Rico em `src/data/bastions.js`**:
-  * Banco de dilemas e visitantes inspirados em mesas reais de D&D (ex.: *Refugiados nos Portões*, *O Artesão Mestre Escondido*, *O Ex-Monstro Procurando Emprego*, *O Bardo Impostor*, *O Auditor Real*, *Caravana Sob Ataque*, *Artefato Senciente em Greve*).
-  * Cada dilema possui **2 ou 3 opções de escolha** com consequências claras (Ouro, População, Felicidade, Renome ou Defensores).
-* **Fluxo no Jogo**:
-  * A cada turno semanal (`advanceBastionTurn`), se não houver dilema pendente, há chance de surgir uma **Petição / Visitante Pendente** (`bastion.pendingDilemma`), ou o Mestre pode sortear um manualmente (`🎲 Novo Dilema / Visitante`) na sub-aba `✨ Evolução & Cidade`.
-  * Os jogadores veem o dilema ativo em destaque no modal somente-leitura para debater e votar em mesa, e o Mestre aplica a decisão escolhida com 1 clique (`resolveBastionDilemma(choiceIdx)`).
-
----
-
-### 2. 🏆 Galeria de Troféus de Chefões Derrotados (`bastion.trophies`)
-* **Registro de Troféus**:
-  * Formulário inline rápido na sub-aba `🏛️ Visão Geral & Salas` (e/ou `✨ Evolução & Cidade`) onde o Mestre registra o chefão derrotado:
-    * Nome do Monstro/Chefe, ND e Dia/Contexto da vitória.
-  * Ao adicionar um troféu, concede imediatamente **`+15 Renome`** e **`+5% Felicidade`** ao Bastião.
-  * **Visível para os Jogadores**: A Galeria de Troféus aparece no modal somente-leitura `#modal-player-bastion-view` para que o grupo veja suas conquistas penduradas no Salão Principal.
+* **PortoReal Bastião & Bastião dos Jogadores (`0 km`)**:
+  * Localizado na **Costa da Espada Central**, em uma enseada abrigada a meio caminho entre **Águas Profundas** (~360 km ao norte pela Estrada da Costa) e o **Portão de Baldur** (~440 km ao sul pela Estrada da Costa), próximo às falésias costeiras de onde partem tanto rotas terrestres quanto rotas marítimas pelo Mar das Espadas.
+* **Ritmos de Viagem (D&D 5e)**:
+  * **🚶 A pé**: `38 km/dia`
+  * **🐎 A cavalo**: `55 km/dia`
+  * **⛵ Navio**: `75 km/dia` (disponível apenas para cidades com porto/rota marítima `hasSeaRoute: true`; cidades interiores exibem rota terrestre recomendada).
 
 ---
 
-### 3. 🤝 Lealdade, Status Veterano & Missões Pessoais do Staff
-* **Evolução dos NPCs (`bastion.staff`)**:
-  * Cada especialista contratado passa a ter:
-    * `loyalty` (`0` a `100%`, inicia em `50%`).
-    * `personalQuest` (Missão Pessoal / Favor opcional definido pelo Mestre ou sorteado de `BASTION_STAFF_QUEST_TEMPLATES`).
-    * `questCompleted` (`true/false`) e `veteran` (`true/false` — conquistado ao atingir `80%+` de lealdade ou completar sua missão pessoal).
-  * **Impacto Mecânico Real**:
-    * Pagar salários em dia aumenta `+5%` de lealdade por semana; atrasar reduz `-15%`.
-    * Quando `questCompleted === true` (botão **`🏅 Concluir Missão`** no card do NPC), o NPC ganha status **⭐ Veterano** e reduz em **`-1 dia`** extra as ordens da sala que gerencia.
+## 🎯 Objetivos da Implementação (ISSUE-186)
+
+### 1. 🗺️ Banco de Dados Geográfico & Lore (`src/data/atlas.js`)
+* **Regiões de Faerûn (`ATLAS_REGIONS`)**:
+  1. **Costa da Espada Central** (Clima temperado marítimo, estradas patrulhadas mas visadas por salteadores e cultos).
+  2. **O Norte Selvagem & Costa Norte** (Clima frio/chuvoso, perigo alto nas estradas entre Luskan e Inverno Remoto).
+  3. **Fronteiras Prateadas (Silver Marches)** (Clima alpino/rigoroso, patrulhas élficas e anãs contra orcs e gigantes).
+  4. **Vale do Vento Gélido (Icewind Dale)** (Tundra ártica extrema, nevascas constantes e perigo severo).
+  5. **Costa da Espada Sul & Terras Centrais Ocidentais** (Clima ameno a quente, comércio intenso e intrigas políticas).
+* **Cidades Principais (`ATLAS_CITIES`, 12 cidades canônicas + PortoReal Bastião)**:
+  1. **PortoReal Bastião** (`0 km` — Ponto de Partida / Selo Especial do Bastião).
+  2. **Águas Profundas (Waterdeep)** (`360 km` Norte — Porto + Estrada da Costa).
+  3. **Adaga (Daggerford)** (`240 km` Norte — Estrada da Costa / Rio Delimbiyr).
+  4. **Portão de Baldur (Baldur's Gate)** (`440 km` Sul — Porto + Estrada da Costa).
+  5. **Forte da Vela (Candlekeep)** (`590 km` Sul — Fortaleza-biblioteca costeira).
+  6. **Inverno Remoto (Neverwinter)** (`740 km` Norte — Porto + Estrada Alta).
+  7. **Luskan** (`960 km` Norte — Porto dos Piratas / Foz do Rio Mirar).
+  8. **Triboar** (`580 km` Nordeste — Interior, sem rota marítima).
+  9. **Yartar** (`700 km` Nordeste — Interior, rio navegável apenas localmente).
+  10. **Lua Argêntea (Silverymoon)** (`980 km` Nordeste — Fronteiras Prateadas, interior).
+  11. **Mirabar** (`1.080 km` Norte-Nordeste — Montanhas da Espinha do Mundo, interior).
+  12. **Dez-Cidades / Bryn Shander (Icewind Dale)** (`1.380 km` Norte — Extremo Norte, rota terrestre/caravana).
+  13. **Athkatla (Amn)** (`920 km` Sul — Costa Sul, grande porto mercante).
+* Cada cidade incluirá:
+  * Nome, Região, Descrição Atmosférica fiel a *Forgotten Realms* (PT-BR), `distanceKm`, `hasSeaRoute`, `isStartingPoint`.
+  * **Facções atuantes** (Harpistas, Aliança dos Lordes, Zhentarim, Ordem da Manopla, Enclave Esmeralda, Irmandade Arcana, Punho Flamejante, etc.).
+  * **Atrações & Pontos de Interesse (4 categorias)**:
+    * ⚔️ *Forjas e Artesanato*
+    * 🔮 *Magia e Itens Mágicos*
+    * 📚 *Livros e Conhecimento*
+    * 🎭 *Festas, Eventos e Cultura*
+
+---
+
+### 2. 🖥️ Interface Interativa (`src/js/atlas.js`, `src/ui/ui.html`, `src/styles/head_css.html`)
+* **Aba `🧭 Atlas & Viagens`** acessível na barra superior (para Mestre) e no **Portal do Jogador** (`#pnav-atlas` + `PLAYER_ALLOWED_TABS`).
+* **Destaque Permanente para PortoReal Bastião**: Exibido com selo **"🏰 Ponto de Partida / Bastião"** no topo da lista.
+* **Seletor de Meio de Transporte**: Toggle visual (`🚶 A pé — 38 km/dia` | `🐎 A cavalo — 55 km/dia` | `⛵ Navio — 75 km/dia`) que recalcula instantaneamente os dias de viagem em todos os cards.
+* **Filtros & Busca**:
+  * Filtro por **Região**, filtro por **Facção** e busca textual instantânea por **nome da cidade ou atração** (ex.: `"forja"`, `"livros"`, `"harpistas"`).
+* **Cards + Modal Detalhado (`#modal-atlas-city`)**:
+  * Cards resumidos com Região, Clima/Perigo, Distância em km, Tempo de viagem em dias e badges de Facções.
+  * Ao clicar, abre o modal detalhado com lore completo, clima da região, facções, as **4 abas/seções de atrações** e (para o Mestre) um botão opcional **`⏳ Viajar até aqui (+X dias)`** que avança o Relógio de Dias da Campanha (`advanceCampaignDays`)!
 
 ---
 
@@ -46,25 +67,21 @@ Para tornar o Bastião verdadeiramente vivo e envolvente na mesa (evitando a cha
 
 | Arquivo | Componente / Responsabilidade |
 |---|---|
-| `src/data/bastions.js` | Catálogos `BASTION_DILEMMAS_CATALOG` e `BASTION_STAFF_QUEST_TEMPLATES` |
-| `src/js/campaigns.js` | Lógica de Dilemas (`triggerRandomBastionDilemma`, `resolveBastionDilemma`), Troféus (`addBastionTrophy`, `removeBastionTrophy`), Lealdade/Missões do Staff (`completeStaffPersonalQuest`, evolução em `advanceBastionTurn`), e exibição nas sub-abas do Mestre e na visão somente-leitura dos jogadores (`renderPlayerBastionViewerModal`) |
-| `src/styles/head_css.html` | Estilos para cards de Dilema com botões de escolha, Troféus dourados e badge Veterano/Lealdade do Staff |
-| `test_runner.js` | Bateria 152 validando dilemas e resoluções, troféus e lealdade/missão pessoal do Staff |
-| `issues/README.md` | Registro oficial da ISSUE-185 |
+| `src/data/atlas.js` | Novo dataset `ATLAS_REGIONS`, `ATLAS_CITIES` e `ATLAS_TRAVEL_MODES` |
+| `src/js/atlas.js` | Novo módulo de renderização, filtros, cálculo de viagem e modal de detalhes `#modal-atlas-city` |
+| `builder.js` | Inclusão de `src/data/atlas.js` e `src/js/atlas.js` no bundle standalone |
+| `src/ui/ui.html` | Botão da aba `🧭 Atlas`, seção `#tab-atlas`, chip `#pnav-atlas` no Portal e modal `#modal-atlas-city` |
+| `src/js/core.js` | Inclusão de `'atlas'` em `PLAYER_ALLOWED_TABS`, `MASTER_TABS_ORDER`, `PORTAL_TABS_ORDER` e hook de renderização em `switchTab` |
+| `src/styles/head_css.html` | Estilos do Atlas, seletor de transporte, cards de cidade, selo de ponto de partida e seções de atrações |
+| `test_runner.js` | Bateria 153 validando regiões, cidades, cálculo de dias por transporte (38/55/75 km/dia), filtros por região/facção/busca e integridade de UI |
+| `issues/README.md` | Registro oficial da ISSUE-186 |
 
 ---
 
 ## ⚠️ Possíveis Impactos & Riscos Mitigados
 
-* **Retrocompatibilidade**: Bastiões existentes no `localStorage` recebem `trophies: []` e `pendingDilemma: null` defensivamente em `getCampaignBastion`, sem perda de dados.
-* **Zero `window.prompt`**: Todos os cadastros de Troféus e Missões Pessoais usam inputs inline estilizados.
-
----
-
-## 🧪 Estratégia de Verificação
-
-1. **Compilação (`node builder.js`)**: Gerar `planilha do rpg.html` e `index.html`.
-2. **Testes Automatizados (`node test_runner.js`)**: Validar 100% de aprovação incluindo a nova **Bateria 152**.
+* **Compatibilidade com `test_runner.js` e `test_ui_integrity.js`**: `builder.js` e `test_runner.js` serão atualizados para carregar `atlas.js` no sandbox de testes e validar os pares de modal `openAtlasCityModal` / `closeAtlasCityModal`.
+* **Zero Impacto em `localStorage`**: O Atlas é um módulo de referência geográfica estática que apenas consulta e opcionalmente aciona `advanceCampaignDays`.
 
 ---
 

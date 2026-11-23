@@ -186,14 +186,14 @@ const loadFile = (rel) => fs.readFileSync(path.join(srcDir, rel), 'utf8');
 const filesToLoad = [
   'data/rules_xp.js', 'data/spells.js', 'data/monsters.js', 'data/equipment.js',
   'data/classes.js', 'data/species.js', 'data/campaigns.js', 'data/hirelings.js',
-  'data/bastions.js', 'data/feats.js', 'data/backgrounds.js', 'data/trait_quick_rules.js',
+  'data/bastions.js', 'data/atlas.js', 'data/feats.js', 'data/backgrounds.js', 'data/trait_quick_rules.js',
   'js/audio_synth.js', 'js/core.js', 'js/firebase_sync.js', 'js/combat.js',
   'js/players.js', 'js/compendium.js', 'js/classes.js', 'js/species.js',
-  'js/campaigns.js', 'js/dice_roller.js', 'js/vtt_grid.js', 'js/screen_sync.js',
+  'js/campaigns.js', 'js/atlas.js', 'js/dice_roller.js', 'js/vtt_grid.js', 'js/screen_sync.js',
   'js/pdf_export.js'
 ];
 
-console.log('📁 Carregando 25 módulos do sistema no ambiente de teste...');
+console.log(`📁 Carregando ${filesToLoad.length} módulos do sistema no ambiente de teste...`);
 filesToLoad.forEach(f => {
   try {
     vm.runInContext(loadFile(f), sandbox);
@@ -202,7 +202,7 @@ filesToLoad.forEach(f => {
     process.exit(1);
   }
 });
-console.log('  ✅ Todos os 25 módulos carregados com sintaxe válida!\n');
+console.log(`  ✅ Todos os ${filesToLoad.length} módulos carregados com sintaxe válida!\n`);
 
 // 3. INICIALIZAR ESTADO GERAL DA APLICAÇÃO
 vm.runInContext(`
@@ -217,7 +217,7 @@ vm.runInContext(`
 
 // FASE 1: TESTE DE NAVEGAÇÃO ENTRE TODAS AS ABAS
 console.log('📑 FASE 1: Teste de Alternância de Abas (switchTab)...');
-const allTabs = ['combat', 'players', 'monsters', 'spells', 'equipment', 'classes', 'species', 'campaigns', 'vtt', 'screen', 'bastions'];
+const allTabs = ['combat', 'players', 'monsters', 'spells', 'equipment', 'classes', 'species', 'campaigns', 'vtt', 'screen', 'bastions', 'atlas'];
 let tabPass = 0;
 let tabFail = 0;
 
